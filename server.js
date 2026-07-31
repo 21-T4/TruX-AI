@@ -29,7 +29,7 @@ app.get('/api/config', (req, res) => {
 
 // Model Mapping (Base updated to gpt-oss-20b)
 const modelMap = {
-  base: 'gpt-oss-20b',
+  base: 'mixtral-8x7b-32768',
   pro: 'qwen/qwen3.6-27b',
   ultra: 'openai/gpt-oss-120b'
 };
