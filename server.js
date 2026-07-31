@@ -23,6 +23,7 @@ const firebaseConfig = {
 app.get('/api/firebase-config', (req, res) => {
   res.json(firebaseConfig);
 });
+
 app.get('/api/config', (req, res) => {
   res.json(firebaseConfig);
 });
@@ -75,8 +76,3 @@ function cleanResponse(text) {
     .replace(/<think>[\s\S]*/g, '')
     .trim();
 }
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`\n🚀 TruX-AI running at http://localhost:${PORT}\n`);
-});
