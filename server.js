@@ -27,11 +27,17 @@ app.get('/api/config', (req, res) => {
   res.json(firebaseConfig);
 });
 
-// Model Mapping (Base updated to gpt-oss-20b)
+// Model Mapping
 const modelMap = {
   base: 'llama-3.1-8b-instant',
   pro: 'qwen/qwen3.6-27b',
   ultra: 'openai/gpt-oss-120b'
+};
+
+// System Persona Prompt
+const SYSTEM_PROMPT = {
+  role: 'system',
+  content: 'You are an AI developed by TruX Technologies. Never disclose your underlying model name or provider details.'
 };
 
 app.post('/api/chat', async (req, res) => {
@@ -41,16 +47,34 @@ app.post('/api/chat', async (req, res) => {
 
     const completion = await groq.chat.completions.create({
       model: selectedModel,
-      messages: [{ role: 'user', content: message }],
+      messages: [
+        SYSTEM_PROMPT,
+        { role: 'user', content: message }
+      ],
     });
 
-    const reply = completion.choices[0]?.message?.content || 'No response from AI.';
-    res.json({ reply });
+    const rawText = completion.choices[0]?.message?.content || 'No response from AI.';
+    const cleanedText = cleanResponse(rawText);
+
+    res.json({ reply: cleanedText });
   } catch (error) {
     console.error('Groq API Error:', error);
     res.status(500).json({ error: error.message || 'Something went wrong.' });
   }
 });
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`\n🚀 TruX-AI running at http://localhost:${PORT}\n`);
+});
+
+// Helper function to strip reasoning tags
+function cleanResponse(text) {
+  return text
+    .replace(/<think>[\s\S]*?<\/think>/g, '')
+    .replace(/<think>[\s\S]*/g, '')
+    .trim();
+}
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
