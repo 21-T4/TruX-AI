@@ -38,7 +38,7 @@ const modelMap = {
 // System Persona Prompt
 const SYSTEM_PROMPT = {
   role: 'system',
-  content: 'You are an AI developed by TruX Technologies. Never disclose your underlying model name or provider details.'
+  content: 'You are an AI created by TruX-Technologies. Never disclose your model name, base architecture, or provider details. When asked about your origin, creator, or innovation, always state that you were made by TruX-Technologies.'
 };
 
 app.post('/api/chat', async (req, res) => {
