@@ -113,7 +113,6 @@
       .send-btn { width: 36px; height: 36px; } 
     }
 
-    /* Modal Styling */
     .profile-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); z-index: 999; justify-content: center; align-items: center; }
     .profile-modal-content { background: #131416; border: 1px solid #303135; border-radius: 24px; padding: 32px; width: 90%; max-width: 340px; text-align: center; position: relative; box-shadow: 0 12px 48px rgba(0,0,0,0.8); animation: modalPop 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     @keyframes modalPop { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -255,15 +254,11 @@
   </div>
 
   <script>
-    // ==========================================
-    // 1. FIREBASE DYNAMIC CONFIGURATION
-    // ==========================================
     let auth = null;
     let provider = null;
     let currentUser = null;
     let userTokens = { pro: 10000, ultra: 2000 };
 
-    // Fetch Firebase config securely from Node backend
     fetch('/api/firebase-config')
       .then(res => res.json())
       .then(config => {
@@ -273,11 +268,9 @@
         auth = firebase.auth();
         provider = new firebase.auth.GoogleAuthProvider();
 
-        // Listen for auth state changes
         auth.onAuthStateChanged(user => {
           if (user) {
             currentUser = user;
-            
             document.getElementById('userAvatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}&background=7f00ff&color=fff`;
             document.getElementById('userName').innerText = user.displayName || 'User';
             document.getElementById('userEmail').innerText = user.email || '';
@@ -293,7 +286,6 @@
             loadUserTokens(user.uid);
           } else {
             currentUser = null;
-            
             document.getElementById('userAvatar').src = `https://ui-avatars.com/api/?name=Guest+User&background=2a2b2d&color=fff`;
             document.getElementById('userName').innerText = 'Guest User';
             document.getElementById('userEmail').innerText = 'Sign in required';
@@ -308,18 +300,13 @@
           }
         });
       })
-      .catch(error => {
-        console.error("Failed to load Firebase Config from /api/firebase-config:", error);
-      });
+      .catch(error => console.error("Error fetching Firebase config:", error));
 
-    // ==========================================
-    // 2. USER & TOKEN STATE MANAGEMENT
-    // ==========================================
     function signInWithGoogle() {
-      if(!auth) return alert("Firebase not loaded yet.");
+      if(!auth) return alert("Firebase initializing, please wait...");
       auth.signInWithPopup(provider).catch(error => {
-        console.error("Error signing in: ", error);
-        alert("Failed to sign in. Check console for details.");
+        console.error("Sign-in error: ", error);
+        alert("Sign in failed. Ensure domain is authorized in Firebase Console.");
       });
     }
 
@@ -358,9 +345,6 @@
       if(userTokens.ultra <= 0) u.classList.add('low'); else u.classList.remove('low');
     }
 
-    // ==========================================
-    // 3. UI & CHAT LOGIC
-    // ==========================================
     function toggleMobileSidebar(e) {
       e.stopPropagation();
       const sidebar = document.getElementById('sidebarNode');
