@@ -245,13 +245,13 @@
 
     <div class="input-section">
       <div class="input-wrapper">
-        <button class="mic-btn" id="micBtn" onclick="toggleManualVoice()" title="Voice Search (or say 'Hi TruX')">
+        <button class="mic-btn" id="micBtn" onclick="toggleManualVoice()" title="Voice Search">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
             <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
             <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
           </svg>
         </button>
-        <textarea id="promptInput" placeholder="Ask TruX anything or say 'Hi TruX'..." rows="1"></textarea>
+        <textarea id="promptInput" placeholder="Ask TruX anything..." rows="1"></textarea>
         <button class="send-btn" onclick="handleActionButton()" id="actionBtn">
           <svg id="btnIcon" viewBox="0 0 24 24">
             <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
@@ -422,7 +422,7 @@
     let statusInterval = null;
     let currentModel = 'base';
 
-    /* VOICE SEARCH & WAKE WORD SYSTEM */
+    /* VOICE SEARCH SYSTEM (MANUAL MIC ONLY) */
     let recognition = null;
     let isManualListening = false;
     let isVoiceQuery = false; // Prevents storing voice interactions
@@ -432,7 +432,7 @@
       if (!SpeechRecognition) return;
 
       recognition = new SpeechRecognition();
-      recognition.continuous = true;
+      recognition.continuous = false;
       recognition.interimResults = true;
       recognition.lang = 'en-US';
 
@@ -442,43 +442,43 @@
           transcript += event.results[i][0].transcript;
         }
 
-        const lower = transcript.toLowerCase().trim();
-        // Regex matches "hi trux", "hello trux", "hey trux" & common phonetic variants
-        const wakeWordRegex = /(hi|hello|hey)\s+(trux|tru x|true x|trucks|truex|trox)/i;
+        const cleanTranscript = transcript.trim();
+        document.getElementById('promptInput').value = cleanTranscript;
 
-        if (wakeWordRegex.test(lower)) {
-          const match = lower.match(wakeWordRegex);
-          const promptAfterWakeWord = lower.substring(match.index + match[0].length).trim();
-
-          if (promptAfterWakeWord.length > 2) {
-            document.getElementById('promptInput').value = promptAfterWakeWord;
-            stopVoiceListeningUI();
-            sendPrompt(true); // Process as voice query (Oral response + No Storage)
-          } else {
-            setVoiceListeningUI(true);
-          }
-        } else if (isManualListening && event.results[event.results.length - 1].isFinal) {
-          document.getElementById('promptInput').value = lower;
+        if (event.results[event.results.length - 1].isFinal) {
           stopVoiceListeningUI();
-          sendPrompt(true); // Voice search
+          if (cleanTranscript.length > 0) {
+            sendPrompt(true); // Voice search (Oral response + No Storage)
+          }
         }
       };
 
       recognition.onend = () => {
-        // Keep continuous background wake word listening active
-        if (!isGenerating) {
-          try { recognition.start(); } catch(e){}
-        }
+        stopVoiceListeningUI();
       };
 
-      try { recognition.start(); } catch(e){}
+      recognition.onerror = (event) => {
+        console.error("Speech recognition error:", event.error);
+        stopVoiceListeningUI();
+      };
     }
 
     function toggleManualVoice() {
+      if (!recognition) {
+        alert("Speech recognition is not supported in this browser.");
+        return;
+      }
+
       if (isManualListening) {
+        try { recognition.stop(); } catch(e){}
         stopVoiceListeningUI();
       } else {
-        setVoiceListeningUI(true);
+        try {
+          recognition.start();
+          setVoiceListeningUI(true);
+        } catch(e) {
+          console.error("Could not start recognition:", e);
+        }
       }
     }
 
@@ -490,13 +490,16 @@
         document.getElementById('promptInput').placeholder = "Listening...";
       } else {
         micBtn.classList.remove('listening');
-        document.getElementById('promptInput').placeholder = "Ask TruX anything or say 'Hi TruX'...";
+        document.getElementById('promptInput').placeholder = "Ask TruX anything...";
       }
     }
 
     function stopVoiceListeningUI() {
       isManualListening = false;
-      setVoiceListeningUI(false);
+      const micBtn = document.getElementById('micBtn');
+      if (micBtn) micBtn.classList.remove('listening');
+      const input = document.getElementById('promptInput');
+      if (input) input.placeholder = "Ask TruX anything...";
     }
 
     const sendIconSvg = `<path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>`;
@@ -886,7 +889,7 @@
       }
     });
 
-    // Initialize Sidebar & Continuous Voice Engine on load
+    // Initialize Sidebar & Voice System on load
     renderSidebar();
     initVoiceSystem();
   </script>
