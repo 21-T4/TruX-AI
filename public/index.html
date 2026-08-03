@@ -556,6 +556,9 @@
       }
       isGenerating = false;
       document.getElementById('btnIcon').innerHTML = sendIconSvg;
+      
+      // Stop the voice immediately if user presses the stop button
+      window.speechSynthesis.cancel(); 
 
       const thinkingBox = document.querySelector('.trux-bubble.thinking-box');
       if (thinkingBox) {
@@ -566,7 +569,8 @@
     
     function stripMarkdown(text) {
       if (!text) return "";
-      return text.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/#(.*?)\n/g, '$1\n');
+      // Strip markdown, and remove backticks to prevent the voice from literally saying "backtick"
+      return text.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/#(.*?)\n/g, '$1\n').replace(/`/g, '');
     }
 
     function needsWebSearch(query) {
@@ -684,7 +688,13 @@
           saveChats();
         }
         
-        streamTextSmoothly(responseText, bubble, isVoiceQuery);
+        // --- VOICE INSTANT TRIGGER FIX --- 
+        // If it was a voice query, start speaking immediately so the user doesn't wait
+        if (isVoiceQuery) {
+          readAloudText(responseText);
+        }
+
+        streamTextSmoothly(responseText, bubble);
       })
       .catch(error => {
         if (statusInterval) {
@@ -712,7 +722,7 @@
       container.scrollTop = container.scrollHeight;
     }
 
-    function streamTextSmoothly(text, targetElement, autoSpeak = false) {
+    function streamTextSmoothly(text, targetElement) {
       const container = document.getElementById('chatContainer');
       const characters = Array.from(text || "");
       let index = 0;
@@ -763,11 +773,6 @@
 
           targetElement.parentElement.appendChild(controls);
           container.scrollTop = container.scrollHeight;
-
-          // Automatically speak back oral response if it was triggered via voice
-          if (autoSpeak) {
-            readAloudText(text);
-          }
         }
       }
       printLetter();
