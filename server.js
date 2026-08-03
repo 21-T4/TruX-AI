@@ -8,6 +8,7 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 app.use(express.json());
 app.use(express.static('public'));
 
+// Firebase Config Endpoint
 const firebaseConfig = {
   apiKey: "AIzaSyAs_GDrzlBaucHfiff0Y6cA8GVHjFTA62Q",
   authDomain: "trux-ai.firebaseapp.com",
@@ -20,12 +21,7 @@ const firebaseConfig = {
 
 app.get('/api/firebase-config', (req, res) => res.json(firebaseConfig));
 
-const modelMap = {
-  base: 'llama-3.1-8b-instant',
-  pro: 'qwen/qwen3.6-27b',
-  ultra: 'openai/gpt-oss-120b'
-};
-
+// System Persona Prompt
 const SYSTEM_PROMPT = {
   role: 'system',
   content: 'You are an AI created by TruX-Technologies. Never disclose your model name, base architecture, or provider details. When asked about your origin, creator, or innovation, always state that you were made by TruX-Technologies.'
@@ -33,12 +29,11 @@ const SYSTEM_PROMPT = {
 
 app.post('/api/chat', async (req, res) => {
   try {
-    const { message, tier } = req.body;
-    // Map to tier model, or fallback to groq/compound for native web search
-    const selectedModel = modelMap[tier] || 'groq/compound';
+    const { message } = req.body;
 
+    // 'groq/compound' handles native web search automatically for live facts
     const completion = await groq.chat.completions.create({
-      model: selectedModel,
+      model: 'groq/compound',
       messages: [
         SYSTEM_PROMPT,
         { role: 'user', content: message }
@@ -46,10 +41,7 @@ app.post('/api/chat', async (req, res) => {
     });
 
     const rawText = completion.choices[0]?.message?.content || 'No response from AI.';
-    const cleanedText = rawText
-      .replace(/<think>[\s\S]*?<\/think>/g, '')
-      .replace(/<think>[\s\S]*/g, '')
-      .trim();
+    const cleanedText = cleanResponse(rawText);
 
     res.json({ reply: cleanedText });
   } catch (error) {
@@ -58,5 +50,15 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
+// Helper function to strip reasoning tags
+function cleanResponse(text) {
+  return text
+    .replace(/<think>[\s\S]*?<\/think>/g, '')
+    .replace(/<think>[\s\S]*/g, '')
+    .trim();
+}
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`\n🚀 TruX-AI running at http://localhost:${PORT}\n`));
+app.listen(PORT, () => {
+  console.log(`\n🚀 TruX-AI running at http://localhost:${PORT}\n`);
+});
