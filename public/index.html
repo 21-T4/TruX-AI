@@ -72,7 +72,7 @@
     .user-bubble { background-color: #1f2023; color: #f1f1f1; align-self: flex-end; border-bottom-right-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.04); max-width: 85%; }
     .trux-bubble { background-color: rgba(18, 19, 21, 0.8); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); color: #e3e3e3; align-self: flex-start; border-top-left-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.06); box-shadow: 0 4px 20px rgba(0,0,0,0.3); width: 100%; }
 
-    /* Glasslike Thinking Status Box with White Shine */
+    /* Glasslike Thinking Status Box */
     .trux-bubble.thinking-box {
       width: auto;
       display: inline-flex;
@@ -108,6 +108,17 @@
     .input-section { padding: 16px 24px 24px; background: linear-gradient(to top, #060607 80%, transparent); z-index: 5; display: flex; flex-direction: column; align-items: center; width: 100%; }
     .input-wrapper { width: 100%; max-width: 800px; background: #18191b; border: 1px solid #303135; border-radius: 28px; padding: 12px 18px; display: flex; align-items: center; box-shadow: 0 4px 24px rgba(0,0,0,0.6); transition: border-color 0.2s, background-color 0.2s; }
     .input-wrapper:focus-within { border-color: #a8c7fa; background: #1e1f22; }
+    
+    /* Mic Button Styling */
+    .mic-btn { background: transparent; border: none; color: #9aa0a6; cursor: pointer; padding: 6px; margin-right: 8px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s; flex-shrink: 0; }
+    .mic-btn:hover { color: #ffffff; background: rgba(255, 255, 255, 0.08); }
+    .mic-btn.listening { color: #ff0055; background: rgba(255, 0, 85, 0.15); animation: micPulse 1.5s infinite; }
+    @keyframes micPulse {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 0, 85, 0.4); }
+      70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(255, 0, 85, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 0, 85, 0); }
+    }
+
     textarea { flex-grow: 1; background: transparent; border: none; color: #e3e3e3; resize: none; outline: none; font-family: inherit; font-size: 15px; max-height: 140px; line-height: 22px; }
     .send-btn { background: linear-gradient(135deg, #a8c7fa, #7cacf8); border: none; border-radius: 50%; width: 38px; height: 38px; cursor: pointer; margin-left: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: transform 0.2s, background 0.2s; }
     .send-btn:hover { transform: scale(1.05); }
@@ -234,7 +245,13 @@
 
     <div class="input-section">
       <div class="input-wrapper">
-        <textarea id="promptInput" placeholder="Ask TruX anything..." rows="1"></textarea>
+        <button class="mic-btn" id="micBtn" onclick="toggleManualVoice()" title="Voice Search (or say 'Hi TruX')">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+          </svg>
+        </button>
+        <textarea id="promptInput" placeholder="Ask TruX anything or say 'Hi TruX'..." rows="1"></textarea>
         <button class="send-btn" onclick="handleActionButton()" id="actionBtn">
           <svg id="btnIcon" viewBox="0 0 24 24">
             <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
@@ -405,6 +422,83 @@
     let statusInterval = null;
     let currentModel = 'base';
 
+    /* VOICE SEARCH & WAKE WORD SYSTEM */
+    let recognition = null;
+    let isManualListening = false;
+    let isVoiceQuery = false; // Prevents storing voice interactions
+
+    function initVoiceSystem() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) return;
+
+      recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+
+        const lower = transcript.toLowerCase().trim();
+        // Regex matches "hi trux", "hello trux", "hey trux" & common phonetic variants
+        const wakeWordRegex = /(hi|hello|hey)\s+(trux|tru x|true x|trucks|truex|trox)/i;
+
+        if (wakeWordRegex.test(lower)) {
+          const match = lower.match(wakeWordRegex);
+          const promptAfterWakeWord = lower.substring(match.index + match[0].length).trim();
+
+          if (promptAfterWakeWord.length > 2) {
+            document.getElementById('promptInput').value = promptAfterWakeWord;
+            stopVoiceListeningUI();
+            sendPrompt(true); // Process as voice query (Oral response + No Storage)
+          } else {
+            setVoiceListeningUI(true);
+          }
+        } else if (isManualListening && event.results[event.results.length - 1].isFinal) {
+          document.getElementById('promptInput').value = lower;
+          stopVoiceListeningUI();
+          sendPrompt(true); // Voice search
+        }
+      };
+
+      recognition.onend = () => {
+        // Keep continuous background wake word listening active
+        if (!isGenerating) {
+          try { recognition.start(); } catch(e){}
+        }
+      };
+
+      try { recognition.start(); } catch(e){}
+    }
+
+    function toggleManualVoice() {
+      if (isManualListening) {
+        stopVoiceListeningUI();
+      } else {
+        setVoiceListeningUI(true);
+      }
+    }
+
+    function setVoiceListeningUI(active) {
+      isManualListening = active;
+      const micBtn = document.getElementById('micBtn');
+      if (active) {
+        micBtn.classList.add('listening');
+        document.getElementById('promptInput').placeholder = "Listening...";
+      } else {
+        micBtn.classList.remove('listening');
+        document.getElementById('promptInput').placeholder = "Ask TruX anything or say 'Hi TruX'...";
+      }
+    }
+
+    function stopVoiceListeningUI() {
+      isManualListening = false;
+      setVoiceListeningUI(false);
+    }
+
     const sendIconSvg = `<path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>`;
     const stopIconSvg = `<rect x="6" y="6" width="12" height="12" rx="1.5" />`;
 
@@ -443,7 +537,7 @@
       if (isGenerating) {
         stopActiveGeneration();
       } else {
-        sendPrompt();
+        sendPrompt(false);
       }
     }
 
@@ -477,10 +571,12 @@
       return liveKeywords.some(keyword => query.toLowerCase().includes(keyword));
     }
 
-    function sendPrompt() {
+    function sendPrompt(isVoice = false) {
       const inputEl = document.getElementById('promptInput');
       const prompt = inputEl.value.trim();
       if (!prompt) return;
+
+      isVoiceQuery = isVoice; // Record if this is a voice query
 
       if (currentModel !== 'base' && !currentUser) {
         alert("Please sign in to use Pro and Ultra models.");
@@ -500,20 +596,23 @@
       document.getElementById('btnIcon').innerHTML = stopIconSvg;
       document.getElementById('pixelGrid').classList.add('grey-mode');
 
-      if (!currentChatId) {
-        currentChatId = 'chat_' + Date.now();
-        chatSessions[currentChatId] = {
-          title: prompt.substring(0, 24) + (prompt.length > 24 ? '...' : ''),
-          messages: []
-        };
+      // ONLY save session data to local history if NOT a voice query
+      if (!isVoiceQuery) {
+        if (!currentChatId) {
+          currentChatId = 'chat_' + Date.now();
+          chatSessions[currentChatId] = {
+            title: prompt.substring(0, 24) + (prompt.length > 24 ? '...' : ''),
+            messages: []
+          };
+        }
+        chatSessions[currentChatId].messages.push({ role: 'user', text: prompt });
+        saveChats();
       }
 
       document.getElementById('welcomeScreen').style.display = 'none';
       const container = document.getElementById('chatContainer');
       container.style.display = 'block';
 
-      chatSessions[currentChatId].messages.push({ role: 'user', text: prompt });
-      saveChats();
       appendMessageRow('You', prompt, 'user-row', 'user-bubble');
 
       inputEl.value = '';
@@ -532,7 +631,6 @@
       container.appendChild(truxRow);
       container.scrollTop = container.scrollHeight;
 
-      // Status Transition Logic with clean Glass Text
       const isSearchLikely = needsWebSearch(prompt);
       let step = 0;
       statusInterval = setInterval(() => {
@@ -577,10 +675,13 @@
           saveUserTokens();
         }
 
-        chatSessions[currentChatId].messages.push({ role: 'trux', text: responseText });
-        saveChats();
+        // Privacy rule: Only save to local history if NOT a voice search
+        if (!isVoiceQuery && currentChatId && chatSessions[currentChatId]) {
+          chatSessions[currentChatId].messages.push({ role: 'trux', text: responseText });
+          saveChats();
+        }
         
-        streamTextSmoothly(responseText, bubble);
+        streamTextSmoothly(responseText, bubble, isVoiceQuery);
       })
       .catch(error => {
         if (statusInterval) {
@@ -608,7 +709,7 @@
       container.scrollTop = container.scrollHeight;
     }
 
-    function streamTextSmoothly(text, targetElement) {
+    function streamTextSmoothly(text, targetElement, autoSpeak = false) {
       const container = document.getElementById('chatContainer');
       const characters = Array.from(text || "");
       let index = 0;
@@ -659,6 +760,11 @@
 
           targetElement.parentElement.appendChild(controls);
           container.scrollTop = container.scrollHeight;
+
+          // Automatically speak back oral response if it was triggered via voice
+          if (autoSpeak) {
+            readAloudText(text);
+          }
         }
       }
       printLetter();
@@ -750,7 +856,8 @@
     function readAloudText(textToRead) {
       if (!textToRead) return;
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(textToRead);
+      const cleanText = stripMarkdown(textToRead);
+      const utterance = new SpeechSynthesisUtterance(cleanText);
       window.speechSynthesis.speak(utterance);
     }
 
@@ -779,7 +886,9 @@
       }
     });
 
+    // Initialize Sidebar & Continuous Voice Engine on load
     renderSidebar();
+    initVoiceSystem();
   </script>
 </body>
 </html>
