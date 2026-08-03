@@ -50,31 +50,71 @@ async function fetchWebSearch(query) {
 // System Persona Prompt Base
 const BASE_PERSONA = 'You are an AI created by TruX-Technologies. Never disclose your model name, base architecture, or provider details. When asked about your origin, creator, or innovation, always state that you were made by TruX-Technologies.';
 
+// Search Tool definition for Groq
+const tools = [
+  {
+    type: 'function',
+    function: {
+      name: 'web_search',
+      description: 'Search the web ONLY for real-time live data, current news, recent facts, or ongoing events. DO NOT use for general math, logic, standard programming questions, or established scientific facts.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'The search query to look up' }
+        },
+        required: ['query']
+      }
+    }
+  }
+];
+
 app.post('/api/chat', async (req, res) => {
   try {
     const { message } = req.body;
 
-    // Fetch live context from Serper
-    const searchContext = await fetchWebSearch(message);
+    const messages = [
+      { role: 'system', content: BASE_PERSONA },
+      { role: 'user', content: message }
+    ];
 
-    // Append search results to persona prompt if available
-    let systemPromptContent = BASE_PERSONA;
-    if (searchContext) {
-      systemPromptContent += `\n\nUse the following real-time web search context to accurately answer the user request:\n\n--- SEARCH CONTEXT ---\n${searchContext}\n----------------------`;
-    }
-
-    const completion = await groq.chat.completions.create({
+    // Step 1: Let Groq evaluate if search is needed
+    let completion = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
-      messages: [
-        { role: 'system', content: systemPromptContent },
-        { role: 'user', content: message }
-      ],
+      messages: messages,
+      tools: tools,
+      tool_choice: 'auto'
     });
 
-    const rawText = completion.choices[0]?.message?.content || 'No response from AI.';
-    const cleanedText = cleanResponse(rawText);
+    let responseMessage = completion.choices[0]?.message;
 
-    res.json({ reply: cleanedText });
+    // Step 2: Execute Serper search only if AI explicitly calls the function
+    if (responseMessage?.tool_calls) {
+      messages.push(responseMessage);
+
+      for (const toolCall of responseMessage.tool_calls) {
+        if (toolCall.function.name === 'web_search') {
+          const { query } = JSON.parse(toolCall.function.arguments);
+          const searchResults = await fetchWebSearch(query);
+
+          messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: searchResults || 'No search results found.'
+          });
+        }
+      }
+
+      // Step 3: Generate final answer with live results attached
+      completion = await groq.chat.completions.create({
+        model: 'llama-3.3-70b-versatile',
+        messages: messages
+      });
+
+      responseMessage = completion.choices[0]?.message;
+    }
+
+    const rawText = responseMessage?.content || 'No response from AI.';
+    res.json({ reply: cleanResponse(rawText) });
   } catch (error) {
     console.error('Groq API Error:', error);
     res.status(500).json({ error: error.message || 'Something went wrong.' });
