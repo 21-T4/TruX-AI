@@ -21,21 +21,52 @@ const firebaseConfig = {
 
 app.get('/api/firebase-config', (req, res) => res.json(firebaseConfig));
 
-// System Persona Prompt
-const SYSTEM_PROMPT = {
-  role: 'system',
-  content: 'You are an AI created by TruX-Technologies. Never disclose your model name, base architecture, or provider details. When asked about your origin, creator, or innovation, always state that you were made by TruX-Technologies.'
-};
+// Helper: Fetch search results from Serper API
+async function fetchWebSearch(query) {
+  try {
+    const response = await fetch('https://google.serper.dev/search', {
+      method: 'POST',
+      headers: {
+        'X-API-KEY': process.env.SERPER_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ q: query, num: 4 })
+    });
+
+    const data = await response.json();
+
+    if (data.organic && data.organic.length > 0) {
+      return data.organic
+        .map(item => `Title: ${item.title}\nSnippet: ${item.snippet}\nLink: ${item.link}`)
+        .join('\n\n');
+    }
+    return '';
+  } catch (error) {
+    console.error('Serper Search Error:', error);
+    return '';
+  }
+}
+
+// System Persona Prompt Base
+const BASE_PERSONA = 'You are an AI created by TruX-Technologies. Never disclose your model name, base architecture, or provider details. When asked about your origin, creator, or innovation, always state that you were made by TruX-Technologies.';
 
 app.post('/api/chat', async (req, res) => {
   try {
     const { message } = req.body;
 
-    // 'groq/compound' handles native web search automatically for live facts
+    // Fetch live context from Serper
+    const searchContext = await fetchWebSearch(message);
+
+    // Append search results to persona prompt if available
+    let systemPromptContent = BASE_PERSONA;
+    if (searchContext) {
+      systemPromptContent += `\n\nUse the following real-time web search context to accurately answer the user request:\n\n--- SEARCH CONTEXT ---\n${searchContext}\n----------------------`;
+    }
+
     const completion = await groq.chat.completions.create({
-      model: 'groq/compound',
+      model: 'llama-3.3-70b-versatile',
       messages: [
-        SYSTEM_PROMPT,
+        { role: 'system', content: systemPromptContent },
         { role: 'user', content: message }
       ],
     });
