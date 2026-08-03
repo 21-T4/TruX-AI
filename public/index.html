@@ -10,6 +10,7 @@
   <!-- FIREBASE SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -255,9 +256,11 @@
 
   <script>
     let auth = null;
+    let db = null;
     let provider = null;
     let currentUser = null;
-    let userTokens = { pro: 10000, ultra: 2000 };
+    let userTokens = { pro: 10000, ultra: 2000, lastReset: Date.now() };
+    const THIRTY_HOURS_MS = 30 * 60 * 60 * 1000;
 
     fetch('/api/firebase-config')
       .then(res => res.json())
@@ -266,41 +269,82 @@
           firebase.initializeApp(config);
         }
         auth = firebase.auth();
+        db = firebase.firestore();
         provider = new firebase.auth.GoogleAuthProvider();
 
-        auth.onAuthStateChanged(user => {
+        auth.onAuthStateChanged(async user => {
           if (user) {
             currentUser = user;
-            document.getElementById('userAvatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}&background=7f00ff&color=fff`;
-            document.getElementById('userName').innerText = user.displayName || 'User';
-            document.getElementById('userEmail').innerText = user.email || '';
-            
-            document.getElementById('modalAvatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}&background=7f00ff&color=fff`;
-            document.getElementById('modalName').innerText = user.displayName || 'User';
-            document.getElementById('modalEmail').innerText = user.email || '';
-            
-            document.getElementById('signInBtn').style.display = 'none';
-            document.getElementById('signOutBtn').style.display = 'flex';
-            document.getElementById('tokenStats').style.display = 'block';
-
-            loadUserTokens(user.uid);
+            updateProfileUI(user);
+            await loadUserTokens(user.uid);
           } else {
             currentUser = null;
-            document.getElementById('userAvatar').src = `https://ui-avatars.com/api/?name=Guest+User&background=2a2b2d&color=fff`;
-            document.getElementById('userName').innerText = 'Guest User';
-            document.getElementById('userEmail').innerText = 'Sign in required';
-            
-            document.getElementById('modalAvatar').src = `https://ui-avatars.com/api/?name=Guest+User&background=2a2b2d&color=fff`;
-            document.getElementById('modalName').innerText = 'Guest User';
-            document.getElementById('modalEmail').innerText = 'Not Signed In';
-
-            document.getElementById('signInBtn').style.display = 'flex';
-            document.getElementById('signOutBtn').style.display = 'none';
-            document.getElementById('tokenStats').style.display = 'none';
+            updateProfileUI(null);
           }
         });
       })
       .catch(error => console.error("Error fetching Firebase config:", error));
+
+    function updateProfileUI(user) {
+      const isUser = !!user;
+      const defaultAvatar = `https://ui-avatars.com/api/?name=Guest+User&background=2a2b2d&color=fff`;
+      
+      document.getElementById('userAvatar').src = isUser ? (user.photoURL || defaultAvatar) : defaultAvatar;
+      document.getElementById('userName').innerText = isUser ? (user.displayName || 'User') : 'Guest User';
+      document.getElementById('userEmail').innerText = isUser ? (user.email || '') : 'Sign in required';
+      
+      document.getElementById('modalAvatar').src = document.getElementById('userAvatar').src;
+      document.getElementById('modalName').innerText = document.getElementById('userName').innerText;
+      document.getElementById('modalEmail').innerText = isUser ? (user.email || '') : 'Not Signed In';
+
+      document.getElementById('signInBtn').style.display = isUser ? 'none' : 'flex';
+      document.getElementById('signOutBtn').style.display = isUser ? 'flex' : 'none';
+      document.getElementById('tokenStats').style.display = isUser ? 'block' : 'none';
+    }
+
+    async function loadUserTokens(uid) {
+      if (!db) return;
+      try {
+        const userRef = db.collection('users').doc(uid);
+        const doc = await userRef.get();
+        const now = Date.now();
+
+        if (doc.exists) {
+          const data = doc.data();
+          if (data.lastReset && (now - data.lastReset > THIRTY_HOURS_MS)) {
+            userTokens = { pro: 10000, ultra: 2000, lastReset: now };
+            await userRef.set(userTokens);
+          } else {
+            userTokens = data;
+          }
+        } else {
+          userTokens = { pro: 10000, ultra: 2000, lastReset: now };
+          await userRef.set(userTokens);
+        }
+        updateTokenUI();
+      } catch (err) {
+        console.error("Error loading user tokens from Firestore:", err);
+      }
+    }
+
+    function saveUserTokens() {
+      if (!currentUser || !db) return;
+      db.collection('users').doc(currentUser.uid).update({
+        pro: userTokens.pro,
+        ultra: userTokens.ultra
+      }).catch(err => console.error("Error saving tokens:", err));
+      updateTokenUI();
+    }
+
+    function updateTokenUI() {
+      const p = document.getElementById('proTokens');
+      const u = document.getElementById('ultraTokens');
+      p.innerText = (userTokens.pro || 0).toLocaleString();
+      u.innerText = (userTokens.ultra || 0).toLocaleString();
+      
+      if(userTokens.pro <= 0) p.classList.add('low'); else p.classList.remove('low');
+      if(userTokens.ultra <= 0) u.classList.add('low'); else u.classList.remove('low');
+    }
 
     function signInWithGoogle() {
       if(!auth) return alert("Firebase initializing, please wait...");
@@ -316,33 +360,6 @@
         closeProfileModal();
         startNewChat();
       });
-    }
-
-    function loadUserTokens(uid) {
-      const saved = localStorage.getItem('trux_tokens_' + uid);
-      if (saved) {
-        userTokens = JSON.parse(saved);
-      } else {
-        userTokens = { pro: 10000, ultra: 2000 };
-        saveUserTokens();
-      }
-      updateTokenUI();
-    }
-
-    function saveUserTokens() {
-      if (!currentUser) return;
-      localStorage.setItem('trux_tokens_' + currentUser.uid, JSON.stringify(userTokens));
-      updateTokenUI();
-    }
-
-    function updateTokenUI() {
-      const p = document.getElementById('proTokens');
-      const u = document.getElementById('ultraTokens');
-      p.innerText = userTokens.pro.toLocaleString();
-      u.innerText = userTokens.ultra.toLocaleString();
-      
-      if(userTokens.pro <= 0) p.classList.add('low'); else p.classList.remove('low');
-      if(userTokens.ultra <= 0) u.classList.add('low'); else u.classList.remove('low');
     }
 
     function toggleMobileSidebar(e) {
