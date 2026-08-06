@@ -422,10 +422,10 @@
     let statusInterval = null;
     let currentModel = 'base';
 
-    /* VOICE SEARCH SYSTEM (MANUAL MIC ONLY) */
+    /* VOICE SEARCH SYSTEM */
     let recognition = null;
     let isManualListening = false;
-    let isVoiceQuery = false; // Prevents storing voice interactions
+    let isVoiceQuery = false;
 
     function initVoiceSystem() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -448,7 +448,7 @@
         if (event.results[event.results.length - 1].isFinal) {
           stopVoiceListeningUI();
           if (cleanTranscript.length > 0) {
-            sendPrompt(true); // Voice search (Oral response + No Storage)
+            sendPrompt(true);
           }
         }
       };
@@ -557,7 +557,6 @@
       isGenerating = false;
       document.getElementById('btnIcon').innerHTML = sendIconSvg;
       
-      // Stop the voice immediately if user presses the stop button
       window.speechSynthesis.cancel(); 
 
       const thinkingBox = document.querySelector('.trux-bubble.thinking-box');
@@ -569,13 +568,7 @@
     
     function stripMarkdown(text) {
       if (!text) return "";
-      // Strip markdown, and remove backticks to prevent the voice from literally saying "backtick"
       return text.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/#(.*?)\n/g, '$1\n').replace(/`/g, '');
-    }
-
-    function needsWebSearch(query) {
-      const liveKeywords = ['current', 'news', 'today', 'weather', 'latest', 'price', 'match', 'score', 'who is', 'when is', 'happening'];
-      return liveKeywords.some(keyword => query.toLowerCase().includes(keyword));
     }
 
     function sendPrompt(isVoice = false) {
@@ -583,7 +576,7 @@
       const prompt = inputEl.value.trim();
       if (!prompt) return;
 
-      isVoiceQuery = isVoice; // Record if this is a voice query
+      isVoiceQuery = isVoice;
 
       if (currentModel !== 'base' && !currentUser) {
         alert("Please sign in to use Pro and Ultra models.");
@@ -603,7 +596,6 @@
       document.getElementById('btnIcon').innerHTML = stopIconSvg;
       document.getElementById('pixelGrid').classList.add('grey-mode');
 
-      // ONLY save session data to local history if NOT a voice query
       if (!isVoiceQuery) {
         if (!currentChatId) {
           currentChatId = 'chat_' + Date.now();
@@ -638,16 +630,15 @@
       container.appendChild(truxRow);
       container.scrollTop = container.scrollHeight;
 
-      const isSearchLikely = needsWebSearch(prompt);
       let step = 0;
       statusInterval = setInterval(() => {
         const statusText = document.getElementById(`statusText_${bubbleId}`);
         if (!statusText) return;
 
         step++;
-        if (step === 1 && isSearchLikely) {
-          statusText.innerText = 'Searching the web...';
-        } else if (step === 2 || (step === 1 && !isSearchLikely)) {
+        if (step === 1) {
+          statusText.innerText = 'Searching Google Web...';
+        } else if (step === 2) {
           statusText.innerText = 'Generating response...';
         }
       }, 1200);
@@ -682,14 +673,11 @@
           saveUserTokens();
         }
 
-        // Privacy rule: Only save to local history if NOT a voice search
         if (!isVoiceQuery && currentChatId && chatSessions[currentChatId]) {
           chatSessions[currentChatId].messages.push({ role: 'trux', text: responseText });
           saveChats();
         }
         
-        // --- VOICE INSTANT TRIGGER FIX --- 
-        // If it was a voice query, start speaking immediately so the user doesn't wait
         if (isVoiceQuery) {
           readAloudText(responseText);
         }
