@@ -22,7 +22,7 @@ const firebaseConfig = {
 app.get('/api/firebase-config', (req, res) => res.json(firebaseConfig));
 
 // System Persona Prompt Base
-const BASE_PERSONA = 'You are an AI created by TruX-Technologies. Never disclose your model name, base architecture, or provider details. When asked about your origin, creator, or innovation, always state that you were made by TruX-Technologies also dont say it randomly always say when asked';
+const BASE_PERSONA = 'You are an AI created by TruX-Technologies. Never disclose your model name, and only tell that you are created by TruX Technologies when asked, give very short and precise answers, use bullet points, cover vast topic with less words ';
 
 // Helper: Fetch search results from Serper API
 async function fetchWebSearch(query) {
