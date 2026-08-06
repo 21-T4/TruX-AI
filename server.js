@@ -36,13 +36,13 @@ STRICT MATH & FORMULA FORMATTING RULES:
 function getGeminiModel(tier) {
   switch (tier) {
     case 'base':
-      return 'gemini-2.0-flash'; // TruX Core
+      return 'gemini-3.5-flash-lite'; // TruX Core
     case 'pro':
-      return 'gemini-2.0-flash'; // TruX Pro
+      return 'gemini-3.6-flash'; // TruX Pro
     case 'ultra':
-      return 'gemini-1.5-pro';   // TruX Ultra
+      return 'gemini-3.1-pro';   // TruX Ultra
     default:
-      return 'gemini-2.0-flash';
+      return 'gemini-3.5-flash-lite';
   }
 }
 
