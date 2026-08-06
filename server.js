@@ -32,55 +32,29 @@ STRICT MATH & FORMULA FORMATTING RULES:
 - NEVER use backslashes (\\) or LaTeX macros (e.g., \\frac, \\sqrt, \\times, \\cdot).
 - Format all mathematical equations, formulas, and variables using standard plain text and ASCII symbols (e.g., x^2, a/b, sqrt(x), *).`;
 
-/**
- * Evaluates whether a user prompt requires real-time web search.
- * Uses an active fast model (gemini-3.5-flash-lite).
- */
-/**
- * Evaluates whether a user prompt requires real-time web search.
- * Uses strict rules and few-shot examples to prevent false positives.
- */
-async function shouldSearchWeb(userMessage) {
-  try {
-    const classifierModel = genAI.getGenerativeModel({ model: 'gemini-3.5-flash-lite' });
-    const prompt = `You are a search intent classifier. Determine if the user prompt requires a real-time web search.
-
-Respond STRICTLY with "YES" only if the prompt needs live web data, current news, live stock/weather info, or recent events.
-
-Respond STRICTLY with "NO" for:
-- Greetings or casual conversation (e.g., "hello", "hi", "how are you", "who made you")
-- Coding, programming help, debugging, or math formulas
-- Writing, summarizing, or creative requests
-- Static general knowledge (e.g., "what is gravity?", "capital of France")
-
-Examples:
-"hello" -> NO
-"hi who are you" -> NO
-"write a python code for fibonacci" -> NO
-"what is today's stock price of Apple?" -> YES
-"who won the latest cricket match?" -> YES
-
-User Prompt: "${userMessage}"
-
-Result (YES or NO):`;
-
-    const result = await classifierModel.generateContent(prompt);
-    const answer = result.response.text().trim().toUpperCase();
-    
-    // Check for exact start match rather than general inclusion
-    return answer.startsWith('YES');
-  } catch (error) {
-    console.error("Classifier error, skipping web search:", error);
-    return false;
+// Function declaration telling Gemini when it should request a web search
+const searchWebDeclaration = {
+  name: 'searchWeb',
+  description: 'Search the live web using Google/Serper. ONLY call this function if you require real-time information, current dates, recent news, live scores, live weather, or updated facts outside your training knowledge. DO NOT call this for greetings, casual conversation, math, coding, or standard known facts.',
+  parameters: {
+    type: 'OBJECT',
+    properties: {
+      query: {
+        type: 'STRING',
+        description: 'The search query keywords.'
+      }
+    },
+    required: ['query']
   }
-}
+};
+
 /**
  * Fetches search results from Serper.dev API.
  */
 async function fetchSerperSearchResults(query) {
   if (!process.env.SERPER_DEV_API) {
     console.warn("SERPER_DEV_API key is missing in environment variables.");
-    return "";
+    return "Search failed: SERPER_DEV_API key missing.";
   }
 
   try {
@@ -95,21 +69,20 @@ async function fetchSerperSearchResults(query) {
 
     if (!response.ok) {
       console.error(`Serper API HTTP Error: ${response.status} ${response.statusText}`);
-      return "";
+      return "Search failed.";
     }
 
     const data = await response.json();
     if (!data.organic || data.organic.length === 0) {
-      return "";
+      return "No search results found.";
     }
 
-    // Return top 4 search snippets
     return data.organic.slice(0, 4).map(item => {
       return `Title: ${item.title}\nSnippet: ${item.snippet}\nLink: ${item.link}`;
     }).join('\n\n');
   } catch (error) {
     console.error("Serper Search Fetch Error:", error);
-    return "";
+    return "Search error occurred.";
   }
 }
 
@@ -137,35 +110,45 @@ app.post('/api/chat', async (req, res) => {
       return res.status(400).json({ error: 'Message is required.' });
     }
 
-    // 1. Determine if real-time web search is required
-    const needsSearch = await shouldSearchWeb(message);
-    let searchContext = "";
-
-    if (needsSearch) {
-      console.log(`[Search Router] Real-time query detected. Executing Serper search for: "${message}"`);
-      searchContext = await fetchSerperSearchResults(message);
-    } else {
-      console.log(`[Search Router] Static/Internal query detected. Bypassing search for: "${message}"`);
-    }
-
-    // 2. Prepare final prompt payload
-    let finalPrompt = message;
-    if (searchContext) {
-      finalPrompt = `Web Search Context (Serper.dev):\n${searchContext}\n\nUser Question: ${message}`;
-    }
-
     const modelName = getGeminiModel(tier);
 
-    // 3. Query Gemini Model
+    // Initialize Gemini with tool declaration
     const model = genAI.getGenerativeModel({
       model: modelName,
-      systemInstruction: BASE_PERSONA
+      systemInstruction: BASE_PERSONA,
+      tools: [{ functionDeclarations: [searchWebDeclaration] }]
     });
 
-    const result = await model.generateContent(finalPrompt);
-    const response = await result.response;
-    const rawText = response.text() || 'No response from AI.';
+    const chat = model.startChat();
+    let result = await chat.sendMessage(message);
 
+    // Check if Gemini requested to call searchWeb
+    const functionCalls = result.response.functionCalls();
+
+    if (functionCalls && functionCalls.length > 0) {
+      const call = functionCalls[0];
+      if (call.name === 'searchWeb') {
+        const searchQuery = call.args.query || message;
+        console.log(`[Gemini Tool Call] Web search requested for: "${searchQuery}"`);
+
+        // Execute Serper search
+        const searchResults = await fetchSerperSearchResults(searchQuery);
+
+        // Send search results back to Gemini to complete its answer
+        result = await chat.sendMessage([
+          {
+            functionResponse: {
+              name: 'searchWeb',
+              response: { results: searchResults }
+            }
+          }
+        ]);
+      }
+    } else {
+      console.log(`[Gemini Direct Response] Bypassed web search.`);
+    }
+
+    const rawText = result.response.text() || 'No response from AI.';
     const cleanedText = cleanResponse(rawText);
 
     res.json({ reply: cleanedText });
