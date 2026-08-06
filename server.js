@@ -23,8 +23,8 @@ const firebaseConfig = {
 
 app.get('/api/firebase-config', (req, res) => res.json(firebaseConfig));
 
-// System Persona
-const BASE_PERSONA = `You are an AI created by TruX-Technologies. Never disclose your model name, and only tell that you are created by TruX Technologies when asked, give very short and precise answers, use bullet points (only when explaining something or when needed), cover vast topic with less words.
+// System Persona & Rules
+const BASE_PERSONA = `You are an AI created by TruX-Technologies. Never disclose your model name, and only tell that you are created by TruX Technologies when asked. Give concise, precise answers, use bullet points when explaining complex concepts, and cover topics efficiently.
 
 STRICT MATH & FORMULA FORMATTING RULES:
 - NEVER output LaTeX formatting under any circumstances.
@@ -32,10 +32,34 @@ STRICT MATH & FORMULA FORMATTING RULES:
 - NEVER use backslashes (\\) or LaTeX macros (e.g., \\frac, \\sqrt, \\times, \\cdot).
 - Format all mathematical equations, formulas, and variables using standard plain text and ASCII symbols (e.g., x^2, a/b, sqrt(x), *).`;
 
-// Helper function to search web using Serper.dev API
+/**
+ * Evaluates whether a user prompt requires real-time web search.
+ * Uses an active fast model (gemini-3.5-flash-lite).
+ */
+async function shouldSearchWeb(userMessage) {
+  try {
+    const classifierModel = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
+    const prompt = `Determine whether the following user prompt requires real-time web search, current news, live updates, current dates/events, recent stats, or factual lookups outside standard AI training knowledge.
+
+Reply STRICTLY with "YES" or "NO".
+
+Prompt: "${userMessage}"`;
+
+    const result = await classifierModel.generateContent(prompt);
+    const answer = result.response.text().trim().toUpperCase();
+    return answer.includes('YES');
+  } catch (error) {
+    console.error("Classifier error, skipping web search:", error);
+    return false;
+  }
+}
+
+/**
+ * Fetches search results from Serper.dev API.
+ */
 async function fetchSerperSearchResults(query) {
   if (!process.env.SERPER_DEV_API) {
-    console.warn("SERPER_DEV_API key is not set in environment variables.");
+    console.warn("SERPER_DEV_API key is missing in environment variables.");
     return "";
   }
 
@@ -50,7 +74,7 @@ async function fetchSerperSearchResults(query) {
     });
 
     if (!response.ok) {
-      console.error(`Serper API error: ${response.statusText}`);
+      console.error(`Serper API HTTP Error: ${response.status} ${response.statusText}`);
       return "";
     }
 
@@ -59,29 +83,29 @@ async function fetchSerperSearchResults(query) {
       return "";
     }
 
-    // Extract top 4 search results
-    const results = data.organic.slice(0, 4).map(item => {
+    // Return top 4 search snippets
+    return data.organic.slice(0, 4).map(item => {
       return `Title: ${item.title}\nSnippet: ${item.snippet}\nLink: ${item.link}`;
     }).join('\n\n');
-
-    return results;
   } catch (error) {
     console.error("Serper Search Fetch Error:", error);
     return "";
   }
 }
 
-// Model selection helper based on tiers
+/**
+ * Maps subscription tiers to active Gemini models.
+ */
 function getGeminiModel(tier) {
   switch (tier) {
     case 'base':
-      return 'gemini-2.0-flash'; // TruX Core
+      return 'gemini-3.1-flash-lite'; // TruX Core
     case 'pro':
-      return 'gemini-2.0-flash'; // TruX Pro
+      return 'gemini-3.5-flash-lite'; // TruX Pro
     case 'ultra':
-      return 'gemini-1.5-pro';   // TruX Ultra
+      return 'gemini-3.6-flash';      // TruX Ultra
     default:
-      return 'gemini-2.0-flash';
+      return 'gemini-3.1-flash-lite';
   }
 }
 
@@ -93,24 +117,31 @@ app.post('/api/chat', async (req, res) => {
       return res.status(400).json({ error: 'Message is required.' });
     }
 
-    // Fetch search results from Serper.dev
-    const searchContext = await fetchSerperSearchResults(message);
+    // 1. Determine if real-time web search is required
+    const needsSearch = await shouldSearchWeb(message);
+    let searchContext = "";
 
-    // Combine web context with the user query if available
+    if (needsSearch) {
+      console.log(`[Search Router] Real-time query detected. Executing Serper search for: "${message}"`);
+      searchContext = await fetchSerperSearchResults(message);
+    } else {
+      console.log(`[Search Router] Static/Internal query detected. Bypassing search for: "${message}"`);
+    }
+
+    // 2. Prepare final prompt payload
     let finalPrompt = message;
     if (searchContext) {
-      finalPrompt = `Web Search Context (Real-time data from Serper.dev):\n${searchContext}\n\nUser Question: ${message}`;
+      finalPrompt = `Web Search Context (Serper.dev):\n${searchContext}\n\nUser Question: ${message}`;
     }
 
     const modelName = getGeminiModel(tier);
 
-    // Initialize Gemini model (Google Search grounding removed)
+    // 3. Query Gemini Model
     const model = genAI.getGenerativeModel({
       model: modelName,
       systemInstruction: BASE_PERSONA
     });
 
-    // Generate completion
     const result = await model.generateContent(finalPrompt);
     const response = await result.response;
     const rawText = response.text() || 'No response from AI.';
@@ -124,7 +155,7 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-// Helper function to clean text
+// Helper function to strip unwanted internal formatting tags
 function cleanResponse(text) {
   return text
     .replace(/<think>[\s\S]*?<\/think>/g, '')
