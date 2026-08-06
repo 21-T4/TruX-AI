@@ -32,17 +32,56 @@ STRICT MATH & FORMULA FORMATTING RULES:
 - NEVER use backslashes (\\) or LaTeX macros (e.g., \\frac, \\sqrt, \\times, \\cdot).
 - Format all mathematical equations, formulas, and variables using standard plain text and ASCII symbols (e.g., x^2, a/b, sqrt(x), *).`;
 
+// Helper function to search web using Serper.dev API
+async function fetchSerperSearchResults(query) {
+  if (!process.env.SERPER_DEV_API) {
+    console.warn("SERPER_DEV_API key is not set in environment variables.");
+    return "";
+  }
+
+  try {
+    const response = await fetch('https://google.serper.dev/search', {
+      method: 'POST',
+      headers: {
+        'X-API-KEY': process.env.SERPER_DEV_API,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ q: query })
+    });
+
+    if (!response.ok) {
+      console.error(`Serper API error: ${response.statusText}`);
+      return "";
+    }
+
+    const data = await response.json();
+    if (!data.organic || data.organic.length === 0) {
+      return "";
+    }
+
+    // Extract top 4 search results
+    const results = data.organic.slice(0, 4).map(item => {
+      return `Title: ${item.title}\nSnippet: ${item.snippet}\nLink: ${item.link}`;
+    }).join('\n\n');
+
+    return results;
+  } catch (error) {
+    console.error("Serper Search Fetch Error:", error);
+    return "";
+  }
+}
+
 // Model selection helper based on tiers
 function getGeminiModel(tier) {
   switch (tier) {
     case 'base':
-      return 'gemini-3.1-flash-lite'; // TruX Core
+      return 'gemini-2.0-flash'; // TruX Core
     case 'pro':
-      return 'gemini-3.5-flash-lite'; // TruX Pro
+      return 'gemini-2.0-flash'; // TruX Pro
     case 'ultra':
-      return 'gemini-3.6-flash';   // TruX Ultra
+      return 'gemini-1.5-pro';   // TruX Ultra
     default:
-      return 'gemini-3.1-flash-lite';
+      return 'gemini-2.0-flash';
   }
 }
 
@@ -54,17 +93,25 @@ app.post('/api/chat', async (req, res) => {
       return res.status(400).json({ error: 'Message is required.' });
     }
 
+    // Fetch search results from Serper.dev
+    const searchContext = await fetchSerperSearchResults(message);
+
+    // Combine web context with the user query if available
+    let finalPrompt = message;
+    if (searchContext) {
+      finalPrompt = `Web Search Context (Real-time data from Serper.dev):\n${searchContext}\n\nUser Question: ${message}`;
+    }
+
     const modelName = getGeminiModel(tier);
 
-    // Initialize Gemini model with native Google Search tool grounding
+    // Initialize Gemini model (Google Search grounding removed)
     const model = genAI.getGenerativeModel({
       model: modelName,
-      systemInstruction: BASE_PERSONA,
-      tools: [{ googleSearch: {} }] // Enables real-time web search capability
+      systemInstruction: BASE_PERSONA
     });
 
     // Generate completion
-    const result = await model.generateContent(message);
+    const result = await model.generateContent(finalPrompt);
     const response = await result.response;
     const rawText = response.text() || 'No response from AI.';
 
