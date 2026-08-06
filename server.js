@@ -36,24 +36,44 @@ STRICT MATH & FORMULA FORMATTING RULES:
  * Evaluates whether a user prompt requires real-time web search.
  * Uses an active fast model (gemini-3.5-flash-lite).
  */
+/**
+ * Evaluates whether a user prompt requires real-time web search.
+ * Uses strict rules and few-shot examples to prevent false positives.
+ */
 async function shouldSearchWeb(userMessage) {
   try {
-    const classifierModel = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
-    const prompt = `Determine whether the following user prompt requires real-time web search, current news, live updates, current dates/events, recent stats, or factual lookups outside standard AI training knowledge.
+    const classifierModel = genAI.getGenerativeModel({ model: 'gemini-3.5-flash-lite' });
+    const prompt = `You are a search intent classifier. Determine if the user prompt requires a real-time web search.
 
-Reply STRICTLY with "YES" or "NO".
+Respond STRICTLY with "YES" only if the prompt needs live web data, current news, live stock/weather info, or recent events.
 
-Prompt: "${userMessage}"`;
+Respond STRICTLY with "NO" for:
+- Greetings or casual conversation (e.g., "hello", "hi", "how are you", "who made you")
+- Coding, programming help, debugging, or math formulas
+- Writing, summarizing, or creative requests
+- Static general knowledge (e.g., "what is gravity?", "capital of France")
+
+Examples:
+"hello" -> NO
+"hi who are you" -> NO
+"write a python code for fibonacci" -> NO
+"what is today's stock price of Apple?" -> YES
+"who won the latest cricket match?" -> YES
+
+User Prompt: "${userMessage}"
+
+Result (YES or NO):`;
 
     const result = await classifierModel.generateContent(prompt);
     const answer = result.response.text().trim().toUpperCase();
-    return answer.includes('YES');
+    
+    // Check for exact start match rather than general inclusion
+    return answer.startsWith('YES');
   } catch (error) {
     console.error("Classifier error, skipping web search:", error);
     return false;
   }
 }
-
 /**
  * Fetches search results from Serper.dev API.
  */
