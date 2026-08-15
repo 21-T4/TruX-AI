@@ -14,32 +14,41 @@
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background-color: #060607; color: #e3e3e3; font-family: 'Poppins', sans-serif; display: flex; height: 100vh; height: 100dvh; width: 100vw; overflow: hidden; position: relative; }
+    body { background-color: #000000; color: #e3e3e3; font-family: 'Poppins', sans-serif; display: flex; height: 100vh; height: 100dvh; width: 100vw; overflow: hidden; position: relative; }
     
-    /* NEW DARK BACKGROUND WITH SUBTLE LIGHT TONES */
-    .dark-ambient-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: 0.8; background: radial-gradient(circle at 50% 50%, #151822 0%, #060607 70%); animation: subtleBreath 8s ease-in-out infinite alternate; }
-    @keyframes subtleBreath { 0% { background: radial-gradient(circle at 50% 50%, #151822 0%, #060607 80%); } 100% { background: radial-gradient(circle at 50% 50%, #1e2233 0%, #060607 100%); } }
+    /* UPDATED: Stable completely black center with light tones on the sides, no animation */
+    .dark-ambient-container { 
+      position: absolute; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      z-index: 0; 
+      pointer-events: none; 
+      background: linear-gradient(to right, #2a2d35 0%, #000000 15%, #000000 85%, #2a2d35 100%);
+    }
     
     .mobile-menu-toggle { display: none; position: absolute; top: 16px; left: 16px; z-index: 100; background: #131416; border: 1px solid #303135; border-radius: 8px; padding: 10px; cursor: pointer; color: #ffffff; font-size: 18px; line-height: 1; }
     
-    /* NEW MOBILE CHAT BUTTON */
     .mobile-new-chat-btn { display: none; position: absolute; top: 16px; right: 16px; z-index: 100; background: #131416; border: 2px solid transparent; color: #ffffff; border-radius: 50%; width: 42px; height: 42px; cursor: pointer; align-items: center; justify-content: center; font-size: 16px; background-image: linear-gradient(#131416, #131416), linear-gradient(90deg, #ff007f, #7f00ff, #00bfff, #ff007f); background-origin: border-box; background-clip: padding-box, border-box; background-size: 200% auto; animation: rainbowShift 4s linear infinite; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
     
     .sidebar-overlay { display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.6); z-index: 9; }
     
-    /* INCREASED WIDTH TO 300px FOR PC */
     .history-sidebar { width: 300px; background-color: #0d0e10; border-right: 1px solid #1f2023; display: flex; flex-direction: column; z-index: 10; flex-shrink: 0; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     
-    .sidebar-header { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-    .new-chat-btn { width: 100%; background: #131416; border: 2px solid transparent; color: #ffffff; padding: 12px; border-radius: 24px; font-family: inherit; font-size: 14px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; position: relative; background-image: linear-gradient(#131416, #131416), linear-gradient(90deg, #ff007f, #7f00ff, #00bfff, #ff007f); background-origin: border-box; background-clip: padding-box, border-box; background-size: 200% auto; animation: rainbowShift 4s linear infinite; }
+    /* UPDATED: Sidebar header layout to fit the new close button */
+    .sidebar-header { padding: 16px; display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 12px; position: relative; }
+    .new-chat-btn { flex-grow: 1; background: #131416; border: 2px solid transparent; color: #ffffff; padding: 12px; border-radius: 24px; font-family: inherit; font-size: 14px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; background-image: linear-gradient(#131416, #131416), linear-gradient(90deg, #ff007f, #7f00ff, #00bfff, #ff007f); background-origin: border-box; background-clip: padding-box, border-box; background-size: 200% auto; animation: rainbowShift 4s linear infinite; }
     @keyframes rainbowShift { to { background-position: 200% center; } }
     
+    /* NEW: Sidebar close button styling */
+    .sidebar-close-btn { display: none; background: transparent; border: none; color: #ffffff; font-size: 26px; cursor: pointer; line-height: 1; padding: 0 5px; opacity: 0.7; }
+    .sidebar-close-btn:hover { opacity: 1; }
+
     .history-list { flex-grow: 1; overflow-y: auto; padding: 8px; }
     .history-item-wrapper { display: flex; align-items: center; justify-content: space-between; border-radius: 12px; margin-bottom: 4px; padding-right: 8px; transition: background 0.2s; }
     .history-item-wrapper:hover, .history-item-wrapper.active { background: #1a1b1e; }
     .history-item { padding: 10px 14px; font-size: 13.5px; cursor: pointer; color: #c4c7c5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; }
-    .delete-btn { background: transparent; border: none; cursor: pointer; padding: 6px; font-size: 14px; opacity: 0.4; }
-    .history-item-wrapper:hover .delete-btn { opacity: 0.8; }
     
     .profile-footer { border-top: 1px solid #1f2023; padding: 16px; background-color: #0b0c0d; display: flex; flex-direction: column; gap: 10px; cursor: pointer; }
     .profile-card { display: flex; align-items: center; gap: 12px; pointer-events: none; }
@@ -51,6 +60,11 @@
     .main-chat-arena { flex-grow: 1; display: flex; flex-direction: column; height: 100%; position: relative; z-index: 5; overflow: hidden; }
     .welcome-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; flex-grow: 1; text-align: center; padding: 20px; z-index: 2; }
     .welcome-title { font-size: 46px; font-weight: 800; letter-spacing: -1.5px; background: linear-gradient(90deg, #ff7eb3 0%, #e599f7 25%, #7f00ff 50%, #00bfff 75%, #ff7eb3 100%); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: metallicFlow 6s linear infinite; filter: drop-shadow(0px 2px 10px rgba(127, 0, 255, 0.15)); }
+    
+    /* UPDATED: Restored the animated X */
+    .x-anim { display: inline-block; -webkit-text-fill-color: #ffffff; color: #ffffff; animation: pulseX 2s infinite alternate; margin-left: 2px;}
+    @keyframes pulseX { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.15); opacity: 1; text-shadow: 0 0 15px rgba(255,255,255,0.5); } }
+    
     @keyframes metallicFlow { 0% { background-position: 0% center; } 100% { background-position: 200% center; } }
     
     .chat-container { display: none; flex-grow: 1; overflow-y: auto; padding: 30px 40px; scroll-behavior: smooth; }
@@ -63,7 +77,6 @@
     .user-bubble { background-color: #1f2023; color: #f1f1f1; align-self: flex-end; border-bottom-right-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.04); max-width: 85%; }
     .trux-bubble { background-color: rgba(18, 19, 21, 0.8); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); color: #e3e3e3; align-self: flex-start; border-top-left-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.06); box-shadow: 0 4px 20px rgba(0,0,0,0.3); width: 100%; }
 
-    /* INSTANT SMOOTH FADE IN ANIMATION */
     .fade-in-text { opacity: 0; animation: smoothFadeIn 0.4s ease-out forwards; }
     @keyframes smoothFadeIn { to { opacity: 1; } }
 
@@ -73,23 +86,22 @@
     
     .input-section { padding: 16px 24px 24px; background: linear-gradient(to top, #060607 80%, transparent); z-index: 5; display: flex; flex-direction: column; align-items: center; width: 100%; }
     
-    /* MODEL SELECTOR MOVED TO INPUT AREA */
     .model-selector-simple { margin-bottom: 12px; max-width: 800px; width: 100%; display: flex; justify-content: flex-start; }
     .model-select { background: #131416; color: #a8c7fa; border: 1px solid #303135; border-radius: 12px; padding: 6px 12px; font-size: 13px; font-family: inherit; outline: none; cursor: pointer; }
 
-    .input-wrapper { width: 100%; max-width: 800px; background: #18191b; border: 1px solid #303135; border-radius: 28px; padding: 12px 18px; display: flex; align-items: flex-end; box-shadow: 0 4px 24px rgba(0,0,0,0.6); transition: border-color 0.2s, background-color 0.2s; position: relative;}
+    /* UPDATED: Changed align-items to center for perfect typing bar alignment */
+    .input-wrapper { width: 100%; max-width: 800px; background: #18191b; border: 1px solid #303135; border-radius: 28px; padding: 12px 18px; display: flex; align-items: center; box-shadow: 0 4px 24px rgba(0,0,0,0.6); transition: border-color 0.2s, background-color 0.2s; position: relative;}
     
-    /* NEW PLUS BUTTON */
     .icon-btn { background: transparent; border: none; color: #9aa0a6; cursor: pointer; padding: 6px; margin-right: 4px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s; flex-shrink: 0; }
     .icon-btn:hover { color: #ffffff; background: rgba(255, 255, 255, 0.08); }
-    .mic-btn.listening { color: #ff0055; background: rgba(255, 0, 85, 0.15); animation: micPulse 1.5s infinite; }
     
     .image-preview-wrapper { display: none; position: absolute; bottom: 65px; left: 20px; background: #1f2023; padding: 8px; border-radius: 12px; border: 1px solid #303135; }
     .image-preview-wrapper img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; }
     .remove-image-btn { position: absolute; top: -6px; right: -6px; background: #ff5555; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px; }
 
-    textarea { flex-grow: 1; background: transparent; border: none; color: #e3e3e3; resize: none; outline: none; font-family: inherit; font-size: 15px; max-height: 140px; line-height: 22px; padding-top: 6px;}
-    .send-btn { background: linear-gradient(135deg, #a8c7fa, #7cacf8); border: none; border-radius: 50%; width: 38px; height: 38px; cursor: pointer; margin-left: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    /* UPDATED: Aligned textarea spacing to match the vertically centered layout */
+    textarea { flex-grow: 1; background: transparent; border: none; color: #e3e3e3; resize: none; outline: none; font-family: inherit; font-size: 15px; max-height: 140px; line-height: 22px; padding: 6px 10px; margin: 0;}
+    .send-btn { background: linear-gradient(135deg, #a8c7fa, #7cacf8); border: none; border-radius: 50%; width: 38px; height: 38px; cursor: pointer; margin-left: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .send-btn svg { fill: #042100; width: 18px; height: 18px; }
 
     @media (max-width: 768px) { 
@@ -97,13 +109,13 @@
       .mobile-new-chat-btn { display: flex; }
       .history-sidebar { position: absolute; top: 0; left: 0; height: 100%; width: 280px; z-index: 100; transform: translateX(-100%); } 
       .history-sidebar.open { transform: translateX(0); } 
-      .chat-container { padding: 80px 16px 20px; } 
+      .chat-container { padding: 80px 16px 20px; }
+      .sidebar-close-btn { display: block; } 
     }
   </style>
 </head>
 <body>
 
-  <!-- Replaced Pixel Grid with Dark Ambient Container -->
   <div class="dark-ambient-container"></div>
 
   <button class="mobile-menu-toggle" onclick="toggleMobileSidebar(event)">☰</button>
@@ -115,6 +127,8 @@
       <button class="new-chat-btn" onclick="startNewChat(); closeMobileSidebar();">
         <span>➕</span> New Chat
       </button>
+      <!-- NEW: Sidebar Close Button included in HTML -->
+      <button class="sidebar-close-btn" onclick="closeMobileSidebar()">×</button>
     </div>
     
     <div class="history-list" id="historyList"></div>
@@ -133,14 +147,14 @@
   <div class="main-chat-arena">
     
     <div class="welcome-screen" id="welcomeScreen">
-      <h1 class="welcome-title">Welcome, I am Tru</h1>
+      <!-- RESTORED: Animated 'X' inside the welcome title -->
+      <h1 class="welcome-title">Welcome, I am Tru<span class="x-anim">X</span></h1>
       <p style="color: #9aa0a6; font-size: 18px;">Your Multi-Engine AI Assistant</p>
     </div>
 
     <div class="chat-container" id="chatContainer"></div>
 
     <div class="input-section">
-      <!-- SIMPLE MODEL SELECTOR MOVED HERE -->
       <div class="model-selector-simple">
         <select class="model-select" id="modelSelect" onchange="currentModel = this.value">
           <option value="base">⚡ TruX 2.5 Core</option>
@@ -157,7 +171,6 @@
 
         <input type="file" id="imageUpload" accept="image/*" style="display:none;" onchange="handleImageUpload(event)">
         
-        <!-- NEW PLUS BUTTON -->
         <button class="icon-btn" onclick="document.getElementById('imageUpload').click()" title="Add Image">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
             <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
@@ -181,9 +194,8 @@
 
   </div>
 
-  <!-- Keep Profile Modal unchanged (hidden CSS for brevity, but make sure to keep your existing modal CSS/HTML here if missing above) -->
   <div class="profile-modal-overlay" id="profileModal" style="display:none;" onclick="closeProfileModal(event)">
-     <!-- (Insert your modal HTML from previous code here if needed) -->
+     <!-- Profile Modal Content Here -->
   </div>
 
   <script>
@@ -196,11 +208,8 @@
     let isManualListening = false;
     let isVoiceQuery = false;
 
-    // Firebase Init (Keep your existing firebase logic)
-    // ...
-
     function toggleMobileSidebar(e) {
-      e.stopPropagation();
+      if(e) e.stopPropagation();
       document.getElementById('sidebarNode').classList.toggle('open');
       document.getElementById('sidebarOverlay').style.display = document.getElementById('sidebarNode').classList.contains('open') ? 'block' : 'none';
     }
@@ -219,7 +228,6 @@
       renderSidebar();
     }
 
-    // IMAGE UPLOAD LOGIC
     function handleImageUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -244,6 +252,12 @@
     function stripMarkdown(text) {
       if (!text) return "";
       return text.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/#(.*?)\n/g, '$1\n').replace(/`/g, '');
+    }
+
+    // NEW: Check if the user is actually signed in
+    function isUserSignedIn() {
+      const emailText = document.getElementById('userEmail').innerText;
+      return emailText !== 'Sign in required' && emailText.trim() !== '';
     }
 
     function sendPrompt(isVoice = false) {
@@ -271,7 +285,6 @@
       const container = document.getElementById('chatContainer');
       container.style.display = 'block';
 
-      // UI append user prompt
       const userDisplay = prompt + (selectedImageBase64 ? ' [Image Attached]' : '');
       appendMessageRow('You', userDisplay, 'user-row', 'user-bubble');
 
@@ -279,17 +292,15 @@
       inputEl.style.height = 'auto';
       renderSidebar();
 
-      // FETCH LAST 5 MESSAGES AS CONTEXT
       let contextHistory = [];
       if (chatSessions[currentChatId]) {
         const msgs = chatSessions[currentChatId].messages;
-        // Don't include the message we just added in the history array, it goes in 'message' body.
         const prevMsgs = msgs.slice(0, msgs.length - 1);
-        contextHistory = prevMsgs.slice(-5); // Get last 5
+        contextHistory = prevMsgs.slice(-5);
       }
 
       const imageToSend = selectedImageBase64;
-      removeImage(); // clear UI immediately
+      removeImage();
 
       const truxRow = document.createElement('div');
       truxRow.className = 'message-row trux-row';
@@ -325,7 +336,6 @@
           localStorage.setItem('trux_chats', JSON.stringify(chatSessions));
         }
 
-        // IMMEDIATELY SHOW TEXT WITH FADE IN
         bubble.innerHTML = `<div class="fade-in-text">${escapeHtml(stripMarkdown(responseText)).replace(/\n/g, '<br>')}</div>`;
         isGenerating = false;
         document.getElementById('btnIcon').innerHTML = sendIconSvg;
@@ -362,6 +372,14 @@
           thinkingBox.innerHTML = 'Generation stopped.';
         }
       } else {
+        // UPDATED: Triggers Sign-In Wall for Pro and Ultra
+        if ((currentModel === 'pro' || currentModel === 'ultra') && !isUserSignedIn()) {
+          alert("Please sign in to access TruX Pro and Ultra models.");
+          if (typeof showProfileModal === 'function') {
+            showProfileModal();
+          }
+          return; // Stop the request
+        }
         sendPrompt(false);
       }
     }
