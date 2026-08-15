@@ -73,10 +73,10 @@ async function fetchSerperSearchResults(query) {
 
 function getGeminiModel(tier) {
   switch (tier) {
-    case 'base': return 'gemini-3.1-flash-lite';
-    case 'pro': return 'gemini-3.5-flash-lite';
-    case 'ultra': return 'gemini-3.6-flash';
-    default: return 'gemini-3.1-flash-lite';
+    case 'base': return 'gemini-1.5-flash'; 
+    case 'pro': return 'gemini-1.5-pro'; 
+    case 'ultra': return 'gemini-1.5-pro'; 
+    default: return 'gemini-1.5-flash';
   }
 }
 
@@ -95,16 +95,32 @@ app.post('/api/chat', async (req, res) => {
       tools: [{ functionDeclarations: [searchWebDeclaration] }]
     });
 
-    // Format previous 5 messages for Gemini Context
-    const formattedHistory = (history || []).map(msg => ({
+    // 1. Map history and strictly enforce 'user' or 'model' roles
+    let cleanHistory = (history || []).map(msg => ({
       role: msg.role === 'trux' ? 'model' : 'user',
       parts: [{ text: msg.text }]
     }));
 
+    // 2. Ensure strictly alternating sequence (user, model, user, model)
+    let formattedHistory = [];
+    let expectedRole = 'user';
+
+    for (let msg of cleanHistory) {
+      if (msg.role === expectedRole) {
+        formattedHistory.push(msg);
+        expectedRole = (expectedRole === 'user') ? 'model' : 'user';
+      }
+    }
+
+    // 3. Ensure the very first message is ALWAYS a 'user' message
+    while (formattedHistory.length > 0 && formattedHistory[0].role !== 'user') {
+      formattedHistory.shift();
+    }
+
     const chat = model.startChat({ history: formattedHistory });
 
     // Handle Image attachment if provided
-    let messageParts = [message];
+    let messageParts = [{ text: message || "Explain this image" }];
     if (image) {
       const mimeType = image.match(/data:(.*?);/)[1];
       const base64Data = image.split(',')[1];
