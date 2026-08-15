@@ -13,50 +13,39 @@
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    /* FIXED: Using 100dvh prevents mobile bottom clipping */
     body { background-color: #000000; color: #e3e3e3; font-family: 'Poppins', sans-serif; display: flex; height: 100dvh; width: 100vw; overflow: hidden; position: relative; }
     
-    /* ADDED: Smooth transition for background fade */
     .dark-ambient-container { 
       position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; 
       background: radial-gradient(ellipse at left center, rgba(140, 160, 255, 0.12) 0%, transparent 45%),
                   radial-gradient(ellipse at right center, rgba(255, 120, 200, 0.12) 0%, transparent 45%);
       transition: opacity 0.8s ease;
     }
-    
-    /* ADDED: Class to hide background lights when chatting */
     body.chat-active .dark-ambient-container { opacity: 0; }
     
     .menu-toggle-btn { position: absolute; top: 16px; left: 16px; z-index: 100; background: #131416; border: 1px solid #303135; border-radius: 8px; padding: 10px; cursor: pointer; color: #ffffff; font-size: 18px; line-height: 1; transition: opacity 0.3s; }
-    
     .mobile-new-chat-btn { display: none; position: absolute; top: 16px; right: 16px; z-index: 100; background: #131416; border: 2px solid transparent; color: #ffffff; border-radius: 50%; width: 42px; height: 42px; cursor: pointer; align-items: center; justify-content: center; font-size: 16px; background-image: linear-gradient(#131416, #131416), linear-gradient(90deg, #ff007f, #7f00ff, #00bfff, #ff007f); background-origin: border-box; background-clip: padding-box, border-box; background-size: 200% auto; animation: rainbowShift 4s linear infinite; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
-    
     .sidebar-overlay { display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0, 0, 0, 0.6); z-index: 9; }
     
     .history-sidebar { width: 300px; background-color: #0d0e10; border-right: 1px solid #1f2023; display: flex; flex-direction: column; z-index: 10; flex-shrink: 0; transition: margin-left 0.3s ease, transform 0.3s ease; }
     .history-sidebar.collapsed { margin-left: -300px; }
-    
     .sidebar-header { padding: 16px; display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 12px; }
     
-    /* ENLARGED: Sidebar options and text */
     .new-chat-btn { flex-grow: 1; background: #131416; border: 2px solid transparent; color: #ffffff; padding: 16px; border-radius: 24px; font-family: inherit; font-size: 16px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; background-image: linear-gradient(#131416, #131416), linear-gradient(90deg, #ff007f, #7f00ff, #00bfff, #ff007f); background-origin: border-box; background-clip: padding-box, border-box; background-size: 200% auto; animation: rainbowShift 4s linear infinite; }
     @keyframes rainbowShift { to { background-position: 200% center; } }
     
-    /* FIXED: Hide close button on PC */
     .sidebar-close-btn { display: none; background: transparent; border: none; color: #ffffff; font-size: 28px; cursor: pointer; line-height: 1; padding: 0 5px; opacity: 0.7; }
     .sidebar-close-btn:hover { opacity: 1; }
 
     .history-list { flex-grow: 1; overflow-y: auto; padding: 12px 8px; }
     .history-item-wrapper { display: flex; align-items: center; justify-content: space-between; border-radius: 12px; margin-bottom: 6px; padding-right: 8px; transition: background 0.2s; }
     .history-item-wrapper:hover, .history-item-wrapper.active { background: #1a1b1e; }
-    /* ENLARGED: History item text */
     .history-item { padding: 14px 16px; font-size: 15px; cursor: pointer; color: #c4c7c5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; }
     
     .chat-delete-btn { background: transparent; border: none; color: #5f6368; font-size: 14px; cursor: pointer; padding: 6px; border-radius: 4px; opacity: 0; transition: all 0.2s; }
     .history-item-wrapper:hover .chat-delete-btn { opacity: 1; }
     .chat-delete-btn:hover { background: #ff5555; color: white; }
 
-    /* ENLARGED: Profile section */
     .profile-footer { border-top: 1px solid #1f2023; padding: 20px 16px; background-color: #0b0c0d; display: flex; flex-direction: column; gap: 10px; cursor: pointer; transition: background 0.2s; }
     .profile-footer:hover { background-color: #1a1b1e; }
     .profile-card { display: flex; align-items: center; gap: 14px; pointer-events: none; }
@@ -86,6 +75,11 @@
     .fade-in-text { opacity: 0; animation: smoothFadeIn 0.4s ease-out forwards; }
     @keyframes smoothFadeIn { to { opacity: 1; } }
 
+    /* Read Aloud Button styling */
+    .message-actions { display: flex; gap: 8px; margin-top: 8px; align-self: flex-start; }
+    .read-aloud-btn { background: #18191b; border: 1px solid #303135; color: #9aa0a6; padding: 4px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s; }
+    .read-aloud-btn:hover { background: #252629; color: #ffffff; }
+
     .trux-bubble.thinking-box { width: auto; display: inline-flex; align-items: center; padding: 10px 22px; background: rgba(255, 255, 255, 0.03); }
     .gemini-status-loader { font-size: 13.5px; font-weight: 500; background: linear-gradient(90deg, #8ab4f8 0%, #ffffff 50%, #8ab4f8 100%); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: glassShine 2.2s linear infinite; }
     @keyframes glassShine { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
@@ -99,6 +93,8 @@
     
     .icon-btn { background: transparent; border: none; color: #9aa0a6; cursor: pointer; padding: 6px; margin-right: 4px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s; flex-shrink: 0; }
     .icon-btn:hover { color: #ffffff; background: rgba(255, 255, 255, 0.08); }
+    .icon-btn.recording { color: #ff5555; background: rgba(255, 85, 85, 0.15); animation: pulseRec 1.5s infinite; }
+    @keyframes pulseRec { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
     
     .image-preview-wrapper { display: none; position: absolute; bottom: 65px; left: 20px; background: #1f2023; padding: 8px; border-radius: 12px; border: 1px solid #303135; }
     .image-preview-wrapper img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; }
@@ -110,15 +106,9 @@
 
     @media (max-width: 768px) { 
       .mobile-new-chat-btn { display: flex; }
-      
-      /* FIXED: Added border-radius to the right side of sidebar on mobile */
       .history-sidebar { position: absolute; top: 0; left: 0; height: 100dvh; width: 290px; z-index: 100; transform: translateX(-100%); margin-left: 0; border-top-right-radius: 20px; border-bottom-right-radius: 20px; } 
       .history-sidebar.open { transform: translateX(0); } 
-      
-      /* FIXED: Show close button on mobile only */
       .sidebar-close-btn { display: block; }
-      
-      /* FIXED: Extra bottom padding for mobile safe zones */
       .chat-container { padding: 80px 16px 20px; }
       .input-section { padding: 16px 16px 30px; }
       .profile-footer { border-bottom-right-radius: 20px; padding-bottom: 24px; }
@@ -177,8 +167,8 @@
           <button class="remove-image-btn" onclick="removeImage()">✖</button>
         </div>
         
-        <!-- ADDED: Voice button placed exactly to the left of the image upload button -->
-        <button class="icon-btn" onclick="alert('Voice input feature coming soon!')" title="Voice Input">
+        <!-- Native Browser Speech Recognition Trigger -->
+        <button class="icon-btn" id="voiceBtn" onclick="toggleVoiceInput()" title="Voice Input">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
             <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
             <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
@@ -203,7 +193,6 @@
   </div>
 
   <script>
-    // --- FIREBASE AUTHENTICATION SETUP ---
     const firebaseConfig = {
       apiKey: "AIzaSyAs_GDrzlBaucHfiff0Y6cA8GVHjFTA62Q",
       authDomain: "trux-ai.firebaseapp.com",
@@ -242,12 +231,78 @@
       return !!auth.currentUser;
     }
 
-    // --- CHAT LOGIC ---
     let chatSessions = JSON.parse(localStorage.getItem('trux_chats')) || {};
     let currentChatId = null;
     let isGenerating = false;
     let currentModel = 'base';
     let selectedImageBase64 = null;
+    let wasInputByVoice = false;
+
+    // --- NATIVE BROWSER SPEECH RECOGNITION ---
+    let recognition = null;
+    let isRecording = false;
+
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        isRecording = true;
+        wasInputByVoice = true;
+        document.getElementById('voiceBtn').classList.add('recording');
+      };
+
+      recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        const inputEl = document.getElementById('promptInput');
+        inputEl.value = transcript;
+        inputEl.style.height = "auto";
+        inputEl.style.height = (inputEl.scrollHeight) + "px";
+      };
+
+      recognition.onerror = () => {
+        stopVoiceInput();
+      };
+
+      recognition.onend = () => {
+        stopVoiceInput();
+      };
+    }
+
+    function toggleVoiceInput() {
+      if (!recognition) {
+        alert("Speech recognition is not supported in this browser. Try Google Chrome.");
+        return;
+      }
+      if (isRecording) {
+        recognition.stop();
+      } else {
+        wasInputByVoice = true;
+        recognition.start();
+      }
+    }
+
+    function stopVoiceInput() {
+      isRecording = false;
+      document.getElementById('voiceBtn').classList.remove('recording');
+    }
+
+    // --- TEXT TO SPEECH (READ ALOUD & AUTO SPEAK) ---
+    function speakText(text) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel(); // Stop any ongoing speech
+      const cleanText = stripMarkdown(text);
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
 
     function toggleSidebar(e) {
       if(e) e.stopPropagation();
@@ -274,7 +329,7 @@
       document.getElementById('chatContainer').innerHTML = '';
       document.getElementById('chatContainer').style.display = 'none';
       document.getElementById('welcomeScreen').style.display = 'flex';
-      document.body.classList.remove('chat-active'); // ADDED: Restores lights
+      document.body.classList.remove('chat-active');
       currentChatId = null;
       removeImage();
       renderSidebar();
@@ -312,8 +367,10 @@
 
       isGenerating = true;
       document.getElementById('btnIcon').innerHTML = stopIconSvg;
-      
-      document.body.classList.add('chat-active'); // ADDED: Fades lights
+      document.body.classList.add('chat-active');
+
+      const currentVoiceTriggered = wasInputByVoice;
+      wasInputByVoice = false; // reset for next turn
 
       if (!currentChatId) {
         currentChatId = 'chat_' + Date.now();
@@ -336,16 +393,21 @@
       removeImage();
 
       const bubbleId = 'bubble_' + Date.now();
+      const actionsId = 'actions_' + Date.now();
       const truxRow = document.createElement('div');
       truxRow.className = 'message-row trux-row';
-      truxRow.innerHTML = `<div class="message-label">TruX AI</div><div class="bubble trux-bubble thinking-box" id="${bubbleId}"><div class="gemini-status-loader">Thinking...</div></div>`;
+      truxRow.innerHTML = `<div class="message-label">TruX AI</div><div class="bubble trux-bubble thinking-box" id="${bubbleId}"><div class="gemini-status-loader">Thinking...</div></div><div class="message-actions" id="${actionsId}"></div>`;
       container.appendChild(truxRow);
       container.scrollTop = container.scrollHeight;
+
+      // Instruction added so any model strictly avoids LaTeX for math formulations
+      const systemInstruction = "Instruction: Never use LaTeX for math formula generation. Use standard plaintext or markdown instead.";
+      const fullPrompt = systemInstruction + "\n\nUser Query: " + prompt;
 
       fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: prompt, tier: currentModel, history: chatSessions[currentChatId].messages.slice(-5, -1), image: imageToSend })
+        body: JSON.stringify({ message: fullPrompt, tier: currentModel, history: chatSessions[currentChatId].messages.slice(-5, -1), image: imageToSend })
       })
       .then(res => res.json())
       .then(data => {
@@ -356,9 +418,23 @@
         const bubble = document.getElementById(bubbleId);
         bubble.classList.remove('thinking-box');
         bubble.innerHTML = `<div class="fade-in-text">${escapeHtml(stripMarkdown(responseText)).replace(/\n/g, '<br>')}</div>`;
+        
+        // Add Read Aloud button below response
+        const actionsContainer = document.getElementById(actionsId);
+        const readBtn = document.createElement('button');
+        readBtn.className = 'read-aloud-btn';
+        readBtn.innerHTML = '🔊 Read Aloud';
+        readBtn.onclick = () => speakText(responseText);
+        actionsContainer.appendChild(readBtn);
+
         isGenerating = false;
         document.getElementById('btnIcon').innerHTML = sendIconSvg;
         container.scrollTop = container.scrollHeight;
+
+        // Auto speak if input was given via voice
+        if (currentVoiceTriggered) {
+          speakText(responseText);
+        }
       })
       .catch(() => {
         document.getElementById(bubbleId).classList.remove('thinking-box');
@@ -436,14 +512,37 @@
 
     function loadChatSession(id) {
       currentChatId = id;
-      document.body.classList.add('chat-active'); // ADDED: Fade lights on load
+      document.body.classList.add('chat-active');
       document.getElementById('welcomeScreen').style.display = 'none';
       const container = document.getElementById('chatContainer');
       container.innerHTML = '';
       container.style.display = 'block';
 
-      chatSessions[id].messages.forEach(msg => {
-        appendMessageRow(msg.role === 'user' ? 'You' : 'TruX AI', msg.text, msg.role === 'user' ? 'user-row' : 'trux-row', msg.role === 'user' ? 'user-bubble' : 'trux-bubble');
+      chatSessions[id].messages.forEach((msg, index) => {
+        const rowClass = msg.role === 'user' ? 'user-row' : 'trux-row';
+        const bubbleClass = msg.role === 'user' ? 'user-bubble' : 'trux-bubble';
+        const label = msg.role === 'user' ? 'You' : 'TruX AI';
+        
+        const row = document.createElement('div');
+        row.className = `message-row ${rowClass}`;
+        let innerHTML = `<div class="message-label">${label}</div><div class="bubble ${bubbleClass}">${escapeHtml(stripMarkdown(msg.text)).replace(/\n/g, '<br>')}</div>`;
+        
+        if (msg.role === 'trux') {
+          const actionId = 'history_action_' + id + '_' + index;
+          innerHTML += `<div class="message-actions" id="${actionId}"></div>`;
+          row.innerHTML = innerHTML;
+          container.appendChild(row);
+          
+          const actContainer = document.getElementById(actionId);
+          const readBtn = document.createElement('button');
+          readBtn.className = 'read-aloud-btn';
+          readBtn.innerHTML = '🔊 Read Aloud';
+          readBtn.onclick = () => speakText(msg.text);
+          actContainer.appendChild(readBtn);
+        } else {
+          row.innerHTML = innerHTML;
+          container.appendChild(row);
+        }
       });
       container.scrollTop = container.scrollHeight;
       renderSidebar();
