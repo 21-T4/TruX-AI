@@ -4,11 +4,11 @@ require('dotenv').config();
 
 const app = express();
 
-// Initialize Gemini API using GEMINI_API_KEY from environment variables
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-app.use(express.json());
+// Increase JSON payload limit to handle base64 image uploads
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Firebase Config Endpoint
 const firebaseConfig = {
@@ -23,7 +23,6 @@ const firebaseConfig = {
 
 app.get('/api/firebase-config', (req, res) => res.json(firebaseConfig));
 
-// System Persona & Rules
 const BASE_PERSONA = `You are an AI created by TruX-Technologies. Never disclose your model name, and only tell that you are created by TruX Technologies when asked.
 Don't type very long answers only give short, precise, concise and informative answers.
 STRICT MATH & FORMULA FORMATTING RULES:
@@ -32,28 +31,21 @@ STRICT MATH & FORMULA FORMATTING RULES:
 - NEVER use backslashes (\\) or LaTeX macros (e.g., \\frac, \\sqrt, \\times, \\cdot).
 - Format all mathematical equations, formulas, and variables using standard plain text and ASCII symbols (e.g., x^2, a/b, sqrt(x), *).`;
 
-// Function declaration telling Gemini when it should request a web search
 const searchWebDeclaration = {
   name: 'searchWeb',
-  description: 'Search the live web using Google/Serper. ONLY call this function if you require real-time information, current dates, recent news, live scores, live weather, or updated facts outside your training knowledge. DO NOT call this for greetings, casual conversation, math, coding, or standard known facts.',
+  description: 'Search the live web using Serper API. ONLY call this function if you require real-time information, current dates, recent news, live scores, live weather, or updated facts outside your training knowledge.',
   parameters: {
     type: 'OBJECT',
     properties: {
-      query: {
-        type: 'STRING',
-        description: 'The search query keywords.'
-      }
+      query: { type: 'STRING', description: 'The search query keywords.' }
     },
     required: ['query']
   }
 };
 
-/**
- * Fetches search results from Serper.dev API.
- */
 async function fetchSerperSearchResults(query) {
   if (!process.env.SERPER_DEV_API) {
-    console.warn("SERPER_DEV_API key is missing in environment variables.");
+    console.warn("SERPER_DEV_API key is missing.");
     return "Search failed: SERPER_DEV_API key missing.";
   }
 
@@ -67,103 +59,91 @@ async function fetchSerperSearchResults(query) {
       body: JSON.stringify({ q: query })
     });
 
-    if (!response.ok) {
-      console.error(`Serper API HTTP Error: ${response.status} ${response.statusText}`);
-      return "Search failed.";
-    }
+    if (!response.ok) return "Search failed.";
 
     const data = await response.json();
-    if (!data.organic || data.organic.length === 0) {
-      return "No search results found.";
-    }
+    if (!data.organic || data.organic.length === 0) return "No search results found.";
 
-    return data.organic.slice(0, 4).map(item => {
-      return `Title: ${item.title}\nSnippet: ${item.snippet}\nLink: ${item.link}`;
-    }).join('\n\n');
+    return data.organic.slice(0, 4).map(item => `Title: ${item.title}\nSnippet: ${item.snippet}\nLink: ${item.link}`).join('\n\n');
   } catch (error) {
     console.error("Serper Search Fetch Error:", error);
     return "Search error occurred.";
   }
 }
 
-/**
- * Maps subscription tiers to active Gemini models.
- */
 function getGeminiModel(tier) {
   switch (tier) {
-    case 'base':
-      return 'gemini-3.1-flash-lite'; // TruX Core
-    case 'pro':
-      return 'gemini-3.5-flash-lite'; // TruX Pro
-    case 'ultra':
-      return 'gemini-3.6-flash';      // TruX Ultra
-    default:
-      return 'gemini-3.1-flash-lite';
+    case 'base': return 'gemini-3.1-flash-lite';
+    case 'pro': return 'gemini-3.5-flash-lite';
+    case 'ultra': return 'gemini-3.6-flash';
+    default: return 'gemini-3.1-flash-lite';
   }
 }
 
 app.post('/api/chat', async (req, res) => {
   try {
-    const { message, tier } = req.body;
+    const { message, tier, history, image } = req.body;
 
-    if (!message) {
-      return res.status(400).json({ error: 'Message is required.' });
+    if (!message && !image) {
+      return res.status(400).json({ error: 'Message or image is required.' });
     }
 
     const modelName = getGeminiModel(tier);
-
-    // Initialize Gemini with tool declaration
     const model = genAI.getGenerativeModel({
       model: modelName,
       systemInstruction: BASE_PERSONA,
       tools: [{ functionDeclarations: [searchWebDeclaration] }]
     });
 
-    const chat = model.startChat();
-    let result = await chat.sendMessage(message);
+    // Format previous 5 messages for Gemini Context
+    const formattedHistory = (history || []).map(msg => ({
+      role: msg.role === 'trux' ? 'model' : 'user',
+      parts: [{ text: msg.text }]
+    }));
 
-    // Check if Gemini requested to call searchWeb
+    const chat = model.startChat({ history: formattedHistory });
+
+    // Handle Image attachment if provided
+    let messageParts = [message];
+    if (image) {
+      const mimeType = image.match(/data:(.*?);/)[1];
+      const base64Data = image.split(',')[1];
+      messageParts.unshift({
+        inlineData: { data: base64Data, mimeType: mimeType }
+      });
+    }
+
+    let result = await chat.sendMessage(messageParts);
+
+    // Handle Serper Search Tool Call
     const functionCalls = result.response.functionCalls();
-
     if (functionCalls && functionCalls.length > 0) {
       const call = functionCalls[0];
       if (call.name === 'searchWeb') {
         const searchQuery = call.args.query || message;
-        console.log(`[Gemini Tool Call] Web search requested for: "${searchQuery}"`);
+        console.log(`[Serper Tool Call] Web search for: "${searchQuery}"`);
 
-        // Execute Serper search
         const searchResults = await fetchSerperSearchResults(searchQuery);
 
-        // Send search results back to Gemini to complete its answer
-        result = await chat.sendMessage([
-          {
-            functionResponse: {
-              name: 'searchWeb',
-              response: { results: searchResults }
-            }
+        result = await chat.sendMessage([{
+          functionResponse: {
+            name: 'searchWeb',
+            response: { results: searchResults }
           }
-        ]);
+        }]);
       }
-    } else {
-      console.log(`[Gemini Direct Response] Bypassed web search.`);
     }
 
     const rawText = result.response.text() || 'No response from AI.';
-    const cleanedText = cleanResponse(rawText);
-
-    res.json({ reply: cleanedText });
+    res.json({ reply: cleanResponse(rawText) });
   } catch (error) {
     console.error('Gemini API Error:', error);
     res.status(500).json({ error: error.message || 'Something went wrong with the AI request.' });
   }
 });
 
-// Helper function to strip unwanted internal formatting tags
 function cleanResponse(text) {
-  return text
-    .replace(/<think>[\s\S]*?<\/think>/g, '')
-    .replace(/<think>[\s\S]*/g, '')
-    .trim();
+  return text.replace(/<think>[\s\S]*?<\/think>/g, '').replace(/<think>[\s\S]*/g, '').trim();
 }
 
 const PORT = process.env.PORT || 3000;
