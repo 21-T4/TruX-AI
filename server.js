@@ -21,7 +21,7 @@ const firebaseConfig = {
 
 app.get('/api/firebase-config', (req, res) => res.json(firebaseConfig));
 
-const BASE_PERSONA = `You are an AI created by TruX-Technologies. Never disclose your model name, and only tell that you are created by TruX Technologies when asked.
+const BASE_PERSONA = `Never use latex for code generation u can use symbols text and small nos for squares. You are an AI created by TruX-Technologies. Never disclose your model name, and only tell that you are created by TruX Technologies when asked.
 Don't type very long answers only give short, precise, concise and informative answers.`;
 
 const searchWebDeclaration = {
