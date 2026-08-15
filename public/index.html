@@ -13,52 +13,60 @@
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background-color: #000000; color: #e3e3e3; font-family: 'Poppins', sans-serif; display: flex; height: 100vh; width: 100vw; overflow: hidden; position: relative; }
+    /* FIXED: Using 100dvh prevents mobile bottom clipping */
+    body { background-color: #000000; color: #e3e3e3; font-family: 'Poppins', sans-serif; display: flex; height: 100dvh; width: 100vw; overflow: hidden; position: relative; }
     
-    /* Perfect symmetric light design on both sides */
+    /* ADDED: Smooth transition for background fade */
     .dark-ambient-container { 
       position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; 
       background: radial-gradient(ellipse at left center, rgba(140, 160, 255, 0.12) 0%, transparent 45%),
                   radial-gradient(ellipse at right center, rgba(255, 120, 200, 0.12) 0%, transparent 45%);
+      transition: opacity 0.8s ease;
     }
+    
+    /* ADDED: Class to hide background lights when chatting */
+    body.chat-active .dark-ambient-container { opacity: 0; }
     
     .menu-toggle-btn { position: absolute; top: 16px; left: 16px; z-index: 100; background: #131416; border: 1px solid #303135; border-radius: 8px; padding: 10px; cursor: pointer; color: #ffffff; font-size: 18px; line-height: 1; transition: opacity 0.3s; }
     
     .mobile-new-chat-btn { display: none; position: absolute; top: 16px; right: 16px; z-index: 100; background: #131416; border: 2px solid transparent; color: #ffffff; border-radius: 50%; width: 42px; height: 42px; cursor: pointer; align-items: center; justify-content: center; font-size: 16px; background-image: linear-gradient(#131416, #131416), linear-gradient(90deg, #ff007f, #7f00ff, #00bfff, #ff007f); background-origin: border-box; background-clip: padding-box, border-box; background-size: 200% auto; animation: rainbowShift 4s linear infinite; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
     
-    .sidebar-overlay { display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.6); z-index: 9; }
+    .sidebar-overlay { display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0, 0, 0, 0.6); z-index: 9; }
     
     .history-sidebar { width: 300px; background-color: #0d0e10; border-right: 1px solid #1f2023; display: flex; flex-direction: column; z-index: 10; flex-shrink: 0; transition: margin-left 0.3s ease, transform 0.3s ease; }
     .history-sidebar.collapsed { margin-left: -300px; }
     
     .sidebar-header { padding: 16px; display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 12px; }
-    .new-chat-btn { flex-grow: 1; background: #131416; border: 2px solid transparent; color: #ffffff; padding: 12px; border-radius: 24px; font-family: inherit; font-size: 14px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; background-image: linear-gradient(#131416, #131416), linear-gradient(90deg, #ff007f, #7f00ff, #00bfff, #ff007f); background-origin: border-box; background-clip: padding-box, border-box; background-size: 200% auto; animation: rainbowShift 4s linear infinite; }
+    
+    /* ENLARGED: Sidebar options and text */
+    .new-chat-btn { flex-grow: 1; background: #131416; border: 2px solid transparent; color: #ffffff; padding: 16px; border-radius: 24px; font-family: inherit; font-size: 16px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; background-image: linear-gradient(#131416, #131416), linear-gradient(90deg, #ff007f, #7f00ff, #00bfff, #ff007f); background-origin: border-box; background-clip: padding-box, border-box; background-size: 200% auto; animation: rainbowShift 4s linear infinite; }
     @keyframes rainbowShift { to { background-position: 200% center; } }
     
-    /* Fixed Sidebar close button visibility for all devices */
-    .sidebar-close-btn { background: transparent; border: none; color: #ffffff; font-size: 26px; cursor: pointer; line-height: 1; padding: 0 5px; opacity: 0.7; }
+    /* FIXED: Hide close button on PC */
+    .sidebar-close-btn { display: none; background: transparent; border: none; color: #ffffff; font-size: 28px; cursor: pointer; line-height: 1; padding: 0 5px; opacity: 0.7; }
     .sidebar-close-btn:hover { opacity: 1; }
 
-    .history-list { flex-grow: 1; overflow-y: auto; padding: 8px; }
-    .history-item-wrapper { display: flex; align-items: center; justify-content: space-between; border-radius: 12px; margin-bottom: 4px; padding-right: 8px; transition: background 0.2s; }
+    .history-list { flex-grow: 1; overflow-y: auto; padding: 12px 8px; }
+    .history-item-wrapper { display: flex; align-items: center; justify-content: space-between; border-radius: 12px; margin-bottom: 6px; padding-right: 8px; transition: background 0.2s; }
     .history-item-wrapper:hover, .history-item-wrapper.active { background: #1a1b1e; }
-    .history-item { padding: 10px 14px; font-size: 13.5px; cursor: pointer; color: #c4c7c5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; }
+    /* ENLARGED: History item text */
+    .history-item { padding: 14px 16px; font-size: 15px; cursor: pointer; color: #c4c7c5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; }
     
-    /* Delete button styling */
-    .chat-delete-btn { background: transparent; border: none; color: #5f6368; font-size: 12px; cursor: pointer; padding: 6px; border-radius: 4px; opacity: 0; transition: all 0.2s; }
+    .chat-delete-btn { background: transparent; border: none; color: #5f6368; font-size: 14px; cursor: pointer; padding: 6px; border-radius: 4px; opacity: 0; transition: all 0.2s; }
     .history-item-wrapper:hover .chat-delete-btn { opacity: 1; }
     .chat-delete-btn:hover { background: #ff5555; color: white; }
 
-    .profile-footer { border-top: 1px solid #1f2023; padding: 16px; background-color: #0b0c0d; display: flex; flex-direction: column; gap: 10px; cursor: pointer; transition: background 0.2s; }
+    /* ENLARGED: Profile section */
+    .profile-footer { border-top: 1px solid #1f2023; padding: 20px 16px; background-color: #0b0c0d; display: flex; flex-direction: column; gap: 10px; cursor: pointer; transition: background 0.2s; }
     .profile-footer:hover { background-color: #1a1b1e; }
-    .profile-card { display: flex; align-items: center; gap: 12px; pointer-events: none; }
-    .profile-avatar { width: 40px; height: 40px; border-radius: 50%; background-color: #2a2b2d; border: 1px solid #303135; object-fit: cover; }
+    .profile-card { display: flex; align-items: center; gap: 14px; pointer-events: none; }
+    .profile-avatar { width: 44px; height: 44px; border-radius: 50%; background-color: #2a2b2d; border: 1px solid #303135; object-fit: cover; }
     .profile-details { flex-grow: 1; overflow: hidden; }
-    .profile-name { font-size: 13.5px; font-weight: 600; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .profile-email { font-size: 11px; color: #9aa0a6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .profile-name { font-size: 15px; font-weight: 600; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .profile-email { font-size: 12px; color: #9aa0a6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     
     .main-chat-arena { flex-grow: 1; display: flex; flex-direction: column; height: 100%; position: relative; z-index: 5; overflow: hidden; }
-    .welcome-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; flex-grow: 1; text-align: center; padding: 20px; z-index: 2; }
+    .welcome-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; flex-grow: 1; text-align: center; padding: 20px; z-index: 2; transition: opacity 0.3s; }
     .welcome-title { font-size: 46px; font-weight: 800; letter-spacing: -1.5px; background: linear-gradient(90deg, #ff7eb3 0%, #e599f7 25%, #7f00ff 50%, #00bfff 75%, #ff7eb3 100%); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: metallicFlow 6s linear infinite; }
     
     .x-anim { display: inline-block; -webkit-text-fill-color: #ffffff; color: #ffffff; animation: pulseX 2s infinite alternate; margin-left: 2px;}
@@ -102,9 +110,18 @@
 
     @media (max-width: 768px) { 
       .mobile-new-chat-btn { display: flex; }
-      .history-sidebar { position: absolute; top: 0; left: 0; height: 100%; width: 280px; z-index: 100; transform: translateX(-100%); margin-left: 0; } 
+      
+      /* FIXED: Added border-radius to the right side of sidebar on mobile */
+      .history-sidebar { position: absolute; top: 0; left: 0; height: 100dvh; width: 290px; z-index: 100; transform: translateX(-100%); margin-left: 0; border-top-right-radius: 20px; border-bottom-right-radius: 20px; } 
       .history-sidebar.open { transform: translateX(0); } 
+      
+      /* FIXED: Show close button on mobile only */
+      .sidebar-close-btn { display: block; }
+      
+      /* FIXED: Extra bottom padding for mobile safe zones */
       .chat-container { padding: 80px 16px 20px; }
+      .input-section { padding: 16px 16px 30px; }
+      .profile-footer { border-bottom-right-radius: 20px; padding-bottom: 24px; }
     }
   </style>
 </head>
@@ -112,7 +129,6 @@
 
   <div class="dark-ambient-container"></div>
 
-  <!-- Global Hamburger Button -->
   <button class="menu-toggle-btn" onclick="toggleSidebar(event)">☰</button>
   <button class="mobile-new-chat-btn" onclick="startNewChat()">➕</button>
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
@@ -160,12 +176,22 @@
           <img id="imagePreview" src="" alt="preview">
           <button class="remove-image-btn" onclick="removeImage()">✖</button>
         </div>
+        
+        <!-- ADDED: Voice button placed exactly to the left of the image upload button -->
+        <button class="icon-btn" onclick="alert('Voice input feature coming soon!')" title="Voice Input">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+          </svg>
+        </button>
+
         <input type="file" id="imageUpload" accept="image/*" style="display:none;" onchange="handleImageUpload(event)">
         <button class="icon-btn" onclick="document.getElementById('imageUpload').click()" title="Add Image">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
             <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
           </svg>
         </button>
+        
         <textarea id="promptInput" placeholder="Ask TruX anything..." rows="1"></textarea>
         <button class="send-btn" onclick="handleActionButton()" id="actionBtn">
           <svg id="btnIcon" viewBox="0 0 24 24">
@@ -248,6 +274,7 @@
       document.getElementById('chatContainer').innerHTML = '';
       document.getElementById('chatContainer').style.display = 'none';
       document.getElementById('welcomeScreen').style.display = 'flex';
+      document.body.classList.remove('chat-active'); // ADDED: Restores lights
       currentChatId = null;
       removeImage();
       renderSidebar();
@@ -285,6 +312,8 @@
 
       isGenerating = true;
       document.getElementById('btnIcon').innerHTML = stopIconSvg;
+      
+      document.body.classList.add('chat-active'); // ADDED: Fades lights
 
       if (!currentChatId) {
         currentChatId = 'chat_' + Date.now();
@@ -371,7 +400,6 @@
       return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
-    // --- SIDEBAR DELETE FEATURE ADDED ---
     function deleteChat(id, event) {
       event.stopPropagation();
       if(confirm("Delete this chat?")) {
@@ -408,6 +436,7 @@
 
     function loadChatSession(id) {
       currentChatId = id;
+      document.body.classList.add('chat-active'); // ADDED: Fade lights on load
       document.getElementById('welcomeScreen').style.display = 'none';
       const container = document.getElementById('chatContainer');
       container.innerHTML = '';
