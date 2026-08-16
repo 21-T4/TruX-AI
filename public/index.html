@@ -8,7 +8,8 @@
   
   <!-- PWA Meta Tags & Icons -->
   <link rel="manifest" href="/manifest.json">
-  <link rel="icon" type="image/png" href="/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
   <link rel="apple-touch-icon" href="/icon-192.png">
   <meta name="theme-color" content="#000000">
   <meta name="mobile-web-app-capable" content="yes">
@@ -205,7 +206,9 @@
     // --- SERVICE WORKER REGISTRATION ---
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(err => console.error('SW registration failed:', err));
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('Service Worker Registered successfully:', reg.scope))
+          .catch(err => console.error('SW registration failed:', err));
       });
     }
 
@@ -303,10 +306,24 @@
       document.getElementById('voiceBtn').classList.remove('recording');
     }
 
+    function renderFormattedText(text) {
+      if (!text) return "";
+      return text
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+        .replace(/\*(.*?)\*/g, '<i>$1</i>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\n/g, '<br>');
+    }
+
+    function stripMarkdownForVoice(text) {
+      return text ? text.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/#/g, '').replace(/`/g, '') : "";
+    }
+
     function speakText(text) {
       if (!('speechSynthesis' in window)) return;
       window.speechSynthesis.cancel();
-      const cleanText = stripMarkdown(text);
+      const cleanText = stripMarkdownForVoice(text);
       const utterance = new SpeechSynthesisUtterance(cleanText);
       utterance.rate = 1.0;
       utterance.pitch = 1.0;
@@ -365,10 +382,6 @@
     const sendIconSvg = `<path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>`;
     const stopIconSvg = `<rect x="6" y="6" width="12" height="12" rx="1.5" />`;
 
-    function stripMarkdown(text) {
-      return text ? text.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/#/g, '').replace(/`/g, '') : "";
-    }
-
     function sendPrompt() {
       const inputEl = document.getElementById('promptInput');
       const prompt = inputEl.value.trim();
@@ -422,7 +435,7 @@
 
         const bubble = document.getElementById(bubbleId);
         bubble.classList.remove('thinking-box');
-        bubble.innerHTML = `<div class="fade-in-text">${escapeHtml(stripMarkdown(responseText)).replace(/\n/g, '<br>')}</div>`;
+        bubble.innerHTML = `<div class="fade-in-text">${renderFormattedText(responseText)}</div>`;
         
         const actionsContainer = document.getElementById(actionsId);
         const readBtn = document.createElement('button');
@@ -451,7 +464,7 @@
       const container = document.getElementById('chatContainer');
       const row = document.createElement('div');
       row.className = `message-row ${rowClass}`;
-      row.innerHTML = `<div class="message-label">${label}</div><div class="bubble ${bubbleClass}">${escapeHtml(stripMarkdown(text)).replace(/\n/g, '<br>')}</div>`;
+      row.innerHTML = `<div class="message-label">${label}</div><div class="bubble ${bubbleClass}">${renderFormattedText(text)}</div>`;
       container.appendChild(row);
       container.scrollTop = container.scrollHeight;
     }
@@ -473,10 +486,6 @@
         }
         sendPrompt();
       }
-    }
-
-    function escapeHtml(text) {
-      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
     function deleteChat(id, event) {
@@ -528,7 +537,7 @@
         
         const row = document.createElement('div');
         row.className = `message-row ${rowClass}`;
-        let innerHTML = `<div class="message-label">${label}</div><div class="bubble ${bubbleClass}">${escapeHtml(stripMarkdown(msg.text)).replace(/\n/g, '<br>')}</div>`;
+        let innerHTML = `<div class="message-label">${label}</div><div class="bubble ${bubbleClass}">${renderFormattedText(msg.text)}</div>`;
         
         if (msg.role === 'trux') {
           const actionId = 'history_action_' + id + '_' + index;
