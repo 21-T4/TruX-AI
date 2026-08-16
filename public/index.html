@@ -54,12 +54,9 @@
     .history-list { flex-grow: 1; overflow-y: auto; padding: 12px 8px; }
     .history-item-wrapper { display: flex; align-items: center; justify-content: space-between; border-radius: 12px; margin-bottom: 6px; padding-right: 8px; transition: background 0.2s; }
     .history-item-wrapper:hover, .history-item-wrapper.active { background: #1a1b1e; }
-    .history-item { padding: 14px 16px; font-size: 15px; cursor: pointer; color: #c4c7c5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; }
+    /* Prevent accidental text selection on mobile hold */
+    .history-item { padding: 14px 16px; font-size: 15px; cursor: pointer; color: #c4c7c5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; user-select: none; -webkit-touch-callout: none; }
     
-    .chat-delete-btn { background: transparent; border: none; color: #5f6368; font-size: 14px; cursor: pointer; padding: 6px; border-radius: 4px; opacity: 0; transition: all 0.2s; }
-    .history-item-wrapper:hover .chat-delete-btn { opacity: 1; }
-    .chat-delete-btn:hover { background: #ff5555; color: white; }
-
     .profile-footer { border-top: 1px solid #1f2023; padding: 20px 16px; background-color: #0b0c0d; display: flex; flex-direction: column; gap: 10px; cursor: pointer; transition: background 0.2s; }
     .profile-footer:hover { background-color: #1a1b1e; }
     .profile-card { display: flex; align-items: center; gap: 14px; pointer-events: none; }
@@ -120,6 +117,22 @@
     textarea { flex-grow: 1; background: transparent; border: none; color: #e3e3e3; resize: none; outline: none; font-family: inherit; font-size: 15px; max-height: 140px; line-height: 22px; padding: 6px 10px; margin: 0;}
     .send-btn { background: linear-gradient(135deg, #a8c7fa, #7cacf8); border: none; border-radius: 50%; width: 38px; height: 38px; cursor: pointer; margin-left: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .send-btn svg { fill: #042100; width: 18px; height: 18px; }
+
+    /* Custom Profile Sign Out Modal */
+    .profile-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0, 0, 0, 0.7); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+    .profile-modal-card { background: #131416; border: 1px solid #303135; border-radius: 24px; padding: 32px 24px; width: 300px; text-align: center; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); position: relative; }
+    .profile-modal-card img { width: 72px; height: 72px; border-radius: 50%; border: 2px solid #303135; margin: 0 auto; object-fit: cover; }
+    .profile-modal-name { color: #ffffff; font-size: 20px; font-weight: 600; margin: 0; }
+    .profile-modal-email { color: #9aa0a6; font-size: 14px; margin: 0; padding-bottom: 12px; }
+    .profile-sign-out-btn { background: #202124; color: #ff5555; border: 1px solid #3c4043; padding: 12px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit; display: flex; justify-content: center; align-items: center; gap: 8px; }
+    .profile-sign-out-btn:hover { background: #ff5555; color: #ffffff; border-color: #ff5555; }
+    .close-modal-btn { position: absolute; top: 12px; right: 16px; background: transparent; border: none; color: #9aa0a6; font-size: 22px; cursor: pointer; line-height: 1; }
+    .close-modal-btn:hover { color: #ffffff; }
+
+    /* Custom Context Menu (Hold/Right-Click) */
+    .context-menu { display: none; position: fixed; background: #1a1b1e; border: 1px solid #303135; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.6); z-index: 2000; flex-direction: column; padding: 6px; min-width: 160px; }
+    .context-menu-item { padding: 12px 16px; color: #ff5555; cursor: pointer; border-radius: 8px; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; transition: background 0.2s; font-family: inherit; }
+    .context-menu-item:hover { background: rgba(255, 85, 85, 0.15); }
 
     @media (max-width: 768px) { 
       .mobile-new-chat-btn { display: flex; }
@@ -209,6 +222,27 @@
     </div>
   </div>
 
+  <!-- Profile Modal Overlay -->
+  <div class="profile-modal-overlay" id="profileModal">
+    <div class="profile-modal-card">
+      <button class="close-modal-btn" onclick="closeProfileModal()">×</button>
+      <img id="modalAvatar" src="" alt="Profile Picture">
+      <div class="profile-modal-name" id="modalName">User Name</div>
+      <div class="profile-modal-email" id="modalEmail">user@email.com</div>
+      <button class="profile-sign-out-btn" onclick="confirmSignOut()">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+        Sign Out
+      </button>
+    </div>
+  </div>
+
+  <!-- Context Menu for Chat -->
+  <div class="context-menu" id="contextMenu">
+    <div class="context-menu-item" id="contextMenuDeleteBtn">
+      <span>🗑️</span> Delete Chat
+    </div>
+  </div>
+
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -250,12 +284,24 @@
     let provider = null;
 
     async function initFirebase() {
+      // Fallback config in case dynamic fetch fails (Bug Fix)
+      const fallbackConfig = {
+        apiKey: "AIzaSyAs_GDrzlBaucHfiff0Y6cA8GVHjFTA62Q",
+        authDomain: "trux-ai.firebaseapp.com",
+        projectId: "trux-ai",
+        storageBucket: "trux-ai.firebasestorage.app",
+        messagingSenderId: "59313097411",
+        appId: "1:59313097411:web:32e4158bfb733fa7cfb076",
+        measurementId: "G-C32LC29QHC"
+      };
+
       try {
         const res = await fetch('/api/firebase-config');
         const config = await res.json();
         firebase.initializeApp(config);
       } catch (err) {
         console.warn("Could not fetch firebase config dynamically, using fallback.");
+        firebase.initializeApp(fallbackConfig);
       }
       
       auth = firebase.auth();
@@ -280,11 +326,30 @@
       if (!auth.currentUser) {
         auth.signInWithPopup(provider).catch(console.error);
       } else {
-        if (confirm("Do you want to sign out?")) {
-          auth.signOut();
-        }
+        // Updated Sign-Out Action: Show elegant modal instead of standard confirm
+        document.getElementById('modalAvatar').src = auth.currentUser.photoURL;
+        document.getElementById('modalName').innerText = auth.currentUser.displayName;
+        document.getElementById('modalEmail').innerText = auth.currentUser.email;
+        document.getElementById('profileModal').style.display = 'flex';
       }
     }
+
+    function closeProfileModal() {
+      document.getElementById('profileModal').style.display = 'none';
+    }
+
+    function confirmSignOut() {
+      auth.signOut().then(() => {
+        closeProfileModal();
+      });
+    }
+
+    // Close profile modal if clicked outside the card
+    document.getElementById('profileModal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('profileModal')) {
+        closeProfileModal();
+      }
+    });
 
     function isUserSignedIn() {
       return auth && !!auth.currentUser;
@@ -543,15 +608,47 @@
       }
     }
 
-    function deleteChat(id, event) {
-      event.stopPropagation();
-      if(confirm("Delete this chat?")) {
+    function deleteChat(id) {
+      if(confirm("Are you sure you want to delete this chat?")) {
         delete chatSessions[id];
         localStorage.setItem('trux_chats', JSON.stringify(chatSessions));
         if(currentChatId === id) startNewChat();
         else renderSidebar();
       }
     }
+
+    // Context Menu Logic
+    let activePressTimer;
+    
+    function showContextMenu(e, id) {
+      e.preventDefault(); 
+      const menu = document.getElementById('contextMenu');
+      menu.style.display = 'flex';
+      
+      let x = e.clientX || (e.touches && e.touches[0].clientX);
+      let y = e.clientY || (e.touches && e.touches[0].clientY);
+      
+      // Prevent pop-up from falling off screen edges
+      if (x + 160 > window.innerWidth) x = window.innerWidth - 170;
+      if (y + 50 > window.innerHeight) y = window.innerHeight - 60;
+      
+      menu.style.left = `${x}px`;
+      menu.style.top = `${y}px`;
+      
+      const btn = document.getElementById('contextMenuDeleteBtn');
+      btn.onclick = (ev) => {
+        ev.stopPropagation();
+        deleteChat(id);
+        hideContextMenu();
+      };
+    }
+    
+    function hideContextMenu() {
+      document.getElementById('contextMenu').style.display = 'none';
+    }
+    
+    document.addEventListener('click', hideContextMenu);
+    document.addEventListener('scroll', hideContextMenu, true); 
 
     function renderSidebar() {
       const list = document.getElementById('historyList');
@@ -563,16 +660,35 @@
         const item = document.createElement('div');
         item.className = 'history-item';
         item.innerText = chatSessions[id].title;
-        item.onclick = () => loadChatSession(id);
 
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'chat-delete-btn';
-        deleteBtn.innerHTML = '🗑️';
-        deleteBtn.title = "Delete Chat";
-        deleteBtn.onclick = (e) => deleteChat(id, e);
+        // Long-press implementation (Mobile & Desktop)
+        item.addEventListener('touchstart', (e) => {
+          activePressTimer = setTimeout(() => showContextMenu(e, id), 550);
+        }, { passive: true });
+        
+        item.addEventListener('touchend', () => clearTimeout(activePressTimer));
+        item.addEventListener('touchmove', () => clearTimeout(activePressTimer));
+        
+        item.addEventListener('mousedown', (e) => {
+          if (e.button !== 2) { 
+            activePressTimer = setTimeout(() => showContextMenu(e, id), 550);
+          }
+        });
+        
+        item.addEventListener('mouseup', () => clearTimeout(activePressTimer));
+        item.addEventListener('mouseleave', () => clearTimeout(activePressTimer));
+        
+        // Context menu (Right-Click) Support
+        item.addEventListener('contextmenu', (e) => showContextMenu(e, id));
+        
+        // Standard Click implementation
+        item.onclick = (e) => {
+          // ensure a long press doesn't also register as a load attempt
+          if (document.getElementById('contextMenu').style.display === 'flex') return;
+          loadChatSession(id);
+        };
 
         wrapper.appendChild(item);
-        wrapper.appendChild(deleteBtn);
         list.appendChild(wrapper);
       });
     }
