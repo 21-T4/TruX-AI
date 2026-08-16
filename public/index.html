@@ -24,8 +24,20 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
   <style>
+    :root {
+      --bg-main: #000000;
+      --bg-sidebar: #0d0e10;
+      --bg-input: #18191b;
+      --bg-hover: #1a1b1e;
+      --text-main: #e3e3e3;
+      --text-muted: #9aa0a6;
+      --border-color: #303135;
+      --accent: #a8c7fa;
+      --error: #ff5555;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background-color: #000000; color: #e3e3e3; font-family: 'Poppins', sans-serif; display: flex; height: 100dvh; width: 100vw; overflow: hidden; position: relative; }
+    body { background-color: var(--bg-main); color: var(--text-main); font-family: 'Poppins', sans-serif; display: flex; height: 100dvh; width: 100vw; overflow: hidden; position: relative; }
     
     .dark-ambient-container { 
       position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; 
@@ -35,13 +47,13 @@
     }
     body.chat-active .dark-ambient-container { opacity: 0; }
     
-    .menu-toggle-btn { position: absolute; top: 16px; left: 16px; z-index: 100; background: #131416; border: 1px solid #303135; border-radius: 8px; padding: 10px; cursor: pointer; color: #ffffff; font-size: 18px; line-height: 1; transition: opacity 0.3s; }
+    .menu-toggle-btn { position: absolute; top: 16px; left: 16px; z-index: 100; background: #131416; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; cursor: pointer; color: #ffffff; font-size: 18px; line-height: 1; transition: opacity 0.3s; }
     .mobile-new-chat-btn { display: none; position: absolute; top: 16px; right: 16px; z-index: 100; background: #131416; border: 2px solid transparent; color: #ffffff; border-radius: 50%; width: 42px; height: 42px; cursor: pointer; align-items: center; justify-content: center; font-size: 16px; background-image: linear-gradient(#131416, #131416), linear-gradient(90deg, #ff007f, #7f00ff, #00bfff, #ff007f); background-origin: border-box; background-clip: padding-box, border-box; background-size: 200% auto; animation: rainbowShift 4s linear infinite; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
-    .mobile-install-btn { display: none; position: absolute; top: 16px; right: 66px; z-index: 100; background: #131416; border: 1px solid #303135; color: #ffffff; border-radius: 50%; width: 42px; height: 42px; cursor: pointer; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
+    .mobile-install-btn { display: none; position: absolute; top: 16px; right: 66px; z-index: 100; background: #131416; border: 1px solid var(--border-color); color: #ffffff; border-radius: 50%; width: 42px; height: 42px; cursor: pointer; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
     
     .sidebar-overlay { display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0, 0, 0, 0.6); z-index: 9; }
     
-    .history-sidebar { width: 300px; background-color: #0d0e10; border-right: 1px solid #1f2023; display: flex; flex-direction: column; z-index: 10; flex-shrink: 0; transition: margin-left 0.3s ease, transform 0.3s ease; }
+    .history-sidebar { width: 300px; background-color: var(--bg-sidebar); border-right: 1px solid #1f2023; display: flex; flex-direction: column; z-index: 10; flex-shrink: 0; transition: margin-left 0.3s ease, transform 0.3s ease; }
     .history-sidebar.collapsed { margin-left: -300px; }
     .sidebar-header { padding: 16px; display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 12px; }
     
@@ -53,16 +65,16 @@
 
     .history-list { flex-grow: 1; overflow-y: auto; padding: 12px 8px; }
     .history-item-wrapper { display: flex; align-items: center; justify-content: space-between; border-radius: 12px; margin-bottom: 6px; padding-right: 8px; transition: background 0.2s; }
-    .history-item-wrapper:hover, .history-item-wrapper.active { background: #1a1b1e; }
+    .history-item-wrapper:hover, .history-item-wrapper.active { background: var(--bg-hover); }
     .history-item { padding: 14px 16px; font-size: 15px; cursor: pointer; color: #c4c7c5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; user-select: none; -webkit-touch-callout: none; }
     
     .profile-footer { border-top: 1px solid #1f2023; padding: 20px 16px; background-color: #0b0c0d; display: flex; flex-direction: column; gap: 10px; cursor: pointer; transition: background 0.2s; }
-    .profile-footer:hover { background-color: #1a1b1e; }
+    .profile-footer:hover { background-color: var(--bg-hover); }
     .profile-card { display: flex; align-items: center; gap: 14px; pointer-events: none; }
-    .profile-avatar { width: 44px; height: 44px; border-radius: 50%; background-color: #2a2b2d; border: 1px solid #303135; object-fit: cover; }
+    .profile-avatar { width: 44px; height: 44px; border-radius: 50%; background-color: #2a2b2d; border: 1px solid var(--border-color); object-fit: cover; }
     .profile-details { flex-grow: 1; overflow: hidden; }
     .profile-name { font-size: 15px; font-weight: 600; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .profile-email { font-size: 12px; color: #9aa0a6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .profile-email { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     
     .main-chat-arena { flex-grow: 1; display: flex; flex-direction: column; height: 100%; position: relative; z-index: 5; overflow: hidden; }
     .welcome-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; flex-grow: 1; text-align: center; padding: 20px; z-index: 2; transition: opacity 0.3s; }
@@ -80,9 +92,9 @@
     
     .bubble { padding: 16px 20px; border-radius: 20px; font-size: 15px; line-height: 1.6; word-wrap: break-word; }
     .user-bubble { background-color: #1f2023; color: #f1f1f1; align-self: flex-end; border-bottom-right-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.04); max-width: 85%; white-space: pre-wrap; }
-    .trux-bubble { background-color: rgba(18, 19, 21, 0.8); backdrop-filter: blur(16px); color: #e3e3e3; align-self: flex-start; border-top-left-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.06); width: 100%; }
+    .trux-bubble { background-color: rgba(18, 19, 21, 0.8); backdrop-filter: blur(16px); color: var(--text-main); align-self: flex-start; border-top-left-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.06); width: 100%; }
 
-    pre { background: #000; border: 1px solid #303135; padding: 12px; border-radius: 8px; overflow-x: auto; margin: 8px 0; font-family: monospace; }
+    pre { background: #000; border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; overflow-x: auto; margin: 8px 0; font-family: monospace; }
     code { background: rgba(255,255,255,0.1); padding: 2px 5px; border-radius: 4px; font-family: monospace; font-size: 14px; }
     pre code { background: transparent; padding: 0; }
 
@@ -90,7 +102,7 @@
     @keyframes smoothFadeIn { to { opacity: 1; } }
 
     .message-actions { display: flex; gap: 8px; margin-top: 8px; align-self: flex-start; }
-    .read-aloud-btn { background: #18191b; border: 1px solid #303135; color: #9aa0a6; padding: 4px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s; }
+    .read-aloud-btn { background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-muted); padding: 4px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s; }
     .read-aloud-btn:hover { background: #252629; color: #ffffff; }
 
     .trux-bubble.thinking-box { width: auto; display: inline-flex; align-items: center; padding: 10px 22px; background: rgba(255, 255, 255, 0.03); }
@@ -100,35 +112,35 @@
     .input-section { padding: 16px 24px 24px; background: linear-gradient(to top, #060607 80%, transparent); z-index: 5; display: flex; flex-direction: column; align-items: center; width: 100%; }
     
     .model-selector-simple { margin-bottom: 12px; max-width: 800px; width: 100%; display: flex; justify-content: flex-start; }
-    .model-select { background: #131416; color: #a8c7fa; border: 1px solid #303135; border-radius: 12px; padding: 6px 12px; font-size: 13px; font-family: inherit; outline: none; cursor: pointer; }
+    .model-select { background: #131416; color: var(--accent); border: 1px solid var(--border-color); border-radius: 12px; padding: 6px 12px; font-size: 13px; font-family: inherit; outline: none; cursor: pointer; }
 
-    .input-wrapper { width: 100%; max-width: 800px; background: #18191b; border: 1px solid #303135; border-radius: 28px; padding: 12px 18px; display: flex; align-items: center; box-shadow: 0 4px 24px rgba(0,0,0,0.6); position: relative;}
+    .input-wrapper { width: 100%; max-width: 800px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 28px; padding: 12px 18px; display: flex; align-items: center; box-shadow: 0 4px 24px rgba(0,0,0,0.6); position: relative;}
     
-    .icon-btn { background: transparent; border: none; color: #9aa0a6; cursor: pointer; padding: 6px; margin-right: 4px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s; flex-shrink: 0; }
+    .icon-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; margin-right: 4px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s; flex-shrink: 0; }
     .icon-btn:hover { color: #ffffff; background: rgba(255, 255, 255, 0.08); }
-    .icon-btn.recording { color: #ff5555; background: rgba(255, 85, 85, 0.15); animation: pulseRec 1.5s infinite; }
+    .icon-btn.recording { color: var(--error); background: rgba(255, 85, 85, 0.15); animation: pulseRec 1.5s infinite; }
     @keyframes pulseRec { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
     
-    .image-preview-wrapper { display: none; position: absolute; bottom: 65px; left: 20px; background: #1f2023; padding: 8px; border-radius: 12px; border: 1px solid #303135; }
+    .image-preview-wrapper { display: none; position: absolute; bottom: 65px; left: 20px; background: #1f2023; padding: 8px; border-radius: 12px; border: 1px solid var(--border-color); }
     .image-preview-wrapper img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; }
-    .remove-image-btn { position: absolute; top: -6px; right: -6px; background: #ff5555; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px; }
+    .remove-image-btn { position: absolute; top: -6px; right: -6px; background: var(--error); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px; }
 
-    textarea { flex-grow: 1; background: transparent; border: none; color: #e3e3e3; resize: none; outline: none; font-family: inherit; font-size: 15px; max-height: 140px; line-height: 22px; padding: 6px 10px; margin: 0;}
+    textarea { flex-grow: 1; background: transparent; border: none; color: var(--text-main); resize: none; outline: none; font-family: inherit; font-size: 15px; max-height: 140px; line-height: 22px; padding: 6px 10px; margin: 0;}
     .send-btn { background: linear-gradient(135deg, #a8c7fa, #7cacf8); border: none; border-radius: 50%; width: 38px; height: 38px; cursor: pointer; margin-left: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .send-btn svg { fill: #042100; width: 18px; height: 18px; }
 
     .profile-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0, 0, 0, 0.7); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
-    .profile-modal-card { background: #131416; border: 1px solid #303135; border-radius: 24px; padding: 32px 24px; width: 300px; text-align: center; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); position: relative; }
-    .profile-modal-card img { width: 72px; height: 72px; border-radius: 50%; border: 2px solid #303135; margin: 0 auto; object-fit: cover; }
+    .profile-modal-card { background: #131416; border: 1px solid var(--border-color); border-radius: 24px; padding: 32px 24px; width: 300px; text-align: center; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); position: relative; }
+    .profile-modal-card img { width: 72px; height: 72px; border-radius: 50%; border: 2px solid var(--border-color); margin: 0 auto; object-fit: cover; }
     .profile-modal-name { color: #ffffff; font-size: 20px; font-weight: 600; margin: 0; }
-    .profile-modal-email { color: #9aa0a6; font-size: 14px; margin: 0; padding-bottom: 12px; }
-    .profile-sign-out-btn { background: #202124; color: #ff5555; border: 1px solid #3c4043; padding: 12px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit; display: flex; justify-content: center; align-items: center; gap: 8px; }
-    .profile-sign-out-btn:hover { background: #ff5555; color: #ffffff; border-color: #ff5555; }
-    .close-modal-btn { position: absolute; top: 12px; right: 16px; background: transparent; border: none; color: #9aa0a6; font-size: 22px; cursor: pointer; line-height: 1; }
+    .profile-modal-email { color: var(--text-muted); font-size: 14px; margin: 0; padding-bottom: 12px; }
+    .profile-sign-out-btn { background: #202124; color: var(--error); border: 1px solid #3c4043; padding: 12px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit; display: flex; justify-content: center; align-items: center; gap: 8px; }
+    .profile-sign-out-btn:hover { background: var(--error); color: #ffffff; border-color: var(--error); }
+    .close-modal-btn { position: absolute; top: 12px; right: 16px; background: transparent; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; line-height: 1; }
     .close-modal-btn:hover { color: #ffffff; }
 
-    .context-menu { display: none; position: fixed; background: #1a1b1e; border: 1px solid #303135; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.6); z-index: 2000; flex-direction: column; padding: 6px; min-width: 160px; }
-    .context-menu-item { padding: 12px 16px; color: #ff5555; cursor: pointer; border-radius: 8px; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; transition: background 0.2s; font-family: inherit; }
+    .context-menu { display: none; position: fixed; background: var(--bg-hover); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.6); z-index: 2000; flex-direction: column; padding: 6px; min-width: 160px; }
+    .context-menu-item { padding: 12px 16px; color: var(--error); cursor: pointer; border-radius: 8px; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; transition: background 0.2s; font-family: inherit; }
     .context-menu-item:hover { background: rgba(255, 85, 85, 0.15); }
 
     @media (max-width: 768px) { 
@@ -146,24 +158,24 @@
 
   <div class="dark-ambient-container"></div>
 
-  <button class="menu-toggle-btn" onclick="toggleSidebar(event)">☰</button>
-  <button class="mobile-install-btn" id="mobileInstallBtn" onclick="installPWA()" title="Install App">📥</button>
-  <button class="mobile-new-chat-btn" onclick="startNewChat()">➕</button>
-  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+  <button class="menu-toggle-btn" aria-label="Toggle Menu" onclick="toggleSidebar(event)">☰</button>
+  <button class="mobile-install-btn" id="mobileInstallBtn" aria-label="Install App" onclick="installPWA()" title="Install App">📥</button>
+  <button class="mobile-new-chat-btn" aria-label="New Chat" onclick="startNewChat()">➕</button>
+  <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true" onclick="closeSidebar()"></div>
 
   <div class="history-sidebar" id="sidebarNode">
     <div class="sidebar-header">
-      <button class="new-chat-btn" onclick="startNewChat(); closeSidebar();">
+      <button class="new-chat-btn" aria-label="Start a new chat" onclick="startNewChat(); closeSidebar();">
         <span>➕</span> New Chat
       </button>
-      <button class="sidebar-close-btn" onclick="closeSidebar()" title="Close Menu">×</button>
+      <button class="sidebar-close-btn" aria-label="Close sidebar" onclick="closeSidebar()" title="Close Menu">×</button>
     </div>
     
-    <div class="history-list" id="historyList"></div>
+    <div class="history-list" id="historyList" role="list"></div>
 
-    <div class="profile-footer" onclick="handleAuthAction()">
+    <div class="profile-footer" aria-label="User Profile" onclick="handleAuthAction()">
       <div class="profile-card" id="profileCard">
-        <img class="profile-avatar" id="userAvatar" src="https://ui-avatars.com/api/?name=Guest+User&background=2a2b2d&color=fff" alt="PFP">
+        <img class="profile-avatar" id="userAvatar" src="https://ui-avatars.com/api/?name=Guest+User&background=2a2b2d&color=fff" alt="User Avatar">
         <div class="profile-details">
           <div class="profile-name" id="userName">Guest User</div>
           <div class="profile-email" id="userEmail">Sign in required</div>
@@ -175,14 +187,14 @@
   <div class="main-chat-arena">
     <div class="welcome-screen" id="welcomeScreen">
       <h1 class="welcome-title">Welcome, I am Tru<span class="x-anim">X</span></h1>
-      <p style="color: #9aa0a6; font-size: 18px;">Your Multi-Engine AI Assistant</p>
+      <p style="color: var(--text-muted); font-size: 18px;">Your Multi-Engine AI Assistant</p>
     </div>
 
-    <div class="chat-container" id="chatContainer"></div>
+    <div class="chat-container" id="chatContainer" role="log" aria-live="polite"></div>
 
     <div class="input-section">
       <div class="model-selector-simple">
-        <select class="model-select" id="modelSelect" onchange="currentModel = this.value">
+        <select class="model-select" id="modelSelect" aria-label="Select AI Model" onchange="currentModel = this.value">
           <option value="base">⚡ TruX Core 3.0</option>
           <option value="pro">✨ TruX Pro 3.0</option>
           <option value="ultra">🚀 TruX Ultra 3.5</option>
@@ -191,11 +203,11 @@
 
       <div class="input-wrapper">
         <div class="image-preview-wrapper" id="imagePreviewContainer">
-          <img id="imagePreview" src="" alt="preview">
-          <button class="remove-image-btn" onclick="removeImage()">✖</button>
+          <img id="imagePreview" src="" alt="Image Preview">
+          <button class="remove-image-btn" aria-label="Remove Image" onclick="removeImage()">✖</button>
         </div>
         
-        <button class="icon-btn" id="voiceBtn" onclick="toggleVoiceInput()" title="Voice Input">
+        <button class="icon-btn" id="voiceBtn" aria-label="Voice Input" onclick="toggleVoiceInput()" title="Voice Input">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
             <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
             <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
@@ -203,14 +215,14 @@
         </button>
 
         <input type="file" id="imageUpload" accept="image/*" style="display:none;" onchange="handleImageUpload(event)">
-        <button class="icon-btn" onclick="document.getElementById('imageUpload').click()" title="Add Image">
+        <button class="icon-btn" aria-label="Upload Image" onclick="document.getElementById('imageUpload').click()" title="Add Image">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
             <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
           </svg>
         </button>
         
-        <textarea id="promptInput" placeholder="Ask TruX anything..." rows="1"></textarea>
-        <button class="send-btn" onclick="handleActionButton()" id="actionBtn">
+        <textarea id="promptInput" aria-label="Message Input" placeholder="Ask TruX anything..." rows="1"></textarea>
+        <button class="send-btn" aria-label="Send Message" onclick="handleActionButton()" id="actionBtn">
           <svg id="btnIcon" viewBox="0 0 24 24">
             <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
           </svg>
@@ -219,13 +231,13 @@
     </div>
   </div>
 
-  <div class="profile-modal-overlay" id="profileModal">
-    <div class="profile-modal-card">
-      <button class="close-modal-btn" onclick="closeProfileModal()">×</button>
+  <div class="profile-modal-overlay" id="profileModal" aria-hidden="true">
+    <div class="profile-modal-card" role="dialog" aria-modal="true">
+      <button class="close-modal-btn" aria-label="Close Profile" onclick="closeProfileModal()">×</button>
       <img id="modalAvatar" src="" alt="Profile Picture">
       <div class="profile-modal-name" id="modalName">User Name</div>
       <div class="profile-modal-email" id="modalEmail">user@email.com</div>
-      <button class="profile-sign-out-btn" onclick="confirmSignOut()">
+      <button class="profile-sign-out-btn" aria-label="Sign Out" onclick="confirmSignOut()">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
         Sign Out
       </button>
@@ -485,7 +497,7 @@
     const sendIconSvg = `<path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>`;
     const stopIconSvg = `<rect x="6" y="6" width="12" height="12" rx="1.5" />`;
 
-    function sendPrompt() {
+    async function sendPrompt() {
       const inputEl = document.getElementById('promptInput');
       const prompt = inputEl.value.trim();
       if (!prompt && !selectedImageBase64) return;
@@ -527,19 +539,20 @@
 
       activeAbortController = new AbortController();
 
-      fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: activeAbortController.signal,
-        body: JSON.stringify({ 
-          message: prompt, 
-          tier: currentModel, 
-          history: chatSessions[currentChatId].messages.slice(-5, -1), 
-          image: imageToSend 
-        })
-      })
-      .then(res => res.json())
-      .then(data => {
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: activeAbortController.signal,
+          body: JSON.stringify({ 
+            message: prompt, 
+            tier: currentModel, 
+            history: chatSessions[currentChatId].messages.slice(-5, -1), 
+            image: imageToSend 
+          })
+        });
+        
+        const data = await res.json();
         const responseText = data.reply || data.error || "No response received.";
         chatSessions[currentChatId].messages.push({ role: 'trux', text: responseText });
         localStorage.setItem('trux_chats', JSON.stringify(chatSessions));
@@ -563,8 +576,7 @@
         if (currentVoiceTriggered) {
           speakText(responseText);
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         const bubble = document.getElementById(bubbleId);
         if (bubble) {
           bubble.classList.remove('thinking-box');
@@ -573,7 +585,7 @@
         isGenerating = false;
         activeAbortController = null;
         document.getElementById('btnIcon').innerHTML = sendIconSvg;
-      });
+      }
     }
 
     function appendMessageRow(label, text, rowClass, bubbleClass) {
@@ -650,6 +662,7 @@
         const item = document.createElement('div');
         item.className = 'history-item';
         item.innerText = chatSessions[id].title;
+        item.setAttribute('role', 'listitem');
 
         item.addEventListener('touchstart', (e) => {
           activePressTimer = setTimeout(() => showContextMenu(e, id), 550);
