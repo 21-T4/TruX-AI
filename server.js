@@ -74,47 +74,79 @@ app.post('/api/chat', async (req, res) => {
       tools: [{ functionDeclarations: [searchWebDeclaration] }]
     });
 
+    // 1. Clean history
     let cleanHistory = (history || []).map(msg => ({
       role: msg.role === 'trux' ? 'model' : 'user',
       parts: [{ text: msg.text || "" }]
     }));
 
+    // 2. Ensure strictly alternating user/model history
     let formattedHistory = [];
-    let expectedRole = 'user';
+    let isUserNext = true;
     for (let msg of cleanHistory) {
-      if (msg.role === expectedRole) {
+      if (isUserNext && msg.role === 'user') {
         formattedHistory.push(msg);
-        expectedRole = (expectedRole === 'user') ? 'model' : 'user';
+        isUserNext = false;
+      } else if (!isUserNext && msg.role === 'model') {
+        formattedHistory.push(msg);
+        isUserNext = true;
       }
     }
-    while (formattedHistory.length > 0 && formattedHistory[0].role !== 'user') {
-      formattedHistory.shift();
+    // Remove trailing 'user' if it exists so we can safely append the new prompt
+    if (formattedHistory.length > 0 && formattedHistory[formattedHistory.length - 1].role === 'user') {
+      formattedHistory.pop();
     }
 
-    const chat = model.startChat({ history: formattedHistory });
-
-    let messageParts = [{ text: message || "Explain this image" }];
+    // 3. Build current message parts
+    let messageParts = [];
     if (image) {
       const mimeMatch = image.match(/data:(.*?);/);
       if (mimeMatch && image.includes(',')) {
         const mimeType = mimeMatch[1];
         const base64Data = image.split(',')[1];
-        messageParts.unshift({ inlineData: { data: base64Data, mimeType: mimeType } });
+        messageParts.push({ inlineData: { data: base64Data, mimeType: mimeType } });
       }
     }
+    messageParts.push({ text: message || "Explain this image" });
 
-    let result = await chat.sendMessage(messageParts);
+    // 4. Construct final contents array (Bypassing startChat to avoid role errors)
+    let contents = [...formattedHistory, { role: 'user', parts: messageParts }];
 
-    const functionCalls = result.response.functionCalls();
+    // 5. Generate Content
+    let result = await model.generateContent({ contents });
+    let response = result.response;
+
+    // 6. Handle Function Calling safely
+    const functionCalls = response.functionCalls();
     if (functionCalls && functionCalls.length > 0) {
       const call = functionCalls[0];
       if (call.name === 'searchWeb') {
         const searchResults = await fetchSerperSearchResults(call.args.query || message);
-        result = await chat.sendMessage([{ functionResponse: { name: 'searchWeb', response: { results: searchResults } } }]);
+        
+        // Append the AI's function call intent
+        contents.push({
+          role: 'model',
+          parts: response.candidates[0].content.parts
+        });
+
+        // Append the actual search data explicitly as the 'user' role
+        contents.push({
+          role: 'user',
+          parts: [{
+            functionResponse: {
+              name: 'searchWeb',
+              response: { results: searchResults }
+            }
+          }]
+        });
+
+        // Re-prompt the model with the injected search data
+        result = await model.generateContent({ contents });
+        response = result.response;
       }
     }
 
-    const rawText = result.response.text() || 'No response from AI.';
+    const rawText = response.text() || 'No response from AI.';
     res.json({ reply: rawText.replace(/<think>[\s\S]*?<\/think>/g, '').trim() });
   } catch (error) {
     console.error('Chat Error:', error);
