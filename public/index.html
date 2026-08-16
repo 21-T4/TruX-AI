@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -17,11 +17,11 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="TruX-AI">
 
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;800&display=swap" rel="stylesheet">
+  <link href="[https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;800&display=swap](https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;800&display=swap)" rel="stylesheet">
   
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="[https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js](https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js)"></script>
+  <script src="[https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js](https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js)"></script>
+  <script src="[https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js](https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js)"></script>
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -80,9 +80,13 @@
     .user-row .message-label { color: #80868b; align-self: flex-end; }
     .trux-row .message-label { background: linear-gradient(45deg, #a8c7fa, #d3e3fd); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     
-    .bubble { padding: 16px 20px; border-radius: 20px; font-size: 15px; line-height: 1.6; word-wrap: break-word; white-space: pre-wrap; }
-    .user-bubble { background-color: #1f2023; color: #f1f1f1; align-self: flex-end; border-bottom-right-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.04); max-width: 85%; }
+    .bubble { padding: 16px 20px; border-radius: 20px; font-size: 15px; line-height: 1.6; word-wrap: break-word; }
+    .user-bubble { background-color: #1f2023; color: #f1f1f1; align-self: flex-end; border-bottom-right-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.04); max-width: 85%; white-space: pre-wrap; }
     .trux-bubble { background-color: rgba(18, 19, 21, 0.8); backdrop-filter: blur(16px); color: #e3e3e3; align-self: flex-start; border-top-left-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.06); width: 100%; }
+
+    pre { background: #000; border: 1px solid #303135; padding: 12px; border-radius: 8px; overflow-x: auto; margin: 8px 0; font-family: monospace; }
+    code { background: rgba(255,255,255,0.1); padding: 2px 5px; border-radius: 4px; font-family: monospace; font-size: 14px; }
+    pre code { background: transparent; padding: 0; }
 
     .fade-in-text { opacity: 0; animation: smoothFadeIn 0.4s ease-out forwards; }
     @keyframes smoothFadeIn { to { opacity: 1; } }
@@ -146,7 +150,7 @@
 
     <div class="profile-footer" onclick="handleAuthAction()">
       <div class="profile-card" id="profileCard">
-        <img class="profile-avatar" id="userAvatar" src="https://ui-avatars.com/api/?name=Guest+User&background=2a2b2d&color=fff" alt="PFP">
+        <img class="profile-avatar" id="userAvatar" src="[https://ui-avatars.com/api/?name=Guest+User&background=2a2b2d&color=fff](https://ui-avatars.com/api/?name=Guest+User&background=2a2b2d&color=fff)" alt="PFP">
         <div class="profile-details">
           <div class="profile-name" id="userName">Guest User</div>
           <div class="profile-email" id="userEmail">Sign in required</div>
@@ -203,7 +207,6 @@
   </div>
 
   <script>
-    // --- SERVICE WORKER REGISTRATION ---
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
@@ -212,31 +215,38 @@
       });
     }
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAs_GDrzlBaucHfiff0Y6cA8GVHjFTA62Q",
-      authDomain: "trux-ai.firebaseapp.com",
-      projectId: "trux-ai",
-      storageBucket: "trux-ai.firebasestorage.app",
-      messagingSenderId: "59313097411",
-      appId: "1:59313097411:web:32e4158bfb733fa7cfb076"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const provider = new firebase.auth.GoogleAuthProvider();
+    let auth = null;
+    let provider = null;
 
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        document.getElementById('userName').innerText = user.displayName;
-        document.getElementById('userEmail').innerText = user.email;
-        document.getElementById('userAvatar').src = user.photoURL;
-      } else {
-        document.getElementById('userName').innerText = 'Guest User';
-        document.getElementById('userEmail').innerText = 'Sign in required';
-        document.getElementById('userAvatar').src = 'https://ui-avatars.com/api/?name=Guest+User&background=2a2b2d&color=fff';
+    // Dynamically fetch Firebase Config from Server
+    async function initFirebase() {
+      try {
+        const res = await fetch('/api/firebase-config');
+        const config = await res.json();
+        firebase.initializeApp(config);
+      } catch (err) {
+        console.warn("Could not fetch firebase config dynamically, using fallback.");
       }
-    });
+      
+      auth = firebase.auth();
+      provider = new firebase.auth.GoogleAuthProvider();
+
+      auth.onAuthStateChanged(user => {
+        if (user) {
+          document.getElementById('userName').innerText = user.displayName;
+          document.getElementById('userEmail').innerText = user.email;
+          document.getElementById('userAvatar').src = user.photoURL;
+        } else {
+          document.getElementById('userName').innerText = 'Guest User';
+          document.getElementById('userEmail').innerText = 'Sign in required';
+          document.getElementById('userAvatar').src = '[https://ui-avatars.com/api/?name=Guest+User&background=2a2b2d&color=fff](https://ui-avatars.com/api/?name=Guest+User&background=2a2b2d&color=fff)';
+        }
+      });
+    }
+    initFirebase();
 
     function handleAuthAction() {
+      if (!auth) return;
       if (!auth.currentUser) {
         auth.signInWithPopup(provider).catch(console.error);
       } else {
@@ -247,12 +257,13 @@
     }
 
     function isUserSignedIn() {
-      return !!auth.currentUser;
+      return auth && !!auth.currentUser;
     }
 
     let chatSessions = JSON.parse(localStorage.getItem('trux_chats')) || {};
     let currentChatId = null;
     let isGenerating = false;
+    let activeAbortController = null;
     let currentModel = 'base';
     let selectedImageBase64 = null;
     let wasInputByVoice = false;
@@ -308,16 +319,25 @@
 
     function renderFormattedText(text) {
       if (!text) return "";
-      return text
-        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-        .replace(/\*(.*?)\*/g, '<i>$1</i>')
-        .replace(/`([^`]+)`/g, '<code>$1</code>')
-        .replace(/\n/g, '<br>');
+      let html = text
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+      // Multi-line Code Blocks
+      html = html.replace(/```([\s\S]*?)```/g, (match, p1) => `<pre><code>${p1.trim()}</code></pre>`);
+      // Inline Code
+      html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+      // Bold
+      html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+      // Italic
+      html = html.replace(/\*(.*?)\*/g, '<i>$1</i>');
+      // Line breaks
+      html = html.replace(/\n/g, '<br>');
+
+      return html;
     }
 
     function stripMarkdownForVoice(text) {
-      return text ? text.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/#/g, '').replace(/`/g, '') : "";
+      return text ? text.replace(/```[\s\S]*?```/g, 'Code block omitted.').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/#/g, '').replace(/`/g, '') : "";
     }
 
     function speakText(text) {
@@ -352,6 +372,7 @@
     }
 
     function startNewChat() {
+      if (activeAbortController) activeAbortController.abort();
       document.getElementById('chatContainer').innerHTML = '';
       document.getElementById('chatContainer').style.display = 'none';
       document.getElementById('welcomeScreen').style.display = 'flex';
@@ -396,7 +417,7 @@
 
       if (!currentChatId) {
         currentChatId = 'chat_' + Date.now();
-        chatSessions[currentChatId] = { title: prompt ? prompt.substring(0, 24) : 'Image Upload', messages: [] };
+        chatSessions[currentChatId] = { title: prompt ? prompt.substring(0, 24) : 'Image Query', messages: [] };
       }
       chatSessions[currentChatId].messages.push({ role: 'user', text: prompt });
       localStorage.setItem('trux_chats', JSON.stringify(chatSessions));
@@ -405,7 +426,7 @@
       const container = document.getElementById('chatContainer');
       container.style.display = 'block';
 
-      appendMessageRow('You', prompt + (selectedImageBase64 ? ' [Image Attached]' : ''), 'user-row', 'user-bubble');
+      appendMessageRow('You', prompt + (selectedImageBase64 ? '\n[Image Attached]' : ''), 'user-row', 'user-bubble');
 
       inputEl.value = '';
       inputEl.style.height = 'auto';
@@ -422,10 +443,18 @@
       container.appendChild(truxRow);
       container.scrollTop = container.scrollHeight;
 
+      activeAbortController = new AbortController();
+
       fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: prompt, tier: currentModel, history: chatSessions[currentChatId].messages.slice(-5, -1), image: imageToSend })
+        signal: activeAbortController.signal,
+        body: JSON.stringify({ 
+          message: prompt, 
+          tier: currentModel, 
+          history: chatSessions[currentChatId].messages.slice(-5, -1), 
+          image: imageToSend 
+        })
       })
       .then(res => res.json())
       .then(data => {
@@ -445,6 +474,7 @@
         actionsContainer.appendChild(readBtn);
 
         isGenerating = false;
+        activeAbortController = null;
         document.getElementById('btnIcon').innerHTML = sendIconSvg;
         container.scrollTop = container.scrollHeight;
 
@@ -452,10 +482,14 @@
           speakText(responseText);
         }
       })
-      .catch(() => {
-        document.getElementById(bubbleId).classList.remove('thinking-box');
-        document.getElementById(bubbleId).innerText = "Error connecting to TruX server.";
+      .catch((err) => {
+        const bubble = document.getElementById(bubbleId);
+        if (bubble) {
+          bubble.classList.remove('thinking-box');
+          bubble.innerText = err.name === 'AbortError' ? "Generation stopped." : "Error connecting to TruX server.";
+        }
         isGenerating = false;
+        activeAbortController = null;
         document.getElementById('btnIcon').innerHTML = sendIconSvg;
       });
     }
@@ -471,13 +505,9 @@
 
     function handleActionButton() {
       if (isGenerating) {
+        if (activeAbortController) activeAbortController.abort();
         isGenerating = false;
         document.getElementById('btnIcon').innerHTML = sendIconSvg;
-        const thinkingBox = document.querySelector('.trux-bubble.thinking-box');
-        if (thinkingBox) {
-          thinkingBox.classList.remove('thinking-box');
-          thinkingBox.innerHTML = 'Generation stopped.';
-        }
       } else {
         if ((currentModel === 'pro' || currentModel === 'ultra') && !isUserSignedIn()) {
           alert("Please sign in to access Pro and Ultra models.");
@@ -523,6 +553,7 @@
     }
 
     function loadChatSession(id) {
+      if (activeAbortController) activeAbortController.abort();
       currentChatId = id;
       document.body.classList.add('chat-active');
       document.getElementById('welcomeScreen').style.display = 'none';
