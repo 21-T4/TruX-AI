@@ -10,7 +10,7 @@ app.use(express.static('public'));
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAs_GDrzlBaucHfiff0Y6cA8GVHjFTA62Q",
+  apiKey: process.env.FIREBASE_API_KEY || "AIzaSyAs_GDrzlBaucHfiff0Y6cA8GVHjFTA62Q",
   authDomain: "trux-ai.firebaseapp.com",
   projectId: "trux-ai",
   storageBucket: "trux-ai.firebasestorage.app",
@@ -53,7 +53,6 @@ async function fetchSerperSearchResults(query) {
   }
 }
 
-// Updated Models
 function getGeminiModel(tier) {
   switch (tier) {
     case 'base': return 'gemini-3.1-flash-lite'; 
@@ -77,7 +76,7 @@ app.post('/api/chat', async (req, res) => {
 
     let cleanHistory = (history || []).map(msg => ({
       role: msg.role === 'trux' ? 'model' : 'user',
-      parts: [{ text: msg.text }]
+      parts: [{ text: msg.text || "" }]
     }));
 
     let formattedHistory = [];
@@ -88,15 +87,20 @@ app.post('/api/chat', async (req, res) => {
         expectedRole = (expectedRole === 'user') ? 'model' : 'user';
       }
     }
-    while (formattedHistory.length > 0 && formattedHistory[0].role !== 'user') formattedHistory.shift();
+    while (formattedHistory.length > 0 && formattedHistory[0].role !== 'user') {
+      formattedHistory.shift();
+    }
 
     const chat = model.startChat({ history: formattedHistory });
 
     let messageParts = [{ text: message || "Explain this image" }];
     if (image) {
-      const mimeType = image.match(/data:(.*?);/)[1];
-      const base64Data = image.split(',')[1];
-      messageParts.unshift({ inlineData: { data: base64Data, mimeType: mimeType } });
+      const mimeMatch = image.match(/data:(.*?);/);
+      if (mimeMatch && image.includes(',')) {
+        const mimeType = mimeMatch[1];
+        const base64Data = image.split(',')[1];
+        messageParts.unshift({ inlineData: { data: base64Data, mimeType: mimeType } });
+      }
     }
 
     let result = await chat.sendMessage(messageParts);
@@ -113,6 +117,7 @@ app.post('/api/chat', async (req, res) => {
     const rawText = result.response.text() || 'No response from AI.';
     res.json({ reply: rawText.replace(/<think>[\s\S]*?<\/think>/g, '').trim() });
   } catch (error) {
+    console.error('Chat Error:', error);
     res.status(500).json({ error: error.message || 'Error processing request.' });
   }
 });
