@@ -1,14 +1,7 @@
 {
   "name": "trux-ai",
   "version": "1.0.0",
-  "description": "TruX-AI Multi-Tier Server",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
   "dependencies": {
-    "@google/generative-ai": "^0.21.0",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2"
+    "@google/generative-ai": "^0.21.0"
   }
 }
