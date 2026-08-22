@@ -39,7 +39,6 @@
       --error: #ff5555;
     }
 
-    /* Selection Restriction: Block global copying across messages, limit text selection strictly to individual message bubbles */
     * { 
       box-sizing: border-box; 
       margin: 0; 
@@ -69,9 +68,13 @@
     }
     body.chat-active .dark-ambient-container { opacity: 0.35; }
     
+    /* Top Left Navigation Buttons */
     .menu-toggle-btn { position: absolute; top: 16px; left: 16px; z-index: 100; background: rgba(18, 20, 28, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(0, 191, 255, 0.3); border-radius: 12px; padding: 10px; cursor: pointer; color: #ffffff; font-size: 18px; line-height: 1; transition: all 0.3s; box-shadow: 0 0 15px rgba(0, 191, 255, 0.15); }
     .menu-toggle-btn:hover { background: var(--bg-hover); border-color: var(--accent); box-shadow: 0 0 20px rgba(0, 191, 255, 0.4); }
     
+    .settings-toggle-btn { position: absolute; top: 16px; left: 66px; z-index: 100; background: rgba(18, 20, 28, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(155, 81, 224, 0.3); border-radius: 12px; padding: 10px; cursor: pointer; color: #ffffff; font-size: 18px; line-height: 1; transition: all 0.3s; box-shadow: 0 0 15px rgba(155, 81, 224, 0.15); }
+    .settings-toggle-btn:hover { background: var(--bg-hover); border-color: var(--accent-purple); box-shadow: 0 0 20px rgba(155, 81, 224, 0.4); transform: rotate(45deg); }
+
     .mobile-new-chat-btn { display: none; position: absolute; top: 16px; right: 16px; z-index: 100; background: #131416; border: 2px solid transparent; color: #ffffff; border-radius: 50%; width: 42px; height: 42px; cursor: pointer; align-items: center; justify-content: center; font-size: 16px; background-image: linear-gradient(#131416, #131416), linear-gradient(90deg, #ff007f, #7f00ff, #00bfff, #ff007f); background-origin: border-box; background-clip: padding-box, border-box; background-size: 200% auto; animation: rainbowShift 4s linear infinite; box-shadow: 0 0 18px rgba(0, 191, 255, 0.4); }
     .mobile-install-btn { display: none; position: absolute; top: 16px; right: 66px; z-index: 100; background: #131416; border: 1px solid var(--border-color); color: #ffffff; border-radius: 50%; width: 42px; height: 42px; cursor: pointer; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
     
@@ -103,7 +106,8 @@
     
     .main-chat-arena { flex-grow: 1; display: flex; flex-direction: column; height: 100%; position: relative; z-index: 5; overflow: hidden; }
     .welcome-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; flex-grow: 1; text-align: center; padding: 20px; z-index: 2; transition: opacity 0.3s; }
-    .welcome-title { font-size: 52px; font-weight: 800; letter-spacing: -1.5px; background: linear-gradient(90deg, #ff007f 0%, #a100ff 30%, #00bfff 70%, #ff007f 100%); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: metallicFlow 5s linear infinite; filter: drop-shadow(0 0 25px rgba(0, 191, 255, 0.3)); }
+    
+    .welcome-title { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; background: linear-gradient(90deg, #ff007f 0%, #a100ff 30%, #00bfff 70%, #ff007f 100%); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: metallicFlow 5s linear infinite; filter: drop-shadow(0 0 15px rgba(0, 191, 255, 0.25)); }
     
     .x-anim { display: inline-block; -webkit-text-fill-color: #ffffff; color: #ffffff; animation: pulseX 2s infinite alternate; margin-left: 2px;}
     @keyframes pulseX { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.18); opacity: 1; text-shadow: 0 0 20px rgba(0, 191, 255, 0.9); } }
@@ -115,7 +119,6 @@
     .user-row .message-label { color: var(--text-muted); align-self: flex-end; }
     .trux-row .message-label { background: linear-gradient(90deg, #00bfff, #c58af9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     
-    /* Allow Text Selection STRICTLY inside message bubbles */
     .bubble { 
       padding: 16px 20px; 
       border-radius: 20px; 
@@ -128,7 +131,6 @@
     .user-bubble { background-color: #161822; color: #f1f1f1; align-self: flex-end; border-bottom-right-radius: 4px; border: 1px solid rgba(0, 191, 255, 0.25); max-width: 85%; white-space: pre-wrap; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
     .trux-bubble { background-color: rgba(15, 17, 26, 0.9); backdrop-filter: blur(16px); color: var(--text-main); align-self: flex-start; border-top-left-radius: 4px; border: 1px solid rgba(155, 81, 224, 0.3); width: 100%; box-shadow: 0 6px 25px rgba(0,0,0,0.5), inset 0 0 15px rgba(155, 81, 224, 0.05); }
 
-    /* Custom Vibrant Code Blocks with Copy Button */
     .code-block-wrapper { margin: 12px 0; border: 1px solid var(--border-color); border-radius: 14px; overflow: hidden; background: #08090e; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6); }
     .code-header { display: flex; justify-content: space-between; align-items: center; background: #12141f; padding: 8px 16px; border-bottom: 1px solid var(--border-color); font-size: 12px; color: var(--accent); font-family: monospace; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
     .copy-code-btn { background: rgba(0, 191, 255, 0.12); border: 1px solid rgba(0, 191, 255, 0.3); color: var(--accent); padding: 4px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; transition: all 0.2s; font-family: 'Poppins', sans-serif; font-weight: 500; }
@@ -146,7 +148,6 @@
     .retry-btn { border-color: rgba(255, 85, 85, 0.4); color: #ff7777; }
     .retry-btn:hover { background: rgba(255, 85, 85, 0.15); color: #ffffff; border-color: var(--error); box-shadow: 0 0 12px rgba(255, 85, 85, 0.3); }
 
-    /* Gemini 3-Dot Vibrant Thinking Loader */
     .trux-bubble.thinking-box { width: auto; display: inline-flex; align-items: center; padding: 12px 24px; background: rgba(255, 255, 255, 0.04); border-radius: 24px; border: 1px solid rgba(0, 191, 255, 0.3); box-shadow: 0 0 20px rgba(0, 191, 255, 0.15); }
     .thinking-loader-container { display: flex; align-items: center; gap: 12px; }
     .thinking-dots { display: flex; gap: 6px; align-items: center; }
@@ -185,8 +186,13 @@
     .send-btn:hover { transform: scale(1.08); box-shadow: 0 0 22px rgba(255, 0, 127, 0.6); }
     .send-btn svg { fill: #ffffff; width: 18px; height: 18px; }
 
-    .profile-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0, 0, 0, 0.85); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(10px); }
-    .profile-modal-card { background: #11131c; border: 1px solid var(--accent); border-radius: 28px; padding: 32px 28px; width: 320px; text-align: center; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 0 35px rgba(0, 191, 255, 0.25); position: relative; }
+    /* Modals Styling */
+    .profile-modal-overlay, .settings-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(5, 5, 8, 0.7); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+    .profile-modal-card, .settings-modal-card { background: rgba(17, 19, 28, 0.85); border: 1px solid rgba(0, 191, 255, 0.35); border-radius: 28px; padding: 32px 28px; width: 380px; max-width: 90vw; text-align: center; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(0, 191, 255, 0.05); position: relative; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); max-height: 85dvh; overflow-y: auto; }
+    
+    .settings-modal-card::-webkit-scrollbar { width: 6px; }
+    .settings-modal-card::-webkit-scrollbar-thumb { background: rgba(0, 191, 255, 0.3); border-radius: 4px; }
+
     .profile-modal-card img { width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--accent); margin: 0 auto; object-fit: cover; box-shadow: 0 0 15px rgba(0, 191, 255, 0.4); }
     .profile-modal-name { color: #ffffff; font-size: 20px; font-weight: 600; margin: 0; }
     .profile-modal-email { color: var(--text-muted); font-size: 13px; margin: 0; padding-bottom: 10px; }
@@ -194,6 +200,29 @@
     .profile-sign-out-btn:hover { background: var(--error); color: #ffffff; border-color: var(--error); box-shadow: 0 0 15px rgba(255, 85, 85, 0.4); }
     .close-modal-btn { position: absolute; top: 14px; right: 18px; background: transparent; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer; line-height: 1; }
     .close-modal-btn:hover { color: #ffffff; }
+
+    /* Transparent Glass Settings Screen Controls */
+    .settings-title { font-size: 22px; font-weight: 700; color: #ffffff; text-align: left; margin-bottom: 4px; background: linear-gradient(90deg, #00bfff, #9b51e0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+    .settings-label { font-size: 14px; font-weight: 500; color: #e1e3e8; text-align: left; }
+    .settings-toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+    .settings-toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #242834; transition: .3s; border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.1); }
+    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 2px; bottom: 2px; background-color: white; transition: .3s; border-radius: 50%; }
+    input:checked + .slider { background-color: var(--accent); }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    .settings-section { margin-top: 10px; text-align: left; width: 100%; }
+    .settings-section-title { font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 6px; }
+    .usage-bar-container { width: 100%; height: 10px; background: #242834; border-radius: 10px; overflow: hidden; margin: 6px 0 4px; border: 1px solid rgba(0, 191, 255, 0.2); }
+    .usage-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #00bfff, #ff007f); transition: width 0.4s ease; }
+    .usage-text { font-size: 11px; color: var(--text-muted); text-align: right; }
+    .settings-textarea { width: 100%; height: 70px; background: #12141c; border: 1px solid var(--border-color); border-radius: 12px; color: #fff; padding: 10px; font-family: inherit; font-size: 12px; resize: none; outline: none; margin-bottom: 4px; }
+    .settings-textarea:focus { border-color: var(--accent); }
+    .settings-btn { width: 100%; background: #1b1e28; border: 1px solid var(--border-color); color: #fff; padding: 10px; border-radius: 12px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit; text-align: center; margin-top: 4px; }
+    .settings-btn:hover { background: var(--bg-hover); border-color: var(--accent); color: var(--accent); }
+    .settings-btn.danger { border-color: rgba(255, 85, 85, 0.4); color: #ff7777; }
+    .settings-btn.danger:hover { background: rgba(255, 85, 85, 0.2); color: #ffffff; }
 
     .context-menu { display: none; position: fixed; background: var(--bg-hover); border: 1px solid rgba(255, 85, 85, 0.4); border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.8); z-index: 2000; flex-direction: column; padding: 6px; min-width: 160px; }
     .context-menu-item { padding: 12px 16px; color: var(--error); cursor: pointer; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; transition: background 0.2s; font-family: inherit; }
@@ -214,7 +243,10 @@
 
   <div class="dark-ambient-container"></div>
 
+  <!-- Top Navigation Controls -->
   <button class="menu-toggle-btn" aria-label="Toggle Menu" onclick="toggleSidebar(event)">☰</button>
+  <button class="settings-toggle-btn" aria-label="Settings" onclick="openSettingsModal()" title="Settings">⚙️</button>
+  
   <button class="mobile-install-btn" id="mobileInstallBtn" aria-label="Install App" onclick="installPWA()" title="Install App">📥</button>
   <button class="mobile-new-chat-btn" aria-label="New Chat" onclick="startNewChat()">➕</button>
   <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true" onclick="closeSidebar()"></div>
@@ -243,7 +275,7 @@
   <div class="main-chat-arena">
     <div class="welcome-screen" id="welcomeScreen">
       <h1 class="welcome-title">Welcome, I am Tru<span class="x-anim">X</span></h1>
-      <p style="color: var(--text-muted); font-size: 18px; margin-top: 6px;">Your Multi-Engine AI Assistant</p>
+      <p style="color: var(--text-muted); font-size: 16px; margin-top: 6px;">Your Multi-Engine AI Assistant</p>
     </div>
 
     <div class="chat-container" id="chatContainer" role="log" aria-live="polite"></div>
@@ -252,7 +284,7 @@
       <div class="model-selector-simple">
         <select class="model-select" id="modelSelect" aria-label="Select AI Model" onchange="handleModelChange(this.value)">
           <option value="base">⚡ TruX Core 3.0</option>
-          <option value="pro">✨ TruX Pro 3.0</option>
+          <option value="pro" id="proOption">✨ TruX Pro 3.0</option>
           <option value="ultra" disabled>🔒 TruX Ultra 3.5 (Locked)</option>
         </select>
       </div>
@@ -287,6 +319,7 @@
     </div>
   </div>
 
+  <!-- Profile Modal -->
   <div class="profile-modal-overlay" id="profileModal" aria-hidden="true">
     <div class="profile-modal-card" role="dialog" aria-modal="true">
       <button class="close-modal-btn" aria-label="Close Profile" onclick="closeProfileModal()">×</button>
@@ -297,6 +330,61 @@
         <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
         Sign Out
       </button>
+    </div>
+  </div>
+
+  <!-- Glassmorphism Settings Modal -->
+  <div class="settings-modal-overlay" id="settingsModal" aria-hidden="true">
+    <div class="settings-modal-card" role="dialog" aria-modal="true">
+      <button class="close-modal-btn" aria-label="Close Settings" onclick="closeSettingsModal()">×</button>
+      <div class="settings-title">Settings</div>
+      
+      <div class="settings-row">
+        <span class="settings-label">Auto Read Answers</span>
+        <label class="settings-toggle-switch">
+          <input type="checkbox" id="autoReadToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-row">
+        <span class="settings-label">Ambient Neon Glow</span>
+        <label class="settings-toggle-switch">
+          <input type="checkbox" id="neonGlowToggle" checked onchange="toggleAmbientGlow(this)">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-row">
+        <span class="settings-label">Sound Effects</span>
+        <label class="settings-toggle-switch">
+          <input type="checkbox" id="sfxToggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <!-- Pro Model Usage Limits Section -->
+      <div class="settings-section">
+        <div class="settings-section-title">TruX Pro Usage (24h Limit)</div>
+        <div class="usage-bar-container">
+          <div class="usage-bar-fill" id="usageBarFill"></div>
+        </div>
+        <div class="usage-text" id="usageText">0 / 1,000 Tokens</div>
+      </div>
+
+      <!-- Instructions for TruX -->
+      <div class="settings-section">
+        <div class="settings-section-title">Instructions for TruX</div>
+        <textarea id="customInstructions" class="settings-textarea" placeholder="How would you like TruX to respond? (e.g. Keep answers concise, act like a senior developer)"></textarea>
+        <button class="settings-btn" onclick="saveCustomInstructions()">Save Instructions</button>
+      </div>
+
+      <!-- Useful Management Buttons -->
+      <div class="settings-section">
+        <div class="settings-section-title">Data & Privacy</div>
+        <button class="settings-btn" onclick="exportChatData()">📥 Export Chat Backup</button>
+        <button class="settings-btn danger" onclick="clearAllHistory()">🗑️ Clear All Chat History</button>
+      </div>
     </div>
   </div>
 
@@ -383,6 +471,84 @@
     }
     initFirebase();
 
+    /* Pro Usage Tracking System (1k Tokens / 24 hrs) */
+    function getProUsageData() {
+      const now = Date.now();
+      let usage = JSON.parse(localStorage.getItem('trux_pro_usage')) || { tokensUsed: 0, resetTimestamp: now + 86400000 };
+      if (now > usage.resetTimestamp) {
+        usage = { tokensUsed: 0, resetTimestamp: now + 86400000 };
+        localStorage.setItem('trux_pro_usage', JSON.stringify(usage));
+      }
+      return usage;
+    }
+
+    function updateProUsageUI() {
+      const usage = getProUsageData();
+      const fillPercent = Math.min(100, (usage.tokensUsed / 1000) * 100);
+      const fillEl = document.getElementById('usageBarFill');
+      const textEl = document.getElementById('usageText');
+      const proOption = document.getElementById('proOption');
+
+      if (fillEl) fillEl.style.width = fillPercent + '%';
+      if (textEl) textEl.innerText = `${usage.tokensUsed.toLocaleString()} / 1,000 Tokens`;
+
+      if (usage.tokensUsed >= 1000) {
+        if (proOption) {
+          proOption.disabled = true;
+          proOption.innerText = "🔒 TruX Pro 3.0 (24h Limit)";
+        }
+        if (currentModel === 'pro') {
+          currentModel = 'base';
+          document.getElementById('modelSelect').value = 'base';
+        }
+      } else {
+        if (proOption) {
+          proOption.disabled = false;
+          proOption.innerText = "✨ TruX Pro 3.0";
+        }
+      }
+    }
+
+    function recordProTokens(tokens) {
+      let usage = getProUsageData();
+      usage.tokensUsed = Math.min(1000, usage.tokensUsed + tokens);
+      localStorage.setItem('trux_pro_usage', JSON.stringify(usage));
+      updateProUsageUI();
+    }
+
+    /* Custom Instructions Logic */
+    function saveCustomInstructions() {
+      const text = document.getElementById('customInstructions').value.trim();
+      localStorage.setItem('trux_custom_instructions', text);
+      alert("Instructions saved successfully!");
+    }
+
+    function loadCustomInstructions() {
+      const saved = localStorage.getItem('trux_custom_instructions') || '';
+      const input = document.getElementById('customInstructions');
+      if (input) input.value = saved;
+    }
+
+    /* Additional Utility Actions */
+    function exportChatData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(chatSessions, null, 2));
+      const anchor = document.createElement('a');
+      anchor.setAttribute("href", dataStr);
+      anchor.setAttribute("download", `trux_chat_backup_${Date.now()}.json`);
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+    }
+
+    function clearAllHistory() {
+      if (confirm("Are you sure you want to permanently clear all chat history?")) {
+        chatSessions = {};
+        localStorage.removeItem('trux_chats');
+        startNewChat();
+        closeSettingsModal();
+      }
+    }
+
     function handleAuthAction() {
       if (!auth) return;
       if (!auth.currentUser) {
@@ -399,6 +565,21 @@
       document.getElementById('profileModal').style.display = 'none';
     }
 
+    function openSettingsModal() {
+      updateProUsageUI();
+      loadCustomInstructions();
+      document.getElementById('settingsModal').style.display = 'flex';
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settingsModal').style.display = 'none';
+    }
+
+    function toggleAmbientGlow(el) {
+      const ambient = document.querySelector('.dark-ambient-container');
+      if (ambient) ambient.style.display = el.checked ? 'block' : 'none';
+    }
+
     function confirmSignOut() {
       auth.signOut().then(() => {
         closeProfileModal();
@@ -406,9 +587,11 @@
     }
 
     document.getElementById('profileModal').addEventListener('click', (e) => {
-      if (e.target === document.getElementById('profileModal')) {
-        closeProfileModal();
-      }
+      if (e.target === document.getElementById('profileModal')) closeProfileModal();
+    });
+
+    document.getElementById('settingsModal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('settingsModal')) closeSettingsModal();
     });
 
     function isUserSignedIn() {
@@ -420,6 +603,14 @@
         alert("TruX Ultra 3.5 is currently locked.");
         document.getElementById('modelSelect').value = currentModel;
         return;
+      }
+      if (val === 'pro') {
+        const usage = getProUsageData();
+        if (usage.tokensUsed >= 1000) {
+          alert("TruX Pro limit reached (1k tokens). Resets in 24 hours.");
+          document.getElementById('modelSelect').value = currentModel;
+          return;
+        }
       }
       currentModel = val;
     }
@@ -482,7 +673,6 @@
       document.getElementById('voiceBtn').classList.remove('recording');
     }
 
-    // Function to Copy Code inside Code Blocks
     function copyCodeToClipboard(button, codeId) {
       const codeElement = document.getElementById(codeId);
       if (!codeElement) return;
@@ -508,7 +698,6 @@
       let html = text
         .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-      // Replace Code blocks with copy button wrapper
       html = html.replace(/```([\s\S]*?)```/g, (match, p1) => {
         codeBlockCounter++;
         const codeId = 'code_block_' + codeBlockCounter + '_' + Date.now();
@@ -602,6 +791,15 @@
       const prompt = inputEl.value.trim();
       if (!prompt && !selectedImageBase64) return;
 
+      if (currentModel === 'pro') {
+        const usage = getProUsageData();
+        if (usage.tokensUsed >= 1000) {
+          alert("TruX Pro token limit reached for 24 hours. Switching to Core model.");
+          currentModel = 'base';
+          document.getElementById('modelSelect').value = 'base';
+        }
+      }
+
       isGenerating = true;
       document.getElementById('btnIcon').innerHTML = stopIconSvg;
       document.body.classList.add('chat-active');
@@ -652,7 +850,6 @@
       container.appendChild(truxRow);
       container.scrollTop = container.scrollHeight;
 
-      // Status text cycle timer
       const phrases = ["Thinking...", "Processing query...", "Analyzing context...", "Formulating response..."];
       let phraseIdx = 0;
       const phraseInterval = setInterval(() => {
@@ -664,6 +861,8 @@
       activeAbortController = new AbortController();
 
       try {
+        const customInstructions = localStorage.getItem('trux_custom_instructions') || '';
+
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -671,8 +870,9 @@
           body: JSON.stringify({ 
             message: prompt, 
             tier: currentModel, 
-            history: chatSessions[currentChatId].messages.slice(-5, -1), 
-            image: imageToSend 
+            history: chatSessions[currentChatId].messages.slice(-6, -1), 
+            image: imageToSend,
+            systemInstruction: customInstructions
           })
         });
         
@@ -681,6 +881,11 @@
         const responseText = data.reply || data.error || "No response received.";
         chatSessions[currentChatId].messages.push({ role: 'trux', text: responseText });
         localStorage.setItem('trux_chats', JSON.stringify(chatSessions));
+
+        if (currentModel === 'pro') {
+          const estimatedTokens = Math.ceil((prompt.length + responseText.length) / 4);
+          recordProTokens(estimatedTokens);
+        }
 
         const bubble = document.getElementById(bubbleId);
         bubble.classList.remove('thinking-box');
@@ -698,7 +903,8 @@
         document.getElementById('btnIcon').innerHTML = sendIconSvg;
         container.scrollTop = container.scrollHeight;
 
-        if (currentVoiceTriggered) {
+        const autoReadChecked = document.getElementById('autoReadToggle').checked;
+        if (currentVoiceTriggered || autoReadChecked) {
           speakText(responseText);
         }
       } catch (err) {
@@ -709,7 +915,6 @@
           bubble.innerText = err.name === 'AbortError' ? "Generation stopped." : "Error connecting to TruX server.";
         }
         
-        // Add Retry Button option when response is stopped or errors out
         const actionsContainer = document.getElementById(actionsId);
         actionsContainer.innerHTML = '';
         const retryBtn = document.createElement('button');
@@ -878,6 +1083,7 @@
     });
 
     renderSidebar();
+    updateProUsageUI();
   </script>
 </body>
 </html>
