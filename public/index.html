@@ -107,7 +107,8 @@
     .main-chat-arena { flex-grow: 1; display: flex; flex-direction: column; height: 100%; position: relative; z-index: 5; overflow: hidden; }
     .welcome-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; flex-grow: 1; text-align: center; padding: 20px; z-index: 2; transition: opacity 0.3s; }
     
-    .welcome-title { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; background: linear-gradient(90deg, #ff007f 0%, #a100ff 30%, #00bfff 70%, #ff007f 100%); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: metallicFlow 5s linear infinite; filter: drop-shadow(0 0 15px rgba(0, 191, 255, 0.25)); }
+    /* Updated Welcome Title with Increased Size */
+    .welcome-title { font-size: clamp(38px, 6vw, 56px); font-weight: 800; letter-spacing: -0.5px; background: linear-gradient(90deg, #ff007f 0%, #a100ff 30%, #00bfff 70%, #ff007f 100%); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: metallicFlow 5s linear infinite; filter: drop-shadow(0 0 20px rgba(0, 191, 255, 0.35)); }
     
     .x-anim { display: inline-block; -webkit-text-fill-color: #ffffff; color: #ffffff; animation: pulseX 2s infinite alternate; margin-left: 2px;}
     @keyframes pulseX { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.18); opacity: 1; text-shadow: 0 0 20px rgba(0, 191, 255, 0.9); } }
@@ -201,7 +202,7 @@
     .close-modal-btn { position: absolute; top: 14px; right: 18px; background: transparent; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer; line-height: 1; }
     .close-modal-btn:hover { color: #ffffff; }
 
-    /* Transparent Glass Settings Screen Controls */
+    /* Settings Screen Controls */
     .settings-title { font-size: 22px; font-weight: 700; color: #ffffff; text-align: left; margin-bottom: 4px; background: linear-gradient(90deg, #00bfff, #9b51e0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
     .settings-label { font-size: 14px; font-weight: 500; color: #e1e3e8; text-align: left; }
