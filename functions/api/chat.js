@@ -37,7 +37,7 @@ function getGeminiModel(tier) {
     case 'base': return 'gemini-3.1-flash-lite'; 
     case 'pro': return 'gemini-3.5-flash-lite'; 
     case 'ultra': return 'gemini-3.5-flash'; 
-    default: return 'gemini-2.5-flash';
+    default: return 'gemini-3.1-flash-lite';
   }
 }
 
