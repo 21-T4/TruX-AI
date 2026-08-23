@@ -36,8 +36,20 @@ function getGeminiModel(tier) {
   switch (tier) {
     case 'base': return 'gemini-3.1-flash-lite'; 
     case 'pro': return 'gemini-3.5-flash-lite'; 
-    case 'ultra': return 'gemini-3.5-flash'; 
+    case 'ultra': return 'gemini-3.6-flash'; 
     default: return 'gemini-3.1-flash-lite';
+  }
+}
+
+export async function onRequestGet(context) {
+  try {
+    const { env } = context;
+    if (!env.GEMINI_API_KEY) {
+      return Response.json({ error: 'GEMINI_API_KEY env variable missing.' }, { status: 500 });
+    }
+    return Response.json({ apiKey: env.GEMINI_API_KEY });
+  } catch (error) {
+    return Response.json({ error: error.message || 'Error fetching key.' }, { status: 500 });
   }
 }
 
@@ -50,7 +62,6 @@ export async function onRequestPost(context) {
       return Response.json({ error: 'Message or image is required.' }, { status: 400 });
     }
 
-    // Combine base persona with user custom instructions
     const combinedSystemInstruction = systemInstruction && systemInstruction.trim() !== ''
       ? `${BASE_PERSONA}\n\n[USER CUSTOM INSTRUCTIONS & PREFERENCES]:\n${systemInstruction}`
       : BASE_PERSONA;
