@@ -283,9 +283,9 @@
     <div class="input-section">
       <div class="model-selector-simple">
         <select class="model-select" id="modelSelect" aria-label="Select AI Model" onchange="handleModelChange(this.value)">
-          <option value="base">⚡ TruX Core 3.0</option>
-          <option value="pro" id="proOption">✨ TruX Pro 3.0</option>
-          <option value="ultra" disabled>🔒 TruX Ultra 3.5 (Locked)</option>
+          <option value="base">⚡ TruX Core 3.1 Flash Lite</option>
+          <option value="pro" id="proOption">✨ TruX Pro 3.5 Flash Lite</option>
+          <option value="ultra" disabled>🔒 TruX Ultra 3.6 Flash (Locked)</option>
         </select>
       </div>
 
@@ -492,7 +492,7 @@
       if (usage.tokensUsed >= 1000) {
         if (proOption) {
           proOption.disabled = true;
-          proOption.innerText = "🔒 TruX Pro 3.0 (24h Limit)";
+          proOption.innerText = "🔒 TruX Pro 3.5 (24h Limit)";
         }
         if (currentModel === 'pro') {
           currentModel = 'base';
@@ -501,7 +501,7 @@
       } else {
         if (proOption) {
           proOption.disabled = false;
-          proOption.innerText = "✨ TruX Pro 3.0";
+          proOption.innerText = "✨ TruX Pro 3.5 Flash Lite";
         }
       }
     }
@@ -569,7 +569,7 @@
 
     function handleModelChange(val) {
       if (val === 'ultra') {
-        alert("TruX Ultra 3.5 is currently locked.");
+        alert("TruX Ultra 3.6 is currently locked.");
         document.getElementById('modelSelect').value = currentModel;
         return;
       }
@@ -643,7 +643,6 @@
       document.getElementById('voiceBtn').classList.remove('recording');
     }
 
-    /* Dynamic Button Switch (Live Audio vs Send) */
     function handleInputChange() {
       const inputEl = document.getElementById('promptInput');
       const val = inputEl.value.trim();
@@ -680,9 +679,16 @@
       const liveBtn = document.getElementById('liveBtn');
       try {
         const HOST = "generativelanguage.googleapis.com";
-        // Prompt user or fetch session key
-        const apiKey = prompt("Enter Gemini API Key for Multimodal Live Audio Session:") || "";
-        if (!apiKey) return;
+        const keyResponse = await fetch('/api/chat');
+        if (!keyResponse.ok) {
+          alert("Failed to retrieve API key from backend.");
+          return;
+        }
+        const { apiKey } = await keyResponse.json();
+        if (!apiKey) {
+          alert("API key missing from server environment.");
+          return;
+        }
 
         const URI = `wss://${HOST}/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${apiKey}`;
         liveWebSocket = new WebSocket(URI);
@@ -694,7 +700,7 @@
 
           const setupMessage = {
             setup: {
-              model: "models/gemini-2.5-flash",
+              model: "models/gemini-3.1-flash-lite",
               generationConfig: {
                 responseModalities: ["AUDIO"],
                 speechConfig: {
