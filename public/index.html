@@ -68,7 +68,7 @@
     }
     body.chat-active .dark-ambient-container { opacity: 0.35; }
     
-    /* Top Left Navigation Buttons */
+    /* Top Navigation Controls */
     .menu-toggle-btn { position: absolute; top: 16px; left: 16px; z-index: 100; background: rgba(18, 20, 28, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(0, 191, 255, 0.3); border-radius: 12px; padding: 10px; cursor: pointer; color: #ffffff; font-size: 18px; line-height: 1; transition: all 0.3s; box-shadow: 0 0 15px rgba(0, 191, 255, 0.15); }
     .menu-toggle-btn:hover { background: var(--bg-hover); border-color: var(--accent); box-shadow: 0 0 20px rgba(0, 191, 255, 0.4); }
     
@@ -94,7 +94,7 @@
     .history-list { flex-grow: 1; overflow-y: auto; padding: 12px 8px; }
     .history-item-wrapper { display: flex; align-items: center; justify-content: space-between; border-radius: 12px; margin-bottom: 6px; padding-right: 8px; transition: background 0.2s, border 0.2s; border: 1px solid transparent; }
     .history-item-wrapper:hover, .history-item-wrapper.active { background: var(--bg-hover); border-color: rgba(0, 191, 255, 0.25); }
-    .history-item { padding: 12px 14px; font-size: 14px; cursor: pointer; color: #c4c7c5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; -webkit-touch-callout: none; }
+    .history-item { padding: 12px 14px; font-size: 14px; cursor: pointer; color: #c4c7c5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; }
     
     .profile-footer { border-top: 1px solid var(--border-color); padding: 18px 16px; background-color: #08090d; display: flex; flex-direction: column; gap: 10px; cursor: pointer; transition: background 0.2s; }
     .profile-footer:hover { background-color: var(--bg-hover); }
@@ -107,7 +107,6 @@
     .main-chat-arena { flex-grow: 1; display: flex; flex-direction: column; height: 100%; position: relative; z-index: 5; overflow: hidden; }
     .welcome-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; flex-grow: 1; text-align: center; padding: 20px; z-index: 2; transition: opacity 0.3s; }
     
-    /* Updated Welcome Title with Increased Size */
     .welcome-title { font-size: clamp(38px, 6vw, 56px); font-weight: 800; letter-spacing: -0.5px; background: linear-gradient(90deg, #ff007f 0%, #a100ff 30%, #00bfff 70%, #ff007f 100%); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: metallicFlow 5s linear infinite; filter: drop-shadow(0 0 20px rgba(0, 191, 255, 0.35)); }
     
     .x-anim { display: inline-block; -webkit-text-fill-color: #ffffff; color: #ffffff; animation: pulseX 2s infinite alternate; margin-left: 2px;}
@@ -168,7 +167,6 @@
     .model-selector-simple { margin-bottom: 12px; max-width: 820px; width: 100%; display: flex; justify-content: flex-start; }
     .model-select { background: #0f1118; color: var(--accent); border: 1px solid rgba(0, 191, 255, 0.3); border-radius: 14px; padding: 8px 14px; font-size: 13px; font-family: inherit; font-weight: 600; outline: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 10px rgba(0, 191, 255, 0.1); }
     .model-select:hover { border-color: var(--accent); box-shadow: 0 0 15px rgba(0, 191, 255, 0.3); }
-    .model-select option:disabled { color: #666; background: #0d0e10; }
 
     .input-wrapper { width: 100%; max-width: 820px; background: var(--bg-input); border: 1px solid rgba(155, 81, 224, 0.3); border-radius: 28px; padding: 10px 16px; display: flex; align-items: center; box-shadow: 0 8px 32px rgba(0,0,0,0.8), inset 0 0 15px rgba(0, 191, 255, 0.05); position: relative; transition: all 0.3s ease; }
     .input-wrapper:focus-within { border-color: var(--accent); box-shadow: 0 0 25px rgba(0, 191, 255, 0.35); }
@@ -183,27 +181,28 @@
     .remove-image-btn { position: absolute; top: -6px; right: -6px; background: var(--error); color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
 
     textarea { flex-grow: 1; background: transparent; border: none; color: var(--text-main); resize: none; outline: none; font-family: inherit; font-size: 15px; max-height: 140px; line-height: 22px; padding: 6px 10px; margin: 0; user-select: text; -webkit-user-select: text; }
+    
     .send-btn { background: linear-gradient(135deg, #00bfff, #9b51e0, #ff007f); border: none; border-radius: 50%; width: 42px; height: 42px; cursor: pointer; margin-left: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 0 15px rgba(0, 191, 255, 0.4); }
     .send-btn:hover { transform: scale(1.08); box-shadow: 0 0 22px rgba(255, 0, 127, 0.6); }
     .send-btn svg { fill: #ffffff; width: 18px; height: 18px; }
 
-    /* Modals Styling */
-    .profile-modal-overlay, .settings-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(5, 5, 8, 0.7); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
-    .profile-modal-card, .settings-modal-card { background: rgba(17, 19, 28, 0.85); border: 1px solid rgba(0, 191, 255, 0.35); border-radius: 28px; padding: 32px 28px; width: 380px; max-width: 90vw; text-align: center; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(0, 191, 255, 0.05); position: relative; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); max-height: 85dvh; overflow-y: auto; }
-    
-    .settings-modal-card::-webkit-scrollbar { width: 6px; }
-    .settings-modal-card::-webkit-scrollbar-thumb { background: rgba(0, 191, 255, 0.3); border-radius: 4px; }
+    /* Live Audio Toggle Button Styling */
+    .live-btn { background: linear-gradient(135deg, #ff007f, #7f00ff, #00bfff); animation: rainbowShift 4s linear infinite; background-size: 200% auto; }
+    .live-btn.active-live { animation: pulseLive 1.2s infinite ease-in-out; background: var(--error); box-shadow: 0 0 25px rgba(255, 85, 85, 0.8); }
+    @keyframes pulseLive { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
 
-    .profile-modal-card img { width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--accent); margin: 0 auto; object-fit: cover; box-shadow: 0 0 15px rgba(0, 191, 255, 0.4); }
+    /* Modals Styling */
+    .profile-modal-overlay, .settings-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(5, 5, 8, 0.7); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(14px); }
+    .profile-modal-card, .settings-modal-card { background: rgba(17, 19, 28, 0.85); border: 1px solid rgba(0, 191, 255, 0.35); border-radius: 28px; padding: 32px 28px; width: 380px; max-width: 90vw; text-align: center; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6); position: relative; max-height: 85dvh; overflow-y: auto; }
+    
+    .profile-modal-card img { width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--accent); margin: 0 auto; object-fit: cover; }
     .profile-modal-name { color: #ffffff; font-size: 20px; font-weight: 600; margin: 0; }
     .profile-modal-email { color: var(--text-muted); font-size: 13px; margin: 0; padding-bottom: 10px; }
     .profile-sign-out-btn { background: #1c1d22; color: var(--error); border: 1px solid rgba(255,85,85,0.4); padding: 12px; border-radius: 14px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit; display: flex; justify-content: center; align-items: center; gap: 8px; }
-    .profile-sign-out-btn:hover { background: var(--error); color: #ffffff; border-color: var(--error); box-shadow: 0 0 15px rgba(255, 85, 85, 0.4); }
-    .close-modal-btn { position: absolute; top: 14px; right: 18px; background: transparent; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer; line-height: 1; }
-    .close-modal-btn:hover { color: #ffffff; }
+    .profile-sign-out-btn:hover { background: var(--error); color: #ffffff; }
+    .close-modal-btn { position: absolute; top: 14px; right: 18px; background: transparent; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer; }
 
-    /* Settings Screen Controls */
-    .settings-title { font-size: 22px; font-weight: 700; color: #ffffff; text-align: left; margin-bottom: 4px; background: linear-gradient(90deg, #00bfff, #9b51e0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .settings-title { font-size: 22px; font-weight: 700; color: #ffffff; text-align: left; background: linear-gradient(90deg, #00bfff, #9b51e0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
     .settings-label { font-size: 14px; font-weight: 500; color: #e1e3e8; text-align: left; }
     .settings-toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
@@ -215,7 +214,7 @@
 
     .settings-section { margin-top: 10px; text-align: left; width: 100%; }
     .settings-section-title { font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 6px; }
-    .usage-bar-container { width: 100%; height: 10px; background: #242834; border-radius: 10px; overflow: hidden; margin: 6px 0 4px; border: 1px solid rgba(0, 191, 255, 0.2); }
+    .usage-bar-container { width: 100%; height: 10px; background: #242834; border-radius: 10px; overflow: hidden; margin: 6px 0 4px; }
     .usage-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #00bfff, #ff007f); transition: width 0.4s ease; }
     .usage-text { font-size: 11px; color: var(--text-muted); text-align: right; }
     .settings-textarea { width: 100%; height: 70px; background: #12141c; border: 1px solid var(--border-color); border-radius: 12px; color: #fff; padding: 10px; font-family: inherit; font-size: 12px; resize: none; outline: none; margin-bottom: 4px; }
@@ -226,7 +225,7 @@
     .settings-btn.danger:hover { background: rgba(255, 85, 85, 0.2); color: #ffffff; }
 
     .context-menu { display: none; position: fixed; background: var(--bg-hover); border: 1px solid rgba(255, 85, 85, 0.4); border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.8); z-index: 2000; flex-direction: column; padding: 6px; min-width: 160px; }
-    .context-menu-item { padding: 12px 16px; color: var(--error); cursor: pointer; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; transition: background 0.2s; font-family: inherit; }
+    .context-menu-item { padding: 12px 16px; color: var(--error); cursor: pointer; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; font-family: inherit; }
     .context-menu-item:hover { background: rgba(255, 85, 85, 0.2); }
 
     @media (max-width: 768px) { 
@@ -310,8 +309,17 @@
           </svg>
         </button>
         
-        <textarea id="promptInput" aria-label="Message Input" placeholder="Ask TruX anything..." rows="1"></textarea>
-        <button class="send-btn" aria-label="Send Message" onclick="handleActionButton()" id="actionBtn">
+        <textarea id="promptInput" aria-label="Message Input" placeholder="Ask TruX anything..." rows="1" oninput="handleInputChange()"></textarea>
+        
+        <!-- Live Voice Chat Toggle Button (Visible when empty) -->
+        <button class="send-btn live-btn" aria-label="Live Audio Chat" onclick="toggleLiveSession()" id="liveBtn" title="Live Audio Chat with TruX">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+          </svg>
+        </button>
+
+        <!-- Send Message Button (Visible when text/image entered) -->
+        <button class="send-btn" aria-label="Send Message" onclick="handleActionButton()" id="actionBtn" style="display: none;">
           <svg id="btnIcon" viewBox="0 0 24 24">
             <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
           </svg>
@@ -334,7 +342,7 @@
     </div>
   </div>
 
-  <!-- Glassmorphism Settings Modal -->
+  <!-- Settings Modal -->
   <div class="settings-modal-overlay" id="settingsModal" aria-hidden="true">
     <div class="settings-modal-card" role="dialog" aria-modal="true">
       <button class="close-modal-btn" aria-label="Close Settings" onclick="closeSettingsModal()">×</button>
@@ -364,7 +372,6 @@
         </label>
       </div>
 
-      <!-- Pro Model Usage Limits Section -->
       <div class="settings-section">
         <div class="settings-section-title">TruX Pro Usage (24h Limit)</div>
         <div class="usage-bar-container">
@@ -373,14 +380,12 @@
         <div class="usage-text" id="usageText">0 / 1,000 Tokens</div>
       </div>
 
-      <!-- Instructions for TruX -->
       <div class="settings-section">
         <div class="settings-section-title">Instructions for TruX</div>
         <textarea id="customInstructions" class="settings-textarea" placeholder="How would you like TruX to respond? (e.g. Keep answers concise, act like a senior developer)"></textarea>
         <button class="settings-btn" onclick="saveCustomInstructions()">Save Instructions</button>
       </div>
 
-      <!-- Useful Management Buttons -->
       <div class="settings-section">
         <div class="settings-section-title">Data & Privacy</div>
         <button class="settings-btn" onclick="exportChatData()">📥 Export Chat Backup</button>
@@ -399,13 +404,12 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
-          .then(reg => console.log('Service Worker Registered successfully:', reg.scope))
+          .then(reg => console.log('Service Worker Registered:', reg.scope))
           .catch(err => console.error('SW registration failed:', err));
       });
     }
 
     let deferredPrompt = null;
-
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
@@ -426,12 +430,6 @@
       deferredPrompt = null;
     }
 
-    window.addEventListener('appinstalled', () => {
-      const installBtn = document.getElementById('mobileInstallBtn');
-      if (installBtn) installBtn.style.display = 'none';
-      deferredPrompt = null;
-    });
-
     let auth = null;
     let provider = null;
 
@@ -451,7 +449,6 @@
         const config = await res.json();
         firebase.initializeApp(config);
       } catch (err) {
-        console.warn("Could not fetch firebase config dynamically, using fallback.");
         firebase.initializeApp(fallbackConfig);
       }
       
@@ -472,7 +469,6 @@
     }
     initFirebase();
 
-    /* Pro Usage Tracking System (1k Tokens / 24 hrs) */
     function getProUsageData() {
       const now = Date.now();
       let usage = JSON.parse(localStorage.getItem('trux_pro_usage')) || { tokensUsed: 0, resetTimestamp: now + 86400000 };
@@ -517,7 +513,6 @@
       updateProUsageUI();
     }
 
-    /* Custom Instructions Logic */
     function saveCustomInstructions() {
       const text = document.getElementById('customInstructions').value.trim();
       localStorage.setItem('trux_custom_instructions', text);
@@ -530,7 +525,6 @@
       if (input) input.value = saved;
     }
 
-    /* Additional Utility Actions */
     function exportChatData() {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(chatSessions, null, 2));
       const anchor = document.createElement('a');
@@ -562,42 +556,16 @@
       }
     }
 
-    function closeProfileModal() {
-      document.getElementById('profileModal').style.display = 'none';
-    }
-
-    function openSettingsModal() {
-      updateProUsageUI();
-      loadCustomInstructions();
-      document.getElementById('settingsModal').style.display = 'flex';
-    }
-
-    function closeSettingsModal() {
-      document.getElementById('settingsModal').style.display = 'none';
-    }
-
+    function closeProfileModal() { document.getElementById('profileModal').style.display = 'none'; }
+    function openSettingsModal() { updateProUsageUI(); loadCustomInstructions(); document.getElementById('settingsModal').style.display = 'flex'; }
+    function closeSettingsModal() { document.getElementById('settingsModal').style.display = 'none'; }
     function toggleAmbientGlow(el) {
       const ambient = document.querySelector('.dark-ambient-container');
       if (ambient) ambient.style.display = el.checked ? 'block' : 'none';
     }
+    function confirmSignOut() { auth.signOut().then(() => closeProfileModal()); }
 
-    function confirmSignOut() {
-      auth.signOut().then(() => {
-        closeProfileModal();
-      });
-    }
-
-    document.getElementById('profileModal').addEventListener('click', (e) => {
-      if (e.target === document.getElementById('profileModal')) closeProfileModal();
-    });
-
-    document.getElementById('settingsModal').addEventListener('click', (e) => {
-      if (e.target === document.getElementById('settingsModal')) closeSettingsModal();
-    });
-
-    function isUserSignedIn() {
-      return auth && !!auth.currentUser;
-    }
+    function isUserSignedIn() { return auth && !!auth.currentUser; }
 
     function handleModelChange(val) {
       if (val === 'ultra') {
@@ -650,6 +618,7 @@
         inputEl.value = transcript;
         inputEl.style.height = "auto";
         inputEl.style.height = (inputEl.scrollHeight) + "px";
+        handleInputChange();
       };
 
       recognition.onerror = () => stopVoiceInput();
@@ -658,7 +627,7 @@
 
     function toggleVoiceInput() {
       if (!recognition) {
-        alert("Speech recognition is not supported in this browser. Try Google Chrome.");
+        alert("Speech recognition is not supported in this browser. Try Chrome.");
         return;
       }
       if (isRecording) {
@@ -674,42 +643,168 @@
       document.getElementById('voiceBtn').classList.remove('recording');
     }
 
+    /* Dynamic Button Switch (Live Audio vs Send) */
+    function handleInputChange() {
+      const inputEl = document.getElementById('promptInput');
+      const val = inputEl.value.trim();
+      const liveBtn = document.getElementById('liveBtn');
+      const actionBtn = document.getElementById('actionBtn');
+
+      inputEl.style.height = "auto";
+      inputEl.style.height = (inputEl.scrollHeight) + "px";
+
+      if (val.length > 0 || selectedImageBase64 || isGenerating) {
+        liveBtn.style.display = 'none';
+        actionBtn.style.display = 'flex';
+      } else {
+        liveBtn.style.display = 'flex';
+        actionBtn.style.display = 'none';
+      }
+    }
+
+    /* Multimodal Live Audio Chat Implementation */
+    let liveWebSocket = null;
+    let liveAudioContext = null;
+    let liveMediaStream = null;
+    let isLiveActive = false;
+
+    async function toggleLiveSession() {
+      if (isLiveActive) {
+        stopLiveSession();
+      } else {
+        startLiveSession();
+      }
+    }
+
+    async function startLiveSession() {
+      const liveBtn = document.getElementById('liveBtn');
+      try {
+        const HOST = "generativelanguage.googleapis.com";
+        // Prompt user or fetch session key
+        const apiKey = prompt("Enter Gemini API Key for Multimodal Live Audio Session:") || "";
+        if (!apiKey) return;
+
+        const URI = `wss://${HOST}/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${apiKey}`;
+        liveWebSocket = new WebSocket(URI);
+
+        liveWebSocket.onopen = async () => {
+          isLiveActive = true;
+          liveBtn.classList.add('active-live');
+          liveBtn.title = "Tap to Stop Live Audio";
+
+          const setupMessage = {
+            setup: {
+              model: "models/gemini-2.5-flash",
+              generationConfig: {
+                responseModalities: ["AUDIO"],
+                speechConfig: {
+                  voiceConfig: { prebuiltVoiceConfig: { voiceName: "Puck" } }
+                }
+              }
+            }
+          };
+          liveWebSocket.send(JSON.stringify(setupMessage));
+          await initLiveAudioStream();
+        };
+
+        liveWebSocket.onmessage = async (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.serverContent?.modelTurn?.parts) {
+              for (let part of data.serverContent.modelTurn.parts) {
+                if (part.inlineData && part.inlineData.mimeType.startsWith("audio/pcm")) {
+                  playIncomingPCM(part.inlineData.data);
+                }
+              }
+            }
+          } catch (err) { console.error("Error reading live message:", err); }
+        };
+
+        liveWebSocket.onclose = () => stopLiveSession();
+        liveWebSocket.onerror = (err) => { console.error("Live Audio Error:", err); stopLiveSession(); };
+      } catch (err) {
+        alert("Failed to connect live session.");
+        stopLiveSession();
+      }
+    }
+
+    async function initLiveAudioStream() {
+      liveAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+      liveMediaStream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000, channelCount: 1 } });
+      const source = liveAudioContext.createMediaStreamSource(liveMediaStream);
+      const processor = liveAudioContext.createScriptProcessor(512, 1, 1);
+
+      processor.onaudioprocess = (e) => {
+        if (!liveWebSocket || liveWebSocket.readyState !== WebSocket.OPEN) return;
+        const inputBuffer = e.inputBuffer.getChannelData(0);
+        const pcm16 = new Int16Array(inputBuffer.length);
+        for (let i = 0; i < inputBuffer.length; i++) {
+          pcm16[i] = Math.max(-1, Math.min(1, inputBuffer[i])) * 0x7FFF;
+        }
+        const base64Audio = btoa(String.fromCharCode(...new Uint8Array(pcm16.buffer)));
+        liveWebSocket.send(JSON.stringify({
+          realtimeInput: { mediaChunks: [{ mimeType: "audio/pcm", data: base64Audio }] }
+        }));
+      };
+
+      source.connect(processor);
+      processor.connect(liveAudioContext.destination);
+    }
+
+    function playIncomingPCM(base64Data) {
+      if (!liveAudioContext) return;
+      const binaryStr = atob(base64Data);
+      const len = binaryStr.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) bytes[i] = binaryStr.charCodeAt(i);
+      
+      const int16Array = new Int16Array(bytes.buffer);
+      const float32Array = new Float32Array(int16Array.length);
+      for (let i = 0; i < int16Array.length; i++) float32Array[i] = int16Array[i] / 32768.0;
+
+      const audioBuffer = liveAudioContext.createBuffer(1, float32Array.length, 24000);
+      audioBuffer.getChannelData(0).set(float32Array);
+      
+      const source = liveAudioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(liveAudioContext.destination);
+      source.start();
+    }
+
+    function stopLiveSession() {
+      isLiveActive = false;
+      const liveBtn = document.getElementById('liveBtn');
+      if (liveBtn) {
+        liveBtn.classList.remove('active-live');
+        liveBtn.title = "Live Audio Chat with TruX";
+      }
+      if (liveWebSocket) { liveWebSocket.close(); liveWebSocket = null; }
+      if (liveMediaStream) { liveMediaStream.getTracks().forEach(t => t.stop()); liveMediaStream = null; }
+      if (liveAudioContext) { liveAudioContext.close(); liveAudioContext = null; }
+    }
+
     function copyCodeToClipboard(button, codeId) {
       const codeElement = document.getElementById(codeId);
       if (!codeElement) return;
-      
-      const codeText = codeElement.innerText;
-      navigator.clipboard.writeText(codeText).then(() => {
-        const originalText = button.innerText;
+      navigator.clipboard.writeText(codeElement.innerText).then(() => {
+        const orig = button.innerText;
         button.innerText = "Copied! ✓";
-        button.style.color = "#00ff88";
-        button.style.borderColor = "#00ff88";
-        setTimeout(() => {
-          button.innerText = originalText;
-          button.style.color = "";
-          button.style.borderColor = "";
-        }, 2000);
-      }).catch(err => {
-        console.error("Failed to copy code: ", err);
+        setTimeout(() => button.innerText = orig, 2000);
       });
     }
 
     function renderFormattedText(text) {
       if (!text) return "";
-      let html = text
-        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
+      let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
       html = html.replace(/```([\s\S]*?)```/g, (match, p1) => {
         codeBlockCounter++;
         const codeId = 'code_block_' + codeBlockCounter + '_' + Date.now();
         return `<div class="code-block-wrapper"><div class="code-header"><span>Code</span><button class="copy-code-btn" onclick="copyCodeToClipboard(this, '${codeId}')">📋 Copy</button></div><pre><code id="${codeId}">${p1.trim()}</code></pre></div>`;
       });
-
       html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
       html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
       html = html.replace(/\*(.*?)\*/g, '<i>$1</i>');
       html = html.replace(/\n/g, '<br>');
-
       return html;
     }
 
@@ -720,15 +815,12 @@
     function speakText(text) {
       if (!('speechSynthesis' in window)) return;
       window.speechSynthesis.cancel();
-      const cleanText = stripMarkdownForVoice(text);
-      const utterance = new SpeechSynthesisUtterance(cleanText);
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
+      const utterance = new SpeechSynthesisUtterance(stripMarkdownForVoice(text));
       window.speechSynthesis.speak(utterance);
     }
 
     function toggleSidebar(e) {
-      if(e) e.stopPropagation();
+      if (e) e.stopPropagation();
       const sidebar = document.getElementById('sidebarNode');
       if (window.innerWidth <= 768) {
         sidebar.classList.toggle('open');
@@ -767,6 +859,7 @@
         selectedImageBase64 = e.target.result;
         document.getElementById('imagePreview').src = selectedImageBase64;
         document.getElementById('imagePreviewContainer').style.display = 'block';
+        handleInputChange();
       };
       reader.readAsDataURL(file);
     }
@@ -775,6 +868,7 @@
       selectedImageBase64 = null;
       document.getElementById('imageUpload').value = '';
       document.getElementById('imagePreviewContainer').style.display = 'none';
+      handleInputChange();
     }
 
     const sendIconSvg = `<path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>`;
@@ -784,6 +878,7 @@
       if (targetRow) targetRow.remove();
       const inputEl = document.getElementById('promptInput');
       inputEl.value = promptToRetry;
+      handleInputChange();
       sendPrompt();
     }
 
@@ -822,11 +917,11 @@
       appendMessageRow('You', prompt + (selectedImageBase64 ? '\n[Image Attached]' : ''), 'user-row', 'user-bubble');
 
       inputEl.value = '';
-      inputEl.style.height = 'auto';
       renderSidebar();
 
       const imageToSend = selectedImageBase64;
       removeImage();
+      handleInputChange();
 
       const bubbleId = 'bubble_' + Date.now();
       const actionsId = 'actions_' + Date.now();
@@ -903,9 +998,9 @@
         activeAbortController = null;
         document.getElementById('btnIcon').innerHTML = sendIconSvg;
         container.scrollTop = container.scrollHeight;
+        handleInputChange();
 
-        const autoReadChecked = document.getElementById('autoReadToggle').checked;
-        if (currentVoiceTriggered || autoReadChecked) {
+        if (currentVoiceTriggered || document.getElementById('autoReadToggle').checked) {
           speakText(responseText);
         }
       } catch (err) {
@@ -927,6 +1022,7 @@
         isGenerating = false;
         activeAbortController = null;
         document.getElementById('btnIcon').innerHTML = sendIconSvg;
+        handleInputChange();
       }
     }
 
@@ -944,6 +1040,7 @@
         if (activeAbortController) activeAbortController.abort();
         isGenerating = false;
         document.getElementById('btnIcon').innerHTML = sendIconSvg;
+        handleInputChange();
       } else {
         if (currentModel === 'pro' && !isUserSignedIn()) {
           alert("Please sign in to access Pro model.");
@@ -963,37 +1060,6 @@
       }
     }
 
-    let activePressTimer;
-    
-    function showContextMenu(e, id) {
-      e.preventDefault(); 
-      const menu = document.getElementById('contextMenu');
-      menu.style.display = 'flex';
-      
-      let x = e.clientX || (e.touches && e.touches[0].clientX);
-      let y = e.clientY || (e.touches && e.touches[0].clientY);
-      
-      if (x + 160 > window.innerWidth) x = window.innerWidth - 170;
-      if (y + 50 > window.innerHeight) y = window.innerHeight - 60;
-      
-      menu.style.left = `${x}px`;
-      menu.style.top = `${y}px`;
-      
-      const btn = document.getElementById('contextMenuDeleteBtn');
-      btn.onclick = (ev) => {
-        ev.stopPropagation();
-        deleteChat(id);
-        hideContextMenu();
-      };
-    }
-    
-    function hideContextMenu() {
-      document.getElementById('contextMenu').style.display = 'none';
-    }
-    
-    document.addEventListener('click', hideContextMenu);
-    document.addEventListener('scroll', hideContextMenu, true); 
-
     function renderSidebar() {
       const list = document.getElementById('historyList');
       list.innerHTML = '';
@@ -1004,31 +1070,8 @@
         const item = document.createElement('div');
         item.className = 'history-item';
         item.innerText = chatSessions[id].title;
-        item.setAttribute('role', 'listitem');
 
-        item.addEventListener('touchstart', (e) => {
-          activePressTimer = setTimeout(() => showContextMenu(e, id), 550);
-        }, { passive: true });
-        
-        item.addEventListener('touchend', () => clearTimeout(activePressTimer));
-        item.addEventListener('touchmove', () => clearTimeout(activePressTimer));
-        
-        item.addEventListener('mousedown', (e) => {
-          if (e.button !== 2) { 
-            activePressTimer = setTimeout(() => showContextMenu(e, id), 550);
-          }
-        });
-        
-        item.addEventListener('mouseup', () => clearTimeout(activePressTimer));
-        item.addEventListener('mouseleave', () => clearTimeout(activePressTimer));
-        
-        item.addEventListener('contextmenu', (e) => showContextMenu(e, id));
-        
-        item.onclick = (e) => {
-          if (document.getElementById('contextMenu').style.display === 'flex') return;
-          loadChatSession(id);
-        };
-
+        item.onclick = () => loadChatSession(id);
         wrapper.appendChild(item);
         list.appendChild(wrapper);
       });
@@ -1075,16 +1118,13 @@
     }
 
     const tx = document.getElementById('promptInput');
-    tx.addEventListener("input", function() {
-      this.style.height = "auto";
-      this.style.height = (this.scrollHeight) + "px";
-    });
     tx.addEventListener("keydown", function(e) {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleActionButton(); }
     });
 
     renderSidebar();
     updateProUsageUI();
+    handleInputChange();
   </script>
 </body>
 </html>
