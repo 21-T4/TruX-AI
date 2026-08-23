@@ -34,27 +34,32 @@ async function fetchSerperSearchResults(query, apiKey) {
 
 function getGeminiModel(tier) {
   switch (tier) {
-    case 'base': return 'gemini-3.1-flash-lite'; 
-    case 'pro': return 'gemini-3.5-flash-lite'; 
-    case 'ultra': return 'gemini-3.6-flash'; 
-    default: return 'gemini-3.1-flash-lite';
+    case 'base': return 'gemini-2.5-flash'; 
+    case 'pro': return 'gemini-2.5-flash'; 
+    case 'ultra': return 'gemini-2.5-pro'; 
+    default: return 'gemini-2.5-flash';
   }
 }
 
 export async function onRequestPost(context) {
   try {
     const { request, env } = context;
-    const { message, tier, history, image } = await request.json();
+    const { message, tier, history, image, systemInstruction } = await request.json();
 
     if (!message && !image) {
       return Response.json({ error: 'Message or image is required.' }, { status: 400 });
     }
 
+    // Combine base persona with user custom instructions
+    const combinedSystemInstruction = systemInstruction && systemInstruction.trim() !== ''
+      ? `${BASE_PERSONA}\n\n[USER CUSTOM INSTRUCTIONS & PREFERENCES]:\n${systemInstruction}`
+      : BASE_PERSONA;
+
     const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
     const modelName = getGeminiModel(tier);
     const model = genAI.getGenerativeModel({
       model: modelName,
-      systemInstruction: BASE_PERSONA,
+      systemInstruction: combinedSystemInstruction,
       tools: [{ functionDeclarations: [searchWebDeclaration] }]
     });
 
