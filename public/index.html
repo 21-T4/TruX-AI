@@ -769,149 +769,155 @@
       sendPrompt();
     }
 
-    async function sendPrompt() {
-      const inputEl = document.getElementById('promptInput');
-      const prompt = inputEl.value.trim();
-      if (!prompt && !selectedImageBase64) return;
+   async function sendPrompt() {
+  const inputEl = document.getElementById('promptInput');
+  const prompt = inputEl.value.trim();
+  if (!prompt && !selectedImageBase64) return;
 
-      if (currentModel === 'pro') {
-        const usage = getProUsageData();
-        if (usage.tokensUsed >= 1000) {
-          alert("TruX Pro token limit reached for 24 hours. Switching to Core model.");
-          currentModel = 'base';
-          document.getElementById('modelSelect').value = 'base';
-        }
-      }
-
-      isGenerating = true;
-      document.getElementById('btnIcon').innerHTML = stopIconSvg;
-      document.body.classList.add('chat-active');
-
-      const currentVoiceTriggered = wasInputByVoice;
-      wasInputByVoice = false;
-
-      if (!currentChatId) {
-        currentChatId = 'chat_' + Date.now();
-        chatSessions[currentChatId] = { title: prompt ? prompt.substring(0, 24) : 'Image Query', messages: [] };
-      }
-      chatSessions[currentChatId].messages.push({ role: 'user', text: prompt });
-      localStorage.setItem('trux_chats', JSON.stringify(chatSessions));
-
-      document.getElementById('welcomeScreen').style.display = 'none';
-      const container = document.getElementById('chatContainer');
-      container.style.display = 'block';
-
-      appendMessageRow('You', prompt + (selectedImageBase64 ? '\n[Image Attached]' : ''), 'user-row', 'user-bubble');
-
-      inputEl.value = '';
-      renderSidebar();
-
-      const imageToSend = selectedImageBase64;
-      removeImage();
-      handleInputChange();
-
-      const bubbleId = 'bubble_' + Date.now();
-      const actionsId = 'actions_' + Date.now();
-      const statusTextId = 'status_' + Date.now();
-
-      const truxRow = document.createElement('div');
-      truxRow.className = 'message-row trux-row';
-      truxRow.innerHTML = `
-        <div class="message-label">TruX AI</div>
-        <div class="bubble trux-bubble thinking-box" id="${bubbleId}">
-          <div class="thinking-loader-container">
-            <div class="thinking-dots">
-              <div class="thinking-dot dot-1"></div>
-              <div class="thinking-dot dot-2"></div>
-              <div class="thinking-dot dot-3"></div>
-            </div>
-            <span class="thinking-status-text" id="${statusTextId}">Thinking...</span>
-          </div>
-        </div>
-        <div class="message-actions" id="${actionsId}"></div>`;
-      
-      container.appendChild(truxRow);
-      container.scrollTop = container.scrollHeight;
-
-      const phrases = ["Thinking...", "Processing query...", "Analyzing context...", "Formulating response..."];
-      let phraseIdx = 0;
-      const phraseInterval = setInterval(() => {
-        phraseIdx = (phraseIdx + 1) % phrases.length;
-        const statusEl = document.getElementById(statusTextId);
-        if (statusEl) statusEl.innerText = phrases[phraseIdx];
-      }, 1800);
-
-      activeAbortController = new AbortController();
-
-      try {
-        const customInstructions = localStorage.getItem('trux_custom_instructions') || '';
-
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: activeAbortController.signal,
-          body: JSON.stringify({ 
-            message: prompt, 
-            tier: currentModel, 
-            history: chatSessions[currentChatId].messages.slice(-6, -1), 
-            image: imageToSend,
-            systemInstruction: customInstructions
-          })
-        });
-        
-        clearInterval(phraseInterval);
-        const data = await res.json();
-        const responseText = data.reply || data.error || "No response received.";
-        chatSessions[currentChatId].messages.push({ role: 'trux', text: responseText });
-        localStorage.setItem('trux_chats', JSON.stringify(chatSessions));
-
-        if (currentModel === 'pro') {
-          const estimatedTokens = Math.ceil((prompt.length + responseText.length) / 4);
-          recordProTokens(estimatedTokens);
-        }
-
-        const bubble = document.getElementById(bubbleId);
-        bubble.classList.remove('thinking-box');
-        bubble.innerHTML = `<div class="fade-in-text">${renderFormattedText(responseText)}</div>`;
-        
-        const actionsContainer = document.getElementById(actionsId);
-        const readBtn = document.createElement('button');
-        readBtn.className = 'read-aloud-btn';
-        readBtn.innerHTML = '🔊 Read Aloud';
-        readBtn.onclick = () => speakText(responseText);
-        actionsContainer.appendChild(readBtn);
-
-        isGenerating = false;
-        activeAbortController = null;
-        document.getElementById('btnIcon').innerHTML = sendIconSvg;
-        container.scrollTop = container.scrollHeight;
-        handleInputChange();
-
-        if (currentVoiceTriggered || document.getElementById('autoReadToggle').checked) {
-          speakText(responseText);
-        }
-      } catch (err) {
-        clearInterval(phraseInterval);
-        const bubble = document.getElementById(bubbleId);
-        if (bubble) {
-          bubble.classList.remove('thinking-box');
-          bubble.innerText = err.name === 'AbortError' ? "Generation stopped." : "Error connecting to TruX server.";
-        }
-        
-        const actionsContainer = document.getElementById(actionsId);
-        actionsContainer.innerHTML = '';
-        const retryBtn = document.createElement('button');
-        retryBtn.className = 'retry-btn';
-        retryBtn.innerHTML = '🔄 Retry';
-        retryBtn.onclick = () => retryPrompt(prompt, truxRow);
-        actionsContainer.appendChild(retryBtn);
-
-        isGenerating = false;
-        activeAbortController = null;
-        document.getElementById('btnIcon').innerHTML = sendIconSvg;
-        handleInputChange();
-      }
+  if (currentModel === 'pro') {
+    const usage = getProUsageData();
+    if (usage.tokensUsed >= 1000) {
+      alert("TruX Pro token limit reached for 24 hours. Switching to Core model.");
+      currentModel = 'base';
+      document.getElementById('modelSelect').value = 'base';
     }
+  }
+
+  isGenerating = true;
+  document.getElementById('btnIcon').innerHTML = stopIconSvg;
+  document.body.classList.add('chat-active');
+
+  const currentVoiceTriggered = wasInputByVoice;
+  wasInputByVoice = false;
+
+  if (!currentChatId) {
+    currentChatId = 'chat_' + Date.now();
+    chatSessions[currentChatId] = { title: prompt ? prompt.substring(0, 24) : 'Image Query', messages: [] };
+  }
+  
+  // Store text only to prevent huge base64 strings in local storage & API payloads
+  chatSessions[currentChatId].messages.push({ role: 'user', text: prompt });
+  localStorage.setItem('trux_chats', JSON.stringify(chatSessions));
+
+  document.getElementById('welcomeScreen').style.display = 'none';
+  const container = document.getElementById('chatContainer');
+  container.style.display = 'block';
+
+  appendMessageRow('You', prompt + (selectedImageBase64 ? '\n[Image Attached]' : ''), 'user-row', 'user-bubble');
+
+  inputEl.value = '';
+  renderSidebar();
+
+  const imageToSend = selectedImageBase64;
+  removeImage();
+  handleInputChange();
+
+  const bubbleId = 'bubble_' + Date.now();
+  const actionsId = 'actions_' + Date.now();
+  const statusTextId = 'status_' + Date.now();
+
+  const truxRow = document.createElement('div');
+  truxRow.className = 'message-row trux-row';
+  truxRow.innerHTML = `
+    <div class="message-label">TruX AI</div>
+    <div class="bubble trux-bubble thinking-box" id="${bubbleId}">
+      <div class="thinking-loader-container">
+        <div class="thinking-dots">
+          <div class="thinking-dot dot-1"></div>
+          <div class="thinking-dot dot-2"></div>
+          <div class="thinking-dot dot-3"></div>
+        </div>
+        <span class="thinking-status-text" id="${statusTextId}">Thinking...</span>
+      </div>
+    </div>
+    <div class="message-actions" id="${actionsId}"></div>`;
+  
+  container.appendChild(truxRow);
+  container.scrollTop = container.scrollHeight;
+
+  // Restored animated thinking status text
+  const phrases = ["Thinking...", "Processing query...", "Analyzing context...", "Formulating response..."];
+  let phraseIdx = 0;
+  const phraseInterval = setInterval(() => {
+    phraseIdx = (phraseIdx + 1) % phrases.length;
+    const statusEl = document.getElementById(statusTextId);
+    if (statusEl) statusEl.innerText = phrases[phraseIdx];
+  }, 1800);
+
+  activeAbortController = new AbortController();
+
+  try {
+    const customInstructions = localStorage.getItem('trux_custom_instructions') || '';
+    
+    // Slice exactly the last 5 conversation pairs (10 messages max) excluding current input
+    const historyPayload = chatSessions[currentChatId].messages.slice(0, -1).slice(-10);
+
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: activeAbortController.signal,
+      body: JSON.stringify({ 
+        message: prompt, 
+        tier: currentModel, 
+        history: historyPayload, 
+        image: imageToSend,
+        systemInstruction: customInstructions
+      })
+    });
+    
+    clearInterval(phraseInterval);
+    const data = await res.json();
+    const responseText = data.reply || data.error || "No response received.";
+    chatSessions[currentChatId].messages.push({ role: 'trux', text: responseText });
+    localStorage.setItem('trux_chats', JSON.stringify(chatSessions));
+
+    if (currentModel === 'pro') {
+      const estimatedTokens = Math.ceil((prompt.length + responseText.length) / 4);
+      recordProTokens(estimatedTokens);
+    }
+
+    const bubble = document.getElementById(bubbleId);
+    bubble.classList.remove('thinking-box');
+    bubble.innerHTML = `<div class="fade-in-text">${renderFormattedText(responseText)}</div>`;
+    
+    const actionsContainer = document.getElementById(actionsId);
+    const readBtn = document.createElement('button');
+    readBtn.className = 'read-aloud-btn';
+    readBtn.innerHTML = '🔊 Read Aloud';
+    readBtn.onclick = () => speakText(responseText);
+    actionsContainer.appendChild(readBtn);
+
+    isGenerating = false;
+    activeAbortController = null;
+    document.getElementById('btnIcon').innerHTML = sendIconSvg;
+    container.scrollTop = container.scrollHeight;
+    handleInputChange();
+
+    if (currentVoiceTriggered || document.getElementById('autoReadToggle').checked) {
+      speakText(responseText);
+    }
+  } catch (err) {
+    clearInterval(phraseInterval);
+    const bubble = document.getElementById(bubbleId);
+    if (bubble) {
+      bubble.classList.remove('thinking-box');
+      bubble.innerText = err.name === 'AbortError' ? "Generation stopped." : "Error connecting to TruX server.";
+    }
+    
+    const actionsContainer = document.getElementById(actionsId);
+    actionsContainer.innerHTML = '';
+    const retryBtn = document.createElement('button');
+    retryBtn.className = 'retry-btn';
+    retryBtn.innerHTML = '🔄 Retry';
+    retryBtn.onclick = () => retryPrompt(prompt, truxRow);
+    actionsContainer.appendChild(retryBtn);
+
+    isGenerating = false;
+    activeAbortController = null;
+    document.getElementById('btnIcon').innerHTML = sendIconSvg;
+    handleInputChange();
+  }
+}
 
     function appendMessageRow(label, text, rowClass, bubbleClass) {
       const container = document.getElementById('chatContainer');
