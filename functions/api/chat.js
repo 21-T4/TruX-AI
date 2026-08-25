@@ -14,6 +14,7 @@ const searchWebDeclaration = {
   }
 };
 
+
 async function fetchSerperSearchResults(query, apiKey) {
   if (!apiKey) return "Search failed: API key missing.";
   try {
