@@ -117,7 +117,7 @@ async function generateNanoBananaImage(prompt) {
     const finalResponse = (rawText + searchSourcesText).replace(/<think>[\s\S]*?<\/think>/g, '').trim();
     return Response.json({ reply: finalResponse });
 
-  } catch (error) {
+    catch (error) {
     console.error('API Error:', error);
     return Response.json({ error: error.message || 'Server connection error' }, { status: 500 });
   }
