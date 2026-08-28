@@ -13,70 +13,31 @@ function getGeminiModel(tier) {
   }
 }
 
-// Nano Banana Pro / Fast Reliable Flux Engine with fallback
 async function generateNanoBananaImage(prompt) {
-  const seed = Math.floor(Math.random() * 1000000);
-  const encodedPrompt = encodeURIComponent(prompt.trim() || "Abstract neon cyberpunk aesthetic art");
+  // 1. Properly handle your fallback styling text
+  const cleanPrompt = prompt ? `${prompt}, Abstract neon cyberpunk aesthetic art` : "Abstract neon cyberpunk aesthetic art";
   
-  // Using high-speed Nano-Banana Pro / Flux image endpoint
-  const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&seed=${seed}&model=flux&nologo=true`;
+  // 2. Initialize the official SDK using your server context API key
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   
-  // Verify image generator health
-  const checkRes = await fetch(imageUrl, { method: 'HEAD' });
-  if (!checkRes.ok) {
-    throw new Error('Image Generation Engine temporarily busy. Please try again.');
-  }
-
-  return imageUrl;
-}
-
-export async function onRequestPost(context) {
   try {
-    const { request, env } = context;
-    if (!env.GEMINI_API_KEY) {
-      return Response.json({ error: 'GEMINI_API_KEY missing on server environment.' }, { status: 500 });
-    }
-
-    const clientIP = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || 'default-user';
-
-    const { 
-      message, 
-      tier = 'base', 
-      history = [], 
-      image = null, 
-      systemInstruction = '', 
-      mode = 'chat', // 'chat' or 'image'
-      thinkingLevel = 'medium' 
-    } = await request.json();
-
-    if (!message && !image) {
-      return Response.json({ error: 'Message or image required.' }, { status: 400 });
-    }
-
-    // --- MODE 1: NANO BANANA PRO IMAGE GENERATION (1 Limit Enforcement) ---
-    if (mode === 'image') {
-      const userImageCount = imageGenTracker.get(clientIP) || 0;
-      if (userImageCount >= 1) {
-        return Response.json({ 
-          error: 'Image generation limit reached! (1 free image allowed per user).' 
-        }, { status: 429 });
-      }
-
-      try {
-        const imageUrl = await generateNanoBananaImage(message);
-        
-        // Mark user as having generated 1 image
-        imageGenTracker.set(clientIP, userImageCount + 1);
-
-        return Response.json({ 
-          reply: `Here is your generated image:\n\n![Generated Image](${imageUrl})` 
-        });
-      } catch (imgError) {
-        console.error('Image Generation Error:', imgError);
-        return Response.json({ error: `Image Generation failed: ${imgError.message}` }, { status: 500 });
-      }
-    }
-
+    // 3. Request the image from the Nano Banana model engine
+    const response = await ai.models.generateImages({
+      model: 'gemini-3-pro-image', // Or your selected Pro production model tier
+      prompt: cleanPrompt,
+      config: {
+        numberOfImages: 1,
+        aspectRatio: '1:1', 
+        outputMimeType: 'image/jpeg',
+      },
+    });
+    
+    // Return the base64 or hosted image URI string format directly
+    return response.generatedImages[0].image.imageBytes; 
+  } catch (error) {
+    throw new Error(`Image Generation engine temporarily busy: ${error.message}`);
+  }
+}
     // --- MODE 2: CHAT WITH NATIVE SEARCH & THINKING BUDGET ---
     const combinedSystemInstruction = systemInstruction?.trim()
       ? `${BASE_PERSONA}\n\n[USER CUSTOM INSTRUCTIONS]:\n${systemInstruction}`
