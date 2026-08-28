@@ -43,18 +43,22 @@ async function fetchSerperSearchResults(query, apiKey) {
   }
 }
 
-// Nano Banana Pro (Imagen 3 REST API Integration)
+// Updated Nano Banana Pro (Gemini 3 Pro Image) Integration
 async function fetchImagen3Image(prompt, apiKey) {
   if (!apiKey) throw new Error("GEMINI_API_KEY missing.");
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image:predict?key=${apiKey}`;
+  
+  // Modern target endpoint for the Gemini 3 Pro Image generation layer
+  const url = `https://googleapis.com{apiKey}`;
   
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      instances: [{ prompt }],
-      parameters: {
-        sampleCount: 1,
+      contents: [{
+        parts: [{ text: prompt }]
+      }],
+      generationConfig: {
+        numberOfImages: 1,
         aspectRatio: "1:1",
         outputMimeType: "image/jpeg"
       }
@@ -67,7 +71,10 @@ async function fetchImagen3Image(prompt, apiKey) {
   }
 
   const data = await response.json();
-  const base64Image = data.predictions?.[0]?.bytesBase64Encoded;
+  
+  // Extracting inline base64 bytes from standard content parts response structure
+  const base64Image = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+  
   if (!base64Image) throw new Error("Failed to generate image.");
   return `data:image/jpeg;base64,${base64Image}`;
 }
