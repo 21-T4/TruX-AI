@@ -10,7 +10,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
   <link rel="apple-touch-icon" href="/icon-192.png">
-  <meta name="theme-color" content="#030509">
+  <meta name="theme-color" content="#000000">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -26,31 +26,24 @@
 
   <style>
     :root {
-      --bg-main: #030509;
-      --bg-sidebar: rgba(10, 13, 22, 0.75);
-      --bg-card: rgba(17, 22, 36, 0.65);
-      --bg-input: rgba(15, 20, 32, 0.85);
-      --bg-hover: rgba(28, 36, 58, 0.6);
+      --bg-main: #000000;
+      --bg-sidebar: rgba(12, 12, 14, 0.92);
+      --bg-card: rgba(18, 18, 22, 0.8);
+      --bg-input: rgba(20, 20, 26, 0.9);
+      --bg-hover: rgba(32, 32, 42, 0.6);
       --text-main: #f3f5fc;
-      --text-muted: #838ca0;
+      --text-muted: #808696;
       --border-color: rgba(255, 255, 255, 0.08);
       --border-glow: rgba(0, 240, 255, 0.4);
       --accent-cyan: #00f0ff;
-      --accent-purple: #9b51e0;
+      --accent-purple: #a100ff;
       --accent-pink: #ff007f;
       --accent-green: #00ff9d;
       --error: #ff4757;
-      --glass-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-      --3d-inset: inset 0 1px 1px rgba(255, 255, 255, 0.15), inset 0 -1px 2px rgba(0, 0, 0, 0.5);
-    }
-
-    body.dark-mode-off {
-      --bg-main: #0a0d14;
-      --bg-sidebar: #0f1420;
-      --bg-card: #151c2c;
-      --bg-input: #171e30;
-      --bg-hover: #212b42;
-      --border-color: rgba(255, 255, 255, 0.12);
+      --glass-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+      --3d-inset: inset 0 1px 1px rgba(255, 255, 255, 0.1), inset 0 -1px 2px rgba(0, 0, 0, 0.8);
+      --gemini-surface: #1e1f20;
+      --gemini-card: #28292a;
     }
 
     * { 
@@ -73,6 +66,11 @@
       transition: background-color 0.4s ease; 
     }
     
+    /* Pitch Black transition when chat starts */
+    body.chat-active {
+      background-color: #000000 !important;
+    }
+    
     /* 3D Dynamic Ambient Canvas Backdrop */
     .dark-ambient-container { 
       position: absolute; 
@@ -83,25 +81,24 @@
       z-index: 0; 
       pointer-events: none; 
       background: 
-        radial-gradient(circle at 10% 15%, rgba(255, 0, 127, 0.15) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(0, 240, 255, 0.16) 0%, transparent 45%),
-        radial-gradient(circle at 50% 50%, rgba(155, 81, 224, 0.12) 0%, transparent 55%);
+        radial-gradient(circle at 15% 15%, rgba(161, 0, 255, 0.12) 0%, transparent 45%),
+        radial-gradient(circle at 85% 85%, rgba(0, 240, 255, 0.1) 0%, transparent 45%);
       transition: opacity 0.8s ease; 
-      filter: blur(40px);
+      filter: blur(50px);
       transform: translateZ(0);
     }
-    body.chat-active .dark-ambient-container { opacity: 0.45; }
+    body.chat-active .dark-ambient-container { opacity: 0; }
 
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(0, 240, 255, 0.4); }
 
-    /* Floating Navigation Header Overlay */
+    /* Navigation Header Overlay */
     .top-nav-dock {
       position: absolute;
-      top: 16px;
+      top: 14px;
       left: 16px;
       right: 16px;
       z-index: 90;
@@ -122,32 +119,31 @@
       background: var(--bg-input);
       backdrop-filter: blur(20px) saturate(180%);
       border: 1px solid var(--border-color);
-      border-radius: 14px;
-      padding: 10px 14px;
+      border-radius: 12px;
+      padding: 8px 14px;
       cursor: pointer;
       color: var(--text-main);
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      box-shadow: var(--glass-shadow), var(--3d-inset);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: var(--glass-shadow);
     }
     .nav-glass-btn:hover {
       background: var(--bg-hover);
       border-color: var(--accent-cyan);
-      box-shadow: 0 0 20px rgba(0, 240, 255, 0.35), var(--3d-inset);
-      transform: translateY(-2px);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.25);
+      transform: translateY(-1px);
     }
-    .nav-glass-btn:active { transform: translateY(1px); }
 
     .brand-badge {
-      background: rgba(0, 240, 255, 0.08);
-      border: 1px solid rgba(0, 240, 255, 0.25);
-      border-radius: 14px;
-      padding: 8px 16px;
-      font-size: 13px;
+      background: rgba(0, 240, 255, 0.05);
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      border-radius: 12px;
+      padding: 7px 14px;
+      font-size: 12.5px;
       font-weight: 700;
       letter-spacing: 0.5px;
       color: var(--accent-cyan);
@@ -155,32 +151,15 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      box-shadow: var(--3d-inset);
     }
     .brand-badge-dot {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
       background: var(--accent-green);
-      box-shadow: 0 0 10px var(--accent-green);
+      box-shadow: 0 0 8px var(--accent-green);
     }
 
-    .mobile-new-chat-btn {
-      display: none;
-      background: var(--bg-input);
-      border: 1px solid var(--accent-cyan);
-      color: #ffffff;
-      border-radius: 14px;
-      width: 42px;
-      height: 42px;
-      cursor: pointer;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-      box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
-      pointer-events: auto;
-    }
-    
     .sidebar-overlay { 
       display: none; 
       position: absolute; 
@@ -188,90 +167,56 @@
       left: 0; 
       width: 100vw; 
       height: 100dvh; 
-      background: rgba(0, 0, 0, 0.8); 
-      backdrop-filter: blur(12px); 
+      background: rgba(0, 0, 0, 0.85); 
+      backdrop-filter: blur(10px); 
       z-index: 95; 
     }
     
-    /* 3D Sidebar Styling */
+    /* Sleek Sidebar */
     .history-sidebar { 
-      width: 320px; 
+      width: 280px; 
       background: var(--bg-sidebar); 
-      backdrop-filter: blur(28px) saturate(180%); 
+      backdrop-filter: blur(28px); 
       border-right: 1px solid var(--border-color); 
       display: flex; 
       flex-direction: column; 
       z-index: 100; 
       flex-shrink: 0; 
       transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), margin-left 0.35s ease; 
-      box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5); 
       position: relative;
     }
-    .history-sidebar.collapsed { margin-left: -320px; }
+    .history-sidebar.collapsed { margin-left: -280px; }
     
     .sidebar-header { 
-      padding: 20px 16px 16px; 
+      padding: 16px; 
       display: flex; 
-      flex-direction: row; 
       align-items: center; 
+      justify-content: space-between;
       gap: 10px; 
       border-bottom: 1px solid var(--border-color); 
     }
     
+    /* Clean New Chat Button without Icon */
     .new-chat-btn { 
       flex: 1; 
-      background: linear-gradient(135deg, rgba(0, 240, 255, 0.15) 0%, rgba(155, 81, 224, 0.15) 100%); 
-      border: 1px solid rgba(0, 240, 255, 0.4); 
+      background: rgba(255, 255, 255, 0.05); 
+      border: 1px solid rgba(255, 255, 255, 0.12); 
       color: #ffffff; 
-      padding: 12px 16px; 
-      border-radius: 16px; 
+      padding: 11px 16px; 
+      border-radius: 12px; 
       font-family: inherit; 
-      font-size: 14px; 
+      font-size: 13.5px; 
       font-weight: 600; 
       cursor: pointer; 
       display: flex; 
       align-items: center; 
       justify-content: center; 
-      gap: 8px; 
-      transition: all 0.3s; 
-      box-shadow: var(--3d-inset); 
+      transition: all 0.25s; 
     }
     .new-chat-btn:hover { 
-      background: linear-gradient(135deg, rgba(0, 240, 255, 0.3) 0%, rgba(155, 81, 224, 0.3) 100%); 
+      background: rgba(0, 240, 255, 0.12); 
       border-color: var(--accent-cyan); 
-      box-shadow: 0 0 20px rgba(0, 240, 255, 0.4), var(--3d-inset); 
-      transform: translateY(-1px);
-    }
-    
-    .header-action-btn { 
-      background: rgba(155, 81, 224, 0.12); 
-      border: 1px solid rgba(155, 81, 224, 0.35); 
-      color: #ffffff; 
-      padding: 12px; 
-      border-radius: 14px; 
-      font-size: 14px; 
-      cursor: pointer; 
-      display: flex; 
-      align-items: center; 
-      justify-content: center; 
-      transition: all 0.25s; 
-      line-height: 1; 
-      box-shadow: var(--3d-inset);
-    }
-    .header-action-btn:hover { 
-      background: rgba(155, 81, 224, 0.3); 
-      border-color: var(--accent-purple); 
-      box-shadow: 0 0 18px rgba(155, 81, 224, 0.4); 
-    }
-    .header-action-btn.pwa-btn { 
-      background: rgba(255, 0, 127, 0.12); 
-      border-color: rgba(255, 0, 127, 0.35); 
-      display: none; 
-    }
-    .header-action-btn.pwa-btn:hover { 
-      background: rgba(255, 0, 127, 0.3); 
-      border-color: var(--accent-pink); 
-      box-shadow: 0 0 18px rgba(255, 0, 127, 0.4); 
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.25); 
     }
 
     .sidebar-close-btn { 
@@ -279,40 +224,35 @@
       background: transparent; 
       border: none; 
       color: var(--text-muted); 
-      font-size: 24px; 
+      font-size: 22px; 
       cursor: pointer; 
-      line-height: 1; 
       padding: 4px; 
-      transition: color 0.2s;
     }
-    .sidebar-close-btn:hover { color: #ffffff; }
 
     .history-list { 
       flex-grow: 1; 
       overflow-y: auto; 
-      padding: 14px 10px; 
+      padding: 12px 10px; 
     }
     .history-item-wrapper { 
       display: flex; 
       align-items: center; 
       justify-content: space-between; 
-      border-radius: 14px; 
-      margin-bottom: 6px; 
-      transition: all 0.25s ease; 
+      border-radius: 10px; 
+      margin-bottom: 4px; 
+      transition: all 0.2s ease; 
       border: 1px solid transparent; 
     }
     .history-item-wrapper:hover, .history-item-wrapper.active { 
       background: var(--bg-hover); 
-      border-color: rgba(0, 240, 255, 0.25); 
-      box-shadow: inset 0 0 15px rgba(0, 240, 255, 0.06), 0 4px 12px rgba(0,0,0,0.3); 
-      transform: translateX(3px);
+      border-color: rgba(255, 255, 255, 0.1); 
     }
     .history-item { 
-      padding: 12px 14px; 
-      font-size: 13.5px; 
+      padding: 10px 12px; 
+      font-size: 13px; 
       font-weight: 500;
       cursor: pointer; 
-      color: #c4c7c5; 
+      color: #a0a6b5; 
       white-space: nowrap; 
       overflow: hidden; 
       text-overflow: ellipsis; 
@@ -322,31 +262,27 @@
 
     .profile-footer { 
       border-top: 1px solid var(--border-color); 
-      padding: 16px; 
-      background: rgba(8, 10, 16, 0.8); 
-      backdrop-filter: blur(16px); 
+      padding: 14px 16px; 
+      background: rgba(8, 8, 10, 0.9); 
       display: flex; 
       flex-direction: column; 
-      gap: 10px; 
+      gap: 8px; 
       cursor: pointer; 
-      transition: background 0.2s; 
     }
-    .profile-footer:hover { background-color: var(--bg-hover); }
-    .profile-card { display: flex; align-items: center; gap: 12px; pointer-events: none; }
+    .profile-card { display: flex; align-items: center; gap: 10px; pointer-events: none; }
     .profile-avatar { 
-      width: 42px; 
-      height: 42px; 
+      width: 36px; 
+      height: 36px; 
       border-radius: 50%; 
       background-color: #2a2b2d; 
-      border: 2px solid var(--accent-cyan); 
+      border: 1px solid var(--accent-cyan); 
       object-fit: cover; 
-      box-shadow: 0 0 12px rgba(0, 240, 255, 0.35); 
     }
     .profile-details { flex-grow: 1; overflow: hidden; }
-    .profile-name { font-size: 14px; font-weight: 600; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .profile-email { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .profile-name { font-size: 13px; font-weight: 600; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .profile-email { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     
-    /* Main Arena & Welcome Display */
+    /* Main Arena & Workspace Display */
     .main-chat-arena { 
       flex-grow: 1; 
       display: flex; 
@@ -355,8 +291,41 @@
       position: relative; 
       z-index: 5; 
       overflow: hidden; 
+      background: #000000;
     }
     
+    /* Floating Workspace Header Tag */
+    .workspace-header-bar {
+      padding: 60px 24px 0px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+      pointer-events: none;
+    }
+    .workspace-badge-tag {
+      background: rgba(18, 20, 28, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      backdrop-filter: blur(12px);
+    }
+    .workspace-tag-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      box-shadow: 0 0 6px var(--accent-cyan);
+    }
+
     .welcome-screen { 
       display: flex; 
       flex-direction: column; 
@@ -364,92 +333,64 @@
       align-items: center; 
       flex-grow: 1; 
       text-align: center; 
-      padding: 40px 20px 100px; 
+      padding: 20px 20px 80px; 
       z-index: 2; 
       transition: opacity 0.3s; 
     }
     
-    .welcome-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 16px;
-      border-radius: 20px;
-      background: rgba(155, 81, 224, 0.12);
-      border: 1px solid rgba(155, 81, 224, 0.3);
-      color: #c58af9;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.8px;
-      text-transform: uppercase;
-      margin-bottom: 20px;
-      box-shadow: 0 0 20px rgba(155, 81, 224, 0.2);
-    }
-
     .welcome-title { 
-      font-size: clamp(40px, 7vw, 64px); 
+      font-size: clamp(36px, 6vw, 58px); 
       font-weight: 800; 
       letter-spacing: -1px; 
       line-height: 1.1;
-      background: linear-gradient(90deg, #ff007f 0%, #a100ff 30%, #00f0ff 70%, #ff007f 100%); 
-      background-size: 200% auto; 
+      background: linear-gradient(90deg, #ffffff 0%, var(--accent-cyan) 50%, var(--accent-purple) 100%); 
       -webkit-background-clip: text; 
       -webkit-text-fill-color: transparent; 
-      animation: metallicFlow 6s linear infinite; 
-      filter: drop-shadow(0 10px 25px rgba(0, 240, 255, 0.25)); 
     }
-    
-    .x-anim { 
-      display: inline-block; 
-      -webkit-text-fill-color: #ffffff; 
-      color: #ffffff; 
-      animation: pulseX 2.5s infinite alternate; 
-      margin-left: 2px;
+
+    /* Workspace Empty State Text Container */
+    .workspace-info-box {
+      background: rgba(18, 22, 32, 0.5);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 16px 22px;
+      max-width: 520px;
+      margin-top: 20px;
+      backdrop-filter: blur(10px);
     }
-    @keyframes pulseX { 
-      0% { transform: scale(1) translateZ(0); opacity: 0.85; text-shadow: 0 0 10px rgba(0, 240, 255, 0.5); } 
-      100% { transform: scale(1.15) translateZ(10px); opacity: 1; text-shadow: 0 0 30px rgba(0, 240, 255, 1), 0 0 50px rgba(255, 0, 127, 0.6); } 
-    }
-    @keyframes metallicFlow { 0% { background-position: 0% center; } 100% { background-position: 200% center; } }
-    
-    .welcome-subtitle {
-      color: var(--text-muted); 
-      font-size: 16px; 
-      max-width: 500px;
-      margin-top: 14px;
-      line-height: 1.6;
+    .workspace-info-text {
+      color: var(--text-muted);
+      font-size: 13.5px;
+      line-height: 1.5;
     }
 
     /* Starter Suggestion Chips */
     .starter-chips-container {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 10px;
       justify-content: center;
-      max-width: 760px;
-      margin-top: 36px;
+      max-width: 720px;
+      margin-top: 28px;
     }
 
     .starter-chip {
-      background: rgba(18, 24, 38, 0.6);
-      backdrop-filter: blur(16px);
+      background: rgba(22, 24, 32, 0.7);
       border: 1px solid var(--border-color);
-      border-radius: 18px;
-      padding: 12px 18px;
-      font-size: 13.5px;
+      border-radius: 14px;
+      padding: 10px 16px;
+      font-size: 13px;
       color: var(--text-main);
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 10px;
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      gap: 8px;
+      transition: all 0.25s ease;
     }
     .starter-chip:hover {
       background: var(--bg-hover);
       border-color: var(--accent-cyan);
-      transform: translateY(-3px) scale(1.02);
-      box-shadow: 0 10px 25px rgba(0, 240, 255, 0.25);
+      transform: translateY(-2px);
     }
 
     /* Chat Container & Bubbles */
@@ -457,181 +398,144 @@
       display: none; 
       flex-grow: 1; 
       overflow-y: auto; 
-      padding: 90px 24px 30px; 
+      padding: 20px 24px 30px; 
       scroll-behavior: smooth; 
     }
     .message-row { 
       display: flex; 
       flex-direction: column; 
-      margin-bottom: 28px; 
-      max-width: 860px; 
+      margin-bottom: 24px; 
+      max-width: 840px; 
       width: 100%; 
       margin-left: auto; 
       margin-right: auto; 
     }
     .message-label { 
-      font-size: 12px; 
+      font-size: 11px; 
       font-weight: 700; 
       text-transform: uppercase; 
       letter-spacing: 0.8px; 
-      margin-bottom: 8px; 
+      margin-bottom: 6px; 
     }
     .user-row .message-label { color: var(--text-muted); align-self: flex-end; }
     .trux-row .message-label { 
-      background: linear-gradient(90deg, #00f0ff, #c58af9); 
-      -webkit-background-clip: text; 
-      -webkit-text-fill-color: transparent; 
+      color: var(--accent-cyan);
     }
     
     .bubble { 
-      padding: 20px 24px; 
-      border-radius: 22px; 
-      font-size: 15px; 
-      line-height: 1.65; 
+      padding: 18px 22px; 
+      border-radius: 18px; 
+      font-size: 14.5px; 
+      line-height: 1.6; 
       word-wrap: break-word; 
       user-select: text !important; 
       -webkit-user-select: text !important; 
     }
     .user-bubble { 
-      background: linear-gradient(135deg, rgba(22, 28, 44, 0.95) 0%, rgba(14, 18, 30, 0.95) 100%); 
+      background: rgba(28, 30, 40, 0.9); 
       color: #ffffff; 
       align-self: flex-end; 
       border-bottom-right-radius: 4px; 
-      border: 1px solid rgba(0, 240, 255, 0.3); 
+      border: 1px solid rgba(255, 255, 255, 0.1); 
       max-width: 85%; 
       white-space: pre-wrap; 
-      box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,0.1); 
     }
     .trux-bubble { 
-      background: var(--bg-card); 
-      backdrop-filter: blur(24px) saturate(180%); 
+      background: rgba(18, 18, 22, 0.95); 
       color: var(--text-main); 
       align-self: flex-start; 
       border-top-left-radius: 4px; 
-      border: 1px solid rgba(155, 81, 224, 0.35); 
+      border: 1px solid var(--border-color); 
       width: 100%; 
-      box-shadow: var(--glass-shadow), inset 0 0 20px rgba(155, 81, 224, 0.08); 
     }
 
-    /* 3D Code Block Container */
+    /* Code Block Container */
     .code-block-wrapper { 
-      margin: 16px 0; 
-      border: 1px solid rgba(255, 255, 255, 0.12); 
-      border-radius: 16px; 
+      margin: 14px 0; 
+      border: 1px solid rgba(255, 255, 255, 0.1); 
+      border-radius: 12px; 
       overflow: hidden; 
-      background: #06080e; 
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7); 
+      background: #090a0f; 
     }
     .code-header { 
       display: flex; 
       justify-content: space-between; 
       align-items: center; 
-      background: #0f1320; 
-      padding: 10px 18px; 
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08); 
-      font-size: 12px; 
+      background: #12141d; 
+      padding: 8px 14px; 
+      font-size: 11px; 
       color: var(--accent-cyan); 
       font-family: 'JetBrains Mono', monospace; 
       font-weight: 600; 
-      text-transform: uppercase; 
-      letter-spacing: 0.5px; 
     }
     .copy-code-btn { 
-      background: rgba(0, 240, 255, 0.12); 
-      border: 1px solid rgba(0, 240, 255, 0.3); 
-      color: var(--accent-cyan); 
-      padding: 5px 14px; 
-      border-radius: 10px; 
-      font-size: 12px; 
+      background: rgba(255, 255, 255, 0.08); 
+      border: none; 
+      color: var(--text-main); 
+      padding: 4px 10px; 
+      border-radius: 6px; 
+      font-size: 11px; 
       cursor: pointer; 
-      transition: all 0.2s; 
-      font-family: 'Plus Jakarta Sans', sans-serif; 
-      font-weight: 600; 
     }
-    .copy-code-btn:hover { 
-      background: var(--accent-cyan); 
-      color: #000000; 
-      box-shadow: 0 0 15px rgba(0, 240, 255, 0.6); 
-    }
-    pre { padding: 16px; overflow-x: auto; font-family: 'JetBrains Mono', monospace; margin: 0; background: transparent; }
-    code { background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 13.5px; color: var(--accent-cyan); }
+    pre { padding: 14px; overflow-x: auto; font-family: 'JetBrains Mono', monospace; margin: 0; }
+    code { background: rgba(255,255,255,0.08); padding: 2px 5px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--accent-cyan); }
     pre code { background: transparent; padding: 0; color: #e1e4ed; }
 
-    .fade-in-text { opacity: 0; animation: smoothFadeIn 0.4s ease-out forwards; }
+    .fade-in-text { opacity: 0; animation: smoothFadeIn 0.3s ease-out forwards; }
     @keyframes smoothFadeIn { to { opacity: 1; } }
 
-    .message-actions { display: flex; gap: 10px; margin-top: 10px; align-self: flex-start; }
+    .message-actions { display: flex; gap: 8px; margin-top: 8px; align-self: flex-start; }
     .read-aloud-btn, .retry-btn { 
-      background: var(--bg-input); 
+      background: rgba(255, 255, 255, 0.05); 
       border: 1px solid var(--border-color); 
       color: var(--text-muted); 
-      padding: 7px 16px; 
-      border-radius: 14px; 
-      font-size: 12px; 
+      padding: 6px 12px; 
+      border-radius: 10px; 
+      font-size: 11.5px; 
       cursor: pointer; 
       display: flex; 
       align-items: center; 
       gap: 6px; 
-      transition: all 0.25s; 
       font-family: inherit; 
       font-weight: 600; 
-      box-shadow: var(--3d-inset);
     }
-    .read-aloud-btn:hover { 
-      background: var(--bg-hover); 
-      color: #ffffff; 
-      border-color: var(--accent-cyan); 
-      box-shadow: 0 0 14px rgba(0, 240, 255, 0.3); 
-    }
-    .retry-btn { border-color: rgba(255, 71, 87, 0.4); color: #ff6b81; }
-    .retry-btn:hover { 
-      background: rgba(255, 71, 87, 0.2); 
-      color: #ffffff; 
-      border-color: var(--error); 
-      box-shadow: 0 0 15px rgba(255, 71, 87, 0.4); 
-    }
+    .read-aloud-btn:hover { background: rgba(255, 255, 255, 0.1); color: #ffffff; }
 
     /* Dynamic Thinking Box */
     .trux-bubble.thinking-box { 
       width: auto; 
       display: inline-flex; 
       align-items: center; 
-      padding: 14px 28px; 
-      background: rgba(255, 255, 255, 0.04); 
-      border-radius: 28px; 
-      border: 1px solid rgba(0, 240, 255, 0.35); 
-      box-shadow: 0 0 25px rgba(0, 240, 255, 0.2); 
+      padding: 12px 22px; 
+      background: rgba(20, 22, 30, 0.8); 
+      border-radius: 20px; 
+      border: 1px solid var(--border-color); 
     }
-    .thinking-loader-container { display: flex; align-items: center; gap: 14px; }
-    .thinking-dots { display: flex; gap: 7px; align-items: center; }
+    .thinking-loader-container { display: flex; align-items: center; gap: 12px; }
+    .thinking-dots { display: flex; gap: 6px; align-items: center; }
     .thinking-dot { 
-      width: 10px; 
-      height: 10px; 
+      width: 8px; 
+      height: 8px; 
       border-radius: 50%; 
-      animation: geminiPulse 1.4s infinite ease-in-out both; 
+      animation: truxPulse 1.4s infinite ease-in-out both; 
     }
     .dot-1 { background-color: var(--accent-cyan); animation-delay: -0.32s; }
     .dot-2 { background-color: var(--accent-purple); animation-delay: -0.16s; }
     .dot-3 { background-color: var(--accent-pink); }
-    @keyframes geminiPulse {
+    @keyframes truxPulse {
       0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-      40% { transform: scale(1.4); opacity: 1; box-shadow: 0 0 15px currentColor; }
+      40% { transform: scale(1.3); opacity: 1; }
     }
     .thinking-status-text { 
-      font-size: 14px; 
-      font-weight: 700; 
-      background: linear-gradient(90deg, #00f0ff 0%, #c58af9 50%, #ff007f 100%); 
-      background-size: 200% auto; 
-      -webkit-background-clip: text; 
-      -webkit-text-fill-color: transparent; 
-      animation: statusGlow 2.5s linear infinite; 
+      font-size: 13px; 
+      font-weight: 600; 
+      color: var(--accent-cyan); 
     }
-    @keyframes statusGlow { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
 
-    /* 3D Bottom Floating Input Section */
+    /* Bottom Input Section */
     .input-section { 
-      padding: 12px 24px 24px; 
-      background: linear-gradient(to top, var(--bg-main) 80%, transparent); 
+      padding: 10px 20px 20px; 
+      background: #000000; 
       z-index: 5; 
       display: flex; 
       flex-direction: column; 
@@ -639,49 +543,46 @@
       width: 100%; 
     }
     
-    .model-selector-simple { 
-      margin-bottom: 10px; 
-      max-width: 860px; 
+    /* Top Bar above Textarea for Model & Thinking Level */
+    .input-controls-bar { 
+      margin-bottom: 8px; 
+      max-width: 840px; 
       width: 100%; 
       display: flex; 
       justify-content: flex-start; 
+      gap: 10px;
     }
-    .model-select { 
-      background: var(--bg-card); 
-      color: var(--accent-cyan); 
-      border: 1px solid rgba(0, 240, 255, 0.3); 
-      border-radius: 14px; 
-      padding: 8px 16px; 
-      font-size: 13px; 
+    .model-select, .thinking-select { 
+      background: rgba(22, 24, 32, 0.9); 
+      color: var(--text-main); 
+      border: 1px solid var(--border-color); 
+      border-radius: 10px; 
+      padding: 6px 12px; 
+      font-size: 12px; 
       font-family: inherit; 
-      font-weight: 700; 
+      font-weight: 600; 
       outline: none; 
       cursor: pointer; 
-      transition: all 0.3s; 
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4); 
+      transition: all 0.2s; 
     }
-    .model-select:hover { 
+    .model-select:hover, .thinking-select:hover { 
       border-color: var(--accent-cyan); 
-      box-shadow: 0 0 20px rgba(0, 240, 255, 0.35); 
     }
 
     .input-wrapper { 
       width: 100%; 
-      max-width: 860px; 
-      background: var(--bg-input); 
-      backdrop-filter: blur(28px) saturate(180%); 
-      border: 1px solid rgba(155, 81, 224, 0.4); 
-      border-radius: 28px; 
-      padding: 10px 18px; 
+      max-width: 840px; 
+      background: rgba(20, 22, 30, 0.95); 
+      border: 1px solid rgba(255, 255, 255, 0.12); 
+      border-radius: 22px; 
+      padding: 8px 14px; 
       display: flex; 
       align-items: center; 
-      box-shadow: var(--glass-shadow), var(--3d-inset); 
       position: relative; 
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
+      transition: border-color 0.25s; 
     }
     .input-wrapper:focus-within { 
       border-color: var(--accent-cyan); 
-      box-shadow: 0 0 30px rgba(0, 240, 255, 0.4), var(--3d-inset); 
     }
     
     .icon-btn { 
@@ -689,59 +590,39 @@
       border: none; 
       color: var(--text-muted); 
       cursor: pointer; 
-      padding: 8px; 
-      margin-right: 2px; 
+      padding: 6px; 
       display: flex; 
       align-items: center; 
       justify-content: center; 
       border-radius: 50%; 
-      transition: all 0.25s; 
+      transition: color 0.2s; 
       flex-shrink: 0; 
     }
-    .icon-btn:hover { 
-      color: #ffffff; 
-      background: rgba(0, 240, 255, 0.15); 
-      transform: scale(1.08);
-    }
-    .icon-btn.recording { 
-      color: var(--error); 
-      background: rgba(255, 71, 87, 0.2); 
-      animation: pulseRec 1.5s infinite; 
-    }
-    @keyframes pulseRec { 
-      0% { transform: scale(1); } 
-      50% { transform: scale(1.15); box-shadow: 0 0 20px rgba(255,71,87,0.6); } 
-      100% { transform: scale(1); } 
-    }
+    .icon-btn:hover { color: #ffffff; }
     
     .image-preview-wrapper { 
       display: none; 
       position: absolute; 
-      bottom: 75px; 
-      left: 20px; 
+      bottom: 65px; 
+      left: 16px; 
       background: #141824; 
-      padding: 8px; 
-      border-radius: 16px; 
+      padding: 6px; 
+      border-radius: 12px; 
       border: 1px solid var(--accent-cyan); 
-      box-shadow: 0 10px 30px rgba(0, 240, 255, 0.3); 
     }
-    .image-preview-wrapper img { width: 68px; height: 68px; object-fit: cover; border-radius: 10px; }
+    .image-preview-wrapper img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; }
     .remove-image-btn { 
       position: absolute; 
-      top: -8px; 
-      right: -8px; 
+      top: -6px; 
+      right: -6px; 
       background: var(--error); 
       color: white; 
       border: none; 
       border-radius: 50%; 
-      width: 24px; 
-      height: 24px; 
+      width: 20px; 
+      height: 20px; 
       cursor: pointer; 
-      font-size: 12px; 
-      display: flex; 
-      align-items: center; 
-      justify-content: center; 
-      box-shadow: 0 2px 8px rgba(0,0,0,0.5); 
+      font-size: 10px; 
     }
 
     textarea { 
@@ -752,214 +633,264 @@
       resize: none; 
       outline: none; 
       font-family: inherit; 
-      font-size: 15px; 
-      max-height: 140px; 
-      line-height: 22px; 
-      padding: 8px 12px; 
-      margin: 0; 
+      font-size: 14.5px; 
+      max-height: 130px; 
+      line-height: 20px; 
+      padding: 6px 10px; 
       user-select: text; 
       -webkit-user-select: text; 
     }
     
     .send-btn { 
-      background: linear-gradient(135deg, #00f0ff, #9b51e0, #ff007f); 
+      background: #ffffff; 
       border: none; 
       border-radius: 50%; 
-      width: 44px; 
-      height: 44px; 
+      width: 38px; 
+      height: 38px; 
       cursor: pointer; 
-      margin-left: 8px; 
+      margin-left: 6px; 
       display: flex; 
       align-items: center; 
       justify-content: center; 
       flex-shrink: 0; 
-      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s; 
-      box-shadow: 0 0 20px rgba(0, 240, 255, 0.45); 
+      transition: transform 0.2s; 
     }
-    .send-btn:hover { 
-      transform: scale(1.1) translateZ(5px); 
-      box-shadow: 0 0 30px rgba(255, 0, 127, 0.7); 
-    }
-    .send-btn:active { transform: scale(0.95); }
-    .send-btn svg { fill: #ffffff; width: 18px; height: 18px; }
+    .send-btn:hover { transform: scale(1.05); }
+    .send-btn svg { fill: #000000; width: 16px; height: 16px; }
 
-    /* Modals with Glass Acrylic Finish */
-    .profile-modal-overlay, .settings-modal-overlay { 
+    /* Gemini-Style Settings Modal */
+    .settings-modal-overlay, .profile-modal-overlay { 
       display: none; 
       position: fixed; 
       top: 0; 
       left: 0; 
       width: 100vw; 
       height: 100dvh; 
-      background: rgba(3, 5, 9, 0.82); 
+      background: rgba(0, 0, 0, 0.8); 
       z-index: 1000; 
       justify-content: center; 
       align-items: center; 
-      backdrop-filter: blur(20px); 
-    }
-    .profile-modal-card, .settings-modal-card { 
-      background: rgba(15, 20, 32, 0.9); 
-      border: 1px solid rgba(0, 240, 255, 0.35); 
-      border-radius: 28px; 
-      padding: 36px 30px; 
-      width: 440px; 
-      max-width: 92vw; 
-      text-align: center; 
-      display: flex; 
-      flex-direction: column; 
-      gap: 18px; 
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85); 
-      position: relative; 
-      max-height: 85dvh; 
-      overflow-y: auto; 
+      backdrop-filter: blur(8px); 
     }
     
-    .profile-modal-card img { 
-      width: 86px; 
-      height: 86px; 
-      border-radius: 50%; 
-      border: 2px solid var(--accent-cyan); 
-      margin: 0 auto; 
-      object-fit: cover; 
-      box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+    .gemini-settings-dialog {
+      background: var(--gemini-surface);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      width: 720px;
+      max-width: 92vw;
+      height: 520px;
+      max-height: 85dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9);
+      position: relative;
     }
-    .profile-modal-name { color: #ffffff; font-size: 22px; font-weight: 700; margin: 0; }
-    .profile-modal-email { color: var(--text-muted); font-size: 13px; margin: 0; padding-bottom: 10px; }
-    .profile-sign-out-btn { 
-      background: #171b28; 
-      color: var(--error); 
-      border: 1px solid rgba(255,71,87,0.4); 
-      padding: 14px; 
-      border-radius: 16px; 
-      font-size: 15px; 
-      font-weight: 700; 
-      cursor: pointer; 
-      transition: all 0.25s; 
-      font-family: inherit; 
-      display: flex; 
-      justify-content: center; 
-      align-items: center; 
-      gap: 8px; 
+
+    .gemini-settings-header {
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
-    .profile-sign-out-btn:hover { background: var(--error); color: #ffffff; box-shadow: 0 0 20px rgba(255,71,87,0.5); }
+
+    .gemini-settings-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .gemini-settings-body {
+      display: flex;
+      flex-grow: 1;
+      overflow: hidden;
+    }
+
+    .gemini-settings-tabs {
+      width: 200px;
+      background: rgba(0, 0, 0, 0.2);
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 16px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .gemini-tab-btn {
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .gemini-tab-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #ffffff;
+    }
+
+    .gemini-tab-btn.active {
+      background: var(--gemini-card);
+      color: var(--accent-cyan);
+    }
+
+    .gemini-settings-content {
+      flex-grow: 1;
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    .gemini-tab-panel {
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .gemini-tab-panel.active {
+      display: flex;
+    }
+
+    .gemini-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .gemini-row-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .gemini-row-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .gemini-row-subtext {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Modern Gemini Toggle Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #383a3d;
+      transition: .3s;
+      border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    input:checked + .slider { background-color: var(--accent-cyan); }
+    input:checked + .slider:before { transform: translateX(20px); background-color: #000; }
+
+    .gemini-textarea {
+      width: 100%;
+      height: 100px;
+      background: #141517;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      color: #fff;
+      padding: 12px;
+      font-family: inherit;
+      font-size: 13px;
+      resize: none;
+      outline: none;
+    }
+    .gemini-textarea:focus { border-color: var(--accent-cyan); }
+
+    .gemini-btn {
+      background: var(--gemini-card);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .gemini-btn:hover { background: rgba(255, 255, 255, 0.15); }
+    .gemini-btn.danger { border-color: rgba(255, 71, 87, 0.4); color: #ff6b81; }
+    .gemini-btn.danger:hover { background: rgba(255, 71, 87, 0.2); }
+
     .close-modal-btn { 
-      position: absolute; 
-      top: 16px; 
-      right: 20px; 
       background: transparent; 
       border: none; 
       color: var(--text-muted); 
-      font-size: 26px; 
+      font-size: 22px; 
       cursor: pointer; 
-      transition: color 0.2s;
     }
-    .close-modal-btn:hover { color: #ffffff; }
-
-    .settings-title { 
-      font-size: 24px; 
-      font-weight: 800; 
-      color: #ffffff; 
-      text-align: left; 
-      background: linear-gradient(90deg, #00f0ff, #9b51e0); 
-      -webkit-background-clip: text; 
-      -webkit-text-fill-color: transparent; 
-    }
-    .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border-color); }
-    .settings-label { font-size: 14px; font-weight: 600; color: #e1e3e8; text-align: left; }
-    .settings-toggle-switch { position: relative; display: inline-block; width: 46px; height: 26px; }
-    .settings-toggle-switch input { opacity: 0; width: 0; height: 0; }
-    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #202738; transition: .3s; border-radius: 26px; border: 1px solid rgba(255, 255, 255, 0.1); }
-    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
-    input:checked + .slider { background-color: var(--accent-cyan); }
-    input:checked + .slider:before { transform: translateX(20px); }
-
-    .settings-section { margin-top: 12px; text-align: left; width: 100%; }
-    .settings-section-title { font-size: 13px; font-weight: 700; color: var(--accent-cyan); margin-bottom: 8px; }
-    .usage-bar-container { width: 100%; height: 10px; background: #202738; border-radius: 10px; overflow: hidden; margin: 8px 0 6px; }
-    .usage-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #00f0ff, #ff007f); transition: width 0.4s ease; }
-    .usage-text { font-size: 11px; color: var(--text-muted); text-align: right; }
-    .settings-textarea { 
-      width: 100%; 
-      height: 80px; 
-      background: var(--bg-input); 
-      border: 1px solid var(--border-color); 
-      border-radius: 14px; 
-      color: #fff; 
-      padding: 12px; 
-      font-family: inherit; 
-      font-size: 13px; 
-      resize: none; 
-      outline: none; 
-      margin-bottom: 6px; 
-    }
-    .settings-textarea:focus { border-color: var(--accent-cyan); }
-    .settings-btn { 
-      width: 100%; 
-      background: var(--bg-input); 
-      border: 1px solid var(--border-color); 
-      color: #fff; 
-      padding: 12px; 
-      border-radius: 14px; 
-      font-size: 13.5px; 
-      font-weight: 600; 
-      cursor: pointer; 
-      transition: all 0.25s; 
-      font-family: inherit; 
-      text-align: center; 
-      margin-top: 8px; 
-    }
-    .settings-btn:hover { background: var(--bg-hover); border-color: var(--accent-cyan); color: var(--accent-cyan); }
-    .settings-btn.danger { border-color: rgba(255, 71, 87, 0.4); color: #ff6b81; }
-    .settings-btn.danger:hover { background: rgba(255, 71, 87, 0.2); color: #ffffff; }
 
     /* Context Menu */
     .context-menu { 
       display: none; 
       position: fixed; 
-      background: rgba(18, 22, 36, 0.95); 
-      backdrop-filter: blur(20px); 
-      border: 1px solid rgba(255, 71, 87, 0.4); 
-      border-radius: 16px; 
-      box-shadow: 0 10px 40px rgba(0,0,0,0.8); 
+      background: #181a20; 
+      border: 1px solid rgba(255, 255, 255, 0.1); 
+      border-radius: 12px; 
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8); 
       z-index: 2000; 
       flex-direction: column; 
-      padding: 6px; 
-      min-width: 170px; 
+      padding: 4px; 
+      min-width: 150px; 
     }
     .context-menu-item { 
-      padding: 12px 16px; 
+      padding: 10px 14px; 
       color: var(--error); 
       cursor: pointer; 
-      border-radius: 12px; 
+      border-radius: 8px; 
       display: flex; 
       align-items: center; 
-      gap: 10px; 
-      font-size: 14px; 
+      gap: 8px; 
+      font-size: 13px; 
       font-weight: 600; 
-      font-family: inherit; 
     }
-    .context-menu-item:hover { background: rgba(255, 71, 87, 0.2); }
+    .context-menu-item:hover { background: rgba(255, 71, 87, 0.15); }
 
     @media (max-width: 768px) { 
-      .mobile-new-chat-btn { display: flex; }
       .history-sidebar { 
         position: absolute; 
         top: 0; 
         left: 0; 
         height: 100dvh; 
-        width: 300px; 
+        width: 260px; 
         z-index: 100; 
         transform: translateX(-100%); 
         margin-left: 0; 
-        border-top-right-radius: 24px; 
-        border-bottom-right-radius: 24px; 
       } 
       .history-sidebar.open { transform: translateX(0); } 
       .sidebar-close-btn { display: block; }
-      .chat-container { padding: 90px 16px 20px; }
-      .input-section { padding: 12px 16px 24px; }
-      .profile-footer { border-bottom-right-radius: 24px; padding-bottom: 24px; }
-      .header-action-btn.pwa-btn { display: flex; }
+      .gemini-settings-body { flex-direction: column; }
+      .gemini-settings-tabs { width: 100%; flex-direction: row; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.08); overflow-x: auto; }
       .starter-chips-container { display: none; }
     }
   </style>
@@ -981,27 +912,18 @@
     
     <div class="nav-group-right">
       <button class="nav-glass-btn" aria-label="Settings" onclick="openSettingsModal()" title="Settings">⚙️ Settings</button>
-      <button class="mobile-new-chat-btn" aria-label="New Chat" onclick="startNewChat()">➕</button>
     </div>
   </div>
 
   <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true" onclick="closeSidebar()"></div>
 
-  <!-- 3D History Sidebar -->
+  <!-- Sidebar -->
   <div class="history-sidebar" id="sidebarNode">
     <div class="sidebar-header">
+      <!-- Clean New Chat Button without extra icon -->
       <button class="new-chat-btn" aria-label="Start a new chat" onclick="startNewChat(); closeSidebar();">
-        <span>➕</span> New Chat
+        New Chat
       </button>
-      
-      <button class="header-action-btn" aria-label="Upgrade" onclick="openUpgradeModal()" title="Upgrade to Pro">
-        ⚡
-      </button>
-      
-      <button class="header-action-btn pwa-btn" id="sidebarInstallBtn" aria-label="Install App" onclick="installPWA()" title="Install TruX App">
-        📥
-      </button>
-
       <button class="sidebar-close-btn" aria-label="Close sidebar" onclick="closeSidebar()" title="Close Menu">×</button>
     </div>
     
@@ -1020,10 +942,24 @@
 
   <!-- Main Chat Arena -->
   <div class="main-chat-arena">
+    
+    <!-- Workspace Indicator Bar -->
+    <div class="workspace-header-bar">
+      <div class="workspace-badge-tag">
+        <span class="workspace-tag-dot"></span>
+        WORKSPACE
+      </div>
+    </div>
+
+    <!-- Empty Workspace Welcome Display -->
     <div class="welcome-screen" id="welcomeScreen">
-      <div class="welcome-badge">⚡ Next-Gen Intelligence</div>
-      <h1 class="welcome-title">Welcome, I am Tru<span class="x-anim">X</span></h1>
-      <p class="welcome-subtitle">Your immersive 3D AI assistant powered by high-speed neural models.</p>
+      <h1 class="welcome-title">Welcome to TruX</h1>
+
+      <div class="workspace-info-box">
+        <p class="workspace-info-text">
+          This is your workspace where your conversations, neural reasoning, and visual outputs will appear. Select a suggestion below or type a prompt to start.
+        </p>
+      </div>
 
       <div class="starter-chips-container">
         <div class="starter-chip" onclick="useSuggestion('Write a clean JavaScript function for dynamic web animations.')">
@@ -1041,11 +977,18 @@
     <div class="chat-container" id="chatContainer" role="log" aria-live="polite"></div>
 
     <div class="input-section">
-      <div class="model-selector-simple">
+      <!-- Model and Thinking Level Selectors Bar -->
+      <div class="input-controls-bar">
         <select class="model-select" id="modelSelect" aria-label="Select AI Model" onchange="handleModelChange(this.value)">
           <option value="base">⚡ TruX Core 3.0</option>
           <option value="pro" id="proOption">✨ TruX Pro 3.0</option>
-          <option value="ultra" disabled>🔒 TruX Ultra 3.5 (paid)</option>
+          <option value="ultra" disabled>🔒 TruX Ultra 3.5</option>
+        </select>
+
+        <select class="thinking-select" id="thinkingSelect" aria-label="Thinking Level" onchange="handleThinkingLevelChange(this.value)">
+          <option value="fast">⚡ Thinking: Fast</option>
+          <option value="balanced" selected>🧠 Thinking: Balanced</option>
+          <option value="deep">🔬 Thinking: Deep Reasoning</option>
         </select>
       </div>
 
@@ -1056,7 +999,7 @@
         </div>
         
         <button class="icon-btn" id="voiceBtn" aria-label="Voice Input" onclick="toggleVoiceInput()" title="Voice Input">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
             <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
             <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
           </svg>
@@ -1064,7 +1007,7 @@
 
         <input type="file" id="imageUpload" accept="image/*" style="display:none;" onchange="handleImageUpload(event)">
         <button class="icon-btn" aria-label="Upload Image" onclick="document.getElementById('imageUpload').click()" title="Add Image">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
             <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
           </svg>
         </button>
@@ -1082,68 +1025,96 @@
 
   <!-- Profile Modal -->
   <div class="profile-modal-overlay" id="profileModal" aria-hidden="true">
-    <div class="profile-modal-card" role="dialog" aria-modal="true">
-      <button class="close-modal-btn" aria-label="Close Profile" onclick="closeProfileModal()">×</button>
-      <img id="modalAvatar" src="" alt="Profile Picture">
-      <div class="profile-modal-name" id="modalName">User Name</div>
-      <div class="profile-modal-email" id="modalEmail">user@email.com</div>
-      <button class="profile-sign-out-btn" aria-label="Sign Out" onclick="confirmSignOut()">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
-        Sign Out
-      </button>
+    <div style="background: var(--gemini-surface); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 24px; text-align: center; width: 320px; color: #fff;">
+      <img id="modalAvatar" src="" alt="Profile Picture" style="width: 70px; height: 70px; border-radius: 50%; border: 2px solid var(--accent-cyan); margin-bottom: 12px;">
+      <div id="modalName" style="font-weight: 700; font-size: 18px;">User Name</div>
+      <div id="modalEmail" style="color: var(--text-muted); font-size: 12px; margin-bottom: 18px;">user@email.com</div>
+      <button class="gemini-btn danger" style="width: 100%;" onclick="confirmSignOut()">Sign Out</button>
+      <button class="gemini-btn" style="width: 100%; margin-top: 8px;" onclick="closeProfileModal()">Cancel</button>
     </div>
   </div>
 
-  <!-- Settings Modal -->
+  <!-- Gemini Identical Settings Modal -->
   <div class="settings-modal-overlay" id="settingsModal" aria-hidden="true">
-    <div class="settings-modal-card" role="dialog" aria-modal="true">
-      <button class="close-modal-btn" aria-label="Close Settings" onclick="closeSettingsModal()">×</button>
-      <div class="settings-title">Settings</div>
-      
-      <div class="settings-row">
-        <span class="settings-label">Dark Ambient Glow</span>
-        <label class="settings-toggle-switch">
-          <input type="checkbox" id="neonGlowToggle" checked onchange="toggleAmbientGlow(this)">
-          <span class="slider"></span>
-        </label>
+    <div class="gemini-settings-dialog" role="dialog" aria-modal="true">
+      <div class="gemini-settings-header">
+        <div class="gemini-settings-title">Settings</div>
+        <button class="close-modal-btn" aria-label="Close Settings" onclick="closeSettingsModal()">×</button>
       </div>
 
-      <div class="settings-row">
-        <span class="settings-label">Auto Read Answers</span>
-        <label class="settings-toggle-switch">
-          <input type="checkbox" id="autoReadToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <div class="settings-row">
-        <span class="settings-label">Sound Effects</span>
-        <label class="settings-toggle-switch">
-          <input type="checkbox" id="sfxToggle" checked>
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <div class="settings-section">
-        <div class="settings-section-title">TruX Pro Usage (24h Limit)</div>
-        <div class="usage-bar-container">
-          <div class="usage-bar-fill" id="usageBarFill"></div>
+      <div class="gemini-settings-body">
+        <!-- Sidebar Navigation Tabs -->
+        <div class="gemini-settings-tabs">
+          <button class="gemini-tab-btn active" onclick="switchSettingsTab('general', this)">General</button>
+          <button class="gemini-tab-btn" onclick="switchSettingsTab('instructions', this)">System Instructions</button>
+          <button class="gemini-tab-btn" onclick="switchSettingsTab('data', this)">Data & Privacy</button>
         </div>
-        <div class="usage-text" id="usageText">0 / 1,000 Tokens</div>
-      </div>
 
-      <div class="settings-section">
-        <div class="settings-section-title">Instructions for TruX</div>
-        <textarea id="customInstructions" class="settings-textarea" placeholder="How would you like TruX to respond? (e.g. Keep answers concise, act like a senior developer)"></textarea>
-        <button class="settings-btn" onclick="saveCustomInstructions()">Save Instructions</button>
-      </div>
+        <!-- Settings Content Area -->
+        <div class="gemini-settings-content">
+          
+          <!-- General Tab -->
+          <div class="gemini-tab-panel active" id="tab-general">
+            <div class="gemini-row">
+              <div class="gemini-row-info">
+                <div class="gemini-row-label">Ambient Glow</div>
+                <div class="gemini-row-subtext">Enable soft ambient light gradients in workspace</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="neonGlowToggle" checked onchange="toggleAmbientGlow(this)">
+                <span class="slider"></span>
+              </label>
+            </div>
 
-      <div class="settings-section">
-        <div class="settings-section-title">System & Tools</div>
-        <button class="settings-btn" onclick="checkApiLatency()">📡 Check API Status</button>
-        <button class="settings-btn" onclick="exportChatData()">📥 Export Chat Backup</button>
-        <button class="settings-btn danger" onclick="resetAllSettings()">🔄 Reset All Settings to Default</button>
-        <button class="settings-btn danger" onclick="clearAllHistory()">🗑️ Clear All Chat History</button>
+            <div class="gemini-row">
+              <div class="gemini-row-info">
+                <div class="gemini-row-label">Auto Read Speech</div>
+                <div class="gemini-row-subtext">Automatically read AI answers out loud</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="autoReadToggle">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="gemini-row">
+              <div class="gemini-row-info">
+                <div class="gemini-row-label">TruX Pro Usage</div>
+                <div class="gemini-row-subtext" id="usageText">0 / 1,000 Tokens</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Instructions Tab -->
+          <div class="gemini-tab-panel" id="tab-instructions">
+            <div class="gemini-row-label">Custom Instructions</div>
+            <div class="gemini-row-subtext" style="margin-bottom: 10px;">Define preferred behavior, tone, or response format for TruX.</div>
+            <textarea id="customInstructions" class="gemini-textarea" placeholder="e.g., Provide concise code snippets with explanation..."></textarea>
+            <div>
+              <button class="gemini-btn" onclick="saveCustomInstructions()">Save Instructions</button>
+            </div>
+          </div>
+
+          <!-- Data & Privacy Tab -->
+          <div class="gemini-tab-panel" id="tab-data">
+            <div class="gemini-row">
+              <div class="gemini-row-info">
+                <div class="gemini-row-label">Export Chat History</div>
+                <div class="gemini-row-subtext">Download local backup of chat history</div>
+              </div>
+              <button class="gemini-btn" onclick="exportChatData()">Export JSON</button>
+            </div>
+
+            <div class="gemini-row">
+              <div class="gemini-row-info">
+                <div class="gemini-row-label">Clear All History</div>
+                <div class="gemini-row-subtext">Permanently delete all conversation logs</div>
+              </div>
+              <button class="gemini-btn danger" onclick="clearAllHistory()">Clear History</button>
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
   </div>
@@ -1156,36 +1127,6 @@
   </div>
 
   <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then(reg => console.log('Service Worker Registered:', reg.scope))
-          .catch(err => console.error('SW registration failed:', err));
-      });
-    }
-
-    let deferredPrompt = null;
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      const installBtn = document.getElementById('sidebarInstallBtn');
-      if (installBtn) installBtn.style.display = 'flex';
-    });
-
-    async function installPWA() {
-      if (!deferredPrompt) {
-        alert("PWA installation is either completed or not supported on this browser.");
-        return;
-      }
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        const installBtn = document.getElementById('sidebarInstallBtn');
-        if (installBtn) installBtn.style.display = 'none';
-      }
-      deferredPrompt = null;
-    }
-
     let auth = null;
     let provider = null;
 
@@ -1237,29 +1178,8 @@
 
     function updateProUsageUI() {
       const usage = getProUsageData();
-      const fillPercent = Math.min(100, (usage.tokensUsed / 1000) * 100);
-      const fillEl = document.getElementById('usageBarFill');
       const textEl = document.getElementById('usageText');
-      const proOption = document.getElementById('proOption');
-
-      if (fillEl) fillEl.style.width = fillPercent + '%';
       if (textEl) textEl.innerText = `${usage.tokensUsed.toLocaleString()} / 1,000 Tokens`;
-
-      if (usage.tokensUsed >= 1000) {
-        if (proOption) {
-          proOption.disabled = true;
-          proOption.innerText = "🔒 TruX Pro 3.0 (24h Limit)";
-        }
-        if (currentModel === 'pro') {
-          currentModel = 'base';
-          document.getElementById('modelSelect').value = 'base';
-        }
-      } else {
-        if (proOption) {
-          proOption.disabled = false;
-          proOption.innerText = "✨ TruX Pro 3.0";
-        }
-      }
     }
 
     function recordProTokens(tokens) {
@@ -1272,7 +1192,7 @@
     function saveCustomInstructions() {
       const text = document.getElementById('customInstructions').value.trim();
       localStorage.setItem('trux_custom_instructions', text);
-      alert("Instructions saved successfully!");
+      alert("Custom Instructions Saved!");
     }
 
     function loadCustomInstructions() {
@@ -1285,32 +1205,14 @@
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(chatSessions, null, 2));
       const anchor = document.createElement('a');
       anchor.setAttribute("href", dataStr);
-      anchor.setAttribute("download", `trux_chat_backup_${Date.now()}.json`);
+      anchor.setAttribute("download", `trux_backup_${Date.now()}.json`);
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
     }
 
-    function checkApiLatency() {
-      const start = Date.now();
-      fetch('/api/chat')
-        .then(() => alert(`API Connection Healthy! Latency: ${Date.now() - start}ms`))
-        .catch(() => alert("Failed to connect to backend server."));
-    }
-
-    function resetAllSettings() {
-      if (confirm("Reset all settings to default configuration?")) {
-        localStorage.removeItem('trux_custom_instructions');
-        localStorage.removeItem('trux_ambient_glow');
-        localStorage.removeItem('trux_auto_read');
-        localStorage.removeItem('trux_sfx');
-        loadSettingsFromStorage();
-        alert("Settings reset to defaults.");
-      }
-    }
-
     function clearAllHistory() {
-      if (confirm("Are you sure you want to permanently clear all chat history?")) {
+      if (confirm("Permanently clear all chat history?")) {
         chatSessions = {};
         localStorage.removeItem('trux_chats');
         startNewChat();
@@ -1333,49 +1235,30 @@
     function closeProfileModal() { document.getElementById('profileModal').style.display = 'none'; }
     function openSettingsModal() { updateProUsageUI(); loadCustomInstructions(); document.getElementById('settingsModal').style.display = 'flex'; }
     function closeSettingsModal() { document.getElementById('settingsModal').style.display = 'none'; }
-    function openUpgradeModal() { alert("⚡ TruX Pro Features:\n• TruX 3.5 Faster Processing\n• Extended Context Window\n• Priority Server Routing"); }
+
+    function switchSettingsTab(tabId, btn) {
+      document.querySelectorAll('.gemini-tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.gemini-tab-panel').forEach(p => p.classList.remove('active'));
+      
+      btn.classList.add('active');
+      document.getElementById('tab-' + tabId).classList.add('active');
+    }
 
     function toggleAmbientGlow(el) {
       const ambient = document.querySelector('.dark-ambient-container');
       const isChecked = el ? el.checked : document.getElementById('neonGlowToggle').checked;
       if (ambient) ambient.style.display = isChecked ? 'block' : 'none';
-      if (!isChecked) {
-        document.body.classList.add('dark-mode-off');
-      } else {
-        document.body.classList.remove('dark-mode-off');
-      }
       localStorage.setItem('trux_ambient_glow', isChecked ? 'true' : 'false');
-    }
-
-    function loadSettingsFromStorage() {
-      const glow = localStorage.getItem('trux_ambient_glow');
-      const isGlowOn = glow === null ? true : glow === 'true';
-      const glowToggle = document.getElementById('neonGlowToggle');
-      if (glowToggle) {
-        glowToggle.checked = isGlowOn;
-        toggleAmbientGlow(glowToggle);
-      }
     }
 
     function confirmSignOut() { auth.signOut().then(() => closeProfileModal()); }
 
-    function isUserSignedIn() { return auth && !!auth.currentUser; }
-
     function handleModelChange(val) {
-      if (val === 'ultra') {
-        alert("TruX Ultra 3.5 is currently locked.");
-        document.getElementById('modelSelect').value = currentModel;
-        return;
-      }
-      if (val === 'pro') {
-        const usage = getProUsageData();
-        if (usage.tokensUsed >= 1000) {
-          alert("TruX Pro limit reached (1k tokens). Resets in 24 hours.");
-          document.getElementById('modelSelect').value = currentModel;
-          return;
-        }
-      }
       currentModel = val;
+    }
+
+    function handleThinkingLevelChange(val) {
+      currentThinkingLevel = val;
     }
 
     function useSuggestion(text) {
@@ -1390,60 +1273,10 @@
     let isGenerating = false;
     let activeAbortController = null;
     let currentModel = 'base';
+    let currentThinkingLevel = 'balanced';
     let selectedImageBase64 = null;
-    let wasInputByVoice = false;
     let codeBlockCounter = 0;
     let contextMenuTargetId = null;
-
-    let recognition = null;
-    let isRecording = false;
-
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-
-      recognition.onstart = () => {
-        isRecording = true;
-        wasInputByVoice = true;
-        document.getElementById('voiceBtn').classList.add('recording');
-      };
-
-      recognition.onresult = (event) => {
-        let transcript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
-        }
-        const inputEl = document.getElementById('promptInput');
-        inputEl.value = transcript;
-        inputEl.style.height = "auto";
-        inputEl.style.height = (inputEl.scrollHeight) + "px";
-        handleInputChange();
-      };
-
-      recognition.onerror = () => stopVoiceInput();
-      recognition.onend = () => stopVoiceInput();
-    }
-
-    function toggleVoiceInput() {
-      if (!recognition) {
-        alert("Speech recognition is not supported in this browser. Try Chrome.");
-        return;
-      }
-      if (isRecording) {
-        recognition.stop();
-      } else {
-        wasInputByVoice = true;
-        recognition.start();
-      }
-    }
-
-    function stopVoiceInput() {
-      isRecording = false;
-      document.getElementById('voiceBtn').classList.remove('recording');
-    }
 
     function handleInputChange() {
       const inputEl = document.getElementById('promptInput');
@@ -1476,14 +1309,10 @@
       return html;
     }
 
-    function stripMarkdownForVoice(text) {
-      return text ? text.replace(/```[\s\S]*?```/g, 'Code block omitted.').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/#/g, '').replace(/`/g, '') : "";
-    }
-
     function speakText(text) {
       if (!('speechSynthesis' in window)) return;
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(stripMarkdownForVoice(text));
+      const utterance = new SpeechSynthesisUtterance(text.replace(/```[\s\S]*?```/g, 'Code block omitted.'));
       window.speechSynthesis.speak(utterance);
     }
 
@@ -1542,34 +1371,16 @@
     const sendIconSvg = `<path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>`;
     const stopIconSvg = `<rect x="6" y="6" width="12" height="12" rx="1.5" />`;
 
-    async function retryPrompt(promptToRetry, targetRow) {
-      if (targetRow) targetRow.remove();
-      const inputEl = document.getElementById('promptInput');
-      inputEl.value = promptToRetry;
-      handleInputChange();
-      sendPrompt();
-    }
-
     async function sendPrompt() {
       const inputEl = document.getElementById('promptInput');
       const prompt = inputEl.value.trim();
       if (!prompt && !selectedImageBase64) return;
 
-      if (currentModel === 'pro') {
-        const usage = getProUsageData();
-        if (usage.tokensUsed >= 1000) {
-          alert("TruX Pro token limit reached for 24 hours. Switching to Core model.");
-          currentModel = 'base';
-          document.getElementById('modelSelect').value = 'base';
-        }
-      }
-
       isGenerating = true;
       document.getElementById('btnIcon').innerHTML = stopIconSvg;
+      
+      /* Make Background Completely Black when Chat is Active */
       document.body.classList.add('chat-active');
-
-      const currentVoiceTriggered = wasInputByVoice;
-      wasInputByVoice = false;
 
       if (!currentChatId) {
         currentChatId = 'chat_' + Date.now();
@@ -1607,21 +1418,13 @@
               <div class="thinking-dot dot-2"></div>
               <div class="thinking-dot dot-3"></div>
             </div>
-            <span class="thinking-status-text" id="${statusTextId}">Thinking...</span>
+            <span class="thinking-status-text" id="${statusTextId}">Thinking (${currentThinkingLevel})...</span>
           </div>
         </div>
         <div class="message-actions" id="${actionsId}"></div>`;
       
       container.appendChild(truxRow);
       container.scrollTop = container.scrollHeight;
-
-      const phrases = ["Thinking...", "Processing query...", "Analyzing context...", "Formulating response..."];
-      let phraseIdx = 0;
-      const phraseInterval = setInterval(() => {
-        phraseIdx = (phraseIdx + 1) % phrases.length;
-        const statusEl = document.getElementById(statusTextId);
-        if (statusEl) statusEl.innerText = phrases[phraseIdx];
-      }, 1800);
 
       activeAbortController = new AbortController();
 
@@ -1635,23 +1438,18 @@
           signal: activeAbortController.signal,
           body: JSON.stringify({ 
             message: prompt, 
-            tier: currentModel, 
+            tier: currentModel,
+            thinkingLevel: currentThinkingLevel,
             history: historyPayload, 
             image: imageToSend,
             systemInstruction: customInstructions
           })
         });
         
-        clearInterval(phraseInterval);
         const data = await res.json();
         const responseText = data.reply || data.error || "No response received.";
         chatSessions[currentChatId].messages.push({ role: 'trux', text: responseText });
         localStorage.setItem('trux_chats', JSON.stringify(chatSessions));
-
-        if (currentModel === 'pro') {
-          const estimatedTokens = Math.ceil((prompt.length + responseText.length) / 4);
-          recordProTokens(estimatedTokens);
-        }
 
         const bubble = document.getElementById(bubbleId);
         bubble.classList.remove('thinking-box');
@@ -1670,29 +1468,18 @@
         container.scrollTop = container.scrollHeight;
         handleInputChange();
 
-        if (currentVoiceTriggered || document.getElementById('autoReadToggle').checked) {
+        if (document.getElementById('autoReadToggle').checked) {
           speakText(responseText);
         }
       } catch (err) {
-        clearInterval(phraseInterval);
         const bubble = document.getElementById(bubbleId);
         if (bubble) {
           bubble.classList.remove('thinking-box');
-          bubble.innerText = err.name === 'AbortError' ? "Generation stopped." : "Error connecting to TruX server.";
+          bubble.innerText = err.name === 'AbortError' ? "Generation stopped." : "Error connecting to server.";
         }
-        
-        const actionsContainer = document.getElementById(actionsId);
-        actionsContainer.innerHTML = '';
-        const retryBtn = document.createElement('button');
-        retryBtn.className = 'retry-btn';
-        retryBtn.innerHTML = '🔄 Retry';
-        retryBtn.onclick = () => retryPrompt(prompt, truxRow);
-        actionsContainer.appendChild(retryBtn);
-
         isGenerating = false;
         activeAbortController = null;
         document.getElementById('btnIcon').innerHTML = sendIconSvg;
-        handleInputChange();
       }
     }
 
@@ -1710,19 +1497,13 @@
         if (activeAbortController) activeAbortController.abort();
         isGenerating = false;
         document.getElementById('btnIcon').innerHTML = sendIconSvg;
-        handleInputChange();
       } else {
-        if (currentModel === 'pro' && !isUserSignedIn()) {
-          alert("Please sign in to access Pro model.");
-          handleAuthAction();
-          return; 
-        }
         sendPrompt();
       }
     }
 
     function deleteChat(id) {
-      if(confirm("Are you sure you want to delete this chat?")) {
+      if(confirm("Delete this conversation?")) {
         delete chatSessions[id];
         localStorage.setItem('trux_chats', JSON.stringify(chatSessions));
         if(currentChatId === id) startNewChat();
@@ -1815,7 +1596,6 @@
 
     renderSidebar();
     updateProUsageUI();
-    loadSettingsFromStorage();
     handleInputChange();
   </script>
 </body>
