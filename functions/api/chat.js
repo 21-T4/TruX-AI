@@ -38,12 +38,16 @@ async function generateNanoBananaImage(prompt) {
     throw new Error(`Image Generation engine temporarily busy: ${error.message}`);
   }
 }
-    // --- MODE 2: CHAT WITH NATIVE SEARCH & THINKING BUDGET ---
+
+// --- MODE 2: CHAT WITH NATIVE SEARCH & THINKING BUDGET ---
+export async function handleChatRequest({ message, history, image, tier, systemInstruction, thinkingLevel, env }) {
+  try {
     const combinedSystemInstruction = systemInstruction?.trim()
       ? `${BASE_PERSONA}\n\n[USER CUSTOM INSTRUCTIONS]:\n${systemInstruction}`
       : BASE_PERSONA;
 
-    const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
+    const apiKey = env?.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+    const genAI = new GoogleGenerativeAI(apiKey);
     
     let thinkingBudget = 0;
     if (thinkingLevel === 'low') thinkingBudget = 1024;
@@ -57,7 +61,9 @@ async function generateNanoBananaImage(prompt) {
     };
 
     if (thinkingBudget > 0) {
-      requestConfig.thinkingConfig = { thinkingBudget };
+      requestConfig.generationConfig = {
+        thinkingConfig: { thinkingBudget }
+      };
     }
 
     const model = genAI.getGenerativeModel(requestConfig);
@@ -116,7 +122,8 @@ async function generateNanoBananaImage(prompt) {
 
     const finalResponse = (rawText + searchSourcesText).replace(/<think>[\s\S]*?<\/think>/g, '').trim();
     return Response.json({ reply: finalResponse });
-
+  } catch (error) {
     console.error('API Error:', error);
     return Response.json({ error: error.message || 'Server connection error' }, { status: 500 });
+  }
 }
