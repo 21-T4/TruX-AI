@@ -1,350 +1,178 @@
-const BASE_PERSONA = `
-You are TruX, an AI created by TruX-Technologies.
-Keep answers concise, precise and informative.
-Never expose hidden reasoning or chain-of-thought.
-Never use LaTeX for code generation.
-Use Unicode symbols and standard text where appropriate.
-`;
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const MODELS = {
-  base: "gemini-3.7-flash",
-  pro: "gemini-3.7-flash"
+const BASE_PERSONA = `Never use latex for code generation. You can use unicode symbols and standard text. Your name is TruX, an AI created by TruX-Technologies. Keep answers concise, precise, and informative.`;
+
+const searchWebDeclaration = {
+  name: 'searchWeb',
+  description: 'Search live web via Serper. ONLY call if real-time/current data outside training is explicitly requested.',
+  parameters: {
+    type: 'OBJECT',
+    properties: {
+      query: { type: 'STRING', description: 'Search keywords.' }
+    },
+    required: ['query']
+  }
 };
 
-const IMAGE_MODEL = "gemini-3.1-flash-image";
-
-function json(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "Content-Type": "application/json",
-      "Cache-Control": "no-store"
-    }
-  });
-}
-
-function cleanHistory(history) {
-  if (!Array.isArray(history)) return [];
-
-  return history
-    .slice(-10)
-    .filter(m => m && m.text)
-    .map(m => ({
-      role: m.role === "trux" || m.role === "model"
-        ? "model"
-        : "user",
-      parts: [
-        {
-          text: String(m.text)
-        }
-      ]
-    }));
-}
-
-function extractText(data) {
-  const parts =
-    data?.candidates?.[0]?.content?.parts || [];
-
-  return parts
-    .filter(p => p.text)
-    .map(p => p.text)
-    .join("\n")
-    .trim();
-}
-
-function extractImage(data) {
-  const parts =
-    data?.candidates?.[0]?.content?.parts || [];
-
-  for (const part of parts) {
-    if (part.inlineData?.data) {
-      return {
-        mimeType: part.inlineData.mimeType || "image/png",
-        data: part.inlineData.data
-      };
-    }
-  }
-
-  return null;
-}
-
-async function callGemini({
-  apiKey,
-  model,
-  contents,
-  config
-}) {
-  const url =
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
+const generateImageDeclaration = {
+  name: 'generateImage',
+  description: 'Generate or draw an image using Nano Banana Pro (Imagen 3). Call when the user requests generating, creating, or drawing an image.',
+  parameters: {
+    type: 'OBJECT',
+    properties: {
+      prompt: { type: 'STRING', description: 'Detailed prompt describing the image to generate.' }
     },
+    required: ['prompt']
+  }
+};
+
+async function fetchSerperSearchResults(query, apiKey) {
+  if (!apiKey) return "Search failed: API key missing.";
+  try {
+    const response = await fetch('https://google.serper.dev/search', {
+      method: 'POST',
+      headers: { 'X-API-KEY': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q: query })
+    });
+    if (!response.ok) return "No results.";
+    const data = await response.json();
+    if (!data.organic?.length) return "No search results found.";
+    return data.organic.slice(0, 3).map(item => `Title: ${item.title}\nSnippet: ${item.snippet}`).join('\n\n');
+  } catch {
+    return "Search error.";
+  }
+}
+
+// Nano Banana Pro (Imagen 3 REST API Integration)
+async function fetchImagen3Image(prompt, apiKey) {
+  if (!apiKey) throw new Error("GEMINI_API_KEY missing.");
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      contents,
-      generationConfig: config
+      instances: [{ prompt }],
+      parameters: {
+        sampleCount: 1,
+        aspectRatio: "1:1",
+        outputMimeType: "image/jpeg"
+      }
     })
   });
 
-  const data = await response.json();
-
   if (!response.ok) {
-    const message =
-      data?.error?.message ||
-      `Gemini API returned HTTP ${response.status}`;
-
-    throw new Error(message);
+    const errText = await response.text();
+    throw new Error(`Imagen Generation Error: ${errText}`);
   }
 
-  return data;
+  const data = await response.json();
+  const base64Image = data.predictions?.[0]?.bytesBase64Encoded;
+  if (!base64Image) throw new Error("Failed to generate image.");
+  return `data:image/jpeg;base64,${base64Image}`;
 }
 
-function thinkingConfig(level) {
-  switch (level) {
-    case "low":
-      return {
-        thinkingLevel: "LOW"
-      };
-
-    case "medium":
-      return {
-        thinkingLevel: "MEDIUM"
-      };
-
-    case "high":
-      return {
-        thinkingLevel: "HIGH"
-      };
-
-    default:
-      return {
-        thinkingLevel: "MINIMAL"
-      };
+function getGeminiModel(tier) {
+  switch (tier) {
+    case 'base': return 'gemini-3.1-flash-lite';
+    case 'pro': return 'gemini-3.5-flash-lite';
+    case 'ultra': return 'gemini-3.6-flash';
+    default: return 'gemini-3.1-flash-lite';
   }
 }
 
 export async function onRequestPost(context) {
   try {
-    const apiKey = context.env.GEMINI_API_KEY;
-
-    if (!apiKey) {
-      return json({
-        error: "GEMINI_API_KEY is not configured in Cloudflare Pages."
-      }, 500);
+    const { request, env } = context;
+    if (!env.GEMINI_API_KEY) {
+      return Response.json({ error: 'GEMINI_API_KEY missing.' }, { status: 500 });
     }
 
-    let body;
+    const { message, tier, history, image, systemInstruction } = await request.json();
 
-    try {
-      body = await context.request.json();
-    } catch {
-      return json({
-        error: "Invalid JSON request."
-      }, 400);
+    if (!message && !image) {
+      return Response.json({ error: 'Message or image required.' }, { status: 400 });
     }
 
-    const {
-      message = "",
-      history = [],
-      image = null,
-      tier = "base",
-      systemInstruction = "",
-      thinkingLevel = "medium",
-      mode = "chat"
-    } = body;
-
-    const prompt = String(message || "").trim();
-
-    if (!prompt && !image) {
-      return json({
-        error: "Message cannot be empty."
-      }, 400);
+    // Direct Nano Banana Pro Image Generation Mode
+    if (tier === 'nano-banana') {
+      const imgData = await fetchImagen3Image(message || "Abstract technological artwork", env.GEMINI_API_KEY);
+      return Response.json({ 
+        reply: `Here is your generated image with **Nano Banana Pro**:\n\n![${message || 'Generated Image'}](${imgData})` 
+      });
     }
 
-    /*
-     * IMAGE GENERATION
-     */
-    if (mode === "image") {
-      const imagePrompt =
-        `${prompt || "Create an abstract futuristic artwork"}.
-         Create a high-quality original image.
-         Do not describe the image instead of generating it.`;
+    const combinedSystemInstruction = systemInstruction?.trim()
+      ? `${BASE_PERSONA}\n\n[USER INSTRUCTIONS]:\n${systemInstruction}`
+      : BASE_PERSONA;
 
-      const imageResponse = await callGemini({
-        apiKey,
-        model: IMAGE_MODEL,
-        contents: [
-          {
-            role: "user",
-            parts: [
-              {
-                text: imagePrompt
-              }
-            ]
-          }
-        ],
-        config: {
-          responseModalities: ["IMAGE"]
+    const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({
+      model: getGeminiModel(tier),
+      systemInstruction: combinedSystemInstruction,
+      tools: [{ functionDeclarations: [searchWebDeclaration, generateImageDeclaration] }]
+    });
+
+    let formattedHistory = [];
+    if (Array.isArray(history)) {
+      const recentHistory = history.slice(-10);
+      let lastRole = null;
+      for (const msg of recentHistory) {
+        const role = msg.role === 'trux' || msg.role === 'model' ? 'model' : 'user';
+        if (role !== lastRole && msg.text) {
+          formattedHistory.push({ role, parts: [{ text: String(msg.text) }] });
+          lastRole = role;
         }
-      });
-
-      const generatedImage = extractImage(imageResponse);
-
-      if (!generatedImage) {
-        const text = extractText(imageResponse);
-
-        return json({
-          error: text || "The image model did not return an image."
-        }, 500);
       }
-
-      return json({
-        success: true,
-        mode: "image",
-        image: generatedImage,
-        reply: "Image generated successfully."
-      });
     }
 
-    /*
-     * NORMAL CHAT
-     */
+    if (formattedHistory.length > 0 && formattedHistory[0].role === 'model') formattedHistory.shift();
+    if (formattedHistory.length > 0 && formattedHistory[formattedHistory.length - 1].role === 'user') formattedHistory.pop();
 
-    const contents = cleanHistory(history);
-
-    const parts = [];
-
-    if (image && typeof image === "string") {
-      const match =
-        image.match(/^data:([^;]+);base64,(.+)$/);
-
-      if (match) {
-        parts.push({
-          inlineData: {
-            mimeType: match[1],
-            data: match[2]
-          }
+    let messageParts = [];
+    if (image && typeof image === 'string') {
+      const mimeMatch = image.match(/data:(.*?);/);
+      if (mimeMatch && image.includes(',')) {
+        messageParts.push({
+          inlineData: { mimeType: mimeMatch[1], data: image.split(',')[1] }
         });
       }
     }
+    messageParts.push({ text: message || "Analyze image" });
 
-    parts.push({
-      text: prompt || "Analyze the attached image."
-    });
+    const contents = [...formattedHistory, { role: 'user', parts: messageParts }];
+    let result = await model.generateContent({ contents });
+    let response = result.response;
 
-    contents.push({
-      role: "user",
-      parts
-    });
-
-    const custom =
-      String(systemInstruction || "").trim();
-
-    const systemText =
-      custom
-        ? `${BASE_PERSONA}\n\nUser custom instructions:\n${custom}`
-        : BASE_PERSONA;
-
-    const config = {
-      systemInstruction: {
-        parts: [
-          {
-            text: systemText
-          }
-        ]
-      },
-      thinkingConfig: thinkingConfig(thinkingLevel),
-      temperature: 0.7,
-      maxOutputTokens: 4096
-    };
-
-    /*
-     * Google Search is enabled for normal chat.
-     */
-    const url =
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODELS[tier] || MODELS.base}:generateContent?key=${encodeURIComponent(apiKey)}`;
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        contents,
-        systemInstruction: config.systemInstruction,
-        generationConfig: {
-          thinkingConfig: config.thinkingConfig,
-          temperature: config.temperature,
-          maxOutputTokens: config.maxOutputTokens
-        },
-        tools: [
-          {
-            googleSearch: {}
-          }
-        ]
-      })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      const error =
-        data?.error?.message ||
-        `Gemini API error ${response.status}`;
-
-      return json({
-        error
-      }, response.status);
-    }
-
-    const reply = extractText(data);
-
-    if (!reply) {
-      return json({
-        error: "Gemini returned an empty response.",
-        raw: data
-      }, 500);
-    }
-
-    /*
-     * Extract Google Search sources.
-     */
-    const chunks =
-      data?.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-
-    const sources = [];
-
-    for (const chunk of chunks) {
-      if (chunk?.web?.uri) {
-        sources.push({
-          title: chunk.web.title || chunk.web.uri,
-          url: chunk.web.uri
-        });
+    const functionCalls = response.functionCalls();
+    if (functionCalls?.length > 0) {
+      const call = functionCalls[0];
+      
+      if (call.name === 'searchWeb') {
+        const searchResults = await fetchSerperSearchResults(call.args.query || message, env.SERPER_DEV_API);
+        contents.push({ role: 'model', parts: response.candidates[0].content.parts });
+        contents.push({ role: 'user', parts: [{ functionResponse: { name: 'searchWeb', response: { result: searchResults } } }] });
+        result = await model.generateContent({ contents });
+        response = result.response;
+      } 
+      else if (call.name === 'generateImage') {
+        const imgPrompt = call.args.prompt || message;
+        try {
+          const generatedImg = await fetchImagen3Image(imgPrompt, env.GEMINI_API_KEY);
+          return Response.json({ 
+            reply: `Here is your generated image with **Nano Banana Pro**:\n\n![${imgPrompt}](${generatedImg})` 
+          });
+        } catch (imgError) {
+          return Response.json({ reply: `Failed to generate image: ${imgError.message}` });
+        }
       }
     }
 
-    return json({
-      success: true,
-      mode: "chat",
-      reply,
-      sources
-    });
+    let rawText = response.text() || 'No response generated.';
+    return Response.json({ reply: rawText.replace(/<think>[\s\S]*?<\/think>/g, '').trim() });
 
   } catch (error) {
-    console.error("TruX API error:", error);
-
-    return json({
-      error: error?.message || "Internal server error."
-    }, 500);
+    console.error('API Error:', error);
+    return Response.json({ error: error.message || 'Server error' }, { status: 500 });
   }
-}
-
-export async function onRequestGet() {
-  return json({
-    ok: true,
-    service: "TruX AI API",
-    endpoint: "/api/chat"
-  });
 }
