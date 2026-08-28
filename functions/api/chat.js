@@ -16,7 +16,7 @@ const searchWebDeclaration = {
 
 const generateImageDeclaration = {
   name: 'generateImage',
-  description: 'Generate or draw an image using Nano Banana Pro (Imagen 3). Call when the user requests generating, creating, or drawing an image.',
+  description: 'Generate or draw an image using Nano Banana Pro. Call when the user requests generating, creating, or drawing an image.',
   parameters: {
     type: 'OBJECT',
     properties: {
@@ -46,7 +46,7 @@ async function fetchSerperSearchResults(query, apiKey) {
 // Nano Banana Pro (Imagen 3 REST API Integration)
 async function fetchImagen3Image(prompt, apiKey) {
   if (!apiKey) throw new Error("GEMINI_API_KEY missing.");
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image:predict?key=${apiKey}`;
   
   const response = await fetch(url, {
     method: 'POST',
