@@ -1,458 +1,1423 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#07080b">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>TruX AI</title>
-<link rel="manifest" href="/manifest.json">
-<link rel="icon" href="/icon-192.png">
-<link rel="apple-touch-icon" href="/icon-192.png">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script><style>
-:root{
---bg:#05060a;--panel:rgba(18,22,34,.58);--card:rgba(28,33,50,.48);
---input:rgba(15,18,28,.78);--hover:rgba(255,255,255,.08);
---text:#f3f5f9;--muted:#8892b0;--silver:#d1d5db;
---border:rgba(255,255,255,.12);--cyan:#00e5ff;--red:#f87171;
---glow:0 0 20px rgba(0,229,255,.22);
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{
-background:
-radial-gradient(circle at 15% 15%,rgba(0,229,255,.08),transparent 40%),
-radial-gradient(circle at 85% 85%,rgba(168,85,247,.08),transparent 40%),var(--bg);
-color:var(--text);font-family:"Plus Jakarta Sans",sans-serif;
-height:100dvh;width:100vw;overflow:hidden;
-}
-button,input,textarea,select{font:inherit}
-button{cursor:pointer}
-::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:8px}
 
-.app{display:flex;width:100%;height:100%}
+<style>
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
+
+:root{
+  --bg:#06070b;
+  --panel:#10131c;
+  --panel2:#171b27;
+  --border:rgba(255,255,255,.11);
+  --text:#f5f7fb;
+  --muted:#8b94aa;
+  --cyan:#00e5ff;
+  --purple:#9b5cff;
+  --danger:#ff6b6b;
+}
+
+body{
+  width:100%;
+  height:100dvh;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 10% 10%,rgba(0,229,255,.08),transparent 35%),
+    radial-gradient(circle at 90% 90%,rgba(155,92,255,.08),transparent 35%),
+    var(--bg);
+  color:var(--text);
+  font-family:Arial,Helvetica,sans-serif;
+}
+
+button,
+select,
+textarea,
+input{
+  font:inherit;
+}
+
+button{
+  cursor:pointer;
+}
+
+.app{
+  width:100%;
+  height:100%;
+  display:flex;
+}
 
 .sidebar{
-width:290px;flex:none;background:var(--panel);
-backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-border-right:1px solid var(--border);
-display:flex;flex-direction:column;transition:.25s;z-index:20
+  width:280px;
+  height:100%;
+  flex-shrink:0;
+  background:rgba(12,15,23,.92);
+  border-right:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  transition:.25s;
+  z-index:20;
 }
-.sidebar.collapsed{margin-left:-290px}
-.top{
-padding:14px;border-bottom:1px solid var(--border);display:grid;gap:10px
+
+.sidebar.closed{
+  margin-left:-280px;
 }
-.newchat,.tool,.profile,.model{
-background:var(--card);color:var(--text);border:1px solid var(--border)
+
+.sidebar-top{
+  padding:14px;
+  border-bottom:1px solid var(--border);
 }
-.newchat{padding:12px;border-radius:13px;text-align:left;font-weight:700}
-.newchat:hover,.tool:hover,.profile:hover{background:var(--hover);border-color:rgba(0,229,255,.4)}
+
+.new-chat{
+  width:100%;
+  padding:12px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:var(--panel2);
+  color:white;
+  font-weight:bold;
+  margin-bottom:10px;
+}
+
+.new-chat:hover{
+  border-color:var(--cyan);
+}
 
 .search{
-display:flex;align-items:center;padding:8px 10px;border-radius:10px;
-background:rgba(0,0,0,.25);border:1px solid var(--border)
-}
-.search input{width:100%;background:none;border:0;outline:0;color:#fff;margin-left:7px;font-size:12px}
-
-.tools{padding:12px 14px;border-bottom:1px solid var(--border);display:grid;gap:8px}
-.tool{padding:10px 12px;border-radius:10px;text-align:left;display:flex;justify-content:space-between;color:var(--silver)}
-.tool.active{color:var(--cyan);border-color:var(--cyan);background:rgba(0,229,255,.1);box-shadow:var(--glow)}
-.model{width:100%;padding:9px;border-radius:10px;outline:0;font-size:12px}
-
-.tag{
-padding:8px 10px;border-radius:10px;font-size:11px;font-weight:700;
-background:linear-gradient(90deg,rgba(168,85,247,.15),rgba(0,229,255,.15));
-border:1px solid rgba(168,85,247,.3)
+  width:100%;
+  padding:10px;
+  border-radius:10px;
+  background:#080a10;
+  border:1px solid var(--border);
+  color:white;
+  outline:none;
 }
 
-.history{flex:1;overflow:auto;padding:10px 8px}
+.tools{
+  padding:12px;
+  border-bottom:1px solid var(--border);
+}
+
+.tool{
+  width:100%;
+  padding:10px;
+  margin-bottom:8px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--panel2);
+  color:#ddd;
+  text-align:left;
+}
+
+.tool.active{
+  border-color:var(--cyan);
+  color:var(--cyan);
+}
+
+select.tool{
+  outline:none;
+}
+
+.history{
+  flex:1;
+  overflow:auto;
+  padding:10px;
+}
+
 .history-item{
-padding:10px 12px;margin-bottom:4px;border-radius:10px;
-font-size:13px;color:var(--silver);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-border:1px solid transparent
+  padding:10px;
+  margin-bottom:4px;
+  border-radius:9px;
+  color:#cdd3df;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  cursor:pointer;
 }
-.history-item:hover,.history-item.active{background:var(--hover);border-color:var(--border);color:#fff}
-.empty{text-align:center;color:var(--muted);font-size:12px;margin-top:30px}
 
-.footer{padding:12px;border-top:1px solid var(--border)}
-.profile{width:100%;padding:10px;border-radius:12px;display:flex;align-items:center;gap:10px;text-align:left}
-.avatar{width:34px;height:34px;border-radius:50%;object-fit:cover}
-.pinfo{min-width:0}
-.pname,.psub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pname{font-size:13px;font-weight:700}
-.psub{font-size:11px;color:var(--muted)}
+.history-item:hover,
+.history-item.active{
+  background:rgba(255,255,255,.07);
+  color:white;
+}
 
-.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.sidebar-bottom{
+  padding:12px;
+  border-top:1px solid var(--border);
+}
+
+.account{
+  padding:11px;
+  border:1px solid var(--border);
+  border-radius:11px;
+  color:#ddd;
+  background:var(--panel2);
+  width:100%;
+  text-align:left;
+}
+
+.main{
+  flex:1;
+  min-width:0;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+}
+
 .nav{
-height:56px;padding:0 16px;border-bottom:1px solid var(--border);
-background:var(--panel);backdrop-filter:blur(16px);
-display:flex;justify-content:space-between;align-items:center;z-index:5
+  height:58px;
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 14px;
+  border-bottom:1px solid var(--border);
+  background:rgba(10,12,18,.75);
 }
-.navleft{display:flex;align-items:center;gap:10px}
-.icon{
-width:36px;height:36px;border-radius:10px;border:1px solid var(--border);
-background:var(--card);color:#fff
-}
-.icon:hover{background:var(--hover);border-color:rgba(0,229,255,.4)}
 
-.modeltop{
-background:var(--card);border:1px solid var(--border);color:#fff;
-padding:8px 12px;border-radius:10px;outline:0;font-size:13px;font-weight:700
+.nav-left{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.icon{
+  width:38px;
+  height:38px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--panel2);
+  color:white;
+}
+
+.model{
+  border:1px solid var(--border);
+  background:var(--panel2);
+  color:white;
+  padding:9px 12px;
+  border-radius:10px;
+  outline:none;
 }
 
 .welcome{
-flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  padding:20px;
 }
-.welcome h1{
-font-size:clamp(32px,5vw,48px);font-weight:800;letter-spacing:-1px;
-background:linear-gradient(#fff,#8892b0);-webkit-background-clip:text;-webkit-text-fill-color:transparent
-}
-.welcome p{margin-top:8px;color:var(--muted);font-size:14px}
 
-.chat{display:none;flex:1;overflow:auto;padding:24px 16px}
-.row{max-width:820px;width:100%;margin:0 auto 24px}
-.label{font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px}
-.user .label{text-align:right;color:var(--muted)}
-.ai .label{color:var(--cyan)}
+.welcome.hidden{
+  display:none;
+}
+
+.welcome h1{
+  font-size:clamp(30px,6vw,48px);
+  margin-bottom:10px;
+}
+
+.welcome p{
+  color:var(--muted);
+}
+
+.chat{
+  flex:1;
+  overflow:auto;
+  padding:25px 15px;
+  display:none;
+}
+
+.chat.visible{
+  display:block;
+}
+
+.message{
+  max-width:850px;
+  width:100%;
+  margin:0 auto 22px;
+}
+
+.label{
+  font-size:11px;
+  font-weight:bold;
+  color:var(--cyan);
+  margin-bottom:7px;
+  text-transform:uppercase;
+}
+
+.user .label{
+  text-align:right;
+  color:var(--muted);
+}
+
 .bubble{
-padding:16px 20px;border-radius:18px;font-size:14.5px;line-height:1.6;
-border:1px solid var(--border);background:var(--panel);overflow-wrap:anywhere
+  padding:15px 18px;
+  border-radius:17px;
+  line-height:1.6;
+  font-size:15px;
+  overflow-wrap:anywhere;
 }
-.user .bubble{background:var(--card);margin-left:auto;max-width:86%;white-space:pre-wrap}
-.ai .bubble{width:100%}
-.bubble img{max-width:100%;display:block;border-radius:13px;margin-top:10px}
-.attached{max-width:280px!important}
-.code{
-margin:12px 0;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#080a10
+
+.user .bubble{
+  margin-left:auto;
+  width:max-content;
+  max-width:85%;
+  background:var(--panel2);
+  border:1px solid var(--border);
 }
-.codehead{
-display:flex;justify-content:space-between;align-items:center;
-padding:8px 12px;background:#0c0e14;border-bottom:1px solid var(--border);
-font:11px "JetBrains Mono",monospace;color:var(--muted)
+
+.ai .bubble{
+  background:rgba(16,19,28,.8);
+  border:1px solid var(--border);
 }
-.copy{background:none;border:1px solid var(--border);color:#fff;padding:4px 8px;border-radius:6px;font-size:10px}
-pre{padding:14px;overflow:auto;font:13px/1.55 "JetBrains Mono",monospace;color:#e2e8f0}
-code{font-family:"JetBrains Mono",monospace}
-.inline{background:rgba(255,255,255,.08);padding:2px 5px;border-radius:4px;color:var(--cyan);font-size:13px}
-.sources{margin-top:14px;padding-top:10px;border-top:1px solid var(--border);font-size:11px}
-.sources a{display:block;color:var(--cyan);margin:4px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.ai img{
+  display:block;
+  max-width:100%;
+  margin-top:12px;
+  border-radius:13px;
+}
 
 .thinking{
-display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border-radius:20px;
-background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.3);
-color:var(--cyan);font-size:12px;font-weight:700
+  display:inline-flex;
+  align-items:center;
+  gap:9px;
+  padding:8px 13px;
+  border:1px solid rgba(0,229,255,.3);
+  border-radius:20px;
+  color:var(--cyan);
+  font-size:13px;
 }
-.dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);animation:pulse 1.2s infinite}
-@keyframes pulse{50%{opacity:1;transform:scale(1.2)}100%{opacity:.3;transform:scale(.8)}}
 
-.composer{padding:10px 16px 16px}
-.box{
-width:100%;max-width:820px;margin:auto;
-background:var(--input);border:1px solid var(--border);border-radius:20px;
-padding:10px 12px;backdrop-filter:blur(16px)
+.dot{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:var(--cyan);
+  animation:pulse 1s infinite;
 }
-.box:focus-within{border-color:rgba(0,229,255,.4);box-shadow:var(--glow)}
-.mode{display:none;margin-bottom:8px}
-.mode span{
-display:inline-flex;padding:5px 9px;border-radius:12px;color:var(--cyan);
-border:1px solid var(--cyan);background:rgba(0,229,255,.1);font-size:11px;font-weight:700
+
+@keyframes pulse{
+  50%{opacity:.25;transform:scale(.7)}
 }
-.attachment{
-display:none;align-items:center;gap:8px;margin-bottom:8px;padding:5px 8px;
-border:1px solid var(--border);border-radius:9px;font-size:11px;color:var(--muted)
+
+.code{
+  margin:12px 0;
+  background:#050609;
+  border:1px solid var(--border);
+  border-radius:10px;
+  overflow:hidden;
 }
-.attachment button{border:0;background:none;color:var(--red)}
-.inputrow{display:flex;gap:5px;align-items:flex-end}
-.action{
-width:34px;height:34px;border:0;background:none;color:var(--muted);border-radius:50%;font-size:16px
+
+.code-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:7px 10px;
+  color:var(--muted);
+  font-size:11px;
+  border-bottom:1px solid var(--border);
 }
-.action:hover{background:var(--hover);color:#fff}
-.recording{color:var(--red)!important;animation:pulse 1s infinite}
+
+.code button{
+  border:1px solid var(--border);
+  background:#151923;
+  color:white;
+  padding:4px 8px;
+  border-radius:6px;
+}
+
+pre{
+  padding:13px;
+  overflow:auto;
+}
+
+code{
+  font-family:monospace;
+}
+
+.inline-code{
+  background:rgba(255,255,255,.08);
+  padding:2px 5px;
+  border-radius:4px;
+}
+
+.sources{
+  margin-top:14px;
+  padding-top:10px;
+  border-top:1px solid var(--border);
+}
+
+.sources a{
+  display:block;
+  color:var(--cyan);
+  margin-top:5px;
+  text-decoration:none;
+  font-size:13px;
+}
+
+.input-area{
+  padding:12px 15px 16px;
+  flex-shrink:0;
+}
+
+.input-box{
+  max-width:850px;
+  margin:auto;
+  border:1px solid var(--border);
+  border-radius:18px;
+  background:rgba(12,15,23,.92);
+  padding:9px;
+}
+
+.input-row{
+  display:flex;
+  align-items:flex-end;
+  gap:5px;
+}
+
 textarea{
-flex:1;min-height:22px;max-height:160px;resize:none;border:0;outline:0;background:none;color:#fff;
-line-height:22px;font-size:14.5px
+  flex:1;
+  resize:none;
+  max-height:150px;
+  background:transparent;
+  color:white;
+  border:0;
+  outline:0;
+  padding:8px;
+  line-height:22px;
 }
+
+.action{
+  width:38px;
+  height:38px;
+  border:0;
+  border-radius:50%;
+  background:transparent;
+  color:#a8b0c1;
+}
+
+.action:hover{
+  background:rgba(255,255,255,.08);
+  color:white;
+}
+
 .send{
-width:36px;height:36px;border:0;border-radius:50%;background:#fff;color:#000;font-size:17px
+  width:38px;
+  height:38px;
+  border:0;
+  border-radius:50%;
+  background:white;
+  color:black;
+  font-weight:bold;
 }
-.send:disabled{opacity:.4;cursor:not-allowed}
-.disclaimer{text-align:center;color:var(--muted);font-size:11px;margin-top:8px}
+
+.send:disabled{
+  opacity:.4;
+}
+
+.attachment{
+  display:none;
+  padding:7px 10px;
+  color:var(--cyan);
+  font-size:12px;
+  border-bottom:1px solid var(--border);
+}
+
+.attachment.show{
+  display:block;
+}
+
+.disclaimer{
+  text-align:center;
+  color:var(--muted);
+  font-size:11px;
+  margin-top:7px;
+}
 
 .modal{
-display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;
-align-items:center;justify-content:center;padding:16px
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.8);
+  z-index:100;
+  align-items:center;
+  justify-content:center;
+  padding:15px;
 }
-.dialog{
-width:780px;max-width:100%;height:540px;max-height:90dvh;
-background:var(--panel);border:1px solid var(--border);border-radius:20px;
-display:flex;overflow:hidden;backdrop-filter:blur(24px);position:relative
+
+.modal.show{
+  display:flex;
 }
-.tabs{width:220px;background:rgba(0,0,0,.3);border-right:1px solid var(--border);padding:12px;display:grid;align-content:start;gap:4px}
-.tab{
-border:0;background:none;color:var(--silver);padding:10px 12px;border-radius:9px;text-align:left
+
+.modal-box{
+  width:600px;
+  max-width:100%;
+  max-height:90dvh;
+  overflow:auto;
+  background:#10131c;
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:20px;
 }
-.tab.active,.tab:hover{background:var(--card);color:#fff}
-.close{position:absolute;right:18px;top:12px;border:0;background:none;color:var(--muted);font-size:24px;z-index:2}
-.content{flex:1;padding:24px;overflow:auto}
-.pane{display:none}
-.pane.active{display:block}
-.title{font-size:16px;font-weight:800;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:18px}
-.setting{display:flex;justify-content:space-between;gap:20px;padding:8px 0;align-items:center}
-.desc{font-size:12px;color:var(--muted);margin-top:2px}
-.switch{position:relative;width:44px;height:24px;flex:none}
-.switch input{display:none}
-.slider{position:absolute;inset:0;background:#262a38;border-radius:20px}
-.slider:before{
-content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s
+
+.modal h2{
+  margin-bottom:18px;
 }
-.switch input:checked+.slider{background:var(--cyan)}
-.switch input:checked+.slider:before{transform:translateX(20px);background:#000}
-.instructions{
-width:100%;height:130px;background:var(--card);border:1px solid var(--border);border-radius:10px;
-color:#fff;padding:10px;resize:vertical;outline:0
+
+.modal textarea{
+  display:block;
+  width:100%;
+  height:130px;
+  background:#080a10;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:10px;
+  margin-bottom:12px;
 }
-.flat{
-background:var(--card);border:1px solid var(--border);color:#fff;padding:10px 14px;border-radius:10px;margin-top:10px
+
+.modal button{
+  padding:10px 14px;
+  border-radius:9px;
+  border:1px solid var(--border);
+  background:var(--panel2);
+  color:white;
+  margin-right:7px;
 }
-.flat:hover{background:var(--hover)}
-.danger{color:var(--red);border-color:rgba(248,113,113,.4)}
 
-@media(max-width:768px){
-.sidebar{position:absolute;top:0;left:0;height:100dvh;transform:translateX(-100%);margin:0}
-.sidebar.mobile-open{transform:translateX(0)}
-.dialog{height:90dvh;flex-direction:column}
-.tabs{width:100%;display:flex;overflow:auto;border-right:0;border-bottom:1px solid var(--border)}
-.tab{white-space:nowrap}
-.chat{padding:16px 10px}
-.composer{padding:8px 10px 12px}
-.user .bubble{max-width:92%}
-}
-</style></head><body>
-<div class="app"><aside class="sidebar" id="sidebar">
-  <div class="top">
-    <button class="newchat" onclick="newChat()">➕ New Chat</button>
-    <div class="search">
-      🔍
-      <input id="search" placeholder="Search chats..." oninput="renderHistory(this.value)">
-    </div>
-  </div>  <div class="tools">
-    <button class="tool" id="imageBtn" onclick="toggleImage()">🎨 Image Generation <span id="imageStatus">OFF</span></button><select class="model" id="thinking" onchange="setThinking(this.value)">
-  <option value="off">Off (Fastest)</option>
-  <option value="low">Low Reasoning</option>
-  <option value="medium" selected>Medium Reasoning</option>
-  <option value="high">High Reasoning</option>
-</select>
+@media(max-width:700px){
+  .sidebar{
+    position:fixed;
+    left:0;
+    top:0;
+    box-shadow:10px 0 40px #000;
+  }
 
-<div class="tag">⚡ TruX Codespace Active</div>
+  .sidebar.closed{
+    margin-left:0;
+    transform:translateX(-100%);
+  }
 
-  </div>  <div class="history" id="history"></div>  <div class="footer">
-    <button class="profile" onclick="openSettings('account')">
-      <img class="avatar" id="avatar" src="https://ui-avatars.com/api/?name=Guest+User&background=141722&color=fff" alt="">
-      <div class="pinfo">
-        <div class="pname" id="name">Guest User</div>
-        <div class="psub" id="sub">Account & Settings</div>
-      </div>
-    </button>
-  </div>
-</aside><main class="main">
-  <header class="nav">
-    <div class="navleft">
-      <button class="icon" onclick="toggleSidebar()">☰</button>
-      <select class="modeltop" id="model" onchange="setModel(this.value)">
-        <option value="base">TruX-Core 3.0</option>
-        <option value="pro">TruX-Pro 3.5</option>
-      </select>
-    </div>
-    <button class="icon" onclick="openSettings('general')">⚙️</button>
-  </header>  <section class="welcome" id="welcome">
-    <h1>What can I help with today?</h1>
-    <p>Supercharged by TruX-Core 3.0 & TruX-Pro 3.5</p>
-  </section>  <section class="chat" id="chat"></section>  <div class="composer">
-    <div class="box">  <div class="mode" id="mode">
-    <span>🎨 Nano Banana Pro Active</span>
-  </div>
+  .user .bubble{
+    max-width:90%;
+  }
 
-  <div class="attachment" id="attachment">
-    <span id="attachmentName">Image attached</span>
-    <button onclick="clearAttachment()">✕</button>
-  </div>
-
-  <div class="inputrow">
-    <input type="file" id="file" accept="image/*" hidden onchange="readImage(this)">
-    <button class="action" onclick="file.click()">📎</button>
-
-    <input type="file" id="camera" accept="image/*" capture="environment" hidden onchange="readImage(this)">
-    <button class="action" onclick="camera.click()">📷</button>
-
-    <button class="action" id="mic" onclick="voice()">🎙️</button>
-
-    <textarea id="input" rows="1" placeholder="Message TruX..."></textarea>
-
-    <button class="send" id="send" onclick="send()">➤</button>
-  </div>
-</div>
-
-<div class="disclaimer">TruX AI can make mistakes. Verify important info.</div>
-
-  </div>
-</main>
-</div><div class="modal" id="modal">
-  <div class="dialog">
-    <button class="close" onclick="closeSettings()">×</button><div class="tabs">
-  <button class="tab active" onclick="openTab('general',this)">General</button>
-  <button class="tab" onclick="openTab('instructions',this)">System Instructions</button>
-  <button class="tab" onclick="openTab('account',this)">Account & Data</button>
-</div>
-
-<div class="content">
-
-  <div class="pane active" id="pane-general">
-    <div class="title">General Settings</div>
-
-    <div class="setting">
-      <div>
-        <b>Auto Read Responses</b>
-        <div class="desc">Speak completed AI responses.</div>
-      </div>
-      <label class="switch">
-        <input id="autoRead" type="checkbox">
-        <span class="slider"></span>
-      </label>
-    </div>
-
-    <div class="setting">
-      <div>
-        <b>Sound Effects</b>
-        <div class="desc">Enable subtle UI audio feedback.</div>
-      </div>
-      <label class="switch">
-        <input id="sfx" type="checkbox" checked>
-        <span class="slider"></span>
-      </label>
-    </div>
-  </div>
-
-  <div class="pane" id="pane-instructions">
-    <div class="title">Custom System Instructions</div>
-    <div class="desc">Personalize how TruX responds.</div>
-    <textarea class="instructions" id="instructions" placeholder="e.g. Be concise, write JavaScript examples, act like a staff architect..."></textarea>
-    <button class="flat" onclick="saveInstructions()">Save Instructions</button>
-  </div>
-
-  <div class="pane" id="pane-account">
-    <div class="title">Account & Data</div>
-
-    <div class="setting">
-      <div>
-        <b id="accountName">Guest Mode</b>
-        <div class="desc" id="accountEmail">Sign in to sync preferences.</div>
-      </div>
-      <button class="flat" onclick="authAction()" id="authBtn">Sign In with Google</button>
-    </div>
-
-    <button class="flat" onclick="exportChats()">📥 Export All Chat Data</button>
-    <button class="flat danger" onclick="clearChats()">🗑️ Clear All Chat History</button>
-  </div>
-
-</div>
-
-  </div>
-</div><script>
-"use strict";
-
-/* ---------- STATE ---------- */
-
-let chats = load("trux_chats",{});
-let currentId = null;
-let currentModel = loadValue("trux_model","base");
-let thinking = loadValue("trux_thinking","medium");
-let imageMode = false;
-let attachedImage = null;
-let controller = null;
-let recognition = null;
-
-let imageUsed =
-  sessionStorage.getItem("trux_image_used") === "true";
-
-/* ---------- SAFE STORAGE ---------- */
-
-function load(key,fallback){
-  try{
-    const v=localStorage.getItem(key);
-    return v ? JSON.parse(v) : fallback;
-  }catch{
-    return fallback;
+  .model{
+    max-width:160px;
   }
 }
+</style>
+</head>
 
-function loadValue(key,fallback){
-  return localStorage.getItem(key)||fallback;
+<body>
+
+<div class="app">
+
+  <aside class="sidebar" id="sidebar">
+
+    <div class="sidebar-top">
+      <button class="new-chat" id="newChatBtn">
+        ＋ New Chat
+      </button>
+
+      <input
+        class="search"
+        id="searchChats"
+        placeholder="Search chats..."
+      >
+    </div>
+
+    <div class="tools">
+
+      <button class="tool" id="imageBtn">
+        🎨 Image Generation: OFF
+      </button>
+
+      <select class="tool" id="thinking">
+        <option value="off">Reasoning: Off</option>
+        <option value="low">Reasoning: Low</option>
+        <option value="medium" selected>Reasoning: Medium</option>
+        <option value="high">Reasoning: High</option>
+      </select>
+
+    </div>
+
+    <div class="history" id="history"></div>
+
+    <div class="sidebar-bottom">
+      <button class="account" id="settingsBtn">
+        ⚙️ Settings
+      </button>
+    </div>
+
+  </aside>
+
+  <main class="main">
+
+    <header class="nav">
+
+      <div class="nav-left">
+        <button class="icon" id="menuBtn">☰</button>
+
+        <select class="model" id="model">
+          <option value="base">TruX-Core 3.7</option>
+          <option value="pro">TruX-Pro</option>
+        </select>
+      </div>
+
+      <button class="icon" id="topSettings">⚙</button>
+
+    </header>
+
+    <section class="welcome" id="welcome">
+      <h1>What can I help with today?</h1>
+      <p>TruX AI</p>
+    </section>
+
+    <section class="chat" id="chat"></section>
+
+    <div class="input-area">
+
+      <div class="input-box">
+
+        <div class="attachment" id="attachment">
+          📎 Image attached
+        </div>
+
+        <div class="input-row">
+
+          <input
+            type="file"
+            id="file"
+            accept="image/*"
+            hidden
+          >
+
+          <input
+            type="file"
+            id="camera"
+            accept="image/*"
+            capture="environment"
+            hidden
+          >
+
+          <button class="action" id="attachBtn" title="Attach image">
+            📎
+          </button>
+
+          <button class="action" id="cameraBtn" title="Camera">
+            📷
+          </button>
+
+          <button class="action" id="micBtn" title="Voice">
+            🎙
+          </button>
+
+          <textarea
+            id="input"
+            rows="1"
+            placeholder="Message TruX..."
+          ></textarea>
+
+          <button class="send" id="sendBtn">
+            ➤
+          </button>
+
+        </div>
+
+      </div>
+
+      <div class="disclaimer">
+        TruX AI can make mistakes. Verify important information.
+      </div>
+
+    </div>
+
+  </main>
+
+</div>
+
+<div class="modal" id="modal">
+
+  <div class="modal-box">
+
+    <h2>TruX Settings</h2>
+
+    <p style="color:#8b94aa;margin-bottom:8px">
+      Custom instructions
+    </p>
+
+    <textarea
+      id="instructions"
+      placeholder="Example: Be concise and focus on JavaScript."
+    ></textarea>
+
+    <button id="saveInstructions">
+      Save
+    </button>
+
+    <button id="clearChats">
+      Clear Chats
+    </button>
+
+    <button id="closeModal">
+      Close
+    </button>
+
+  </div>
+
+</div>
+
+<script>
+"use strict";
+
+/* =========================
+   STATE
+========================= */
+
+const STORAGE_CHATS = "trux_chats_v2";
+const STORAGE_INSTRUCTIONS = "trux_instructions_v2";
+
+let chats = {};
+let currentChatId = null;
+let imageMode = false;
+let selectedImage = null;
+let thinkingLevel = "medium";
+let modelTier = "base";
+let controller = null;
+
+/* =========================
+   ELEMENTS
+========================= */
+
+const $ = id => document.getElementById(id);
+
+const sidebar = $("sidebar");
+const welcome = $("welcome");
+const chatEl = $("chat");
+const input = $("input");
+const sendBtn = $("sendBtn");
+const historyEl = $("history");
+const imageBtn = $("imageBtn");
+const fileInput = $("file");
+const cameraInput = $("camera");
+const attachment = $("attachment");
+const modal = $("modal");
+const instructions = $("instructions");
+
+/* =========================
+   STORAGE
+========================= */
+
+function loadStorage(){
+
+  try{
+    chats =
+      JSON.parse(
+        localStorage.getItem(STORAGE_CHATS)
+      ) || {};
+  }catch{
+    chats = {};
+  }
+
+  instructions.value =
+    localStorage.getItem(STORAGE_INSTRUCTIONS) || "";
+
+  renderHistory();
 }
 
 function saveChats(){
-  localStorage.setItem("trux_chats",JSON.stringify(chats));
+  localStorage.setItem(
+    STORAGE_CHATS,
+    JSON.stringify(chats)
+  );
 }
 
-/* ---------- FIREBASE ---------- */
+/* =========================
+   SIDEBAR
+========================= */
 
-let auth=null;
+$("menuBtn").onclick = () => {
+  sidebar.classList.toggle("closed");
+};
 
-try{
-  if(!firebase.apps.length){
-    firebase.initializeApp({
-      apiKey:"AIzaSyAs_GDrzlBaucHfiff0Y6cA8GVHjFTA62Q",
-      authDomain:"trux-ai.firebaseapp.com",
-      projectId:"trux-ai"
-    });
+$("newChatBtn").onclick = newChat;
+
+function newChat(){
+
+  if(controller){
+    controller.abort();
+    controller = null;
   }
 
-  auth=firebase.auth();
+  currentChatId = null;
 
-  auth.onAuthStateChanged(user=>{
-    if(user){
-      $("name").textContent=user.displayName||"Google User";
-      $("sub").textContent=user.email||"Signed in";
-      $("accountName").textContent=user.displayName||"Google User";
-      $("accountEmail").textContent=user.email||"Signed in";
-      $("authBtn").textContent="Sign Out";
-      if(user.photoURL) $("avatar").src=user.photoURL;
-    }else{
-      $("name").textContent="Guest User";
-      $("sub").textContent="Account & Settings";
-      $("accountName").textContent="Guest Mode";
-      $("accountEmail").textContent="Sign in to sync preferences.";
-      $("authBtn").textContent="Sign In with Google";
+  chatEl.innerHTML = "";
+  chatEl.classList.remove("visible");
+  welcome.classList.remove("hidden");
+
+  selectedImage = null;
+  attachment.classList.remove("show");
+
+  renderHistory();
+}
+
+function renderHistory(filter = ""){
+
+  historyEl.innerHTML = "";
+
+  const ids = Object.keys(chats).reverse();
+
+  const query = filter.toLowerCase();
+
+  let found = false;
+
+  for(const id of ids){
+
+    const item = chats[id];
+
+    if(
+      query &&
+      !String(item.title || "")
+        .toLowerCase()
+        .includes(query)
+    ){
+      continue;
     }
-  });
-}catch(e){
-  console.warn("Firebase unavailable",e);
+
+    found = true;
+
+    const el = document.createElement("div");
+
+    el.className =
+      "history-item" +
+      (id === currentChatId ? " active" : "");
+
+    el.textContent =
+      item.title || "New Chat";
+
+    el.onclick = () => loadChat(id);
+
+    historyEl.appendChild(el);
+  }
+
+  if(!found){
+
+    const empty =
+      document.createElement("div");
+
+    empty.style.color = "#8b94aa";
+    empty.style.padding = "12px";
+    empty.textContent = "No chats";
+
+    historyEl.appendChild(empty);
+  }
 }
 
-function authAction(){
-  if(!auth){
-    alert("Authentication is unavailable.");
+$("searchChats").oninput = e => {
+  renderHistory(e.target.value);
+};
+
+/* =========================
+   MODEL / THINKING
+========================= */
+
+$("model").onchange = e => {
+  modelTier = e.target.value;
+};
+
+$("thinking").onchange = e => {
+  thinkingLevel = e.target.value;
+};
+
+/* =========================
+   IMAGE MODE
+========================= */
+
+imageBtn.onclick = () => {
+
+  imageMode = !imageMode;
+
+  imageBtn.classList.toggle(
+    "active",
+    imageMode
+  );
+
+  imageBtn.textContent =
+    imageMode
+      ? "🎨 Image Generation: ON"
+      : "🎨 Image Generation: OFF";
+};
+
+/* =========================
+   IMAGE UPLOAD
+========================= */
+
+$("attachBtn").onclick = () =>
+  fileInput.click();
+
+$("cameraBtn").onclick = () =>
+  cameraInput.click();
+
+fileInput.onchange = handleImage;
+cameraInput.onchange = handleImage;
+
+function handleImage(event){
+
+  const file = event.target.files?.[0];
+
+  if(!file) return;
+
+  if(!file.type.startsWith("image/")){
+
+    alert("Please select an image.");
+
+    event.target.value = "";
+
     return;
   }
 
-  if(auth.currentUser){
-    auth.signOut().catch(console.error);
+  const reader = new FileReader();
+
+  reader.onload = e => {
+
+    selectedImage = e.target.result;
+
+    attachment.textContent =
+      "📎 " + file.name;
+
+    attachment.classList.add("show");
+  };
+
+  reader.onerror = () => {
+    alert("Could not read image.");
+  };
+
+  reader.readAsDataURL(file);
+}
+
+/* =========================
+   TEXTAREA
+========================= */
+
+input.oninput = () => {
+
+  input.style.height = "auto";
+
+  input.style.height =
+    Math.min(input.scrollHeight,150) + "px";
+};
+
+input.onkeydown = e => {
+
+  if(
+    e.key === "Enter" &&
+    !e.shiftKey
+  ){
+
+    e.preventDefault();
+
+    sendMessage();
+  }
+};
+
+sendBtn.onclick = sendMessage;
+
+/* =========================
+   CHAT CREATION
+========================= */
+
+function ensureChat(message){
+
+  if(currentChatId) return;
+
+  currentChatId =
+    "chat_" +
+    Date.now() +
+    "_" +
+    Math.random()
+      .toString(36)
+      .slice(2,7);
+
+  chats[currentChatId] = {
+
+    title:
+      message
+        ? message.slice(0,35)
+        : "Image generation",
+
+    messages: []
+
+  };
+
+  saveChats();
+}
+
+/* =========================
+   ADD USER MESSAGE
+========================= */
+
+function addUserMessage(text){
+
+  const row =
+    document.createElement("div");
+
+  row.className = "message user";
+
+  const label =
+    document.createElement("div");
+
+  label.className = "label";
+  label.textContent = "You";
+
+  const bubble =
+    document.createElement("div");
+
+  bubble.className = "bubble";
+
+  bubble.textContent =
+    text || "Image";
+
+  row.appendChild(label);
+  row.appendChild(bubble);
+
+  chatEl.appendChild(row);
+
+  scrollBottom();
+}
+
+/* =========================
+   THINKING
+========================= */
+
+function addThinking(){
+
+  const row =
+    document.createElement("div");
+
+  row.className = "message ai";
+  row.id = "thinkingMessage";
+
+  row.innerHTML = `
+    <div class="label">TruX AI</div>
+    <div class="thinking">
+      <span class="dot"></span>
+      <span>Thinking...</span>
+    </div>
+  `;
+
+  chatEl.appendChild(row);
+
+  scrollBottom();
+
+  return row;
+}
+
+/* =========================
+   SEND MESSAGE
+========================= */
+
+async function sendMessage(){
+
+  const message =
+    input.value.trim();
+
+  if(!message && !selectedImage){
+
     return;
   }
 
-  const provider=new firebase.auth.GoogleAuthProvider();
+  sendBtn.disabled = true;
 
-  auth.signInWithPopup(provider).catch(e=>{
-    console.error(e);
-    alert(e.message||"Google sign-in failed.");
+  ensureChat(message);
+
+  chats[currentChatId].messages.push({
+    role:"user",
+    text:message
   });
+
+  saveChats();
+
+  welcome.classList.add("hidden");
+  chatEl.classList.add("visible");
+
+  addUserMessage(message);
+
+  const imageForRequest =
+    selectedImage;
+
+  input.value = "";
+  input.style.height = "auto";
+
+  selectedImage = null;
+
+  attachment.classList.remove("show");
+
+  const isImage =
+    imageMode;
+
+  imageMode = false;
+
+  imageBtn.classList.remove("active");
+  imageBtn.textContent =
+    "🎨 Image Generation: OFF";
+
+  const thinking =
+    addThinking();
+
+  controller =
+    new AbortController();
+
+  try{
+
+    const response =
+      await fetch("/api/chat",{
+
+        method:"POST",
+
+        headers:{
+          "Content-Type":
+            "application/json"
+        },
+
+        signal:
+          controller.signal,
+
+        body:JSON.stringify({
+
+          message,
+
+          history:
+            chats[currentChatId]
+              .messages
+              .slice(0,-1)
+              .slice(-10),
+
+          image:
+            imageForRequest,
+
+          tier:
+            modelTier,
+
+          thinkingLevel,
+
+          systemInstruction:
+            localStorage.getItem(
+              STORAGE_INSTRUCTIONS
+            ) || "",
+
+          mode:
+            isImage
+              ? "image"
+              : "chat"
+        })
+      });
+
+    let data;
+
+    try{
+      data = await response.json();
+    }catch{
+      throw new Error(
+        "Server returned invalid JSON."
+      );
+    }
+
+    if(!response.ok){
+
+      throw new Error(
+        data?.error ||
+        `Server error ${response.status}`
+      );
+    }
+
+    thinking.remove();
+
+    if(isImage){
+
+      renderImageResponse(data);
+
+    }else{
+
+      renderAIResponse(data);
+
+    }
+
+  }catch(error){
+
+    if(error.name === "AbortError"){
+      thinking.remove();
+      return;
+    }
+
+    thinking.remove();
+
+    renderError(
+      error.message ||
+      "Unable to connect to TruX."
+    );
+
+  }finally{
+
+    sendBtn.disabled = false;
+    controller = null;
+
+  }
 }
 
-/* ---------- BASIC HELPERS ---------- */
+/* =========================
+   AI RESPONSE
+========================= */
 
-function $(id){
-  return document.getElementById(id);
+function renderAIResponse(data){
+
+  const text =
+    data.reply ||
+    "No response generated.";
+
+  chats[currentChatId].messages.push({
+    role:"trux",
+    text
+  });
+
+  saveChats();
+
+  const row =
+    document.createElement("div");
+
+  row.className = "message ai";
+
+  row.innerHTML = `
+    <div class="label">TruX AI</div>
+    <div class="bubble">
+      ${formatText(text)}
+    </div>
+  `;
+
+  chatEl.appendChild(row);
+
+  if(
+    Array.isArray(data.sources) &&
+    data.sources.length
+  ){
+
+    const sources =
+      document.createElement("div");
+
+    sources.className = "sources";
+
+    sources.innerHTML =
+      "<b>Sources</b>";
+
+    const unique =
+      new Set();
+
+    data.sources.forEach(source => {
+
+      if(
+        !source.url ||
+        unique.has(source.url)
+      ) return;
+
+      unique.add(source.url);
+
+      const a =
+        document.createElement("a");
+
+      a.href = source.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+
+      a.textContent =
+        "• " +
+        (source.title || source.url);
+
+      sources.appendChild(a);
+    });
+
+    row.querySelector(".bubble")
+      .appendChild(sources);
+  }
+
+  scrollBottom();
 }
 
-function esc(v){
-  return String(v??"")
+/* =========================
+   IMAGE RESPONSE
+========================= */
+
+function renderImageResponse(data){
+
+  if(
+    !data.image ||
+    !data.image.data
+  ){
+
+    renderError(
+      "The server did not return an image."
+    );
+
+    return;
+  }
+
+  const row =
+    document.createElement("div");
+
+  row.className = "message ai";
+
+  const bubble =
+    document.createElement("div");
+
+  bubble.className = "bubble";
+
+  const label =
+    document.createElement("div");
+
+  label.className = "label";
+  label.textContent = "TruX AI";
+
+  const img =
+    document.createElement("img");
+
+  img.src =
+    "data:" +
+    data.image.mimeType +
+    ";base64," +
+    data.image.data;
+
+  img.alt =
+    "Generated image";
+
+  img.onload = scrollBottom;
+
+  bubble.appendChild(img);
+
+  row.appendChild(label);
+  row.appendChild(bubble);
+
+  chatEl.appendChild(row);
+
+  chats[currentChatId].messages.push({
+    role:"trux",
+    text:
+      "[Generated Image]"
+  });
+
+  saveChats();
+
+  scrollBottom();
+}
+
+/* =========================
+   ERROR
+========================= */
+
+function renderError(message){
+
+  const row =
+    document.createElement("div");
+
+  row.className = "message ai";
+
+  row.innerHTML = `
+    <div class="label">TruX AI</div>
+    <div class="bubble" style="border-color:rgba(255,107,107,.4)">
+      ⚠️ ${escapeHTML(message)}
+    </div>
+  `;
+
+  chatEl.appendChild(row);
+
+  scrollBottom();
+}
+
+/* =========================
+   FORMAT TEXT
+========================= */
+
+function formatText(text){
+
+  let html =
+    escapeHTML(String(text));
+
+  /*
+   * Code blocks
+   */
+  html =
+    html.replace(
+      /```(?:[a-zA-Z0-9_+-]+)?\n?([\s\S]*?)```/g,
+      (_,code) => {
+
+        const id =
+          "code_" +
+          Math.random()
+            .toString(36)
+            .slice(2,9);
+
+        return `
+          <div class="code">
+            <div class="code-head">
+              <span>Code</span>
+              <button
+                onclick="copyCode('${id}')"
+              >
+                Copy
+              </button>
+            </div>
+
+            <pre><code id="${id}">${code.trim()}</code></pre>
+          </div>
+        `;
+      }
+    );
+
+  /*
+   * Inline code
+   */
+  html =
+    html.replace(
+      /`([^`]+)`/g,
+      '<span class="inline-code">$1</span>'
+    );
+
+  /*
+   * Bold
+   */
+  html =
+    html.replace(
+      /\*\*(.*?)\*\*/g,
+      "<strong>$1</strong>"
+    );
+
+  /*
+   * Markdown links
+   */
+  html =
+    html.replace(
+      /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener noreferrer" style="color:#00e5ff">$1</a>'
+    );
+
+  /*
+   * Newlines
+   */
+  html =
+    html.replace(/\n/g,"<br>");
+
+  return html;
+}
+
+function escapeHTML(value){
+
+  return value
     .replace(/&/g,"&amp;")
     .replace(/</g,"&lt;")
     .replace(/>/g,"&gt;")
@@ -460,728 +1425,189 @@ function esc(v){
     .replace(/'/g,"&#039;");
 }
 
-function attr(v){
-  return esc(v).replace(/`/g,"&#096;");
-}
+window.copyCode = async function(id){
 
-function id(prefix){
-  return prefix+"_"+Math.random().toString(36).slice(2,9);
-}
+  const el = document.getElementById(id);
 
-/* ---------- NAV ---------- */
-
-function toggleSidebar(){
-  if(innerWidth<=768)
-    $("sidebar").classList.toggle("mobile-open");
-  else
-    $("sidebar").classList.toggle("collapsed");
-}
-
-function setModel(v){
-  currentModel=v;
-  localStorage.setItem("trux_model",v);
-}
-
-function setThinking(v){
-  thinking=v;
-  localStorage.setItem("trux_thinking",v);
-}
-
-/* ---------- IMAGE MODE ---------- */
-
-function toggleImage(force){
-  if(imageUsed && force!==false){
-    alert("Your free image generation has already been used for this session.");
-    return;
-  }
-
-  imageMode =
-    typeof force==="boolean"
-      ? force
-      : !imageMode;
-
-  $("imageBtn").classList.toggle("active",imageMode);
-  $("imageStatus").textContent=imageMode?"ON":"OFF";
-  $("mode").style.display=imageMode?"block":"none";
-}
-
-/* ---------- IMAGE ATTACHMENT ---------- */
-
-function readImage(input){
-  const file=input.files?.[0];
-
-  if(!file) return;
-
-  if(!file.type.startsWith("image/")){
-    alert("Please select an image.");
-    input.value="";
-    return;
-  }
-
-  if(file.size>8*1024*1024){
-    alert("Please choose an image smaller than 8 MB.");
-    input.value="";
-    return;
-  }
-
-  const reader=new FileReader();
-
-  reader.onload=e=>{
-    attachedImage=e.target.result;
-    $("attachmentName").textContent=file.name;
-    $("attachment").style.display="flex";
-  };
-
-  reader.onerror=()=>{
-    alert("Could not read image.");
-  };
-
-  reader.readAsDataURL(file);
-}
-
-function clearAttachment(){
-  attachedImage=null;
-  $("attachment").style.display="none";
-  $("file").value="";
-  $("camera").value="";
-}
-
-/* ---------- VOICE ---------- */
-
-function voice(){
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-
-  if(!SR){
-    alert("Voice input is not supported by this browser.");
-    return;
-  }
-
-  if(recognition){
-    recognition.stop();
-    recognition=null;
-    $("mic").classList.remove("recording");
-    return;
-  }
-
-  recognition=new SR();
-  recognition.lang="en-US";
-  recognition.continuous=false;
-  recognition.interimResults=false;
-
-  recognition.onstart=()=>{
-    $("mic").classList.add("recording");
-  };
-
-  recognition.onresult=e=>{
-    const text=e.results?.[0]?.[0]?.transcript||"";
-    const input=$("input");
-    input.value+=(input.value?" ":"")+text;
-    resizeInput();
-  };
-
-  recognition.onerror=e=>console.warn("Voice:",e);
-
-  recognition.onend=()=>{
-    $("mic").classList.remove("recording");
-    recognition=null;
-  };
+  if(!el) return;
 
   try{
-    recognition.start();
-  }catch(e){
-    console.warn(e);
+
+    await navigator.clipboard.writeText(
+      el.innerText
+    );
+
+  }catch{
+
+    alert("Copy failed.");
   }
-}
+};
 
-/* ---------- INPUT ---------- */
+/* =========================
+   LOAD CHAT
+========================= */
 
-function resizeInput(){
-  const el=$("input");
-  el.style.height="auto";
-  el.style.height=Math.min(el.scrollHeight,160)+"px";
-}
+function loadChat(id){
 
-$("input").addEventListener("input",resizeInput);
+  if(!chats[id]) return;
 
-$("input").addEventListener("keydown",e=>{
-  if(e.key==="Enter"&&!e.shiftKey){
-    e.preventDefault();
-    send();
-  }
-});
+  currentChatId = id;
 
-/* ---------- CHAT ---------- */
+  welcome.classList.add("hidden");
+  chatEl.classList.add("visible");
 
-function newChat(){
-  if(controller) controller.abort();
+  chatEl.innerHTML = "";
 
-  currentId=null;
-  $("chat").innerHTML="";
-  $("chat").style.display="none";
-  $("welcome").style.display="flex";
-  clearAttachment();
-  toggleImage(false);
-  renderHistory();
-}
+  chats[id].messages.forEach(message => {
 
-function ensureChat(title){
-  if(currentId) return;
+    if(message.role === "user"){
 
-  currentId="chat_"+Date.now();
+      addUserMessage(
+        message.text
+      );
 
-  chats[currentId]={
-    title:title||"New Chat",
-    messages:[]
-  };
-}
-
-function appendUser(text,img){
-  appendRow("You",text,"user",img,null);
-}
-
-function appendRow(label,text,type,img,data){
-
-  const row=document.createElement("div");
-  row.className="row "+type;
-
-  let body="";
-
-  if(type==="ai"){
-    body=format(text);
-
-    if(data?.data){
-      const mime=data.mimeType||"image/png";
-      body+=
-        `<img src="data:${attr(mime)};base64,${data.data}" alt="Generated image">`;
-    }
-
-    if(Array.isArray(arguments[5])&&arguments[5].length){
-      body+=sources(arguments[5]);
-    }
-  }else{
-    body=format(text);
-
-    if(img){
-      body+=`<img class="attached" src="${attr(img)}" alt="Attached image">`;
-    }
-  }
-
-  row.innerHTML=
-    `<div class="label">${esc(label)}</div><div class="bubble">${body}</div>`;
-
-  $("chat").appendChild(row);
-  $("chat").scrollTop=$("chat").scrollHeight;
-
-  return row;
-}
-
-function thinkingRow(){
-  const row=document.createElement("div");
-  row.className="row ai";
-
-  const node=id("thinking");
-
-  row.innerHTML=
-    `<div class="label">TruX AI</div>
-     <div class="thinking" id="${node}">
-       <div class="dot"></div>
-       <span>Thinking...</span>
-     </div>`;
-
-  $("chat").appendChild(row);
-  $("chat").scrollTop=$("chat").scrollHeight;
-
-  const phrases=[
-    "Thinking...",
-    "Processing request...",
-    "Analyzing context...",
-    "Formulating response..."
-  ];
-
-  let n=0;
-
-  const timer=setInterval(()=>{
-    const el=document.querySelector("#"+node+" span");
-
-    if(el){
-      el.textContent=phrases[n++%phrases.length];
     }else{
-      clearInterval(timer);
+
+      const row =
+        document.createElement("div");
+
+      row.className = "message ai";
+
+      row.innerHTML = `
+        <div class="label">TruX AI</div>
+        <div class="bubble">
+          ${
+            message.text ===
+            "[Generated Image]"
+              ? "🖼 Generated image"
+              : formatText(message.text)
+          }
+        </div>
+      `;
+
+      chatEl.appendChild(row);
     }
-  },1500);
-
-  return {row,timer};
-}
-
-/* ---------- SEND TO API ---------- */
-
-async function send(){
-
-  const text=$("input").value.trim();
-
-  if(!text&&!attachedImage) return;
-
-  if(imageMode&&imageUsed){
-    alert("Your free image generation has already been used for this session.");
-    toggleImage(false);
-    return;
-  }
-
-  const mode=imageMode?"image":"chat";
-  const image=attachedImage;
-
-  ensureChat(
-    mode==="image"
-      ? "🎨 "+(text||"Generated Image").slice(0,28)
-      : (text||"Image Analysis").slice(0,28)
-  );
-
-  chats[currentId].messages.push({
-    role:"user",
-    text:text,
-    image:image||null
   });
 
-  saveChats();
-
-  $("welcome").style.display="none";
-  $("chat").style.display="block";
-
-  appendUser(
-    text||"Image attached",
-    image
-  );
-
-  $("input").value="";
-  resizeInput();
-  clearAttachment();
-
-  toggleImage(false);
   renderHistory();
 
-  const wait=thinkingRow();
-  controller=new AbortController();
-
-  $("send").disabled=true;
-
-  try{
-
-    const history=chats[currentId].messages
-      .slice(0,-1)
-      .slice(-10);
-
-    const custom=
-      localStorage.getItem("trux_custom_instructions")||"";
-
-    const res=await fetch("/api/chat",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      signal:controller.signal,
-      body:JSON.stringify({
-        message:text,
-        history,
-        image,
-        tier:currentModel,
-        systemInstruction:custom,
-        mode,
-        thinkingLevel:thinking
-      })
-    });
-
-    const raw=await res.text();
-
-    let data;
-
-    try{
-      data=JSON.parse(raw);
-    }catch{
-      throw new Error(
-        "The server returned invalid JSON. Check your Cloudflare Pages Function."
-      );
-    }
-
-    if(!res.ok){
-      throw new Error(
-        data?.error||`Request failed (${res.status})`
-      );
-    }
-
-    clearInterval(wait.timer);
-    wait.row.remove();
-
-    /*
-     * Only consume the image quota when an image
-     * was actually returned.
-     */
-    if(mode==="image"&&data?.image?.data){
-      imageUsed=true;
-      sessionStorage.setItem(
-        "trux_image_used",
-        "true"
-      );
-    }
-
-    const reply=data?.reply||(
-      mode==="image"
-        ?"Image generated successfully."
-        :"No response generated."
-    );
-
-    chats[currentId].messages.push({
-      role:"trux",
-      text:reply,
-      image:data?.image||null,
-      sources:data?.sources||[]
-    });
-
-    saveChats();
-
-    appendRow(
-      "TruX AI",
-      reply,
-      "ai",
-      null,
-      data?.image||null,
-      data?.sources||[]
-    );
-
-    if($("autoRead").checked){
-      speak(reply);
-    }
-
-  }catch(error){
-
-    clearInterval(wait.timer);
-
-    if(wait.row.parentNode){
-      wait.row.remove();
-    }
-
-    const row=document.createElement("div");
-    row.className="row ai";
-
-    row.innerHTML=
-      `<div class="label">TruX AI</div>
-       <div class="bubble" style="border-color:rgba(248,113,113,.4);color:#fecaca">
-         ${esc(
-           error?.name==="AbortError"
-             ?"Generation stopped."
-             :(error?.message||"Unable to connect to TruX.")
-         )}
-       </div>`;
-
-    $("chat").appendChild(row);
-    $("chat").scrollTop=$("chat").scrollHeight;
-
-    console.error(error);
-
-  }finally{
-    $("send").disabled=false;
-    controller=null;
+  if(window.innerWidth <= 700){
+    sidebar.classList.add("closed");
   }
 }
 
-/* ---------- MARKDOWN ---------- */
+/* =========================
+   SCROLL
+========================= */
 
-function format(text){
+function scrollBottom(){
 
-  let s=esc(text||"");
-  const blocks=[];
+  requestAnimationFrame(() => {
 
-  s=s.replace(
-    /```([a-zA-Z0-9_+#.-]*)\n?([\s\S]*?)```/g,
-    (m,lang,code)=>{
-      const key="@@CODE"+blocks.length+"@@";
+    chatEl.scrollTop =
+      chatEl.scrollHeight;
 
-      blocks.push({
-        key,
-        lang:lang||"Code",
-        code
-      });
-
-      return key;
-    }
-  );
-
-  s=s.replace(
-    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-    (m,label,url)=>
-      `<a href="${attr(url)}" target="_blank" rel="noopener noreferrer">${label}</a>`
-  );
-
-  s=s.replace(
-    /`([^`]+)`/g,
-    `<span class="inline">$1</span>`
-  );
-
-  s=s.replace(
-    /\*\*(.*?)\*\*/g,
-    "<strong>$1</strong>"
-  );
-
-  s=s.replace(
-    /\*([^*]+)\*/g,
-    "<em>$1</em>"
-  );
-
-  s=s.replace(/\n/g,"<br>");
-
-  blocks.forEach((b,i)=>{
-    const codeId=id("code");
-
-    const html=
-      `<div class="code">
-        <div class="codehead">
-          <span>${esc(b.lang)}</span>
-          <button class="copy" onclick="copyCode('${codeId}')">Copy</button>
-        </div>
-        <pre><code id="${codeId}">${b.code}</code></pre>  </div>`;
-
-s=s.replace(
-  "@@CODE"+i+"@@",
-  html
-);
-
-});
-
-return s;
+  });
 }
 
-function copyCode(codeId){
+/* =========================
+   SETTINGS
+========================= */
 
-const el=$(codeId);
+$("settingsBtn").onclick =
+$("topSettings").onclick = () => {
 
-if(!el) return;
+  instructions.value =
+    localStorage.getItem(
+      STORAGE_INSTRUCTIONS
+    ) || "";
 
-navigator.clipboard
-.writeText(el.innerText)
-.then(()=>{
-const btn=
-el.closest(".code")?.querySelector(".copy");
+  modal.classList.add("show");
+};
 
-  if(btn){
-    const old=btn.textContent;
-    btn.textContent="Copied";
+$("closeModal").onclick = () => {
+  modal.classList.remove("show");
+};
 
-    setTimeout(()=>{
-      btn.textContent=old;
-    },1000);
+$("saveInstructions").onclick = () => {
+
+  localStorage.setItem(
+    STORAGE_INSTRUCTIONS,
+    instructions.value.trim()
+  );
+
+  modal.classList.remove("show");
+};
+
+$("clearChats").onclick = () => {
+
+  if(!confirm(
+    "Delete all local chat history?"
+  )) return;
+
+  chats = {};
+
+  localStorage.removeItem(
+    STORAGE_CHATS
+  );
+
+  newChat();
+};
+
+/* =========================
+   VOICE
+========================= */
+
+$("micBtn").onclick = () => {
+
+  const SpeechRecognition =
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
+
+  if(!SpeechRecognition){
+
+    alert(
+      "Voice recognition is not supported on this browser."
+    );
+
+    return;
   }
-})
-.catch(console.error);
 
-}
+  const recognition =
+    new SpeechRecognition();
 
-function sources(list){
+  recognition.lang = "en-US";
+  recognition.interimResults = false;
+  recognition.continuous = false;
 
-const unique=[];
-const seen=new Set();
+  recognition.onresult = event => {
 
-for(const s of list){
-if(!s?.uri||seen.has(s.uri)) continue;
-seen.add(s.uri);
-unique.push(s);
-}
+    const text =
+      event.results[0][0].transcript;
 
-if(!unique.length) return "";
+    input.value +=
+      (input.value ? " " : "") +
+      text;
 
-return "<div class="sources"> <b>Sources</b> ${unique.map(s=>"<a href="${attr(s.uri)}" target="_blank" rel="noopener noreferrer">
-${esc(s.title||s.uri)}
-</a>").join("")} </div>";
-}
+    input.dispatchEvent(
+      new Event("input")
+    );
+  };
 
-/* ---------- HISTORY ---------- */
+  recognition.onerror = () => {
+    console.log("Voice recognition error");
+  };
 
-function renderHistory(filter=""){
+  recognition.start();
+};
 
-const box=$("history");
-box.innerHTML="";
+/* =========================
+   START
+========================= */
 
-const ids=Object.keys(chats).reverse();
-
-if(!ids.length){
-box.innerHTML='<div class="empty">Your recent chats appear here</div>';
-return;
-}
-
-let count=0;
-
-ids.forEach(id=>{
-const title=chats[id]?.title||"Untitled Chat";
-
-if(
-  filter &&
-  !title.toLowerCase().includes(filter.toLowerCase().trim())
-) return;
-
-count++;
-
-const item=document.createElement("div");
-item.className=
-  "history-item"+
-  (id===currentId?" active":"");
-
-item.textContent=title;
-item.onclick=()=>loadChat(id);
-
-box.appendChild(item);
-
-});
-
-if(!count){
-box.innerHTML='<div class="empty">No matching chats found</div>';
-}
-}
-
-function loadChat(chatId){
-
-if(!chats[chatId]) return;
-
-currentId=chatId;
-
-$("welcome").style.display="none";
-$("chat").style.display="block";
-$("chat").innerHTML="";
-
-for(const m of chats[chatId].messages||[]){
-
-if(m.role==="user"){
-  appendRow(
-    "You",
-    m.text||"Image attached",
-    "user",
-    m.image||null
-  );
-}else{
-  appendRow(
-    "TruX AI",
-    m.text||"",
-    "ai",
-    null,
-    m.image||null,
-    m.sources||[]
-  );
-}
-
-}
-
-renderHistory();
-
-if(innerWidth<=768){
-$("sidebar").classList.remove("mobile-open");
-}
-}
-
-/* ---------- SETTINGS ---------- */
-
-function openSettings(tab){
-$("modal").style.display="flex";
-
-$("instructions").value=
-localStorage.getItem("trux_custom_instructions")||"";
-
-const buttons=[...document.querySelectorAll(".tab")];
-
-const button=buttons.find(
-b=>(b.getAttribute("onclick")||"").includes("'"+tab+"'")
-);
-
-if(button) openTab(tab,button);
-}
-
-function closeSettings(){
-$("modal").style.display="none";
-}
-
-function openTab(name,button){
-
-document.querySelectorAll(".tab")
-.forEach(x=>x.classList.remove("active"));
-
-document.querySelectorAll(".pane")
-.forEach(x=>x.classList.remove("active"));
-
-button.classList.add("active");
-
-$("pane-"+name).classList.add("active");
-}
-
-function saveInstructions(){
-
-localStorage.setItem(
-"trux_custom_instructions",
-$("instructions").value.trim()
-);
-
-alert("Custom instructions saved.");
-}
-
-/* ---------- EXPORT ---------- */
-
-function exportChats(){
-
-const blob=new Blob(
-[JSON.stringify(chats,null,2)],
-{type:"application/json"}
-);
-
-const url=URL.createObjectURL(blob);
-
-const a=document.createElement("a");
-a.href=url;
-a.download="trux_backup_${Date.now()}.json";
-
-document.body.appendChild(a);
-a.click();
-a.remove();
-
-URL.revokeObjectURL(url);
-}
-
-function clearChats(){
-
-if(!confirm("Delete all local chat history?"))
-return;
-
-chats={};
-
-localStorage.removeItem("trux_chats");
-
-newChat();
-
-closeSettings();
-}
-
-/* ---------- TTS ---------- */
-
-function speak(text){
-
-if(!("speechSynthesis" in window))
-return;
-
-try{
-speechSynthesis.cancel();
-
-const utterance=
-  new SpeechSynthesisUtterance(text);
-
-utterance.rate=1;
-utterance.pitch=1;
-
-speechSynthesis.speak(utterance);
-
-}catch(e){
-console.warn(e);
-}
-}
-
-/* ---------- INIT ---------- */
-
-$("model").value=currentModel;
-$("thinking").value=thinking;
-
-renderHistory();
+loadStorage();
 
 </script>
+
 </body>
 </html>
