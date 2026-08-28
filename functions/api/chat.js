@@ -1,41 +1,33 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const BASE_PERSONA = `Never use latex for code generation. You can use unicode symbols and standard text. Your name is TruX, an AI created by TruX-Technologies ( dont tag ur name with every message just disclose it when asked about ur name or creator ). Keep answers concise, precise, and informative.`;
+const BASE_PERSONA = `Never use latex for code generation. You can use unicode symbols and standard text. Your name is TruX, an AI created by TruX-Technologies. Keep answers concise, precise, and informative.`;
+
+// Track image generation counts per IP/Session in memory (1 image limit per user)
+const imageGenTracker = new Map();
 
 function getGeminiModel(tier) {
   switch (tier) {
-    case 'pro': return 'gemini-3.7-flash';
+    case 'pro': return 'gemini-3.5-flash'; // TruX-Pro 3.5
     case 'base':
-    default: return 'gemini-3.5-flash';
+    default: return 'gemini-3.7-flash'; // TruX-Core 3.0
   }
 }
 
-// Dedicated helper for Imagen 3 generation
-async function generateImagen3(prompt, apiKey) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:generateImages?key=${apiKey}`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      prompt: prompt,
-      config: {
-        numberOfImages: 1,
-        outputMimeType: 'image/jpeg',
-        aspectRatio: '1:1'
-      }
-    })
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error?.message || `Image API Error ${response.status}`);
+// Nano Banana Pro / Fast Reliable Flux Engine with fallback
+async function generateNanoBananaImage(prompt) {
+  const seed = Math.floor(Math.random() * 1000000);
+  const encodedPrompt = encodeURIComponent(prompt.trim() || "Abstract neon cyberpunk aesthetic art");
+  
+  // Using high-speed Nano-Banana Pro / Flux image endpoint
+  const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&seed=${seed}&model=flux&nologo=true`;
+  
+  // Verify image generator health
+  const checkRes = await fetch(imageUrl, { method: 'HEAD' });
+  if (!checkRes.ok) {
+    throw new Error('Image Generation Engine temporarily busy. Please try again.');
   }
 
-  const data = await response.json();
-  const base64Bytes = data.generatedImages?.[0]?.image?.imageBytes;
-  if (!base64Bytes) throw new Error('No image bytes returned from Imagen.');
-
-  return `data:image/jpeg;base64,${base64Bytes}`;
+  return imageUrl;
 }
 
 export async function onRequestPost(context) {
@@ -45,6 +37,8 @@ export async function onRequestPost(context) {
       return Response.json({ error: 'GEMINI_API_KEY missing on server environment.' }, { status: 500 });
     }
 
+    const clientIP = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || 'default-user';
+
     const { 
       message, 
       tier = 'base', 
@@ -52,17 +46,28 @@ export async function onRequestPost(context) {
       image = null, 
       systemInstruction = '', 
       mode = 'chat', // 'chat' or 'image'
-      thinkingLevel = 'medium' // 'off', 'low', 'medium', 'high'
+      thinkingLevel = 'medium' 
     } = await request.json();
 
     if (!message && !image) {
       return Response.json({ error: 'Message or image required.' }, { status: 400 });
     }
 
-    // --- MODE 1: IMAGE GENERATION ---
+    // --- MODE 1: NANO BANANA PRO IMAGE GENERATION (1 Limit Enforcement) ---
     if (mode === 'image') {
+      const userImageCount = imageGenTracker.get(clientIP) || 0;
+      if (userImageCount >= 1) {
+        return Response.json({ 
+          error: 'Image generation limit reached! (1 free image allowed per user).' 
+        }, { status: 429 });
+      }
+
       try {
-        const imageUrl = await generateImagen3(message || "Abstract creative AI art", env.GEMINI_API_KEY);
+        const imageUrl = await generateNanoBananaImage(message);
+        
+        // Mark user as having generated 1 image
+        imageGenTracker.set(clientIP, userImageCount + 1);
+
         return Response.json({ 
           reply: `Here is your generated image:\n\n![Generated Image](${imageUrl})` 
         });
@@ -72,14 +77,13 @@ export async function onRequestPost(context) {
       }
     }
 
-    // --- MODE 2: CHAT WITH NATIVE GOOGLE SEARCH & THINKING BUDGET ---
+    // --- MODE 2: CHAT WITH NATIVE SEARCH & THINKING BUDGET ---
     const combinedSystemInstruction = systemInstruction?.trim()
       ? `${BASE_PERSONA}\n\n[USER CUSTOM INSTRUCTIONS]:\n${systemInstruction}`
       : BASE_PERSONA;
 
     const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
     
-    // Configure Thinking Budget mapping
     let thinkingBudget = 0;
     if (thinkingLevel === 'low') thinkingBudget = 1024;
     else if (thinkingLevel === 'medium') thinkingBudget = 2048;
@@ -88,7 +92,7 @@ export async function onRequestPost(context) {
     const requestConfig = {
       model: getGeminiModel(tier),
       systemInstruction: combinedSystemInstruction,
-      tools: [{ googleSearch: {} }] // Native Google Search Grounding
+      tools: [{ googleSearch: {} }]
     };
 
     if (thinkingBudget > 0) {
@@ -130,7 +134,7 @@ export async function onRequestPost(context) {
         });
       }
     }
-    messageParts.push({ text: message || "Analyze attached content" });
+    messageParts.push({ text: message || "Analyze attached image/content" });
 
     const contents = [...formattedHistory, { role: 'user', parts: messageParts }];
     const result = await model.generateContent({ contents });
@@ -138,7 +142,6 @@ export async function onRequestPost(context) {
 
     let rawText = response.text() || 'No response generated.';
     
-    // Parse Google Search Grounding metadata if available
     const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
     let searchSourcesText = '';
     if (groundingMetadata?.groundingChunks?.length) {
