@@ -1,74 +1,106 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const BASE_PERSONA = `Never use latex for code generation. You can use unicode symbols and standard text. Your name is TruX, an AI created by TruX-Technologies (dont tag ur name an creator with every message unless aske you eg- who are you etc). Keep answers concise, precise, and informative.`;
-
-const searchWebDeclaration = {
-  name: 'searchWeb',
-  description: 'Search live web via Serper. ONLY call if real-time/current data outside training is explicitly requested.',
-  parameters: {
-    type: 'OBJECT',
-    properties: {
-      query: { type: 'STRING', description: 'Search keywords.' }
-    },
-    required: ['query']
-  }
-};
-
-
-async function fetchSerperSearchResults(query, apiKey) {
-  if (!apiKey) return "Search failed: API key missing.";
-  try {
-    const response = await fetch('https://google.serper.dev/search', {
-      method: 'POST',
-      headers: { 'X-API-KEY': apiKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: query })
-    });
-    if (!response.ok) return "No results.";
-    const data = await response.json();
-    if (!data.organic?.length) return "No search results found.";
-    return data.organic.slice(0, 3).map(item => `Title: ${item.title}\nSnippet: ${item.snippet}`).join('\n\n');
-  } catch {
-    return "Search error.";
-  }
-}
+const BASE_PERSONA = `Never use latex for code generation. You can use unicode symbols and standard text. Your name is TruX, an AI created by TruX-Technologies ( dont tag ur name with every message just disclose it when asked about ur name or creator ). Keep answers concise, precise, and informative.`;
 
 function getGeminiModel(tier) {
   switch (tier) {
-    case 'base': return 'gemini-3.1-flash-lite';
-    case 'pro': return 'gemini-3.5-flash-lite';
-    case 'ultra': return 'gemini-3.6-flash';
-    default: return 'gemini-3.1-flash-lite';
+    case 'pro': return 'gemini-3.7-flash';
+    case 'base':
+    default: return 'gemini-3.5-flash';
   }
+}
+
+// Dedicated helper for Imagen 3 generation
+async function generateImagen3(prompt, apiKey) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:generateImages?key=${apiKey}`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prompt: prompt,
+      config: {
+        numberOfImages: 1,
+        outputMimeType: 'image/jpeg',
+        aspectRatio: '1:1'
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error?.message || `Image API Error ${response.status}`);
+  }
+
+  const data = await response.json();
+  const base64Bytes = data.generatedImages?.[0]?.image?.imageBytes;
+  if (!base64Bytes) throw new Error('No image bytes returned from Imagen.');
+
+  return `data:image/jpeg;base64,${base64Bytes}`;
 }
 
 export async function onRequestPost(context) {
   try {
     const { request, env } = context;
     if (!env.GEMINI_API_KEY) {
-      return Response.json({ error: 'GEMINI_API_KEY missing.' }, { status: 500 });
+      return Response.json({ error: 'GEMINI_API_KEY missing on server environment.' }, { status: 500 });
     }
 
-    const { message, tier, history, image, systemInstruction } = await request.json();
+    const { 
+      message, 
+      tier = 'base', 
+      history = [], 
+      image = null, 
+      systemInstruction = '', 
+      mode = 'chat', // 'chat' or 'image'
+      thinkingLevel = 'medium' // 'off', 'low', 'medium', 'high'
+    } = await request.json();
 
     if (!message && !image) {
       return Response.json({ error: 'Message or image required.' }, { status: 400 });
     }
 
+    // --- MODE 1: IMAGE GENERATION ---
+    if (mode === 'image') {
+      try {
+        const imageUrl = await generateImagen3(message || "Abstract creative AI art", env.GEMINI_API_KEY);
+        return Response.json({ 
+          reply: `Here is your generated image:\n\n![Generated Image](${imageUrl})` 
+        });
+      } catch (imgError) {
+        console.error('Image Generation Error:', imgError);
+        return Response.json({ error: `Image Generation failed: ${imgError.message}` }, { status: 500 });
+      }
+    }
+
+    // --- MODE 2: CHAT WITH NATIVE GOOGLE SEARCH & THINKING BUDGET ---
     const combinedSystemInstruction = systemInstruction?.trim()
-      ? `${BASE_PERSONA}\n\n[USER INSTRUCTIONS]:\n${systemInstruction}`
+      ? `${BASE_PERSONA}\n\n[USER CUSTOM INSTRUCTIONS]:\n${systemInstruction}`
       : BASE_PERSONA;
 
     const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({
+    
+    // Configure Thinking Budget mapping
+    let thinkingBudget = 0;
+    if (thinkingLevel === 'low') thinkingBudget = 1024;
+    else if (thinkingLevel === 'medium') thinkingBudget = 2048;
+    else if (thinkingLevel === 'high') thinkingBudget = 4096;
+
+    const requestConfig = {
       model: getGeminiModel(tier),
       systemInstruction: combinedSystemInstruction,
-      tools: [{ functionDeclarations: [searchWebDeclaration] }]
-    });
+      tools: [{ googleSearch: {} }] // Native Google Search Grounding
+    };
 
-    // Format up to 5 pairs (10 messages) of alternating user/model history
+    if (thinkingBudget > 0) {
+      requestConfig.thinkingConfig = { thinkingBudget };
+    }
+
+    const model = genAI.getGenerativeModel(requestConfig);
+
+    // Format chat history
     let formattedHistory = [];
     if (Array.isArray(history)) {
-      const recentHistory = history.slice(-10); // 5 pairs
+      const recentHistory = history.slice(-10);
       let lastRole = null;
       for (const msg of recentHistory) {
         const role = msg.role === 'trux' || msg.role === 'model' ? 'model' : 'user';
@@ -79,11 +111,9 @@ export async function onRequestPost(context) {
       }
     }
 
-    // Trim history if it starts with model to maintain strict user-first turn
     if (formattedHistory.length > 0 && formattedHistory[0].role === 'model') {
       formattedHistory.shift();
     }
-    // Trim end if duplicate user turn exists
     if (formattedHistory.length > 0 && formattedHistory[formattedHistory.length - 1].role === 'user') {
       formattedHistory.pop();
     }
@@ -100,39 +130,31 @@ export async function onRequestPost(context) {
         });
       }
     }
-    messageParts.push({ text: message || "Analyze image" });
+    messageParts.push({ text: message || "Analyze attached content" });
 
     const contents = [...formattedHistory, { role: 'user', parts: messageParts }];
-    let result = await model.generateContent({ contents });
-    let response = result.response;
-
-    const functionCalls = response.functionCalls();
-    if (functionCalls?.length > 0 && functionCalls[0].name === 'searchWeb') {
-      const searchResults = await fetchSerperSearchResults(
-        functionCalls[0].args.query || message,
-        env.SERPER_DEV_API
-      );
-
-      contents.push({ role: 'model', parts: response.candidates[0].content.parts });
-      contents.push({
-        role: 'user',
-        parts: [{
-          functionResponse: {
-            name: 'searchWeb',
-            response: { result: searchResults }
-          }
-        }]
-      });
-
-      result = await model.generateContent({ contents });
-      response = result.response;
-    }
+    const result = await model.generateContent({ contents });
+    const response = result.response;
 
     let rawText = response.text() || 'No response generated.';
-    return Response.json({ reply: rawText.replace(/<think>[\s\S]*?<\/think>/g, '').trim() });
+    
+    // Parse Google Search Grounding metadata if available
+    const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
+    let searchSourcesText = '';
+    if (groundingMetadata?.groundingChunks?.length) {
+      const sources = groundingMetadata.groundingChunks
+        .filter(chunk => chunk.web?.uri && chunk.web?.title)
+        .map(chunk => `[${chunk.web.title}](${chunk.web.uri})`);
+      if (sources.length > 0) {
+        searchSourcesText = `\n\n**Sources:**\n` + Array.from(new Set(sources)).map(s => `• ${s}`).join('\n');
+      }
+    }
+
+    const finalResponse = (rawText + searchSourcesText).replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+    return Response.json({ reply: finalResponse });
 
   } catch (error) {
     console.error('API Error:', error);
-    return Response.json({ error: error.message || 'Server error' }, { status: 500 });
+    return Response.json({ error: error.message || 'Server connection error' }, { status: 500 });
   }
 }
