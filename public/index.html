@@ -10,7 +10,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
   <link rel="apple-touch-icon" href="/icon-192.png">
-  <meta name="theme-color" content="#080a0f">
+  <meta name="theme-color" content="#000000">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -24,64 +24,54 @@
 
   <style>
     :root {
-      --bg-main: #07090e;
-      --bg-sidebar: rgba(13, 16, 25, 0.85);
-      --bg-card: rgba(18, 22, 34, 0.75);
-      --bg-input: rgba(18, 22, 35, 0.9);
-      --bg-hover: rgba(28, 34, 52, 0.85);
-      --text-main: #f0f3f9;
-      --text-muted: #8e96a5;
-      --border-color: rgba(255, 255, 255, 0.08);
+      --bg-main: #000000;
+      --bg-sidebar: #050507;
+      --bg-card: #0c0d12;
+      --bg-input: #10121a;
+      --bg-hover: #161924;
+      --text-main: #f5f6fa;
+      --text-muted: #808696;
+      --border-color: rgba(255, 255, 255, 0.1);
       --accent: #00bfff;
       --accent-purple: #9b51e0;
       --accent-pink: #ff007f;
       --error: #ff5555;
-      --glass-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
-    }
-
-    body.dark-mode-off {
-      --bg-main: #0e121a;
-      --bg-sidebar: #131924;
-      --bg-card: #18202e;
-      --bg-input: #1b2434;
-      --bg-hover: #242f44;
-      --border-color: rgba(255, 255, 255, 0.12);
+      --glass-shadow: 0 16px 40px rgba(0, 0, 0, 0.95);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
     
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 10px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
-    body { background-color: var(--bg-main); color: var(--text-main); font-family: 'Poppins', sans-serif; display: flex; height: 100dvh; width: 100vw; overflow: hidden; position: relative; transition: background-color 0.4s ease; }
+    body { background-color: var(--bg-main); color: var(--text-main); font-family: 'Poppins', sans-serif; display: flex; height: 100dvh; width: 100vw; overflow: hidden; position: relative; }
     
     .dark-ambient-container { 
       position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; 
-      background: radial-gradient(ellipse at 15% 20%, rgba(255, 0, 128, 0.18) 0%, transparent 45%),
-                  radial-gradient(ellipse at 85% 75%, rgba(0, 191, 255, 0.2) 0%, transparent 50%),
-                  radial-gradient(ellipse at 50% 40%, rgba(155, 81, 224, 0.18) 0%, transparent 60%);
-      transition: opacity 0.8s ease; filter: blur(30px);
+      background: radial-gradient(ellipse at 15% 20%, rgba(255, 0, 128, 0.08) 0%, transparent 45%),
+                  radial-gradient(ellipse at 85% 75%, rgba(0, 191, 255, 0.08) 0%, transparent 50%),
+                  radial-gradient(ellipse at 50% 40%, rgba(155, 81, 224, 0.06) 0%, transparent 60%);
+      filter: blur(40px); transition: opacity 0.5s ease;
     }
-    body.chat-active .dark-ambient-container { opacity: 0.35; }
     
     .menu-toggle-btn, .settings-toggle-btn { position: absolute; top: 16px; z-index: 100; background: var(--bg-input); backdrop-filter: blur(16px); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px; cursor: pointer; color: #ffffff; font-size: 18px; line-height: 1; transition: all 0.3s; box-shadow: var(--glass-shadow); }
     .menu-toggle-btn { left: 16px; }
     .settings-toggle-btn { left: 66px; }
-    .menu-toggle-btn:hover { background: var(--bg-hover); border-color: var(--accent); box-shadow: 0 0 20px rgba(0, 191, 255, 0.4); }
-    .settings-toggle-btn:hover { background: var(--bg-hover); border-color: var(--accent-purple); box-shadow: 0 0 20px rgba(155, 81, 224, 0.4); transform: rotate(45deg); }
+    .menu-toggle-btn:hover { background: var(--bg-hover); border-color: var(--accent); box-shadow: 0 0 15px rgba(0, 191, 255, 0.4); }
+    .settings-toggle-btn:hover { background: var(--bg-hover); border-color: var(--accent-purple); box-shadow: 0 0 15px rgba(155, 81, 224, 0.4); transform: rotate(45deg); }
 
     .mobile-new-chat-btn { display: none; position: absolute; top: 16px; right: 16px; z-index: 100; background: var(--bg-input); border: 1px solid var(--accent); color: #ffffff; border-radius: 50%; width: 42px; height: 42px; cursor: pointer; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 0 15px rgba(0, 191, 255, 0.3); }
     
-    .sidebar-overlay { display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px); z-index: 9; }
+    .sidebar-overlay { display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 9; }
     
-    .history-sidebar { width: 330px; background: var(--bg-sidebar); backdrop-filter: blur(24px); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; z-index: 10; flex-shrink: 0; transition: margin-left 0.3s ease, transform 0.3s ease; box-shadow: var(--glass-shadow); }
+    .history-sidebar { width: 330px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; z-index: 10; flex-shrink: 0; transition: margin-left 0.3s ease, transform 0.3s ease; box-shadow: var(--glass-shadow); }
     .history-sidebar.collapsed { margin-left: -330px; }
     
     .sidebar-header { padding: 16px; display: flex; flex-direction: row; align-items: center; gap: 8px; border-bottom: 1px solid var(--border-color); }
     
-    .new-chat-btn { flex: 1; background: rgba(0, 191, 255, 0.12); border: 1px solid rgba(0, 191, 255, 0.35); color: #ffffff; padding: 11px 12px; border-radius: 14px; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.25s; box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15); }
+    .new-chat-btn { flex: 1; background: rgba(0, 191, 255, 0.12); border: 1px solid rgba(0, 191, 255, 0.35); color: #ffffff; padding: 11px 12px; border-radius: 14px; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.25s; }
     .new-chat-btn:hover { background: rgba(0, 191, 255, 0.25); border-color: var(--accent); box-shadow: 0 0 15px rgba(0, 191, 255, 0.3); }
     
     .header-action-btn { background: rgba(155, 81, 224, 0.12); border: 1px solid rgba(155, 81, 224, 0.35); color: #ffffff; padding: 11px; border-radius: 14px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.25s; line-height: 1; }
@@ -91,20 +81,25 @@
     .sidebar-close-btn { display: none; background: transparent; border: none; color: #ffffff; font-size: 24px; cursor: pointer; line-height: 1; padding: 0 4px; opacity: 0.7; }
     .sidebar-close-btn:hover { opacity: 1; }
 
-    .history-list { flex-grow: 1; overflow-y: auto; padding: 12px 8px; }
+    /* Code Space Header & Section */
+    .sidebar-code-space-header { padding: 14px 16px 6px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--accent); display: flex; align-items: center; gap: 6px; }
+
+    .history-list { flex-grow: 1; overflow-y: auto; padding: 6px 8px; }
+    .empty-history-text { text-align: center; color: var(--text-muted); font-size: 13px; margin-top: 30px; font-style: italic; opacity: 0.7; }
+
     .history-item-wrapper { display: flex; align-items: center; justify-content: space-between; border-radius: 12px; margin-bottom: 6px; padding-right: 8px; transition: all 0.2s; border: 1px solid transparent; }
-    .history-item-wrapper:hover, .history-item-wrapper.active { background: var(--bg-hover); border-color: rgba(0, 191, 255, 0.25); box-shadow: inset 0 0 10px rgba(0, 191, 255, 0.05); }
+    .history-item-wrapper:hover, .history-item-wrapper.active { background: var(--bg-hover); border-color: rgba(0, 191, 255, 0.3); }
     .history-item { padding: 12px 14px; font-size: 13.5px; cursor: pointer; color: #c4c7c5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; }
     
-    .profile-footer { border-top: 1px solid var(--border-color); padding: 16px; background: rgba(8, 9, 13, 0.6); backdrop-filter: blur(12px); display: flex; flex-direction: column; gap: 10px; cursor: pointer; transition: background 0.2s; }
+    .profile-footer { border-top: 1px solid var(--border-color); padding: 16px; background: #040406; display: flex; flex-direction: column; gap: 10px; cursor: pointer; transition: background 0.2s; }
     .profile-footer:hover { background-color: var(--bg-hover); }
     .profile-card { display: flex; align-items: center; gap: 14px; pointer-events: none; }
-    .profile-avatar { width: 42px; height: 42px; border-radius: 50%; background-color: #2a2b2d; border: 1.5px solid var(--accent); object-fit: cover; box-shadow: 0 0 12px rgba(0, 191, 255, 0.3); }
+    .profile-avatar { width: 42px; height: 42px; border-radius: 50%; background-color: #1a1c24; border: 1.5px solid var(--accent); object-fit: cover; box-shadow: 0 0 10px rgba(0, 191, 255, 0.3); }
     .profile-details { flex-grow: 1; overflow: hidden; }
     .profile-name { font-size: 14px; font-weight: 600; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .profile-email { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     
-    .main-chat-arena { flex-grow: 1; display: flex; flex-direction: column; height: 100%; position: relative; z-index: 5; overflow: hidden; }
+    .main-chat-arena { flex-grow: 1; display: flex; flex-direction: column; height: 100%; position: relative; z-index: 5; overflow: hidden; background: #000000; }
     .welcome-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; flex-grow: 1; text-align: center; padding: 20px; z-index: 2; transition: opacity 0.3s; }
     .welcome-title { font-size: clamp(38px, 6vw, 56px); font-weight: 800; letter-spacing: -0.5px; background: linear-gradient(90deg, #ff007f 0%, #a100ff 30%, #00bfff 70%, #ff007f 100%); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: metallicFlow 5s linear infinite; filter: drop-shadow(0 0 20px rgba(0, 191, 255, 0.35)); }
     
@@ -112,25 +107,24 @@
     @keyframes pulseX { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.18); opacity: 1; text-shadow: 0 0 20px rgba(0, 191, 255, 0.9); } }
     @keyframes metallicFlow { 0% { background-position: 0% center; } 100% { background-position: 200% center; } }
     
-    .chat-container { display: none; flex-grow: 1; overflow-y: auto; padding: 30px 40px; scroll-behavior: smooth; }
+    .chat-container { display: none; flex-grow: 1; overflow-y: auto; padding: 30px 40px; scroll-behavior: smooth; background: #000000; }
     .message-row { display: flex; flex-direction: column; margin-bottom: 28px; max-width: 840px; width: 100%; margin-left: auto; margin-right: auto; }
     .message-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
     .user-row .message-label { color: var(--text-muted); align-self: flex-end; }
     .trux-row .message-label { background: linear-gradient(90deg, #00bfff, #c58af9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     
     .bubble { padding: 18px 22px; border-radius: 20px; font-size: 15px; line-height: 1.6; word-wrap: break-word; user-select: text !important; -webkit-user-select: text !important; }
-    .user-bubble { background: rgba(22, 24, 34, 0.9); color: #f1f1f1; align-self: flex-end; border-bottom-right-radius: 4px; border: 1px solid rgba(0, 191, 255, 0.25); max-width: 85%; white-space: pre-wrap; box-shadow: var(--glass-shadow); }
-    .trux-bubble { background: var(--bg-card); backdrop-filter: blur(20px); color: var(--text-main); align-self: flex-start; border-top-left-radius: 4px; border: 1px solid rgba(155, 81, 224, 0.3); width: 100%; box-shadow: var(--glass-shadow), inset 0 0 15px rgba(155, 81, 224, 0.05); }
+    .user-bubble { background: #0f121d; color: #f1f1f1; align-self: flex-end; border-bottom-right-radius: 4px; border: 1px solid rgba(0, 191, 255, 0.3); max-width: 85%; white-space: pre-wrap; box-shadow: var(--glass-shadow); }
+    .trux-bubble { background: #08090e; color: var(--text-main); align-self: flex-start; border-top-left-radius: 4px; border: 1px solid rgba(155, 81, 224, 0.35); width: 100%; box-shadow: var(--glass-shadow); }
 
-    /* Generated Image Card UI */
-    .generated-image-card { margin-top: 12px; border-radius: 16px; overflow: hidden; border: 1px solid rgba(0, 191, 255, 0.3); background: rgba(0,0,0,0.4); box-shadow: 0 8px 30px rgba(0, 191, 255, 0.2); }
+    .generated-image-card { margin-top: 12px; border-radius: 16px; overflow: hidden; border: 1px solid rgba(0, 191, 255, 0.3); background: rgba(0,0,0,0.6); box-shadow: 0 8px 30px rgba(0, 191, 255, 0.2); }
     .generated-img { width: 100%; max-height: 480px; object-fit: contain; cursor: zoom-in; display: block; border-bottom: 1px solid var(--border-color); }
-    .image-card-actions { padding: 10px 14px; display: flex; justify-content: flex-end; background: rgba(12, 14, 22, 0.8); }
+    .image-card-actions { padding: 10px 14px; display: flex; justify-content: flex-end; background: #07080d; }
     .img-download-btn { background: rgba(0, 191, 255, 0.15); border: 1px solid var(--accent); color: var(--accent); text-decoration: none; padding: 6px 14px; border-radius: 10px; font-size: 12px; font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
     .img-download-btn:hover { background: var(--accent); color: #000000; box-shadow: 0 0 12px rgba(0, 191, 255, 0.5); }
 
-    .code-block-wrapper { margin: 12px 0; border: 1px solid var(--border-color); border-radius: 14px; overflow: hidden; background: #08090e; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6); }
-    .code-header { display: flex; justify-content: space-between; align-items: center; background: #12141f; padding: 8px 16px; border-bottom: 1px solid var(--border-color); font-size: 12px; color: var(--accent); font-family: monospace; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .code-block-wrapper { margin: 12px 0; border: 1px solid var(--border-color); border-radius: 14px; overflow: hidden; background: #050609; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8); }
+    .code-header { display: flex; justify-content: space-between; align-items: center; background: #0d0f17; padding: 8px 16px; border-bottom: 1px solid var(--border-color); font-size: 12px; color: var(--accent); font-family: monospace; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
     .copy-code-btn { background: rgba(0, 191, 255, 0.12); border: 1px solid rgba(0, 191, 255, 0.3); color: var(--accent); padding: 4px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; transition: all 0.2s; font-family: 'Poppins', sans-serif; font-weight: 500; }
     .copy-code-btn:hover { background: var(--accent); color: #000000; box-shadow: 0 0 12px rgba(0, 191, 255, 0.5); }
     pre { padding: 14px; overflow-x: auto; font-family: monospace; margin: 0; background: transparent; border: none; }
@@ -146,7 +140,7 @@
     .retry-btn { border-color: rgba(255, 85, 85, 0.4); color: #ff7777; }
     .retry-btn:hover { background: rgba(255, 85, 85, 0.15); color: #ffffff; border-color: var(--error); box-shadow: 0 0 12px rgba(255, 85, 85, 0.3); }
 
-    .trux-bubble.thinking-box { width: auto; display: inline-flex; align-items: center; padding: 12px 24px; background: rgba(255, 255, 255, 0.04); border-radius: 24px; border: 1px solid rgba(0, 191, 255, 0.3); box-shadow: 0 0 20px rgba(0, 191, 255, 0.15); }
+    .trux-bubble.thinking-box { width: auto; display: inline-flex; align-items: center; padding: 12px 24px; background: rgba(255, 255, 255, 0.03); border-radius: 24px; border: 1px solid rgba(0, 191, 255, 0.35); box-shadow: 0 0 20px rgba(0, 191, 255, 0.15); }
     .thinking-loader-container { display: flex; align-items: center; gap: 12px; }
     .thinking-dots { display: flex; gap: 6px; align-items: center; }
     .thinking-dot { width: 9px; height: 9px; border-radius: 50%; animation: geminiPulse 1.4s infinite ease-in-out both; }
@@ -160,13 +154,13 @@
     .thinking-status-text { font-size: 14px; font-weight: 600; background: linear-gradient(90deg, #00bfff 0%, #c58af9 50%, #ff007f 100%); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: statusGlow 2.5s linear infinite; }
     @keyframes statusGlow { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
 
-    .input-section { padding: 16px 24px 24px; background: linear-gradient(to top, var(--bg-main) 85%, transparent); z-index: 5; display: flex; flex-direction: column; align-items: center; width: 100%; }
+    .input-section { padding: 12px 24px 16px; background: #000000; z-index: 5; display: flex; flex-direction: column; align-items: center; width: 100%; border-top: 1px solid rgba(255,255,255,0.05); }
     
-    .model-selector-simple { margin-bottom: 12px; max-width: 840px; width: 100%; display: flex; justify-content: flex-start; }
-    .model-select { background: var(--bg-card); color: var(--accent); border: 1px solid rgba(0, 191, 255, 0.3); border-radius: 14px; padding: 8px 14px; font-size: 13px; font-family: inherit; font-weight: 600; outline: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 10px rgba(0, 191, 255, 0.1); }
+    .model-selector-simple { margin-bottom: 10px; max-width: 840px; width: 100%; display: flex; justify-content: flex-start; }
+    .model-select { background: #080a10; color: var(--accent); border: 1px solid rgba(0, 191, 255, 0.3); border-radius: 14px; padding: 8px 14px; font-size: 13px; font-family: inherit; font-weight: 600; outline: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 10px rgba(0, 191, 255, 0.1); }
     .model-select:hover { border-color: var(--accent); box-shadow: 0 0 15px rgba(0, 191, 255, 0.3); }
 
-    .input-wrapper { width: 100%; max-width: 840px; background: var(--bg-input); backdrop-filter: blur(20px); border: 1px solid rgba(155, 81, 224, 0.35); border-radius: 28px; padding: 10px 16px; display: flex; align-items: center; box-shadow: var(--glass-shadow), inset 0 0 15px rgba(0, 191, 255, 0.05); position: relative; transition: all 0.3s ease; }
+    .input-wrapper { width: 100%; max-width: 840px; background: var(--bg-input); border: 1px solid rgba(155, 81, 224, 0.35); border-radius: 28px; padding: 10px 16px; display: flex; align-items: center; box-shadow: var(--glass-shadow); position: relative; transition: all 0.3s ease; }
     .input-wrapper:focus-within { border-color: var(--accent); box-shadow: 0 0 25px rgba(0, 191, 255, 0.35); }
     
     .icon-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 8px; margin-right: 2px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s; flex-shrink: 0; }
@@ -174,7 +168,7 @@
     .icon-btn.recording { color: var(--error); background: rgba(255, 85, 85, 0.2); animation: pulseRec 1.5s infinite; }
     @keyframes pulseRec { 0% { transform: scale(1); } 50% { transform: scale(1.12); box-shadow: 0 0 15px rgba(255,85,85,0.5); } 100% { transform: scale(1); } }
     
-    .image-preview-wrapper { display: none; position: absolute; bottom: 70px; left: 20px; background: #1c1d22; padding: 8px; border-radius: 14px; border: 1px solid var(--accent); box-shadow: 0 4px 20px rgba(0, 191, 255, 0.3); }
+    .image-preview-wrapper { display: none; position: absolute; bottom: 70px; left: 20px; background: #12141c; padding: 8px; border-radius: 14px; border: 1px solid var(--accent); box-shadow: 0 4px 20px rgba(0, 191, 255, 0.3); }
     .image-preview-wrapper img { width: 64px; height: 64px; object-fit: cover; border-radius: 10px; }
     .remove-image-btn { position: absolute; top: -6px; right: -6px; background: var(--error); color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
 
@@ -184,17 +178,20 @@
     .send-btn:hover { transform: scale(1.08); box-shadow: 0 0 22px rgba(255, 0, 127, 0.6); }
     .send-btn svg { fill: #ffffff; width: 18px; height: 18px; }
 
-    /* Modals & Overlay Lightbox */
-    .lightbox-modal { display: none; position: fixed; top:0; left:0; width:100vw; height:100dvh; background: rgba(0,0,0,0.9); z-index: 3000; justify-content: center; align-items: center; backdrop-filter: blur(12px); }
+    /* Footer AI Disclaimer Notice */
+    .ai-disclaimer { margin-top: 8px; font-size: 11px; color: var(--text-muted); text-align: center; font-weight: 400; opacity: 0.75; letter-spacing: 0.2px; }
+
+    /* Lightbox & Modals */
+    .lightbox-modal { display: none; position: fixed; top:0; left:0; width:100vw; height:100dvh; background: rgba(0,0,0,0.95); z-index: 3000; justify-content: center; align-items: center; backdrop-filter: blur(12px); }
     .lightbox-modal img { max-width: 90vw; max-height: 90dvh; border-radius: 16px; border: 1px solid var(--accent); box-shadow: 0 0 40px rgba(0,191,255,0.5); }
 
-    .profile-modal-overlay, .settings-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(5, 5, 8, 0.75); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(16px); }
-    .profile-modal-card, .settings-modal-card { background: rgba(17, 20, 30, 0.9); border: 1px solid rgba(0, 191, 255, 0.35); border-radius: 28px; padding: 32px 28px; width: 420px; max-width: 90vw; text-align: center; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8); position: relative; max-height: 85dvh; overflow-y: auto; }
+    .profile-modal-overlay, .settings-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0, 0, 0, 0.85); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(16px); }
+    .profile-modal-card, .settings-modal-card { background: #0a0b10; border: 1px solid rgba(0, 191, 255, 0.35); border-radius: 28px; padding: 32px 28px; width: 420px; max-width: 90vw; text-align: center; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.95); position: relative; max-height: 85dvh; overflow-y: auto; }
     
     .profile-modal-card img { width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--accent); margin: 0 auto; object-fit: cover; }
     .profile-modal-name { color: #ffffff; font-size: 20px; font-weight: 600; margin: 0; }
     .profile-modal-email { color: var(--text-muted); font-size: 13px; margin: 0; padding-bottom: 10px; }
-    .profile-sign-out-btn { background: #1c1d22; color: var(--error); border: 1px solid rgba(255,85,85,0.4); padding: 12px; border-radius: 14px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit; display: flex; justify-content: center; align-items: center; gap: 8px; }
+    .profile-sign-out-btn { background: #161720; color: var(--error); border: 1px solid rgba(255,85,85,0.4); padding: 12px; border-radius: 14px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit; display: flex; justify-content: center; align-items: center; gap: 8px; }
     .profile-sign-out-btn:hover { background: var(--error); color: #ffffff; }
     .close-modal-btn { position: absolute; top: 14px; right: 18px; background: transparent; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer; }
 
@@ -203,14 +200,14 @@
     .settings-label { font-size: 14px; font-weight: 500; color: #e1e3e8; text-align: left; }
     .settings-toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
     .settings-toggle-switch input { opacity: 0; width: 0; height: 0; }
-    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #242834; transition: .3s; border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.1); }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #1e202c; transition: .3s; border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.1); }
     .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 2px; bottom: 2px; background-color: white; transition: .3s; border-radius: 50%; }
     input:checked + .slider { background-color: var(--accent); }
     input:checked + .slider:before { transform: translateX(20px); }
 
     .settings-section { margin-top: 10px; text-align: left; width: 100%; }
     .settings-section-title { font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 6px; }
-    .usage-bar-container { width: 100%; height: 10px; background: #242834; border-radius: 10px; overflow: hidden; margin: 6px 0 4px; }
+    .usage-bar-container { width: 100%; height: 10px; background: #1e202c; border-radius: 10px; overflow: hidden; margin: 6px 0 4px; }
     .usage-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #00bfff, #ff007f); transition: width 0.4s ease; }
     .usage-text { font-size: 11px; color: var(--text-muted); text-align: right; }
     .settings-textarea { width: 100%; height: 70px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 12px; color: #fff; padding: 10px; font-family: inherit; font-size: 12px; resize: none; outline: none; margin-bottom: 4px; }
@@ -220,7 +217,7 @@
     .settings-btn.danger { border-color: rgba(255, 85, 85, 0.4); color: #ff7777; }
     .settings-btn.danger:hover { background: rgba(255, 85, 85, 0.2); color: #ffffff; }
 
-    .context-menu { display: none; position: fixed; background: rgba(20, 24, 36, 0.95); backdrop-filter: blur(16px); border: 1px solid rgba(255, 85, 85, 0.4); border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.8); z-index: 2000; flex-direction: column; padding: 6px; min-width: 160px; }
+    .context-menu { display: none; position: fixed; background: #0c0e16; border: 1px solid rgba(255, 85, 85, 0.4); border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.9); z-index: 2000; flex-direction: column; padding: 6px; min-width: 160px; }
     .context-menu-item { padding: 12px 16px; color: var(--error); cursor: pointer; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; font-family: inherit; }
     .context-menu-item:hover { background: rgba(255, 85, 85, 0.2); }
 
@@ -230,7 +227,7 @@
       .history-sidebar.open { transform: translateX(0); } 
       .sidebar-close-btn { display: block; }
       .chat-container { padding: 80px 16px 20px; }
-      .input-section { padding: 16px 16px 30px; }
+      .input-section { padding: 12px 16px 20px; }
       .profile-footer { border-bottom-right-radius: 20px; padding-bottom: 24px; }
       .header-action-btn.pwa-btn { display: flex; }
     }
@@ -251,19 +248,21 @@
       <button class="new-chat-btn" aria-label="Start a new chat" onclick="startNewChat(); closeSidebar();">
         <span>➕</span> New Chat
       </button>
-      
-      <button class="header-action-btn" aria-label="Upgrade" onclick="openUpgradeModal()" title="Upgrade to Pro">⚡</button>
-      
+      <button class="header-action-btn" aria-label="Upgrade" onclick="openUpgradeModal()" title="Upgrade Pro Features">⚡</button>
       <button class="header-action-btn pwa-btn" id="sidebarInstallBtn" aria-label="Install App" onclick="installPWA()" title="Install TruX App">📥</button>
-
       <button class="sidebar-close-btn" aria-label="Close sidebar" onclick="closeSidebar()" title="Close Menu">×</button>
     </div>
     
+    <div class="sidebar-code-space-header">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
+      Code Space
+    </div>
+
     <div class="history-list" id="historyList" role="list"></div>
 
     <div class="profile-footer" aria-label="User Profile" onclick="handleAuthAction()">
       <div class="profile-card" id="profileCard">
-        <img class="profile-avatar" id="userAvatar" src="https://ui-avatars.com/api/?name=Guest+User&background=2a2b2d&color=fff" alt="User Avatar">
+        <img class="profile-avatar" id="userAvatar" src="https://ui-avatars.com/api/?name=Guest+User&background=1a1c24&color=fff" alt="User Avatar">
         <div class="profile-details">
           <div class="profile-name" id="userName">Guest User</div>
           <div class="profile-email" id="userEmail">Sign in required</div>
@@ -275,7 +274,7 @@
   <div class="main-chat-arena">
     <div class="welcome-screen" id="welcomeScreen">
       <h1 class="welcome-title">Welcome, I am Tru<span class="x-anim">X</span></h1>
-      <p style="color: var(--text-muted); font-size: 16px; margin-top: 6px;">Your Intelligent AI Assistant</p>
+      <p style="color: var(--text-muted); font-size: 16px; margin-top: 6px;">Your Intelligent Vertex AI Assistant</p>
     </div>
 
     <div class="chat-container" id="chatContainer" role="log" aria-live="polite"></div>
@@ -283,10 +282,10 @@
     <div class="input-section">
       <div class="model-selector-simple">
         <select class="model-select" id="modelSelect" aria-label="Select AI Model" onchange="handleModelChange(this.value)">
-          <option value="base">⚡ TruX Core 3.0</option>
-          <option value="pro" id="proOption">✨ TruX Pro 3.0</option>
+          <option value="base">⚡ TruX Core 4.0 (Gemini 3.1 Flash)</option>
+          <option value="pro" id="proOption">✨ TruX Pro 5.0 (Gemini 3.1 Pro)</option>
           <option value="nano-banana">🍌 Nano Banana Pro (Image Gen)</option>
-          <option value="ultra" disabled>🔒 TruX Ultra 3.5 (paid)</option>
+          <option value="ultra" disabled>🔒 TruX Ultra 5.5 (Paid)</option>
         </select>
       </div>
 
@@ -310,7 +309,7 @@
           </svg>
         </button>
         
-        <textarea id="promptInput" aria-label="Message Input" placeholder="Ask TruX anything or generate images with Nano Banana Pro..." rows="1" oninput="handleInputChange()"></textarea>
+        <textarea id="promptInput" aria-label="Message Input" placeholder="Ask TruX anything..." rows="1" oninput="handleInputChange()"></textarea>
         
         <button class="send-btn" aria-label="Send Message" onclick="handleActionButton()" id="actionBtn">
           <svg id="btnIcon" viewBox="0 0 24 24">
@@ -318,6 +317,8 @@
           </svg>
         </button>
       </div>
+
+      <div class="ai-disclaimer">TruX AI can make mistakes. Verify important info.</div>
     </div>
   </div>
 
@@ -344,25 +345,9 @@
       <div class="settings-title">Settings</div>
       
       <div class="settings-row">
-        <span class="settings-label">Dark Mode / Ambient Glow</span>
-        <label class="settings-toggle-switch">
-          <input type="checkbox" id="neonGlowToggle" checked onchange="toggleAmbientGlow(this)">
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <div class="settings-row">
         <span class="settings-label">Auto Read Answers</span>
         <label class="settings-toggle-switch">
           <input type="checkbox" id="autoReadToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <div class="settings-row">
-        <span class="settings-label">Sound Effects</span>
-        <label class="settings-toggle-switch">
-          <input type="checkbox" id="sfxToggle" checked>
           <span class="slider"></span>
         </label>
       </div>
@@ -383,7 +368,7 @@
 
       <div class="settings-section">
         <div class="settings-section-title">System & Tools</div>
-        <button class="settings-btn" onclick="checkApiLatency()">📡 Check API Status</button>
+        <button class="settings-btn" onclick="checkApiLatency()">📡 Check Vertex AI Latency</button>
         <button class="settings-btn" onclick="exportChatData()">📥 Export Chat Backup</button>
         <button class="settings-btn danger" onclick="resetAllSettings()">🔄 Reset All Settings to Default</button>
         <button class="settings-btn danger" onclick="clearAllHistory()">🗑️ Clear All Chat History</button>
@@ -415,10 +400,7 @@
     });
 
     async function installPWA() {
-      if (!deferredPrompt) {
-        alert("PWA installation is either completed or not supported on this browser.");
-        return;
-      }
+      if (!deferredPrompt) return;
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
@@ -438,8 +420,7 @@
         projectId: "trux-ai",
         storageBucket: "trux-ai.firebasestorage.app",
         messagingSenderId: "59313097411",
-        appId: "1:59313097411:web:32e4158bfb733fa7cfb076",
-        measurementId: "G-C32LC29QHC"
+        appId: "1:59313097411:web:32e4158bfb733fa7cfb076"
       };
 
       try {
@@ -461,7 +442,7 @@
         } else {
           document.getElementById('userName').innerText = 'Guest User';
           document.getElementById('userEmail').innerText = 'Sign in required';
-          document.getElementById('userAvatar').src = 'https://ui-avatars.com/api/?name=Guest+User&background=2a2b2d&color=fff';
+          document.getElementById('userAvatar').src = 'https://ui-avatars.com/api/?name=Guest+User&background=1a1c24&color=fff';
         }
       });
     }
@@ -498,7 +479,7 @@
       if (usage.tokensUsed >= 1000) {
         if (proOption) {
           proOption.disabled = true;
-          proOption.innerText = "🔒 TruX Pro 3.0 (24h Limit)";
+          proOption.innerText = "🔒 TruX Pro 5.0 (24h Limit)";
         }
         if (currentModel === 'pro') {
           currentModel = 'base';
@@ -507,7 +488,7 @@
       } else {
         if (proOption) {
           proOption.disabled = false;
-          proOption.innerText = "✨ TruX Pro 3.0";
+          proOption.innerText = "✨ TruX Pro 5.0 (Gemini 3.1 Pro)";
         }
       }
     }
@@ -544,17 +525,14 @@
     function checkApiLatency() {
       const start = Date.now();
       fetch('/api/chat')
-        .then(() => alert(`API Connection Healthy! Latency: ${Date.now() - start}ms`))
+        .then(() => alert(`Vertex AI Connection Healthy! Latency: ${Date.now() - start}ms`))
         .catch(() => alert("Failed to connect to backend server."));
     }
 
     function resetAllSettings() {
       if (confirm("Reset all settings to default configuration?")) {
         localStorage.removeItem('trux_custom_instructions');
-        localStorage.removeItem('trux_ambient_glow');
         localStorage.removeItem('trux_auto_read');
-        localStorage.removeItem('trux_sfx');
-        loadSettingsFromStorage();
         alert("Settings reset to defaults.");
       }
     }
@@ -583,29 +561,7 @@
     function closeProfileModal() { document.getElementById('profileModal').style.display = 'none'; }
     function openSettingsModal() { updateProUsageUI(); loadCustomInstructions(); document.getElementById('settingsModal').style.display = 'flex'; }
     function closeSettingsModal() { document.getElementById('settingsModal').style.display = 'none'; }
-    function openUpgradeModal() { alert("⚡ TruX Pro Features:\n• TruX 3.5 Faster Processing\n• Extended Context Window\n• Priority Server Routing"); }
-
-    function toggleAmbientGlow(el) {
-      const ambient = document.querySelector('.dark-ambient-container');
-      const isChecked = el ? el.checked : document.getElementById('neonGlowToggle').checked;
-      if (ambient) ambient.style.display = isChecked ? 'block' : 'none';
-      if (!isChecked) {
-        document.body.classList.add('dark-mode-off');
-      } else {
-        document.body.classList.remove('dark-mode-off');
-      }
-      localStorage.setItem('trux_ambient_glow', isChecked ? 'true' : 'false');
-    }
-
-    function loadSettingsFromStorage() {
-      const glow = localStorage.getItem('trux_ambient_glow');
-      const isGlowOn = glow === null ? true : glow === 'true';
-      const glowToggle = document.getElementById('neonGlowToggle');
-      if (glowToggle) {
-        glowToggle.checked = isGlowOn;
-        toggleAmbientGlow(glowToggle);
-      }
-    }
+    function openUpgradeModal() { alert("⚡ TruX Pro Features:\n• Gemini 3.1 Pro via Vertex AI\n• Automated Context Prefix Caching\n• Priority Vertex Processing"); }
 
     function confirmSignOut() { auth.signOut().then(() => closeProfileModal()); }
 
@@ -613,7 +569,7 @@
 
     function handleModelChange(val) {
       if (val === 'ultra') {
-        alert("TruX Ultra 3.6 is currently locked.");
+        alert("TruX Ultra 5.5 is locked.");
         document.getElementById('modelSelect').value = currentModel;
         return;
       }
@@ -708,7 +664,6 @@
       if (!text) return "";
       let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
       
-      // Render Images from markdown ![alt](url)
       html = html.replace(/!\[(.*?)\]\((data:image\/[^;]+;base64,[^\s\)]+|https?:\/\/[^\s\)]+)\)/g, (match, alt, src) => {
         return `<div class="generated-image-card">
           <img src="${src}" alt="${alt}" class="generated-img" onclick="openLightbox('${src}')"/>
@@ -718,7 +673,6 @@
         </div>`;
       });
 
-      // Render Code Blocks
       html = html.replace(/```([\s\S]*?)```/g, (match, p1) => {
         codeBlockCounter++;
         const codeId = 'code_block_' + codeBlockCounter + '_' + Date.now();
@@ -733,7 +687,7 @@
     }
 
     function stripMarkdownForVoice(text) {
-      return text ? text.replace(/```[\s\S]*?```/g, 'Code block omitted.').replace(/\!\s*\[.*?\]\(.*?\)/g, 'Image outputted.').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/#/g, '').replace(/`/g, '') : "";
+      return text ? text.replace(/```[\s\S]*?```/g, 'Code omitted.').replace(/\!\s*\[.*?\]\(.*?\)/g, 'Image outputted.').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/#/g, '').replace(/`/g, '') : "";
     }
 
     function speakText(text) {
@@ -769,7 +723,6 @@
       document.getElementById('chatContainer').innerHTML = '';
       document.getElementById('chatContainer').style.display = 'none';
       document.getElementById('welcomeScreen').style.display = 'flex';
-      document.body.classList.remove('chat-active');
       currentChatId = null;
       removeImage();
       renderSidebar();
@@ -822,7 +775,6 @@
 
       isGenerating = true;
       document.getElementById('btnIcon').innerHTML = stopIconSvg;
-      document.body.classList.add('chat-active');
 
       const currentVoiceTriggered = wasInputByVoice;
       wasInputByVoice = false;
@@ -873,7 +825,7 @@
 
       const phrases = currentModel === 'nano-banana' 
         ? ["Rendering graphics...", "Applying neural filters...", "Finalizing image details..."]
-        : ["Thinking...", "Processing query...", "Analyzing context...", "Formulating response..."];
+        : ["Thinking via Vertex AI...", "Processing query...", "Analyzing context...", "Formulating response..."];
       let phraseIdx = 0;
       const phraseInterval = setInterval(() => {
         phraseIdx = (phraseIdx + 1) % phrases.length;
@@ -885,7 +837,9 @@
 
       try {
         const customInstructions = localStorage.getItem('trux_custom_instructions') || '';
-        const historyPayload = chatSessions[currentChatId].messages.slice(0, -1).slice(-10);
+        
+        // Pass only the last 6 messages (3 turns) for cached context efficiency
+        const historyPayload = chatSessions[currentChatId].messages.slice(0, -1).slice(-6);
 
         const res = await fetch('/api/chat', {
           method: 'POST',
@@ -936,7 +890,7 @@
         const bubble = document.getElementById(bubbleId);
         if (bubble) {
           bubble.classList.remove('thinking-box');
-          bubble.innerText = err.name === 'AbortError' ? "Generation stopped." : "Error connecting to TruX server.";
+          bubble.innerText = err.name === 'AbortError' ? "Generation stopped." : "Error connecting to Vertex AI backend.";
         }
         
         const actionsContainer = document.getElementById(actionsId);
@@ -991,7 +945,14 @@
     function renderSidebar() {
       const list = document.getElementById('historyList');
       list.innerHTML = '';
-      Object.keys(chatSessions).reverse().forEach(id => {
+      const sessionKeys = Object.keys(chatSessions);
+
+      if (sessionKeys.length === 0) {
+        list.innerHTML = '<div class="empty-history-text">Your chats will appear here</div>';
+        return;
+      }
+
+      sessionKeys.reverse().forEach(id => {
         const wrapper = document.createElement('div');
         wrapper.className = `history-item-wrapper ${id === currentChatId ? 'active' : ''}`;
         
@@ -1029,7 +990,6 @@
     function loadChatSession(id) {
       if (activeAbortController) activeAbortController.abort();
       currentChatId = id;
-      document.body.classList.add('chat-active');
       document.getElementById('welcomeScreen').style.display = 'none';
       const container = document.getElementById('chatContainer');
       container.innerHTML = '';
@@ -1073,7 +1033,6 @@
 
     renderSidebar();
     updateProUsageUI();
-    loadSettingsFromStorage();
     handleInputChange();
   </script>
 </body>
