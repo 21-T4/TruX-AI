@@ -28,7 +28,7 @@ const searchWebDeclaration = {
 const generateImageDeclaration = {
   name: 'generateImage',
   description:
-    'Generate an image using Gemini 3.1 Flash Image. Call when the user explicitly asks to generate or draw an image.',
+    'Generate an image using Gemini image generation. Call when the user explicitly asks to generate or draw an image.',
   parameters: {
     type: 'OBJECT',
     properties: {
@@ -125,13 +125,11 @@ async function createGoogleAccessToken(env) {
     return cachedAccessToken;
   }
 
-
   if (!env.GCP_PROJECT_ID) {
     throw new Error(
       'GCP_PROJECT_ID secret is missing.'
     );
   }
-
 
   if (!env.GCP_CLIENT_EMAIL) {
     throw new Error(
@@ -139,23 +137,19 @@ async function createGoogleAccessToken(env) {
     );
   }
 
-
   if (!env.GCP_PRIVATE_KEY) {
     throw new Error(
       'GCP_PRIVATE_KEY secret is missing.'
     );
   }
 
-
   const now =
     Math.floor(Date.now() / 1000);
-
 
   const header = {
     alg: 'RS256',
     typ: 'JWT'
   };
-
 
   const claims = {
     iss: env.GCP_CLIENT_EMAIL,
@@ -171,35 +165,24 @@ async function createGoogleAccessToken(env) {
     exp: now + 3600
   };
 
-
   const encodedHeader =
     base64UrlEncode(
       JSON.stringify(header)
     );
-
 
   const encodedClaims =
     base64UrlEncode(
       JSON.stringify(claims)
     );
 
-
   const unsignedJwt =
     `${encodedHeader}.${encodedClaims}`;
-
-
-  /*
-   * Google service-account JSON keys
-   * commonly contain literal \\n characters.
-   * Convert them to real newlines.
-   */
 
   const privateKey =
     env.GCP_PRIVATE_KEY.replace(
       /\\n/g,
       '\n'
     );
-
 
   const cryptoKey =
     await crypto.subtle.importKey(
@@ -222,7 +205,6 @@ async function createGoogleAccessToken(env) {
       ['sign']
     );
 
-
   const signature =
     await crypto.subtle.sign(
       'RSASSA-PKCS1-v1_5',
@@ -234,10 +216,8 @@ async function createGoogleAccessToken(env) {
       )
     );
 
-
   const signedJwt =
     `${unsignedJwt}.${base64UrlEncode(signature)}`;
-
 
   const tokenResponse =
     await fetch(
@@ -261,9 +241,7 @@ async function createGoogleAccessToken(env) {
       }
     );
 
-
   if (!tokenResponse.ok) {
-
     const errorText =
       await tokenResponse.text();
 
@@ -272,10 +250,8 @@ async function createGoogleAccessToken(env) {
     );
   }
 
-
   const tokenData =
     await tokenResponse.json();
-
 
   if (!tokenData.access_token) {
     throw new Error(
@@ -283,10 +259,8 @@ async function createGoogleAccessToken(env) {
     );
   }
 
-
   cachedAccessToken =
     tokenData.access_token;
-
 
   cachedTokenExpiry =
     Date.now() +
@@ -295,13 +269,12 @@ async function createGoogleAccessToken(env) {
       1000
     );
 
-
   return cachedAccessToken;
 }
 
 
 /* =========================================================
-   IMAGE GENERATION LIMIT
+   IMAGE LIMIT
    ========================================================= */
 
 async function getImageCount(
@@ -315,14 +288,11 @@ async function getImageCount(
     );
   }
 
-
   const key =
     `img_limit_${userIdentifier}`;
 
-
   const value =
     await env.IMAGE_LIMIT_KV.get(key);
-
 
   return value
     ? parseInt(value, 10) || 0
@@ -341,14 +311,11 @@ async function checkImageLimit(
       env
     );
 
-
   if (count >= IMAGE_LIMIT) {
-
     throw new Error(
       `Image generation limit reached. You can generate up to ${IMAGE_LIMIT} images per user.`
     );
   }
-
 
   return count;
 }
@@ -363,7 +330,6 @@ async function recordSuccessfulImage(
   const key =
     `img_limit_${userIdentifier}`;
 
-
   await env.IMAGE_LIMIT_KV.put(
     key,
     String(previousCount + 1)
@@ -372,7 +338,7 @@ async function recordSuccessfulImage(
 
 
 /* =========================================================
-   SERPER WEB SEARCH
+   SERPER SEARCH
    ========================================================= */
 
 async function fetchSerperSearchResults(
@@ -383,7 +349,6 @@ async function fetchSerperSearchResults(
   if (!apiKey) {
     return 'Search failed: API key missing.';
   }
-
 
   try {
 
@@ -407,20 +372,16 @@ async function fetchSerperSearchResults(
         }
       );
 
-
     if (!response.ok) {
       return 'No results.';
     }
 
-
     const data =
       await response.json();
-
 
     if (!data.organic?.length) {
       return 'No search results found.';
     }
-
 
     return data.organic
       .slice(0, 3)
@@ -438,7 +399,7 @@ async function fetchSerperSearchResults(
 
 
 /* =========================================================
-   VERTEX AI GEMINI REQUEST
+   STANDARD VERTEX REQUEST
    ========================================================= */
 
 async function fetchVertexGemini({
@@ -457,17 +418,14 @@ async function fetchVertexGemini({
     );
   }
 
-
   const url =
     `https://aiplatform.googleapis.com/v1/` +
     `projects/${projectId}/locations/${LOCATION}/` +
     `publishers/google/models/${model}:generateContent`;
 
-
   const payload = {
     contents
   };
-
 
   if (systemInstruction) {
 
@@ -481,21 +439,15 @@ async function fetchVertexGemini({
     };
   }
 
-
-  if (
-    tools &&
-    tools.length > 0
-  ) {
+  if (tools?.length) {
     payload.tools =
       tools;
   }
-
 
   if (generationConfig) {
     payload.generationConfig =
       generationConfig;
   }
-
 
   const response =
     await fetch(
@@ -516,20 +468,258 @@ async function fetchVertexGemini({
       }
     );
 
-
   if (!response.ok) {
 
     const errorText =
       await response.text();
-
 
     throw new Error(
       `Vertex AI ${model} Error: ${errorText}`
     );
   }
 
-
   return await response.json();
+}
+
+
+/* =========================================================
+   VERTEX STREAMING REQUEST
+   ========================================================= */
+
+async function streamVertexGemini({
+  model,
+  contents,
+  systemInstruction,
+  tools,
+  accessToken,
+  projectId,
+  onText,
+  onStatus
+}) {
+
+  const url =
+    `https://aiplatform.googleapis.com/v1/` +
+    `projects/${projectId}/locations/${LOCATION}/` +
+    `publishers/google/models/${model}:streamGenerateContent?alt=sse`;
+
+  const payload = {
+    contents
+  };
+
+  if (systemInstruction) {
+
+    payload.systemInstruction = {
+      parts: [
+        {
+          text:
+            systemInstruction
+        }
+      ]
+    };
+  }
+
+  if (tools?.length) {
+    payload.tools =
+      tools;
+  }
+
+  const response =
+    await fetch(
+      url,
+      {
+        method: 'POST',
+
+        headers: {
+          'Content-Type':
+            'application/json',
+
+          'Authorization':
+            `Bearer ${accessToken}`,
+
+          'Accept':
+            'text/event-stream'
+        },
+
+        body:
+          JSON.stringify(payload)
+      }
+    );
+
+  if (!response.ok) {
+
+    const errorText =
+      await response.text();
+
+    throw new Error(
+      `Vertex AI ${model} Stream Error: ${errorText}`
+    );
+  }
+
+  if (!response.body) {
+    throw new Error(
+      'Vertex AI returned an empty streaming body.'
+    );
+  }
+
+  const reader =
+    response.body.getReader();
+
+  const decoder =
+    new TextDecoder();
+
+  let buffer = '';
+
+  let functionCall = null;
+
+  let accumulatedText = '';
+
+  async function processSseData(rawData) {
+
+    if (!rawData) {
+      return;
+    }
+
+    let parsed;
+
+    try {
+      parsed =
+        JSON.parse(rawData);
+    } catch {
+      return;
+    }
+
+    const parts =
+      parsed
+        ?.candidates?.[0]
+        ?.content
+        ?.parts || [];
+
+    for (const part of parts) {
+
+      if (typeof part.text === 'string') {
+
+        accumulatedText +=
+          part.text;
+
+        if (onText) {
+          await onText(
+            part.text
+          );
+        }
+      }
+
+      if (part.functionCall) {
+
+        functionCall =
+          part.functionCall;
+      }
+    }
+  }
+
+  while (true) {
+
+    const {
+      value,
+      done
+    } = await reader.read();
+
+    if (done) {
+      break;
+    }
+
+    buffer +=
+      decoder.decode(
+        value,
+        {
+          stream: true
+        }
+      );
+
+    const lines =
+      buffer.split(/\r?\n/);
+
+    buffer =
+      lines.pop() || '';
+
+    let dataLines = [];
+
+    for (const line of lines) {
+
+      if (line.startsWith('data:')) {
+
+        dataLines.push(
+          line.slice(5).trimStart()
+        );
+
+      } else if (
+        line.trim() === ''
+      ) {
+
+        if (dataLines.length) {
+
+          const data =
+            dataLines.join('\n');
+
+          await processSseData(
+            data
+          );
+
+          dataLines = [];
+        }
+      }
+    }
+  }
+
+  buffer +=
+    decoder.decode();
+
+  if (buffer.trim()) {
+
+    const trailingLines =
+      buffer.split(/\r?\n/);
+
+    let trailingData = [];
+
+    for (
+      const line
+      of trailingLines
+    ) {
+
+      if (
+        line.startsWith('data:')
+      ) {
+
+        trailingData.push(
+          line
+            .slice(5)
+            .trimStart()
+        );
+
+      } else if (
+        line.trim() === '' &&
+        trailingData.length
+      ) {
+
+        await processSseData(
+          trailingData.join('\n')
+        );
+
+        trailingData = [];
+      }
+    }
+
+    if (trailingData.length) {
+      await processSseData(
+        trailingData.join('\n')
+      );
+    }
+  }
+
+  return {
+    text:
+      accumulatedText,
+    functionCall
+  };
 }
 
 
@@ -552,7 +742,7 @@ function getVertexModel(tier) {
 
 
 /* =========================================================
-   GEMINI 3.1 FLASH IMAGE
+   GEMINI IMAGE GENERATION
    ========================================================= */
 
 async function generateImageWithVertex({
@@ -601,19 +791,16 @@ async function generateImageWithVertex({
       }
     });
 
-
   const parts =
     response
       .candidates?.[0]
       ?.content
       ?.parts || [];
 
-
   for (const part of parts) {
 
     const inlineData =
       part.inlineData;
-
 
     if (
       inlineData?.data &&
@@ -628,7 +815,6 @@ async function generateImageWithVertex({
     }
   }
 
-
   throw new Error(
     'Vertex AI returned no generated image.'
   );
@@ -636,7 +822,90 @@ async function generateImageWithVertex({
 
 
 /* =========================================================
-   MAIN CLOUDFLARE PAGES FUNCTION
+   STREAM RESPONSE HELPER
+   ========================================================= */
+
+function createSseResponse(
+  startStreaming
+) {
+
+  const stream =
+    new ReadableStream({
+
+      async start(controller) {
+
+        const encoder =
+          new TextEncoder();
+
+        const send = payload => {
+
+          try {
+
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify(payload)}\n\n`
+              )
+            );
+
+          } catch {
+            // Client may have disconnected.
+          }
+        };
+
+        try {
+
+          await startStreaming({
+            send
+          });
+
+          send({
+            type: 'done'
+          });
+
+          controller.close();
+
+        } catch (error) {
+
+          send({
+            type: 'error',
+            error:
+              error?.message ||
+              'Streaming error.'
+          });
+
+          controller.close();
+        }
+      }
+    });
+
+  return new Response(
+    stream,
+    {
+      status: 200,
+
+      headers: {
+        'Content-Type':
+          'text/event-stream; charset=utf-8',
+
+        'Cache-Control':
+          'no-cache, no-store, must-revalidate',
+
+        'Pragma':
+          'no-cache',
+
+        'X-Accel-Buffering':
+          'no',
+
+        'Access-Control-Allow-Origin':
+          '*'
+      }
+    }
+  );
+}
+
+
+/* =========================================================
+   MAIN POST HANDLER
    ========================================================= */
 
 export async function onRequestPost(
@@ -650,10 +919,8 @@ export async function onRequestPost(
       env
     } = context;
 
-
     const body =
       await request.json();
-
 
     const {
       message,
@@ -666,14 +933,10 @@ export async function onRequestPost(
 
 
     /*
-     * NO SIGN-IN CHECK HERE.
+     * Authentication is intentionally NOT enforced here.
      *
-     * The frontend can handle authentication later.
-     *
-     * If userId exists, it is used for the
-     * per-user image limit.
-     *
-     * Otherwise the request IP is used.
+     * If userId exists, it is used for image limits.
+     * Otherwise the Cloudflare IP is used.
      */
 
     const userIdentifier =
@@ -705,15 +968,10 @@ export async function onRequestPost(
     }
 
 
-    /* =====================================================
-       GOOGLE AUTHENTICATION
-       ===================================================== */
-
     const accessToken =
       await createGoogleAccessToken(
         env
       );
-
 
     const projectId =
       env.GCP_PROJECT_ID;
@@ -724,12 +982,10 @@ export async function onRequestPost(
        ===================================================== */
 
     if (
-      tier ===
-      'nano-banana'
+      tier === 'nano-banana'
     ) {
 
       let previousCount;
-
 
       try {
 
@@ -768,10 +1024,6 @@ export async function onRequestPost(
 
           });
 
-
-        /*
-         * Count only successful generations.
-         */
 
         await recordSuccessfulImage(
 
@@ -813,11 +1065,9 @@ export async function onRequestPost(
 
         });
 
-
       } catch (imageError) {
 
         return Response.json(
-
           {
             reply:
               `Failed to generate image: ${imageError.message}`,
@@ -829,14 +1079,13 @@ export async function onRequestPost(
           {
             status: 500
           }
-
         );
       }
     }
 
 
     /* =====================================================
-       SYSTEM INSTRUCTION
+       NORMAL TEXT STREAM
        ===================================================== */
 
     const combinedSystemInstruction =
@@ -853,7 +1102,6 @@ export async function onRequestPost(
 
     let formattedHistory = [];
 
-
     if (
       Array.isArray(history) &&
       history.length > 0
@@ -862,10 +1110,8 @@ export async function onRequestPost(
       const recentHistory =
         history.slice(-6);
 
-
       let lastRole =
         null;
-
 
       for (
         const msg
@@ -879,7 +1125,6 @@ export async function onRequestPost(
           )
             ? 'model'
             : 'user';
-
 
         if (
           role !== lastRole &&
@@ -899,7 +1144,6 @@ export async function onRequestPost(
 
           });
 
-
           lastRole =
             role;
         }
@@ -909,8 +1153,7 @@ export async function onRequestPost(
 
     if (
       formattedHistory.length > 0 &&
-      formattedHistory[0].role ===
-        'model'
+      formattedHistory[0].role === 'model'
     ) {
 
       formattedHistory.shift();
@@ -946,7 +1189,6 @@ export async function onRequestPost(
         base64Data
       ] =
         image.split(',');
-
 
       const mimeMatch =
         header.match(
@@ -994,139 +1236,173 @@ export async function onRequestPost(
     ];
 
 
-    /* =====================================================
-       INITIAL GEMINI CALL
-       ===================================================== */
-
     const targetModel =
       getVertexModel(
         tier
       );
 
 
-    let responseData =
-      await fetchVertexGemini({
+    return createSseResponse(
+      async ({
+        send
+      }) => {
 
-        model:
-          targetModel,
 
-        contents,
+        /* -------------------------------------------------
+           First streamed generation
+           ------------------------------------------------- */
 
-        systemInstruction:
-          combinedSystemInstruction,
+        const firstResult =
+          await streamVertexGemini({
 
-        tools: [
+            model:
+              targetModel,
 
-          {
-            functionDeclarations: [
+            contents,
 
-              searchWebDeclaration,
+            systemInstruction:
+              combinedSystemInstruction,
 
-              generateImageDeclaration
+            tools: [
+              {
+                functionDeclarations: [
+                  searchWebDeclaration,
+                  generateImageDeclaration
+                ]
+              }
+            ],
+
+            accessToken,
+
+            projectId,
+
+            onText:
+              async text => {
+
+                /*
+                 * IMPORTANT:
+                 *
+                 * The frontend receives these chunks
+                 * immediately but DOES NOT display them.
+                 *
+                 * It silently buffers them until
+                 * the final "done" event.
+                 */
+
+                send({
+                  type: 'chunk',
+                  text
+                });
+              },
+
+            onStatus:
+              async status => {
+
+                send({
+                  type: 'status',
+                  status
+                });
+              }
+          });
+
+
+        /* -------------------------------------------------
+           No tool call → finished naturally
+           ------------------------------------------------- */
+
+        if (
+          !firstResult.functionCall
+        ) {
+
+          return;
+        }
+
+
+        const call =
+          firstResult.functionCall;
+
+
+        /* -------------------------------------------------
+           WEB SEARCH
+           ------------------------------------------------- */
+
+        if (
+          call.name ===
+          'searchWeb'
+        ) {
+
+          send({
+            type:
+              'status',
+
+            status:
+              'Searching the web...'
+          });
+
+
+          const searchResults =
+            await fetchSerperSearchResults(
+
+              call.args?.query ||
+                message,
+
+              env.SERPER_DEV_API
+
+            );
+
+
+          /*
+           * Give Gemini its own function call
+           * and the function result so it can
+           * generate the final answer.
+           */
+
+          contents.push({
+
+            role: 'model',
+
+            parts: [
+
+              {
+                functionCall:
+                  call
+              }
 
             ]
-          }
 
-        ],
-
-        accessToken,
-
-        projectId
-
-      });
+          });
 
 
-    /* =====================================================
-       FUNCTION CALL HANDLING
-       ===================================================== */
+          contents.push({
 
-    const candidate =
-      responseData
-        .candidates?.[0];
+            role: 'user',
 
+            parts: [
 
-    const candidateParts =
-      candidate
-        ?.content
-        ?.parts || [];
+              {
 
+                functionResponse: {
 
-    const functionCalls =
-      candidateParts
-        .filter(
-          p =>
-            p.functionCall
-        )
-        .map(
-          p =>
-            p.functionCall
-        );
+                  name:
+                    'searchWeb',
 
+                  response: {
 
-    if (
-      functionCalls.length > 0
-    ) {
+                    result:
+                      searchResults
 
-      const call =
-        functionCalls[0];
-
-
-      /* ===================================================
-         WEB SEARCH
-         =================================================== */
-
-      if (
-        call.name ===
-        'searchWeb'
-      ) {
-
-        const searchResults =
-          await fetchSerperSearchResults(
-
-            call.args?.query ||
-              message,
-
-            env.SERPER_DEV_API
-
-          );
-
-
-        contents.push(
-          candidate.content
-        );
-
-
-        contents.push({
-
-          role: 'user',
-
-          parts: [
-
-            {
-
-              functionResponse: {
-
-                name:
-                  'searchWeb',
-
-                response: {
-
-                  result:
-                    searchResults
+                  }
 
                 }
 
               }
 
-            }
+            ]
 
-          ]
-
-        });
+          });
 
 
-        responseData =
-          await fetchVertexGemini({
+          await streamVertexGemini({
 
             model:
               targetModel,
@@ -1138,163 +1414,160 @@ export async function onRequestPost(
 
             accessToken,
 
-            projectId
+            projectId,
+
+            onText:
+              async text => {
+
+                send({
+                  type:
+                    'chunk',
+
+                  text
+                });
+
+              },
+
+            onStatus:
+              async status => {
+
+                send({
+                  type:
+                    'status',
+
+                  status
+                });
+
+              }
 
           });
-      }
 
 
-      /* ===================================================
-         IMAGE TOOL CALL
-         =================================================== */
-
-      else if (
-        call.name ===
-        'generateImage'
-      ) {
-
-        let previousCount;
-
-
-        try {
-
-          previousCount =
-            await checkImageLimit(
-              userIdentifier,
-              env
-            );
-
-        } catch (limitError) {
-
-          return Response.json({
-
-            imageLimitReached:
-              true,
-
-            reply:
-              limitError.message
-
-          });
+          return;
         }
 
 
-        const imgPrompt =
-          call.args?.prompt ||
-          message;
+        /* -------------------------------------------------
+           IMAGE TOOL CALL
+           ------------------------------------------------- */
+
+        if (
+          call.name ===
+          'generateImage'
+        ) {
+
+          let previousCount;
 
 
-        try {
+          try {
 
-          const result =
-            await generateImageWithVertex({
+            previousCount =
+              await checkImageLimit(
+                userIdentifier,
+                env
+              );
 
-              prompt:
-                imgPrompt,
+          } catch (limitError) {
 
-              accessToken,
+            send({
 
-              projectId
+              type:
+                'final',
+
+              text:
+                limitError.message
+
+            });
+
+            return;
+          }
+
+
+          send({
+
+            type:
+              'status',
+
+            status:
+              'Generating image...'
+
+          });
+
+
+          const imgPrompt =
+            call.args?.prompt ||
+            message;
+
+
+          try {
+
+            const result =
+              await generateImageWithVertex({
+
+                prompt:
+                  imgPrompt,
+
+                accessToken,
+
+                projectId
+
+              });
+
+
+            await recordSuccessfulImage(
+
+              userIdentifier,
+
+              previousCount,
+
+              env
+
+            );
+
+
+            const used =
+              previousCount + 1;
+
+
+            const remaining =
+              Math.max(
+                IMAGE_LIMIT - used,
+                0
+              );
+
+
+            send({
+
+              type:
+                'final',
+
+              text:
+                `Here is your generated image with **Nano Banana Pro**:\n\n` +
+                `![Generated Image](${result.dataUrl})\n\n` +
+                `**Image generations remaining: ${remaining}/${IMAGE_LIMIT}**`
 
             });
 
 
-          await recordSuccessfulImage(
+          } catch (imageError) {
 
-            userIdentifier,
+            send({
 
-            previousCount,
+              type:
+                'final',
 
-            env
+              text:
+                `Failed to generate image: ${imageError.message}`
 
-          );
+            });
 
+          }
 
-          const used =
-            previousCount + 1;
-
-
-          const remaining =
-            Math.max(
-              IMAGE_LIMIT - used,
-              0
-            );
-
-
-          return Response.json({
-
-            reply:
-              `Here is your generated image with **Nano Banana Pro**:\n\n` +
-              `![Generated Image](${result.dataUrl})\n\n` +
-              `**Image generations remaining: ${remaining}/${IMAGE_LIMIT}**`,
-
-            imageGenerated:
-              true,
-
-            imageGenerationsUsed:
-              used,
-
-            imageGenerationsRemaining:
-              remaining
-
-          });
-
-
-        } catch (imageError) {
-
-          return Response.json({
-
-            reply:
-              `Failed to generate image: ${imageError.message}`,
-
-            imageGenerated:
-              false
-
-          });
-
+          return;
         }
+
       }
-    }
-
-
-    /* =====================================================
-       FINAL RESPONSE
-       ===================================================== */
-
-    const finalParts =
-      responseData
-        .candidates?.[0]
-        ?.content
-        ?.parts || [];
-
-
-    let rawText =
-      finalParts
-        .map(
-          p =>
-            p.text || ''
-        )
-        .join('')
-        .trim();
-
-
-    if (!rawText) {
-
-      rawText =
-        'No response generated.';
-    }
-
-
-    return Response.json({
-
-      reply:
-        rawText
-          .replace(
-            /<think>[\s\S]*?<\/think>/g,
-            ''
-          )
-          .trim()
-
-    });
+    );
 
 
   } catch (error) {
@@ -1306,7 +1579,6 @@ export async function onRequestPost(
 
 
     return Response.json(
-
       {
         error:
           error.message ||
@@ -1316,7 +1588,21 @@ export async function onRequestPost(
       {
         status: 500
       }
-
     );
   }
+}
+
+
+/* =========================================================
+   SIMPLE HEALTH CHECK
+   ========================================================= */
+
+export async function onRequestGet() {
+
+  return Response.json(
+    {
+      ok: true,
+      service: 'TruX Vertex backend'
+    }
+  );
 }
