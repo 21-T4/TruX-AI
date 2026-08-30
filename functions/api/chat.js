@@ -1,6 +1,7 @@
-import { GoogleGenAI } from '@google-genai';
+const PROJECT_ID = 'trux-ai';
+const LOCATION = 'us-central1';
 
-const BASE_PERSONA = `Never use latex for code generation. You can use unicode symbols and standard text. Your name is TruX, an AI created by TruX-Technologies. Keep answers concise, precise, and informative.`;
+const BASE_PERSONA = `Never use latex for code generation. You can use unicode symbols and standard text. Your name is TruX, an AI created by TruX-Technologies (dont disclose ur name or creator till asked) . Keep answers concise, precise, and informative.`;
 
 const searchWebDeclaration = {
   name: 'searchWeb',
@@ -26,6 +27,27 @@ const generateImageDeclaration = {
   }
 };
 
+// Enforces 1 image per user using Cloudflare KV or IP/User-ID in-memory tracking
+async function checkAndEnforceImageLimit(userIdentifier, env) {
+  if (!userIdentifier) userIdentifier = 'anonymous_user';
+
+  if (env.IMAGE_LIMIT_KV) {
+    const count = await env.IMAGE_LIMIT_KV.get(`img_limit_${userIdentifier}`);
+    if (count && parseInt(count, 10) >= 1) {
+      throw new Error("Image generation limit reached. You can only generate 1 image per user.");
+    }
+    await env.IMAGE_LIMIT_KV.put(`img_limit_${userIdentifier}`, "1");
+  } else {
+    if (!globalThis.generatedImageUsers) {
+      globalThis.generatedImageUsers = new Set();
+    }
+    if (globalThis.generatedImageUsers.has(userIdentifier)) {
+      throw new Error("Image generation limit reached. You can only generate 1 image per user.");
+    }
+    globalThis.generatedImageUsers.add(userIdentifier);
+  }
+}
+
 async function fetchSerperSearchResults(query, apiKey) {
   if (!apiKey) return "Search failed: API key missing.";
   try {
@@ -43,22 +65,28 @@ async function fetchSerperSearchResults(query, apiKey) {
   }
 }
 
-async function fetchImagen3Image(prompt, apiKey) {
-  if (!apiKey) throw new Error("API Key or Token missing.");
+// Calls Nano Banana Pro (Imagen 3) directly via Vertex AI REST API
+async function fetchVertexImagen3Image(prompt, apiKey) {
+  if (!apiKey) throw new Error("VERTEX_API_KEY missing.");
   
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+  const url = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+  
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       instances: [{ prompt }],
-      parameters: { sampleCount: 1, aspectRatio: "1:1", outputMimeType: "image/jpeg" }
+      parameters: {
+        sampleCount: 1,
+        aspectRatio: "1:1",
+        outputMimeType: "image/jpeg"
+      }
     })
   });
 
   if (!response.ok) {
     const errText = await response.text();
-    throw new Error(`Imagen Error: ${errText}`);
+    throw new Error(`Vertex Imagen Error: ${errText}`);
   }
 
   const data = await response.json();
@@ -67,27 +95,51 @@ async function fetchImagen3Image(prompt, apiKey) {
   return `data:image/jpeg;base64,${base64Image}`;
 }
 
+// Calls Gemini Models directly via Vertex AI REST API
+async function fetchVertexGemini({ model, contents, systemInstruction, tools, apiKey }) {
+  if (!apiKey) throw new Error("VERTEX_API_KEY missing.");
+
+  const url = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${model}:generateContent?key=${apiKey}`;
+
+  const payload = {
+    contents: contents,
+    systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined
+  };
+
+  if (tools && tools.length > 0) {
+    payload.tools = tools;
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Vertex Gemini Error: ${errText}`);
+  }
+
+  return await response.json();
+}
+
 function getVertexModel(tier) {
   switch (tier) {
-    case 'base': return 'gemini-3.1-flash';
+    case 'base': return 'gemini-3.6-flash';
     case 'pro': return 'gemini-3.1-pro-preview';
-    default: return 'gemini-3.1-flash';
+    default: return 'gemini-2.5-flash';
   }
 }
 
 export async function onRequestPost(context) {
   try {
     const { request, env } = context;
-    
-    // Initialize Google Gen AI SDK in Vertex AI Mode
-    const ai = new GoogleGenAI({
-      vertexAI: true,
-      project: env.GCP_PROJECT_ID || env.GOOGLE_CLOUD_PROJECT || 'trux-ai-project',
-      location: env.GCP_LOCATION || 'us-central1',
-      apiKey: env.GEMINI_API_KEY || env.GCP_API_KEY
-    });
+    const body = await request.json();
+    const { message, tier, history, image, systemInstruction, userId } = body;
 
-    const { message, tier, history, image, systemInstruction } = await request.json();
+    // Identify user by userId or client IP
+    const userIdentifier = userId || request.headers.get('cf-connecting-ip') || 'anonymous';
 
     if (!message && !image) {
       return Response.json({ error: 'Message or image required.' }, { status: 400 });
@@ -95,7 +147,13 @@ export async function onRequestPost(context) {
 
     // Direct Image Generation Mode
     if (tier === 'nano-banana') {
-      const imgData = await fetchImagen3Image(message || "Abstract technological artwork", env.GEMINI_API_KEY);
+      try {
+        await checkAndEnforceImageLimit(userIdentifier, env);
+      } catch (limitErr) {
+        return Response.json({ reply: limitErr.message });
+      }
+
+      const imgData = await fetchVertexImagen3Image(message || "Abstract technological artwork", env.VERTEX_API_KEY);
       return Response.json({ 
         reply: `Here is your generated image with **Nano Banana Pro**:\n\n![${message || 'Generated Image'}](${imgData})` 
       });
@@ -105,7 +163,7 @@ export async function onRequestPost(context) {
       ? `${BASE_PERSONA}\n\n[USER INSTRUCTIONS]:\n${systemInstruction}`
       : BASE_PERSONA;
 
-    // Build context history: Exactly 3 turns (3 User + 3 AI = max 6 items) for optimal automated prefix caching
+    // Build context history
     let formattedHistory = [];
     if (Array.isArray(history) && history.length > 0) {
       const recentHistory = history.slice(-6);
@@ -120,7 +178,6 @@ export async function onRequestPost(context) {
       }
     }
 
-    // Ensure valid alternation structure starting with user and ending with model
     if (formattedHistory.length > 0 && formattedHistory[0].role === 'model') {
       formattedHistory.shift();
     }
@@ -144,18 +201,18 @@ export async function onRequestPost(context) {
     const contents = [...formattedHistory, { role: 'user', parts: currentParts }];
     const targetModel = getVertexModel(tier);
 
-    // Initial content generation call
-    let response = await ai.models.generateContent({
+    // Initial content generation call to Vertex AI REST API
+    let responseData = await fetchVertexGemini({
       model: targetModel,
       contents: contents,
-      config: {
-        systemInstruction: combinedSystemInstruction,
-        tools: [{ functionDeclarations: [searchWebDeclaration, generateImageDeclaration] }]
-      }
+      systemInstruction: combinedSystemInstruction,
+      tools: [{ functionDeclarations: [searchWebDeclaration, generateImageDeclaration] }],
+      apiKey: env.VERTEX_API_KEY
     });
 
-    const candidate = response.candidates?.[0];
-    const functionCalls = candidate?.content?.parts?.filter(p => p.functionCall).map(p => p.functionCall);
+    const candidate = responseData.candidates?.[0];
+    const candidateParts = candidate?.content?.parts || [];
+    const functionCalls = candidateParts.filter(p => p.functionCall).map(p => p.functionCall);
 
     if (functionCalls?.length > 0) {
       const call = functionCalls[0];
@@ -173,16 +230,23 @@ export async function onRequestPost(context) {
           }]
         });
 
-        response = await ai.models.generateContent({
+        responseData = await fetchVertexGemini({
           model: targetModel,
           contents: contents,
-          config: { systemInstruction: combinedSystemInstruction }
+          systemInstruction: combinedSystemInstruction,
+          apiKey: env.VERTEX_API_KEY
         });
       } 
       else if (call.name === 'generateImage') {
+        try {
+          await checkAndEnforceImageLimit(userIdentifier, env);
+        } catch (limitErr) {
+          return Response.json({ reply: limitErr.message });
+        }
+
         const imgPrompt = call.args.prompt || message;
         try {
-          const generatedImg = await fetchImagen3Image(imgPrompt, env.GEMINI_API_KEY);
+          const generatedImg = await fetchVertexImagen3Image(imgPrompt, env.VERTEX_API_KEY);
           return Response.json({ 
             reply: `Here is your generated image with **Nano Banana Pro**:\n\n![${imgPrompt}](${generatedImg})` 
           });
@@ -192,11 +256,13 @@ export async function onRequestPost(context) {
       }
     }
 
-    let rawText = response.text || 'No response generated.';
+    const finalParts = responseData.candidates?.[0]?.content?.parts || [];
+    let rawText = finalParts.map(p => p.text || '').join('').trim() || 'No response generated.';
+
     return Response.json({ reply: rawText.replace(/<think>[\s\S]*?<\/think>/g, '').trim() });
 
   } catch (error) {
-    console.error('Vertex AI API Error:', error);
+    console.error('Vertex AI REST API Error:', error);
     return Response.json({ error: error.message || 'Server error' }, { status: 500 });
   }
 }
