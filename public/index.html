@@ -1,32 +1,625 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>TruX AI</title><base target="_top"><link rel="manifest" href="/manifest.json"><link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png"><link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png"><link rel="apple-touch-icon" href="/icon-192.png"><meta name="theme-color" content="#05040d"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="TruX-AI"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"><script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script><style>
-:root{--bg:#000;--panel:#0b0b0b;--panel2:#101010;--txt:#ececec;--muted:#8e8e8e;--line:rgba(255,255,255,.08);--soft:rgba(255,255,255,.04);--cyan:#b7b7b7;--violet:#d4d4d4;--pink:#f0f0f0;--green:#74d99a;--red:#f47783;--max:900px}*{box-sizing:border-box;margin:0;padding:0}html,body{width:100%;height:100%;background:var(--bg)}body{font-family:Inter,sans-serif;color:var(--txt);overflow:hidden;display:flex;isolation:isolate}button,input,textarea{font:inherit}button{-webkit-tap-highlight-color:transparent}.bg{position:fixed;inset:0;z-index:-5;background:#000}.bg:before,.bg:after{display:none}.grid{display:none}.shell{display:flex;width:100%;height:100%}.sidebar{width:292px;height:100%;display:flex;flex-direction:column;flex-shrink:0;background:#080808;border-right:1px solid var(--line);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);transition:.28s;z-index:100}.sidebar.collapsed{margin-left:-292px}.brand{padding:16px 17px;display:flex;align-items:center;gap:11px;border-bottom:1px solid var(--line)}.logo{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;font:700 16px "Space Grotesk";color:#fff;background:#ececec;box-shadow:0 8px 28px rgba(88,91,255,.24)}.brand b{font:700 15px "Space Grotesk"}.brand small{display:block;color:var(--muted);font-size:10px;margin-top:2px}.side-actions{display:flex;gap:8px;padding:12px}.new-chat,.side-btn{height:40px;border-radius:12px;border:1px solid var(--line);color:#fff;background:#fff06;cursor:pointer}.new-chat{flex:1;font-size:12px;font-weight:700;background:#111}.side-btn{width:40px}.history{flex:1;overflow:auto;padding:2px 8px}.history-head{padding:10px 7px;color:#6e6a7e;font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.empty{margin:10px 5px;padding:15px;border:1px dashed #fff13;border-radius:14px;text-align:center;color:var(--muted);font-size:11px;line-height:1.5}.hist{padding:10px 11px;margin:3px 0;border:1px solid transparent;border-radius:11px;color:#c7c3d3;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}.hist:hover{background:#fff06}.hist.active{background:#111;border-color:#cfcfcf28;color:#fff}.profile{padding:13px;border-top:1px solid var(--line);background:#05050c8c;display:flex;align-items:center;gap:10px;cursor:pointer}.avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;border:1px solid #39d9ff59}.profile-info{min-width:0}.profile-info b,.profile-info small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.profile-info b{font-size:12px}.profile-info small{font-size:10px;color:var(--muted);margin-top:2px}.main{min-width:0;flex:1;height:100%;display:flex;flex-direction:column;position:relative}.topbar{height:58px;position:absolute;left:0;right:0;top:0;display:flex;justify-content:center;align-items:center;z-index:10;pointer-events:none}.status{padding:6px 11px;border:1px solid #fff13;border-radius:999px;background:#09081473;backdrop-filter:blur(16px);font-size:9px;font-weight:800;letter-spacing:.1em;color:#c9c5d7}.status i{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 9px var(--green);margin-right:7px}.top-btn{position:absolute;top:12px;width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:#09081399;color:#fff;display:grid;place-items:center;cursor:pointer;backdrop-filter:blur(14px);z-index:20}.menu-btn{left:12px}.settings-btn{left:60px}.mobile-new{display:none;right:12px}.welcome{flex:1;display:flex;justify-content:center;align-items:center;position:relative;overflow:hidden;padding:72px 18px 145px}.halo{position:absolute;width:min(64vw,650px);height:min(64vw,650px);border-radius:50%;background:conic-gradient(from 20deg,#39d9ff39,#8b62ff2c,#ff4aa239,#39d9ff39);filter:blur(38px);animation:spin 18s linear infinite}.ring{position:absolute;width:min(43vw,450px);height:min(43vw,450px);border-radius:50%;border:1px solid #fff10;box-shadow:inset 0 0 80px #39d9ff10,0 0 100px #8b62ff12;animation:float 9s ease-in-out infinite alternate}@keyframes spin{to{transform:rotate(360deg)}}@keyframes float{to{transform:scale(1.05) translateY(-10px)}}.hero{position:relative;width:min(760px,94vw);z-index:2;text-align:center;padding:44px 38px 38px;border-radius:30px;border:1px solid rgba(255,255,255,.08);background:#0b0b0b;box-shadow:0 30px 95px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.025);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px)}.hero:after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:transparent}.badge{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid #fff13;border-radius:999px;background:#fff07;color:#dcd8e8;font-size:9px;font-weight:800;letter-spacing:.11em}.badge i{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan)}.welcome-title{margin:20px 0 12px;font:700 clamp(44px,8vw,76px)/.95 "Space Grotesk";letter-spacing:-.055em;color:#fff}.welcome-title span{background:linear-gradient(90deg,#fff,#bfbfbf,#fff);-webkit-background-clip:text;background-clip:text;color:transparent}.welcome-sub{max-width:560px;margin:auto;color:#aaa5bb;font-size:14px;line-height:1.7}.chips{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin-top:22px}.chip{padding:8px 11px;border:1px solid #fff12;border-radius:999px;background:#fff06;color:#c6c2d2;font-size:10px}.chat{display:none;flex:1;overflow:auto;padding:72px 22px 28px}.row{max-width:var(--max);width:100%;margin:0 auto 23px;display:flex;flex-direction:column}.label{font-size:9px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#777389;margin-bottom:7px}.trux-row .label{color:#a9b7ea}.trux-row .label:before{content:"✦";color:var(--cyan);margin-right:6px}.user-row .label{align-self:flex-end}.bubble{font-size:14px;line-height:1.7;overflow-wrap:anywhere;user-select:text!important;-webkit-user-select:text!important}.user-bubble{max-width:min(82%,680px);align-self:flex-end;padding:14px 17px;border:1px solid #fff11;border-radius:19px 19px 6px 19px;background:#111;color:#f5f3fa}.trux-bubble{padding:18px 19px;border:1px solid #8b62ff2b;border-radius:7px 20px 20px 20px;background:#0b0b0b;box-shadow:inset 0 1px 0 #fff005,0 15px 42px #0003;backdrop-filter:blur(15px)}.trux-bubble:before{content:"";display:block;width:46px;height:2px;border-radius:99px;background:linear-gradient(90deg,#777,#fff,#777);margin-bottom:12px}.thinking{display:inline-flex!important;width:max-content!important;padding:11px 14px!important;position:relative;overflow:hidden;background:#0c0c0c!important;border:1px solid rgba(255,255,255,.08)!important;color:#cfcfcf}.thinking:before{content:"";display:block;width:38px;height:2px;margin-right:10px;border-radius:99px;background:linear-gradient(90deg,#555,#fff,#555);background-size:200% 100%;animation:metal 1.8s linear infinite}.dots{display:none}.status-msg{margin-left:0;font-size:10px;font-weight:600;color:#a6a6a6;background:linear-gradient(90deg,#777,#fff,#777);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:metal 1.8s linear infinite}@keyframes metal{to{background-position:-220% 0}}.actions{display:flex;gap:7px;margin-top:7px}.act,.retry{border:1px solid #fff12;background:#fff006;color:#9d99ad;border-radius:10px;padding:6px 9px;font-size:10px;cursor:pointer}.retry{color:#ff8d98;border-color:#ff65742d}.code{margin:12px 0;border:1px solid #fff13;border-radius:13px;overflow:hidden;background:#07070e}.code-head{display:flex;justify-content:space-between;align-items:center;padding:8px 11px;color:#bcbcbc;background:#fff006;font-size:9px;font-weight:800;text-transform:uppercase}.code-head button{padding:4px 8px;border:1px solid #39d9ff2b;border-radius:8px;background:#39d9ff0b;color:#cfcfcf;font-size:9px;cursor:pointer}.code pre{margin:0;padding:13px;overflow:auto;font:12px/1.6 ui-monospace,SFMono-Regular,monospace;color:#e6e7ef}.inline{padding:2px 5px;border-radius:5px;background:#fff10;color:#cfcfcf;font-family:monospace;font-size:.9em}.img-card{margin-top:10px;border:1px solid #39d9ff2b;border-radius:14px;overflow:hidden;background:#0005}.img-card img{display:block;width:100%;max-height:520px;object-fit:contain;background:#04040a;cursor:zoom-in}.img-actions{padding:8px;text-align:right}.download{display:inline-block;padding:6px 9px;border:1px solid #39d9ff33;border-radius:9px;background:#39d9ff0b;color:var(--cyan);text-decoration:none;font-size:10px}.composer{padding:8px 16px 14px;position:relative;z-index:20;background:linear-gradient(to top,#03030af5 55%,#03030ab8,transparent);display:flex;justify-content:center}.compose{width:min(var(--max),100%)}.modelbar{display:flex;justify-content:center;gap:5px;margin-bottom:7px}.mopt{border:1px solid #fff13;border-radius:999px;background:#0e0c1ac9;color:#9c98ac;padding:6px 10px;font-size:9px;font-weight:800;cursor:pointer}.mopt.active{color:#fff;border-color:#ffffff1f;background:#161616}.mopt.img.active{border-color:#ffffff1f}.bar{position:relative;display:flex;align-items:flex-end;gap:4px;padding:7px;border:1px solid #fff14;border-radius:22px;background:#0b0b0b;box-shadow:0 18px 50px #0007,inset 0 1px 0 #fff09;backdrop-filter:blur(22px)}.bar:focus-within{border-color:#cfcfcf45;box-shadow:0 18px 55px #0008,0 0 30px #39d9ff12}.icon-btn{width:39px;height:39px;border:0;border-radius:12px;background:transparent;color:#858197;display:grid;place-items:center;cursor:pointer}.icon-btn:hover{background:#fff08;color:#fff}.icon-btn.recording{color:#fff;background:#ff657414}.send-btn{width:41px;height:41px;border:0;border-radius:13px;background:#ececec;color:#111;display:grid;place-items:center;cursor:pointer;box-shadow:0 7px 20px rgba(255,255,255,.08)}.send-btn:active{transform:scale(.96)}textarea{flex:1;min-width:0;min-height:39px;max-height:145px;resize:none;border:0;outline:0;background:transparent;color:#fff;padding:9px 7px;font-size:14px;line-height:21px;user-select:text;-webkit-user-select:text}textarea::placeholder{color:#6d697c}.preview{display:none;position:absolute;bottom:61px;left:9px;padding:5px;border-radius:11px;background:#0e0c19;border:1px solid #39d9ff40}.preview img{width:58px;height:58px;object-fit:cover;border-radius:8px}.preview button{position:absolute;right:-6px;top:-6px;width:18px;height:18px;border:0;border-radius:50%;background:var(--red);color:#fff;font-size:10px}.hint{text-align:center;color:#575365;font-size:8px;margin-top:6px}.modal{display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;padding:16px;background:#020108c4;backdrop-filter:blur(18px)}.card{width:min(430px,94vw);max-height:88vh;overflow:auto;padding:24px;border:1px solid #fff13;border-radius:24px;background:linear-gradient(145deg,#18132fe8,#080713f2);box-shadow:0 30px 90px #000b}.close{float:right;width:32px;height:32px;border-radius:10px;border:1px solid var(--line);background:#fff06;color:#9994ab;font-size:19px;cursor:pointer}.modal-avatar{display:block;width:78px;height:78px;border-radius:50%;object-fit:cover;margin:7px auto 12px;border:1px solid #39d9ff59}.center{text-align:center}.mtitle{font:700 21px "Space Grotesk";margin-bottom:5px}.msub{font-size:10px;color:var(--muted);margin-bottom:14px}.mrow{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line);font-size:11px}.toggle{position:relative;width:42px;height:23px}.toggle input{opacity:0}.slider{position:absolute;inset:0;border-radius:99px;background:#252235;border:1px solid var(--line);cursor:pointer}.slider:before{content:"";position:absolute;width:17px;height:17px;left:2px;top:2px;border-radius:50%;background:#fff;transition:.2s}.toggle input:checked+.slider{background:linear-gradient(90deg,var(--cyan),var(--violet))}.toggle input:checked+.slider:before{transform:translateX(19px)}.sect{margin-top:16px}.sect h4{font-size:9px;color:#aaa5bb;text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}.usage{height:8px;border-radius:99px;background:#fff008;overflow:hidden}.usage i{display:block;height:100%;width:0;background:linear-gradient(90deg,#777,#fff,#777)}.utxt{text-align:right;color:var(--muted);font-size:9px;margin-top:5px}.instr{width:100%;height:75px;resize:vertical;padding:9px;border-radius:11px;border:1px solid var(--line);background:#fff006;color:#fff;outline:0;font-size:10px}.mbtn{width:100%;padding:10px;margin-top:7px;border:1px solid var(--line);border-radius:11px;background:#fff006;color:#ddd8e8;font-size:10px;font-weight:700;cursor:pointer}.danger{color:#ff9aa2}.lightbox{display:none;position:fixed;inset:0;z-index:3000;align-items:center;justify-content:center;padding:20px;background:#000eb}.lightbox img{max-width:95vw;max-height:92vh;border-radius:16px}.context{display:none;position:fixed;z-index:2500;background:#0f0d19;border:1px solid #ff657433;border-radius:11px;padding:5px;min-width:145px}.del{padding:9px 11px;color:#ff9ba3;font-size:10px;font-weight:700;cursor:pointer;border-radius:8px}.del:hover{background:#ff657412}
-@media(max-width:768px){.sidebar{position:fixed;left:0;top:0;width:min(300px,88vw);height:100dvh;transform:translateX(-102%);margin:0;border-radius:0 20px 20px 0;box-shadow:20px 0 60px #0009}.sidebar.open{transform:translateX(0)}.sidebar.collapsed{margin-left:0}.mobile-new{display:grid}.menu-btn,.settings-btn{top:11px}.menu-btn{left:11px}.settings-btn{left:59px}.chat{padding:68px 11px 18px}.composer{padding:7px 9px 12px}.hero{padding:34px 18px 28px;border-radius:24px}.welcome-title{font-size:clamp(40px,12vw,58px)}.welcome-sub{font-size:12px}.chip{font-size:9px}.user-bubble{max-width:92%}.bar{border-radius:19px}.hint{display:none}}@media(max-width:420px){.hero{padding:29px 14px}.welcome-title{font-size:42px}.icon-btn{width:35px;height:35px}.send-btn{width:39px;height:39px}textarea{font-size:13px}}
-</style><style>.trux-bubble b,.trux-bubble i,.trux-bubble code,.trux-bubble pre,.trux-bubble br{transition:opacity .2s ease}.trux-bubble{letter-spacing:.002em}.trux-bubble p{margin:.15em 0 .7em}</style></head><body><div class="bg" id="bg"></div><div class="grid"></div><div class="shell"><aside class="sidebar" id="sidebarNode"><div class="brand"><div class="logo">TX</div><div><b>TruX AI</b><small>Intelligent workspace</small></div></div><div class="side-actions"><button class="new-chat" onclick="startNewChat();closeSidebar()">＋ New Chat</button><button class="side-btn" onclick="openUpgradeModal()">⚡</button><button class="side-btn" id="sidebarInstallBtn" onclick="installPWA()" style="display:none">⇩</button></div><div class="history" id="historyList"></div><div class="profile" onclick="handleAuthAction()"><img class="avatar" id="userAvatar" src="https://ui-avatars.com/api/?name=Guest+User&background=171421&color=fff"><div class="profile-info"><b id="userName">Guest User</b><small id="userEmail">Sign in required</small></div></div></aside><main class="main"><div class="topbar"><div class="status"><i></i>TRUX WORKSPACE</div></div><button class="top-btn menu-btn" onclick="toggleSidebar(event)">☰</button><button class="top-btn settings-btn" onclick="openSettingsModal()">⚙</button><button class="top-btn mobile-new" onclick="startNewChat()">＋</button><section class="welcome" id="welcomeScreen"><div class="halo"></div><div class="ring"></div><div class="hero"><div class="badge"><i></i>TRUX INTELLIGENCE ONLINE</div><h1 class="welcome-title">Welcome, I am <span>TruX</span></h1><p class="welcome-sub">Your intelligent AI workspace for coding, analysis, writing, vision, search and creative work.</p><div class="chips"><span class="chip">✦ Coding</span><span class="chip">✦ Analysis</span><span class="chip">✦ Writing</span><span class="chip">✦ Vision</span></div></div></section><div class="chat" id="chatContainer"></div><section class="composer"><div class="compose"><div class="modelbar"><button class="mopt active" data-model="base" onclick="selectModel('base',event)">⚡ Core 4.0</button><button class="mopt" data-model="pro" id="proModelOption" onclick="selectModel('pro',event)">✨ Ultra 5.0 Preview</button><button class="mopt img" data-model="nano-banana" onclick="selectModel('nano-banana',event)">🍌 Image</button></div><div class="bar"><div class="preview" id="imagePreviewContainer"><img id="imagePreview"><button onclick="removeImage()">×</button></div><button class="icon-btn" id="voiceBtn" onclick="toggleVoiceInput()" title="Voice input">🎙</button><input id="imageUpload" type="file" accept="image/*" hidden onchange="handleImageUpload(event)"><button class="icon-btn" onclick="imageUpload.click()" title="Add image">＋</button><textarea id="promptInput" rows="1" placeholder="Ask TruX anything…" oninput="handleInputChange()"></textarea><button class="send-btn" id="actionBtn" onclick="handleActionButton()"><svg id="btnIcon" viewBox="0 0 24 24" width="17" height="17"><path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/></svg></button></div><div class="hint">Enter to send · Shift + Enter for a new line</div></div></section></main></div><div class="modal" id="profileModal"><div class="card"><button class="close" onclick="closeProfileModal()">×</button><img class="modal-avatar" id="modalAvatar"><div class="center"><div class="mtitle" id="modalName">User Name</div><div class="msub" id="modalEmail">user@email.com</div></div><button class="mbtn danger" onclick="confirmSignOut()">↪ Sign Out</button></div></div><div class="modal" id="settingsModal"><div class="card"><button class="close" onclick="closeSettingsModal()">×</button><div class="mtitle">Settings</div><div class="msub">Personalize your TruX workspace.</div><div class="mrow"><span>Ambient Glow</span><label class="toggle"><input id="neonGlowToggle" type="checkbox" checked onchange="toggleAmbientGlow(this)"><span class="slider"></span></label></div><div class="mrow"><span>Auto Read Answers</span><label class="toggle"><input id="autoReadToggle" type="checkbox"><span class="slider"></span></label></div><div class="sect"><h4>Ultra Usage · 24h</h4><div class="usage"><i id="usageBarFill"></i></div><div class="utxt" id="usageText">0 / 2,000,000 Tokens</div></div><div class="sect"><h4>Instructions</h4><textarea id="customInstructions" class="instr" placeholder="How should TruX respond?"></textarea><button class="mbtn" onclick="saveCustomInstructions()">Save Instructions</button></div><div class="sect"><h4>System & Tools</h4><button class="mbtn" onclick="checkApiLatency()">📡 Check API Status</button><button class="mbtn" onclick="exportChatData()">⇩ Export Chat</button><button class="mbtn danger" onclick="resetAllSettings()">↺ Reset Settings</button><button class="mbtn danger" onclick="clearAllHistory()">🗑 Clear All Chats</button></div></div></div><div class="lightbox" id="lightboxModal" onclick="closeLightbox()"><img id="lightboxImg"></div><div class="context" id="contextMenu"><div class="del" id="contextMenuDeleteBtn">🗑 Delete Chat</div></div>
-<script>
-/* PWA */if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));let deferredPrompt=null;addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;let b=document.getElementById("sidebarInstallBtn");if(b)b.style.display="block"});async function installPWA(){if(!deferredPrompt)return;await deferredPrompt.prompt();deferredPrompt=null}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>TruX AI - Intelligent Workspace</title>
+  <base target="_top">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <meta name="theme-color" content="#0b0914">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="TruX-AI">
+  
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-/* Firebase */let auth=null,provider=null;async function initFirebase(){const fallback={apiKey:"AIzaSyAs_GDrzlBaucHfiff0Y6cA8GVHjFTA62Q",authDomain:"trux-ai.firebaseapp.com",projectId:"trux-ai",storageBucket:"trux-ai.firebasestorage.app",messagingSenderId:"59313097411",appId:"1:59313097411:web:32e4158bfb733fa7cfb076"};try{const r=await fetch("/api/firebase-config",{cache:"no-store"});firebase.initializeApp(await r.json())}catch{firebase.initializeApp(fallback)}auth=firebase.auth();provider=new firebase.auth.GoogleAuthProvider();auth.onAuthStateChanged(u=>{userName.innerText=u?.displayName||"Guest User";userEmail.innerText=u?.email||"Sign in required";userAvatar.src=u?.photoURL||"https://ui-avatars.com/api/?name=Guest+User&background=171421&color=fff"})}initFirebase();
+  <style>
+    /* --- CSS VARIABLES & THEME --- */
+    :root {
+      --bg-base: #050508;
+      --glass-bg: rgba(20, 18, 32, 0.5);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-highlight: rgba(255, 255, 255, 0.15);
+      --txt-main: #f8f9fa;
+      --txt-muted: #94a3b8;
+      --accent-1: #00f2fe;
+      --accent-2: #4facfe;
+      --accent-3: #f093fb;
+      --accent-4: #f5576c;
+      --user-grad: linear-gradient(135deg, #ff0844 0%, #ffb199 100%);
+      --max-width: 900px;
+    }
 
-/* State */let currentModel="base",chatSessions=JSON.parse(localStorage.getItem("trux_chats"))||{},currentChatId=null,isGenerating=false,activeAbortController=null,selectedImageBase64=null,wasInputByVoice=false,contextMenuTargetId=null,codeBlockCounter=0,recognition=null,isRecording=false;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    html, body {
+      width: 100%; height: 100%; 
+      background-color: var(--bg-base);
+      font-family: 'Inter', sans-serif;
+      color: var(--txt-main);
+      overflow: hidden;
+      display: flex;
+    }
 
-/* Model/usage */function selectModel(m,e){e?.stopPropagation();if(m==="pro"&&getProUsageData().tokensUsed>=2000000){alert("TruX Ultra 5.0 Preview limit reached for 24 hours.");return}currentModel=m;document.querySelectorAll(".mopt").forEach(x=>x.classList.toggle("active",x.dataset.model===m))}function getProUsageData(){let n=Date.now(),u=JSON.parse(localStorage.getItem("trux_pro_usage"))||{tokensUsed:0,resetTimestamp:n+86400000};if(n>u.resetTimestamp){u={tokensUsed:0,resetTimestamp:n+86400000};localStorage.setItem("trux_pro_usage",JSON.stringify(u))}return u}function updateProUsageUI(){let u=getProUsageData();usageBarFill.style.width=Math.min(100,u.tokensUsed/20000)+"%";usageText.innerText=`${u.tokensUsed.toLocaleString()} / 2,000,000 Tokens`;proModelOption.style.opacity=u.tokensUsed>=2000000?".45":"1";proModelOption.disabled=u.tokensUsed>=2000000;if(currentModel==="pro"&&u.tokensUsed>=2000000)selectModel("base")}function recordProTokens(n){let u=getProUsageData();u.tokensUsed=Math.min(2000000,u.tokensUsed+n);localStorage.setItem("trux_pro_usage",JSON.stringify(u));updateProUsageUI()}
+    button, input, textarea { font: inherit; outline: none; border: none; }
+    button { cursor: pointer; -webkit-tap-highlight-color: transparent; transition: all 0.2s ease; }
 
-/* Settings */function saveCustomInstructions(){localStorage.setItem("trux_custom_instructions",customInstructions.value.trim());alert("Instructions saved successfully!")}function loadCustomInstructions(){customInstructions.value=localStorage.getItem("trux_custom_instructions")||""}function toggleAmbientGlow(el){bg.style.display="block";localStorage.setItem("trux_ambient_glow",el.checked?"true":"false")}function loadSettings(){neonGlowToggle.checked=localStorage.getItem("trux_ambient_glow")!=="false";toggleAmbientGlow(neonGlowToggle);autoReadToggle.checked=localStorage.getItem("trux_auto_read")==="true";loadCustomInstructions()}function exportChatData(){let a=document.createElement("a");a.href="data:application/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(chatSessions,null,2));a.download=`trux_chat_${Date.now()}.json`;document.body.appendChild(a);a.click();a.remove()}async function checkApiLatency(){let t=performance.now();try{let r=await fetch("/api/chat",{cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);alert(`TruX backend is reachable.\nResponse: ${Math.round(performance.now()-t)} ms`)}catch(e){alert("Backend check failed.\n"+e.message)}}function resetAllSettings(){if(!confirm("Reset all settings?"))return;["trux_custom_instructions","trux_auto_read","trux_ambient_glow"].forEach(k=>localStorage.removeItem(k));loadSettings();alert("Settings reset.")}function clearAllHistory(){if(!confirm("Delete all local chats?"))return;chatSessions={};localStorage.removeItem("trux_chats");startNewChat();closeSettingsModal()}function handleAuthAction(){if(!auth)return;if(!auth.currentUser)return auth.signInWithPopup(provider).catch(console.error);modalAvatar.src=auth.currentUser.photoURL||userAvatar.src;modalName.innerText=auth.currentUser.displayName||"Signed-in User";modalEmail.innerText=auth.currentUser.email||"";profileModal.style.display="flex"}function closeProfileModal(){profileModal.style.display="none"}function openSettingsModal(){updateProUsageUI();loadSettings();settingsModal.style.display="flex"}function closeSettingsModal(){settingsModal.style.display="none"}function openUpgradeModal(){alert("⚡ TruX Ultra 5.0 Preview\n\n• Advanced reasoning\n• Complex task support\n• Higher capability model")}function confirmSignOut(){auth?.signOut().then(closeProfileModal)}function openLightbox(s){lightboxImg.src=s;lightboxModal.style.display="flex"}function closeLightbox(){lightboxModal.style.display="none"}
+    /* --- VIBRANT ANIMATED BACKGROUND --- */
+    .bg {
+      position: fixed; inset: 0; z-index: -10;
+      background: var(--bg-base);
+      overflow: hidden;
+    }
+    .bg::before, .bg::after, .bg-orb {
+      content: ""; position: absolute;
+      border-radius: 50%;
+      filter: blur(90px);
+      opacity: 0.6;
+      animation: float 20s infinite ease-in-out alternate;
+    }
+    .bg::before {
+      width: 60vw; height: 60vw;
+      background: radial-gradient(circle, var(--accent-3), transparent 70%);
+      top: -10%; left: -10%;
+      animation-delay: -5s;
+    }
+    .bg::after {
+      width: 50vw; height: 50vw;
+      background: radial-gradient(circle, var(--accent-1), transparent 70%);
+      bottom: -10%; right: -10%;
+    }
+    .bg-orb {
+      width: 40vw; height: 40vw;
+      background: radial-gradient(circle, var(--accent-4), transparent 70%);
+      top: 40%; left: 30%;
+      animation-duration: 25s;
+    }
 
-/* Sidebar/chat */function toggleSidebar(e){e?.stopPropagation();let s=sidebarNode;if(innerWidth<=768)s.classList.toggle("open");else s.classList.toggle("collapsed")}function closeSidebar(){let s=sidebarNode;if(innerWidth<=768)s.classList.remove("open");else s.classList.add("collapsed")}function startNewChat(){activeAbortController?.abort();chatContainer.innerHTML="";chatContainer.style.display="none";welcomeScreen.style.display="flex";currentChatId=null;removeImage();renderSidebar()}function handleInputChange(){promptInput.style.height="auto";promptInput.style.height=Math.min(promptInput.scrollHeight,145)+"px"}function handleImageUpload(e){let f=e.target.files[0];if(!f||!f.type.startsWith("image/"))return;let r=new FileReader;r.onload=x=>{selectedImageBase64=x.target.result;imagePreview.src=x.target.result;imagePreviewContainer.style.display="block";handleInputChange()};r.readAsDataURL(f)}function removeImage(){selectedImageBase64=null;imageUpload.value="";imagePreviewContainer.style.display="none";handleInputChange()}
+    @keyframes float {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(10vw, -10vh) scale(1.2); }
+    }
 
-/* Voice */if("webkitSpeechRecognition"in window||"SpeechRecognition"in window){let SR=window.SpeechRecognition||window.webkitSpeechRecognition;recognition=new SR;recognition.continuous=false;recognition.interimResults=true;recognition.lang="en-US";recognition.onstart=()=>{isRecording=true;wasInputByVoice=true;voiceBtn.classList.add("recording")};recognition.onresult=e=>{let t="";for(let i=e.resultIndex;i<e.results.length;i++)t+=e.results[i][0].transcript;promptInput.value=t;handleInputChange()};recognition.onerror=stopVoiceInput;recognition.onend=stopVoiceInput}function toggleVoiceInput(){if(!recognition)return alert("Speech recognition is not supported in this browser. Try Chrome.");isRecording?recognition.stop():(wasInputByVoice=true,recognition.start())}function stopVoiceInput(){isRecording=false;voiceBtn.classList.remove("recording")}
+    /* --- APP SHELL & SIDEBAR --- */
+    .shell { display: flex; width: 100%; height: 100%; z-index: 1; }
+    
+    .sidebar {
+      width: 300px; height: 100%;
+      display: flex; flex-direction: column; flex-shrink: 0;
+      background: rgba(10, 8, 16, 0.6);
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      border-right: 1px solid var(--glass-border);
+      transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 100;
+    }
+    .sidebar.collapsed { margin-left: -300px; }
 
-/* Markdown/render */function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;")}function copyCodeToClipboard(b,id){let e=document.getElementById(id);if(e)navigator.clipboard.writeText(e.innerText).then(()=>{let x=b.innerText;b.innerText="Copied ✓";setTimeout(()=>b.innerText=x,1500)})}function renderFormattedText(t){if(!t)return"";let h=escapeHtml(t);h=h.replace(/!\[(.*?)\]\((data:image\/[^;]+;base64,[^\s)]+|https?:\/\/[^\s)]+)\)/g,(m,a,s)=>{if(!/^data:image\/|^https?:\/\//.test(s))return"";return`<div class="img-card"><img src="${s}" alt="${escapeHtml(a)}" onclick="openLightbox('${s.replace(/'/g,"%27")}')"><div class="img-actions"><a class="download" href="${s}" download="trux-generated-image.jpg">⇩ Download</a></div></div>`});h=h.replace(/```(?:[\w-]+)?\n?([\s\S]*?)```/g,(m,c)=>{let id=`code_${++codeBlockCounter}_${Date.now()}`;return`<div class="code"><div class="code-head"><span>Code</span><button onclick="copyCodeToClipboard(this,'${id}')">Copy</button></div><pre><code id="${id}">${c.trim()}</code></pre></div>`});return h.replace(/`([^`]+)`/g,'<span class="inline">$1</span>').replace(/\*\*(.*?)\*\*/g,"<b>$1</b>").replace(/\*(.*?)\*/g,"<i>$1</i>").replace(/\n/g,"<br>")}function speakText(t){if(!("speechSynthesis"in window))return;speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(t.replace(/```[\s\S]*?```/g,"Code block omitted.").replace(/\*\*(.*?)\*\*/g,"$1").replace(/\*(.*?)\*/g,"$1").replace(/`/g,"")))}
+    .brand {
+      padding: 24px 20px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .logo {
+      width: 42px; height: 42px;
+      border-radius: 14px;
+      display: grid; place-items: center;
+      font: 800 18px "Space Grotesk"; color: #fff;
+      background: linear-gradient(135deg, var(--accent-2), var(--accent-1));
+      box-shadow: 0 8px 24px rgba(79, 172, 254, 0.4);
+    }
+    .brand b { font: 700 18px "Space Grotesk"; letter-spacing: -0.5px; }
+    .brand small { display: block; color: var(--txt-muted); font-size: 11px; font-weight: 500; }
 
-/* Response */function appendMessageRow(label,text,rc,bc){let r=document.createElement("div");r.className=`row ${rc}`;r.innerHTML=`<div class="label">${escapeHtml(label)}</div><div class="bubble ${bc}">${renderFormattedText(text)}</div>`;chatContainer.appendChild(r);chatContainer.scrollTop=chatContainer.scrollHeight}async function retryPrompt(p,r){r?.remove();promptInput.value=p;handleInputChange();sendPrompt()}function finalizeResponse(id,aid,text,prompt,voice){chatSessions[currentChatId].messages.push({role:"trux",text});localStorage.setItem("trux_chats",JSON.stringify(chatSessions));if(currentModel==="pro")recordProTokens(Math.ceil((prompt.length+text.length)/4));let b=document.getElementById(id);if(b){b.classList.remove("thinking");b.innerHTML=renderFormattedText(text)}let a=document.getElementById(aid);if(a){a.innerHTML="";let x=document.createElement("button");x.className="act";x.innerText="🔊 Read Aloud";x.onclick=()=>speakText(text);a.appendChild(x)}isGenerating=false;activeAbortController=null;btnIcon.innerHTML='<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';requestAnimationFrame(()=>chatContainer.scrollTop=chatContainer.scrollHeight);if(voice||autoReadToggle.checked)speakText(text)}
+    .side-actions { display: flex; gap: 10px; padding: 0 20px 20px; }
+    .new-chat, .side-btn {
+      height: 44px; border-radius: 12px;
+      background: var(--glass-highlight);
+      color: #fff; font-weight: 600;
+      border: 1px solid var(--glass-border);
+    }
+    .new-chat {
+      flex: 1; font-size: 13px;
+      background: linear-gradient(to right, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+    }
+    .new-chat:hover, .side-btn:hover { background: rgba(255,255,255,0.15); transform: translateY(-1px); }
+    .side-btn { width: 44px; font-size: 16px; }
 
-/* Main send */async function sendPrompt(){let prompt=promptInput.value.trim();if(!prompt&&!selectedImageBase64)return;if(currentModel==="pro"&&getProUsageData().tokensUsed>=2000000){alert("TruX Ultra 5.0 Preview limit reached for 24 hours. Switching to Core.");selectModel("base")}isGenerating=true;btnIcon.innerHTML='<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>';let voice=wasInputByVoice;wasInputByVoice=false;if(!currentChatId){currentChatId="chat_"+Date.now();chatSessions[currentChatId]={title:prompt?prompt.slice(0,32):"Image Query",messages:[]}}chatSessions[currentChatId].messages.push({role:"user",text:prompt});localStorage.setItem("trux_chats",JSON.stringify(chatSessions));welcomeScreen.style.display="none";chatContainer.style.display="block";appendMessageRow("You",prompt+(selectedImageBase64?"\n[Image Attached]":""),"user-row","user-bubble");promptInput.value="";let img=selectedImageBase64;removeImage();let id="b_"+Date.now(),aid="a_"+Date.now(),sid="s_"+Date.now(),row=document.createElement("div");row.className="row trux-row";row.innerHTML=`<div class="label">TruX AI</div><div class="bubble trux-bubble thinking" id="${id}"><div class="dots"><i></i><i></i><i></i><span class="status-msg" id="${sid}">${currentModel==="nano-banana"?"Generating image…":"Thinking…"}</span></div></div><div class="actions" id="${aid}"></div>`;chatContainer.appendChild(row);chatContainer.scrollTop=chatContainer.scrollHeight;let phrases=currentModel==="nano-banana"?["Generating image…","Rendering details…","Finalizing image…"]:["Thinking…","Processing…","Analyzing context…","Preparing response…"],pi=0,timer=setInterval(()=>{let e=document.getElementById(sid);if(e)e.innerText=phrases[pi=(pi+1)%phrases.length]},1800);activeAbortController=new AbortController();try{let res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json","Accept":"text/event-stream"},signal:activeAbortController.signal,body:JSON.stringify({message:prompt,tier:currentModel,history:chatSessions[currentChatId].messages.slice(0,-1).slice(-6),image:img,systemInstruction:localStorage.getItem("trux_custom_instructions")||"",userId:auth?.currentUser?.uid||null})});if(!res.ok){let q=`Backend error (${res.status})`;try{let j=await res.json();q=j.error||j.reply||q}catch{}throw Error(q)}if(currentModel==="nano-banana"){clearInterval(timer);let j=await res.json();return finalizeResponse(id,aid,j.reply||j.error||"No image response.",prompt,voice)}if(!res.body)throw Error("Streaming body unavailable.");let rd=res.body.getReader(),dec=new TextDecoder(),buf="",full="",fin=null;function ev(raw){if(!raw)return;let j;try{j=JSON.parse(raw)}catch{return}if(j.type==="chunk")full+=j.text||"";else if(j.type==="final")fin=j.text||"";else if(j.type==="status"){let e=document.getElementById(sid);if(e)e.innerText=j.status||"Processing…"}else if(j.type==="error")throw Error(j.error||"Streaming error.")}while(1){let{value,done}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});let es=buf.split(/\r?\n\r?\n/);buf=es.pop()||"";for(let x of es){let ls=x.split(/\r?\n/).filter(l=>l.startsWith("data:"));if(ls.length)ev(ls.map(l=>l.slice(5).trimStart()).join("\n"))}}let text=(fin!==null?fin:full).trim();if(!text)throw Error("No response received.");clearInterval(timer);finalizeResponse(id,aid,text,prompt,voice)}catch(e){clearInterval(timer);let b=document.getElementById(id);if(b){b.classList.remove("thinking");b.innerHTML=e.name==="AbortError"?"Generation stopped.":"Error: "+escapeHtml(e.message||"Unable to connect.")}if(e.name!=="AbortError"){let a=document.getElementById(aid);if(a){let x=document.createElement("button");x.className="retry";x.innerText="↻ Retry";x.onclick=()=>retryPrompt(prompt,row);a.appendChild(x)}}isGenerating=false;activeAbortController=null;btnIcon.innerHTML='<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>'}}
-function handleActionButton(){if(isGenerating){activeAbortController?.abort();isGenerating=false;btnIcon.innerHTML='<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';return}sendPrompt()}
+    .history { flex: 1; overflow-y: auto; padding: 0 12px; }
+    .history::-webkit-scrollbar { width: 4px; }
+    .history::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+    
+    .history-head {
+      padding: 12px 10px; color: var(--txt-muted);
+      font-size: 10px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase;
+    }
+    .hist {
+      padding: 12px 14px; margin: 4px 0;
+      border-radius: 10px; color: #cbd5e1;
+      font-size: 13px; font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      transition: all 0.2s; cursor: pointer;
+    }
+    .hist:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+    .hist.active {
+      background: linear-gradient(90deg, rgba(255,255,255,0.15), transparent);
+      border-left: 3px solid var(--accent-1);
+      color: #fff; font-weight: 600;
+    }
+    .empty {
+      margin: 10px 8px; padding: 20px;
+      border: 1px dashed rgba(255,255,255,0.15); border-radius: 12px;
+      text-align: center; color: var(--txt-muted); font-size: 12px; line-height: 1.6;
+    }
 
-/* History */function renderSidebar(){historyList.innerHTML="";let ids=Object.keys(chatSessions).reverse();if(!ids.length){historyList.innerHTML='<div class="history-head">Workspace</div><div class="empty">Your chats will appear here.<br>Start a new chat to begin.</div>';return}historyList.innerHTML='<div class="history-head">Recent chats</div>';ids.forEach(id=>{let x=document.createElement("div");x.className="hist"+(id===currentChatId?" active":"");x.innerText=chatSessions[id].title;x.onclick=()=>loadChatSession(id);x.oncontextmenu=e=>{e.preventDefault();contextMenuTargetId=id;contextMenu.style.display="block";contextMenu.style.left=Math.min(e.clientX,innerWidth-160)+"px";contextMenu.style.top=Math.min(e.clientY,innerHeight-48)+"px"};historyList.appendChild(x)})}function loadChatSession(id){if(!chatSessions[id])return;activeAbortController?.abort();currentChatId=id;welcomeScreen.style.display="none";chatContainer.style.display="block";chatContainer.innerHTML="";chatSessions[id].messages.forEach(m=>appendMessageRow(m.role==="user"?"You":"TruX AI",m.text,m.role==="user"?"user-row":"trux-row",m.role==="user"?"user-bubble":"trux-bubble"));renderSidebar();if(innerWidth<=768)closeSidebar()}function deleteChat(id){if(confirm("Are you sure you want to delete this chat?")){delete chatSessions[id];localStorage.setItem("trux_chats",JSON.stringify(chatSessions));if(currentChatId===id)startNewChat();else renderSidebar()}}contextMenuDeleteBtn.onclick=()=>{if(contextMenuTargetId){deleteChat(contextMenuTargetId);contextMenuTargetId=null;contextMenu.style.display="none"}};addEventListener("click",e=>{if(!contextMenu.contains(e.target))contextMenu.style.display="none"});
+    .profile {
+      padding: 16px 20px;
+      background: rgba(0, 0, 0, 0.2);
+      border-top: 1px solid var(--glass-border);
+      display: flex; align-items: center; gap: 12px; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .profile:hover { background: rgba(255,255,255,0.05); }
+    .avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.1); }
+    .profile-info { min-width: 0; flex: 1; }
+    .profile-info b { font-size: 13px; display: block; text-overflow: ellipsis; overflow: hidden; }
+    .profile-info small { font-size: 11px; color: var(--txt-muted); display: block; text-overflow: ellipsis; overflow: hidden; }
 
-/* Keyboard/settings */promptInput.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();handleActionButton()}});autoReadToggle.checked=localStorage.getItem("trux_auto_read")==="true";autoReadToggle.onchange=()=>localStorage.setItem("trux_auto_read",autoReadToggle.checked?"true":"false");profileModal.addEventListener("click",e=>{if(e.target===profileModal)closeProfileModal()});settingsModal.addEventListener("click",e=>{if(e.target===settingsModal)closeSettingsModal()});addEventListener("keydown",e=>{if(e.key==="Escape"){closeProfileModal();closeSettingsModal();contextMenu.style.display="none";if(innerWidth<=768)closeSidebar()}});
+    /* --- MAIN CHAT AREA --- */
+    .main { flex: 1; height: 100%; display: flex; flex-direction: column; position: relative; min-width: 0; }
+    
+    .topbar {
+      height: 64px; position: absolute; left: 0; right: 0; top: 0;
+      display: flex; justify-content: center; align-items: center;
+      z-index: 10; pointer-events: none;
+    }
+    .status {
+      padding: 6px 14px; border: 1px solid var(--glass-border); border-radius: 99px;
+      background: rgba(10, 8, 16, 0.4); backdrop-filter: blur(12px);
+      font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: var(--txt-main);
+    }
+    .status i {
+      display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+      background: #10b981; box-shadow: 0 0 10px #10b981; margin-right: 8px;
+    }
+    
+    .top-btn {
+      position: absolute; top: 12px;
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--glass-bg); border: 1px solid var(--glass-border);
+      color: #fff; display: grid; place-items: center; cursor: pointer;
+      backdrop-filter: blur(12px); pointer-events: auto; transition: 0.2s;
+    }
+    .top-btn:hover { background: rgba(255,255,255,0.1); }
+    .menu-btn { left: 16px; }
+    .settings-btn { left: 64px; }
+    .mobile-new { display: none; right: 16px; }
 
-/* Init */loadSettings();renderSidebar();updateProUsageUI();handleInputChange();
-</script></body></html>
+    /* --- WELCOME HERO --- */
+    .welcome {
+      flex: 1; display: flex; justify-content: center; align-items: center;
+      position: relative; padding: 0 24px;
+    }
+    .hero {
+      position: relative; width: min(800px, 100%); z-index: 2;
+      text-align: center; padding: 60px 40px;
+      border-radius: 32px;
+      background: rgba(15, 10, 25, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5), inset 0 0 40px rgba(255,255,255,0.02);
+      backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 14px; border: 1px solid var(--glass-border); border-radius: 99px;
+      background: rgba(255,255,255,0.05); color: #e2e8f0; font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+      margin-bottom: 20px;
+    }
+    .badge i { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-1); box-shadow: 0 0 10px var(--accent-1); }
+    .welcome-title {
+      font: 800 clamp(36px, 6vw, 64px)/1.1 "Space Grotesk";
+      color: #fff; margin-bottom: 16px; letter-spacing: -1px;
+    }
+    .welcome-title span {
+      background: linear-gradient(135deg, var(--accent-3), var(--accent-1));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .welcome-sub {
+      max-width: 500px; margin: 0 auto 30px;
+      color: var(--txt-muted); font-size: 16px; line-height: 1.6;
+    }
+    .chips { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }
+    .chip {
+      padding: 8px 16px; border: 1px solid var(--glass-border); border-radius: 99px;
+      background: rgba(255,255,255,0.03); color: #cbd5e1; font-size: 12px; font-weight: 500;
+      transition: 0.2s;
+    }
+    .chip:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
+
+    /* --- CHAT INTERFACE --- */
+    .chat { display: none; flex: 1; overflow-y: auto; padding: 80px 24px 30px; scroll-behavior: smooth; }
+    .chat::-webkit-scrollbar { width: 6px; }
+    .chat::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+    
+    .row { max-width: var(--max-width); width: 100%; margin: 0 auto 32px; display: flex; flex-direction: column; }
+    .label {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--txt-muted); margin-bottom: 8px; display: flex; align-items: center;
+    }
+    .trux-row .label { color: var(--accent-1); }
+    .trux-row .label::before { content: "✦"; margin-right: 6px; font-size: 14px; }
+    .user-row .label { align-self: flex-end; color: var(--accent-3); }
+
+    .bubble {
+      font-size: 15px; line-height: 1.7; overflow-wrap: anywhere;
+      user-select: text !important; -webkit-user-select: text !important;
+    }
+    .user-bubble {
+      max-width: 85%; align-self: flex-end;
+      padding: 16px 20px;
+      background: var(--user-grad); color: #fff;
+      border-radius: 20px 20px 4px 20px;
+      box-shadow: 0 10px 25px rgba(255, 8, 68, 0.2);
+      font-weight: 500;
+    }
+    .trux-bubble {
+      padding: 20px 24px;
+      background: rgba(20, 18, 30, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px 20px 20px 20px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    }
+    .trux-bubble b { color: #fff; font-weight: 700; }
+    .trux-bubble code { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 6px; font-family: monospace; font-size: 0.9em; color: var(--accent-1); }
+    
+    .thinking {
+      display: inline-flex !important; width: max-content !important;
+      align-items: center; gap: 12px;
+      background: rgba(255, 255, 255, 0.05) !important;
+    }
+    .thinking::before {
+      content: ""; display: block; width: 24px; height: 24px;
+      border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--accent-1);
+      border-radius: 50%; animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .status-msg { font-size: 13px; font-weight: 600; color: var(--accent-1); animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .dots { display: none; }
+
+    .actions { display: flex; gap: 8px; margin-top: 10px; }
+    .act, .retry {
+      padding: 6px 12px; border-radius: 8px; border: 1px solid var(--glass-border);
+      background: rgba(255,255,255,0.05); color: var(--txt-muted); font-size: 11px; font-weight: 600;
+    }
+    .act:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .retry { color: var(--accent-4); border-color: rgba(245, 87, 108, 0.3); }
+
+    /* Formatting inside chat */
+    .code { margin: 16px 0; border: 1px solid var(--glass-border); border-radius: 12px; overflow: hidden; background: #0a0a0f; }
+    .code-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: rgba(255,255,255,0.05); font-size: 11px; font-weight: 700; color: var(--txt-muted); text-transform: uppercase; }
+    .code-head button { padding: 4px 10px; border-radius: 6px; background: rgba(255,255,255,0.1); color: #fff; font-size: 10px; }
+    .code pre { padding: 16px; overflow-x: auto; font-family: 'Fira Code', monospace; font-size: 13px; color: #e2e8f0; margin: 0; }
+    
+    .img-card { margin-top: 12px; border: 1px solid var(--glass-border); border-radius: 16px; overflow: hidden; }
+    .img-card img { display: block; width: 100%; max-height: 400px; object-fit: contain; background: rgba(0,0,0,0.5); }
+    .img-actions { padding: 10px; background: rgba(255,255,255,0.02); text-align: right; }
+    .download { display: inline-block; padding: 8px 12px; background: rgba(255,255,255,0.1); border-radius: 8px; color: #fff; text-decoration: none; font-size: 11px; font-weight: 600; }
+
+    /* --- COMPOSER (Input Area) --- */
+    .composer {
+      padding: 10px 24px 24px; position: relative; z-index: 20;
+      background: linear-gradient(to top, var(--bg-base) 60%, transparent);
+      display: flex; justify-content: center;
+    }
+    .compose { width: min(var(--max-width), 100%); }
+    .modelbar { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }
+    .mopt {
+      padding: 8px 14px; border: 1px solid var(--glass-border); border-radius: 99px;
+      background: rgba(0,0,0,0.4); color: var(--txt-muted);
+      font-size: 11px; font-weight: 700; backdrop-filter: blur(10px); transition: 0.2s;
+    }
+    .mopt:hover { color: #fff; background: rgba(255,255,255,0.05); }
+    .mopt.active { background: rgba(255,255,255,0.15); color: #fff; border-color: rgba(255,255,255,0.2); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    
+    .bar {
+      position: relative; display: flex; align-items: flex-end; gap: 8px;
+      padding: 8px; border: 1px solid rgba(255,255,255,0.15); border-radius: 24px;
+      background: rgba(20, 18, 30, 0.7);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.1);
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      transition: 0.3s;
+    }
+    .bar:focus-within { border-color: var(--accent-1); box-shadow: 0 0 0 1px var(--accent-1), 0 20px 40px rgba(0,0,0,0.5); }
+    
+    .icon-btn {
+      width: 44px; height: 44px; border-radius: 16px;
+      background: transparent; color: var(--txt-muted); font-size: 18px;
+    }
+    .icon-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .icon-btn.recording { color: var(--accent-4); background: rgba(245, 87, 108, 0.15); animation: pulse 1.5s infinite; }
+    
+    .send-btn {
+      width: 44px; height: 44px; border-radius: 16px;
+      background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      color: #fff; display: grid; place-items: center;
+      box-shadow: 0 8px 20px rgba(79, 172, 254, 0.3);
+    }
+    .send-btn:active { transform: scale(0.95); }
+
+    textarea {
+      flex: 1; min-height: 44px; max-height: 200px;
+      padding: 12px 8px; resize: none; background: transparent;
+      color: #fff; font-size: 15px; line-height: 1.5; font-family: 'Inter', sans-serif;
+    }
+    textarea::placeholder { color: rgba(255,255,255,0.3); }
+
+    .preview {
+      display: none; position: absolute; bottom: calc(100% + 12px); left: 16px;
+      padding: 6px; border-radius: 16px; background: rgba(20,18,30,0.9);
+      border: 1px solid var(--glass-border); backdrop-filter: blur(10px);
+    }
+    .preview img { width: 64px; height: 64px; object-fit: cover; border-radius: 10px; }
+    .preview button {
+      position: absolute; right: -8px; top: -8px;
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--accent-4); color: #fff; font-size: 12px; font-weight: bold;
+    }
+
+    .hint { text-align: center; color: var(--txt-muted); font-size: 11px; margin-top: 12px; font-weight: 500; }
+
+    /* --- MODALS --- */
+    .modal {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      align-items: center; justify-content: center; padding: 20px;
+      background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    }
+    .card {
+      width: min(440px, 100%); max-height: 85vh; overflow-y: auto;
+      padding: 30px; border-radius: 28px;
+      background: rgba(20, 18, 30, 0.85); border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 40px 100px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.1);
+    }
+    .card::-webkit-scrollbar { display: none; }
+    
+    .close {
+      float: right; width: 36px; height: 36px; border-radius: 12px;
+      background: rgba(255,255,255,0.05); color: #fff; font-size: 20px;
+    }
+    .close:hover { background: rgba(255,255,255,0.15); }
+    
+    .modal-avatar { display: block; width: 88px; height: 88px; border-radius: 50%; margin: 10px auto 16px; border: 3px solid rgba(255,255,255,0.1); }
+    .center { text-align: center; }
+    .mtitle { font: 700 24px "Space Grotesk"; margin-bottom: 6px; color: #fff; }
+    .msub { font-size: 13px; color: var(--txt-muted); margin-bottom: 24px; }
+    
+    .mrow { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid var(--glass-border); font-size: 14px; font-weight: 500; }
+    .toggle { position: relative; width: 48px; height: 26px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; inset: 0; border-radius: 99px; background: rgba(255,255,255,0.1); cursor: pointer; transition: 0.3s; }
+    .slider:before { content: ""; position: absolute; width: 18px; height: 18px; left: 4px; top: 4px; border-radius: 50%; background: #fff; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .toggle input:checked + .slider { background: linear-gradient(90deg, var(--accent-1), var(--accent-2)); }
+    .toggle input:checked + .slider:before { transform: translateX(22px); }
+    
+    .sect { margin-top: 24px; }
+    .sect h4 { font-size: 11px; color: var(--txt-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; }
+    .usage { height: 10px; border-radius: 99px; background: rgba(255,255,255,0.1); overflow: hidden; }
+    .usage i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent-1), var(--accent-3)); transition: width 0.5s; }
+    .utxt { text-align: right; color: var(--txt-muted); font-size: 11px; margin-top: 8px; font-weight: 600; }
+    
+    .instr { width: 100%; height: 90px; resize: vertical; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #fff; font-size: 13px; font-family: 'Inter', sans-serif; }
+    .instr:focus { border-color: var(--accent-1); }
+    
+    .mbtn { width: 100%; padding: 14px; margin-top: 10px; border-radius: 12px; background: rgba(255,255,255,0.08); color: #fff; font-size: 13px; font-weight: 700; transition: 0.2s; }
+    .mbtn:hover { background: rgba(255,255,255,0.15); }
+    .danger { color: #ff8a95; background: rgba(245, 87, 108, 0.1); border: 1px solid rgba(245, 87, 108, 0.2); }
+    .danger:hover { background: rgba(245, 87, 108, 0.2); color: #fff; }
+
+    .lightbox { display: none; position: fixed; inset: 0; z-index: 3000; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,0.9); backdrop-filter: blur(10px); }
+    .lightbox img { max-width: 95vw; max-height: 92vh; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); }
+
+    .context { display: none; position: fixed; z-index: 2500; background: rgba(20,18,30,0.95); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 6px; min-width: 160px; backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .del { padding: 10px 14px; color: var(--accent-4); font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 8px; transition: 0.2s; }
+    .del:hover { background: rgba(245, 87, 108, 0.15); }
+
+    /* --- RESPONSIVE --- */
+    @media (max-width: 768px) {
+      .sidebar { position: fixed; left: 0; top: 0; width: min(320px, 85vw); height: 100dvh; transform: translateX(-100%); margin: 0; border-radius: 0 24px 24px 0; box-shadow: 20px 0 60px rgba(0,0,0,0.5); }
+      .sidebar.open { transform: translateX(0); }
+      .mobile-new { display: grid; }
+      .menu-btn, .settings-btn { top: 12px; }
+      .menu-btn { left: 16px; }
+      .settings-btn { left: 64px; }
+      .chat { padding: 80px 16px 20px; }
+      .composer { padding: 10px 12px 16px; }
+      .hero { padding: 40px 20px; border-radius: 28px; }
+      .welcome-title { font-size: clamp(32px, 9vw, 48px); }
+      .welcome-sub { font-size: 14px; }
+      .user-bubble { max-width: 92%; }
+      .bar { border-radius: 20px; padding: 6px; }
+      .icon-btn, .send-btn { width: 40px; height: 40px; }
+      .hint { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Vibrant Animated Background -->
+  <div class="bg" id="bg"><div class="bg-orb"></div></div>
+  
+  <div class="shell">
+    <aside class="sidebar" id="sidebarNode">
+      <div class="brand">
+        <div class="logo">TX</div>
+        <div><b>TruX AI</b><small>Intelligent workspace</small></div>
+      </div>
+      <div class="side-actions">
+        <button class="new-chat" onclick="startNewChat();closeSidebar()">＋ New Chat</button>
+        <button class="side-btn" onclick="openUpgradeModal()" title="Upgrade">⚡</button>
+        <button class="side-btn" id="sidebarInstallBtn" onclick="installPWA()" style="display:none" title="Install App">⇩</button>
+      </div>
+      <div class="history" id="historyList"></div>
+      <div class="profile" onclick="handleAuthAction()">
+        <img class="avatar" id="userAvatar" src="https://ui-avatars.com/api/?name=Guest+User&background=171421&color=fff">
+        <div class="profile-info">
+          <b id="userName">Guest User</b>
+          <small id="userEmail">Sign in required</small>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="status"><i></i>TRUX WORKSPACE</div>
+      </div>
+      
+      <button class="top-btn menu-btn" onclick="toggleSidebar(event)">☰</button>
+      <button class="top-btn settings-btn" onclick="openSettingsModal()">⚙</button>
+      <button class="top-btn mobile-new" onclick="startNewChat()">＋</button>
+      
+      <section class="welcome" id="welcomeScreen">
+        <div class="hero">
+          <div class="badge"><i></i>TRUX INTELLIGENCE ONLINE</div>
+          <h1 class="welcome-title">Welcome, I am <span>TruX</span></h1>
+          <p class="welcome-sub">Your intelligent AI workspace for coding, analysis, writing, vision, search, and creative work.</p>
+          <div class="chips">
+            <span class="chip">✦ Coding</span>
+            <span class="chip">✦ Analysis</span>
+            <span class="chip">✦ Writing</span>
+            <span class="chip">✦ Vision</span>
+          </div>
+        </div>
+      </section>
+
+      <div class="chat" id="chatContainer"></div>
+
+      <section class="composer">
+        <div class="compose">
+          <div class="modelbar">
+            <button class="mopt active" data-model="base" onclick="selectModel('base',event)">⚡ Core 4.0</button>
+            <button class="mopt" data-model="pro" id="proModelOption" onclick="selectModel('pro',event)">✨ Ultra 5.0 Preview</button>
+            <button class="mopt img" data-model="nano-banana" onclick="selectModel('nano-banana',event)">🍌 Image</button>
+          </div>
+          <div class="bar">
+            <div class="preview" id="imagePreviewContainer">
+              <img id="imagePreview">
+              <button onclick="removeImage()">×</button>
+            </div>
+            <button class="icon-btn" id="voiceBtn" onclick="toggleVoiceInput()" title="Voice input">🎙</button>
+            <input id="imageUpload" type="file" accept="image/*" hidden onchange="handleImageUpload(event)">
+            <button class="icon-btn" onclick="imageUpload.click()" title="Add image">＋</button>
+            <textarea id="promptInput" rows="1" placeholder="Ask TruX anything…" oninput="handleInputChange()"></textarea>
+            <button class="send-btn" id="actionBtn" onclick="handleActionButton()">
+              <svg id="btnIcon" viewBox="0 0 24 24" width="20" height="20">
+                <path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>
+              </svg>
+            </button>
+          </div>
+          <div class="hint">Enter to send · Shift + Enter for a new line</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modals -->
+  <div class="modal" id="profileModal">
+    <div class="card">
+      <button class="close" onclick="closeProfileModal()">×</button>
+      <img class="modal-avatar" id="modalAvatar">
+      <div class="center">
+        <div class="mtitle" id="modalName">User Name</div>
+        <div class="msub" id="modalEmail">user@email.com</div>
+      </div>
+      <button class="mbtn danger" onclick="confirmSignOut()">↪ Sign Out</button>
+    </div>
+  </div>
+
+  <div class="modal" id="settingsModal">
+    <div class="card">
+      <button class="close" onclick="closeSettingsModal()">×</button>
+      <div class="mtitle">Settings</div>
+      <div class="msub">Personalize your TruX workspace.</div>
+      
+      <div class="mrow">
+        <span>Ambient Glow</span>
+        <label class="toggle">
+          <input id="neonGlowToggle" type="checkbox" checked onchange="toggleAmbientGlow(this)">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="mrow">
+        <span>Auto Read Answers</span>
+        <label class="toggle">
+          <input id="autoReadToggle" type="checkbox">
+          <span class="slider"></span>
+        </label>
+      </div>
+      
+      <div class="sect">
+        <h4>Ultra Usage · 24h</h4>
+        <div class="usage"><i id="usageBarFill"></i></div>
+        <div class="utxt" id="usageText">0 / 2,000,000 Tokens</div>
+      </div>
+      
+      <div class="sect">
+        <h4>Instructions</h4>
+        <textarea id="customInstructions" class="instr" placeholder="How should TruX respond?"></textarea>
+        <button class="mbtn" onclick="saveCustomInstructions()">Save Instructions</button>
+      </div>
+      
+      <div class="sect">
+        <h4>System & Tools</h4>
+        <button class="mbtn" onclick="checkApiLatency()">📡 Check API Status</button>
+        <button class="mbtn" onclick="exportChatData()">⇩ Export Chat</button>
+        <button class="mbtn danger" onclick="resetAllSettings()">↺ Reset Settings</button>
+        <button class="mbtn danger" onclick="clearAllHistory()">🗑 Clear All Chats</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="lightbox" id="lightboxModal" onclick="closeLightbox()">
+    <img id="lightboxImg">
+  </div>
+
+  <div class="context" id="contextMenu">
+    <div class="del" id="contextMenuDeleteBtn">🗑 Delete Chat</div>
+  </div>
+
+  <script>
+    /* PWA */if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));let deferredPrompt=null;addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;let b=document.getElementById("sidebarInstallBtn");if(b)b.style.display="block"});async function installPWA(){if(!deferredPrompt)return;await deferredPrompt.prompt();deferredPrompt=null}
+
+    /* Firebase */let auth=null,provider=null;async function initFirebase(){const fallback={apiKey:"AIzaSyAs_GDrzlBaucHfiff0Y6cA8GVHjFTA62Q",authDomain:"trux-ai.firebaseapp.com",projectId:"trux-ai",storageBucket:"trux-ai.firebasestorage.app",messagingSenderId:"59313097411",appId:"1:59313097411:web:32e4158bfb733fa7cfb076"};try{const r=await fetch("/api/firebase-config",{cache:"no-store"});firebase.initializeApp(await r.json())}catch{firebase.initializeApp(fallback)}auth=firebase.auth();provider=new firebase.auth.GoogleAuthProvider();auth.onAuthStateChanged(u=>{userName.innerText=u?.displayName||"Guest User";userEmail.innerText=u?.email||"Sign in required";userAvatar.src=u?.photoURL||"https://ui-avatars.com/api/?name=Guest+User&background=171421&color=fff"})}initFirebase();
+
+    /* State */let currentModel="base",chatSessions=JSON.parse(localStorage.getItem("trux_chats"))||{},currentChatId=null,isGenerating=false,activeAbortController=null,selectedImageBase64=null,wasInputByVoice=false,contextMenuTargetId=null,codeBlockCounter=0,recognition=null,isRecording=false;
+
+    /* Model/usage */function selectModel(m,e){e?.stopPropagation();if(m==="pro"&&getProUsageData().tokensUsed>=2000000){alert("TruX Ultra 5.0 Preview limit reached for 24 hours.");return}currentModel=m;document.querySelectorAll(".mopt").forEach(x=>x.classList.toggle("active",x.dataset.model===m))}function getProUsageData(){let n=Date.now(),u=JSON.parse(localStorage.getItem("trux_pro_usage"))||{tokensUsed:0,resetTimestamp:n+86400000};if(n>u.resetTimestamp){u={tokensUsed:0,resetTimestamp:n+86400000};localStorage.setItem("trux_pro_usage",JSON.stringify(u))}return u}function updateProUsageUI(){let u=getProUsageData();usageBarFill.style.width=Math.min(100,u.tokensUsed/20000)+"%";usageText.innerText=`${u.tokensUsed.toLocaleString()} / 2,000,000 Tokens`;proModelOption.style.opacity=u.tokensUsed>=2000000?".45":"1";proModelOption.disabled=u.tokensUsed>=2000000;if(currentModel==="pro"&&u.tokensUsed>=2000000)selectModel("base")}function recordProTokens(n){let u=getProUsageData();u.tokensUsed=Math.min(2000000,u.tokensUsed+n);localStorage.setItem("trux_pro_usage",JSON.stringify(u));updateProUsageUI()}
+
+    /* Settings */function saveCustomInstructions(){localStorage.setItem("trux_custom_instructions",customInstructions.value.trim());alert("Instructions saved successfully!")}function loadCustomInstructions(){customInstructions.value=localStorage.getItem("trux_custom_instructions")||""}function toggleAmbientGlow(el){bg.style.display=el.checked?"block":"none";localStorage.setItem("trux_ambient_glow",el.checked?"true":"false")}function loadSettings(){neonGlowToggle.checked=localStorage.getItem("trux_ambient_glow")!=="false";toggleAmbientGlow(neonGlowToggle);autoReadToggle.checked=localStorage.getItem("trux_auto_read")==="true";loadCustomInstructions()}function exportChatData(){let a=document.createElement("a");a.href="data:application/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(chatSessions,null,2));a.download=`trux_chat_${Date.now()}.json`;document.body.appendChild(a);a.click();a.remove()}async function checkApiLatency(){let t=performance.now();try{let r=await fetch("/api/chat",{cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);alert(`TruX backend is reachable.\nResponse: ${Math.round(performance.now()-t)} ms`)}catch(e){alert("Backend check failed.\n"+e.message)}}function resetAllSettings(){if(!confirm("Reset all settings?"))return;["trux_custom_instructions","trux_auto_read","trux_ambient_glow"].forEach(k=>localStorage.removeItem(k));loadSettings();alert("Settings reset.")}function clearAllHistory(){if(!confirm("Delete all local chats?"))return;chatSessions={};localStorage.removeItem("trux_chats");startNewChat();closeSettingsModal()}function handleAuthAction(){if(!auth)return;if(!auth.currentUser)return auth.signInWithPopup(provider).catch(console.error);modalAvatar.src=auth.currentUser.photoURL||userAvatar.src;modalName.innerText=auth.currentUser.displayName||"Signed-in User";modalEmail.innerText=auth.currentUser.email||"";profileModal.style.display="flex"}function closeProfileModal(){profileModal.style.display="none"}function openSettingsModal(){updateProUsageUI();loadSettings();settingsModal.style.display="flex"}function closeSettingsModal(){settingsModal.style.display="none"}function openUpgradeModal(){alert("⚡ TruX Ultra 5.0 Preview\n\n• Advanced reasoning\n• Complex task support\n• Higher capability model")}function confirmSignOut(){auth?.signOut().then(closeProfileModal)}function openLightbox(s){lightboxImg.src=s;lightboxModal.style.display="flex"}function closeLightbox(){lightboxModal.style.display="none"}
+
+    /* Sidebar/chat */function toggleSidebar(e){e?.stopPropagation();let s=sidebarNode;if(innerWidth<=768)s.classList.toggle("open");else s.classList.toggle("collapsed")}function closeSidebar(){let s=sidebarNode;if(innerWidth<=768)s.classList.remove("open");else s.classList.add("collapsed")}function startNewChat(){activeAbortController?.abort();chatContainer.innerHTML="";chatContainer.style.display="none";welcomeScreen.style.display="flex";currentChatId=null;removeImage();renderSidebar()}function handleInputChange(){promptInput.style.height="auto";promptInput.style.height=Math.min(promptInput.scrollHeight,200)+"px"}function handleImageUpload(e){let f=e.target.files[0];if(!f||!f.type.startsWith("image/"))return;let r=new FileReader;r.onload=x=>{selectedImageBase64=x.target.result;imagePreview.src=x.target.result;imagePreviewContainer.style.display="block";handleInputChange()};r.readAsDataURL(f)}function removeImage(){selectedImageBase64=null;imageUpload.value="";imagePreviewContainer.style.display="none";handleInputChange()}
+
+    /* Voice */if("webkitSpeechRecognition"in window||"SpeechRecognition"in window){let SR=window.SpeechRecognition||window.webkitSpeechRecognition;recognition=new SR;recognition.continuous=false;recognition.interimResults=true;recognition.lang="en-US";recognition.onstart=()=>{isRecording=true;wasInputByVoice=true;voiceBtn.classList.add("recording")};recognition.onresult=e=>{let t="";for(let i=e.resultIndex;i<e.results.length;i++)t+=e.results[i][0].transcript;promptInput.value=t;handleInputChange()};recognition.onerror=stopVoiceInput;recognition.onend=stopVoiceInput}function toggleVoiceInput(){if(!recognition)return alert("Speech recognition is not supported in this browser. Try Chrome.");isRecording?recognition.stop():(wasInputByVoice=true,recognition.start())}function stopVoiceInput(){isRecording=false;voiceBtn.classList.remove("recording")}
+
+    /* Markdown/render */function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;")}function copyCodeToClipboard(b,id){let e=document.getElementById(id);if(e)navigator.clipboard.writeText(e.innerText).then(()=>{let x=b.innerText;b.innerText="Copied ✓";setTimeout(()=>b.innerText=x,1500)})}function renderFormattedText(t){if(!t)return"";let h=escapeHtml(t);h=h.replace(/!\[(.*?)\]\((data:image\/[^;]+;base64,[^\s)]+|https?:\/\/[^\s)]+)\)/g,(m,a,s)=>{if(!/^data:image\/|^https?:\/\//.test(s))return"";return`<div class="img-card"><img src="${s}" alt="${escapeHtml(a)}" onclick="openLightbox('${s.replace(/'/g,"%27")}')"><div class="img-actions"><a class="download" href="${s}" download="trux-generated-image.jpg">⇩ Download</a></div></div>`});h=h.replace(/```(?:[\w-]+)?\n?([\s\S]*?)```/g,(m,c)=>{let id=`code_${++codeBlockCounter}_${Date.now()}`;return`<div class="code"><div class="code-head"><span>Code</span><button onclick="copyCodeToClipboard(this,'${id}')">Copy</button></div><pre><code id="${id}">${c.trim()}</code></pre></div>`});return h.replace(/`([^`]+)`/g,'<span class="inline">$1</span>').replace(/\*\*(.*?)\*\*/g,"<b>$1</b>").replace(/\*(.*?)\*/g,"<i>$1</i>").replace(/\n/g,"<br>")}function speakText(t){if(!("speechSynthesis"in window))return;speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(t.replace(/```[\s\S]*?```/g,"Code block omitted.").replace(/\*\*(.*?)\*\*/g,"$1").replace(/\*(.*?)\*/g,"$1").replace(/`/g,"")))}
+
+    /* Response */function appendMessageRow(label,text,rc,bc){let r=document.createElement("div");r.className=`row ${rc}`;r.innerHTML=`<div class="label">${escapeHtml(label)}</div><div class="bubble ${bc}">${renderFormattedText(text)}</div>`;chatContainer.appendChild(r);chatContainer.scrollTop=chatContainer.scrollHeight}async function retryPrompt(p,r){r?.remove();promptInput.value=p;handleInputChange();sendPrompt()}function finalizeResponse(id,aid,text,prompt,voice){chatSessions[currentChatId].messages.push({role:"trux",text});localStorage.setItem("trux_chats",JSON.stringify(chatSessions));if(currentModel==="pro")recordProTokens(Math.ceil((prompt.length+text.length)/4));let b=document.getElementById(id);if(b){b.classList.remove("thinking");b.innerHTML=renderFormattedText(text)}let a=document.getElementById(aid);if(a){a.innerHTML="";let x=document.createElement("button");x.className="act";x.innerText="🔊 Read Aloud";x.onclick=()=>speakText(text);a.appendChild(x)}isGenerating=false;activeAbortController=null;btnIcon.innerHTML='<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';requestAnimationFrame(()=>chatContainer.scrollTop=chatContainer.scrollHeight);if(voice||autoReadToggle.checked)speakText(text)}
+
+    /* Main send */async function sendPrompt(){let prompt=promptInput.value.trim();if(!prompt&&!selectedImageBase64)return;if(currentModel==="pro"&&getProUsageData().tokensUsed>=2000000){alert("TruX Ultra 5.0 Preview limit reached for 24 hours. Switching to Core.");selectModel("base")}isGenerating=true;btnIcon.innerHTML='<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>';let voice=wasInputByVoice;wasInputByVoice=false;if(!currentChatId){currentChatId="chat_"+Date.now();chatSessions[currentChatId]={title:prompt?prompt.slice(0,32):"Image Query",messages:[]}}chatSessions[currentChatId].messages.push({role:"user",text:prompt});localStorage.setItem("trux_chats",JSON.stringify(chatSessions));welcomeScreen.style.display="none";chatContainer.style.display="block";appendMessageRow("You",prompt+(selectedImageBase64?"\n[Image Attached]":""),"user-row","user-bubble");promptInput.value="";let img=selectedImageBase64;removeImage();let id="b_"+Date.now(),aid="a_"+Date.now(),sid="s_"+Date.now(),row=document.createElement("div");row.className="row trux-row";row.innerHTML=`<div class="label">TruX AI</div><div class="bubble trux-bubble thinking" id="${id}"><div class="dots"><i></i><i></i><i></i><span class="status-msg" id="${sid}">${currentModel==="nano-banana"?"Generating image…":"Thinking…"}</span></div></div><div class="actions" id="${aid}"></div>`;chatContainer.appendChild(row);chatContainer.scrollTop=chatContainer.scrollHeight;let phrases=currentModel==="nano-banana"?["Generating image…","Rendering details…","Finalizing image…"]:["Thinking…","Processing…","Analyzing context…","Preparing response…"],pi=0,timer=setInterval(()=>{let e=document.getElementById(sid);if(e)e.innerText=phrases[pi=(pi+1)%phrases.length]},1800);activeAbortController=new AbortController();try{let res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json","Accept":"text/event-stream"},signal:activeAbortController.signal,body:JSON.stringify({message:prompt,tier:currentModel,history:chatSessions[currentChatId].messages.slice(0,-1).slice(-6),image:img,systemInstruction:localStorage.getItem("trux_custom_instructions")||"",userId:auth?.currentUser?.uid||null})});if(!res.ok){let q=`Backend error (${res.status})`;try{let j=await res.json();q=j.error||j.reply||q}catch{}throw Error(q)}if(currentModel==="nano-banana"){clearInterval(timer);let j=await res.json();return finalizeResponse(id,aid,j.reply||j.error||"No image response.",prompt,voice)}if(!res.body)throw Error("Streaming body unavailable.");let rd=res.body.getReader(),dec=new TextDecoder(),buf="",full="",fin=null;function ev(raw){if(!raw)return;let j;try{j=JSON.parse(raw)}catch{return}if(j.type==="chunk")full+=j.text||"";else if(j.type==="final")fin=j.text||"";else if(j.type==="status"){let e=document.getElementById(sid);if(e)e.innerText=j.status||"Processing…"}else if(j.type==="error")throw Error(j.error||"Streaming error.")}while(1){let{value,done}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});let es=buf.split(/\r?\n\r?\n/);buf=es.pop()||"";for(let x of es){let ls=x.split(/\r?\n/).filter(l=>l.startsWith("data:"));if(ls.length)ev(ls.map(l=>l.slice(5).trimStart()).join("\n"))}}let text=(fin!==null?fin:full).trim();if(!text)throw Error("No response received.");clearInterval(timer);finalizeResponse(id,aid,text,prompt,voice)}catch(e){clearInterval(timer);let b=document.getElementById(id);if(b){b.classList.remove("thinking");b.innerHTML=e.name==="AbortError"?"Generation stopped.":"Error: "+escapeHtml(e.message||"Unable to connect.")}if(e.name!=="AbortError"){let a=document.getElementById(aid);if(a){let x=document.createElement("button");x.className="retry";x.innerText="↻ Retry";x.onclick=()=>retryPrompt(prompt,row);a.appendChild(x)}}isGenerating=false;activeAbortController=null;btnIcon.innerHTML='<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>'}}
+    function handleActionButton(){if(isGenerating){activeAbortController?.abort();isGenerating=false;btnIcon.innerHTML='<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';return}sendPrompt()}
+
+    /* History */function renderSidebar(){historyList.innerHTML="";let ids=Object.keys(chatSessions).reverse();if(!ids.length){historyList.innerHTML='<div class="history-head">Workspace</div><div class="empty">Your chats will appear here.<br>Start a new chat to begin.</div>';return}historyList.innerHTML='<div class="history-head">Recent chats</div>';ids.forEach(id=>{let x=document.createElement("div");x.className="hist"+(id===currentChatId?" active":"");x.innerText=chatSessions[id].title;x.onclick=()=>loadChatSession(id);x.oncontextmenu=e=>{e.preventDefault();contextMenuTargetId=id;contextMenu.style.display="block";contextMenu.style.left=Math.min(e.clientX,innerWidth-160)+"px";contextMenu.style.top=Math.min(e.clientY,innerHeight-48)+"px"};historyList.appendChild(x)})}function loadChatSession(id){if(!chatSessions[id])return;activeAbortController?.abort();currentChatId=id;welcomeScreen.style.display="none";chatContainer.style.display="block";chatContainer.innerHTML="";chatSessions[id].messages.forEach(m=>appendMessageRow(m.role==="user"?"You":"TruX AI",m.text,m.role==="user"?"user-row":"trux-row",m.role==="user"?"user-bubble":"trux-bubble"));renderSidebar();if(innerWidth<=768)closeSidebar()}function deleteChat(id){if(confirm("Are you sure you want to delete this chat?")){delete chatSessions[id];localStorage.setItem("trux_chats",JSON.stringify(chatSessions));if(currentChatId===id)startNewChat();else renderSidebar()}}contextMenuDeleteBtn.onclick=()=>{if(contextMenuTargetId){deleteChat(contextMenuTargetId);contextMenuTargetId=null;contextMenu.style.display="none"}};addEventListener("click",e=>{if(!contextMenu.contains(e.target))contextMenu.style.display="none"});
+
+    /* Keyboard/settings */promptInput.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();handleActionButton()}});autoReadToggle.checked=localStorage.getItem("trux_auto_read")==="true";autoReadToggle.onchange=()=>localStorage.setItem("trux_auto_read",autoReadToggle.checked?"true":"false");profileModal.addEventListener("click",e=>{if(e.target===profileModal)closeProfileModal()});settingsModal.addEventListener("click",e=>{if(e.target===settingsModal)closeSettingsModal()});addEventListener("keydown",e=>{if(e.key==="Escape"){closeProfileModal();closeSettingsModal();contextMenu.style.display="none";if(innerWidth<=768)closeSidebar()}});
+
+    /* Init */loadSettings();renderSidebar();updateProUsageUI();handleInputChange();
+  </script>
+</body>
+</html>
