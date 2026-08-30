@@ -38,7 +38,6 @@
       --accent-2: #818cf8;
       --accent-3: #c084fc;
       --accent-4: #f43f5e;
-      --user-grad: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(168, 85, 247, 0.9));
       --metallic-grad: linear-gradient(110deg, #94a3b8 0%, #ffffff 20%, #cbd5e1 40%, #ffffff 60%, #64748b 80%, #94a3b8 100%);
       --max-width: 880px;
     }
@@ -92,6 +91,26 @@
     @keyframes float {
       0% { transform: translate(0, 0) scale(1); }
       100% { transform: translate(8vw, -8vh) scale(1.15); }
+    }
+
+    /* --- COLORFUL HOME GRADIENT --- */
+    .colorful-bg {
+      position: fixed; inset: 0; z-index: -5;
+      background: linear-gradient(120deg, #ff007a, #7000ff, #00d4ff, #ff007a);
+      background-size: 300% 300%;
+      animation: gradientShift 10s ease infinite;
+      opacity: 0;
+      transition: opacity 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+      pointer-events: none;
+    }
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    /* Only visible when home-active class is on body */
+    body.home-active .colorful-bg {
+      opacity: 0.35;
     }
 
     /* --- APP SHELL & SIDEBAR --- */
@@ -206,6 +225,7 @@
       background: #10b981; box-shadow: 0 0 10px #10b981; margin-right: 8px;
     }
     
+    /* Fixed Z-Index here so buttons are clickable on the home screen */
     .top-btn {
       position: absolute; top: 12px;
       width: 40px; height: 40px; border-radius: 12px;
@@ -213,6 +233,7 @@
       color: #fff; display: grid; place-items: center; cursor: pointer;
       backdrop-filter: blur(16px); pointer-events: auto; transition: all 0.2s;
       box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      z-index: 100; 
     }
     .top-btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); }
     .menu-btn { left: 16px; }
@@ -278,15 +299,20 @@
       font-size: 15px; line-height: 1.7; overflow-wrap: anywhere;
       user-select: text !important; -webkit-user-select: text !important;
     }
+
+    /* Fixed User Bubble Styling */
     .user-bubble {
       max-width: 85%; align-self: flex-end;
       padding: 16px 22px;
-      background: var(--user-grad); color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
       border-radius: 22px 22px 4px 22px;
-      box-shadow: 0 10px 30px rgba(124, 58, 237, 0.25);
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       font-weight: 500;
     }
+
     .trux-bubble {
       padding: 22px 26px;
       background: rgba(14, 12, 24, 0.7);
@@ -298,27 +324,25 @@
     .trux-bubble b { color: #fff; font-weight: 700; }
     .trux-bubble code { background: rgba(255,255,255,0.1); padding: 2px 7px; border-radius: 6px; font-family: 'Fira Code', monospace; font-size: 0.9em; color: var(--accent-1); }
     
-    /* METALLIC SHINE THINKING BAR */
+    /* Fixed Thinking Bar */
+    .thinking {
+      display: inline-flex !important; width: max-content !important;
+      align-items: center; gap: 14px;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      backdrop-filter: none !important; 
+      -webkit-backdrop-filter: none !important;
+      padding: 0 !important;
+    }
+    
     @keyframes metallicShimmer {
       0% { background-position: -200% 0; }
       100% { background-position: 200% 0; }
     }
     
-    .thinking {
-      display: inline-flex !important; width: max-content !important;
-      align-items: center; gap: 14px;
-      background: rgba(255, 255, 255, 0.03) !important;
-      border-color: rgba(255, 255, 255, 0.12) !important;
-    }
-    .thinking::before {
-      content: ""; display: block; width: 20px; height: 20px;
-      border: 2px solid rgba(255,255,255,0.15); border-top-color: var(--accent-1);
-      border-radius: 50%; animation: spin 0.9s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    
     .status-msg {
-      font-size: 13px; font-weight: 700; letter-spacing: 0.05em;
+      font-size: 14px; font-weight: 700; letter-spacing: 0.05em;
       background: var(--metallic-grad);
       background-size: 200% auto;
       color: transparent;
@@ -504,9 +528,10 @@
     }
   </style>
 </head>
-<body>
-  <!-- Ambient Animated Background -->
+<body class="home-active">
+  <!-- Ambient Animated Backgrounds -->
   <div class="bg" id="bg"><div class="bg-orb"></div></div>
+  <div class="colorful-bg"></div>
   
   <!-- Backdrop Overlay for Mobile Sidebar -->
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
@@ -851,6 +876,7 @@
 
     /* Chat Initialization & Controls */
     function startNewChat() {
+      document.body.classList.add("home-active");
       activeAbortController?.abort();
       getEl("chatContainer").innerHTML = "";
       getEl("chatContainer").style.display = "none";
@@ -1008,6 +1034,8 @@
         selectModel("base");
       }
       
+      document.body.classList.remove("home-active");
+      
       isGenerating = true;
       getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>';
       let voice = wasInputByVoice;
@@ -1161,6 +1189,7 @@
 
     function loadChatSession(id) {
       if(!chatSessions[id]) return;
+      document.body.classList.remove("home-active");
       activeAbortController?.abort();
       currentChatId = id;
       getEl("welcomeScreen").style.display = "none";
@@ -1220,6 +1249,7 @@
     });
 
     /* App Init */
+    document.body.classList.add("home-active");
     loadSettings();
     renderSidebar();
     updateProUsageUI();
