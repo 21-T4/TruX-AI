@@ -25,7 +25,6 @@ const searchWebDeclaration = {
   }
 };
 
-
 const generateImageDeclaration = {
   name: 'generateImage',
   description:
@@ -72,10 +71,7 @@ function base64UrlEncode(data) {
     binary += String.fromCharCode(
       ...bytes.subarray(
         i,
-        Math.min(
-          i + chunkSize,
-          bytes.length
-        )
+        Math.min(i + chunkSize, bytes.length)
       )
     );
   }
@@ -102,8 +98,9 @@ function pemToArrayBuffer(pem) {
 
   const binary = atob(cleanPem);
 
-  const bytes =
-    new Uint8Array(binary.length);
+  const bytes = new Uint8Array(
+    binary.length
+  );
 
   for (
     let i = 0;
@@ -192,14 +189,16 @@ async function createGoogleAccessToken(env) {
 
 
   /*
-   * Cloudflare secrets copied from the
-   * Google JSON file commonly contain literal
-   * "\\n". Convert them into real newlines.
+   * Google service-account JSON keys
+   * commonly contain literal \\n characters.
+   * Convert them to real newlines.
    */
 
   const privateKey =
-    env.GCP_PRIVATE_KEY
-      .replace(/\\n/g, '\n');
+    env.GCP_PRIVATE_KEY.replace(
+      /\\n/g,
+      '\n'
+    );
 
 
   const cryptoKey =
@@ -459,12 +458,6 @@ async function fetchVertexGemini({
   }
 
 
-  /*
-   * IMPORTANT:
-   * Gemini 3.6 Flash is available on the
-   * global endpoint.
-   */
-
   const url =
     `https://aiplatform.googleapis.com/v1/` +
     `projects/${projectId}/locations/${LOCATION}/` +
@@ -643,7 +636,7 @@ async function generateImageWithVertex({
 
 
 /* =========================================================
-   CLOUDFLARE PAGES POST HANDLER
+   MAIN CLOUDFLARE PAGES FUNCTION
    ========================================================= */
 
 export async function onRequestPost(
@@ -672,29 +665,26 @@ export async function onRequestPost(
     } = body;
 
 
-    /* =====================================================
-       REQUIRE SIGN-IN
-       ===================================================== */
-
-    if (!userId) {
-
-      return Response.json(
-        {
-          requiresAuth: true,
-
-          reply:
-            'Please sign in to TruX before sending a message.'
-        },
-
-        {
-          status: 401
-        }
-      );
-    }
-
+    /*
+     * NO SIGN-IN CHECK HERE.
+     *
+     * The frontend can handle authentication later.
+     *
+     * If userId exists, it is used for the
+     * per-user image limit.
+     *
+     * Otherwise the request IP is used.
+     */
 
     const userIdentifier =
-      String(userId);
+      userId
+        ? String(userId)
+        : (
+            request.headers.get(
+              'cf-connecting-ip'
+            ) ||
+            'anonymous'
+          );
 
 
     if (
@@ -752,11 +742,13 @@ export async function onRequestPost(
       } catch (limitError) {
 
         return Response.json({
+
           imageLimitReached:
             true,
 
           reply:
             limitError.message
+
         });
       }
 
@@ -765,6 +757,7 @@ export async function onRequestPost(
 
         const result =
           await generateImageWithVertex({
+
             prompt:
               message ||
               'Abstract technological artwork',
@@ -772,18 +765,22 @@ export async function onRequestPost(
             accessToken,
 
             projectId
+
           });
 
 
         /*
-         * Only count successful
-         * image generation.
+         * Count only successful generations.
          */
 
         await recordSuccessfulImage(
+
           userIdentifier,
+
           previousCount,
+
           env
+
         );
 
 
@@ -820,6 +817,7 @@ export async function onRequestPost(
       } catch (imageError) {
 
         return Response.json(
+
           {
             reply:
               `Failed to generate image: ${imageError.message}`,
@@ -831,6 +829,7 @@ export async function onRequestPost(
           {
             status: 500
           }
+
         );
       }
     }
@@ -1033,6 +1032,7 @@ export async function onRequestPost(
         accessToken,
 
         projectId
+
       });
 
 
@@ -1103,6 +1103,7 @@ export async function onRequestPost(
           parts: [
 
             {
+
               functionResponse: {
 
                 name:
@@ -1116,6 +1117,7 @@ export async function onRequestPost(
                 }
 
               }
+
             }
 
           ]
@@ -1248,13 +1250,14 @@ export async function onRequestPost(
               false
 
           });
+
         }
       }
     }
 
 
     /* =====================================================
-       FINAL TEXT RESPONSE
+       FINAL RESPONSE
        ===================================================== */
 
     const finalParts =
