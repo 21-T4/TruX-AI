@@ -1,44 +1,44 @@
-Const LOCATION = 'global';
+const LOCATION = 'global';
 
-Const BASE_PERSONA = `Never use latex for code generation. You can use unicode symbols and standard text. Your name is TruX, an AI created by TruX-Technologies (dont disclose ur name or creator till asked). Keep answers concise, precise, and informative.`;
+const BASE_PERSONA = `Never use latex for code generation. You can use unicode symbols and standard text. Your name is TruX, an AI created by TruX-Technologies (dont disclose ur name or creator till asked). Keep answers concise, precise, and informative.`;
 
-Const IMAGE_LIMIT = 5;
+const IMAGE_LIMIT = 5;
 
 
 /* =========================================================
    TOOL DECLARATIONS
    ========================================================= */
 
-Const searchWebDeclaration = {
-  Name: 'searchWeb',
-  Description:
+const searchWebDeclaration = {
+  name: 'searchWeb',
+  description:
     'Search live web via Serper. ONLY call if real-time/current data outside training is explicitly requested.',
-  Parameters: {
-    Type: 'OBJECT',
-    Properties: {
-      Query: {
-        Type: 'STRING',
-        Description: 'Search keywords.'
+  parameters: {
+    type: 'OBJECT',
+    properties: {
+      query: {
+        type: 'STRING',
+        description: 'Search keywords.'
       }
     },
-    Required: ['query']
+    required: ['query']
   }
 };
 
-Const generateImageDeclaration = {
-  Name: 'generateImage',
-  Description:
+const generateImageDeclaration = {
+  name: 'generateImage',
+  description:
     'Generate an image using Gemini image generation. Call when the user explicitly asks to generate or draw an image.',
-  Parameters: {
-    Type: 'OBJECT',
-    Properties: {
-      Prompt: {
-        Type: 'STRING',
-        Description:
+  parameters: {
+    type: 'OBJECT',
+    properties: {
+      prompt: {
+        type: 'STRING',
+        description:
           'Detailed prompt describing the image to generate.'
       }
     },
-    Required: ['prompt']
+    required: ['prompt']
   }
 };
 
@@ -47,44 +47,44 @@ Const generateImageDeclaration = {
    GOOGLE SERVICE ACCOUNT AUTHENTICATION
    ========================================================= */
 
-Let cachedAccessToken = null;
-Let cachedTokenExpiry = 0;
+let cachedAccessToken = null;
+let cachedTokenExpiry = 0;
 
 
-Function base64UrlEncode(data) {
-  Let bytes;
+function base64UrlEncode(data) {
+  let bytes;
 
-  If (typeof data === 'string') {
-    Bytes = new TextEncoder().encode(data);
+  if (typeof data === 'string') {
+    bytes = new TextEncoder().encode(data);
   } else {
-    Bytes = new Uint8Array(data);
+    bytes = new Uint8Array(data);
   }
 
-  Let binary = '';
-  Const chunkSize = 0x8000;
+  let binary = '';
+  const chunkSize = 0x8000;
 
-  For (
-    Let i = 0;
-    I < bytes.length;
-    I += chunkSize
+  for (
+    let i = 0;
+    i < bytes.length;
+    i += chunkSize
   ) {
-    Binary += String.fromCharCode(
+    binary += String.fromCharCode(
       ...bytes.subarray(
-        I,
+        i,
         Math.min(i + chunkSize, bytes.length)
       )
     );
   }
 
-  Return btoa(binary)
+  return btoa(binary)
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=+$/g, '');
 }
 
 
-Function pemToArrayBuffer(pem) {
-  Const cleanPem = pem
+function pemToArrayBuffer(pem) {
+  const cleanPem = pem
     .replace(/\\n/g, '\n')
     .replace(
       /-----BEGIN PRIVATE KEY-----/g,
@@ -96,180 +96,180 @@ Function pemToArrayBuffer(pem) {
     )
     .replace(/\s/g, '');
 
-  Const binary = atob(cleanPem);
+  const binary = atob(cleanPem);
 
-  Const bytes = new Uint8Array(
-    Binary.length
+  const bytes = new Uint8Array(
+    binary.length
   );
 
-  For (
-    Let i = 0;
-    I < binary.length;
-    I++
+  for (
+    let i = 0;
+    i < binary.length;
+    i++
   ) {
-    Bytes[i] =
-      Binary.charCodeAt(i);
+    bytes[i] =
+      binary.charCodeAt(i);
   }
 
-  Return bytes.buffer;
+  return bytes.buffer;
 }
 
 
-Async function createGoogleAccessToken(env) {
+async function createGoogleAccessToken(env) {
 
-  If (
-    CachedAccessToken &&
+  if (
+    cachedAccessToken &&
     Date.now() <
-      CachedTokenExpiry - 60000
+      cachedTokenExpiry - 60000
   ) {
-    Return cachedAccessToken;
+    return cachedAccessToken;
   }
 
-  If (!env.GCP_PROJECT_ID) {
-    Throw new Error(
+  if (!env.GCP_PROJECT_ID) {
+    throw new Error(
       'GCP_PROJECT_ID secret is missing.'
     );
   }
 
-  If (!env.GCP_CLIENT_EMAIL) {
-    Throw new Error(
+  if (!env.GCP_CLIENT_EMAIL) {
+    throw new Error(
       'GCP_CLIENT_EMAIL secret is missing.'
     );
   }
 
-  If (!env.GCP_PRIVATE_KEY) {
-    Throw new Error(
+  if (!env.GCP_PRIVATE_KEY) {
+    throw new Error(
       'GCP_PRIVATE_KEY secret is missing.'
     );
   }
 
-  Const now =
+  const now =
     Math.floor(Date.now() / 1000);
 
-  Const header = {
-    Alg: 'RS256',
-    Typ: 'JWT'
+  const header = {
+    alg: 'RS256',
+    typ: 'JWT'
   };
 
-  Const claims = {
-    Iss: env.GCP_CLIENT_EMAIL,
+  const claims = {
+    iss: env.GCP_CLIENT_EMAIL,
 
-    Scope:
+    scope:
       'https://www.googleapis.com/auth/cloud-platform',
 
-    Aud:
+    aud:
       'https://oauth2.googleapis.com/token',
 
-    Iat: now,
+    iat: now,
 
-    Exp: now + 3600
+    exp: now + 3600
   };
 
-  Const encodedHeader =
-    Base64UrlEncode(
+  const encodedHeader =
+    base64UrlEncode(
       JSON.stringify(header)
     );
 
-  Const encodedClaims =
-    Base64UrlEncode(
+  const encodedClaims =
+    base64UrlEncode(
       JSON.stringify(claims)
     );
 
-  Const unsignedJwt =
+  const unsignedJwt =
     `${encodedHeader}.${encodedClaims}`;
 
-  Const privateKey =
-    Env.GCP_PRIVATE_KEY.replace(
+  const privateKey =
+    env.GCP_PRIVATE_KEY.replace(
       /\\n/g,
       '\n'
     );
 
-  Const cryptoKey =
-    Await crypto.subtle.importKey(
+  const cryptoKey =
+    await crypto.subtle.importKey(
       'pkcs8',
 
-      Await pemToArrayBuffer(
-        PrivateKey
+      await pemToArrayBuffer(
+        privateKey
       ),
 
       {
-        Name:
+        name:
           'RSASSA-PKCS1-v1_5',
 
-        Hash:
+        hash:
           'SHA-256'
       },
 
-      False,
+      false,
 
       ['sign']
     );
 
-  Const signature =
-    Await crypto.subtle.sign(
+  const signature =
+    await crypto.subtle.sign(
       'RSASSA-PKCS1-v1_5',
 
-      CryptoKey,
+      cryptoKey,
 
-      New TextEncoder().encode(
-        UnsignedJwt
+      new TextEncoder().encode(
+        unsignedJwt
       )
     );
 
-  Const signedJwt =
+  const signedJwt =
     `${unsignedJwt}.${base64UrlEncode(signature)}`;
 
-  Const tokenResponse =
-    Await fetch(
+  const tokenResponse =
+    await fetch(
       'https://oauth2.googleapis.com/token',
       {
-        Method: 'POST',
+        method: 'POST',
 
-        Headers: {
+        headers: {
           'Content-Type':
             'application/x-www-form-urlencoded'
         },
 
-        Body:
-          New URLSearchParams({
-            Grant_type:
+        body:
+          new URLSearchParams({
+            grant_type:
               'urn:ietf:params:oauth:grant-type:jwt-bearer',
 
-            Assertion:
-              SignedJwt
+            assertion:
+              signedJwt
           }).toString()
       }
     );
 
-  If (!tokenResponse.ok) {
-    Const errorText =
-      Await tokenResponse.text();
+  if (!tokenResponse.ok) {
+    const errorText =
+      await tokenResponse.text();
 
-    Throw new Error(
+    throw new Error(
       `Google authentication failed: ${errorText}`
     );
   }
 
-  Const tokenData =
-    Await tokenResponse.json();
+  const tokenData =
+    await tokenResponse.json();
 
-  If (!tokenData.access_token) {
-    Throw new Error(
+  if (!tokenData.access_token) {
+    throw new Error(
       'Google authentication returned no access token.'
     );
   }
 
-  CachedAccessToken =
-    TokenData.access_token;
+  cachedAccessToken =
+    tokenData.access_token;
 
-  CachedTokenExpiry =
+  cachedTokenExpiry =
     Date.now() +
     (
       (tokenData.expires_in || 3600) *
       1000
     );
 
-  Return cachedAccessToken;
+  return cachedAccessToken;
 }
 
 
@@ -277,63 +277,61 @@ Async function createGoogleAccessToken(env) {
    IMAGE LIMIT
    ========================================================= */
 
-Async function getImageCount(
-  UserIdentifier,
-  Env
+async function getImageCount(
+  userIdentifier,
+  env
 ) {
 
-  If (!env.IMAGE_LIMIT_KV) {
-    Return 0;
+  if (!env.IMAGE_LIMIT_KV) {
+    throw new Error(
+      'IMAGE_LIMIT_KV binding is missing.'
+    );
   }
 
-  Const key =
+  const key =
     `img_limit_${userIdentifier}`;
 
-  Const value =
-    Await env.IMAGE_LIMIT_KV.get(key);
+  const value =
+    await env.IMAGE_LIMIT_KV.get(key);
 
-  Return value
-    ? ParseInt(value, 10) || 0
+  return value
+    ? parseInt(value, 10) || 0
     : 0;
 }
 
 
-Async function checkImageLimit(
-  UserIdentifier,
-  Env
+async function checkImageLimit(
+  userIdentifier,
+  env
 ) {
 
-  Const count =
-    Await getImageCount(
-      UserIdentifier,
-      Env
+  const count =
+    await getImageCount(
+      userIdentifier,
+      env
     );
 
-  If (count >= IMAGE_LIMIT) {
-    Throw new Error(
+  if (count >= IMAGE_LIMIT) {
+    throw new Error(
       `Image generation limit reached. You can generate up to ${IMAGE_LIMIT} images per user.`
     );
   }
 
-  Return count;
+  return count;
 }
 
 
-Async function recordSuccessfulImage(
-  UserIdentifier,
-  PreviousCount,
-  Env
+async function recordSuccessfulImage(
+  userIdentifier,
+  previousCount,
+  env
 ) {
 
-  If (!env.IMAGE_LIMIT_KV) {
-    Return;
-  }
-
-  Const key =
+  const key =
     `img_limit_${userIdentifier}`;
 
-  Await env.IMAGE_LIMIT_KV.put(
-    Key,
+  await env.IMAGE_LIMIT_KV.put(
+    key,
     String(previousCount + 1)
   );
 }
@@ -343,59 +341,59 @@ Async function recordSuccessfulImage(
    SERPER SEARCH
    ========================================================= */
 
-Async function fetchSerperSearchResults(
-  Query,
-  ApiKey
+async function fetchSerperSearchResults(
+  query,
+  apiKey
 ) {
 
-  If (!apiKey) {
-    Return 'Search failed: API key missing.';
+  if (!apiKey) {
+    return 'Search failed: API key missing.';
   }
 
-  Try {
+  try {
 
-    Const response =
-      Await fetch(
+    const response =
+      await fetch(
         'https://google.serper.dev/search',
         {
-          Method: 'POST',
+          method: 'POST',
 
-          Headers: {
+          headers: {
             'X-API-KEY': apiKey,
 
             'Content-Type':
               'application/json'
           },
 
-          Body:
+          body:
             JSON.stringify({
-              Q: query
+              q: query
             })
         }
       );
 
-    If (!response.ok) {
-      Return 'No results.';
+    if (!response.ok) {
+      return 'No results.';
     }
 
-    Const data =
-      Await response.json();
+    const data =
+      await response.json();
 
-    If (!data.organic?.length) {
-      Return 'No search results found.';
+    if (!data.organic?.length) {
+      return 'No search results found.';
     }
 
-    Return data.organic
+    return data.organic
       .slice(0, 3)
       .map(
-        Item =>
+        item =>
           `Title: ${item.title}\nSnippet: ${item.snippet}`
       )
       .join('\n\n');
 
   } catch {
 
-    Return 'Search error.';
+    return 'Search error.';
   }
 }
 
@@ -404,60 +402,60 @@ Async function fetchSerperSearchResults(
    STANDARD VERTEX REQUEST
    ========================================================= */
 
-Async function fetchVertexGemini({
-  Model,
-  Contents,
-  SystemInstruction,
-  Tools,
-  AccessToken,
-  ProjectId,
-  GenerationConfig
+async function fetchVertexGemini({
+  model,
+  contents,
+  systemInstruction,
+  tools,
+  accessToken,
+  projectId,
+  generationConfig
 }) {
 
-  If (!accessToken) {
-    Throw new Error(
+  if (!accessToken) {
+    throw new Error(
       'Google access token missing.'
     );
   }
 
-  Const url =
+  const url =
     `https://aiplatform.googleapis.com/v1/` +
     `projects/${projectId}/locations/${LOCATION}/` +
     `publishers/google/models/${model}:generateContent`;
 
-  Const payload = {
-    Contents
+  const payload = {
+    contents
   };
 
-  If (systemInstruction) {
+  if (systemInstruction) {
 
-    Payload.systemInstruction = {
-      Parts: [
+    payload.systemInstruction = {
+      parts: [
         {
-          Text:
-            SystemInstruction
+          text:
+            systemInstruction
         }
       ]
     };
   }
 
-  If (tools?.length) {
-    Payload.tools =
-      Tools;
+  if (tools?.length) {
+    payload.tools =
+      tools;
   }
 
-  If (generationConfig) {
-    Payload.generationConfig =
-      GenerationConfig;
+  if (generationConfig) {
+    payload.generationConfig =
+      generationConfig;
   }
 
-  Const response =
-    Await fetch(
-      Url,
+  const response =
+    await fetch(
+      url,
       {
-        Method: 'POST',
+        method: 'POST',
 
-        Headers: {
+        headers: {
           'Content-Type':
             'application/json',
 
@@ -465,22 +463,22 @@ Async function fetchVertexGemini({
             `Bearer ${accessToken}`
         },
 
-        Body:
+        body:
           JSON.stringify(payload)
       }
     );
 
-  If (!response.ok) {
+  if (!response.ok) {
 
-    Const errorText =
-      Await response.text();
+    const errorText =
+      await response.text();
 
-    Throw new Error(
+    throw new Error(
       `Vertex AI ${model} Error: ${errorText}`
     );
   }
 
-  Return await response.json();
+  return await response.json();
 }
 
 
@@ -488,50 +486,50 @@ Async function fetchVertexGemini({
    VERTEX STREAMING REQUEST
    ========================================================= */
 
-Async function streamVertexGemini({
-  Model,
-  Contents,
-  SystemInstruction,
-  Tools,
-  AccessToken,
-  ProjectId,
-  OnText,
-  OnStatus
+async function streamVertexGemini({
+  model,
+  contents,
+  systemInstruction,
+  tools,
+  accessToken,
+  projectId,
+  onText,
+  onStatus
 }) {
 
-  Const url =
+  const url =
     `https://aiplatform.googleapis.com/v1/` +
     `projects/${projectId}/locations/${LOCATION}/` +
     `publishers/google/models/${model}:streamGenerateContent?alt=sse`;
 
-  Const payload = {
-    Contents
+  const payload = {
+    contents
   };
 
-  If (systemInstruction) {
+  if (systemInstruction) {
 
-    Payload.systemInstruction = {
-      Parts: [
+    payload.systemInstruction = {
+      parts: [
         {
-          Text:
-            SystemInstruction
+          text:
+            systemInstruction
         }
       ]
     };
   }
 
-  If (tools?.length) {
-    Payload.tools =
-      Tools;
+  if (tools?.length) {
+    payload.tools =
+      tools;
   }
 
-  Const response =
-    Await fetch(
-      Url,
+  const response =
+    await fetch(
+      url,
       {
-        Method: 'POST',
+        method: 'POST',
 
-        Headers: {
+        headers: {
           'Content-Type':
             'application/json',
 
@@ -542,185 +540,185 @@ Async function streamVertexGemini({
             'text/event-stream'
         },
 
-        Body:
+        body:
           JSON.stringify(payload)
       }
     );
 
-  If (!response.ok) {
+  if (!response.ok) {
 
-    Const errorText =
-      Await response.text();
+    const errorText =
+      await response.text();
 
-    Throw new Error(
+    throw new Error(
       `Vertex AI ${model} Stream Error: ${errorText}`
     );
   }
 
-  If (!response.body) {
-    Throw new Error(
+  if (!response.body) {
+    throw new Error(
       'Vertex AI returned an empty streaming body.'
     );
   }
 
-  Const reader =
-    Response.body.getReader();
+  const reader =
+    response.body.getReader();
 
-  Const decoder =
-    New TextDecoder();
+  const decoder =
+    new TextDecoder();
 
-  Let buffer = '';
+  let buffer = '';
 
-  Let functionCall = null;
+  let functionCall = null;
 
-  Let accumulatedText = '';
+  let accumulatedText = '';
 
-  Async function processSseData(rawData) {
+  async function processSseData(rawData) {
 
-    If (!rawData) {
-      Return;
+    if (!rawData) {
+      return;
     }
 
-    Let parsed;
+    let parsed;
 
-    Try {
-      Parsed =
+    try {
+      parsed =
         JSON.parse(rawData);
     } catch {
-      Return;
+      return;
     }
 
-    Const parts =
-      Parsed
+    const parts =
+      parsed
         ?.candidates?.[0]
         ?.content
         ?.parts || [];
 
-    For (const part of parts) {
+    for (const part of parts) {
 
-      If (typeof part.text === 'string') {
+      if (typeof part.text === 'string') {
 
-        AccumulatedText +=
-          Part.text;
+        accumulatedText +=
+          part.text;
 
-        If (onText) {
-          Await onText(
-            Part.text
+        if (onText) {
+          await onText(
+            part.text
           );
         }
       }
 
-      If (part.functionCall) {
+      if (part.functionCall) {
 
-        FunctionCall =
-          Part.functionCall;
+        functionCall =
+          part.functionCall;
       }
     }
   }
 
-  While (true) {
+  while (true) {
 
-    Const {
-      Value,
-      Done
+    const {
+      value,
+      done
     } = await reader.read();
 
-    If (done) {
-      Break;
+    if (done) {
+      break;
     }
 
-    Buffer +=
-      Decoder.decode(
-        Value,
+    buffer +=
+      decoder.decode(
+        value,
         {
-          Stream: true
+          stream: true
         }
       );
 
-    Const lines =
-      Buffer.split(/\r?\n/);
+    const lines =
+      buffer.split(/\r?\n/);
 
-    Buffer =
-      Lines.pop() || '';
+    buffer =
+      lines.pop() || '';
 
-    Let dataLines = [];
+    let dataLines = [];
 
-    For (const line of lines) {
+    for (const line of lines) {
 
-      If (line.startsWith('data:')) {
+      if (line.startsWith('data:')) {
 
-        DataLines.push(
-          Line.slice(5).trimStart()
+        dataLines.push(
+          line.slice(5).trimStart()
         );
 
       } else if (
-        Line.trim() === ''
+        line.trim() === ''
       ) {
 
-        If (dataLines.length) {
+        if (dataLines.length) {
 
-          Const data =
-            DataLines.join('\n');
+          const data =
+            dataLines.join('\n');
 
-          Await processSseData(
-            Data
+          await processSseData(
+            data
           );
 
-          DataLines = [];
+          dataLines = [];
         }
       }
     }
   }
 
-  Buffer +=
-    Decoder.decode();
+  buffer +=
+    decoder.decode();
 
-  If (buffer.trim()) {
+  if (buffer.trim()) {
 
-    Const trailingLines =
-      Buffer.split(/\r?\n/);
+    const trailingLines =
+      buffer.split(/\r?\n/);
 
-    Let trailingData = [];
+    let trailingData = [];
 
-    For (
-      Const line
-      Of trailingLines
+    for (
+      const line
+      of trailingLines
     ) {
 
-      If (
-        Line.startsWith('data:')
+      if (
+        line.startsWith('data:')
       ) {
 
-        TrailingData.push(
-          Line
+        trailingData.push(
+          line
             .slice(5)
             .trimStart()
         );
 
       } else if (
-        Line.trim() === '' &&
-        TrailingData.length
+        line.trim() === '' &&
+        trailingData.length
       ) {
 
-        Await processSseData(
-          TrailingData.join('\n')
+        await processSseData(
+          trailingData.join('\n')
         );
 
-        TrailingData = [];
+        trailingData = [];
       }
     }
 
-    If (trailingData.length) {
-      Await processSseData(
-        TrailingData.join('\n')
+    if (trailingData.length) {
+      await processSseData(
+        trailingData.join('\n')
       );
     }
   }
 
-  Return {
-    Text:
-      AccumulatedText,
-    FunctionCall
+  return {
+    text:
+      accumulatedText,
+    functionCall
   };
 }
 
@@ -729,16 +727,16 @@ Async function streamVertexGemini({
    MODEL SELECTION
    ========================================================= */
 
-Function getVertexModel(tier) {
+function getVertexModel(tier) {
 
-  Switch (tier) {
+  switch (tier) {
 
-    Case 'pro':
-      Return 'gemini-3.1-pro-preview';
+    case 'pro':
+      return 'gemini-3.1-pro-preview';
 
-    Case 'base':
-    Default:
-      Return 'gemini-3.6-flash';
+    case 'base':
+    default:
+      return 'gemini-3.6-flash';
   }
 }
 
@@ -747,77 +745,77 @@ Function getVertexModel(tier) {
    GEMINI IMAGE GENERATION
    ========================================================= */
 
-Async function generateImageWithVertex({
-  Prompt,
-  AccessToken,
-  ProjectId
+async function generateImageWithVertex({
+  prompt,
+  accessToken,
+  projectId
 }) {
 
-  Const response =
-    Await fetchVertexGemini({
+  const response =
+    await fetchVertexGemini({
 
-      Model:
+      model:
         'gemini-3.1-flash-image',
 
-      Contents: [
+      contents: [
         {
-          Role: 'user',
+          role: 'user',
 
-          Parts: [
+          parts: [
             {
-              Text:
+              text:
                 `Generate an image based on this request. ` +
                 `Create the image itself, not merely a description.\n\n` +
-                Prompt
+                prompt
             }
           ]
         }
       ],
 
-      SystemInstruction:
+      systemInstruction:
         'Generate the requested image. Return the generated image.',
 
-      AccessToken,
+      accessToken,
 
-      ProjectId,
+      projectId,
 
-      GenerationConfig: {
-        ResponseModalities: [
+      generationConfig: {
+        responseModalities: [
           'TEXT',
           'IMAGE'
         ],
 
-        ImageConfig: {
-          AspectRatio: '1:1'
+        imageConfig: {
+          aspectRatio: '1:1'
         }
       }
     });
 
-  Const parts =
-    Response
+  const parts =
+    response
       .candidates?.[0]
       ?.content
       ?.parts || [];
 
-  For (const part of parts) {
+  for (const part of parts) {
 
-    Const inlineData =
-      Part.inlineData;
+    const inlineData =
+      part.inlineData;
 
-    If (
-      InlineData?.data &&
-      InlineData?.mimeType
+    if (
+      inlineData?.data &&
+      inlineData?.mimeType
     ) {
 
-      Return {
-        DataUrl:
+      return {
+        dataUrl:
           `data:${inlineData.mimeType};base64,` +
-          InlineData.data
+          inlineData.data
       };
     }
   }
 
-  Throw new Error(
+  throw new Error(
     'Vertex AI returned no generated image.'
   );
 }
@@ -827,24 +825,24 @@ Async function generateImageWithVertex({
    STREAM RESPONSE HELPER
    ========================================================= */
 
-Function createSseResponse(
-  StartStreaming
+function createSseResponse(
+  startStreaming
 ) {
 
-  Const stream =
-    New ReadableStream({
+  const stream =
+    new ReadableStream({
 
-      Async start(controller) {
+      async start(controller) {
 
-        Const encoder =
-          New TextEncoder();
+        const encoder =
+          new TextEncoder();
 
-        Const send = payload => {
+        const send = payload => {
 
-          Try {
+          try {
 
-            Controller.enqueue(
-              Encoder.encode(
+            controller.enqueue(
+              encoder.encode(
                 `data: ${JSON.stringify(payload)}\n\n`
               )
             );
@@ -854,38 +852,38 @@ Function createSseResponse(
           }
         };
 
-        Try {
+        try {
 
-          Await startStreaming({
-            Send
+          await startStreaming({
+            send
           });
 
-          Send({
-            Type: 'done'
+          send({
+            type: 'done'
           });
 
-          Controller.close();
+          controller.close();
 
         } catch (error) {
 
-          Send({
-            Type: 'error',
-            Error:
-              Error?.message ||
+          send({
+            type: 'error',
+            error:
+              error?.message ||
               'Streaming error.'
           });
 
-          Controller.close();
+          controller.close();
         }
       }
     });
 
-  Return new Response(
-    Stream,
+  return new Response(
+    stream,
     {
-      Status: 200,
+      status: 200,
 
-      Headers: {
+      headers: {
         'Content-Type':
           'text/event-stream; charset=utf-8',
 
@@ -910,27 +908,27 @@ Function createSseResponse(
    MAIN POST HANDLER
    ========================================================= */
 
-Export async function onRequestPost(
-  Context
+export async function onRequestPost(
+  context
 ) {
 
-  Try {
+  try {
 
-    Const {
-      Request,
-      Env
+    const {
+      request,
+      env
     } = context;
 
-    Const body =
-      Await request.json();
+    const body =
+      await request.json();
 
-    Const {
-      Message,
-      Tier,
-      History,
-      Image,
-      SystemInstruction,
-      UserId
+    const {
+      message,
+      tier,
+      history,
+      image,
+      systemInstruction,
+      userId
     } = body;
 
 
@@ -941,145 +939,145 @@ Export async function onRequestPost(
      * Otherwise the Cloudflare IP is used.
      */
 
-    Const userIdentifier =
-      UserId
+    const userIdentifier =
+      userId
         ? String(userId)
         : (
-            Request.headers.get(
+            request.headers.get(
               'cf-connecting-ip'
             ) ||
             'anonymous'
           );
 
 
-    If (
+    if (
       !message &&
       !image
     ) {
 
-      Return Response.json(
+      return Response.json(
         {
-          Error:
+          error:
             'Message or image required.'
         },
 
         {
-          Status: 400
+          status: 400
         }
       );
     }
 
 
-    Const accessToken =
-      Await createGoogleAccessToken(
-        Env
+    const accessToken =
+      await createGoogleAccessToken(
+        env
       );
 
-    Const projectId =
-      Env.GCP_PROJECT_ID;
+    const projectId =
+      env.GCP_PROJECT_ID;
 
 
     /* =====================================================
        DIRECT IMAGE MODE
        ===================================================== */
 
-    If (
-      Tier === 'nano-banana'
+    if (
+      tier === 'nano-banana'
     ) {
 
-      Let previousCount;
+      let previousCount;
 
-      Try {
+      try {
 
-        PreviousCount =
-          Await checkImageLimit(
-            UserIdentifier,
-            Env
+        previousCount =
+          await checkImageLimit(
+            userIdentifier,
+            env
           );
 
       } catch (limitError) {
 
-        Return Response.json({
+        return Response.json({
 
-          ImageLimitReached:
-            True,
+          imageLimitReached:
+            true,
 
-          Reply:
-            LimitError.message
+          reply:
+            limitError.message
 
         });
       }
 
 
-      Try {
+      try {
 
-        Const result =
-          Await generateImageWithVertex({
+        const result =
+          await generateImageWithVertex({
 
-            Prompt:
-              Message ||
+            prompt:
+              message ||
               'Abstract technological artwork',
 
-            AccessToken,
+            accessToken,
 
-            ProjectId
+            projectId
 
           });
 
 
-        Await recordSuccessfulImage(
+        await recordSuccessfulImage(
 
-          UserIdentifier,
+          userIdentifier,
 
-          PreviousCount,
+          previousCount,
 
-          Env
+          env
 
         );
 
 
-        Const used =
-          PreviousCount + 1;
+        const used =
+          previousCount + 1;
 
 
-        Const remaining =
+        const remaining =
           Math.max(
             IMAGE_LIMIT - used,
             0
           );
 
 
-        Return Response.json({
+        return Response.json({
 
-          Reply:
+          reply:
             `Here is your generated image with **Nano Banana Pro**:\n\n` +
             `![Generated Image](${result.dataUrl})\n\n` +
             `**Image generations remaining: ${remaining}/${IMAGE_LIMIT}**`,
 
-          ImageGenerated:
-            True,
+          imageGenerated:
+            true,
 
-          ImageGenerationsUsed:
-            Used,
+          imageGenerationsUsed:
+            used,
 
-          ImageGenerationsRemaining:
-            Remaining
+          imageGenerationsRemaining:
+            remaining
 
         });
 
       } catch (imageError) {
 
-        Return Response.json(
+        return Response.json(
           {
-            Reply:
+            reply:
               `Failed to generate image: ${imageError.message}`,
 
-            ImageGenerated:
-              False
+            imageGenerated:
+              false
           },
 
           {
-            Status: 500
+            status: 500
           }
         );
       }
@@ -1090,8 +1088,8 @@ Export async function onRequestPost(
        NORMAL TEXT STREAM
        ===================================================== */
 
-    Const combinedSystemInstruction =
-      SystemInstruction?.trim()
+    const combinedSystemInstruction =
+      systemInstruction?.trim()
 
         ? `${BASE_PERSONA}\n\n[USER INSTRUCTIONS]:\n${systemInstruction}`
 
@@ -1102,74 +1100,74 @@ Export async function onRequestPost(
        HISTORY
        ===================================================== */
 
-    Let formattedHistory = [];
+    let formattedHistory = [];
 
-    If (
+    if (
       Array.isArray(history) &&
-      History.length > 0
+      history.length > 0
     ) {
 
-      Const recentHistory =
-        History.slice(-6);
+      const recentHistory =
+        history.slice(-6);
 
-      Let lastRole =
-        Null;
+      let lastRole =
+        null;
 
-      For (
-        Const msg
-        Of recentHistory
+      for (
+        const msg
+        of recentHistory
       ) {
 
-        Const role =
+        const role =
           (
-            Msg.role === 'trux' ||
-            Msg.role === 'model'
+            msg.role === 'trux' ||
+            msg.role === 'model'
           )
             ? 'model'
             : 'user';
 
-        If (
-          Role !== lastRole &&
-          Msg.text
+        if (
+          role !== lastRole &&
+          msg.text
         ) {
 
-          FormattedHistory.push({
+          formattedHistory.push({
 
-            Role,
+            role,
 
-            Parts: [
+            parts: [
               {
-                Text:
+                text:
                   String(msg.text)
               }
             ]
 
           });
 
-          LastRole =
-            Role;
+          lastRole =
+            role;
         }
       }
     }
 
 
-    If (
-      FormattedHistory.length > 0 &&
-      FormattedHistory[0].role === 'model'
+    if (
+      formattedHistory.length > 0 &&
+      formattedHistory[0].role === 'model'
     ) {
 
-      FormattedHistory.shift();
+      formattedHistory.shift();
     }
 
 
-    If (
-      FormattedHistory.length > 0 &&
-      FormattedHistory[
-        FormattedHistory.length - 1
+    if (
+      formattedHistory.length > 0 &&
+      formattedHistory[
+        formattedHistory.length - 1
       ].role === 'user'
     ) {
 
-      FormattedHistory.pop();
+      formattedHistory.pop();
     }
 
 
@@ -1177,76 +1175,76 @@ Export async function onRequestPost(
        CURRENT MESSAGE
        ===================================================== */
 
-    Const currentParts = [];
+    const currentParts = [];
 
 
-    If (
-      Image &&
-      Typeof image === 'string' &&
-      Image.includes(',')
+    if (
+      image &&
+      typeof image === 'string' &&
+      image.includes(',')
     ) {
 
-      Const [
-        Header,
-        Base64Data
+      const [
+        header,
+        base64Data
       ] =
-        Image.split(',');
+        image.split(',');
 
-      Const mimeMatch =
-        Header.match(
+      const mimeMatch =
+        header.match(
           /data:(.*?);/
         );
 
 
-      CurrentParts.push({
+      currentParts.push({
 
-        InlineData: {
+        inlineData: {
 
-          MimeType:
-            MimeMatch
-              ? MimeMatch[1]
+          mimeType:
+            mimeMatch
+              ? mimeMatch[1]
               : 'image/jpeg',
 
-          Data:
-            Base64Data
+          data:
+            base64Data
         }
 
       });
     }
 
 
-    CurrentParts.push({
+    currentParts.push({
 
-      Text:
-        Message ||
+      text:
+        message ||
         'Analyze the provided image.'
 
     });
 
 
-    Const contents = [
+    const contents = [
 
       ...formattedHistory,
 
       {
-        Role: 'user',
+        role: 'user',
 
-        Parts:
-          CurrentParts
+        parts:
+          currentParts
       }
 
     ];
 
 
-    Const targetModel =
-      GetVertexModel(
-        Tier
+    const targetModel =
+      getVertexModel(
+        tier
       );
 
 
-    Return createSseResponse(
-      Async ({
-        Send
+    return createSseResponse(
+      async ({
+        send
       }) => {
 
 
@@ -1254,32 +1252,32 @@ Export async function onRequestPost(
            First streamed generation
            ------------------------------------------------- */
 
-        Const firstResult =
-          Await streamVertexGemini({
+        const firstResult =
+          await streamVertexGemini({
 
-            Model:
-              TargetModel,
+            model:
+              targetModel,
 
-            Contents,
+            contents,
 
-            SystemInstruction:
-              CombinedSystemInstruction,
+            systemInstruction:
+              combinedSystemInstruction,
 
-            Tools: [
+            tools: [
               {
-                FunctionDeclarations: [
-                  SearchWebDeclaration,
-                  GenerateImageDeclaration
+                functionDeclarations: [
+                  searchWebDeclaration,
+                  generateImageDeclaration
                 ]
               }
             ],
 
-            AccessToken,
+            accessToken,
 
-            ProjectId,
+            projectId,
 
-            OnText:
-              Async text => {
+            onText:
+              async text => {
 
                 /*
                  * IMPORTANT:
@@ -1291,18 +1289,18 @@ Export async function onRequestPost(
                  * the final "done" event.
                  */
 
-                Send({
-                  Type: 'chunk',
-                  Text
+                send({
+                  type: 'chunk',
+                  text
                 });
               },
 
-            OnStatus:
-              Async status => {
+            onStatus:
+              async status => {
 
-                Send({
-                  Type: 'status',
-                  Status
+                send({
+                  type: 'status',
+                  status
                 });
               }
           });
@@ -1312,43 +1310,43 @@ Export async function onRequestPost(
            No tool call → finished naturally
            ------------------------------------------------- */
 
-        If (
+        if (
           !firstResult.functionCall
         ) {
 
-          Return;
+          return;
         }
 
 
-        Const call =
-          FirstResult.functionCall;
+        const call =
+          firstResult.functionCall;
 
 
         /* -------------------------------------------------
            WEB SEARCH
            ------------------------------------------------- */
 
-        If (
-          Call.name ===
+        if (
+          call.name ===
           'searchWeb'
         ) {
 
-          Send({
-            Type:
+          send({
+            type:
               'status',
 
-            Status:
+            status:
               'Searching the web...'
           });
 
 
-          Const searchResults =
-            Await fetchSerperSearchResults(
+          const searchResults =
+            await fetchSerperSearchResults(
 
-              Call.args?.query ||
-                Message,
+              call.args?.query ||
+                message,
 
-              Env.SERPER_DEV_API
+              env.SERPER_DEV_API
 
             );
 
@@ -1359,15 +1357,15 @@ Export async function onRequestPost(
            * generate the final answer.
            */
 
-          Contents.push({
+          contents.push({
 
-            Role: 'model',
+            role: 'model',
 
-            Parts: [
+            parts: [
 
               {
-                FunctionCall:
-                  Call
+                functionCall:
+                  call
               }
 
             ]
@@ -1375,23 +1373,23 @@ Export async function onRequestPost(
           });
 
 
-          Contents.push({
+          contents.push({
 
-            Role: 'user',
+            role: 'user',
 
-            Parts: [
+            parts: [
 
               {
 
-                FunctionResponse: {
+                functionResponse: {
 
-                  Name:
+                  name:
                     'searchWeb',
 
-                  Response: {
+                  response: {
 
-                    Result:
-                      SearchResults
+                    result:
+                      searchResults
 
                   }
 
@@ -1404,40 +1402,40 @@ Export async function onRequestPost(
           });
 
 
-          Await streamVertexGemini({
+          await streamVertexGemini({
 
-            Model:
-              TargetModel,
+            model:
+              targetModel,
 
-            Contents,
+            contents,
 
-            SystemInstruction:
-              CombinedSystemInstruction,
+            systemInstruction:
+              combinedSystemInstruction,
 
-            AccessToken,
+            accessToken,
 
-            ProjectId,
+            projectId,
 
-            OnText:
-              Async text => {
+            onText:
+              async text => {
 
-                Send({
-                  Type:
+                send({
+                  type:
                     'chunk',
 
-                  Text
+                  text
                 });
 
               },
 
-            OnStatus:
-              Async status => {
+            onStatus:
+              async status => {
 
-                Send({
-                  Type:
+                send({
+                  type:
                     'status',
 
-                  Status
+                  status
                 });
 
               }
@@ -1445,7 +1443,7 @@ Export async function onRequestPost(
           });
 
 
-          Return;
+          return;
         }
 
 
@@ -1453,97 +1451,97 @@ Export async function onRequestPost(
            IMAGE TOOL CALL
            ------------------------------------------------- */
 
-        If (
-          Call.name ===
+        if (
+          call.name ===
           'generateImage'
         ) {
 
-          Let previousCount;
+          let previousCount;
 
 
-          Try {
+          try {
 
-            PreviousCount =
-              Await checkImageLimit(
-                UserIdentifier,
-                Env
+            previousCount =
+              await checkImageLimit(
+                userIdentifier,
+                env
               );
 
           } catch (limitError) {
 
-            Send({
+            send({
 
-              Type:
+              type:
                 'final',
 
-              Text:
-                LimitError.message
+              text:
+                limitError.message
 
             });
 
-            Return;
+            return;
           }
 
 
-          Send({
+          send({
 
-            Type:
+            type:
               'status',
 
-            Status:
+            status:
               'Generating image...'
 
           });
 
 
-          Const imgPrompt =
-            Call.args?.prompt ||
-            Message;
+          const imgPrompt =
+            call.args?.prompt ||
+            message;
 
 
-          Try {
+          try {
 
-            Const result =
-              Await generateImageWithVertex({
+            const result =
+              await generateImageWithVertex({
 
-                Prompt:
-                  ImgPrompt,
+                prompt:
+                  imgPrompt,
 
-                AccessToken,
+                accessToken,
 
-                ProjectId
+                projectId
 
               });
 
 
-            Await recordSuccessfulImage(
+            await recordSuccessfulImage(
 
-              UserIdentifier,
+              userIdentifier,
 
-              PreviousCount,
+              previousCount,
 
-              Env
+              env
 
             );
 
 
-            Const used =
-              PreviousCount + 1;
+            const used =
+              previousCount + 1;
 
 
-            Const remaining =
+            const remaining =
               Math.max(
                 IMAGE_LIMIT - used,
                 0
               );
 
 
-            Send({
+            send({
 
-              Type:
+              type:
                 'final',
 
-              Text:
+              text:
                 `Here is your generated image with **Nano Banana Pro**:\n\n` +
                 `![Generated Image](${result.dataUrl})\n\n` +
                 `**Image generations remaining: ${remaining}/${IMAGE_LIMIT}**`
@@ -1553,19 +1551,19 @@ Export async function onRequestPost(
 
           } catch (imageError) {
 
-            Send({
+            send({
 
-              Type:
+              type:
                 'final',
 
-              Text:
+              text:
                 `Failed to generate image: ${imageError.message}`
 
             });
 
           }
 
-          Return;
+          return;
         }
 
       }
@@ -1574,21 +1572,21 @@ Export async function onRequestPost(
 
   } catch (error) {
 
-    Console.error(
+    console.error(
       'Vertex AI Error:',
-      Error
+      error
     );
 
 
-    Return Response.json(
+    return Response.json(
       {
-        Error:
-          Error.message ||
+        error:
+          error.message ||
           'Server error'
       },
 
       {
-        Status: 500
+        status: 500
       }
     );
   }
@@ -1599,12 +1597,12 @@ Export async function onRequestPost(
    SIMPLE HEALTH CHECK
    ========================================================= */
 
-Export async function onRequestGet() {
+export async function onRequestGet() {
 
-  Return Response.json(
+  return Response.json(
     {
-      Ok: true,
-      Service: 'TruX Vertex backend'
+      ok: true,
+      service: 'TruX Vertex backend'
     }
   );
 }
