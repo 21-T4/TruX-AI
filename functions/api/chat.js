@@ -1,47 +1,24 @@
 const LOCATION = 'global';
 
-const BASE_PERSONA = `Never use latex for code generation. You can use unicode symbols and standard text. Your name is TruX, an AI created by TruX-Technologies (dont disclose ur name or creator till asked). Use only 1 code block for a whole code of 1 responce instead of splitting it in many parts and make files in which code is present for long codes( more than 10 lines).`;
+const BASE_PERSONA = `Never use LaTeX for code generation. You can use Unicode symbols and standard text. Your name is TruX, an AI created by TruX-Technologies (do not disclose your name or creator until asked). Use only one code block for a complete code response. If code is longer than 5 lines, put all of it in one triple-backtick code block so the app can present it as a downloadable code file; do not split it across multiple code blocks.`;
 
 const IMAGE_LIMIT = 5;
+
+function isImageGenerationRequest(message) {
+  if (typeof message !== 'string') {
+    return false;
+  }
+
+  return (
+    /\b(generate|create|draw|make|produce|design)\b[\s\S]{0,80}\b(image|picture|art|artwork|illustration|photo|poster|logo)\b/i.test(message) ||
+    /\b(draw|illustrate|paint|render)\b\s+(?:me\s+)?(?:a|an|the)\b/i.test(message)
+  );
+}
 
 
 /* =========================================================
    TOOL DECLARATIONS
    ========================================================= */
-
-const searchWebDeclaration = {
-  name: 'searchWeb',
-  description:
-    'Search live web via Serper. ONLY call if real-time/current data outside training is explicitly requested.',
-  parameters: {
-    type: 'OBJECT',
-    properties: {
-      query: {
-        type: 'STRING',
-        description: 'Search keywords.'
-      }
-    },
-    required: ['query']
-  }
-};
-
-const generateImageDeclaration = {
-  name: 'generateImage',
-  description:
-    'Generate an image using Gemini image generation. Call when the user explicitly asks to generate or draw an image.',
-  parameters: {
-    type: 'OBJECT',
-    properties: {
-      prompt: {
-        type: 'STRING',
-        description:
-          'Detailed prompt describing the image to generate.'
-      }
-    },
-    required: ['prompt']
-  }
-};
-
 
 /* =========================================================
    GOOGLE SERVICE ACCOUNT AUTHENTICATION
@@ -338,67 +315,6 @@ async function recordSuccessfulImage(
 
 
 /* =========================================================
-   SERPER SEARCH
-   ========================================================= */
-
-async function fetchSerperSearchResults(
-  query,
-  apiKey
-) {
-
-  if (!apiKey) {
-    return 'Search failed: API key missing.';
-  }
-
-  try {
-
-    const response =
-      await fetch(
-        'https://google.serper.dev/search',
-        {
-          method: 'POST',
-
-          headers: {
-            'X-API-KEY': apiKey,
-
-            'Content-Type':
-              'application/json'
-          },
-
-          body:
-            JSON.stringify({
-              q: query
-            })
-        }
-      );
-
-    if (!response.ok) {
-      return 'No results.';
-    }
-
-    const data =
-      await response.json();
-
-    if (!data.organic?.length) {
-      return 'No search results found.';
-    }
-
-    return data.organic
-      .slice(0, 3)
-      .map(
-        item =>
-          `Title: ${item.title}\nSnippet: ${item.snippet}`
-      )
-      .join('\n\n');
-
-  } catch {
-
-    return 'Search error.';
-  }
-}
-
-
-/* =========================================================
    STANDARD VERTEX REQUEST
    ========================================================= */
 
@@ -571,6 +487,8 @@ async function streamVertexGemini({
 
   let functionCall = null;
 
+  let groundingMetadata = null;
+
   let accumulatedText = '';
 
   async function processSseData(rawData) {
@@ -588,11 +506,18 @@ async function streamVertexGemini({
       return;
     }
 
+    const candidate =
+      parsed?.candidates?.[0];
+
     const parts =
-      parsed
-        ?.candidates?.[0]
+      candidate
         ?.content
         ?.parts || [];
+
+    if (candidate?.groundingMetadata) {
+      groundingMetadata =
+        candidate.groundingMetadata;
+    }
 
     for (const part of parts) {
 
@@ -718,7 +643,8 @@ async function streamVertexGemini({
   return {
     text:
       accumulatedText,
-    functionCall
+    functionCall,
+    groundingMetadata
   };
 }
 
@@ -732,12 +658,67 @@ function getVertexModel(tier) {
   switch (tier) {
 
     case 'pro':
-      return 'gemini-3.1-pro-preview';
+      return 'gemini-3.7-flash';
 
     case 'base':
     default:
       return 'gemini-3.6-flash';
   }
+}
+
+
+function getGroundingSources(
+  groundingMetadata
+) {
+
+  const chunks =
+    groundingMetadata?.groundingChunks || [];
+
+  const seen = new Set();
+
+  return chunks
+    .map(chunk => {
+
+      const web = chunk?.web;
+
+      if (!web?.uri || seen.has(web.uri)) {
+        return null;
+      }
+
+      seen.add(web.uri);
+
+      return {
+        title:
+          web.title ||
+          web.domain ||
+          'Google Search result',
+
+        uri:
+          web.uri
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 6);
+}
+
+
+function getGroundingData(
+  groundingMetadata
+) {
+
+  return {
+    sources:
+      getGroundingSources(
+        groundingMetadata
+      ),
+
+    // Google provides this markup for its required Search Suggestions UI.
+    searchSuggestionHtml:
+      groundingMetadata
+        ?.searchEntryPoint
+        ?.renderedContent ||
+      ''
+  };
 }
 
 
@@ -982,7 +963,8 @@ export async function onRequestPost(
        ===================================================== */
 
     if (
-      tier === 'nano-banana'
+      tier === 'nano-banana' ||
+      isImageGenerationRequest(message)
     ) {
 
       let previousCount;
@@ -1050,9 +1032,17 @@ export async function onRequestPost(
         return Response.json({
 
           reply:
-            `Here is your generated image with **Nano Banana Pro**:\n\n` +
-            `![Generated Image](${result.dataUrl})\n\n` +
-            `**Image generations remaining: ${remaining}/${IMAGE_LIMIT}**`,
+            'Your image is ready.',
+
+          image: {
+            dataUrl:
+              result.dataUrl,
+
+            alt:
+              'Generated image',
+
+            remaining
+          },
 
           imageGenerated:
             true,
@@ -1265,10 +1255,9 @@ export async function onRequestPost(
 
             tools: [
               {
-                functionDeclarations: [
-                  searchWebDeclaration,
-                  generateImageDeclaration
-                ]
+                // Google Search grounding is model-directed. Gemini only searches
+                // when live web information would improve the answer.
+                googleSearch: {}
               }
             ],
 
@@ -1314,257 +1303,28 @@ export async function onRequestPost(
           !firstResult.functionCall
         ) {
 
-          return;
-        }
-
-
-        const call =
-          firstResult.functionCall;
-
-
-        /* -------------------------------------------------
-           WEB SEARCH
-           ------------------------------------------------- */
-
-        if (
-          call.name ===
-          'searchWeb'
-        ) {
-
-          send({
-            type:
-              'status',
-
-            status:
-              'Searching the web...'
-          });
-
-
-          const searchResults =
-            await fetchSerperSearchResults(
-
-              call.args?.query ||
-                message,
-
-              env.SERPER_DEV_API
-
+          const grounding =
+            getGroundingData(
+              firstResult.groundingMetadata
             );
 
-
-          /*
-           * Give Gemini its own function call
-           * and the function result so it can
-           * generate the final answer.
-           */
-
-          contents.push({
-
-            role: 'model',
-
-            parts: [
-
-              {
-                functionCall:
-                  call
-              }
-
-            ]
-
-          });
-
-
-          contents.push({
-
-            role: 'user',
-
-            parts: [
-
-              {
-
-                functionResponse: {
-
-                  name:
-                    'searchWeb',
-
-                  response: {
-
-                    result:
-                      searchResults
-
-                  }
-
-                }
-
-              }
-
-            ]
-
-          });
-
-
-          await streamVertexGemini({
-
-            model:
-              targetModel,
-
-            contents,
-
-            systemInstruction:
-              combinedSystemInstruction,
-
-            accessToken,
-
-            projectId,
-
-            onText:
-              async text => {
-
-                send({
-                  type:
-                    'chunk',
-
-                  text
-                });
-
-              },
-
-            onStatus:
-              async status => {
-
-                send({
-                  type:
-                    'status',
-
-                  status
-                });
-
-              }
-
-          });
-
-
-          return;
-        }
-
-
-        /* -------------------------------------------------
-           IMAGE TOOL CALL
-           ------------------------------------------------- */
-
-        if (
-          call.name ===
-          'generateImage'
-        ) {
-
-          let previousCount;
-
-
-          try {
-
-            previousCount =
-              await checkImageLimit(
-                userIdentifier,
-                env
-              );
-
-          } catch (limitError) {
-
+          if (
+            grounding.sources.length ||
+            grounding.searchSuggestionHtml
+          ) {
             send({
-
-              type:
-                'final',
-
-              text:
-                limitError.message
-
+              type: 'grounding',
+              grounding
             });
-
-            return;
-          }
-
-
-          send({
-
-            type:
-              'status',
-
-            status:
-              'Generating image...'
-
-          });
-
-
-          const imgPrompt =
-            call.args?.prompt ||
-            message;
-
-
-          try {
-
-            const result =
-              await generateImageWithVertex({
-
-                prompt:
-                  imgPrompt,
-
-                accessToken,
-
-                projectId
-
-              });
-
-
-            await recordSuccessfulImage(
-
-              userIdentifier,
-
-              previousCount,
-
-              env
-
-            );
-
-
-            const used =
-              previousCount + 1;
-
-
-            const remaining =
-              Math.max(
-                IMAGE_LIMIT - used,
-                0
-              );
-
-
-            send({
-
-              type:
-                'final',
-
-              text:
-                `Here is your generated image with **Nano Banana Pro**:\n\n` +
-                `![Generated Image](${result.dataUrl})\n\n` +
-                `**Image generations remaining: ${remaining}/${IMAGE_LIMIT}**`
-
-            });
-
-
-          } catch (imageError) {
-
-            send({
-
-              type:
-                'final',
-
-              text:
-                `Failed to generate image: ${imageError.message}`
-
-            });
-
           }
 
           return;
         }
+
+
+        // Google Search requests do not permit normal function tools in the
+        // same call. Image prompts are routed above before text generation.
+        return;
 
       }
     );
