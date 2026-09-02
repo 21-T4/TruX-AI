@@ -443,8 +443,8 @@
       <section class="composer">
         <div class="compose">
           <div class="modelbar">
-            <button class="mopt active" data-model="base" onclick="selectModel('base',event)">⚡ Core · 3.6 Flash</button>
-            <button class="mopt" data-model="pro" id="proModelOption" onclick="selectModel('pro',event)">✨ Pro · 3.7 Flash</button>
+            <button class="mopt active" data-model="base" onclick="selectModel('base',event)">⚡ TruX-Core 4.0</button>
+            <button class="mopt" data-model="pro" id="proModelOption" onclick="selectModel('pro',event)">✨ TruX-Pro 5.0</button>
             <button class="mopt img" data-model="nano-banana" onclick="selectModel('nano-banana',event)">🍌 Image</button>
           </div>
           
@@ -648,7 +648,7 @@
     function closeProfileModal() { getEl("profileModal").style.display = "none"; }
     function openSettingsModal() { updateProUsageUI(); loadSettings(); getEl("settingsModal").style.display = "flex"; }
     function closeSettingsModal() { getEl("settingsModal").style.display = "none"; }
-    function openUpgradeModal() { alert("✨ TruX Pro · Gemini 3.7 Flash\n\n• Advanced reasoning\n• Complex task support"); }
+    function openUpgradeModal() { alert("✨ TruX Pro 5.0\n\n• Advanced reasoning\n• Complex task support"); }
     function confirmSignOut() { auth?.signOut().then(closeProfileModal); }
     function openLightbox(s) { getEl("lightboxImg").src = s; getEl("lightboxModal").style.display = "flex"; }
     function closeLightbox() { getEl("lightboxModal").style.display = "none"; }
