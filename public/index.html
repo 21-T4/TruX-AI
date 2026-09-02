@@ -124,12 +124,12 @@
 
     .brand { padding: 22px 20px; display: flex; align-items: center; gap: 14px; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 12px; }
     .logo {
-      width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
-      font: 800 17px "Space Grotesk"; color: #fff;
+      width: 40px; height: 40px; border-radius: 12px; overflow: hidden; flex: 0 0 40px;
       background: #111111;
       border: 1px solid var(--glass-border);
       box-shadow: 0 0 15px rgba(255, 255, 255, 0.05);
     }
+    .logo img { display: block; width: 100%; height: 100%; object-fit: cover; }
     .brand b { font: 700 18px "Space Grotesk"; letter-spacing: -0.5px; color: #fff; }
     .brand small { display: block; color: var(--txt-muted); font-size: 11px; font-weight: 500; }
 
@@ -283,6 +283,16 @@
     .img-card img { display: block; width: 100%; max-height: 420px; object-fit: contain; background: #000; }
     .img-actions { padding: 10px; background: #0f0f0f; text-align: right; }
     .download { display: inline-block; padding: 8px 14px; background: #1a1a1a; border-radius: 8px; color: #fff; text-decoration: none; font-size: 11px; font-weight: 600; border: 1px solid rgba(255,255,255,0.1); }
+    .generated-image-card { margin: 0; overflow: hidden; border: 1px solid rgba(255,255,255,0.16); border-radius: 20px; background: linear-gradient(145deg, #151515, #070707); box-shadow: 0 18px 45px rgba(0,0,0,0.55); }
+    .generated-image-head { display: flex; align-items: center; gap: 9px; padding: 12px 14px; color: #f8fafc; font-size: 12px; font-weight: 750; }
+    .generated-image-head span { display: grid; width: 25px; height: 25px; place-items: center; border-radius: 9px; background: linear-gradient(135deg, var(--accent-1), var(--accent-3)); }
+    .generated-image-card img { display: block; width: 100%; max-height: 620px; object-fit: contain; cursor: zoom-in; background: #000; }
+    .generated-image-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 14px; color: var(--txt-muted); font-size: 11px; background: rgba(255,255,255,0.03); }
+    .grounding-sources { margin-top: 15px; padding-top: 13px; border-top: 1px solid rgba(255,255,255,0.09); }
+    .grounding-sources > span { display: block; margin-bottom: 8px; color: var(--txt-muted); font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    .grounding-source { display: block; overflow: hidden; padding: 8px 10px; margin-top: 6px; border: 1px solid rgba(255,255,255,.09); border-radius: 9px; color: #dbeafe; font-size: 12px; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; background: rgba(255,255,255,.025); }
+    .grounding-source:hover { background: rgba(56,189,248,.1); border-color: rgba(56,189,248,.35); }
+    .google-search-suggestion { margin-top: 11px; overflow: hidden; border-radius: 10px; }
 
     /* --- COMPOSER (Input Area) --- */
     .composer { padding: 10px 24px 24px; position: relative; z-index: 20; background: linear-gradient(to top, #000000 80%, transparent); display: flex; justify-content: center; }
@@ -387,7 +397,7 @@
 
     <aside class="sidebar" id="sidebarNode">
       <div class="brand">
-        <div class="logo">TX</div>
+        <div class="logo"><img src="/icon-192.png" alt="TruX AI logo"></div>
         <div><b>TruX AI</b><small>Intelligent workspace</small></div>
       </div>
       <div class="side-actions">
@@ -433,8 +443,8 @@
       <section class="composer">
         <div class="compose">
           <div class="modelbar">
-            <button class="mopt active" data-model="base" onclick="selectModel('base',event)">⚡ Core 4.0</button>
-            <button class="mopt" data-model="pro" id="proModelOption" onclick="selectModel('pro',event)">✨ Ultra 5.0 Preview</button>
+            <button class="mopt active" data-model="base" onclick="selectModel('base',event)">⚡ Core · 3.6 Flash</button>
+            <button class="mopt" data-model="pro" id="proModelOption" onclick="selectModel('pro',event)">✨ Pro · 3.7 Flash</button>
             <button class="mopt img" data-model="nano-banana" onclick="selectModel('nano-banana',event)">🍌 Image</button>
           </div>
           
@@ -583,7 +593,7 @@
     /* Model / Usage */
     function selectModel(m, e) {
       e?.stopPropagation();
-      if(m === "pro" && getProUsageData().tokensUsed >= 2000000) return alert("TruX Ultra 5.0 limit reached for 24 hours.");
+      if(m === "pro" && getProUsageData().tokensUsed >= 2000000) return alert("TruX Pro limit reached for 24 hours.");
       currentModel = m;
       document.querySelectorAll(".mopt").forEach(x => x.classList.toggle("active", x.dataset.model === m));
     }
@@ -638,7 +648,7 @@
     function closeProfileModal() { getEl("profileModal").style.display = "none"; }
     function openSettingsModal() { updateProUsageUI(); loadSettings(); getEl("settingsModal").style.display = "flex"; }
     function closeSettingsModal() { getEl("settingsModal").style.display = "none"; }
-    function openUpgradeModal() { alert("⚡ TruX Ultra 5.0 Preview\n\n• Advanced reasoning\n• Complex task support"); }
+    function openUpgradeModal() { alert("✨ TruX Pro · Gemini 3.7 Flash\n\n• Advanced reasoning\n• Complex task support"); }
     function confirmSignOut() { auth?.signOut().then(closeProfileModal); }
     function openLightbox(s) { getEl("lightboxImg").src = s; getEl("lightboxModal").style.display = "flex"; }
     function closeLightbox() { getEl("lightboxModal").style.display = "none"; }
@@ -724,9 +734,63 @@
       h = h.replace(/```([\w-]*)\n?([\s\S]*?)```/g, (m, lang, c) => {
         let id = `code_${++codeBlockCounter}_${Date.now()}`;
         let displayLang = lang || 'Code';
-        return `<div class="code"><div class="code-head"><span>${displayLang}</span><div class="code-actions"><button onclick="copyCodeToClipboard(this,'${id}')">Copy</button><button onclick="downloadCode('${id}', '${displayLang}')">Download</button></div></div><pre><code id="${id}">${c.trim()}</code></pre></div>`;
+        return `<div class="code"><div class="code-head"><span>${displayLang} code file</span><div class="code-actions"><button onclick="copyCodeToClipboard(this,'${id}')">Copy</button><button onclick="downloadCode('${id}', '${displayLang}')">Download file</button></div></div><pre><code id="${id}">${c.trim()}</code></pre></div>`;
       });
       return h.replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*(.*?)\*\*/g, "<b>$1</b>").replace(/\*(.*?)\*/g, "<i>$1</i>").replace(/\n/g, "<br>");
+    }
+
+    function buildImageCard(image) {
+      let card = document.createElement("div");
+      card.className = "generated-image-card";
+      let head = document.createElement("div");
+      head.className = "generated-image-head";
+      head.innerHTML = "<span>✦</span> Generated image";
+      let img = document.createElement("img");
+      img.src = image.dataUrl;
+      img.alt = image.alt || "Generated image";
+      img.loading = "eager";
+      img.onclick = () => openLightbox(image.dataUrl);
+      let foot = document.createElement("div");
+      foot.className = "generated-image-foot";
+      let remaining = document.createElement("span");
+      remaining.textContent = Number.isFinite(image.remaining) ? `${image.remaining} image generation${image.remaining === 1 ? "" : "s"} remaining` : "Created with TruX Image";
+      let download = document.createElement("a");
+      download.className = "download";
+      download.href = image.dataUrl;
+      download.download = "trux-generated-image.png";
+      download.textContent = "⇩ Download";
+      foot.append(remaining, download);
+      card.append(head, img, foot);
+      return card;
+    }
+
+    function appendGroundingSources(container, grounding) {
+      let sources = Array.isArray(grounding) ? grounding : grounding?.sources || [];
+      let searchSuggestionHtml = Array.isArray(grounding) ? "" : grounding?.searchSuggestionHtml || "";
+      if(!sources.length && !searchSuggestionHtml) return;
+      let block = document.createElement("div");
+      block.className = "grounding-sources";
+      let title = document.createElement("span");
+      title.textContent = "Sources from Google Search";
+      block.appendChild(title);
+      sources.forEach(source => {
+        if(!source?.uri) return;
+        let link = document.createElement("a");
+        link.className = "grounding-source";
+        link.href = source.uri;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = source.title || source.uri;
+        block.appendChild(link);
+      });
+      if(searchSuggestionHtml) {
+        let suggestion = document.createElement("div");
+        suggestion.className = "google-search-suggestion";
+        // This markup is supplied by Google as its compliant Search Suggestions UI.
+        suggestion.innerHTML = searchSuggestionHtml;
+        block.appendChild(suggestion);
+      }
+      container.appendChild(block);
     }
 
     function speakText(t) {
@@ -744,13 +808,20 @@
 
     function appendMessageRow(label, text, rc, bc) {
       let chatContainer = getEl("chatContainer"), r = document.createElement("div"); r.className = `row ${rc}`;
-      r.innerHTML = `<div class="label">${escapeHtml(label)}</div><div class="bubble ${bc}">${renderFormattedText(text)}</div>`;
+      r.innerHTML = `<div class="label">${escapeHtml(label)}</div><div class="bubble ${bc}"></div>`;
+      let bubble = r.querySelector(".bubble");
+      if(text?.kind === "image" && text.image?.dataUrl) {
+        bubble.appendChild(buildImageCard(text.image));
+      } else {
+        bubble.innerHTML = renderFormattedText(typeof text === "string" ? text : text?.text || "");
+        appendGroundingSources(bubble, text?.grounding || { sources: text?.sources });
+      }
       chatContainer.appendChild(r); chatContainer.scrollTop = chatContainer.scrollHeight;
     }
     async function retryPrompt(p, r) { r?.remove(); getEl("promptInput").value = p; handleInputChange(); sendPrompt(); }
 
     /* Smooth Gemini-like typewriter reveal after full completion */
-    function smoothRenderResponse(bubbleId, actionId, fullText, prompt, voice) {
+    function smoothRenderResponse(bubbleId, actionId, fullText, prompt, voice, grounding = {}) {
       let b = getEl(bubbleId);
       if(!b) return;
       b.classList.remove("thinking");
@@ -766,7 +837,8 @@
           currentLen = totalLen;
           clearInterval(animTimer);
           b.innerHTML = renderFormattedText(fullText);
-          finalizeResponse(bubbleId, actionId, fullText, prompt, voice);
+          appendGroundingSources(b, grounding);
+          finalizeResponse(bubbleId, actionId, fullText, prompt, voice, grounding);
         } else {
           let sliced = fullText.slice(0, currentLen);
           b.innerHTML = renderFormattedText(sliced);
@@ -779,8 +851,8 @@
       }, 16);
     }
 
-    function finalizeResponse(id, aid, text, prompt, voice) {
-      chatSessions[currentChatId].messages.push({ role: "trux", text }); localStorage.setItem("trux_chats", JSON.stringify(chatSessions));
+    function finalizeResponse(id, aid, text, prompt, voice, grounding = {}) {
+      chatSessions[currentChatId].messages.push({ role: "trux", text, grounding }); localStorage.setItem("trux_chats", JSON.stringify(chatSessions));
       if(currentModel === "pro") recordProTokens(Math.ceil((prompt.length + text.length) / 4));
       
       let a = getEl(aid); if(a) { a.innerHTML = ""; let x = document.createElement("button"); x.className = "act"; x.innerText = "🔊 Read Aloud"; x.onclick = () => speakText(text); a.appendChild(x); }
@@ -788,6 +860,19 @@
       isGenerating = false; activeAbortController = null; getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
       
       if(voice || getEl("autoReadToggle")?.checked) speakText(text);
+    }
+
+    function renderImageResponse(bubbleId, actionId, image, prompt, voice) {
+      let bubble = getEl(bubbleId);
+      if(!bubble || !image?.dataUrl) return;
+      bubble.classList.remove("thinking");
+      bubble.replaceChildren(buildImageCard(image));
+      chatSessions[currentChatId].messages.push({ role: "trux", kind: "image", image, text: "Generated image" });
+      localStorage.setItem("trux_chats", JSON.stringify(chatSessions));
+      if(currentModel === "pro") recordProTokens(Math.ceil(prompt.length / 4));
+      isGenerating = false; activeAbortController = null;
+      getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
+      if(voice || getEl("autoReadToggle")?.checked) speakText("Your generated image is ready.");
     }
 
     /* Main Send Routine with Buffered Stream */
@@ -799,7 +884,7 @@
       if(attachedText) prompt = prompt ? (prompt + "\n\n" + attachedText) : attachedText;
       
       if(!prompt && !selectedImageBase64) return;
-      if(currentModel === "pro" && getProUsageData().tokensUsed >= 2000000) { alert("TruX Ultra 5.0 limit reached. Switching to Core."); selectModel("base"); }
+      if(currentModel === "pro" && getProUsageData().tokensUsed >= 2000000) { alert("TruX Pro limit reached. Switching to Core."); selectModel("base"); }
       
       document.body.classList.remove("home-active"); isGenerating = true; isScrolledUp = false;
       getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>';
@@ -832,17 +917,27 @@
           signal: activeAbortController.signal,
           body: JSON.stringify({ message: prompt, tier: currentModel, history: chatSessions[currentChatId].messages.slice(0, -1).slice(-6), image: img, systemInstruction: localStorage.getItem("trux_custom_instructions") || "", userId: auth?.currentUser?.uid || null })
         });
-        if(!res.ok) throw Error("Backend Error (" + res.status + ")");
+        if(!res.ok) {
+          let errorPayload = await res.json().catch(() => ({}));
+          throw Error(errorPayload.reply || errorPayload.error || "Backend Error (" + res.status + ")");
+        }
 
-        if(currentModel === "nano-banana") { clearInterval(timer); let j = await res.json(); clearInterval(timer); return smoothRenderResponse(id, aid, j.reply || j.error || "No image.", prompt, voice); }
+        if(currentModel === "nano-banana" || (res.headers.get("content-type") || "").includes("application/json")) {
+          clearInterval(timer);
+          let j = await res.json();
+          if(j.image?.dataUrl) return renderImageResponse(id, aid, j.image, prompt, voice);
+          return smoothRenderResponse(id, aid, j.reply || j.error || "No image.", prompt, voice);
+        }
         if(!res.body) throw Error("Streaming body unavailable.");
         
-        let rd = res.body.getReader(), dec = new TextDecoder(), buf = "", full = "", fin = null;
+        let rd = res.body.getReader(), dec = new TextDecoder(), buf = "", full = "", fin = null, generatedImage = null, grounding = {};
         function ev(raw) {
           if(!raw) return; let j; try { j = JSON.parse(raw); } catch { return; }
           if(j.type === "chunk") {
             full += j.text || ""; // Buffer in background memory without direct layout thrashing
           } else if(j.type === "final") fin = j.text || "";
+          else if(j.type === "image") generatedImage = j.image || null;
+          else if(j.type === "grounding") grounding = j.grounding || {};
           else if(j.type === "status") { let e = getEl(sid); if(e) e.innerText = j.status || "Processing…"; }
           else if(j.type === "error") throw Error(j.error || "Streaming error.");
         }
@@ -853,11 +948,12 @@
           let es = buf.split(/\r?\n\r?\n/); buf = es.pop() || "";
           for(let x of es) { let ls = x.split(/\r?\n/).filter(l => l.startsWith("data:")); if(ls.length) ev(ls.map(l => l.slice(5).trimStart()).join("\n")); }
         }
+        if(generatedImage?.dataUrl) { clearInterval(timer); return renderImageResponse(id, aid, generatedImage, prompt, voice); }
         let text = (fin !== null ? fin : full).trim(); if(!text) throw Error("No response received.");
         clearInterval(timer);
         
         // Print smoothly once complete
-        smoothRenderResponse(id, aid, text, prompt, voice);
+        smoothRenderResponse(id, aid, text, prompt, voice, grounding);
       } catch(e) {
         clearInterval(timer); let b = getEl(id);
         if(b) { b.classList.remove("thinking"); b.innerHTML = e.name === "AbortError" ? "Generation stopped." : "Error: " + escapeHtml(e.message); }
