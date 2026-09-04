@@ -254,13 +254,25 @@
     .trux-bubble b { color: #fff; font-weight: 700; }
     .trux-bubble code { background: #161616; padding: 2px 7px; border-radius: 6px; font-family: 'Fira Code', monospace; font-size: 0.9em; color: var(--accent-1); border: 1px solid rgba(255,255,255,0.08); }
     
-    /* Code Blocks */
-    .code { margin: 16px 0; border: 1px solid var(--glass-border); border-radius: 14px; overflow: hidden; background: #050505; }
-    .code-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #101010; font-size: 11px; font-weight: 700; color: var(--txt-muted); text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.06); }
-    .code-actions { display: flex; gap: 8px; }
-    .code-head button { padding: 4px 12px; border-radius: 6px; background: #1a1a1a; color: #fff; font-size: 10px; font-weight: 600; transition: background 0.2s; border: 1px solid rgba(255,255,255,0.1); }
-    .code-head button:hover { background: #262626; }
-    .code pre { padding: 16px; overflow-x: auto; font-family: 'Fira Code', monospace; font-size: 13px; color: #e2e8f0; margin: 0; line-height: 1.6; }
+    /* Generated code is deliberately a compact downloadable-file card, never a visible code block. */
+    .code-file { display: flex; align-items: center; gap: 12px; margin: 16px 0; padding: 13px 14px; border: 1px solid var(--glass-border); border-radius: 14px; background: #101010; }
+    .code-file-icon { display: grid; width: 34px; height: 38px; flex: 0 0 34px; place-items: center; border: 1px solid rgba(56,189,248,.45); border-radius: 9px; color: var(--accent-1); background: rgba(56,189,248,.08); }
+    .code-file-meta { min-width: 0; flex: 1; }
+    .code-file-meta b, .code-file-meta small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .code-file-meta b { color: #fff; font-size: 12px; }
+    .code-file-meta small { margin-top: 2px; color: var(--txt-muted); font-size: 10px; text-transform: uppercase; }
+    .code-actions { display: flex; gap: 7px; }
+    .code-actions button { padding: 7px 10px; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; background: #1a1a1a; color: #fff; font-size: 10px; font-weight: 700; }
+    .code-actions button:hover { background: #262626; }
+    .code-pending { margin: 14px 0; color: var(--txt-muted); font-size: 13px; font-style: italic; }
+
+    /* Readable fallback maths for models that still send ASCII powers or fractions. */
+    .math-power { vertical-align: super; font-size: .72em; line-height: 0; margin-left: 1px; }
+    .math-frac { display: inline-flex; vertical-align: middle; flex-direction: column; align-items: center; margin: 0 .12em; font-size: .88em; line-height: 1; }
+    .math-frac > span:first-child { padding: 0 .18em .1em; border-bottom: 1px solid currentColor; }
+    .math-frac > span:last-child { padding: .1em .18em 0; }
+    @keyframes responseReveal { from { opacity: 0; transform: translateY(3px); filter: blur(1px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+    .response-reveal { display: block; animation: responseReveal .24s ease-out both; }
     
     .thinking {
       display: inline-flex !important; width: max-content !important; align-items: center; gap: 14px;
@@ -314,6 +326,13 @@
     .icon-btn { width: 42px; height: 42px; border-radius: 14px; background: transparent; color: var(--txt-muted); font-size: 18px; display: grid; place-items: center; flex-shrink: 0; }
     .icon-btn:hover { background: #181818; color: #fff; }
     .icon-btn.recording { color: var(--accent-4); background: rgba(244, 63, 94, 0.15); animation: pulse 1.5s infinite; }
+    .icon-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .attach-menu { position: absolute; bottom: calc(100% + 10px); left: 52px; display: none; min-width: 166px; padding: 6px; border: 1px solid var(--glass-border); border-radius: 13px; background: #111; box-shadow: 0 16px 32px rgba(0,0,0,.55); }
+    .attach-menu.open { display: grid; gap: 3px; animation: responseReveal .18s ease-out both; }
+    .attach-menu button { display: flex; align-items: center; gap: 9px; width: 100%; padding: 10px; border-radius: 9px; background: transparent; color: #fff; font-size: 12px; font-weight: 650; text-align: left; }
+    .attach-menu button:hover { background: #202020; }
+    .attach-menu svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .thinking-btn.active { color: #fff; background: rgba(255,255,255,.14); box-shadow: inset 0 0 0 1px rgba(255,255,255,.22); }
     
     .send-btn { width: 42px; height: 42px; border-radius: 14px; background: linear-gradient(135deg, var(--accent-1), var(--accent-2)); color: #fff; display: grid; place-items: center; flex-shrink: 0; box-shadow: 0 4px 16px rgba(56, 189, 248, 0.35); }
     .send-btn:active { transform: scale(0.94); }
@@ -455,10 +474,20 @@
               <img id="imagePreview">
               <button onclick="removeImage()">×</button>
             </div>
-            <button class="icon-btn" id="voiceBtn" onclick="toggleVoiceInput()" title="Voice input">🎙</button>
+            <button class="icon-btn" id="voiceBtn" onclick="toggleVoiceInput()" title="Voice input" aria-label="Voice input">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8"></path></svg>
+            </button>
             <input id="imageUpload" type="file" accept="image/*" hidden onchange="handleImageUpload(event)">
-            <button class="icon-btn" onclick="document.getElementById('imageUpload').click()" title="Add image">＋</button>
+            <input id="cameraUpload" type="file" accept="image/*" capture="environment" hidden onchange="handleImageUpload(event)">
+            <button class="icon-btn" id="attachBtn" onclick="toggleAttachmentMenu(event)" title="Add photo" aria-label="Add photo">＋</button>
+            <div class="attach-menu" id="attachmentMenu" role="menu">
+              <button type="button" onclick="openCamera()" role="menuitem"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l1.4-2h7.2L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>Camera</button>
+              <button type="button" onclick="openPhotoLibrary()" role="menuitem"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="8" cy="9" r="1.5"></circle><path d="m4 18 5-5 3 3 3-3 5 5"></path></svg>Photos</button>
+            </div>
             <textarea id="promptInput" rows="1" placeholder="Ask TruX anything…" oninput="handleInputChange()"></textarea>
+            <button class="icon-btn thinking-btn" id="thinkingBtn" onclick="toggleAdvancedThinking()" title="Extended thinking" aria-label="Enable extended thinking" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 18.5h5M10 21h4M8.5 15.5c-1.4-1-2.5-2.7-2.5-4.7a6 6 0 1 1 12 0c0 2-1.1 3.7-2.5 4.7-.7.5-1 1.2-1 2H9.5c0-.8-.3-1.5-1-2Z"></path><path d="M9.4 10.5c.2-1.4 1.1-2.2 2.6-2.2 1.2 0 2.3.7 2.3 1.9 0 1.1-.8 1.5-1.5 2-.5.4-.8.8-.8 1.5"></path><path d="M12 14.8h.01"></path></svg>
+            </button>
             <button class="send-btn" id="actionBtn" onclick="handleActionButton()">
               <svg id="btnIcon" viewBox="0 0 24 24" width="20" height="20">
                 <path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>
@@ -586,9 +615,10 @@
         wasInputByVoice = false,
         contextMenuTargetId = null,
         codeBlockCounter = 0,
-        recognition = null,
-        isRecording = false,
-        isScrolledUp = false;
+         recognition = null,
+         isRecording = false,
+         isScrolledUp = false,
+         advancedThinkingEnabled = false;
 
     /* Model / Usage */
     function selectModel(m, e) {
@@ -669,6 +699,8 @@
     getEl("chatContainer").addEventListener("scroll", function() {
       isScrolledUp = (this.scrollHeight - this.scrollTop - this.clientHeight) > 30;
     });
+    // Any deliberate reading gesture pauses automatic follow-scrolling for this reply.
+    ["wheel", "touchstart", "pointerdown"].forEach(type => getEl("chatContainer").addEventListener(type, () => { isScrolledUp = true; }, { passive: true }));
 
     /* Code/Text Attachments */
     getEl("promptInput").addEventListener("paste", e => {
@@ -700,6 +732,17 @@
     }
     function quickPrompt(txt) { getEl("promptInput").value = txt; getEl("promptInput").focus(); handleInputChange(); }
     function handleInputChange() { let p = getEl("promptInput"); p.style.height = "auto"; p.style.height = Math.min(p.scrollHeight, 200) + "px"; }
+    function toggleAttachmentMenu(e) { e?.stopPropagation(); getEl("attachmentMenu").classList.toggle("open"); }
+    function closeAttachmentMenu() { getEl("attachmentMenu").classList.remove("open"); }
+    function openCamera() { closeAttachmentMenu(); getEl("cameraUpload").click(); }
+    function openPhotoLibrary() { closeAttachmentMenu(); getEl("imageUpload").click(); }
+    function toggleAdvancedThinking() {
+      advancedThinkingEnabled = !advancedThinkingEnabled;
+      let button = getEl("thinkingBtn");
+      button.classList.toggle("active", advancedThinkingEnabled);
+      button.setAttribute("aria-pressed", String(advancedThinkingEnabled));
+      button.title = advancedThinkingEnabled ? "Extended thinking enabled" : "Extended thinking";
+    }
     
     function handleImageUpload(e) {
       let f = e.target.files[0]; if(!f || !f.type.startsWith("image/")) return;
@@ -707,7 +750,7 @@
       r.onload = x => { selectedImageBase64 = x.target.result; getEl("imagePreview").src = x.target.result; getEl("imagePreviewContainer").style.display = "block"; handleInputChange(); };
       r.readAsDataURL(f);
     }
-    function removeImage() { selectedImageBase64 = null; getEl("imageUpload").value = ""; getEl("imagePreviewContainer").style.display = "none"; handleInputChange(); }
+    function removeImage() { selectedImageBase64 = null; getEl("imageUpload").value = ""; getEl("cameraUpload").value = ""; getEl("imagePreviewContainer").style.display = "none"; handleInputChange(); }
 
     /* Voice recognition */
     if("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
@@ -722,21 +765,43 @@
 
     /* Parsing & Rendering */
     function escapeHtml(t) { return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
-    function copyCodeToClipboard(b, id) { let e = getEl(id); if(e) navigator.clipboard.writeText(e.innerText).then(() => { let x = b.innerText; b.innerText = "Copied ✓"; setTimeout(() => b.innerText = x, 1500); }); }
-    function downloadCode(id, ext) { let c = getEl(id).innerText; let a = document.createElement("a"); a.href = "data:text/plain;charset=utf-8," + encodeURIComponent(c); a.download = `snippet.${ext.toLowerCase() === 'code' ? 'txt' : ext}`; a.click(); }
+    function copyCodeToClipboard(b, id) { let e = getEl(id); if(e) navigator.clipboard.writeText(e.value).then(() => { let x = b.innerText; b.innerText = "Copied ✓"; setTimeout(() => b.innerText = x, 1500); }); }
+    function downloadCode(id, filename) {
+      let e = getEl(id); if(!e) return;
+      let url = URL.createObjectURL(new Blob([e.value], { type: "text/plain;charset=utf-8" }));
+      let a = document.createElement("a"); a.href = url; a.download = filename; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
+    function codeFileExtension(language) {
+      let map = { javascript: "js", js: "js", typescript: "ts", ts: "ts", html: "html", css: "css", json: "json", python: "py", java: "java", c: "c", cpp: "cpp", csharp: "cs", sql: "sql", bash: "sh", shell: "sh", markdown: "md", md: "md", xml: "xml", yaml: "yml", yml: "yml" };
+      return map[String(language || "").toLowerCase()] || "txt";
+    }
+    function formatReadableMath(html) {
+      return html
+        .replace(/([A-Za-z0-9\)\]])\^([+-]?\d+)/g, "$1<sup class=\"math-power\">$2</sup>")
+        .replace(/(?<![\w.])(-?\d+(?:\.\d+)?)\s*\/\s*(-?\d+(?:\.\d+)?)(?![\w.])/g, '<span class="math-frac"><span>$1</span><span>$2</span></span>')
+        .replace(/\b([A-Za-z])\s*\/\s*(\d+)\b/g, '<span class="math-frac"><span>$1</span><span>$2</span></span>');
+    }
 
     function renderFormattedText(t) {
       if(!t) return ""; let h = escapeHtml(t);
+      // Do not reveal a half-received source file while the response is animating.
+      let fences = h.match(/```/g) || [];
+      if(fences.length % 2) h = h.slice(0, h.lastIndexOf("```")) + '<div class="code-pending">Preparing downloadable code file…</div>';
       h = h.replace(/!\[(.*?)\]\((data:image\/[^;]+;base64,[^\s)]+|https?:\/\/[^\s)]+)\)/g, (m, a, s) => {
         if(!/^data:image\/|^https?:\/\//.test(s)) return "";
         return `<div class="img-card"><img src="${s}" alt="${escapeHtml(a)}" onclick="openLightbox('${s.replace(/'/g,"%27")}')"><div class="img-actions"><a class="download" href="${s}" download="trux-generated-image.jpg">⇩ Download</a></div></div>`;
       });
+      let fileTokens = [];
       h = h.replace(/```([\w-]*)\n?([\s\S]*?)```/g, (m, lang, c) => {
         let id = `code_${++codeBlockCounter}_${Date.now()}`;
-        let displayLang = lang || 'Code';
-        return `<div class="code"><div class="code-head"><span>${displayLang} code file</span><div class="code-actions"><button onclick="copyCodeToClipboard(this,'${id}')">Copy</button><button onclick="downloadCode('${id}', '${displayLang}')">Download file</button></div></div><pre><code id="${id}">${c.trim()}</code></pre></div>`;
+        let displayLang = lang || "Text", extension = codeFileExtension(lang), filename = `trux-response.${extension}`;
+        let file = `<div class="code-file"><span class="code-file-icon">&lt;/&gt;</span><div class="code-file-meta"><b>${filename}</b><small>${displayLang} · generated code file</small></div><div class="code-actions"><button onclick="copyCodeToClipboard(this,'${id}')">Copy</button><button onclick="downloadCode('${id}','${filename}')">Download</button></div><textarea id="${id}" hidden>${c.trim()}</textarea></div>`;
+        fileTokens.push(file);
+        return `@@TRUX_CODE_FILE_${fileTokens.length - 1}@@`;
       });
-      return h.replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*(.*?)\*\*/g, "<b>$1</b>").replace(/\*(.*?)\*/g, "<i>$1</i>").replace(/\n/g, "<br>");
+      h = formatReadableMath(h).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*(.*?)\*\*/g, "<b>$1</b>").replace(/\*(.*?)\*/g, "<i>$1</i>").replace(/\n/g, "<br>");
+      return h.replace(/@@TRUX_CODE_FILE_(\d+)@@/g, (m, index) => fileTokens[Number(index)] || "");
     }
 
     function buildImageCard(image) {
@@ -829,7 +894,8 @@
       let chatContainer = getEl("chatContainer");
       let currentLen = 0;
       let totalLen = fullText.length;
-      let step = Math.max(2, Math.ceil(totalLen / 80)); // Smooth adaptive speed
+      // Character groups keep the reveal fluid without looking like word-by-word typing.
+      let step = Math.max(12, Math.ceil(totalLen / 90));
 
       let animTimer = setInterval(() => {
         currentLen += step;
@@ -841,14 +907,14 @@
           finalizeResponse(bubbleId, actionId, fullText, prompt, voice, grounding);
         } else {
           let sliced = fullText.slice(0, currentLen);
-          b.innerHTML = renderFormattedText(sliced);
+          b.innerHTML = `<span class="response-reveal">${renderFormattedText(sliced)}</span>`;
         }
         
         // Background smooth print without scroll lock
         if(!isScrolledUp) {
           chatContainer.scrollTop = chatContainer.scrollHeight;
         }
-      }, 16);
+      }, 42);
     }
 
     function finalizeResponse(id, aid, text, prompt, voice, grounding = {}) {
@@ -915,7 +981,7 @@
         let res = await fetch("/api/chat", {
           method: "POST", headers: { "Content-Type": "application/json", "Accept": "text/event-stream" },
           signal: activeAbortController.signal,
-          body: JSON.stringify({ message: prompt, tier: currentModel, history: chatSessions[currentChatId].messages.slice(0, -1).slice(-6), image: img, systemInstruction: localStorage.getItem("trux_custom_instructions") || "", userId: auth?.currentUser?.uid || null })
+          body: JSON.stringify({ message: prompt, tier: currentModel, advancedThinking: advancedThinkingEnabled, history: chatSessions[currentChatId].messages.slice(0, -1).slice(-6), image: img, systemInstruction: localStorage.getItem("trux_custom_instructions") || "", userId: auth?.currentUser?.uid || null })
         });
         if(!res.ok) {
           let errorPayload = await res.json().catch(() => ({}));
@@ -985,7 +1051,11 @@
 
     /* Events */
     getEl("contextMenuDeleteBtn").onclick = () => { if(contextMenuTargetId) { deleteChat(contextMenuTargetId); contextMenuTargetId = null; getEl("contextMenu").style.display = "none"; } };
-    addEventListener("click", e => { let ctx = getEl("contextMenu"); if(ctx && !ctx.contains(e.target)) ctx.style.display = "none"; });
+    addEventListener("click", e => {
+      let ctx = getEl("contextMenu"); if(ctx && !ctx.contains(e.target)) ctx.style.display = "none";
+      let menu = getEl("attachmentMenu");
+      if(menu && !menu.contains(e.target) && !getEl("attachBtn").contains(e.target)) closeAttachmentMenu();
+    });
     getEl("promptInput").addEventListener("keydown", e => { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleActionButton(); } });
     getEl("profileModal").addEventListener("click", e => { if(e.target === getEl("profileModal")) closeProfileModal(); });
     getEl("settingsModal").addEventListener("click", e => { if(e.target === getEl("settingsModal")) closeSettingsModal(); });
