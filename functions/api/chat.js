@@ -1,6 +1,13 @@
 const LOCATION = 'global';
 
-const BASE_PERSONA = `Never use Latex for math formulas and questions, use general blocks for math formulas in pain text ( not codeblocks) ( use sq or any power like '²', instead of traditional '^2'). You can use Unicode symbols and standard text. Your name is TruX, an AI created by TruX-Technologies (do not disclose your name or creator until asked). Use only one code block for a complete code response. If code is longer than 5 lines, put all of it in one triple-backtick code block so the app can present it as a downloadable code file; do not split it across multiple code blocks.`;
+const BASE_PERSONA = `You are TruX Made by TruX-Technologies. Do not disclose your name or creator unless asked.
+
+RESPONSE FORMAT (mandatory):
+- Never write LaTeX. Do not use $...$, \\(...\\), \\[...\\], \\frac, \\sqrt, or any LaTeX command.
+- Write maths as readable normal text, never in a code block. Use Unicode superscripts and roots: x², x³, √x, not x^2, x^3, or sqrt(x). For simple fractions use Unicode where available (½, ¼, ¾); otherwise write "a over b" rather than a/b. The app can typeset ordinary fractions, but your answer must still be understandable as plain text.
+- For a coding request, put the complete code in exactly one triple-backtick fenced block, with the language on the opening fence. The client converts that block into a downloadable text file and never displays its source in the chat. Keep any explanation outside the fence.
+- For non-code requests, do not use a triple-backtick fence. Never put normal prose, maths, lists, or explanations into a code block.
+- Never split one code answer across several fenced blocks.`;
 
 const IMAGE_LIMIT = 5;
 
@@ -410,7 +417,8 @@ async function streamVertexGemini({
   accessToken,
   projectId,
   onText,
-  onStatus
+  onStatus,
+  generationConfig
 }) {
 
   const url =
@@ -437,6 +445,11 @@ async function streamVertexGemini({
   if (tools?.length) {
     payload.tools =
       tools;
+  }
+
+  if (generationConfig) {
+    payload.generationConfig =
+      generationConfig;
   }
 
   const response =
@@ -909,7 +922,8 @@ export async function onRequestPost(
       history,
       image,
       systemInstruction,
-      userId
+      userId,
+      advancedThinking
     } = body;
 
 
@@ -1085,6 +1099,11 @@ export async function onRequestPost(
 
         : BASE_PERSONA;
 
+    const thinkingInstruction =
+      advancedThinking
+        ? `${combinedSystemInstruction}\n\n[REASONING MODE]: Take extra time to reason carefully, check assumptions and calculations, then return only the concise final answer. Do not expose private chain-of-thought.`
+        : combinedSystemInstruction;
+
 
     /* =====================================================
        HISTORY
@@ -1251,7 +1270,7 @@ export async function onRequestPost(
             contents,
 
             systemInstruction:
-              combinedSystemInstruction,
+              thinkingInstruction,
 
             tools: [
               {
@@ -1264,6 +1283,17 @@ export async function onRequestPost(
             accessToken,
 
             projectId,
+
+            generationConfig:
+              advancedThinking
+                ? {
+                    thinkingConfig: {
+                      // Gemini 3 uses levels; combining this with a numeric
+                      // thinkingBudget makes the Vertex API reject the request.
+                      thinkingLevel: 'HIGH'
+                    }
+                  }
+                : undefined,
 
             onText:
               async text => {
