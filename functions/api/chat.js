@@ -672,7 +672,7 @@ function getVertexModel(tier) {
   switch (tier) {
 
     case 'pro':
-      return 'gemini-3.7-flash';
+      return 'gemini-3.1-pro-preview';
 
     case 'base':
     default:
