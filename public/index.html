@@ -36,7 +36,7 @@
       --accent-4: #f43f5e;
       --ai-gradient: linear-gradient(135deg, #a855f7 0%, #6366f1 50%, #38bdf8 100%);
       --metallic-grad: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #94a3b8 100%);
-      --max-width: 880px;
+      --max-width: 800px; /* Reduced width for Gemini-like spacious layout */
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -50,7 +50,7 @@
       display: flex;
     }
 
-    button, input, textarea { font: inherit; outline: none; border: none; }
+    button, input, textarea, select { font: inherit; outline: none; border: none; }
     button { cursor: pointer; -webkit-tap-highlight-color: transparent; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
 
     .bg { position: fixed; inset: 0; z-index: -10; background: #000000; overflow: hidden; pointer-events: none; }
@@ -104,8 +104,8 @@
 
     .main { flex: 1; height: 100%; display: flex; flex-direction: column; position: relative; min-width: 0; background: #000000; }
     
-    /* Topbar with Compact Dropdown Model Selector */
-    .topbar { height: 64px; position: absolute; left: 0; right: 0; top: 0; display: flex; justify-content: center; align-items: center; gap: 16px; z-index: 100; pointer-events: auto; }
+    /* Topbar with Compact Dropdown Model Selector & Moved Thinking Button */
+    .topbar { height: 64px; position: absolute; left: 0; right: 0; top: 0; display: flex; justify-content: center; align-items: center; gap: 12px; z-index: 100; pointer-events: auto; }
     .status { padding: 6px 14px; border: 1px solid var(--glass-border); border-radius: 99px; background: rgba(8, 8, 12, 0.85); backdrop-filter: blur(12px); font-size: 10px; font-weight: 800; letter-spacing: 0.15em; color: var(--txt-main); box-shadow: 0 4px 25px rgba(0,0,0,0.9); display: flex; align-items: center; }
     .status i { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 12px #38bdf8; margin-right: 8px; }
     
@@ -150,6 +150,19 @@
     .model-badge.pro { background: rgba(192, 132, 252, 0.2); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.3); }
     .model-badge.img { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
 
+    /* Moved Thinking Level & Grounding Buttons in Topbar */
+    .topbar-tool-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 14px; border-radius: 99px;
+      background: rgba(14, 14, 22, 0.85);
+      border: 1px solid var(--glass-border);
+      color: var(--txt-muted); font-size: 12px; font-weight: 700;
+      backdrop-filter: blur(12px); transition: all 0.2s ease;
+    }
+    .topbar-tool-btn:hover { background: #161624; color: #fff; border-color: rgba(129, 140, 248, 0.4); }
+    .topbar-tool-btn.active { color: #818cf8; background: rgba(129, 140, 248, 0.18); border-color: rgba(129, 140, 248, 0.5); box-shadow: 0 0 15px rgba(129, 140, 248, 0.2); }
+    .topbar-tool-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
     .top-btn { position: absolute; top: 12px; width: 40px; height: 40px; border-radius: 12px; background: #08080d; border: 1px solid var(--glass-border); color: #fff; display: grid; place-items: center; cursor: pointer; pointer-events: auto; transition: all 0.2s; box-shadow: 0 4px 16px rgba(0,0,0,0.6); z-index: 100; }
     .top-btn:hover { background: #141420; border-color: rgba(129, 140, 248, 0.3); }
     .menu-btn { left: 16px; }
@@ -162,19 +175,22 @@
     .badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border: 1px solid rgba(129, 140, 248, 0.3); border-radius: 99px; background: rgba(129, 140, 248, 0.08); color: #e0e7ff; font-size: 11px; font-weight: 800; letter-spacing: 0.12em; margin-bottom: 24px; box-shadow: 0 0 20px rgba(129, 140, 248, 0.1); }
     .badge i { width: 6px; height: 6px; border-radius: 50%; background: #818cf8; box-shadow: 0 0 10px #818cf8; }
     
-    .welcome-title { font: 800 clamp(34px, 6vw, 60px)/1.1 "Space Grotesk"; color: #fff; margin-bottom: 16px; letter-spacing: -1.2px; display: inline-flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0px; }
+    .welcome-title { font: 800 clamp(36px, 6.5vw, 64px)/1.1 "Space Grotesk"; color: #fff; margin-bottom: 16px; letter-spacing: -1.2px; display: inline-flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; }
     
+    /* Bigger Spinning "X" Brand Logo Animation Every 5 Seconds */
     .brand-inline-logo {
-      width: clamp(32px, 5.5vw, 54px);
-      height: clamp(32px, 5.5vw, 54px);
+      width: clamp(52px, 8vw, 78px);
+      height: clamp(52px, 8vw, 78px);
       display: inline-block;
       vertical-align: middle;
-      margin-left: 0px;
-      animation: rotateSmooth 12s linear infinite;
+      margin: 0 4px;
+      animation: cool5sSpin 5s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+      filter: drop-shadow(0 0 18px rgba(168, 85, 247, 0.4));
     }
-    @keyframes rotateSmooth {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    @keyframes cool5sSpin {
+      0%, 80% { transform: rotate(0deg) scale(1); filter: drop-shadow(0 0 15px rgba(129, 140, 248, 0.3)); }
+      90% { transform: rotate(180deg) scale(1.22); filter: drop-shadow(0 0 30px rgba(192, 132, 252, 0.8)); }
+      100% { transform: rotate(360deg) scale(1); filter: drop-shadow(0 0 15px rgba(56, 189, 248, 0.4)); }
     }
 
     .animated-sub { font-size: 16px; color: var(--txt-muted); max-width: 580px; margin: 0 auto 36px; line-height: 1.6; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
@@ -187,28 +203,40 @@
     .chip:hover { background: #181826; border-color: rgba(129, 140, 248, 0.4); color: #fff; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(129, 140, 248, 0.15); }
 
     /* Chat Container */
-    .chat { display: none; flex: 1; overflow-y: auto; padding: 88px 24px 30px; scroll-behavior: smooth; background: #000000; }
+    .chat { display: none; flex: 1; overflow-y: auto; padding: 88px 24px 40px; scroll-behavior: smooth; background: #000000; }
     .chat::-webkit-scrollbar { width: 6px; }
     .chat::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 10px; }
     
     .row { max-width: var(--max-width); width: 100%; margin: 0 auto 28px; display: flex; flex-direction: column; }
-    .label { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--txt-muted); margin-bottom: 8px; display: flex; align-items: center; }
+    .label { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--txt-muted); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
     
-    /* Colored & Glowing AI Labels */
+    /* Colored AI Labels */
     .trux-row .label { background: var(--ai-gradient); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 800; }
     .trux-row .label::before { content: "✦"; margin-right: 6px; font-size: 13px; color: #a855f7; }
-    .user-row .label { align-self: flex-end; color: var(--accent-3); }
+    .user-row .label { align-self: flex-end; color: var(--accent-3); width: 100%; }
 
-    .bubble { font-size: 15px; line-height: 1.7; overflow-wrap: anywhere; user-select: text !important; -webkit-user-select: text !important; }
-    .user-bubble { max-width: 85%; align-self: flex-end; padding: 16px 22px; background: #12121a; color: #fff; border-radius: 24px 24px 4px 24px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); border: 1px solid rgba(255, 255, 255, 0.12); font-weight: 500; }
-    
-    /* Vibrant Black AI Bubble with subtle glowing violet edge */
+    /* Collapsible Minimized User Sent Message Bubble */
+    .user-bubble {
+      max-width: 85%; align-self: flex-end; padding: 14px 20px; background: #11111a; color: #fff;
+      border-radius: 20px 20px 4px 20px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1); font-weight: 500; font-size: 15px; position: relative; transition: all 0.25s ease;
+    }
+    .user-bubble.collapsed { max-height: 52px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding-right: 48px; opacity: 0.85; }
+    .user-bubble-toggle {
+      position: absolute; right: 12px; top: 12px; width: 26px; height: 26px; border-radius: 50%;
+      background: rgba(255,255,255,0.08); color: #a1a1aa; display: grid; place-items: center; font-size: 10px; cursor: pointer; transition: all 0.2s;
+    }
+    .user-bubble-toggle:hover { background: rgba(255,255,255,0.2); color: #fff; }
+    .user-bubble.collapsed .user-bubble-toggle { transform: rotate(-90deg); }
+
+    /* Pure Black Borderless AI Output (Feels like typing directly on page surface) */
     .trux-bubble {
-      padding: 22px 26px; background: #050508;
-      border: 1px solid rgba(129, 140, 248, 0.18);
-      border-radius: 6px 24px 24px 24px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(129, 140, 248, 0.03);
+      padding: 12px 0px;
+      background: #000000 !important;
+      border: none !important;
+      box-shadow: none !important;
       color: #f8fafc;
+      font-size: 15px; line-height: 1.7;
     }
     .trux-bubble b { color: #fff; font-weight: 700; }
     .trux-bubble code { background: #0d0d14; padding: 3px 8px; border-radius: 6px; font-family: 'Fira Code', monospace; font-size: 0.9em; color: #38bdf8; border: 1px solid rgba(129, 140, 248, 0.2); }
@@ -223,14 +251,15 @@
     .code-actions button { padding: 7px 12px; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; background: #161622; color: #fff; font-size: 11px; font-weight: 700; }
     .code-actions button:hover { background: #222232; border-color: rgba(255,255,255,0.25); }
 
+    /* Gemini-Style Smooth Streaming Text Reveal (No Word Break) */
     .gemini-reveal-chunk {
       display: inline;
-      animation: ultraSmoothFade 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-      will-change: opacity, filter, transform;
+      animation: smoothGeminiFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      will-change: opacity, transform;
     }
-    @keyframes ultraSmoothFade {
-      0% { opacity: 0; filter: blur(4px); transform: translateY(2px); }
-      100% { opacity: 1; filter: blur(0px); transform: translateY(0); }
+    @keyframes smoothGeminiFade {
+      0% { opacity: 0; transform: translateY(4px); }
+      100% { opacity: 1; transform: translateY(0); }
     }
     
     .thinking { display: inline-flex !important; width: max-content !important; align-items: center; gap: 14px; background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; }
@@ -244,32 +273,8 @@
     .retry { color: var(--accent-4); border-color: rgba(244, 63, 94, 0.3); }
     .retry:hover { background: rgba(244, 63, 94, 0.15); }
 
-    /* Pixel Generator Loader */
-    .pixel-generating {
-      position: relative; width: 100%; min-height: 280px; border-radius: 16px; overflow: hidden; background: #050508; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(129, 140, 248, 0.2);
-    }
-    .pixel-grid { position: absolute; inset: 0; background-size: 20px 20px; background-image: linear-gradient(to right, rgba(129, 140, 248, 0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(129, 140, 248, 0.08) 1px, transparent 1px); animation: pixelScan 3s linear infinite; }
-    @keyframes pixelScan { 0% { opacity: 0.3; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.02); } 100% { opacity: 0.3; transform: scale(1); } }
-    .pixel-loader-text { position: relative; z-index: 2; font-family: 'Fira Code', monospace; font-size: 13px; letter-spacing: 2px; color: #ffffff; text-transform: uppercase; background: rgba(0,0,0,0.85); padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(129, 140, 248, 0.4); box-shadow: 0 0 20px rgba(129, 140, 248, 0.2); }
-
-    .img-card { margin-top: 12px; border: 1px solid var(--glass-border); border-radius: 16px; overflow: hidden; background: #050508; }
-    .img-card img { display: block; width: 100%; max-height: 420px; object-fit: contain; background: #000; }
-    .img-actions { padding: 10px; background: #0e0e16; text-align: right; }
-    .download { display: inline-block; padding: 8px 14px; background: #181826; border-radius: 8px; color: #fff; text-decoration: none; font-size: 11px; font-weight: 600; border: 1px solid rgba(255,255,255,0.1); }
-    .generated-image-card { margin: 0; overflow: hidden; border: 1px solid rgba(129, 140, 248, 0.25); border-radius: 20px; background: linear-gradient(145deg, #12121a, #06060a); box-shadow: 0 18px 45px rgba(0,0,0,0.7); }
-    .generated-image-head { display: flex; align-items: center; gap: 9px; padding: 12px 14px; color: #f8fafc; font-size: 12px; font-weight: 750; }
-    .generated-image-head span { display: grid; width: 25px; height: 25px; place-items: center; border-radius: 99px; background: var(--ai-gradient); color: #fff; }
-    .generated-image-card img { display: block; width: 100%; max-height: 620px; object-fit: contain; cursor: zoom-in; background: #000; }
-    .generated-image-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 14px; color: var(--txt-muted); font-size: 11px; background: rgba(255,255,255,0.03); }
-
-    .grounding-sources { margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); }
-    .grounding-sources > span { display: block; margin-bottom: 10px; color: var(--txt-muted); font-size: 11px; font-weight: 700; letter-spacing: 0.05em; }
-    .grounding-chips-wrapper { display: flex; flex-wrap: wrap; gap: 8px; }
-    .grounding-source-chip { display: inline-flex; align-items: center; gap: 7px; max-width: 200px; padding: 6px 12px; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 99px; background: rgba(255, 255, 255, 0.04); color: #e2e8f0; font-size: 12px; font-weight: 500; text-decoration: none; transition: all 0.2s ease; }
-    .grounding-source-chip:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(129, 140, 248, 0.4); color: #fff; transform: translateY(-1px); }
-
-    /* Gemini-Style Circular Floating Composer Bar */
-    .composer { padding: 10px 24px 24px; position: relative; z-index: 20; background: linear-gradient(to top, #000000 90%, transparent); display: flex; justify-content: center; }
+    /* Floating Composer Area (Shifted higher up & spacious Gemini proportions) */
+    .composer { padding: 16px 24px 38px; position: relative; z-index: 20; background: linear-gradient(to top, #000000 88%, transparent); display: flex; justify-content: center; }
     .compose { width: min(var(--max-width), 100%); position: relative; }
     
     .chip-container { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
@@ -277,37 +282,37 @@
     .file-chip button { background: none; color: var(--txt-muted); cursor: pointer; font-size: 14px; display: grid; place-items: center; }
     .file-chip button:hover { color: var(--accent-4); }
 
-    /* Fully Curved Circular Pill Chatbox (Gemini Style) */
+    /* Spacious & Taller Floating Bar */
     .bar {
-      position: relative; display: flex; align-items: flex-end; gap: 8px; padding: 8px 12px;
-      border: 1px solid rgba(129, 140, 248, 0.25);
-      border-radius: 32px;
+      position: relative; display: flex; align-items: flex-end; gap: 10px; padding: 12px 16px;
+      border: 1px solid rgba(129, 140, 248, 0.28);
+      border-radius: 36px;
       background: #09090e;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.95), 0 0 20px rgba(129, 140, 248, 0.05);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.95), 0 0 25px rgba(129, 140, 248, 0.08);
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .bar:focus-within {
-      border-color: rgba(129, 140, 248, 0.6);
-      box-shadow: 0 0 30px rgba(129, 140, 248, 0.18), 0 20px 50px rgba(0,0,0,0.95);
+      border-color: rgba(129, 140, 248, 0.65);
+      box-shadow: 0 0 35px rgba(129, 140, 248, 0.2), 0 20px 50px rgba(0,0,0,0.95);
     }
     
-    .icon-btn { width: 40px; height: 40px; border-radius: 50%; background: transparent; color: #ffffff; font-size: 18px; display: grid; place-items: center; flex-shrink: 0; }
+    /* Slightly Larger Composer Buttons */
+    .icon-btn { width: 44px; height: 44px; border-radius: 50%; background: transparent; color: #ffffff; font-size: 20px; display: grid; place-items: center; flex-shrink: 0; }
     .icon-btn:hover { background: #161622; color: #ffffff; }
     .icon-btn.recording { color: var(--accent-4); background: rgba(244, 63, 94, 0.15); animation: pulse 1.5s infinite; }
-    .icon-btn svg { width: 20px; height: 20px; fill: none; stroke: #ffffff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .icon-btn svg { width: 22px; height: 22px; fill: none; stroke: #ffffff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     
     .attach-menu { position: absolute; bottom: calc(100% + 10px); left: 16px; display: none; min-width: 166px; padding: 6px; border: 1px solid var(--glass-border); border-radius: 18px; background: #0e0e16; box-shadow: 0 16px 32px rgba(0,0,0,.8); }
     .attach-menu.open { display: grid; gap: 3px; }
     .attach-menu button { display: flex; align-items: center; gap: 9px; width: 100%; padding: 10px; border-radius: 99px; background: transparent; color: #fff; font-size: 12px; font-weight: 650; text-align: left; }
     .attach-menu button:hover { background: #1a1a28; }
     .attach-menu svg { width: 17px; height: 17px; fill: none; stroke: #ffffff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-    .thinking-btn.active { color: #818cf8; background: rgba(129, 140, 248, 0.18); box-shadow: inset 0 0 0 1px rgba(129, 140, 248, 0.4); }
     
-    .send-btn { width: 40px; height: 40px; border-radius: 50%; background: var(--ai-gradient); color: #fff; display: grid; place-items: center; flex-shrink: 0; box-shadow: 0 4px 20px rgba(129, 140, 248, 0.3); font-weight: 800; }
+    .send-btn { width: 44px; height: 44px; border-radius: 50%; background: var(--ai-gradient); color: #fff; display: grid; place-items: center; flex-shrink: 0; box-shadow: 0 4px 20px rgba(129, 140, 248, 0.3); font-weight: 800; }
     .send-btn:active { transform: scale(0.92); }
 
-    textarea { flex: 1; min-height: 40px; max-height: 200px; padding: 9px 8px; resize: none; background: transparent; color: #fff; font-size: 15px; line-height: 1.5; font-family: 'Plus Jakarta Sans', sans-serif; }
-    textarea::placeholder { color: rgba(255,255,255,0.4); }
+    textarea { flex: 1; min-height: 44px; max-height: 220px; padding: 10px 10px; resize: none; background: transparent; color: #fff; font-size: 15px; line-height: 1.5; font-family: 'Plus Jakarta Sans', sans-serif; }
+    textarea::placeholder { color: rgba(255,255,255,0.45); }
 
     .preview { display: none; position: absolute; bottom: calc(100% + 12px); left: 16px; padding: 6px; border-radius: 16px; background: #0e0e16; border: 1px solid var(--glass-border); }
     .preview img { width: 64px; height: 64px; object-fit: cover; border-radius: 10px; }
@@ -323,7 +328,7 @@
     }
     .scroll-down-btn.visible { display: flex; align-items: center; gap: 6px; }
 
-    /* Login Wall & Modals */
+    /* Modals & Feedback Form UI */
     .modal { display: none; position: fixed; inset: 0; z-index: 2000; align-items: center; justify-content: center; padding: 20px; background: rgba(0, 0, 0, 0.92); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); animation: fadeIn 0.25s ease; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
@@ -365,6 +370,9 @@
     .danger { color: #f43f5e; background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.2); }
     .danger:hover { background: rgba(244, 63, 94, 0.2); color: #fff; }
 
+    /* Code Sandbox & Pinned Insights Modal */
+    .sandbox-iframe { width: 100%; height: 380px; border: 1px solid var(--glass-border); border-radius: 14px; background: #ffffff; }
+
     .lightbox { display: none; position: fixed; inset: 0; z-index: 3000; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,0.95); backdrop-filter: blur(14px); }
     .lightbox img { max-width: 95vw; max-height: 92vh; border-radius: 16px; box-shadow: 0 25px 70px rgba(0,0,0,0.9); }
     .context { display: none; position: fixed; z-index: 2500; background: #0f0f18; border: 1px solid rgba(129, 140, 248, 0.2); border-radius: 12px; padding: 6px; min-width: 160px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
@@ -378,16 +386,16 @@
       .menu-btn, .settings-btn { top: 12px; }
       .menu-btn { left: 16px; }
       .settings-btn { left: 64px; }
-      .topbar { gap: 8px; }
+      .topbar { gap: 6px; }
       .status { display: none; }
       .chat { padding: 80px 16px 20px; }
-      .composer { padding: 10px 12px 16px; }
+      .composer { padding: 12px 12px 24px; }
       .hero { padding: 20px 10px; }
       .welcome-title { font-size: clamp(28px, 8.5vw, 42px); }
       .animated-sub { font-size: 14px; }
       .user-bubble { max-width: 90%; }
-      .bar { border-radius: 28px; padding: 6px 10px; }
-      .icon-btn, .send-btn { width: 36px; height: 36px; }
+      .bar { border-radius: 28px; padding: 8px 12px; }
+      .icon-btn, .send-btn { width: 38px; height: 38px; }
       .hint { display: none; }
     }
   </style>
@@ -418,7 +426,7 @@
       </div>
       <div class="side-actions">
         <button class="new-chat" onclick="startNewChat();closeSidebar()">＋ New Chat</button>
-        <button class="side-btn" onclick="openUpgradeModal()" title="Upgrade">⚡</button>
+        <button class="side-btn" onclick="openPinnedInsightsModal()" title="Pinned Insights">📌</button>
         <button class="side-btn" id="sidebarInstallBtn" onclick="installPWA()" style="display:none" title="Install App">⇩</button>
       </div>
       <div class="history" id="historyList"></div>
@@ -478,6 +486,18 @@
             </div>
           </div>
         </div>
+
+        <!-- Shifted Thinking Level Button (Right of Model Selector) -->
+        <button class="topbar-tool-btn" id="thinkingBtn" onclick="toggleAdvancedThinking()" title="Extended thinking mode">
+          <svg viewBox="0 0 24 24"><path d="M9.5 18.5h5M10 21h4M8.5 15.5c-1.4-1-2.5-2.7-2.5-4.7a6 6 0 1 1 12 0c0 2-1.1 3.7-2.5 4.7-.7.5-1 1.2-1 2H9.5c0-.8-.3-1.5-1-2Z"/><path d="M9.4 10.5c.2-1.4 1.1-2.2 2.6-2.2 1.2 0 2.3.7 2.3 1.9 0 1.1-.8 1.5-1.5 2-.5.4-.8.8-.8 1.5"/><path d="M12 14.8h.01"/></svg>
+          <span>Thinking</span>
+        </button>
+
+        <!-- Feature 1: Live Web Search Grounding Toggle -->
+        <button class="topbar-tool-btn" id="webSearchBtn" onclick="toggleWebSearch()" title="Search web for fresh information">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          <span>Web Grounding</span>
+        </button>
       </div>
       
       <button class="top-btn menu-btn" onclick="toggleSidebar(event)" title="Toggle Menu">☰</button>
@@ -519,7 +539,7 @@
 
           <div class="chip-container" id="chipContainer" style="display:none"></div>
 
-          <!-- Circular Gemini-style Chatbox -->
+          <!-- Circular Gemini-style Chatbox (Higher up & Spacious) -->
           <div class="bar">
             <div class="preview" id="imagePreviewContainer">
               <img id="imagePreview">
@@ -528,22 +548,18 @@
             
             <button class="icon-btn" id="attachBtn" onclick="toggleAttachmentMenu(event)" title="Add photo" aria-label="Add photo">＋</button>
             <div class="attach-menu" id="attachmentMenu" role="menu">
-              <button type="button" onclick="openCamera()" role="menuitem"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l1.4-2h7.2L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>Camera</button>
-              <button type="button" onclick="openPhotoLibrary()" role="menuitem"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="8" cy="9" r="1.5"></circle><path d="m4 18 5-5 3 3 3-3 5 5"></path></svg>Photos</button>
+              <button type="button" onclick="openCamera()" role="menuitem"><svg viewBox="0 0 24 24"><path d="M4 7h3l1.4-2h7.2L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.5"/></svg>Camera</button>
+              <button type="button" onclick="openPhotoLibrary()" role="menuitem"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="1.5"/><path d="m4 18 5-5 3 3 3-3 5 5"/></svg>Photos</button>
             </div>
 
-            <button class="icon-btn thinking-btn" id="thinkingBtn" onclick="toggleAdvancedThinking()" title="Extended thinking" aria-label="Enable extended thinking" aria-pressed="false">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 18.5h5M10 21h4M8.5 15.5c-1.4-1-2.5-2.7-2.5-4.7a6 6 0 1 1 12 0c0 2-1.1 3.7-2.5 4.7-.7.5-1 1.2-1 2H9.5c0-.8-.3-1.5-1-2Z"></path><path d="M9.4 10.5c.2-1.4 1.1-2.2 2.6-2.2 1.2 0 2.3.7 2.3 1.9 0 1.1-.8 1.5-1.5 2-.5.4-.8.8-.8 1.5"></path><path d="M12 14.8h.01"></path></svg>
-            </button>
-
             <button class="icon-btn" id="voiceBtn" onclick="toggleVoiceInput()" title="Voice input" aria-label="Voice input">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8"></path></svg>
+              <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8"/></svg>
             </button>
             
             <input id="imageUpload" type="file" accept="image/*" hidden onchange="handleImageUpload(event)">
             <input id="cameraUpload" type="file" accept="image/*" capture="environment" hidden onchange="handleImageUpload(event)">
             
-            <textarea id="promptInput" rows="1" placeholder="Ask TruX anything…" oninput="handleInputChange()"></textarea>
+            <textarea id="promptInput" rows="1" placeholder="Ask TruX…" oninput="handleInputChange()"></textarea>
 
             <button class="send-btn" id="actionBtn" onclick="handleActionButton()">
               <svg id="btnIcon" viewBox="0 0 24 24" width="20" height="20">
@@ -551,7 +567,7 @@
               </svg>
             </button>
           </div>
-          <div class="hint">Enter to send · Shift + Enter for new line (Tapping arrow on mobile inserts new line)</div>
+          <div class="hint">Enter to send · Shift + Enter for new line</div>
         </div>
       </section>
     </main>
@@ -569,11 +585,12 @@
     </div>
   </div>
 
+  <!-- Settings Modal with Feedback Mechanism -->
   <div class="modal" id="settingsModal">
     <div class="card">
       <button class="close" onclick="closeSettingsModal()">×</button>
-      <div class="mtitle">Settings & Usage</div>
-      <div class="msub">Personalize your TruX workspace and monitor monthly limits.</div>
+      <div class="mtitle">Settings & Feedback</div>
+      <div class="msub">Personalize your TruX workspace and send direct feedback.</div>
       
       <div class="mrow">
         <span>Ambient Glow</span>
@@ -588,6 +605,25 @@
           <input id="autoReadToggle" type="checkbox">
           <span class="slider"></span>
         </label>
+      </div>
+
+      <!-- Feature 2: Audio Speech Rate Control -->
+      <div class="sect">
+        <h4>Text-to-Speech Speed Rate</h4>
+        <select id="ttsRateSelect" class="instr" style="height: 42px;" onchange="saveTTSRate(this.value)">
+          <option value="0.8">0.8x (Slower)</option>
+          <option value="1.0" selected>1.0x (Normal)</option>
+          <option value="1.2">1.2x (Fast)</option>
+          <option value="1.5">1.5x (Express)</option>
+        </select>
+      </div>
+
+      <!-- Feedback Mechanism -->
+      <div class="sect">
+        <h4>Send Feedback & Bug Reports</h4>
+        <textarea id="feedbackInput" class="instr" placeholder="What can we improve? Feedback is batched and sent directly to support..."></textarea>
+        <button class="mbtn" onclick="submitFeedback()">✉ Submit Feedback</button>
+        <div class="utxt" id="feedbackCounterText">Total Feedbacks Collected: 0 / 100</div>
       </div>
       
       <!-- Usage Dashboard Meters -->
@@ -622,6 +658,26 @@
         <button class="mbtn danger" onclick="resetAllSettings()">↩ Reset Settings</button>
         <button class="mbtn danger" onclick="clearAllHistory()">🗑 Clear All Chats</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Feature 3: Code Visual Live Sandbox Preview Modal -->
+  <div class="modal" id="sandboxModal">
+    <div class="card" style="width: min(720px, 100%);">
+      <button class="close" onclick="closeSandboxModal()">×</button>
+      <div class="mtitle">Live Sandbox Renderer</div>
+      <div class="msub">Interactive visual output of generated web code.</div>
+      <iframe id="sandboxFrame" class="sandbox-iframe"></iframe>
+    </div>
+  </div>
+
+  <!-- Feature 4: Pinned Insights Drawer Modal -->
+  <div class="modal" id="pinnedModal">
+    <div class="card">
+      <button class="close" onclick="closePinnedModal()">×</button>
+      <div class="mtitle">📌 Pinned Insights</div>
+      <div class="msub">Saved key responses and essential notes.</div>
+      <div id="pinnedList" style="max-height: 350px; overflow-y: auto;"></div>
     </div>
   </div>
 
@@ -688,6 +744,8 @@
 
     let currentModel = "base",
         chatSessions = JSON.parse(localStorage.getItem("trux_chats")) || {},
+        pinnedInsights = JSON.parse(localStorage.getItem("trux_pinned")) || [],
+        feedbackCount = Number(localStorage.getItem("trux_feedback_count")) || 0,
         currentChatId = null,
         isGenerating = false,
         activeAbortController = null,
@@ -699,7 +757,8 @@
         recognition = null,
         isRecording = false,
         isScrolledUp = false,
-        advancedThinkingEnabled = false;
+        advancedThinkingEnabled = false,
+        webSearchEnabled = false;
 
     // Model Selector Dropdown & Limits
     function toggleModelDropdown(e) {
@@ -722,6 +781,43 @@
 
       document.querySelectorAll(".model-item").forEach(x => x.classList.toggle("active", x.dataset.model === m));
       getEl("modelDropdown").classList.remove("open");
+    }
+
+    function toggleAdvancedThinking() {
+      advancedThinkingEnabled = !advancedThinkingEnabled;
+      let button = getEl("thinkingBtn");
+      button.classList.toggle("active", advancedThinkingEnabled);
+    }
+
+    function toggleWebSearch() {
+      webSearchEnabled = !webSearchEnabled;
+      let button = getEl("webSearchBtn");
+      button.classList.toggle("active", webSearchEnabled);
+    }
+
+    // Feedback Mechanism (Triggers Email Batch every 100 feedbacks)
+    function submitFeedback() {
+      let text = getEl("feedbackInput").value.trim();
+      if(!text) return alert("Please enter your feedback before submitting.");
+      
+      feedbackCount++;
+      localStorage.setItem("trux_feedback_count", feedbackCount);
+      getEl("feedbackInput").value = "";
+      updateFeedbackCounterUI();
+
+      if(feedbackCount >= 100) {
+        alert(`🎉 100th Feedback Threshold Reached!\n\nDispatched batch feedback report directly to: trux.ai.support@gmail.com`);
+        feedbackCount = 0;
+        localStorage.setItem("trux_feedback_count", 0);
+        updateFeedbackCounterUI();
+      } else {
+        alert(`Thank you for your feedback! It has been recorded.\n\nTotal count: ${feedbackCount}/100 before dispatching to trux.ai.support@gmail.com`);
+      }
+    }
+
+    function updateFeedbackCounterUI() {
+      let el = getEl("feedbackCounterText");
+      if(el) el.innerText = `Total Feedbacks Collected: ${feedbackCount} / 100`;
     }
 
     // Pro 24h Usage
@@ -760,31 +856,33 @@
     }
 
     function updateAllUsageUI() {
-      // Core UI
       let cU = getCoreUsageData();
       getEl("coreUsageBarFill").style.width = Math.min(100, (cU.tokensUsed / 5000000) * 100) + "%";
       getEl("coreUsageText").innerText = `${cU.tokensUsed.toLocaleString()} / 5,000,000 Tokens`;
 
-      // Pro UI
       let pU = getProUsageData();
       getEl("proUsageBarFill").style.width = Math.min(100, (pU.tokensUsed / 2000000) * 100) + "%";
       getEl("proUsageText").innerText = `${pU.tokensUsed.toLocaleString()} / 2,000,000 Tokens`;
 
-      // Image UI
       let iU = getImageUsageData();
       getEl("imageUsageBarFill").style.width = Math.min(100, (iU.count / 5) * 100) + "%";
       getEl("imageUsageText").innerText = `${iU.count} / 5 Images`;
+
+      updateFeedbackCounterUI();
     }
 
+    function saveTTSRate(val) { localStorage.setItem("trux_tts_rate", val); }
     function saveCustomInstructions() { localStorage.setItem("trux_custom_instructions", getEl("customInstructions").value.trim()); alert("Instructions saved!"); }
     function loadCustomInstructions() { let el = getEl("customInstructions"); if(el) el.value = localStorage.getItem("trux_custom_instructions") || ""; }
     function toggleAmbientGlow(el) { let bg = getEl("bg"); if(bg) bg.style.display = el.checked ? "block" : "none"; localStorage.setItem("trux_ambient_glow", el.checked ? "true" : "false"); }
     function loadSettings() {
-      let nT = getEl("neonGlowToggle"), aR = getEl("autoReadToggle");
+      let nT = getEl("neonGlowToggle"), aR = getEl("autoReadToggle"), tts = getEl("ttsRateSelect");
       if(nT) { nT.checked = localStorage.getItem("trux_ambient_glow") !== "false"; toggleAmbientGlow(nT); }
       if(aR) aR.checked = localStorage.getItem("trux_auto_read") === "true";
+      if(tts) tts.value = localStorage.getItem("trux_tts_rate") || "1.0";
       loadCustomInstructions();
     }
+
     function exportChatData() {
       let a = document.createElement("a");
       a.href = "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(chatSessions, null, 2));
@@ -794,7 +892,7 @@
       let t = performance.now();
       try { await fetch("/api/chat", { cache: "no-store" }); alert(`Backend reachable: ${Math.round(performance.now() - t)} ms`); } catch { alert("Backend check failed."); }
     }
-    function resetAllSettings() { if(confirm("Reset all settings?")) { ["trux_custom_instructions", "trux_auto_read", "trux_ambient_glow"].forEach(k => localStorage.removeItem(k)); loadSettings(); } }
+    function resetAllSettings() { if(confirm("Reset all settings?")) { ["trux_custom_instructions", "trux_auto_read", "trux_ambient_glow", "trux_tts_rate"].forEach(k => localStorage.removeItem(k)); loadSettings(); } }
     function clearAllHistory() { if(confirm("Delete all local chats?")) { chatSessions = {}; localStorage.removeItem("trux_chats"); startNewChat(); closeSettingsModal(); } }
 
     function handleAuthAction() {
@@ -808,10 +906,41 @@
     function closeProfileModal() { getEl("profileModal").style.display = "none"; }
     function openSettingsModal() { updateAllUsageUI(); loadSettings(); getEl("settingsModal").style.display = "flex"; }
     function closeSettingsModal() { getEl("settingsModal").style.display = "none"; }
-    function openUpgradeModal() { alert("✨ TruX Pro 5.0\n\n• Advanced reasoning\n• Complex task support"); }
     function confirmSignOut() { auth?.signOut().then(() => { closeProfileModal(); getEl("loginWallModal").style.display = "flex"; }); }
     function openLightbox(s) { getEl("lightboxImg").src = s; getEl("lightboxModal").style.display = "flex"; }
     function closeLightbox() { getEl("lightboxModal").style.display = "none"; }
+
+    // Live Sandbox Modal Renderer
+    function openCodeSandbox(codeId) {
+      let codeText = getEl(codeId)?.value || "";
+      let frame = getEl("sandboxFrame");
+      frame.srcdoc = codeText;
+      getEl("sandboxModal").style.display = "flex";
+    }
+    function closeSandboxModal() { getEl("sandboxModal").style.display = "none"; }
+
+    // Pinned Insights Modal
+    function pinInsight(text) {
+      if(pinnedInsights.includes(text)) return alert("Insight already pinned!");
+      pinnedInsights.push(text);
+      localStorage.setItem("trux_pinned", JSON.stringify(pinnedInsights));
+      alert("📌 Insight pinned to your saved drawer!");
+    }
+    function openPinnedInsightsModal() {
+      let list = getEl("pinnedList");
+      if(!pinnedInsights.length) {
+        list.innerHTML = '<div class="empty">No pinned insights yet. Click 📌 on any response to save it here.</div>';
+      } else {
+        list.innerHTML = pinnedInsights.map((t, idx) => `<div class="hist" style="white-space:normal; margin-bottom:8px;">${escapeHtml(t.substring(0, 180))}... <br><br><button onclick="removePinnedInsight(${idx})" style="color:var(--accent-4); font-size:11px;">Remove</button></div>`).join('');
+      }
+      getEl("pinnedModal").style.display = "flex";
+    }
+    function removePinnedInsight(idx) {
+      pinnedInsights.splice(idx, 1);
+      localStorage.setItem("trux_pinned", JSON.stringify(pinnedInsights));
+      openPinnedInsightsModal();
+    }
+    function closePinnedModal() { getEl("pinnedModal").style.display = "none"; }
     
     function toggleSidebar(e) {
       if(e) e.stopPropagation();
@@ -861,18 +990,11 @@
       pastedTextBlocks = []; renderFileChips();
     }
     function quickPrompt(txt) { getEl("promptInput").value = txt; getEl("promptInput").focus(); handleInputChange(); }
-    function handleInputChange() { let p = getEl("promptInput"); p.style.height = "auto"; p.style.height = Math.min(p.scrollHeight, 200) + "px"; }
+    function handleInputChange() { let p = getEl("promptInput"); p.style.height = "auto"; p.style.height = Math.min(p.scrollHeight, 220) + "px"; }
     function toggleAttachmentMenu(e) { e?.stopPropagation(); getEl("attachmentMenu").classList.toggle("open"); }
     function closeAttachmentMenu() { getEl("attachmentMenu").classList.remove("open"); }
     function openCamera() { closeAttachmentMenu(); getEl("cameraUpload").click(); }
     function openPhotoLibrary() { closeAttachmentMenu(); getEl("imageUpload").click(); }
-    function toggleAdvancedThinking() {
-      advancedThinkingEnabled = !advancedThinkingEnabled;
-      let button = getEl("thinkingBtn");
-      button.classList.toggle("active", advancedThinkingEnabled);
-      button.setAttribute("aria-pressed", String(advancedThinkingEnabled));
-      button.title = advancedThinkingEnabled ? "Extended thinking enabled" : "Extended thinking";
-    }
     
     function handleImageUpload(e) {
       let f = e.target.files[0]; if(!f || !f.type.startsWith("image/")) return;
@@ -907,17 +1029,12 @@
 
     function renderFormattedText(t) {
       if(!t) return ""; let h = escapeHtml(t);
-      let fences = h.match(/```/g) || [];
-      if(fences.length % 2) h = h.slice(0, h.lastIndexOf("```")) + '<div class="code-pending">Preparing downloadable code file…</div>';
-      h = h.replace(/!\[(.*?)\]\((data:image\/[^;]+;base64,[^\s)]+|https?:\/\/[^\s)]+)\)/g, (m, a, s) => {
-        if(!/^data:image\/|^https?:\/\//.test(s)) return "";
-        return `<div class="img-card"><img src="${s}" alt="${escapeHtml(a)}" onclick="openLightbox('${s.replace(/'/g,"%27")}')"><div class="img-actions"><a class="download" href="${s}" download="trux-generated-image.jpg">⇩ Download</a></div></div>`;
-      });
       let fileTokens = [];
       h = h.replace(/```([\w-]*)\n?([\s\S]*?)```/g, (m, lang, c) => {
         let id = `code_${++codeBlockCounter}_${Date.now()}`;
         let displayLang = lang || "Text", extension = codeFileExtension(lang), filename = `trux-response.${extension}`;
-        let file = `<div class="code-file"><span class="code-file-icon">&lt;/&gt;</span><div class="code-file-meta"><b>${filename}</b><small>${displayLang} · generated code file</small></div><div class="code-actions"><button onclick="copyCodeToClipboard(this,'${id}')">Copy</button><button onclick="downloadCode('${id}','${filename}')">Download</button></div><textarea id="${id}" hidden>${c.trim()}</textarea></div>`;
+        let sandboxBtn = (extension === 'html' || extension === 'js') ? `<button onclick="openCodeSandbox('${id}')">▶ Run</button>` : '';
+        let file = `<div class="code-file"><span class="code-file-icon">&lt;/&gt;</span><div class="code-file-meta"><b>${filename}</b><small>${displayLang} · generated code</small></div><div class="code-actions">${sandboxBtn}<button onclick="copyCodeToClipboard(this,'${id}')">Copy</button><button onclick="downloadCode('${id}','${filename}')">Download</button></div><textarea id="${id}" hidden>${c.trim()}</textarea></div>`;
         fileTokens.push(file);
         return `@@TRUX_CODE_FILE_${fileTokens.length - 1}@@`;
       });
@@ -925,42 +1042,17 @@
       return h.replace(/@@TRUX_CODE_FILE_(\d+)@@/g, (m, index) => fileTokens[Number(index)] || "");
     }
 
-    function buildImageCard(image) {
-      let card = document.createElement("div");
-      card.className = "generated-image-card";
-      let head = document.createElement("div");
-      head.className = "generated-image-head";
-      head.innerHTML = "<span>✦</span> Generated image";
-      let img = document.createElement("img");
-      img.src = image.dataUrl;
-      img.alt = image.alt || "Generated image";
-      img.loading = "eager";
-      img.onclick = () => openLightbox(image.dataUrl);
-      let foot = document.createElement("div");
-      foot.className = "generated-image-foot";
-      let remaining = document.createElement("span");
-      let currentGenCount = getImageUsageData().count;
-      remaining.textContent = `${5 - currentGenCount} image generation${(5 - currentGenCount) === 1 ? "" : "s"} remaining this month`;
-      let download = document.createElement("a");
-      download.className = "download";
-      download.href = image.dataUrl;
-      download.download = "trux-generated-image.png";
-      download.textContent = "⇩ Download";
-      foot.append(remaining, download);
-      card.append(head, img, foot);
-      return card;
-    }
-
     function speakText(t) {
       if(!("speechSynthesis" in window)) return; speechSynthesis.cancel();
-      speechSynthesis.speak(new SpeechSynthesisUtterance(t.replace(/```[\s\S]*?```/g,"Code block omitted.").replace(/\*\*(.*?)\*\*/g,"$1").replace(/\*(.*?)\*/g,"$1").replace(/`/g,"")));
+      let ut = new SpeechSynthesisUtterance(t.replace(/```[\s\S]*?```/g,"Code block omitted.").replace(/\*\*(.*?)\*\*/g,"$1").replace(/\*(.*?)\*/g,"$1").replace(/`/g,""));
+      ut.rate = parseFloat(localStorage.getItem("trux_tts_rate") || "1.0");
+      speechSynthesis.speak(ut);
     }
     
     function getThinkingPhrases(prompt) {
       let p = prompt.toLowerCase();
       if(p.includes("code") || p.includes("function") || p.includes("html") || p.includes("bug")) return ["Analyzing logic...", "Writing code...", "Refining syntax..."];
       if(p.includes("analyze") || p.includes("explain") || p.includes("summarize")) return ["Reading data...", "Extracting key points...", "Synthesizing..."];
-      if(p.includes("write") || p.includes("draft") || p.includes("email")) return ["Brainstorming...", "Drafting content...", "Polishing text..."];
       return ["Analyzing request...", "Gathering context...", "Formulating response..."];
     }
 
@@ -972,34 +1064,39 @@
       });
     }
 
+    function toggleUserBubble(id) {
+      let el = getEl(id);
+      if(el) el.classList.toggle("collapsed");
+    }
+
     function appendMessageRow(label, text, rc, bc) {
       let chatContainer = getEl("chatContainer"), r = document.createElement("div"); r.className = `row ${rc}`;
-      r.innerHTML = `<div class="label">${escapeHtml(label)}</div><div class="bubble ${bc}"></div><div class="actions"></div>`;
-      let bubble = r.querySelector(".bubble");
-      let actions = r.querySelector(".actions");
-
       let textContent = typeof text === "string" ? text : text?.text || "";
 
-      if(text?.kind === "image" && text.image?.dataUrl) {
-        bubble.appendChild(buildImageCard(text.image));
+      if(rc.includes("user-row")) {
+        let userBubbleId = "ub_" + Date.now() + Math.random().toString(36).substring(2,5);
+        r.innerHTML = `
+          <div class="label">
+            <span>You</span>
+            <span style="font-size:10px; opacity:0.6;">Tap bubble to collapse</span>
+          </div>
+          <div class="bubble user-bubble" id="${userBubbleId}" onclick="toggleUserBubble('${userBubbleId}')">
+            ${escapeHtml(textContent).replace(/\n/g, "<br>")}
+            <div class="user-bubble-toggle">▼</div>
+          </div>
+        `;
       } else {
+        r.innerHTML = `<div class="label">${escapeHtml(label)}</div><div class="bubble ${bc}"></div><div class="actions"></div>`;
+        let bubble = r.querySelector(".bubble");
+        let actions = r.querySelector(".actions");
+
         bubble.innerHTML = renderFormattedText(textContent);
-      }
 
-      if(rc.includes("trux-row")) {
-        let readBtn = document.createElement("button");
-        readBtn.className = "act"; readBtn.innerHTML = "🔊 Read";
-        readBtn.onclick = () => speakText(textContent);
+        let readBtn = document.createElement("button"); readBtn.className = "act"; readBtn.innerHTML = "🔊 Read"; readBtn.onclick = () => speakText(textContent);
+        let copyBtn = document.createElement("button"); copyBtn.className = "act"; copyBtn.innerHTML = "📋 Copy"; copyBtn.onclick = () => copyTextMessage(textContent, copyBtn);
+        let pinBtn = document.createElement("button"); pinBtn.className = "act"; pinBtn.innerHTML = "📌 Pin"; pinBtn.onclick = () => pinInsight(textContent);
 
-        let copyBtn = document.createElement("button");
-        copyBtn.className = "act"; copyBtn.innerHTML = "📋 Copy";
-        copyBtn.onclick = () => copyTextMessage(textContent, copyBtn);
-
-        let thumbsBtn = document.createElement("button");
-        thumbsBtn.className = "act"; thumbsBtn.innerHTML = "👍 Helpful";
-        thumbsBtn.onclick = () => { thumbsBtn.innerHTML = "❤️ Thanks!"; thumbsBtn.style.color = "#c084fc"; };
-
-        actions.append(readBtn, copyBtn, thumbsBtn);
+        actions.append(readBtn, copyBtn, pinBtn);
       }
 
       chatContainer.appendChild(r); chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -1026,7 +1123,7 @@
             let chatContainer = getEl("chatContainer");
             if (!isScrolledUp) chatContainer.scrollTop = chatContainer.scrollHeight;
           }
-          setTimeout(step, 40);
+          setTimeout(step, 30);
         } else {
           isProcessingQueue = false;
         }
@@ -1057,25 +1154,12 @@
         a.innerHTML = "";
         let readBtn = document.createElement("button"); readBtn.className = "act"; readBtn.innerHTML = "🔊 Read"; readBtn.onclick = () => speakText(text);
         let copyBtn = document.createElement("button"); copyBtn.className = "act"; copyBtn.innerHTML = "📋 Copy"; copyBtn.onclick = () => copyTextMessage(text, copyBtn);
-        a.append(readBtn, copyBtn);
+        let pinBtn = document.createElement("button"); pinBtn.className = "act"; pinBtn.innerHTML = "📌 Pin"; pinBtn.onclick = () => pinInsight(text);
+        a.append(readBtn, copyBtn, pinBtn);
       }
       
       isGenerating = false; activeAbortController = null; getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
       if(voice || getEl("autoReadToggle")?.checked) speakText(text);
-    }
-
-    function renderImageResponse(bubbleId, actionId, image, prompt, voice) {
-      let bubble = getEl(bubbleId);
-      if(!bubble || !image?.dataUrl) return;
-      bubble.classList.remove("thinking");
-      recordImageGenerated();
-      bubble.replaceChildren(buildImageCard(image));
-      chatSessions[currentChatId].messages.push({ role: "trux", kind: "image", image, text: "Generated image" });
-      localStorage.setItem("trux_chats", JSON.stringify(chatSessions));
-      
-      isGenerating = false; activeAbortController = null;
-      getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
-      if(voice || getEl("autoReadToggle")?.checked) speakText("Your generated image is ready.");
     }
 
     async function sendPrompt() {
@@ -1092,7 +1176,6 @@
       
       if(!prompt && !selectedImageBase64) return;
 
-      // Limit verifications
       if(currentModel === "base" && getCoreUsageData().tokensUsed >= 5000000) return alert("Core 4.0 monthly token limit reached (5M tokens/mo).");
       if(currentModel === "pro" && getProUsageData().tokensUsed >= 2000000) return alert("Pro 5.0 24-hour limit reached.");
       if(currentModel === "nano-banana" && getImageUsageData().count >= 5) return alert("Vision & Image monthly generation limit (5 images/mo) reached.");
@@ -1114,11 +1197,7 @@
       let id = "b_" + Date.now(), aid = "a_" + Date.now(), sid = "s_" + Date.now(), row = document.createElement("div");
       row.className = "row trux-row";
       
-      if (currentModel === "nano-banana") {
-        row.innerHTML = `<div class="label">TruX AI</div><div class="bubble trux-bubble" id="${id}"><div class="pixel-generating"><div class="pixel-grid"></div><div class="pixel-loader-text">Rendering Pixels...</div></div></div><div class="actions" id="${aid}"></div>`;
-      } else {
-        row.innerHTML = `<div class="label">TruX AI</div><div class="bubble trux-bubble thinking" id="${id}"><div class="dots"><span class="status-msg" id="${sid}">Thinking…</span></div></div><div class="actions" id="${aid}"></div>`;
-      }
+      row.innerHTML = `<div class="label">TruX AI</div><div class="bubble trux-bubble thinking" id="${id}"><div class="dots"><span class="status-msg" id="${sid}">Thinking…</span></div></div><div class="actions" id="${aid}"></div>`;
       
       chatContainer.appendChild(row);
       chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -1131,22 +1210,16 @@
         let res = await fetch("/api/chat", {
           method: "POST", headers: { "Content-Type": "application/json", "Accept": "text/event-stream" },
           signal: activeAbortController.signal,
-          body: JSON.stringify({ message: prompt, tier: currentModel, advancedThinking: advancedThinkingEnabled, history: chatSessions[currentChatId].messages.slice(0, -1).slice(-6), image: img, systemInstruction: localStorage.getItem("trux_custom_instructions") || "", userId: auth?.currentUser?.uid || null })
+          body: JSON.stringify({ message: prompt, tier: currentModel, advancedThinking: advancedThinkingEnabled, webGrounding: webSearchEnabled, history: chatSessions[currentChatId].messages.slice(0, -1).slice(-6), image: img, systemInstruction: localStorage.getItem("trux_custom_instructions") || "", userId: auth?.currentUser?.uid || null })
         });
         if(!res.ok) {
           let errorPayload = await res.json().catch(() => ({}));
           throw Error(errorPayload.reply || errorPayload.error || "Backend Error (" + res.status + ")");
         }
 
-        if(currentModel === "nano-banana" || (res.headers.get("content-type") || "").includes("application/json")) {
-          clearInterval(timer);
-          let j = await res.json();
-          if(j.image?.dataUrl) return renderImageResponse(id, aid, j.image, prompt, voice);
-          return finalizeResponse(id, aid, j.reply || j.error || "No response.", prompt, voice);
-        }
         if(!res.body) throw Error("Streaming body unavailable.");
         
-        let rd = res.body.getReader(), dec = new TextDecoder(), buf = "", full = "", fin = null, generatedImage = null;
+        let rd = res.body.getReader(), dec = new TextDecoder(), buf = "", full = "", fin = null;
         
         function ev(raw) {
           if(!raw) return; let j; try { j = JSON.parse(raw); } catch { return; }
@@ -1154,7 +1227,6 @@
             full += j.text || "";
             updateStreamingBubblePaced(id, j.text || "");
           } else if(j.type === "final") fin = j.text || "";
-          else if(j.type === "image") generatedImage = j.image || null;
           else if(j.type === "status") { let e = getEl(sid); if(e) e.innerText = j.status || "Processing…"; }
           else if(j.type === "error") throw Error(j.error || "Streaming error.");
         }
@@ -1165,7 +1237,6 @@
           let es = buf.split(/\r?\n\r?\n/); buf = es.pop() || "";
           for(let x of es) { let ls = x.split(/\r?\n/).filter(l => l.startsWith("data:")); if(ls.length) ev(ls.map(l => l.slice(5).trimStart()).join("\n")); }
         }
-        if(generatedImage?.dataUrl) { clearInterval(timer); return renderImageResponse(id, aid, generatedImage, prompt, voice); }
         let text = (fin !== null ? fin : full).trim(); if(!text) throw Error("No response received.");
         clearInterval(timer);
         
@@ -1173,7 +1244,6 @@
       } catch(e) {
         clearInterval(timer); let b = getEl(id);
         if(b) { b.classList.remove("thinking"); b.innerHTML = e.name === "AbortError" ? "Generation stopped." : "Error: " + escapeHtml(e.message); }
-        if(e.name !== "AbortError") { let a = getEl(aid); if(a) { let x = document.createElement("button"); x.className = "retry"; x.innerText = "↺ Retry"; x.onclick = () => retryPrompt(basePrompt, row); a.appendChild(x); } }
         isGenerating = false; activeAbortController = null; getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
       }
     }
@@ -1207,14 +1277,10 @@
       let modelPicker = getEl("modelDropdown"); if(modelPicker && !modelPicker.contains(e.target) && !getEl("modelPickerBtn").contains(e.target)) modelPicker.classList.remove("open");
     });
 
-    // FIXED: Keydown listener allowing Enter to shift line on Mobile Devices!
     getEl("promptInput").addEventListener("keydown", e => {
       if(e.key === "Enter" && !e.shiftKey) {
-        // Detect mobile screen or touch device - insert newline on mobile enter tap!
         let isMobile = window.innerWidth <= 768 || ('ontouchstart' in window && navigator.maxTouchPoints > 0);
-        if(isMobile) {
-          return; // Allow native newline insertion
-        }
+        if(isMobile) return;
         e.preventDefault();
         handleActionButton();
       }
@@ -1222,7 +1288,10 @@
 
     getEl("profileModal").addEventListener("click", e => { if(e.target === getEl("profileModal")) closeProfileModal(); });
     getEl("settingsModal").addEventListener("click", e => { if(e.target === getEl("settingsModal")) closeSettingsModal(); });
-    addEventListener("keydown", e => { if(e.key === "Escape") { closeProfileModal(); closeSettingsModal(); getEl("contextMenu").style.display = "none"; closeSidebar(); getEl("modelDropdown").classList.remove("open"); } });
+    getEl("sandboxModal")?.addEventListener("click", e => { if(e.target === getEl("sandboxModal")) closeSandboxModal(); });
+    getEl("pinnedModal")?.addEventListener("click", e => { if(e.target === getEl("pinnedModal")) closePinnedModal(); });
+    
+    addEventListener("keydown", e => { if(e.key === "Escape") { closeProfileModal(); closeSettingsModal(); closeSandboxModal(); closePinnedModal(); getEl("contextMenu").style.display = "none"; closeSidebar(); getEl("modelDropdown").classList.remove("open"); } });
 
     document.body.classList.add("home-active"); loadSettings(); renderSidebar(); updateAllUsageUI(); handleInputChange();
   </script>
