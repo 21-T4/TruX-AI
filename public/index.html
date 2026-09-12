@@ -150,7 +150,7 @@
     .model-icon { font-size: 16px; }
     .model-info b { display: block; font-size: 13px; color: #fff; font-weight: 700; }
     .model-info small { display: block; font-size: 10px; color: var(--txt-muted); margin-top: 1px; }
-    .model-badge { font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 99px; background: rgba(255,255,255,0.08); color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.05em; }
+    .model-badge { font-size: 99px; font-weight: 800; padding: 3px 8px; border-radius: 99px; background: rgba(255,255,255,0.08); color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.05em; font-size: 9px; }
     .model-badge.pro { background: rgba(192, 132, 252, 0.2); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.3); }
     .model-badge.img { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
 
@@ -171,10 +171,19 @@
     .settings-btn { left: 64px; }
     .mobile-new { display: none; right: 16px; }
 
-    /* Expanded & Prominent Welcome Headline */
-    .welcome { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; padding: 0 24px; background: #000000; overflow-x: hidden !important; }
-    .hero { position: relative; width: min(780px, 100%); z-index: 2; text-align: center; padding: 20px; overflow-x: hidden !important; }
-    .badge { display: inline-flex; align-items: center; gap: 8px; padding: 7px 18px; border: 1px solid rgba(129, 140, 248, 0.35); border-radius: 99px; background: rgba(129, 140, 248, 0.1); color: #e0e7ff; font-size: 11.5px; font-weight: 800; letter-spacing: 0.14em; margin-bottom: 28px; }
+    /* Expanded & Prominent Welcome Workspace Shifted Comfortably Below Topbar */
+    .welcome { 
+      flex: 1; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      position: relative; 
+      padding: 84px 24px 24px; 
+      background: #000000; 
+      overflow-x: hidden !important; 
+    }
+    .hero { position: relative; width: min(780px, 100%); z-index: 2; text-align: center; padding: 10px 20px 20px; overflow-x: hidden !important; }
+    .badge { display: inline-flex; align-items: center; gap: 8px; padding: 7px 18px; border: 1px solid rgba(129, 140, 248, 0.35); border-radius: 99px; background: rgba(129, 140, 248, 0.1); color: #e0e7ff; font-size: 11.5px; font-weight: 800; letter-spacing: 0.14em; margin-bottom: 24px; }
     .badge i { width: 7px; height: 7px; border-radius: 50%; background: #818cf8; box-shadow: 0 0 12px #818cf8; }
     
     .welcome-title {
@@ -203,15 +212,44 @@
       object-fit: contain;
     }
 
-    .animated-sub { font-size: 16.5px; color: var(--txt-muted); max-width: 560px; margin: 0 auto 36px; line-height: 1.6; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+    .animated-sub { font-size: 16.5px; color: var(--txt-muted); max-width: 560px; margin: 0 auto 32px; line-height: 1.6; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
     .cycling-text-wrapper { display: inline-flex; overflow: hidden; vertical-align: bottom; height: 26px; }
     .cycling-text { background: var(--ai-gradient); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 800; display: inline-block; animation: textCycleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     @keyframes textCycleIn { 0% { opacity: 0; transform: translateY(14px); } 100% { opacity: 1; transform: translateY(0); } }
 
-    /* Enlarged Blox / Prompt Chips */
-    .chips { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; max-width: 720px; margin: 0 auto; }
-    .chip { padding: 12px 24px; border: 1px solid rgba(129, 140, 248, 0.22); border-radius: 99px; background: #0c0c14; color: #f1f5f9; font-size: 14px; font-weight: 600; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-    .chip:hover { background: #161624; border-color: rgba(129, 140, 248, 0.5); color: #fff; transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 25px rgba(129, 140, 248, 0.15); }
+    /* Symmetric 2x2 Grid Prompt Chips for Home Screen */
+    .chips { 
+      display: grid; 
+      grid-template-columns: repeat(2, minmax(0, 1fr)); 
+      gap: 12px; 
+      max-width: 580px; 
+      margin: 0 auto; 
+      width: 100%; 
+    }
+    .chip { 
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 13px 20px; 
+      border: 1px solid rgba(129, 140, 248, 0.22); 
+      border-radius: 99px; 
+      background: #0c0c14; 
+      color: #f1f5f9; 
+      font-size: 13.5px; 
+      font-weight: 600; 
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); 
+      cursor: pointer; 
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
+      white-space: nowrap;
+    }
+    .chip:hover { 
+      background: #161624; 
+      border-color: rgba(129, 140, 248, 0.5); 
+      color: #fff; 
+      transform: translateY(-2px) scale(1.02); 
+      box-shadow: 0 8px 25px rgba(129, 140, 248, 0.15); 
+    }
 
     .chat { display: none; flex: 1; overflow-y: auto; overflow-x: hidden !important; padding: 84px 20px 40px; scroll-behavior: smooth; background: #000000; }
     .chat::-webkit-scrollbar { width: 6px; }
@@ -231,7 +269,7 @@
       word-break: break-word; overflow-x: hidden !important;
     }
 
-    /* Increased Inter-Word Spacing & Clean Typography */
+    /* Clean Typography */
     .trux-bubble {
       padding: 10px 0px;
       background: #000000 !important;
@@ -252,7 +290,7 @@
     .trux-bubble li { margin-bottom: 10px; }
     .trux-bubble inline-code, .trux-bubble code { background: #0e0e18; padding: 3px 8px; border-radius: 6px; font-family: 'Fira Code', monospace; font-size: 0.88em; color: #38bdf8; border: 1px solid rgba(129, 140, 248, 0.25); white-space: normal; }
     
-    /* Code Files Rendered as Organized Structural Cards without bloated code walls */
+    /* Code File Structural Cards */
     .code-file { display: flex; flex-direction: column; width: 100%; margin: 18px 0; border: 1px solid rgba(129, 140, 248, 0.3); border-radius: 16px; background: #08080f; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
     .code-file-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; background: #0c0c16; border-bottom: 1px solid rgba(255,255,255,0.06); }
     .code-file-info { display: flex; align-items: center; gap: 12px; min-width: 0; }
@@ -263,8 +301,8 @@
     .code-actions button { padding: 6px 14px; border: 1px solid rgba(255,255,255,.14); border-radius: 99px; background: #161622; color: #fff; font-size: 11.5px; font-weight: 700; }
     .code-actions button:hover { background: #222236; border-color: rgba(129, 140, 248, 0.5); transform: translateY(-1px); }
 
-    /* Metallic Floating Line Thinking Indicator */
-    @keyframes metallicLineGlow {
+    /* Gemini-Style Pure Floating Text Thinking Indicator with Metallic Shine */
+    @keyframes metallicShine {
       0% { background-position: -200% 0; }
       100% { background-position: 200% 0; }
     }
@@ -272,40 +310,34 @@
     .thinking-container {
       display: inline-flex;
       align-items: center;
-      gap: 12px;
-      padding: 8px 18px;
-      border-radius: 99px;
-      background: transparent;
+      gap: 10px;
+      padding: 4px 0;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
       position: relative;
-      margin: 8px 0;
-    }
-    
-    .thinking-container::after {
-      content: "";
-      position: absolute;
-      bottom: -4px; left: 0; right: 0; height: 2px;
-      background: linear-gradient(90deg, transparent, #818cf8, #c084fc, #38bdf8, transparent);
-      background-size: 200% 100%;
-      animation: metallicLineGlow 2.5s infinite linear;
-      border-radius: 99px;
-      box-shadow: 0 0 12px rgba(129, 140, 248, 0.8);
+      margin: 4px 0;
     }
 
     .thinking-sparkle {
-      font-size: 14px;
+      font-size: 15px;
       color: #818cf8;
       animation: rotateSparkle 2s infinite linear;
+      display: inline-block;
     }
-    @keyframes rotateSparkle { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.2); } 100% { transform: rotate(360deg) scale(1); } }
+    @keyframes rotateSparkle { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.15); } 100% { transform: rotate(360deg) scale(1); } }
 
     .status-msg {
-      font-size: 13.5px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      background: linear-gradient(90deg, #ffffff 0%, #cbd5e1 50%, #94a3b8 100%);
+      font-size: 14.5px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      background: linear-gradient(90deg, #64748b 0%, #cbd5e1 20%, #ffffff 40%, #818cf8 60%, #cbd5e1 80%, #64748b 100%);
+      background-size: 200% auto;
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
+      animation: metallicShine 3s linear infinite;
+      display: inline-block;
     }
     
     .actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
@@ -414,6 +446,8 @@
       .welcome-title { font-size: clamp(32px, 8vw, 44px); }
       .user-bubble { max-width: 90%; }
       .hint { display: none; }
+      .chips { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .chip { font-size: 12px; padding: 10px 14px; }
     }
   </style>
 </head>
@@ -526,6 +560,7 @@
             </span>
           </div>
 
+          <!-- 2x2 Symmetric Home Grid Buttons -->
           <div class="chips">
             <span class="chip" onclick="quickPrompt('Write a clean JavaScript function for...')">✦ Coding & Logic</span>
             <span class="chip" onclick="quickPrompt('Analyze the following text...')">✦ Data Analysis</span>
@@ -804,7 +839,6 @@
       if(el) el.innerText = `Total Feedbacks Collected: ${feedbackCount} / 100`;
     }
 
-    /* Updated Pro Monthly Usage Storage */
     function getProUsageData() {
       let currentMonth = new Date().toISOString().slice(0, 7);
       let u = JSON.parse(localStorage.getItem("trux_pro_usage")) || { tokensUsed: 0, monthReset: currentMonth };
@@ -938,7 +972,6 @@
       getEl("scrollDownBtn").classList.remove("visible");
     }
 
-    /* Live Code Attachment Detector (Pasting + Direct Typing) */
     function detectCodeInInput(text) {
       if (!text) return false;
       let hasCodeBlock = text.includes("```");
@@ -987,7 +1020,6 @@
       p.style.height = "auto"; 
       p.style.height = Math.min(p.scrollHeight, 200) + "px";
 
-      /* Auto-convert if typed code grows long */
       if (detectCodeInInput(p.value)) {
         let textToAttach = p.value;
         p.value = "";
@@ -1032,7 +1064,6 @@
       return map[String(language || "").toLowerCase()] || "txt";
     }
 
-    /* Rendering Single Clean Code Files without Bloated Code Preview Walls */
     function renderFormattedText(t) {
       if(!t) return ""; let h = escapeHtml(t);
       let fileTokens = [];
@@ -1059,35 +1090,34 @@
       speechSynthesis.speak(ut);
     }
     
-    /* Dynamic Context-Aware Floating Line Thinking Phrases */
     function getThinkingPhrases(prompt) {
-      if(!prompt) return ["Analyzing request context...", "Preparing answer..."];
+      if(!prompt) return ["Thinking…", "Processing request…"];
       let p = prompt.trim();
       let words = p.replace(/[^\w\s]/gi, '').split(/\s+/).filter(w => w.length > 3);
       let topic = words.slice(0, 3).join(" ") || "request";
       
       if (p.includes("```") || /function|const|let|var|class|import|def|public|html|css|select/i.test(p)) {
         return [
-          `Parsing code logic for "${topic}"...`,
-          `Structuring code file output...`,
-          `Finalizing file delivery...`
+          `Parsing logic for "${topic}"…`,
+          `Structuring code file output…`,
+          `Finalizing file delivery…`
         ];
       } else if (/explain|what|how|why|describe/i.test(p)) {
         return [
-          `Analyzing topic: "${topic}"...`,
-          `Structuring clear breakdown...`,
-          `Synthesizing response...`
+          `Analyzing topic: "${topic}"…`,
+          `Structuring clear breakdown…`,
+          `Synthesizing response…`
         ];
       } else if (/fix|bug|error|issue|solve/i.test(p)) {
         return [
-          `Diagnosing issue in "${topic}"...`,
-          `Formulating resolution file...`,
-          `Verifying code resolution...`
+          `Diagnosing issue in "${topic}"…`,
+          `Formulating resolution file…`,
+          `Verifying code resolution…`
         ];
       }
       return [
-        `Processing context for "${topic}"...`,
-        `Synthesizing response...`
+        `Processing context for "${topic}"…`,
+        `Synthesizing response…`
       ];
     }
 
@@ -1189,7 +1219,7 @@
       let id = "b_" + Date.now(), aid = "a_" + Date.now(), sid = "s_" + Date.now(), row = document.createElement("div");
       row.className = "row trux-row";
       
-      /* Metallic Floating Line Thinking Box */
+      /* Pure Floating Text Metallic Shine Gemini-Style Thinking Indicator */
       row.innerHTML = `<div class="label">TruX AI</div><div class="bubble trux-bubble thinking" id="${id}"><div class="thinking-container"><span class="thinking-sparkle">✦</span><span class="status-msg" id="${sid}">Thinking…</span></div></div><div class="actions" id="${aid}"></div>`;
       
       chatContainer.appendChild(row);
@@ -1231,7 +1261,6 @@
         let text = (fin !== null ? fin : full).trim(); if(!text) throw Error("No response received.");
         clearInterval(timer);
         
-        /* Render full output cleanly all at once */
         finalizeResponse(id, aid, text, prompt, voice);
       } catch(e) {
         clearInterval(timer); let b = getEl(id);
