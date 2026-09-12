@@ -27,7 +27,7 @@
       --bg-surface: #09090d;
       --bg-surface-elevated: #111118;
       --glass-border: rgba(255, 255, 255, 0.12);
-      --glass-border-glow: rgba(129, 140, 248, 0.3);
+      --glass-border-glow: rgba(129, 140, 248, 0.35);
       --txt-main: #f8fafc;
       --txt-muted: #808ea3;
       --accent-1: #38bdf8;
@@ -35,8 +35,7 @@
       --accent-3: #c084fc;
       --accent-4: #f43f5e;
       --ai-gradient: linear-gradient(135deg, #a855f7 0%, #6366f1 50%, #38bdf8 100%);
-      --metallic-gradient: linear-gradient(110deg, #12131c 0%, #2e3245 25%, #565d7a 50%, #2e3245 75%, #12131c 100%);
-      --max-width: 680px;
+      --max-width: 720px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -68,7 +67,6 @@
 
     .colorful-bg { position: fixed; inset: 0; z-index: -5; background: radial-gradient(circle at 50% 0%, rgba(129, 140, 248, 0.08), transparent 65%); pointer-events: none; }
     
-    /* Strict Horizontal Overflow Prevention */
     .shell { display: flex; width: 100%; height: 100%; z-index: 1; position: relative; background: #000000; overflow-x: hidden !important; }
     
     .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.88); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); z-index: 998; opacity: 0; transition: opacity 0.3s ease; }
@@ -172,49 +170,53 @@
     .settings-btn { left: 64px; }
     .mobile-new { display: none; right: 16px; }
 
+    /* Expanded & Refined Welcome Screen */
     .welcome { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; padding: 0 24px; background: #000000; overflow-x: hidden !important; }
-    .hero { position: relative; width: min(680px, 100%); z-index: 2; text-align: center; padding: 20px; overflow-x: hidden !important; }
-    .badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border: 1px solid rgba(129, 140, 248, 0.3); border-radius: 99px; background: rgba(129, 140, 248, 0.08); color: #e0e7ff; font-size: 11px; font-weight: 800; letter-spacing: 0.12em; margin-bottom: 24px; }
-    .badge i { width: 6px; height: 6px; border-radius: 50%; background: #818cf8; box-shadow: 0 0 10px #818cf8; }
+    .hero { position: relative; width: min(760px, 100%); z-index: 2; text-align: center; padding: 20px; overflow-x: hidden !important; }
+    .badge { display: inline-flex; align-items: center; gap: 8px; padding: 7px 18px; border: 1px solid rgba(129, 140, 248, 0.35); border-radius: 99px; background: rgba(129, 140, 248, 0.1); color: #e0e7ff; font-size: 12px; font-weight: 800; letter-spacing: 0.14em; margin-bottom: 28px; box-shadow: 0 0 20px rgba(129, 140, 248, 0.15); }
+    .badge i { width: 7px; height: 7px; border-radius: 50%; background: #818cf8; box-shadow: 0 0 12px #818cf8; }
     
     .welcome-title {
-      font: 800 clamp(32px, 5.5vw, 56px)/1.2 "Space Grotesk";
+      font: 800 clamp(42px, 7vw, 68px)/1.15 "Space Grotesk";
       color: #fff;
-      margin-bottom: 16px;
-      letter-spacing: -1px;
+      margin-bottom: 20px;
+      letter-spacing: -1.5px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      text-shadow: 0 4px 30px rgba(0,0,0,0.8);
     }
     
     .welcome-subline {
       display: inline-flex;
       align-items: center;
       white-space: nowrap;
+      background: linear-gradient(135deg, #ffffff 30%, #a5b4fc 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
     }
 
     .brand-inline-logo {
-      width: clamp(38px, 6vw, 52px);
-      height: clamp(38px, 6vw, 52px);
+      width: clamp(44px, 7.5vw, 62px);
+      height: clamp(44px, 7.5vw, 62px);
       display: inline-block;
       vertical-align: middle;
-      margin-left: 2px;
-      filter: none;
-      animation: none;
+      margin-left: 4px;
       object-fit: contain;
     }
 
-    .animated-sub { font-size: 15px; color: var(--txt-muted); max-width: 500px; margin: 0 auto 32px; line-height: 1.6; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
-    .cycling-text-wrapper { display: inline-flex; overflow: hidden; vertical-align: bottom; height: 24px; }
+    .animated-sub { font-size: 16px; color: var(--txt-muted); max-width: 520px; margin: 0 auto 36px; line-height: 1.6; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+    .cycling-text-wrapper { display: inline-flex; overflow: hidden; vertical-align: bottom; height: 26px; }
     .cycling-text { background: var(--ai-gradient); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 800; display: inline-block; animation: textCycleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    @keyframes textCycleIn { 0% { opacity: 0; transform: translateY(12px); } 100% { opacity: 1; transform: translateY(0); } }
+    @keyframes textCycleIn { 0% { opacity: 0; transform: translateY(14px); } 100% { opacity: 1; transform: translateY(0); } }
 
-    .chips { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }
-    .chip { padding: 9px 18px; border: 1px solid var(--glass-border); border-radius: 99px; background: #0e0e16; color: #e2e8f0; font-size: 13px; font-weight: 600; transition: all 0.25s; cursor: pointer; }
-    .chip:hover { background: #181826; border-color: rgba(129, 140, 248, 0.4); color: #fff; transform: translateY(-2px); }
+    /* Expanded Prompt Chips */
+    .chips { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; max-width: 700px; margin: 0 auto; }
+    .chip { padding: 12px 24px; border: 1px solid rgba(129, 140, 248, 0.25); border-radius: 99px; background: rgba(14, 14, 22, 0.75); backdrop-filter: blur(12px); color: #f1f5f9; font-size: 14px; font-weight: 600; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
+    .chip:hover { background: rgba(28, 28, 44, 0.9); border-color: rgba(129, 140, 248, 0.6); color: #ffffff; transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 25px rgba(129, 140, 248, 0.25); }
 
-    /* Main Chat Container Locked Horizontal Scroll */
     .chat { display: none; flex: 1; overflow-y: auto; overflow-x: hidden !important; padding: 84px 20px 40px; scroll-behavior: smooth; background: #000000; }
     .chat::-webkit-scrollbar { width: 6px; }
     .chat::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 10px; }
@@ -233,30 +235,30 @@
       word-break: break-word; overflow-x: hidden !important;
     }
 
-    /* Bolder & Spacious AI Response Typography */
+    /* Breathable AI Typography with Increased Word Spacing */
     .trux-bubble {
       padding: 10px 0px;
-      background: #000000 !important;
+      background: transparent !important;
       border: none !important;
       box-shadow: none !important;
       color: #f8fafc;
-      font-size: 15.5px;
-      font-weight: 500; /* Bolder AI Text */
-      line-height: 1.95; /* Spacious Line Height */
-      letter-spacing: 0.015em;
-      word-spacing: 0.05em;
+      font-size: 16px;
+      font-weight: 500;
+      line-height: 2.0;
+      letter-spacing: 0.025em;
+      word-spacing: 0.12em;
       word-break: break-word;
       overflow-x: hidden !important;
     }
     .trux-bubble b, .trux-bubble strong { color: #ffffff; font-weight: 700; }
-    .trux-bubble p { margin-bottom: 18px; }
-    .trux-bubble ul, .trux-bubble ol { margin: 12px 0 18px 22px; }
-    .trux-bubble li { margin-bottom: 8px; }
-    .trux-bubble inline-code, .trux-bubble code { background: #0e0e18; padding: 3px 8px; border-radius: 6px; font-family: 'Fira Code', monospace; font-size: 0.88em; color: #38bdf8; border: 1px solid rgba(129, 140, 248, 0.25); white-space: normal; }
+    .trux-bubble p { margin-bottom: 20px; }
+    .trux-bubble ul, .trux-bubble ol { margin: 12px 0 20px 22px; }
+    .trux-bubble li { margin-bottom: 10px; }
+    .trux-bubble inline-code, .trux-bubble code { background: #0e0e18; padding: 4px 9px; border-radius: 6px; font-family: 'Fira Code', monospace; font-size: 0.88em; color: #38bdf8; border: 1px solid rgba(129, 140, 248, 0.25); word-spacing: normal; letter-spacing: normal; }
     
-    /* Code Blocks (ONLY area where horizontal side-scrolling is allowed) */
-    .code-file { display: flex; flex-direction: column; width: 100%; margin: 18px 0; border: 1px solid rgba(129, 140, 248, 0.25); border-radius: 14px; background: #08080f; overflow: hidden; }
-    .code-file-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; background: #0c0c16; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    /* Unified Code File Container */
+    .code-file { display: flex; flex-direction: column; width: 100%; margin: 20px 0; border: 1px solid rgba(129, 140, 248, 0.3); border-radius: 14px; background: #07070e; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.7); }
+    .code-file-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 18px; background: #0c0c16; border-bottom: 1px solid rgba(255,255,255,0.06); }
     .code-file-info { display: flex; align-items: center; gap: 10px; min-width: 0; }
     .code-file-icon { display: grid; width: 32px; height: 32px; flex: 0 0 32px; place-items: center; border: 1px solid rgba(129, 140, 248, 0.4); border-radius: 8px; color: #818cf8; background: rgba(129, 140, 248, 0.08); font-size: 12px; font-family: 'Fira Code', monospace; }
     .code-file-meta b { color: #fff; font-size: 13px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -265,47 +267,52 @@
     .code-actions button { padding: 6px 12px; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; background: #161622; color: #fff; font-size: 11px; font-weight: 700; }
     .code-actions button:hover { background: #222232; border-color: rgba(129, 140, 248, 0.4); }
     .code-content-wrapper { width: 100%; overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
-    .code-content-wrapper pre { margin: 0; padding: 16px; font-family: 'Fira Code', monospace; font-size: 13.5px; line-height: 1.6; color: #e2e8f0; white-space: pre; word-break: normal; }
+    .code-content-wrapper pre { margin: 0; padding: 18px; font-family: 'Fira Code', monospace; font-size: 13.5px; line-height: 1.6; color: #e2e8f0; white-space: pre; word-break: normal; word-spacing: normal; letter-spacing: normal; }
 
     .gemini-reveal-chunk {
       display: inline;
-      animation: smoothGeminiFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation: smoothGeminiFade 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
-    @keyframes smoothGeminiFade { 0% { opacity: 0; transform: translateY(4px); } 100% { opacity: 1; transform: translateY(0); } }
+    @keyframes smoothGeminiFade { 0% { opacity: 0; transform: translateY(3px); } 100% { opacity: 1; transform: translateY(0); } }
     
-    /* Metallic Lustered Thinking Indicator */
-    @keyframes metallicShimmer {
-      0% { background-position: -200% 0; }
-      100% { background-position: 200% 0; }
-    }
-    @keyframes metallicPulse {
-      0%, 100% { border-color: rgba(255, 255, 255, 0.25); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.3); }
-      50% { border-color: rgba(168, 185, 220, 0.55); box-shadow: 0 4px 25px rgba(129, 140, 248, 0.25), inset 0 1px 2px rgba(255, 255, 255, 0.5); }
-    }
-    
+    /* Sleek Metallic Floating Line Thinking Box */
     .thinking-container {
       display: inline-flex;
       align-items: center;
       gap: 12px;
-      padding: 10px 20px;
-      border-radius: 99px;
-      background: var(--metallic-gradient);
-      background-size: 200% 100%;
-      animation: metallicShimmer 3.5s infinite linear, metallicPulse 3s infinite ease-in-out;
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+      padding: 10px 22px;
+      border-radius: 12px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(129, 140, 248, 0.12) 50%, rgba(255,255,255,0.03) 100%);
+      border-left: 3px solid #818cf8;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      position: relative;
+      overflow: hidden;
       margin: 6px 0;
     }
-    .thinking-sparkle {
-      font-size: 13px;
-      animation: rotateSparkle 2s infinite linear;
+
+    .thinking-container::before {
+      content: "";
+      position: absolute;
+      top: 0; left: -100%; width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+      animation: metallicShimmerLine 2.2s infinite ease-in-out;
     }
+
+    @keyframes metallicShimmerLine {
+      0% { left: -100%; }
+      100% { left: 200%; }
+    }
+    
+    .thinking-sparkle { font-size: 13px; animation: rotateSparkle 2s infinite linear; color: #a855f7; }
     @keyframes rotateSparkle { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.15); } 100% { transform: rotate(360deg) scale(1); } }
 
     .status-msg {
       font-size: 13px;
       font-weight: 700;
-      letter-spacing: 0.03em;
+      letter-spacing: 0.04em;
       background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #94a3b8 100%);
       -webkit-background-clip: text;
       background-clip: text;
@@ -319,9 +326,10 @@
     .composer { padding: 12px 20px 32px; position: relative; z-index: 20; background: linear-gradient(to top, #000000 88%, transparent); display: flex; justify-content: center; overflow-x: hidden !important; }
     .compose { width: min(var(--max-width), 100%); position: relative; overflow-x: hidden !important; }
     
+    /* Clean File Attachment Chips (No Preview Clutter) */
     .chip-container { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-    .file-chip { background: #12121c; border: 1px solid rgba(129, 140, 248, 0.3); padding: 6px 14px; border-radius: 99px; font-size: 11.5px; color: #fff; display: flex; align-items: center; gap: 8px; font-weight: 600; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
-    .file-chip button { background: none; color: var(--txt-muted); cursor: pointer; font-size: 14px; }
+    .file-chip { background: #0f0f18; border: 1px solid rgba(129, 140, 248, 0.35); padding: 7px 16px; border-radius: 99px; font-size: 12px; color: #fff; display: flex; align-items: center; gap: 9px; font-weight: 600; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
+    .file-chip button { background: none; color: var(--txt-muted); cursor: pointer; font-size: 15px; }
     .file-chip button:hover { color: #f43f5e; }
 
     .bar {
@@ -415,9 +423,10 @@
       .topbar { left: 110px; right: 60px; }
       .chat { padding: 80px 16px 20px; }
       .composer { padding: 12px 12px 24px; }
-      .welcome-title { font-size: clamp(28px, 7vw, 40px); }
+      .welcome-title { font-size: clamp(34px, 8vw, 48px); }
       .user-bubble { max-width: 90%; }
       .hint { display: none; }
+      .chip { padding: 10px 18px; font-size: 13px; }
     }
   </style>
 </head>
@@ -486,7 +495,7 @@
                 <span class="model-icon">✨</span>
                 <div class="model-info">
                   <b>Pro 5.0</b>
-                  <small>Deep reasoning · 2M tokens/24h</small>
+                  <small>Deep reasoning · 2M tokens/mo</small>
                 </div>
               </div>
               <div class="model-badge pro">Pro</div>
@@ -639,7 +648,7 @@
       </div>
 
       <div class="sect">
-        <h4>Pro 5.0 · 24h Usage</h4>
+        <h4>Pro 5.0 · Monthly Usage</h4>
         <div class="usage"><i id="proUsageBarFill"></i></div>
         <div class="utxt" id="proUsageText">0 / 2,000,000 Tokens</div>
       </div>
@@ -755,7 +764,8 @@
         recognition = null,
         isRecording = false,
         isScrolledUp = false,
-        advancedThinkingEnabled = false;
+        advancedThinkingEnabled = false,
+        accumulatedStreamText = "";
 
     function toggleModelDropdown(e) {
       e?.stopPropagation();
@@ -764,7 +774,7 @@
 
     function selectModel(m, e) {
       e?.stopPropagation();
-      if(m === "pro" && getProUsageData().tokensUsed >= 2000000) return alert("TruX Pro limit reached for 24 hours.");
+      if(m === "pro" && getProUsageData().tokensUsed >= 2000000) return alert("TruX Pro limit reached for this month.");
       if(m === "base" && getCoreUsageData().tokensUsed >= 5000000) return alert("TruX Core monthly limit reached.");
       if(m === "nano-banana" && getImageUsageData().count >= 5) return alert("TruX Vision & Image monthly limit reached.");
 
@@ -808,9 +818,11 @@
       if(el) el.innerText = `Total Feedbacks Collected: ${feedbackCount} / 100`;
     }
 
+    /* Updated Pro Usage Data to Monthly Tracker */
     function getProUsageData() {
-      let n = Date.now(), u = JSON.parse(localStorage.getItem("trux_pro_usage")) || { tokensUsed: 0, resetTimestamp: n + 86400000 };
-      if(n > u.resetTimestamp) { u = { tokensUsed: 0, resetTimestamp: n + 86400000 }; localStorage.setItem("trux_pro_usage", JSON.stringify(u)); }
+      let currentMonth = new Date().toISOString().slice(0, 7);
+      let u = JSON.parse(localStorage.getItem("trux_pro_usage")) || { tokensUsed: 0, monthReset: currentMonth };
+      if(u.monthReset !== currentMonth) { u = { tokensUsed: 0, monthReset: currentMonth }; localStorage.setItem("trux_pro_usage", JSON.stringify(u)); }
       return u;
     }
     function recordProTokens(n) {
@@ -940,21 +952,43 @@
       getEl("scrollDownBtn").classList.remove("visible");
     }
 
-    /* Convert Code/Long Text into Attached File Chip Automatically */
+    /* Auto Code File Attachment for Typing & Pasting Code */
+    function checkAndAttachCode(text) {
+      if(!text) return false;
+      let isCode = /```[\s\S]*```/g.test(text) || 
+                   text.split('\n').length >= 4 || 
+                   (text.length > 80 && /(function|const|let|var|class\s+\w+|import\s+.*from|def\s+\w+\(|<html|<div|public\s+class|select\s+.*from)/i.test(text));
+      
+      if(isCode) {
+        let id = Date.now();
+        let cleanText = text.replace(/```/g, '').trim();
+        let cleanFirstLine = cleanText.split('\n')[0].substring(0, 26);
+        let fileType = /<html|<div/i.test(cleanText) ? "HTML Document" : (/function|const|let|var|def/i.test(cleanText) ? "Source Code" : "Code Attachment");
+        let snippet = `${fileType}: ${cleanFirstLine || "Code File"}`;
+        
+        pastedTextBlocks.push({ id, text: cleanText, snippet });
+        renderFileChips();
+        return true;
+      }
+      return false;
+    }
+
     getEl("promptInput").addEventListener("paste", e => {
       let text = (e.clipboardData || window.clipboardData).getData('text');
-      let isCodeOrLong = /```|function|const|let|var|class\s+\w+|import\s+.*from|def\s+\w+\(|<html|<div|public\s+class|select\s+.*from/i.test(text) || text.split('\n').length > 4 || text.length > 250;
-      
-      if(isCodeOrLong) {
+      if(checkAndAttachCode(text)) {
         e.preventDefault();
-        let id = Date.now();
-        let cleanFirstLine = text.trim().split('\n')[0].substring(0, 24).replace(/```/g, '');
-        let fileType = /<html|<div/i.test(text) ? "HTML Code" : (/function|const|let|var|def/i.test(text) ? "Source Code" : "Text Attachment");
-        let snippet = `${fileType}: ${cleanFirstLine || "Code Snippet"}...`;
-        
-        pastedTextBlocks.push({ id, text, snippet });
-        renderFileChips();
         handleInputChange();
+      }
+    });
+
+    getEl("promptInput").addEventListener("input", function() {
+      handleInputChange();
+      let val = this.value;
+      if(val.startsWith("```") && val.endsWith("```") && val.length > 10) {
+        if(checkAndAttachCode(val)) {
+          this.value = "";
+          handleInputChange();
+        }
       }
     });
 
@@ -1010,20 +1044,26 @@
       return map[String(language || "").toLowerCase()] || "txt";
     }
 
+    /* Single Clean File Container Parsing (No Broken Splitting) */
     function renderFormattedText(t) {
-      if(!t) return ""; let h = escapeHtml(t);
+      if(!t) return ""; 
+      let h = escapeHtml(t);
       let fileTokens = [];
       
-      /* Render Code Blocks with Strict Side-Scrolling Enclosure */
       h = h.replace(/```([\w-]*)\n?([\s\S]*?)```/g, (m, lang, c) => {
         let id = `code_${++codeBlockCounter}_${Date.now()}`;
         let displayLang = lang || "Text", extension = codeFileExtension(lang), filename = `trux-response.${extension}`;
         let sandboxBtn = (extension === 'html' || extension === 'js') ? `<button onclick="openCodeSandbox('${id}')">▶ Run</button>` : '';
-        let file = `<div class="code-file"><div class="code-file-header"><div class="code-file-info"><span class="code-file-icon">&lt;/&gt;</span><div class="code-file-meta"><b>${filename}</b><small>${displayLang} · code block</small></div></div><div class="code-actions">${sandboxBtn}<button onclick="copyCodeToClipboard(this,'${id}')">Copy</button><button onclick="downloadCode('${id}','${filename}')">Download</button></div></div><div class="code-content-wrapper"><pre>${c.trim()}</pre></div><textarea id="${id}" hidden>${c.trim()}</textarea></div>`;
+        let file = `<div class="code-file"><div class="code-file-header"><div class="code-file-info"><span class="code-file-icon">&lt;/&gt;</span><div class="code-file-meta"><b>${filename}</b><small>${displayLang} · unified code file</small></div></div><div class="code-actions">${sandboxBtn}<button onclick="copyCodeToClipboard(this,'${id}')">Copy</button><button onclick="downloadCode('${id}','${filename}')">Download</button></div></div><div class="code-content-wrapper"><pre>${c.trim()}</pre></div><textarea id="${id}" hidden>${c.trim()}</textarea></div>`;
         fileTokens.push(file);
         return `@@TRUX_CODE_FILE_${fileTokens.length - 1}@@`;
       });
-      h = h.replace(/`([^`]+)`/g, '<inline-code>$1</inline-code>').replace(/\*\*(.*?)\*\*/g, "<b>$1</b>").replace(/\*(.*?)\*/g, "<i>$1</i>").replace(/\n/g, "<br>");
+      
+      h = h.replace(/`([^`]+)`/g, '<inline-code>$1</inline-code>')
+           .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")
+           .replace(/\*(.*?)\*/g, "<i>$1</i>")
+           .replace(/\n/g, "<br>");
+
       return h.replace(/@@TRUX_CODE_FILE_(\d+)@@/g, (m, index) => fileTokens[Number(index)] || "");
     }
 
@@ -1034,44 +1074,28 @@
       speechSynthesis.speak(ut);
     }
     
-    /* Dynamic Context-Aware Metallic Thinking Words */
+    /* Sleek Dynamic Metallic Floating Line Phrases */
     function getThinkingPhrases(prompt) {
-      if(!prompt) return ["Analyzing input...", "Preparing response..."];
+      if(!prompt) return ["Analyzing request...", "Formulating logic..."];
       let p = prompt.trim();
       let words = p.replace(/[^\w\s]/gi, '').split(/\s+/).filter(w => w.length > 3);
       let topic = words.slice(0, 3).join(" ") || "request";
       
-      if (p.includes("```") || /function|const|let|var|class|import|def|public|html|css|select/i.test(p)) {
+      if (p.includes("```") || /(function|const|let|var|class|import|def|public|html|css|select)/i.test(p)) {
         return [
           `Parsing code context...`,
           `Evaluating logic for "${topic}"...`,
-          `Optimizing syntax structures...`,
-          `Synthesizing code output...`
+          `Synthesizing unified file structure...`
         ];
-      } else if (/explain|what|how|why|describe/i.test(p)) {
+      } else if (/(explain|what|how|why|describe)/i.test(p)) {
         return [
           `Analyzing topic: "${topic}"...`,
-          `Structuring clear breakdown...`,
-          `Synthesizing core concepts...`,
-          `Formatting detailed insights...`
-        ];
-      } else if (/fix|bug|error|issue|solve/i.test(p)) {
-        return [
-          `Diagnosing issue in "${topic}"...`,
-          `Searching optimal solution...`,
-          `Formulating fix strategy...`,
-          `Verifying code resolution...`
-        ];
-      } else if (/write|draft|create|generate/i.test(p)) {
-        return [
-          `Drafting context on "${topic}"...`,
-          `Refining composition & tone...`,
-          `Finalizing response text...`
+          `Structuring insights...`,
+          `Formatting detailed response...`
         ];
       }
       return [
         `Processing context for "${topic}"...`,
-        `Evaluating prompt parameters...`,
         `Formulating structured answer...`
       ];
     }
@@ -1112,45 +1136,23 @@
       chatContainer.appendChild(r); chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
-    let streamingQueue = [];
-    let isProcessingQueue = false;
-
-    function processStreamingQueue(bubbleId) {
-      if (isProcessingQueue) return;
-      isProcessingQueue = true;
-
-      function step() {
-        if (streamingQueue.length > 0) {
-          let textChunk = streamingQueue.shift();
-          let b = getEl(bubbleId);
-          if (b) {
-            b.classList.remove("thinking");
-            let span = document.createElement("span");
-            span.className = "gemini-reveal-chunk";
-            span.innerHTML = renderFormattedText(textChunk);
-            b.appendChild(span);
-
-            let chatContainer = getEl("chatContainer");
-            if (!isScrolledUp) chatContainer.scrollTop = chatContainer.scrollHeight;
-          }
-          setTimeout(step, 30);
-        } else {
-          isProcessingQueue = false;
-        }
+    /* Fast Smooth Text Streaming Render */
+    function updateStreamingBubble(bubbleId, fullText) {
+      let b = getEl(bubbleId);
+      if(b) {
+        b.classList.remove("thinking");
+        b.innerHTML = renderFormattedText(fullText);
+        let chatContainer = getEl("chatContainer");
+        if (!isScrolledUp) chatContainer.scrollTop = chatContainer.scrollHeight;
       }
-      step();
-    }
-
-    function updateStreamingBubblePaced(bubbleId, newChunk) {
-      if(!newChunk) return;
-      streamingQueue.push(newChunk);
-      processStreamingQueue(bubbleId);
     }
 
     function finalizeResponse(id, aid, text, prompt, voice) {
-      streamingQueue = [];
       let b = getEl(id);
-      if(b) b.innerHTML = renderFormattedText(text);
+      if(b) {
+        b.classList.remove("thinking");
+        b.innerHTML = renderFormattedText(text);
+      }
       
       chatSessions[currentChatId].messages.push({ role: "trux", text }); 
       localStorage.setItem("trux_chats", JSON.stringify(chatSessions));
@@ -1180,6 +1182,9 @@
 
       let promptInput = getEl("promptInput");
       let basePrompt = promptInput.value.trim();
+      
+      if(basePrompt) checkAndAttachCode(basePrompt);
+
       let attachedText = pastedTextBlocks.map(b => "```\n" + b.text + "\n```").join("\n\n");
       let prompt = basePrompt;
       if(attachedText) prompt = prompt ? (prompt + "\n\n" + attachedText) : attachedText;
@@ -1187,10 +1192,10 @@
       if(!prompt && !selectedImageBase64) return;
 
       if(currentModel === "base" && getCoreUsageData().tokensUsed >= 5000000) return alert("Core 4.0 monthly token limit reached.");
-      if(currentModel === "pro" && getProUsageData().tokensUsed >= 2000000) return alert("Pro 5.0 24-hour limit reached.");
+      if(currentModel === "pro" && getProUsageData().tokensUsed >= 2000000) return alert("Pro 5.0 monthly token limit reached.");
       if(currentModel === "nano-banana" && getImageUsageData().count >= 5) return alert("Vision & Image monthly generation limit reached.");
       
-      document.body.classList.remove("home-active"); isGenerating = true; isScrolledUp = false; streamingQueue = [];
+      document.body.classList.remove("home-active"); isGenerating = true; isScrolledUp = false; accumulatedStreamText = "";
       getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>';
       let voice = wasInputByVoice; wasInputByVoice = false;
 
@@ -1207,7 +1212,7 @@
       let id = "b_" + Date.now(), aid = "a_" + Date.now(), sid = "s_" + Date.now(), row = document.createElement("div");
       row.className = "row trux-row";
       
-      /* Metallic Lustered Dynamic Thinking Box */
+      /* Sleek Metallic Floating Line Thinking Container */
       row.innerHTML = `<div class="label">TruX AI</div><div class="bubble trux-bubble thinking" id="${id}"><div class="thinking-container"><span class="thinking-sparkle">✦</span><span class="status-msg" id="${sid}">Thinking…</span></div></div><div class="actions" id="${aid}"></div>`;
       
       chatContainer.appendChild(row);
@@ -1230,13 +1235,13 @@
 
         if(!res.body) throw Error("Streaming body unavailable.");
         
-        let rd = res.body.getReader(), dec = new TextDecoder(), buf = "", full = "", fin = null;
+        let rd = res.body.getReader(), dec = new TextDecoder(), buf = "", fin = null;
         
         function ev(raw) {
           if(!raw) return; let j; try { j = JSON.parse(raw); } catch { return; }
           if(j.type === "chunk") {
-            full += j.text || "";
-            updateStreamingBubblePaced(id, j.text || "");
+            accumulatedStreamText += j.text || "";
+            updateStreamingBubble(id, accumulatedStreamText);
           } else if(j.type === "final") fin = j.text || "";
           else if(j.type === "status") { let e = getEl(sid); if(e) e.innerText = j.status || "Processing…"; }
           else if(j.type === "error") throw Error(j.error || "Streaming error.");
@@ -1248,7 +1253,7 @@
           let es = buf.split(/\r?\n\r?\n/); buf = es.pop() || "";
           for(let x of es) { let ls = x.split(/\r?\n/).filter(l => l.startsWith("data:")); if(ls.length) ev(ls.map(l => l.slice(5).trimStart()).join("\n")); }
         }
-        let text = (fin !== null ? fin : full).trim(); if(!text) throw Error("No response received.");
+        let text = (fin !== null ? fin : accumulatedStreamText).trim(); if(!text) throw Error("No response received.");
         clearInterval(timer);
         
         finalizeResponse(id, aid, text, prompt, voice);
