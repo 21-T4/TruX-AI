@@ -35,7 +35,8 @@
       --accent-3: #c084fc;
       --accent-4: #f43f5e;
       --ai-gradient: linear-gradient(135deg, #a855f7 0%, #6366f1 50%, #38bdf8 100%);
-      --max-width: 680px; /* Reduced width for clean, compact workspace */
+      --metallic-gradient: linear-gradient(110deg, #12131c 0%, #2e3245 25%, #565d7a 50%, #2e3245 75%, #12131c 100%);
+      --max-width: 680px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -45,7 +46,8 @@
       background-color: var(--bg-base) !important;
       font-family: 'Plus Jakarta Sans', sans-serif;
       color: var(--txt-main);
-      overflow: hidden;
+      overflow-x: hidden !important;
+      overflow-y: hidden;
       display: flex;
     }
 
@@ -65,7 +67,9 @@
     @keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(5vw, -5vh) scale(1.12); } }
 
     .colorful-bg { position: fixed; inset: 0; z-index: -5; background: radial-gradient(circle at 50% 0%, rgba(129, 140, 248, 0.08), transparent 65%); pointer-events: none; }
-    .shell { display: flex; width: 100%; height: 100%; z-index: 1; position: relative; background: #000000; }
+    
+    /* Strict Horizontal Overflow Prevention */
+    .shell { display: flex; width: 100%; height: 100%; z-index: 1; position: relative; background: #000000; overflow-x: hidden !important; }
     
     .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.88); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); z-index: 998; opacity: 0; transition: opacity 0.3s ease; }
     .sidebar-overlay.active { display: block; opacity: 1; }
@@ -101,9 +105,8 @@
     .profile-info b { font-size: 13px; display: block; text-overflow: ellipsis; overflow: hidden; color: #fff; }
     .profile-info small { font-size: 11px; color: var(--txt-muted); display: block; text-overflow: ellipsis; overflow: hidden; }
 
-    .main { flex: 1; height: 100%; display: flex; flex-direction: column; position: relative; min-width: 0; background: #000000; }
+    .main { flex: 1; height: 100%; display: flex; flex-direction: column; position: relative; min-width: 0; background: #000000; overflow-x: hidden !important; }
     
-    /* Topbar with Clean Spacing to Prevent Overlapping Left Action Buttons */
     .topbar {
       height: 64px;
       position: absolute;
@@ -112,7 +115,6 @@
       z-index: 100; pointer-events: auto;
     }
     
-    /* Model Selector Dropdown UI */
     .model-picker-container { position: relative; }
     .model-picker-btn {
       display: flex; align-items: center; gap: 8px;
@@ -153,7 +155,6 @@
     .model-badge.pro { background: rgba(192, 132, 252, 0.2); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.3); }
     .model-badge.img { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
 
-    /* Thinking Button (Icon Only - Clean & Uncluttered) */
     .topbar-tool-btn.icon-only {
       width: 38px; height: 38px; border-radius: 50%;
       display: grid; place-items: center; padding: 0;
@@ -165,20 +166,17 @@
     .topbar-tool-btn.icon-only.active { color: #818cf8; background: rgba(129, 140, 248, 0.18); border-color: rgba(129, 140, 248, 0.5); box-shadow: 0 0 15px rgba(129, 140, 248, 0.2); }
     .topbar-tool-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-    /* Left Top Action Buttons */
     .top-btn { position: absolute; top: 12px; width: 40px; height: 40px; border-radius: 12px; background: #08080d; border: 1px solid var(--glass-border); color: #fff; display: grid; place-items: center; cursor: pointer; pointer-events: auto; transition: all 0.2s; box-shadow: 0 4px 16px rgba(0,0,0,0.6); z-index: 101; }
     .top-btn:hover { background: #141420; border-color: rgba(129, 140, 248, 0.3); }
     .menu-btn { left: 16px; }
     .settings-btn { left: 64px; }
     .mobile-new { display: none; right: 16px; }
 
-    /* Home Welcome Hero Page */
-    .welcome { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; padding: 0 24px; background: #000000; }
-    .hero { position: relative; width: min(680px, 100%); z-index: 2; text-align: center; padding: 20px; }
+    .welcome { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; padding: 0 24px; background: #000000; overflow-x: hidden !important; }
+    .hero { position: relative; width: min(680px, 100%); z-index: 2; text-align: center; padding: 20px; overflow-x: hidden !important; }
     .badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border: 1px solid rgba(129, 140, 248, 0.3); border-radius: 99px; background: rgba(129, 140, 248, 0.08); color: #e0e7ff; font-size: 11px; font-weight: 800; letter-spacing: 0.12em; margin-bottom: 24px; }
     .badge i { width: 6px; height: 6px; border-radius: 50%; background: #818cf8; box-shadow: 0 0 10px #818cf8; }
     
-    /* Clean Two-Line Heading Alignment Fix */
     .welcome-title {
       font: 800 clamp(32px, 5.5vw, 56px)/1.2 "Space Grotesk";
       color: #fff;
@@ -196,7 +194,6 @@
       white-space: nowrap;
     }
 
-    /* Pure Black / Clean Brand Logo Fix (No spinning, no glow, no filters) */
     .brand-inline-logo {
       width: clamp(38px, 6vw, 52px);
       height: clamp(38px, 6vw, 52px);
@@ -217,50 +214,58 @@
     .chip { padding: 9px 18px; border: 1px solid var(--glass-border); border-radius: 99px; background: #0e0e16; color: #e2e8f0; font-size: 13px; font-weight: 600; transition: all 0.25s; cursor: pointer; }
     .chip:hover { background: #181826; border-color: rgba(129, 140, 248, 0.4); color: #fff; transform: translateY(-2px); }
 
-    /* Chat Messages Workspace */
-    .chat { display: none; flex: 1; overflow-y: auto; padding: 84px 20px 40px; scroll-behavior: smooth; background: #000000; }
+    /* Main Chat Container Locked Horizontal Scroll */
+    .chat { display: none; flex: 1; overflow-y: auto; overflow-x: hidden !important; padding: 84px 20px 40px; scroll-behavior: smooth; background: #000000; }
     .chat::-webkit-scrollbar { width: 6px; }
     .chat::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 10px; }
     
-    .row { max-width: var(--max-width); width: 100%; margin: 0 auto 28px; display: flex; flex-direction: column; }
+    .row { max-width: var(--max-width); width: 100%; margin: 0 auto 28px; display: flex; flex-direction: column; overflow-x: hidden !important; }
     .label { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--txt-muted); margin-bottom: 8px; display: flex; align-items: center; }
     
     .trux-row .label { background: var(--ai-gradient); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 800; }
     .trux-row .label::before { content: "✦"; margin-right: 6px; font-size: 13px; color: #a855f7; }
     .user-row .label { align-self: flex-end; color: var(--accent-3); }
 
-    /* Clean User Message Bubble (Fixed layout bug) */
     .user-bubble {
       max-width: 85%; align-self: flex-end; padding: 14px 18px; background: #11111a; color: #fff;
       border-radius: 18px 18px 4px 18px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
       border: 1px solid rgba(255, 255, 255, 0.1); font-weight: 500; font-size: 15px; line-height: 1.6;
+      word-break: break-word; overflow-x: hidden !important;
     }
 
-    /* Highly Spacious & Readable AI Response Typography Fix */
+    /* Bolder & Spacious AI Response Typography */
     .trux-bubble {
-      padding: 8px 0px;
+      padding: 10px 0px;
       background: #000000 !important;
       border: none !important;
       box-shadow: none !important;
       color: #f8fafc;
-      font-size: 15px;
-      line-height: 1.85; /* Generous line height for sentence breathing room */
-      letter-spacing: 0.01em;
-      word-spacing: 0.04em; /* Expanded word spacing */
+      font-size: 15.5px;
+      font-weight: 500; /* Bolder AI Text */
+      line-height: 1.95; /* Spacious Line Height */
+      letter-spacing: 0.015em;
+      word-spacing: 0.05em;
+      word-break: break-word;
+      overflow-x: hidden !important;
     }
-    .trux-bubble b { color: #fff; font-weight: 700; }
-    .trux-bubble p { margin-bottom: 16px; }
-    .trux-bubble code { background: #0d0d14; padding: 3px 8px; border-radius: 6px; font-family: 'Fira Code', monospace; font-size: 0.9em; color: #38bdf8; border: 1px solid rgba(129, 140, 248, 0.2); }
+    .trux-bubble b, .trux-bubble strong { color: #ffffff; font-weight: 700; }
+    .trux-bubble p { margin-bottom: 18px; }
+    .trux-bubble ul, .trux-bubble ol { margin: 12px 0 18px 22px; }
+    .trux-bubble li { margin-bottom: 8px; }
+    .trux-bubble inline-code, .trux-bubble code { background: #0e0e18; padding: 3px 8px; border-radius: 6px; font-family: 'Fira Code', monospace; font-size: 0.88em; color: #38bdf8; border: 1px solid rgba(129, 140, 248, 0.25); white-space: normal; }
     
-    .code-file { display: flex; align-items: center; gap: 12px; margin: 18px 0; padding: 14px 16px; border: 1px solid rgba(129, 140, 248, 0.2); border-radius: 14px; background: #08080f; }
-    .code-file-icon { display: grid; width: 36px; height: 40px; flex: 0 0 36px; place-items: center; border: 1px solid rgba(129, 140, 248, 0.4); border-radius: 10px; color: #818cf8; background: rgba(129, 140, 248, 0.08); }
-    .code-file-meta { min-width: 0; flex: 1; }
-    .code-file-meta b, .code-file-meta small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .code-file-meta b { color: #fff; font-size: 13px; }
-    .code-file-meta small { margin-top: 2px; color: var(--txt-muted); font-size: 10px; text-transform: uppercase; }
-    .code-actions { display: flex; gap: 8px; }
-    .code-actions button { padding: 7px 12px; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; background: #161622; color: #fff; font-size: 11px; font-weight: 700; }
-    .code-actions button:hover { background: #222232; }
+    /* Code Blocks (ONLY area where horizontal side-scrolling is allowed) */
+    .code-file { display: flex; flex-direction: column; width: 100%; margin: 18px 0; border: 1px solid rgba(129, 140, 248, 0.25); border-radius: 14px; background: #08080f; overflow: hidden; }
+    .code-file-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; background: #0c0c16; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .code-file-info { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .code-file-icon { display: grid; width: 32px; height: 32px; flex: 0 0 32px; place-items: center; border: 1px solid rgba(129, 140, 248, 0.4); border-radius: 8px; color: #818cf8; background: rgba(129, 140, 248, 0.08); font-size: 12px; font-family: 'Fira Code', monospace; }
+    .code-file-meta b { color: #fff; font-size: 13px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .code-file-meta small { color: var(--txt-muted); font-size: 10px; text-transform: uppercase; display: block; }
+    .code-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .code-actions button { padding: 6px 12px; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; background: #161622; color: #fff; font-size: 11px; font-weight: 700; }
+    .code-actions button:hover { background: #222232; border-color: rgba(129, 140, 248, 0.4); }
+    .code-content-wrapper { width: 100%; overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+    .code-content-wrapper pre { margin: 0; padding: 16px; font-family: 'Fira Code', monospace; font-size: 13.5px; line-height: 1.6; color: #e2e8f0; white-space: pre; word-break: normal; }
 
     .gemini-reveal-chunk {
       display: inline;
@@ -268,20 +273,56 @@
     }
     @keyframes smoothGeminiFade { 0% { opacity: 0; transform: translateY(4px); } 100% { opacity: 1; transform: translateY(0); } }
     
-    .thinking { display: inline-flex !important; width: max-content !important; align-items: center; background: transparent !important; border: none !important; padding: 0 !important; }
-    .status-msg { font-size: 14px; font-weight: 700; background: var(--ai-gradient); color: transparent; -webkit-background-clip: text; background-clip: text; }
+    /* Metallic Lustered Thinking Indicator */
+    @keyframes metallicShimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    @keyframes metallicPulse {
+      0%, 100% { border-color: rgba(255, 255, 255, 0.25); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.3); }
+      50% { border-color: rgba(168, 185, 220, 0.55); box-shadow: 0 4px 25px rgba(129, 140, 248, 0.25), inset 0 1px 2px rgba(255, 255, 255, 0.5); }
+    }
+    
+    .thinking-container {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 20px;
+      border-radius: 99px;
+      background: var(--metallic-gradient);
+      background-size: 200% 100%;
+      animation: metallicShimmer 3.5s infinite linear, metallicPulse 3s infinite ease-in-out;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+      margin: 6px 0;
+    }
+    .thinking-sparkle {
+      font-size: 13px;
+      animation: rotateSparkle 2s infinite linear;
+    }
+    @keyframes rotateSparkle { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.15); } 100% { transform: rotate(360deg) scale(1); } }
+
+    .status-msg {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
     
     .actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
     .act { padding: 5px 12px; border-radius: 99px; border: 1px solid var(--glass-border); background: #0c0c12; color: var(--txt-muted); font-size: 11px; font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; gap: 5px; }
     .act:hover { background: #161622; color: #fff; border-color: rgba(129, 140, 248, 0.3); }
 
-    /* Composer Input Area */
-    .composer { padding: 12px 20px 32px; position: relative; z-index: 20; background: linear-gradient(to top, #000000 88%, transparent); display: flex; justify-content: center; }
-    .compose { width: min(var(--max-width), 100%); position: relative; }
+    .composer { padding: 12px 20px 32px; position: relative; z-index: 20; background: linear-gradient(to top, #000000 88%, transparent); display: flex; justify-content: center; overflow-x: hidden !important; }
+    .compose { width: min(var(--max-width), 100%); position: relative; overflow-x: hidden !important; }
     
     .chip-container { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-    .file-chip { background: #12121c; border: 1px solid var(--glass-border); padding: 5px 12px; border-radius: 99px; font-size: 11px; color: #fff; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+    .file-chip { background: #12121c; border: 1px solid rgba(129, 140, 248, 0.3); padding: 6px 14px; border-radius: 99px; font-size: 11.5px; color: #fff; display: flex; align-items: center; gap: 8px; font-weight: 600; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
     .file-chip button { background: none; color: var(--txt-muted); cursor: pointer; font-size: 14px; }
+    .file-chip button:hover { color: #f43f5e; }
 
     .bar {
       position: relative; display: flex; align-items: flex-end; gap: 10px; padding: 10px 14px;
@@ -323,7 +364,6 @@
     }
     .scroll-down-btn.visible { display: flex; align-items: center; gap: 6px; }
 
-    /* Modals */
     .modal { display: none; position: fixed; inset: 0; z-index: 2000; align-items: center; justify-content: center; padding: 20px; background: rgba(0, 0, 0, 0.92); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); animation: fadeIn 0.25s ease; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
@@ -421,9 +461,7 @@
     </aside>
 
     <main class="main">
-      <!-- Clean Topbar: Model Selection & Thinking Icon Button Only -->
       <div class="topbar">
-        <!-- Compact Model Selector Dropdown -->
         <div class="model-picker-container">
           <button class="model-picker-btn" id="modelPickerBtn" onclick="toggleModelDropdown(event)">
             <span class="model-picker-icon" id="currentModelIcon">⚡</span>
@@ -467,7 +505,6 @@
           </div>
         </div>
 
-        <!-- Thinking Button (Icon Only - No Text) -->
         <button class="topbar-tool-btn icon-only" id="thinkingBtn" onclick="toggleAdvancedThinking()" title="Extended thinking mode">
           <svg viewBox="0 0 24 24"><path d="M9.5 18.5h5M10 21h4M8.5 15.5c-1.4-1-2.5-2.7-2.5-4.7a6 6 0 1 1 12 0c0 2-1.1 3.7-2.5 4.7-.7.5-1 1.2-1 2H9.5c0-.8-.3-1.5-1-2Z"/><path d="M9.4 10.5c.2-1.4 1.1-2.2 2.6-2.2 1.2 0 2.3.7 2.3 1.9 0 1.1-.8 1.5-1.5 2-.5.4-.8.8-.8 1.5"/><path d="M12 14.8h.01"/></svg>
         </button>
@@ -477,7 +514,6 @@
       <button class="top-btn settings-btn" onclick="openSettingsModal()" title="Settings">⚙</button>
       <button class="top-btn mobile-new" onclick="startNewChat()" title="New Chat">＋</button>
       
-      <!-- Welcome Screen with Correct Heading Layout & Pure Black Logo -->
       <section class="welcome" id="welcomeScreen">
         <div class="hero">
           <div class="badge"><i></i>TRUX INTELLIGENCE 5.0</div>
@@ -904,14 +940,21 @@
       getEl("scrollDownBtn").classList.remove("visible");
     }
 
+    /* Convert Code/Long Text into Attached File Chip Automatically */
     getEl("promptInput").addEventListener("paste", e => {
       let text = (e.clipboardData || window.clipboardData).getData('text');
-      if(text.split('\n').length > 5 || text.length > 350) {
+      let isCodeOrLong = /```|function|const|let|var|class\s+\w+|import\s+.*from|def\s+\w+\(|<html|<div|public\s+class|select\s+.*from/i.test(text) || text.split('\n').length > 4 || text.length > 250;
+      
+      if(isCodeOrLong) {
         e.preventDefault();
         let id = Date.now();
-        let snippet = text.substring(0, 20).replace(/\n/g, " ") + "...";
+        let cleanFirstLine = text.trim().split('\n')[0].substring(0, 24).replace(/```/g, '');
+        let fileType = /<html|<div/i.test(text) ? "HTML Code" : (/function|const|let|var|def/i.test(text) ? "Source Code" : "Text Attachment");
+        let snippet = `${fileType}: ${cleanFirstLine || "Code Snippet"}...`;
+        
         pastedTextBlocks.push({ id, text, snippet });
-        renderFileChips(); handleInputChange();
+        renderFileChips();
+        handleInputChange();
       }
     });
 
@@ -970,15 +1013,17 @@
     function renderFormattedText(t) {
       if(!t) return ""; let h = escapeHtml(t);
       let fileTokens = [];
+      
+      /* Render Code Blocks with Strict Side-Scrolling Enclosure */
       h = h.replace(/```([\w-]*)\n?([\s\S]*?)```/g, (m, lang, c) => {
         let id = `code_${++codeBlockCounter}_${Date.now()}`;
         let displayLang = lang || "Text", extension = codeFileExtension(lang), filename = `trux-response.${extension}`;
         let sandboxBtn = (extension === 'html' || extension === 'js') ? `<button onclick="openCodeSandbox('${id}')">▶ Run</button>` : '';
-        let file = `<div class="code-file"><span class="code-file-icon">&lt;/&gt;</span><div class="code-file-meta"><b>${filename}</b><small>${displayLang} · generated code</small></div><div class="code-actions">${sandboxBtn}<button onclick="copyCodeToClipboard(this,'${id}')">Copy</button><button onclick="downloadCode('${id}','${filename}')">Download</button></div><textarea id="${id}" hidden>${c.trim()}</textarea></div>`;
+        let file = `<div class="code-file"><div class="code-file-header"><div class="code-file-info"><span class="code-file-icon">&lt;/&gt;</span><div class="code-file-meta"><b>${filename}</b><small>${displayLang} · code block</small></div></div><div class="code-actions">${sandboxBtn}<button onclick="copyCodeToClipboard(this,'${id}')">Copy</button><button onclick="downloadCode('${id}','${filename}')">Download</button></div></div><div class="code-content-wrapper"><pre>${c.trim()}</pre></div><textarea id="${id}" hidden>${c.trim()}</textarea></div>`;
         fileTokens.push(file);
         return `@@TRUX_CODE_FILE_${fileTokens.length - 1}@@`;
       });
-      h = h.replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*(.*?)\*\*/g, "<b>$1</b>").replace(/\*(.*?)\*/g, "<i>$1</i>").replace(/\n/g, "<br>");
+      h = h.replace(/`([^`]+)`/g, '<inline-code>$1</inline-code>').replace(/\*\*(.*?)\*\*/g, "<b>$1</b>").replace(/\*(.*?)\*/g, "<i>$1</i>").replace(/\n/g, "<br>");
       return h.replace(/@@TRUX_CODE_FILE_(\d+)@@/g, (m, index) => fileTokens[Number(index)] || "");
     }
 
@@ -989,11 +1034,46 @@
       speechSynthesis.speak(ut);
     }
     
+    /* Dynamic Context-Aware Metallic Thinking Words */
     function getThinkingPhrases(prompt) {
-      let p = prompt.toLowerCase();
-      if(p.includes("code") || p.includes("function") || p.includes("html") || p.includes("bug")) return ["Analyzing logic...", "Writing code...", "Refining syntax..."];
-      if(p.includes("analyze") || p.includes("explain") || p.includes("summarize")) return ["Reading data...", "Extracting key points...", "Synthesizing..."];
-      return ["Analyzing request...", "Gathering context...", "Formulating response..."];
+      if(!prompt) return ["Analyzing input...", "Preparing response..."];
+      let p = prompt.trim();
+      let words = p.replace(/[^\w\s]/gi, '').split(/\s+/).filter(w => w.length > 3);
+      let topic = words.slice(0, 3).join(" ") || "request";
+      
+      if (p.includes("```") || /function|const|let|var|class|import|def|public|html|css|select/i.test(p)) {
+        return [
+          `Parsing code context...`,
+          `Evaluating logic for "${topic}"...`,
+          `Optimizing syntax structures...`,
+          `Synthesizing code output...`
+        ];
+      } else if (/explain|what|how|why|describe/i.test(p)) {
+        return [
+          `Analyzing topic: "${topic}"...`,
+          `Structuring clear breakdown...`,
+          `Synthesizing core concepts...`,
+          `Formatting detailed insights...`
+        ];
+      } else if (/fix|bug|error|issue|solve/i.test(p)) {
+        return [
+          `Diagnosing issue in "${topic}"...`,
+          `Searching optimal solution...`,
+          `Formulating fix strategy...`,
+          `Verifying code resolution...`
+        ];
+      } else if (/write|draft|create|generate/i.test(p)) {
+        return [
+          `Drafting context on "${topic}"...`,
+          `Refining composition & tone...`,
+          `Finalizing response text...`
+        ];
+      }
+      return [
+        `Processing context for "${topic}"...`,
+        `Evaluating prompt parameters...`,
+        `Formulating structured answer...`
+      ];
     }
 
     function copyTextMessage(txt, btn) {
@@ -1004,7 +1084,6 @@
       });
     }
 
-    /* Fixed Clean Message Row Append (No bugged subtext or toggle clutter) */
     function appendMessageRow(label, text, rc, bc) {
       let chatContainer = getEl("chatContainer"), r = document.createElement("div"); r.className = `row ${rc}`;
       let textContent = typeof text === "string" ? text : text?.text || "";
@@ -1122,19 +1201,20 @@
       getEl("welcomeScreen").style.display = "none";
       let chatContainer = getEl("chatContainer"); chatContainer.style.display = "block";
       
-      appendMessageRow("You", basePrompt + (attachedText ? "\n\n[File Attached]" : "") + (selectedImageBase64 ? "\n[Image Attached]" : ""), "user-row", "user-bubble");
+      appendMessageRow("You", basePrompt + (attachedText ? "\n\n[Code File Attached]" : "") + (selectedImageBase64 ? "\n[Image Attached]" : ""), "user-row", "user-bubble");
       promptInput.value = ""; let img = selectedImageBase64; removeImage(); pastedTextBlocks = []; renderFileChips(); handleInputChange();
 
       let id = "b_" + Date.now(), aid = "a_" + Date.now(), sid = "s_" + Date.now(), row = document.createElement("div");
       row.className = "row trux-row";
       
-      row.innerHTML = `<div class="label">TruX AI</div><div class="bubble trux-bubble thinking" id="${id}"><div class="dots"><span class="status-msg" id="${sid}">Thinking…</span></div></div><div class="actions" id="${aid}"></div>`;
+      /* Metallic Lustered Dynamic Thinking Box */
+      row.innerHTML = `<div class="label">TruX AI</div><div class="bubble trux-bubble thinking" id="${id}"><div class="thinking-container"><span class="thinking-sparkle">✦</span><span class="status-msg" id="${sid}">Thinking…</span></div></div><div class="actions" id="${aid}"></div>`;
       
       chatContainer.appendChild(row);
       chatContainer.scrollTop = chatContainer.scrollHeight;
 
       let phrases = getThinkingPhrases(basePrompt), pi = 0;
-      let timer = setInterval(() => { let e = getEl(sid); if(e) e.innerText = phrases[pi = (pi + 1) % phrases.length]; }, 3500);
+      let timer = setInterval(() => { let e = getEl(sid); if(e) e.innerText = phrases[pi = (pi + 1) % phrases.length]; }, 2800);
 
       activeAbortController = new AbortController();
       try {
