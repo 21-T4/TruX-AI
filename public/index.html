@@ -15,11 +15,11 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="TruX-AI">
   
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <link href="[https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&family=Fira+Code:wght@400;500&display=swap](https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&family=Fira+Code:wght@400;500&display=swap)" rel="stylesheet">
   
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="[https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js](https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js)"></script>
+  <script src="[https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js](https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js)"></script>
+  <script src="[https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js](https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js)"></script>
 
   <style>
     :root {
@@ -35,7 +35,7 @@
       --accent-3: #c084fc;
       --accent-4: #f43f5e;
       --ai-gradient: linear-gradient(135deg, #a855f7 0%, #6366f1 50%, #38bdf8 100%);
-      --max-width: 720px;
+      --max-width: 680px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -170,52 +170,75 @@
     .settings-btn { left: 64px; }
     .mobile-new { display: none; right: 16px; }
 
-    /* Expanded & Refined Welcome Screen */
+    /* Enlarged & Enhanced Welcome Screen */
     .welcome { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; padding: 0 24px; background: #000000; overflow-x: hidden !important; }
-    .hero { position: relative; width: min(760px, 100%); z-index: 2; text-align: center; padding: 20px; overflow-x: hidden !important; }
-    .badge { display: inline-flex; align-items: center; gap: 8px; padding: 7px 18px; border: 1px solid rgba(129, 140, 248, 0.35); border-radius: 99px; background: rgba(129, 140, 248, 0.1); color: #e0e7ff; font-size: 12px; font-weight: 800; letter-spacing: 0.14em; margin-bottom: 28px; box-shadow: 0 0 20px rgba(129, 140, 248, 0.15); }
-    .badge i { width: 7px; height: 7px; border-radius: 50%; background: #818cf8; box-shadow: 0 0 12px #818cf8; }
+    .hero { position: relative; width: min(760px, 100%); z-index: 2; text-align: center; padding: 20px 10px; overflow-x: hidden !important; }
+    .badge { display: inline-flex; align-items: center; gap: 8px; padding: 7px 18px; border: 1px solid rgba(129, 140, 248, 0.35); border-radius: 99px; background: rgba(129, 140, 248, 0.1); color: #e0e7ff; font-size: 11.5px; font-weight: 800; letter-spacing: 0.15em; margin-bottom: 28px; box-shadow: 0 0 20px rgba(129, 140, 248, 0.15); }
+    .badge i { width: 7px; height: 7px; border-radius: 50%; background: #818cf8; box-shadow: 0 0 10px #818cf8; }
     
     .welcome-title {
-      font: 800 clamp(42px, 7vw, 68px)/1.15 "Space Grotesk";
-      color: #fff;
+      font: 800 clamp(44px, 7.5vw, 76px)/1.12 "Space Grotesk", sans-serif;
       margin-bottom: 20px;
       letter-spacing: -1.5px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      text-shadow: 0 4px 30px rgba(0,0,0,0.8);
     }
-    
+    .welcome-top {
+      background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    }
     .welcome-subline {
       display: inline-flex;
       align-items: center;
       white-space: nowrap;
-      background: linear-gradient(135deg, #ffffff 30%, #a5b4fc 100%);
+      background: var(--ai-gradient);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
     }
 
     .brand-inline-logo {
-      width: clamp(44px, 7.5vw, 62px);
-      height: clamp(44px, 7.5vw, 62px);
+      width: clamp(46px, 7.5vw, 70px);
+      height: clamp(46px, 7.5vw, 70px);
       display: inline-block;
       vertical-align: middle;
-      margin-left: 4px;
+      margin-left: 6px;
       object-fit: contain;
     }
 
-    .animated-sub { font-size: 16px; color: var(--txt-muted); max-width: 520px; margin: 0 auto 36px; line-height: 1.6; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+    .animated-sub { font-size: 16px; color: var(--txt-muted); max-width: 540px; margin: 0 auto 36px; line-height: 1.6; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
     .cycling-text-wrapper { display: inline-flex; overflow: hidden; vertical-align: bottom; height: 26px; }
     .cycling-text { background: var(--ai-gradient); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 800; display: inline-block; animation: textCycleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    @keyframes textCycleIn { 0% { opacity: 0; transform: translateY(14px); } 100% { opacity: 1; transform: translateY(0); } }
+    @keyframes textCycleIn { 0% { opacity: 0; transform: translateY(12px); } 100% { opacity: 1; transform: translateY(0); } }
 
-    /* Expanded Prompt Chips */
-    .chips { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; max-width: 700px; margin: 0 auto; }
-    .chip { padding: 12px 24px; border: 1px solid rgba(129, 140, 248, 0.25); border-radius: 99px; background: rgba(14, 14, 22, 0.75); backdrop-filter: blur(12px); color: #f1f5f9; font-size: 14px; font-weight: 600; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
-    .chip:hover { background: rgba(28, 28, 44, 0.9); border-color: rgba(129, 140, 248, 0.6); color: #ffffff; transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 25px rgba(129, 140, 248, 0.25); }
+    /* Expanded & Refined Suggestion Chips */
+    .chips { display: flex; justify-content: center; flex-wrap: wrap; gap: 14px; margin-top: 10px; }
+    .chip {
+      padding: 12px 24px;
+      border: 1px solid rgba(129, 140, 248, 0.25);
+      border-radius: 99px;
+      background: rgba(14, 14, 22, 0.75);
+      backdrop-filter: blur(12px);
+      color: #f1f5f9;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+    }
+    .chip:hover {
+      background: linear-gradient(135deg, rgba(129, 140, 248, 0.22), rgba(192, 132, 252, 0.12));
+      border-color: rgba(129, 140, 248, 0.6);
+      color: #ffffff;
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 8px 25px rgba(129, 140, 248, 0.25);
+    }
 
     .chat { display: none; flex: 1; overflow-y: auto; overflow-x: hidden !important; padding: 84px 20px 40px; scroll-behavior: smooth; background: #000000; }
     .chat::-webkit-scrollbar { width: 6px; }
@@ -235,84 +258,70 @@
       word-break: break-word; overflow-x: hidden !important;
     }
 
-    /* Breathable AI Typography with Increased Word Spacing */
+    /* Spacious & Word-Spaced AI Response Typography */
     .trux-bubble {
       padding: 10px 0px;
-      background: transparent !important;
+      background: #000000 !important;
       border: none !important;
       box-shadow: none !important;
       color: #f8fafc;
       font-size: 16px;
       font-weight: 500;
-      line-height: 2.0;
+      line-height: 2.0; /* Spacious line height */
       letter-spacing: 0.025em;
-      word-spacing: 0.12em;
+      word-spacing: 0.18em; /* Significantly increased word gap */
       word-break: break-word;
       overflow-x: hidden !important;
     }
     .trux-bubble b, .trux-bubble strong { color: #ffffff; font-weight: 700; }
     .trux-bubble p { margin-bottom: 20px; }
-    .trux-bubble ul, .trux-bubble ol { margin: 12px 0 20px 22px; }
+    .trux-bubble ul, .trux-bubble ol { margin: 14px 0 20px 24px; }
     .trux-bubble li { margin-bottom: 10px; }
-    .trux-bubble inline-code, .trux-bubble code { background: #0e0e18; padding: 4px 9px; border-radius: 6px; font-family: 'Fira Code', monospace; font-size: 0.88em; color: #38bdf8; border: 1px solid rgba(129, 140, 248, 0.25); word-spacing: normal; letter-spacing: normal; }
+    .trux-bubble inline-code, .trux-bubble code { background: #0e0e18; padding: 3px 8px; border-radius: 6px; font-family: 'Fira Code', monospace; font-size: 0.88em; color: #38bdf8; border: 1px solid rgba(129, 140, 248, 0.25); white-space: normal; }
     
-    /* Unified Code File Container */
-    .code-file { display: flex; flex-direction: column; width: 100%; margin: 20px 0; border: 1px solid rgba(129, 140, 248, 0.3); border-radius: 14px; background: #07070e; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.7); }
+    /* Code Blocks (Single Unified File Card) */
+    .code-file { display: flex; flex-direction: column; width: 100%; margin: 20px 0; border: 1px solid rgba(129, 140, 248, 0.28); border-radius: 16px; background: #07070d; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
     .code-file-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 18px; background: #0c0c16; border-bottom: 1px solid rgba(255,255,255,0.06); }
     .code-file-info { display: flex; align-items: center; gap: 10px; min-width: 0; }
-    .code-file-icon { display: grid; width: 32px; height: 32px; flex: 0 0 32px; place-items: center; border: 1px solid rgba(129, 140, 248, 0.4); border-radius: 8px; color: #818cf8; background: rgba(129, 140, 248, 0.08); font-size: 12px; font-family: 'Fira Code', monospace; }
+    .code-file-icon { display: grid; width: 34px; height: 34px; flex: 0 0 34px; place-items: center; border: 1px solid rgba(129, 140, 248, 0.4); border-radius: 8px; color: #818cf8; background: rgba(129, 140, 248, 0.08); font-size: 13px; font-family: 'Fira Code', monospace; }
     .code-file-meta b { color: #fff; font-size: 13px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .code-file-meta small { color: var(--txt-muted); font-size: 10px; text-transform: uppercase; display: block; }
     .code-actions { display: flex; gap: 8px; flex-shrink: 0; }
-    .code-actions button { padding: 6px 12px; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; background: #161622; color: #fff; font-size: 11px; font-weight: 700; }
+    .code-actions button { padding: 6px 14px; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; background: #161622; color: #fff; font-size: 11px; font-weight: 700; }
     .code-actions button:hover { background: #222232; border-color: rgba(129, 140, 248, 0.4); }
     .code-content-wrapper { width: 100%; overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
-    .code-content-wrapper pre { margin: 0; padding: 18px; font-family: 'Fira Code', monospace; font-size: 13.5px; line-height: 1.6; color: #e2e8f0; white-space: pre; word-break: normal; word-spacing: normal; letter-spacing: normal; }
+    .code-content-wrapper pre { margin: 0; padding: 18px; font-family: 'Fira Code', monospace; font-size: 13.5px; line-height: 1.6; color: #e2e8f0; white-space: pre; word-break: normal; }
 
-    .gemini-reveal-chunk {
-      display: inline;
-      animation: smoothGeminiFade 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    /* Floating Metallic Line Thinking Indicator */
+    @keyframes metallicShimmerLine {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
     }
-    @keyframes smoothGeminiFade { 0% { opacity: 0; transform: translateY(3px); } 100% { opacity: 1; transform: translateY(0); } }
-    
-    /* Sleek Metallic Floating Line Thinking Box */
     .thinking-container {
       display: inline-flex;
       align-items: center;
       gap: 12px;
-      padding: 10px 22px;
-      border-radius: 12px;
-      background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(129, 140, 248, 0.12) 50%, rgba(255,255,255,0.03) 100%);
-      border-left: 3px solid #818cf8;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      border-right: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
-      position: relative;
-      overflow: hidden;
-      margin: 6px 0;
+      padding: 8px 24px;
+      border-radius: 99px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.02) 0%, rgba(129, 140, 248, 0.25) 30%, rgba(192, 132, 252, 0.4) 50%, rgba(56, 189, 248, 0.25) 70%, rgba(255,255,255,0.02) 100%);
+      background-size: 200% 100%;
+      animation: metallicShimmerLine 3s infinite linear;
+      border: 1px solid rgba(129, 140, 248, 0.4);
+      box-shadow: 0 0 25px rgba(129, 140, 248, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+      margin: 8px 0;
+      backdrop-filter: blur(12px);
     }
-
-    .thinking-container::before {
-      content: "";
-      position: absolute;
-      top: 0; left: -100%; width: 100%; height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
-      animation: metallicShimmerLine 2.2s infinite ease-in-out;
+    .thinking-sparkle {
+      font-size: 13px;
+      color: #c084fc;
+      animation: rotateSparkle 2s infinite linear;
     }
-
-    @keyframes metallicShimmerLine {
-      0% { left: -100%; }
-      100% { left: 200%; }
-    }
-    
-    .thinking-sparkle { font-size: 13px; animation: rotateSparkle 2s infinite linear; color: #a855f7; }
     @keyframes rotateSparkle { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.15); } 100% { transform: rotate(360deg) scale(1); } }
 
     .status-msg {
       font-size: 13px;
       font-weight: 700;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.03em;
       background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #94a3b8 100%);
       -webkit-background-clip: text;
       background-clip: text;
@@ -326,10 +335,9 @@
     .composer { padding: 12px 20px 32px; position: relative; z-index: 20; background: linear-gradient(to top, #000000 88%, transparent); display: flex; justify-content: center; overflow-x: hidden !important; }
     .compose { width: min(var(--max-width), 100%); position: relative; overflow-x: hidden !important; }
     
-    /* Clean File Attachment Chips (No Preview Clutter) */
     .chip-container { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-    .file-chip { background: #0f0f18; border: 1px solid rgba(129, 140, 248, 0.35); padding: 7px 16px; border-radius: 99px; font-size: 12px; color: #fff; display: flex; align-items: center; gap: 9px; font-weight: 600; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
-    .file-chip button { background: none; color: var(--txt-muted); cursor: pointer; font-size: 15px; }
+    .file-chip { background: #12121c; border: 1px solid rgba(129, 140, 248, 0.35); padding: 7px 16px; border-radius: 99px; font-size: 12px; color: #fff; display: flex; align-items: center; gap: 8px; font-weight: 600; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
+    .file-chip button { background: none; color: var(--txt-muted); cursor: pointer; font-size: 15px; margin-left: 4px; }
     .file-chip button:hover { color: #f43f5e; }
 
     .bar {
@@ -426,7 +434,6 @@
       .welcome-title { font-size: clamp(34px, 8vw, 48px); }
       .user-bubble { max-width: 90%; }
       .hint { display: none; }
-      .chip { padding: 10px 18px; font-size: 13px; }
     }
   </style>
 </head>
@@ -461,7 +468,7 @@
       </div>
       <div class="history" id="historyList"></div>
       <div class="profile" onclick="handleAuthAction()">
-        <img class="avatar" id="userAvatar" src="https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff">
+        <img class="avatar" id="userAvatar" src="[https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff](https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff)">
         <div class="profile-info">
           <b id="userName">Guest User</b>
           <small id="userEmail">Sign in required</small>
@@ -528,8 +535,8 @@
           <div class="badge"><i></i>TRUX INTELLIGENCE 5.0</div>
           
           <h1 class="welcome-title">
-            <div>Welcome,</div>
-            <div class="welcome-subline">I am Tru<img src="/icon-512.png" class="brand-inline-logo" alt="X"></div>
+            <span class="welcome-top">Welcome,</span>
+            <span class="welcome-subline">I am Tru<img src="/icon-512.png" class="brand-inline-logo" alt="X"></span>
           </h1>
           
           <div class="animated-sub">
@@ -541,9 +548,9 @@
 
           <div class="chips">
             <span class="chip" onclick="quickPrompt('Write a clean JavaScript function for...')">✦ Coding</span>
-            <span class="chip" onclick="quickPrompt('Analyze the following text...')">✦ Analysis</span>
+            <span class="chip" onclick="quickPrompt('Analyze the following dataset...')">✦ Analysis</span>
             <span class="chip" onclick="quickPrompt('Draft a concise professional email about...')">✦ Writing</span>
-            <span class="chip" onclick="quickPrompt('Explain this concept simply...')">✦ Vision</span>
+            <span class="chip" onclick="quickPrompt('Explain this complex concept simply...')">✦ Vision</span>
           </div>
         </div>
       </section>
@@ -577,7 +584,7 @@
             <input id="imageUpload" type="file" accept="image/*" hidden onchange="handleImageUpload(event)">
             <input id="cameraUpload" type="file" accept="image/*" capture="environment" hidden onchange="handleImageUpload(event)">
             
-            <textarea id="promptInput" rows="1" placeholder="Ask TruX…" oninput="handleInputChange()"></textarea>
+            <textarea id="promptInput" rows="1" placeholder="Ask TruX…" oninput="handleTextareaInput(event)"></textarea>
 
             <button class="send-btn" id="actionBtn" onclick="handleActionButton()">
               <svg id="btnIcon" viewBox="0 0 24 24" width="20" height="20">
@@ -648,7 +655,7 @@
       </div>
 
       <div class="sect">
-        <h4>Pro 5.0 · Monthly Usage</h4>
+        <h4>Pro 5.0 Monthly Usage</h4>
         <div class="usage"><i id="proUsageBarFill"></i></div>
         <div class="utxt" id="proUsageText">0 / 2,000,000 Tokens</div>
       </div>
@@ -732,12 +739,12 @@
         if(u) {
           getEl("userName").innerText = u.displayName || "User";
           getEl("userEmail").innerText = u.email || "";
-          getEl("userAvatar").src = u.photoURL || "https://ui-avatars.com/api/?name=User&background=111111&color=fff";
+          getEl("userAvatar").src = u.photoURL || "[https://ui-avatars.com/api/?name=User&background=111111&color=fff](https://ui-avatars.com/api/?name=User&background=111111&color=fff)";
           getEl("loginWallModal").style.display = "none";
         } else {
           getEl("userName").innerText = "Guest User";
           getEl("userEmail").innerText = "Sign in required";
-          getEl("userAvatar").src = "https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff";
+          getEl("userAvatar").src = "[https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff](https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff)";
           getEl("loginWallModal").style.display = "flex";
         }
       });
@@ -764,8 +771,7 @@
         recognition = null,
         isRecording = false,
         isScrolledUp = false,
-        advancedThinkingEnabled = false,
-        accumulatedStreamText = "";
+        advancedThinkingEnabled = false;
 
     function toggleModelDropdown(e) {
       e?.stopPropagation();
@@ -818,7 +824,7 @@
       if(el) el.innerText = `Total Feedbacks Collected: ${feedbackCount} / 100`;
     }
 
-    /* Updated Pro Usage Data to Monthly Tracker */
+    /* Updated Pro Usage Data to Monthly Reset */
     function getProUsageData() {
       let currentMonth = new Date().toISOString().slice(0, 7);
       let u = JSON.parse(localStorage.getItem("trux_pro_usage")) || { tokensUsed: 0, monthReset: currentMonth };
@@ -952,21 +958,19 @@
       getEl("scrollDownBtn").classList.remove("visible");
     }
 
-    /* Auto Code File Attachment for Typing & Pasting Code */
-    function checkAndAttachCode(text) {
+    /* Auto Code Detection & Conversion to Clean File Attachment Chips */
+    function detectAndAttachCode(text) {
       if(!text) return false;
-      let isCode = /```[\s\S]*```/g.test(text) || 
-                   text.split('\n').length >= 4 || 
-                   (text.length > 80 && /(function|const|let|var|class\s+\w+|import\s+.*from|def\s+\w+\(|<html|<div|public\s+class|select\s+.*from)/i.test(text));
+      let isCode = /```|function\s*\(|const\s+\w+\s*=|let\s+\w+\s*=|var\s+\w+\s*=|class\s+\w+|import\s+.*from|def\s+\w+\(|<html|<div|public\s+class|select\s+.*from/i.test(text) || (text.includes('\n') && text.length > 120);
       
       if(isCode) {
         let id = Date.now();
-        let cleanText = text.replace(/```/g, '').trim();
-        let cleanFirstLine = cleanText.split('\n')[0].substring(0, 26);
-        let fileType = /<html|<div/i.test(cleanText) ? "HTML Document" : (/function|const|let|var|def/i.test(cleanText) ? "Source Code" : "Code Attachment");
-        let snippet = `${fileType}: ${cleanFirstLine || "Code File"}`;
+        let fileLabel = "Code Document";
+        if (/<html|<div/i.test(text)) fileLabel = "HTML Document";
+        else if (/def\s|import\s/i.test(text)) fileLabel = "Python Script";
+        else if (/function|const|let|var/i.test(text)) fileLabel = "JavaScript Code";
         
-        pastedTextBlocks.push({ id, text: cleanText, snippet });
+        pastedTextBlocks.push({ id, text, snippet: fileLabel });
         renderFileChips();
         return true;
       }
@@ -975,23 +979,24 @@
 
     getEl("promptInput").addEventListener("paste", e => {
       let text = (e.clipboardData || window.clipboardData).getData('text');
-      if(checkAndAttachCode(text)) {
+      if(detectAndAttachCode(text)) {
         e.preventDefault();
+        getEl("promptInput").value = "";
         handleInputChange();
       }
     });
 
-    getEl("promptInput").addEventListener("input", function() {
-      handleInputChange();
-      let val = this.value;
-      if(val.startsWith("```") && val.endsWith("```") && val.length > 10) {
-        if(checkAndAttachCode(val)) {
-          this.value = "";
-          handleInputChange();
+    function handleTextareaInput(e) {
+      let text = e.target.value;
+      if(text.includes('```')) {
+        if(detectAndAttachCode(text)) {
+          e.target.value = "";
         }
       }
-    });
+      handleInputChange();
+    }
 
+    /* Clean Display for File Chips (No inline snippet previews) */
     function renderFileChips() {
       let c = getEl("chipContainer");
       if(!pastedTextBlocks.length) { c.style.display = "none"; return; }
@@ -1044,26 +1049,20 @@
       return map[String(language || "").toLowerCase()] || "txt";
     }
 
-    /* Single Clean File Container Parsing (No Broken Splitting) */
+    /* Unified Single-Pass Code File Block Renderer */
     function renderFormattedText(t) {
-      if(!t) return ""; 
-      let h = escapeHtml(t);
+      if(!t) return ""; let h = escapeHtml(t);
       let fileTokens = [];
       
       h = h.replace(/```([\w-]*)\n?([\s\S]*?)```/g, (m, lang, c) => {
         let id = `code_${++codeBlockCounter}_${Date.now()}`;
         let displayLang = lang || "Text", extension = codeFileExtension(lang), filename = `trux-response.${extension}`;
         let sandboxBtn = (extension === 'html' || extension === 'js') ? `<button onclick="openCodeSandbox('${id}')">▶ Run</button>` : '';
-        let file = `<div class="code-file"><div class="code-file-header"><div class="code-file-info"><span class="code-file-icon">&lt;/&gt;</span><div class="code-file-meta"><b>${filename}</b><small>${displayLang} · unified code file</small></div></div><div class="code-actions">${sandboxBtn}<button onclick="copyCodeToClipboard(this,'${id}')">Copy</button><button onclick="downloadCode('${id}','${filename}')">Download</button></div></div><div class="code-content-wrapper"><pre>${c.trim()}</pre></div><textarea id="${id}" hidden>${c.trim()}</textarea></div>`;
+        let file = `<div class="code-file"><div class="code-file-header"><div class="code-file-info"><span class="code-file-icon">&lt;/&gt;</span><div class="code-file-meta"><b>${filename}</b><small>${displayLang} · code block</small></div></div><div class="code-actions">${sandboxBtn}<button onclick="copyCodeToClipboard(this,'${id}')">Copy</button><button onclick="downloadCode('${id}','${filename}')">Download</button></div></div><div class="code-content-wrapper"><pre>${c.trim()}</pre></div><textarea id="${id}" hidden>${c.trim()}</textarea></div>`;
         fileTokens.push(file);
         return `@@TRUX_CODE_FILE_${fileTokens.length - 1}@@`;
       });
-      
-      h = h.replace(/`([^`]+)`/g, '<inline-code>$1</inline-code>')
-           .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")
-           .replace(/\*(.*?)\*/g, "<i>$1</i>")
-           .replace(/\n/g, "<br>");
-
+      h = h.replace(/`([^`]+)`/g, '<inline-code>$1</inline-code>').replace(/\*\*(.*?)\*\*/g, "<b>$1</b>").replace(/\*(.*?)\*/g, "<i>$1</i>").replace(/\n/g, "<br>");
       return h.replace(/@@TRUX_CODE_FILE_(\d+)@@/g, (m, index) => fileTokens[Number(index)] || "");
     }
 
@@ -1074,28 +1073,43 @@
       speechSynthesis.speak(ut);
     }
     
-    /* Sleek Dynamic Metallic Floating Line Phrases */
     function getThinkingPhrases(prompt) {
-      if(!prompt) return ["Analyzing request...", "Formulating logic..."];
+      if(!prompt) return ["Analyzing input...", "Preparing response..."];
       let p = prompt.trim();
       let words = p.replace(/[^\w\s]/gi, '').split(/\s+/).filter(w => w.length > 3);
       let topic = words.slice(0, 3).join(" ") || "request";
       
-      if (p.includes("```") || /(function|const|let|var|class|import|def|public|html|css|select)/i.test(p)) {
+      if (p.includes("```") || /function|const|let|var|class|import|def|public|html|css|select/i.test(p)) {
         return [
           `Parsing code context...`,
           `Evaluating logic for "${topic}"...`,
-          `Synthesizing unified file structure...`
+          `Optimizing syntax structures...`,
+          `Synthesizing code output...`
         ];
-      } else if (/(explain|what|how|why|describe)/i.test(p)) {
+      } else if (/explain|what|how|why|describe/i.test(p)) {
         return [
           `Analyzing topic: "${topic}"...`,
-          `Structuring insights...`,
-          `Formatting detailed response...`
+          `Structuring clear breakdown...`,
+          `Synthesizing core concepts...`,
+          `Formatting detailed insights...`
+        ];
+      } else if (/fix|bug|error|issue|solve/i.test(p)) {
+        return [
+          `Diagnosing issue in "${topic}"...`,
+          `Searching optimal solution...`,
+          `Formulating fix strategy...`,
+          `Verifying code resolution...`
+        ];
+      } else if (/write|draft|create|generate/i.test(p)) {
+        return [
+          `Drafting context on "${topic}"...`,
+          `Refining composition & tone...`,
+          `Finalizing response text...`
         ];
       }
       return [
         `Processing context for "${topic}"...`,
+        `Evaluating prompt parameters...`,
         `Formulating structured answer...`
       ];
     }
@@ -1136,17 +1150,7 @@
       chatContainer.appendChild(r); chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
-    /* Fast Smooth Text Streaming Render */
-    function updateStreamingBubble(bubbleId, fullText) {
-      let b = getEl(bubbleId);
-      if(b) {
-        b.classList.remove("thinking");
-        b.innerHTML = renderFormattedText(fullText);
-        let chatContainer = getEl("chatContainer");
-        if (!isScrolledUp) chatContainer.scrollTop = chatContainer.scrollHeight;
-      }
-    }
-
+    /* Render Whole Streamed Response Unified at Once */
     function finalizeResponse(id, aid, text, prompt, voice) {
       let b = getEl(id);
       if(b) {
@@ -1170,6 +1174,9 @@
         a.append(readBtn, copyBtn, pinBtn);
       }
       
+      let chatContainer = getEl("chatContainer");
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+
       isGenerating = false; activeAbortController = null; getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
       if(voice || getEl("autoReadToggle")?.checked) speakText(text);
     }
@@ -1182,9 +1189,6 @@
 
       let promptInput = getEl("promptInput");
       let basePrompt = promptInput.value.trim();
-      
-      if(basePrompt) checkAndAttachCode(basePrompt);
-
       let attachedText = pastedTextBlocks.map(b => "```\n" + b.text + "\n```").join("\n\n");
       let prompt = basePrompt;
       if(attachedText) prompt = prompt ? (prompt + "\n\n" + attachedText) : attachedText;
@@ -1195,7 +1199,7 @@
       if(currentModel === "pro" && getProUsageData().tokensUsed >= 2000000) return alert("Pro 5.0 monthly token limit reached.");
       if(currentModel === "nano-banana" && getImageUsageData().count >= 5) return alert("Vision & Image monthly generation limit reached.");
       
-      document.body.classList.remove("home-active"); isGenerating = true; isScrolledUp = false; accumulatedStreamText = "";
+      document.body.classList.remove("home-active"); isGenerating = true; isScrolledUp = false;
       getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>';
       let voice = wasInputByVoice; wasInputByVoice = false;
 
@@ -1206,13 +1210,13 @@
       getEl("welcomeScreen").style.display = "none";
       let chatContainer = getEl("chatContainer"); chatContainer.style.display = "block";
       
-      appendMessageRow("You", basePrompt + (attachedText ? "\n\n[Code File Attached]" : "") + (selectedImageBase64 ? "\n[Image Attached]" : ""), "user-row", "user-bubble");
+      appendMessageRow("You", basePrompt + (attachedText ? "\n\n[Code Document Attached]" : "") + (selectedImageBase64 ? "\n[Image Attached]" : ""), "user-row", "user-bubble");
       promptInput.value = ""; let img = selectedImageBase64; removeImage(); pastedTextBlocks = []; renderFileChips(); handleInputChange();
 
       let id = "b_" + Date.now(), aid = "a_" + Date.now(), sid = "s_" + Date.now(), row = document.createElement("div");
       row.className = "row trux-row";
       
-      /* Sleek Metallic Floating Line Thinking Container */
+      /* Sleek Floating Metallic Line Thinking Box */
       row.innerHTML = `<div class="label">TruX AI</div><div class="bubble trux-bubble thinking" id="${id}"><div class="thinking-container"><span class="thinking-sparkle">✦</span><span class="status-msg" id="${sid}">Thinking…</span></div></div><div class="actions" id="${aid}"></div>`;
       
       chatContainer.appendChild(row);
@@ -1235,13 +1239,12 @@
 
         if(!res.body) throw Error("Streaming body unavailable.");
         
-        let rd = res.body.getReader(), dec = new TextDecoder(), buf = "", fin = null;
+        let rd = res.body.getReader(), dec = new TextDecoder(), buf = "", full = "", fin = null;
         
         function ev(raw) {
           if(!raw) return; let j; try { j = JSON.parse(raw); } catch { return; }
           if(j.type === "chunk") {
-            accumulatedStreamText += j.text || "";
-            updateStreamingBubble(id, accumulatedStreamText);
+            full += j.text || "";
           } else if(j.type === "final") fin = j.text || "";
           else if(j.type === "status") { let e = getEl(sid); if(e) e.innerText = j.status || "Processing…"; }
           else if(j.type === "error") throw Error(j.error || "Streaming error.");
@@ -1253,7 +1256,7 @@
           let es = buf.split(/\r?\n\r?\n/); buf = es.pop() || "";
           for(let x of es) { let ls = x.split(/\r?\n/).filter(l => l.startsWith("data:")); if(ls.length) ev(ls.map(l => l.slice(5).trimStart()).join("\n")); }
         }
-        let text = (fin !== null ? fin : accumulatedStreamText).trim(); if(!text) throw Error("No response received.");
+        let text = (fin !== null ? fin : full).trim(); if(!text) throw Error("No response received.");
         clearInterval(timer);
         
         finalizeResponse(id, aid, text, prompt, voice);
