@@ -297,22 +297,81 @@
       word-break: break-word;
       overflow-x: hidden !important;
     }
-    /* Generated image display: pixelated placeholder while loading, blur-to-clear reveal */
+
+    /* ============ NEW: Beautiful flowing image generation card (GPT-style) ============ */
     .gen-image-wrap { margin-top: 12px; }
     .gen-image-wrap img {
-      display: block; max-width: 100%; border-radius: 16px;
-      border: 1px solid rgba(129, 140, 248, 0.25); box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-      filter: blur(24px) saturate(0.6); opacity: 0; transform: scale(1.02);
-      transition: filter 0.7s ease, opacity 0.5s ease, transform 0.7s ease;
+      display: block; max-width: 100%; border-radius: 18px;
+      border: 1px solid rgba(129, 140, 248, 0.25); box-shadow: 0 10px 34px rgba(0,0,0,0.65);
+      filter: blur(18px) saturate(0.6); opacity: 0; transform: scale(1.03);
+      transition: filter 0.9s cubic-bezier(.2,.7,.2,1), opacity 0.7s ease, transform 0.9s cubic-bezier(.2,.7,.2,1);
     }
     .gen-image-wrap img.loaded { filter: blur(0) saturate(1); opacity: 1; transform: scale(1); }
-    .gen-image-placeholder {
-      width: 100%; max-width: 320px; aspect-ratio: 1 / 1; border-radius: 16px;
-      background: repeating-linear-gradient(45deg, #0c0c14, #0c0c14 10px, #14141e 10px, #14141e 20px);
-      background-size: 28px 28px; animation: pixelShift 0.9s linear infinite;
-      border: 1px solid rgba(129, 140, 248, 0.25);
+
+    .gen-image-card {
+      position: relative; width: 100%; max-width: 340px; aspect-ratio: 1 / 1;
+      border-radius: 18px; overflow: hidden;
+      border: 1px solid rgba(129, 140, 248, 0.3);
+      background: #0a0a12;
+      box-shadow: 0 10px 34px rgba(0,0,0,0.65);
     }
-    @keyframes pixelShift { from { background-position: 0 0; } to { background-position: 28px 28px; } }
+    .gen-image-card::before {
+      content: "";
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(168,85,247,0.35), transparent 45%),
+        radial-gradient(circle at 80% 30%, rgba(56,189,248,0.30), transparent 45%),
+        radial-gradient(circle at 50% 80%, rgba(99,102,241,0.35), transparent 45%);
+      filter: blur(6px);
+      animation: genOrbFlow 4.5s ease-in-out infinite alternate;
+    }
+    @keyframes genOrbFlow {
+      0%   { transform: translate(-4%, -3%) scale(1);   opacity: 0.85; }
+      50%  { transform: translate(3%, 4%) scale(1.15);  opacity: 1; }
+      100% { transform: translate(-2%, 3%) scale(1.05); opacity: 0.9; }
+    }
+    .gen-image-card::after {
+      content: "";
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(
+        100deg,
+        transparent 0%,
+        rgba(255,255,255,0.06) 8%,
+        transparent 16%
+      );
+      background-size: 200% 100%;
+      animation: genSweep 2.2s linear infinite;
+      mix-blend-mode: overlay;
+    }
+    @keyframes genSweep {
+      0% { background-position: 120% 0; }
+      100% { background-position: -20% 0; }
+    }
+    .gen-image-particles {
+      position: absolute; inset: 0; display: grid; place-items: center;
+      z-index: 2;
+    }
+    .gen-image-particles .dot-ring {
+      display: flex; gap: 7px;
+    }
+    .gen-image-particles .dot-ring span {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: linear-gradient(135deg, #a855f7, #38bdf8);
+      animation: dotPulse 1.1s ease-in-out infinite;
+      box-shadow: 0 0 10px rgba(129,140,248,0.7);
+    }
+    .gen-image-particles .dot-ring span:nth-child(2) { animation-delay: 0.15s; }
+    .gen-image-particles .dot-ring span:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes dotPulse {
+      0%, 100% { transform: translateY(0) scale(1); opacity: 0.6; }
+      50% { transform: translateY(-9px) scale(1.25); opacity: 1; }
+    }
+    .gen-image-label {
+      position: absolute; bottom: 12px; left: 0; right: 0; text-align: center;
+      font-size: 11.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      color: rgba(255,255,255,0.75); z-index: 2;
+    }
+
     .trux-bubble b, .trux-bubble strong { color: #ffffff; font-weight: 700; }
     .trux-bubble p { margin-bottom: 20px; }
     .trux-bubble ul, .trux-bubble ol { margin: 14px 0 20px 24px; }
@@ -368,13 +427,25 @@
       animation: metallicShine 3s linear infinite;
       display: inline-block;
     }
+
+    /* ============ NEW: Gemini-style smooth line-by-line fade-in streaming ============ */
+    .stream-line {
+      display: block;
+      opacity: 0;
+      transform: translateY(6px);
+      animation: lineFadeIn 0.38s cubic-bezier(.2,.7,.3,1) forwards;
+    }
+    @keyframes lineFadeIn {
+      0% { opacity: 0; transform: translateY(6px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
     
     .actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
     .act { padding: 6px 14px; border-radius: 99px; border: 1px solid var(--glass-border); background: #0c0c12; color: var(--txt-muted); font-size: 11.5px; font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
     .act:hover { background: #161622; color: #fff; border-color: rgba(129, 140, 248, 0.4); }
 
     .composer { padding: 12px 20px 32px; position: relative; z-index: 20; background: linear-gradient(to top, #000000 88%, transparent); display: flex; justify-content: center; overflow-x: hidden !important; }
-    .compose { width: min(var(--max-width), 100%); position: relative; overflow-x: hidden !important; }
+    .compose { width: min(var(--max-width), 100%); position: relative; overflow-x: visible !important; }
     
     .chip-container { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
     .file-chip { background: #12121c; border: 1px solid rgba(129, 140, 248, 0.35); padding: 7px 16px; border-radius: 99px; font-size: 12px; color: #fff; display: flex; align-items: center; gap: 8px; font-weight: 600; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
@@ -391,13 +462,26 @@
     }
     .bar:focus-within { border-color: rgba(129, 140, 248, 0.65); box-shadow: 0 0 25px rgba(129, 140, 248, 0.2); }
     
-    .icon-btn { width: 40px; height: 40px; border-radius: 50%; background: transparent; color: #ffffff; font-size: 18px; display: grid; place-items: center; flex-shrink: 0; }
+    .icon-btn { width: 40px; height: 40px; border-radius: 50%; background: transparent; color: #ffffff; font-size: 18px; display: grid; place-items: center; flex-shrink: 0; position: relative; }
     .icon-btn:hover { background: #161622; }
     .icon-btn.recording { color: var(--accent-4); background: rgba(244, 63, 94, 0.15); }
     .icon-btn svg { width: 20px; height: 20px; fill: none; stroke: #ffffff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     
-    .attach-menu { position: absolute; bottom: calc(100% + 10px); left: 16px; display: none; min-width: 160px; padding: 6px; border: 1px solid var(--glass-border); border-radius: 18px; background: #0e0e16; box-shadow: 0 16px 32px rgba(0,0,0,.8); }
-    .attach-menu.open { display: grid; gap: 3px; }
+    .attach-menu {
+      position: absolute; bottom: calc(100% + 10px); left: 16px;
+      display: none; min-width: 180px; padding: 6px;
+      border: 1px solid rgba(129,140,248,0.35); border-radius: 18px;
+      background: #0e0e16; box-shadow: 0 16px 40px rgba(0,0,0,.9);
+      z-index: 500;
+      opacity: 0; transform: translateY(8px) scale(0.96);
+      transition: opacity 0.18s ease, transform 0.18s cubic-bezier(.2,.7,.3,1);
+      pointer-events: none;
+    }
+    .attach-menu.open {
+      display: grid; gap: 3px;
+      opacity: 1; transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
     .attach-menu button { display: flex; align-items: center; gap: 9px; width: 100%; padding: 10px; border-radius: 99px; background: transparent; color: #fff; font-size: 12px; font-weight: 600; text-align: left; }
     .attach-menu button:hover { background: #1a1a28; }
     .attach-menu svg { width: 16px; height: 16px; fill: none; stroke: #ffffff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -428,10 +512,57 @@
     .close { float: right; width: 32px; height: 32px; border-radius: 10px; background: #161622; color: #fff; font-size: 16px; display: grid; place-items: center; }
     .close:hover { background: #222232; }
     
-    .login-box { text-align: center; }
-    .login-box .mtitle { font-size: 26px; font-weight: 800; margin-bottom: 8px; }
-    .login-box .msub { font-size: 13px; color: var(--txt-muted); margin-bottom: 24px; }
-    .login-btn-google { width: 100%; padding: 12px; border-radius: 12px; background: #ffffff; color: #000; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; }
+    /* ============ NEW: Full-screen beautiful sign-in overlay ============ */
+    .login-wall {
+      display: none; position: fixed; inset: 0; z-index: 5000;
+      align-items: center; justify-content: center; padding: 24px;
+      background: #000000;
+    }
+    .login-wall.active { display: flex; }
+    .login-wall-bg { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+    .login-wall-bg span {
+      position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.35;
+      animation: float 18s infinite ease-in-out alternate;
+    }
+    .login-wall-bg span:nth-child(1) { width: 50vw; height: 50vw; background: radial-gradient(circle, #a855f7, transparent 70%); top: -10%; left: -10%; }
+    .login-wall-bg span:nth-child(2) { width: 45vw; height: 45vw; background: radial-gradient(circle, #38bdf8, transparent 70%); bottom: -10%; right: -8%; animation-delay: -6s; }
+    .login-wall-bg span:nth-child(3) { width: 35vw; height: 35vw; background: radial-gradient(circle, #6366f1, transparent 70%); top: 40%; left: 35%; animation-delay: -3s; animation-duration: 22s; }
+
+    .login-box {
+      position: relative; z-index: 2; text-align: center;
+      width: min(420px, 100%); padding: 44px 34px;
+      border-radius: 28px; background: rgba(10,10,15,0.75);
+      border: 1px solid rgba(129,140,248,0.28);
+      box-shadow: 0 40px 120px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.02) inset;
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      animation: loginPop 0.5s cubic-bezier(.2,.8,.2,1);
+    }
+    @keyframes loginPop { 0% { opacity: 0; transform: translateY(18px) scale(0.96); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+
+    .login-orb {
+      width: 68px; height: 68px; margin: 0 auto 18px; border-radius: 20px;
+      background: var(--ai-gradient); display: grid; place-items: center;
+      font: 800 26px "Space Grotesk"; color: #fff;
+      box-shadow: 0 10px 40px rgba(129,140,248,0.45);
+      position: relative;
+    }
+    .login-orb::after {
+      content: ""; position: absolute; inset: -6px; border-radius: 24px;
+      background: var(--ai-gradient); opacity: 0.4; filter: blur(14px); z-index: -1;
+      animation: rotateSparkle 4s linear infinite;
+    }
+
+    .login-box .mtitle { font: 800 26px "Space Grotesk"; margin-bottom: 8px; letter-spacing: -0.5px; }
+    .login-box .msub { font-size: 13.5px; color: var(--txt-muted); margin-bottom: 28px; line-height: 1.6; }
+    .login-btn-google { width: 100%; padding: 13px; border-radius: 14px; background: #ffffff; color: #000; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; box-shadow: 0 8px 24px rgba(255,255,255,0.08); }
+    .login-btn-google:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(255,255,255,0.15); }
+    .login-wall-footer { margin-top: 18px; font-size: 11px; color: var(--txt-muted); }
+    .login-wall-close {
+      position: absolute; top: 18px; right: 18px; z-index: 3;
+      width: 34px; height: 34px; border-radius: 10px; background: rgba(255,255,255,0.06);
+      border: 1px solid var(--glass-border); color: #fff; display: grid; place-items: center;
+    }
+    .login-wall-close:hover { background: rgba(255,255,255,0.12); }
 
     .modal-avatar { display: block; width: 80px; height: 80px; border-radius: 50%; margin: 10px auto 16px; border: 3px solid rgba(129,140,248,0.4); }
     .center { text-align: center; }
@@ -485,15 +616,19 @@
   <div class="bg" id="bg"><div class="bg-orb"></div></div>
   <div class="colorful-bg"></div>
 
-  <!-- Mandatory Auth Modal Screen -->
-  <div class="modal" id="loginWallModal" style="display: flex;">
-    <div class="card login-box">
+  <!-- Sign-in only appears when the user tries to send a message or explicitly clicks sign in -->
+  <div class="login-wall" id="loginWallModal">
+    <div class="login-wall-bg"><span></span><span></span><span></span></div>
+    <button class="login-wall-close" onclick="closeLoginWall()" title="Close">×</button>
+    <div class="login-box">
+      <div class="login-orb">X</div>
       <div class="mtitle">Welcome to ChatTruX-AI</div>
-      <div class="msub">Please sign in to access your intelligent workspace and start chatting.</div>
+      <div class="msub">Sign in to unlock your intelligent workspace — conversations, image generation, and memory, all in one place.</div>
       <button class="login-btn-google" onclick="handleGoogleLogin()">
         <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
         Sign in with Google
       </button>
+      <div class="login-wall-footer">✦ Powered by ChatTruX-AI</div>
     </div>
   </div>
   
@@ -515,7 +650,7 @@
         <img class="avatar" id="userAvatar" src="https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff">
         <div class="profile-info">
           <b id="userName">Guest User</b>
-          <small id="userEmail">Sign in required</small>
+          <small id="userEmail">Tap to sign in</small>
         </div>
       </div>
     </aside>
@@ -535,7 +670,7 @@
                 <span class="model-icon">⚡</span>
                 <div class="model-info">
                   <b>Core 4.0</b>
-                  <small>Fast & smart · 5M tokens/mo</small>
+                  <small>Fast & smart · text + image gen</small>
                 </div>
               </div>
               <div class="model-badge">Standard</div>
@@ -546,21 +681,10 @@
                 <span class="model-icon">✨</span>
                 <div class="model-info">
                   <b>Pro 5.0</b>
-                  <small>Deep reasoning · 2M tokens/mo</small>
+                  <small>Deep reasoning · text + image gen</small>
                 </div>
               </div>
               <div class="model-badge pro">Pro</div>
-            </div>
-            
-            <div class="model-item" data-model="nano-banana" id="imgModelOption" onclick="selectModel('nano-banana',event)">
-              <div class="model-item-head">
-                <span class="model-icon">🎨</span>
-                <div class="model-info">
-                  <b>Vision & Image</b>
-                  <small>AI Image creation · 15 images/mo</small>
-                </div>
-              </div>
-              <div class="model-badge img">Creative</div>
             </div>
           </div>
         </div>
@@ -598,7 +722,7 @@
             <span class="chip" onclick="quickPrompt('Write a clean JavaScript function for...')">✦ Coding & Logic</span>
             <span class="chip" onclick="quickPrompt('Analyze the following text...')">✦ Data Analysis</span>
             <span class="chip" onclick="quickPrompt('Draft a concise professional email about...')">✦ Technical Writing</span>
-            <span class="chip" onclick="quickPrompt('Explain this concept simply...')">✦ Vision Processing</span>
+            <span class="chip" onclick="quickPrompt('Generate an image of...')">✦ Image Generation</span>
           </div>
         </div>
       </section>
@@ -709,7 +833,7 @@
       </div>
 
       <div class="sect">
-        <h4>Vision & Image Generation · Monthly Limit</h4>
+        <h4>Image Generation · Monthly Limit (shared across models)</h4>
         <div class="usage"><i id="imageUsageBarFill"></i></div>
         <div class="utxt" id="imageUsageText">0 / 15 Images</div>
       </div>
@@ -776,7 +900,8 @@
     });
     async function installPWA() { if(!deferredPrompt) return; await deferredPrompt.prompt(); deferredPrompt = null; }
 
-    let auth = null, provider = null;
+    /* ============ Auth: sign-in wall only shown on demand ============ */
+    let auth = null, provider = null, isSigningIn = false;
     async function initFirebase() {
       const fallback = { apiKey: "AIzaSyAs_GDrzlBaucHfiff0Y6cA8GVHjFTA62Q", authDomain: "trux-ai.firebaseapp.com", projectId: "trux-ai", storageBucket: "trux-ai.firebasestorage.app", messagingSenderId: "59313097411", appId: "1:59313097411:web:32e4158bfb733fa7cfb076" };
       try { const r = await fetch("/api/firebase-config", { cache: "no-store" }); firebase.initializeApp(await r.json()); }
@@ -788,20 +913,27 @@
           getEl("userName").innerText = u.displayName || "User";
           getEl("userEmail").innerText = u.email || "";
           getEl("userAvatar").src = u.photoURL || "https://ui-avatars.com/api/?name=User&background=111111&color=fff";
-          getEl("loginWallModal").style.display = "none";
+          closeLoginWall();
         } else {
           getEl("userName").innerText = "Guest User";
-          getEl("userEmail").innerText = "Sign in required";
+          getEl("userEmail").innerText = "Tap to sign in";
           getEl("userAvatar").src = "https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff";
-          getEl("loginWallModal").style.display = "flex";
+          // NOTE: we deliberately do NOT auto-open the login wall here.
+          // It only opens when the user tries to send a message or taps "sign in".
         }
       });
     }
     initFirebase();
 
+    function openLoginWall() { getEl("loginWallModal").classList.add("active"); }
+    function closeLoginWall() { getEl("loginWallModal").classList.remove("active"); }
+
     function handleGoogleLogin() {
-      if(!auth) return;
-      auth.signInWithPopup(provider).catch(e => alert("Login failed: " + e.message));
+      if(!auth || isSigningIn) return;
+      isSigningIn = true;
+      auth.signInWithPopup(provider)
+        .catch(e => alert("Login failed: " + e.message))
+        .finally(() => { isSigningIn = false; });
     }
 
     let currentModel = "base",
@@ -830,11 +962,10 @@
       e?.stopPropagation();
       if(m === "pro" && getProUsageData().tokensUsed >= 2000000) return alert("TruX Pro monthly limit reached.");
       if(m === "base" && getCoreUsageData().tokensUsed >= 5000000) return alert("TruX Core monthly limit reached.");
-      if(m === "nano-banana" && getImageUsageData().count >= 15) return alert("TruX Vision & Image monthly limit reached.");
 
       currentModel = m;
-      const labels = { 'base': 'Core 4.0', 'pro': 'Pro 5.0', 'nano-banana': 'Vision & Image' };
-      const icons = { 'base': '⚡', 'pro': '✨', 'nano-banana': '🎨' };
+      const labels = { 'base': 'Core 4.0', 'pro': 'Pro 5.0' };
+      const icons = { 'base': '⚡', 'pro': '✨' };
 
       getEl("currentModelLabel").innerText = labels[m];
       getEl("currentModelIcon").innerText = icons[m];
@@ -943,7 +1074,7 @@
 
     function handleAuthAction() {
       if(!auth) return;
-      if(!auth.currentUser) return handleGoogleLogin();
+      if(!auth.currentUser) return openLoginWall();
       getEl("modalAvatar").src = auth.currentUser.photoURL || getEl("userAvatar").src;
       getEl("modalName").innerText = auth.currentUser.displayName || "User";
       getEl("modalEmail").innerText = auth.currentUser.email || "";
@@ -952,7 +1083,7 @@
     function closeProfileModal() { getEl("profileModal").style.display = "none"; }
     function openSettingsModal() { updateAllUsageUI(); loadSettings(); getEl("settingsModal").style.display = "flex"; }
     function closeSettingsModal() { getEl("settingsModal").style.display = "none"; }
-    function confirmSignOut() { auth?.signOut().then(() => { closeProfileModal(); getEl("loginWallModal").style.display = "flex"; }); }
+    function confirmSignOut() { auth?.signOut().then(() => { closeProfileModal(); }); }
 
     function openCodeSandbox(codeId) {
       let codeText = getEl(codeId)?.value || "";
@@ -1061,7 +1192,11 @@
       }
     }
     
-    function toggleAttachmentMenu(e) { e?.stopPropagation(); getEl("attachmentMenu").classList.toggle("open"); }
+    /* ============ Fixed attach menu toggle ============ */
+    function toggleAttachmentMenu(e) {
+      e?.stopPropagation();
+      getEl("attachmentMenu").classList.toggle("open");
+    }
     function closeAttachmentMenu() { getEl("attachmentMenu").classList.remove("open"); }
     function openCamera() { closeAttachmentMenu(); getEl("cameraUpload").click(); }
     function openPhotoLibrary() { closeAttachmentMenu(); getEl("imageUpload").click(); }
@@ -1107,7 +1242,7 @@
         let lineCount = c.trim().split('\n').length;
         let sandboxBtn = (extension === 'html' || extension === 'js') ? `<button onclick="openCodeSandbox('${id}')">▶ Run</button>` : '';
         
-        let fileCard = `<div class="code-file"><div class="code-file-header"><div class="code-file-info"><span class="code-file-icon">&lt;/&gt;</span><div class="code-file-meta"><b>${filename}</b><small>${displayLang.toUpperCase()} · ${lineCount} Lines</small></div></div><div class="code-actions">${sandboxBtn}<button onclick="copyCodeToClipboard(this,'${id}')">Copy</button><button onclick="downloadCode('${id}','${filename}')">Download</button></div></div><textarea id="${id}" hidden>${c.trim()}</textarea></div>`;
+        let fileCard = `<div class="code-file"><div class="code-file-header"><div class="code-file-info"><span class="code-file-icon">&lt;/&gt;</span><div class="code-file-meta"><b>${filename}</b><small>${displayLang.toUpperCase()} · ${lineCount} Lines</small></div></div><div class="code-actions">${sandboxBtn}<button onclick="copyCodeToClipboard(this,'${id}')">Copy</button><button onclick="downloadCode(this.previousElementSibling ? '' : '${id}','${filename}')">Download</button></div></div><textarea id="${id}" hidden>${c.trim()}</textarea></div>`;
         fileTokens.push(fileCard);
         return `@@TRUX_CODE_FILE_${fileTokens.length - 1}@@`;
       });
@@ -1202,11 +1337,51 @@
       chatContainer.appendChild(r); chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
+    /* ============ NEW: smooth Gemini-style line-by-line streaming reveal ============ */
+    function streamRenderLines(container, fullText, onDone) {
+      // Split the already-formatted HTML into meaningful chunks (by <br> which represents newlines,
+      // and by sentence-ending punctuation for long paragraphs), then fade each chunk in quickly.
+      let html = renderFormattedText(fullText);
+      // Split on <br> tags first, keeping structural HTML (code-file cards) intact as single chunks.
+      let parts = html.split(/(<div class="code-file">[\s\S]*?<\/div><\/div>)/g);
+      let chunks = [];
+      parts.forEach(part => {
+        if (/^<div class="code-file">/.test(part)) {
+          chunks.push(part);
+        } else if (part) {
+          part.split(/(<br>)/g).forEach(seg => { if (seg) chunks.push(seg); });
+        }
+      });
+      // Merge <br> tokens onto the previous chunk so each visual line is one fade-in unit.
+      let lines = [];
+      chunks.forEach(c => {
+        if (c === "<br>" && lines.length) lines[lines.length - 1] += c;
+        else lines.push(c);
+      });
+
+      container.innerHTML = "";
+      let i = 0;
+      let speed = 55; // ms between lines — fast but readable
+      function next() {
+        if (i >= lines.length) { if (onDone) onDone(); return; }
+        let span = document.createElement("span");
+        span.className = "stream-line";
+        span.innerHTML = lines[i];
+        container.appendChild(span);
+        i++;
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+        setTimeout(next, speed);
+      }
+      next();
+    }
+
     function finalizeResponse(id, aid, text, prompt, voice) {
       let b = getEl(id);
       if(b) {
         b.classList.remove("thinking");
-        b.innerHTML = renderFormattedText(text);
+        streamRenderLines(b, text, () => {
+          chatContainer.scrollTop = chatContainer.scrollHeight;
+        });
       }
       
       chatSessions[currentChatId].messages.push({ role: "trux", text }); 
@@ -1229,6 +1404,7 @@
       if(voice || getEl("autoReadToggle")?.checked) speakText(text);
     }
 
+    /* ============ Image generation now works from ANY model (no separate model) ============ */
     async function generateImage(basePrompt) {
       document.body.classList.remove("home-active"); isGenerating = true; isScrolledUp = false;
       getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>';
@@ -1245,7 +1421,12 @@
 
       let row = document.createElement("div"); row.className = "row trux-row";
       let aid = "a_" + Date.now();
-      row.innerHTML = `<div class="label">ChatTruX-AI</div><div class="bubble trux-bubble"><div class="gen-image-placeholder"></div></div><div class="actions" id="${aid}"></div>`;
+      row.innerHTML = `<div class="label">ChatTruX-AI</div><div class="bubble trux-bubble">
+          <div class="gen-image-card">
+            <div class="gen-image-particles"><div class="dot-ring"><span></span><span></span><span></span></div></div>
+            <div class="gen-image-label">Creating your image…</div>
+          </div>
+        </div><div class="actions" id="${aid}"></div>`;
       chatContainer.appendChild(row); chatContainer.scrollTop = chatContainer.scrollHeight;
 
       activeAbortController = new AbortController();
@@ -1253,7 +1434,7 @@
         let res = await fetch("/api/chat", {
           method: "POST", headers: { "Content-Type": "application/json" },
           signal: activeAbortController.signal,
-          body: JSON.stringify({ message: basePrompt, tier: "nano-banana", userId: auth?.currentUser?.uid || null })
+          body: JSON.stringify({ message: basePrompt, tier: currentModel, generateImage: true, userId: auth?.currentUser?.uid || null })
         });
         let payload = await res.json().catch(() => ({}));
 
@@ -1293,9 +1474,18 @@
       }
     }
 
+    function isImageGenerationRequest(message) {
+      if (typeof message !== 'string') return false;
+      return (
+        /\b(generate|create|draw|make|produce|design)\b[\s\S]{0,80}\b(image|picture|art|artwork|illustration|photo|poster|logo)\b/i.test(message) ||
+        /\b(draw|illustrate|paint|render)\b\s+(?:me\s+)?(?:a|an|the)\b/i.test(message)
+      );
+    }
+
     async function sendPrompt() {
+      // Sign-in wall appears only when the person actually tries to send a message.
       if(!auth?.currentUser) {
-        getEl("loginWallModal").style.display = "flex";
+        openLoginWall();
         return;
       }
 
@@ -1309,9 +1499,12 @@
 
       if(currentModel === "base" && getCoreUsageData().tokensUsed >= 5000000) return alert("Core 4.0 monthly token limit reached.");
       if(currentModel === "pro" && getProUsageData().tokensUsed >= 2000000) return alert("Pro 5.0 monthly limit reached.");
-      if(currentModel === "nano-banana" && getImageUsageData().count >= 15) return alert("Vision & Image monthly generation limit reached.");
 
-      if(currentModel === "nano-banana") { return generateImage(prompt); }
+      // Any model can now generate images — routed automatically by intent detection.
+      if(isImageGenerationRequest(prompt) && !selectedImageBase64) {
+        if(getImageUsageData().count >= 15) return alert("Image generation monthly limit reached.");
+        return generateImage(prompt);
+      }
       
       document.body.classList.remove("home-active"); isGenerating = true; isScrolledUp = false;
       getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>';
@@ -1421,8 +1614,9 @@
     getEl("settingsModal").addEventListener("click", e => { if(e.target === getEl("settingsModal")) closeSettingsModal(); });
     getEl("sandboxModal")?.addEventListener("click", e => { if(e.target === getEl("sandboxModal")) closeSandboxModal(); });
     getEl("pinnedModal")?.addEventListener("click", e => { if(e.target === getEl("pinnedModal")) closePinnedModal(); });
+    getEl("loginWallModal")?.addEventListener("click", e => { if(e.target === getEl("loginWallModal")) closeLoginWall(); });
     
-    addEventListener("keydown", e => { if(e.key === "Escape") { closeProfileModal(); closeSettingsModal(); closeSandboxModal(); closePinnedModal(); getEl("contextMenu").style.display = "none"; closeSidebar(); getEl("modelDropdown").classList.remove("open"); } });
+    addEventListener("keydown", e => { if(e.key === "Escape") { closeProfileModal(); closeSettingsModal(); closeSandboxModal(); closePinnedModal(); closeLoginWall(); getEl("contextMenu").style.display = "none"; closeSidebar(); getEl("modelDropdown").classList.remove("open"); } });
 
     document.body.classList.add("home-active"); loadSettings(); renderSidebar(); updateAllUsageUI(); handleInputChange();
   </script>
