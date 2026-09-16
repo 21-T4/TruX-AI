@@ -291,14 +291,28 @@
       color: #f8fafc;
       font-size: 16px;
       font-weight: 500;
-      line-height: 1.5;
-      letter-spacing: 0.02em;
-      word-spacing: 0.12em;
+      line-height: 2.0;
+      letter-spacing: 0.025em;
+      word-spacing: 0.18em;
       word-break: break-word;
       overflow-x: hidden !important;
-      @keyframes streamFadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
-    .stream-chunk { display: inline; opacity: 0; animation: streamFadeIn 0.28s ease forwards; }
     }
+    /* Generated image display: pixelated placeholder while loading, blur-to-clear reveal */
+    .gen-image-wrap { margin-top: 12px; }
+    .gen-image-wrap img {
+      display: block; max-width: 100%; border-radius: 16px;
+      border: 1px solid rgba(129, 140, 248, 0.25); box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      filter: blur(24px) saturate(0.6); opacity: 0; transform: scale(1.02);
+      transition: filter 0.7s ease, opacity 0.5s ease, transform 0.7s ease;
+    }
+    .gen-image-wrap img.loaded { filter: blur(0) saturate(1); opacity: 1; transform: scale(1); }
+    .gen-image-placeholder {
+      width: 100%; max-width: 320px; aspect-ratio: 1 / 1; border-radius: 16px;
+      background: repeating-linear-gradient(45deg, #0c0c14, #0c0c14 10px, #14141e 10px, #14141e 20px);
+      background-size: 28px 28px; animation: pixelShift 0.9s linear infinite;
+      border: 1px solid rgba(129, 140, 248, 0.25);
+    }
+    @keyframes pixelShift { from { background-position: 0 0; } to { background-position: 28px 28px; } }
     .trux-bubble b, .trux-bubble strong { color: #ffffff; font-weight: 700; }
     .trux-bubble p { margin-bottom: 20px; }
     .trux-bubble ul, .trux-bubble ol { margin: 14px 0 20px 24px; }
@@ -558,7 +572,7 @@
 
       <!-- Workspace badge: now anchored to the top, directly under the model selector -->
       <div class="home-badge-row" id="homeBadgeRow">
-        <div class="badge"><i></i>ChatTruX-Workspace</div>
+        <div class="badge"><i></i>TruX-Workspace</div>
       </div>
       
       <button class="top-btn menu-btn" onclick="toggleSidebar(event)" title="Toggle Menu">☰</button>
@@ -1148,7 +1162,7 @@
       });
     }
 
-    function appendMessageRow(label, text, rc, bc) {
+    function appendMessageRow(label, text, rc, bc, imageUrl) {
       let chatContainer = getEl("chatContainer"), r = document.createElement("div"); r.className = `row ${rc}`;
       let textContent = typeof text === "string" ? text : text?.text || "";
 
@@ -1165,6 +1179,18 @@
         let actions = r.querySelector(".actions");
 
         bubble.innerHTML = renderFormattedText(textContent);
+
+        if(imageUrl) {
+          let wrap = document.createElement("div"); wrap.className = "gen-image-wrap";
+          let img = document.createElement("img"); img.src = imageUrl; img.alt = "Generated image";
+          img.onload = () => img.classList.add("loaded");
+          if(img.complete) img.classList.add("loaded");
+          wrap.appendChild(img); bubble.appendChild(wrap);
+
+          let dlBtn = document.createElement("button"); dlBtn.className = "act"; dlBtn.innerHTML = "⇩ Download";
+          dlBtn.onclick = () => { let l = document.createElement("a"); l.href = imageUrl; l.download = `chattrux-image-${Date.now()}.png`; l.click(); };
+          actions.appendChild(dlBtn);
+        }
 
         let readBtn = document.createElement("button"); readBtn.className = "act"; readBtn.innerHTML = "🔊 Read"; readBtn.onclick = () => speakText(textContent);
         let copyBtn = document.createElement("button"); copyBtn.className = "act"; copyBtn.innerHTML = "📋 Copy"; copyBtn.onclick = () => copyTextMessage(textContent, copyBtn);
@@ -1203,6 +1229,70 @@
       if(voice || getEl("autoReadToggle")?.checked) speakText(text);
     }
 
+    async function generateImage(basePrompt) {
+      document.body.classList.remove("home-active"); isGenerating = true; isScrolledUp = false;
+      getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>';
+
+      if(!currentChatId) { currentChatId = "chat_" + Date.now(); chatSessions[currentChatId] = { title: basePrompt ? basePrompt.slice(0, 32) : "Image", messages: [] }; }
+      chatSessions[currentChatId].messages.push({ role: "user", text: basePrompt });
+      localStorage.setItem("trux_chats", JSON.stringify(chatSessions));
+
+      getEl("welcomeScreen").style.display = "none";
+      let chatContainer = getEl("chatContainer"); chatContainer.style.display = "block";
+
+      appendMessageRow("You", basePrompt, "user-row", "user-bubble");
+      getEl("promptInput").value = ""; handleInputChange();
+
+      let row = document.createElement("div"); row.className = "row trux-row";
+      let aid = "a_" + Date.now();
+      row.innerHTML = `<div class="label">ChatTruX-AI</div><div class="bubble trux-bubble"><div class="gen-image-placeholder"></div></div><div class="actions" id="${aid}"></div>`;
+      chatContainer.appendChild(row); chatContainer.scrollTop = chatContainer.scrollHeight;
+
+      activeAbortController = new AbortController();
+      try {
+        let res = await fetch("/api/chat", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          signal: activeAbortController.signal,
+          body: JSON.stringify({ message: basePrompt, tier: "nano-banana", userId: auth?.currentUser?.uid || null })
+        });
+        let payload = await res.json().catch(() => ({}));
+
+        if(payload.imageLimitReached || !payload.imageGenerated || !payload.image?.dataUrl) {
+          throw Error(payload.reply || "Image generation failed.");
+        }
+
+        let bubble = row.querySelector(".bubble");
+        let replyText = payload.reply || "Your image is ready.";
+        bubble.innerHTML = renderFormattedText(replyText);
+        let wrap = document.createElement("div"); wrap.className = "gen-image-wrap";
+        let img = document.createElement("img"); img.src = payload.image.dataUrl; img.alt = payload.image.alt || "Generated image";
+        img.onload = () => img.classList.add("loaded");
+        if(img.complete) img.classList.add("loaded");
+        wrap.appendChild(img); bubble.appendChild(wrap);
+
+        chatSessions[currentChatId].messages.push({ role: "trux", text: replyText, image: payload.image.dataUrl });
+        localStorage.setItem("trux_chats", JSON.stringify(chatSessions));
+
+        let a = getEl(aid);
+        if(a) {
+          let dlBtn = document.createElement("button"); dlBtn.className = "act"; dlBtn.innerHTML = "⇩ Download";
+          dlBtn.onclick = () => { let l = document.createElement("a"); l.href = payload.image.dataUrl; l.download = `chattrux-image-${Date.now()}.png`; l.click(); };
+          a.append(dlBtn);
+        }
+
+        let iu = getImageUsageData();
+        iu.count = typeof payload.imageGenerationsUsed === "number" ? payload.imageGenerationsUsed : iu.count + 1;
+        localStorage.setItem("trux_image_usage", JSON.stringify(iu));
+        updateAllUsageUI();
+      } catch(e) {
+        let bubble = row.querySelector(".bubble");
+        bubble.innerHTML = e.name === "AbortError" ? "Generation stopped." : "Error: " + escapeHtml(e.message);
+      } finally {
+        isGenerating = false; activeAbortController = null;
+        getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
+      }
+    }
+
     async function sendPrompt() {
       if(!auth?.currentUser) {
         getEl("loginWallModal").style.display = "flex";
@@ -1220,6 +1310,8 @@
       if(currentModel === "base" && getCoreUsageData().tokensUsed >= 5000000) return alert("Core 4.0 monthly token limit reached.");
       if(currentModel === "pro" && getProUsageData().tokensUsed >= 2000000) return alert("Pro 5.0 monthly limit reached.");
       if(currentModel === "nano-banana" && getImageUsageData().count >= 15) return alert("Vision & Image monthly generation limit reached.");
+
+      if(currentModel === "nano-banana") { return generateImage(prompt); }
       
       document.body.classList.remove("home-active"); isGenerating = true; isScrolledUp = false;
       getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>';
@@ -1260,26 +1352,12 @@
         }
 
         if(!res.body) throw Error("Streaming body unavailable.");
-
+        
         let rd = res.body.getReader(), dec = new TextDecoder(), buf = "", full = "", fin = null;
-        let bubbleEl = getEl(id);
-
+        
         function ev(raw) {
           if(!raw) return; let j; try { j = JSON.parse(raw); } catch { return; }
-          if(j.type === "chunk") {
-            let newText = j.text || "";
-            if(newText) {
-              if(full === "" && bubbleEl) { bubbleEl.classList.remove("thinking"); bubbleEl.innerHTML = ""; }
-              full += newText;
-              if(bubbleEl) {
-                let span = document.createElement("span");
-                span.className = "stream-chunk";
-                span.innerHTML = renderFormattedText(newText);
-                bubbleEl.appendChild(span);
-                if(!isScrolledUp) chatContainer.scrollTop = chatContainer.scrollHeight;
-              }
-            }
-          }
+          if(j.type === "chunk") full += j.text || "";
           else if(j.type === "final") fin = j.text || "";
           else if(j.type === "status") { let e = getEl(sid); if(e) e.innerText = j.status || "Processing…"; }
           else if(j.type === "error") throw Error(j.error || "Streaming error.");
@@ -1293,7 +1371,7 @@
         }
         let text = (fin !== null ? fin : full).trim(); if(!text) throw Error("No response received.");
         clearInterval(timer);
-
+        
         finalizeResponse(id, aid, text, prompt, voice);
       } catch(e) {
         clearInterval(timer); let b = getEl(id);
@@ -1317,7 +1395,7 @@
     function loadChatSession(id) {
       if(!chatSessions[id]) return; document.body.classList.remove("home-active"); activeAbortController?.abort(); currentChatId = id;
       getEl("welcomeScreen").style.display = "none"; let cC = getEl("chatContainer"); cC.style.display = "block"; cC.innerHTML = "";
-      chatSessions[id].messages.forEach(m => appendMessageRow(m.role === "user" ? "You" : "ChatTruX-AI", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble"));
+      chatSessions[id].messages.forEach(m => appendMessageRow(m.role === "user" ? "You" : "ChatTruX-AI", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image));
       renderSidebar(); if(innerWidth <= 768) closeSidebar();
     }
     function deleteChat(id) { if(confirm("Delete this chat?")) { delete chatSessions[id]; localStorage.setItem("trux_chats", JSON.stringify(chatSessions)); if(currentChatId === id) startNewChat(); else renderSidebar(); } }
