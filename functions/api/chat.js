@@ -1,6 +1,6 @@
 const LOCATION = 'global';
 
-const BASE_PERSONA = `You are TruX Made by TruX-Technologies. Do not disclose your name or creator unless asked.
+const BASE_PERSONA = `You are ChatTruX-AI Made by TruX-Technologies. Do not disclose your name or creator unless asked.
 
 RESPONSE FORMAT (mandatory):
 - Never write LaTeX. Do not use $...$, \\(...\\), \\[...\\], \\frac, \\sqrt, or any LaTeX command.
@@ -10,7 +10,7 @@ RESPONSE FORMAT (mandatory):
 - Never split one code answer across several fenced blocks.
 - Talk like human, not a bot also use emojis where ever possible`;
 
-const IMAGE_LIMIT = 5;
+const IMAGE_LIMIT = 15;
 
 function isImageGenerationRequest(message) {
   if (typeof message !== 'string') {
@@ -259,8 +259,13 @@ async function createGoogleAccessToken(env) {
 
 
 /* =========================================================
-   IMAGE LIMIT
+   IMAGE LIMIT (resets every calendar month)
    ========================================================= */
+
+function getCurrentMonthKey() {
+  const d = new Date();
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+}
 
 async function getImageCount(
   userIdentifier,
@@ -274,7 +279,7 @@ async function getImageCount(
   }
 
   const key =
-    `img_limit_${userIdentifier}`;
+    `img_limit_${userIdentifier}_${getCurrentMonthKey()}`;
 
   const value =
     await env.IMAGE_LIMIT_KV.get(key);
@@ -298,7 +303,7 @@ async function checkImageLimit(
 
   if (count >= IMAGE_LIMIT) {
     throw new Error(
-      `Image generation limit reached. You can generate up to ${IMAGE_LIMIT} images per user.`
+      `Image generation limit reached. You can generate up to ${IMAGE_LIMIT} images per month.`
     );
   }
 
@@ -313,7 +318,7 @@ async function recordSuccessfulImage(
 ) {
 
   const key =
-    `img_limit_${userIdentifier}`;
+    `img_limit_${userIdentifier}_${getCurrentMonthKey()}`;
 
   await env.IMAGE_LIMIT_KV.put(
     key,
@@ -1393,7 +1398,7 @@ export async function onRequestGet() {
   return Response.json(
     {
       ok: true,
-      service: 'TruX Vertex backend'
+      service: 'ChatTruX-AI Vertex backend'
     }
   );
 }
