@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>TruX AI - Intelligent Workspace</title>
+  <title>ChatTruX-AI - Intelligent Workspace</title>
   <base target="_top">
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
@@ -13,7 +13,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="TruX-AI">
+  <meta name="apple-mobile-web-app-title" content="ChatTruX-AI">
   
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
   
@@ -113,6 +113,19 @@
       display: flex; justify-content: center; align-items: center; gap: 10px;
       z-index: 100; pointer-events: auto;
     }
+
+    /* Home badge row: sits directly beneath the topbar / model selector, home screen only */
+    .home-badge-row {
+      display: none;
+      position: absolute;
+      top: 64px; left: 0; right: 0;
+      justify-content: center;
+      padding: 10px 0 0;
+      z-index: 90;
+      pointer-events: none;
+    }
+    body.home-active .home-badge-row { display: flex; }
+    .home-badge-row .badge { margin-bottom: 0; pointer-events: auto; }
     
     .model-picker-container { position: relative; }
     .model-picker-btn {
@@ -178,7 +191,7 @@
       justify-content: center; 
       align-items: center; 
       position: relative; 
-      padding: 84px 24px 24px; 
+      padding: 96px 24px 24px; 
       background: #000000; 
       overflow-x: hidden !important; 
     }
@@ -201,15 +214,15 @@
       display: inline-flex;
       align-items: center;
       white-space: nowrap;
+      font-size: clamp(50px, 9vw, 84px);
+      margin-top: 4px;
     }
 
-    .brand-inline-logo {
-      width: clamp(48px, 7.5vw, 64px);
-      height: clamp(48px, 7.5vw, 64px);
-      display: inline-block;
-      vertical-align: middle;
-      margin-left: 6px;
-      object-fit: contain;
+    .brand-x {
+      background: var(--ai-gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
     }
 
     .animated-sub { font-size: 16.5px; color: var(--txt-muted); max-width: 560px; margin: 0 auto 32px; line-height: 1.6; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
@@ -444,6 +457,7 @@
       .chat { padding: 80px 16px 20px; }
       .composer { padding: 12px 12px 24px; }
       .welcome-title { font-size: clamp(32px, 8vw, 44px); }
+      .welcome-subline { font-size: clamp(38px, 11vw, 56px); }
       .user-bubble { max-width: 90%; }
       .hint { display: none; }
       .chips { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
@@ -458,7 +472,7 @@
   <!-- Mandatory Auth Modal Screen -->
   <div class="modal" id="loginWallModal" style="display: flex;">
     <div class="card login-box">
-      <div class="mtitle">Welcome to TruX AI</div>
+      <div class="mtitle">Welcome to ChatTruX-AI</div>
       <div class="msub">Please sign in to access your intelligent workspace and start chatting.</div>
       <button class="login-btn-google" onclick="handleGoogleLogin()">
         <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
@@ -472,8 +486,8 @@
 
     <aside class="sidebar" id="sidebarNode">
       <div class="brand">
-        <div class="logo"><img src="/icon-192.png" alt="TruX AI logo"></div>
-        <div><b>TruX AI</b><small>Intelligent workspace</small></div>
+        <div class="logo"><img src="/icon-192.png" alt="ChatTruX-AI logo"></div>
+        <div><b>ChatTruX-AI</b><small>Intelligent workspace</small></div>
       </div>
       <div class="side-actions">
         <button class="new-chat" onclick="startNewChat();closeSidebar()">＋ New Chat</button>
@@ -527,7 +541,7 @@
                 <span class="model-icon">🎨</span>
                 <div class="model-info">
                   <b>Vision & Image</b>
-                  <small>AI Image creation · 5 images/mo</small>
+                  <small>AI Image creation · 15 images/mo</small>
                 </div>
               </div>
               <div class="model-badge img">Creative</div>
@@ -539,6 +553,11 @@
           <svg viewBox="0 0 24 24"><path d="M9.5 18.5h5M10 21h4M8.5 15.5c-1.4-1-2.5-2.7-2.5-4.7a6 6 0 1 1 12 0c0 2-1.1 3.7-2.5 4.7-.7.5-1 1.2-1 2H9.5c0-.8-.3-1.5-1-2Z"/><path d="M9.4 10.5c.2-1.4 1.1-2.2 2.6-2.2 1.2 0 2.3.7 2.3 1.9 0 1.1-.8 1.5-1.5 2-.5.4-.8.8-.8 1.5"/><path d="M12 14.8h.01"/></svg>
         </button>
       </div>
+
+      <!-- Workspace badge: now anchored to the top, directly under the model selector -->
+      <div class="home-badge-row" id="homeBadgeRow">
+        <div class="badge"><i></i>TruX-Workspace</div>
+      </div>
       
       <button class="top-btn menu-btn" onclick="toggleSidebar(event)" title="Toggle Menu">☰</button>
       <button class="top-btn settings-btn" onclick="openSettingsModal()" title="Settings">⚙</button>
@@ -546,11 +565,9 @@
       
       <section class="welcome" id="welcomeScreen">
         <div class="hero">
-          <div class="badge"><i></i>TruX-Workspace</div>
-          
           <h1 class="welcome-title">
             <div>Welcome,</div>
-            <div class="welcome-subline">I am Tru<img src="/icon-512.png" class="brand-inline-logo" alt="X"></div>
+            <div class="welcome-subline">I am Tru<span class="brand-x">X</span></div>
           </h1>
           
           <div class="animated-sub">
@@ -629,7 +646,7 @@
     <div class="card">
       <button class="close" onclick="closeSettingsModal()">×</button>
       <div class="mtitle">Settings & Feedback</div>
-      <div class="msub">Personalize your TruX workspace and send direct feedback.</div>
+      <div class="msub">Personalize your ChatTruX-AI workspace and send direct feedback.</div>
       
       <div class="mrow">
         <span>Ambient Glow</span>
@@ -678,7 +695,7 @@
       <div class="sect">
         <h4>Vision & Image Generation · Monthly Limit</h4>
         <div class="usage"><i id="imageUsageBarFill"></i></div>
-        <div class="utxt" id="imageUsageText">0 / 5 Images</div>
+        <div class="utxt" id="imageUsageText">0 / 15 Images</div>
       </div>
       
       <div class="sect">
@@ -797,7 +814,7 @@
       e?.stopPropagation();
       if(m === "pro" && getProUsageData().tokensUsed >= 2000000) return alert("TruX Pro monthly limit reached.");
       if(m === "base" && getCoreUsageData().tokensUsed >= 5000000) return alert("TruX Core monthly limit reached.");
-      if(m === "nano-banana" && getImageUsageData().count >= 5) return alert("TruX Vision & Image monthly limit reached.");
+      if(m === "nano-banana" && getImageUsageData().count >= 15) return alert("TruX Vision & Image monthly limit reached.");
 
       currentModel = m;
       const labels = { 'base': 'Core 4.0', 'pro': 'Pro 5.0', 'nano-banana': 'Vision & Image' };
@@ -878,8 +895,8 @@
       getEl("proUsageText").innerText = `${pU.tokensUsed.toLocaleString()} / 2,000,000 Tokens`;
 
       let iU = getImageUsageData();
-      getEl("imageUsageBarFill").style.width = Math.min(100, (iU.count / 5) * 100) + "%";
-      getEl("imageUsageText").innerText = `${iU.count} / 5 Images`;
+      getEl("imageUsageBarFill").style.width = Math.min(100, (iU.count / 15) * 100) + "%";
+      getEl("imageUsageText").innerText = `${iU.count} / 15 Images`;
 
       updateFeedbackCounterUI();
     }
@@ -899,7 +916,7 @@
     function exportChatData() {
       let a = document.createElement("a");
       a.href = "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(chatSessions, null, 2));
-      a.download = `trux_chat_${Date.now()}.json`; document.body.appendChild(a); a.click(); a.remove();
+      a.download = `chattrux_chat_${Date.now()}.json`; document.body.appendChild(a); a.click(); a.remove();
     }
     async function checkApiLatency() {
       let t = performance.now();
@@ -1070,7 +1087,7 @@
       
       h = h.replace(/```([\w-]*)\n?([\s\S]*?)```/g, (m, lang, c) => {
         let id = `code_${++codeBlockCounter}_${Date.now()}`;
-        let displayLang = lang || "Text", extension = codeFileExtension(lang), filename = `trux-output.${extension}`;
+        let displayLang = lang || "Text", extension = codeFileExtension(lang), filename = `chattrux-output.${extension}`;
         let lineCount = c.trim().split('\n').length;
         let sandboxBtn = (extension === 'html' || extension === 'js') ? `<button onclick="openCodeSandbox('${id}')">▶ Run</button>` : '';
         
@@ -1200,7 +1217,7 @@
 
       if(currentModel === "base" && getCoreUsageData().tokensUsed >= 5000000) return alert("Core 4.0 monthly token limit reached.");
       if(currentModel === "pro" && getProUsageData().tokensUsed >= 2000000) return alert("Pro 5.0 monthly limit reached.");
-      if(currentModel === "nano-banana" && getImageUsageData().count >= 5) return alert("Vision & Image monthly generation limit reached.");
+      if(currentModel === "nano-banana" && getImageUsageData().count >= 15) return alert("Vision & Image monthly generation limit reached.");
       
       document.body.classList.remove("home-active"); isGenerating = true; isScrolledUp = false;
       getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>';
@@ -1220,7 +1237,7 @@
       row.className = "row trux-row";
       
       /* Pure Floating Text Metallic Shine Gemini-Style Thinking Indicator */
-      row.innerHTML = `<div class="label">TruX AI</div><div class="bubble trux-bubble thinking" id="${id}"><div class="thinking-container"><span class="thinking-sparkle">✦</span><span class="status-msg" id="${sid}">Thinking…</span></div></div><div class="actions" id="${aid}"></div>`;
+      row.innerHTML = `<div class="label">ChatTruX-AI</div><div class="bubble trux-bubble thinking" id="${id}"><div class="thinking-container"><span class="thinking-sparkle">✦</span><span class="status-msg" id="${sid}">Thinking…</span></div></div><div class="actions" id="${aid}"></div>`;
       
       chatContainer.appendChild(row);
       chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -1284,7 +1301,7 @@
     function loadChatSession(id) {
       if(!chatSessions[id]) return; document.body.classList.remove("home-active"); activeAbortController?.abort(); currentChatId = id;
       getEl("welcomeScreen").style.display = "none"; let cC = getEl("chatContainer"); cC.style.display = "block"; cC.innerHTML = "";
-      chatSessions[id].messages.forEach(m => appendMessageRow(m.role === "user" ? "You" : "TruX AI", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble"));
+      chatSessions[id].messages.forEach(m => appendMessageRow(m.role === "user" ? "You" : "ChatTruX-AI", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble"));
       renderSidebar(); if(innerWidth <= 768) closeSidebar();
     }
     function deleteChat(id) { if(confirm("Delete this chat?")) { delete chatSessions[id]; localStorage.setItem("trux_chats", JSON.stringify(chatSessions)); if(currentChatId === id) startNewChat(); else renderSidebar(); } }
