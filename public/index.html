@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="description" content="ChatTruX-AI — a fast, secure intelligent workspace for deep thinking and focused work.">
   <title>ChatTruX-AI - Intelligent Workspace</title>
   <base target="_top">
@@ -98,6 +98,11 @@
       letter-spacing: -0.005em;
       font-weight: 450;
     }
+
+    /* No pinch-to-zoom or double-tap zoom: this is an app shell, not a document.
+       iOS ignores user-scalable=no, so gestures are cancelled in JS as well. */
+    html { touch-action: pan-x pan-y; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    button, .act, .chip, .icon-btn, .send-btn, .source-chip { touch-action: manipulation; }
 
     button, input, textarea, select {
       font-family: inherit;
@@ -996,6 +1001,55 @@
     .gen-image-particles .dot-ring span:nth-child(2) { animation-delay: 0.15s; background: #7c9bfa; }
     .gen-image-particles .dot-ring span:nth-child(3) { animation-delay: 0.3s; background: var(--acc-2); }
     @keyframes dotPulse { 0%,100% { opacity: 0.25; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1); } }
+
+    /* search sources the model actually used, under the answer */
+    .sources {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+      margin-top: 18px;
+    }
+    .sources-label {
+      font-family: var(--font-mono);
+      font-size: 10px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase;
+      color: var(--txt-4);
+      margin-right: 2px;
+    }
+    .source-chip {
+      display: inline-flex; align-items: center; gap: 8px;
+      max-width: 250px;
+      padding: 7px 12px 7px 9px;
+      border-radius: 999px;
+      background: var(--bg-2);
+      border: 1px solid var(--line);
+      color: var(--txt-2);
+      font-size: 13px; font-weight: 550;
+      letter-spacing: -0.005em;
+      text-decoration: none;
+      transition: background 0.2s var(--ease), border-color 0.2s var(--ease), color 0.2s var(--ease), transform 0.2s var(--ease-out);
+    }
+    .source-chip:hover {
+      background: var(--bg-3); border-color: var(--acc-line); color: #fff;
+      transform: translateY(-1px);
+      text-decoration: none;
+    }
+    .source-chip img {
+      width: 17px; height: 17px; flex: 0 0 17px;
+      border-radius: 4px;
+      background: var(--bg-4);
+      object-fit: cover;
+    }
+    .source-chip .sc-dot {
+      width: 17px; height: 17px; flex: 0 0 17px;
+      border-radius: 5px;
+      background: linear-gradient(160deg, var(--acc), var(--acc-2));
+      opacity: 0.75;
+    }
+    .source-chip span {
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .source-chip b {
+      font-family: var(--font-mono);
+      font-size: 11px; font-weight: 500; color: var(--txt-4);
+    }
 
     /* ============================================================
        COMPOSER
@@ -1924,6 +1978,28 @@
       while(host.children.length > 3) host.firstElementChild.remove();
     }
 
+    /* iOS Safari honours neither user-scalable=no nor maximum-scale, so pinch
+       and double-tap zoom are cancelled by hand. Wheel+ctrl (trackpad pinch on
+       desktop) is blocked too, which is what a native app shell feels like. */
+    ["gesturestart", "gesturechange", "gestureend"].forEach(function(t) {
+      document.addEventListener(t, function(e) { e.preventDefault(); }, { passive: false });
+    });
+    document.addEventListener("touchmove", function(e) {
+      if(e.touches && e.touches.length > 1) e.preventDefault();
+    }, { passive: false });
+    document.addEventListener("wheel", function(e) {
+      if(e.ctrlKey) e.preventDefault();
+    }, { passive: false });
+    let lastTouchEnd = 0;
+    document.addEventListener("touchend", function(e) {
+      let now = Date.now();
+      /* Controls keep their native double-tap behaviour (touch-action:
+         manipulation already kills zoom there) so fast repeat taps still work. */
+      let interactive = e.target.closest && e.target.closest("button, a, input, textarea, select, label, [contenteditable]");
+      if(!interactive && now - lastTouchEnd <= 320) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive: false });
+
     const cyclePhrases = ["Software", "Data Analytics", "Creative Writing", "Vision Processing", "Algorithmic Logic", "Strategic Planning"];
     let cycleIndex = 0;
     setInterval(() => {
@@ -2810,7 +2886,60 @@
     const BRAND_MARK = '<img class="label-logo" src="icon-192.png" alt="" width="22" height="22">';
     const BRAND_LABEL = BRAND_MARK + 'ChatTruX-AI';
 
-    function appendMessageRow(label, text, rc, bc, imageUrl, animate) {
+    /* Grounding URIs come back as Vertex redirect links, so the readable domain
+       lives in the title. Prefer a real hostname when the URI has one. */
+    function sourceDomain(src) {
+      let host = "";
+      try { host = new URL(src.uri).hostname.replace(/^www\./, ""); } catch (e) {}
+      if(!host || /vertexaisearch|googleapis|google\.com|grounding-api-redirect/i.test(host)) {
+        let t = (src.title || "").trim();
+        let m = t.match(/([a-z0-9-]+(?:\.[a-z0-9-]+)+)/i);
+        return m ? m[1].replace(/^www\./, "") : (t || "source");
+      }
+      return host;
+    }
+    function buildSourcesStrip(sources) {
+      if(!Array.isArray(sources) || !sources.length) return null;
+      let wrap = document.createElement("div");
+      wrap.className = "sources";
+      let lab = document.createElement("div"); lab.className = "sources-label"; lab.textContent = "Sources";
+      wrap.appendChild(lab);
+      sources.slice(0, 6).forEach(function(src) {
+        if(!src || !src.uri) return;
+        let dom = sourceDomain(src);
+        let a = document.createElement("a");
+        a.className = "source-chip";
+        a.href = src.uri;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.title = (src.title || dom) + " — " + dom;
+        let ico = document.createElement("img");
+        ico.src = "https://www.google.com/s2/favicons?sz=64&domain=" + encodeURIComponent(dom);
+        ico.alt = "";
+        ico.loading = "lazy";
+        ico.referrerPolicy = "no-referrer";
+        /* A site with no favicon gets the accent tile instead of a broken icon. */
+        ico.onerror = function() {
+          let dot = document.createElement("span"); dot.className = "sc-dot";
+          ico.replaceWith(dot);
+        };
+        let name = document.createElement("span"); name.textContent = dom;
+        a.append(ico, name);
+        wrap.appendChild(a);
+      });
+      return wrap.children.length > 1 ? wrap : null;
+    }
+    /* Sources sit between the answer and its action row. */
+    function attachSources(row, sources) {
+      if(!row) return;
+      row.querySelector(".sources")?.remove();
+      let strip = buildSourcesStrip(sources);
+      if(!strip) return;
+      let actions = row.querySelector(".actions");
+      if(actions) row.insertBefore(strip, actions); else row.appendChild(strip);
+    }
+
+    function appendMessageRow(label, text, rc, bc, imageUrl, animate, sources) {
       let chatContainer = getEl("chatContainer"), r = document.createElement("div");
       r.className = `row ${rc}` + (animate ? " appear" : "");
       let textContent = typeof text === "string" ? text : text?.text || "";
@@ -2844,6 +2973,7 @@
         let regenBtn = document.createElement("button"); regenBtn.className = "act"; regenBtn.title = "Regenerate this answer"; regenBtn.innerHTML = ICON.redo + "Retry"; regenBtn.onclick = () => regenerateLast();
 
         actions.append(readBtn, copyBtn, pinBtn, regenBtn);
+        attachSources(r, sources);
       }
 
       chatContainer.appendChild(r); chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -2991,7 +3121,7 @@
       };
     }
 
-    function finalizeResponse(id, aid, text, prompt, voice, streamer) {
+    function finalizeResponse(id, aid, text, prompt, voice, streamer, sources) {
       let b = getEl(id);
       if (b) {
         b.classList.remove("thinking");
@@ -3003,8 +3133,10 @@
         }
       }
 
-      chatSessions[currentChatId].messages.push({ role: "trux", text }); 
+      let cleanSources = Array.isArray(sources) ? sources.filter(x => x && x.uri).slice(0, 6) : [];
+      chatSessions[currentChatId].messages.push(cleanSources.length ? { role: "trux", text, sources: cleanSources } : { role: "trux", text });
       saveChatSessions();
+      if(b) attachSources(b.closest(".row"), cleanSources);
       
       let tokensUsed = Math.ceil((prompt.length + text.length) / 4);
       if(currentModel === "pro") recordProTokens(tokensUsed);
@@ -3190,6 +3322,8 @@
         if(!res.body) throw Error("Streaming body unavailable.");
         
         let rd = res.body.getReader(), dec = new TextDecoder(), buf = "", full = "", fin = null;
+        /* Web pages the model actually consulted when it ran a Google search. */
+        let turnSources = [];
 
         /* Image routing: the model answers with "[[IMAGE]] <prompt>" when it
            decides the turn wants a picture. Hold the first few characters back
@@ -3238,6 +3372,7 @@
           }
           else if(j.type === "final") fin = j.text || "";
           else if(j.type === "status") { let e = getEl(sid); if(e) e.innerText = j.status || "Processing…"; }
+          else if(j.type === "grounding") { turnSources = (j.grounding && j.grounding.sources) || []; }
           else if(j.type === "error") throw Error(j.error || "Streaming error.");
         }
 
@@ -3270,7 +3405,7 @@
         text = text.replace(/\[\[IMAGE\]\]/gi, "").trim();
 
         let streamer = ensureStreamer();
-        finalizeResponse(id, aid, text, prompt, voice, streamer);
+        finalizeResponse(id, aid, text, prompt, voice, streamer, turnSources);
         activeStreamer = null;
       } catch(e) {
         clearInterval(timer);
@@ -3352,7 +3487,7 @@
     function loadChatSession(id) {
       if(!chatSessions[id]) return; document.body.classList.remove("home-active"); activeAbortController?.abort(); currentChatId = id;
       getEl("welcomeScreen").style.display = "none"; let cC = getEl("chatContainer"); cC.style.display = "block"; cC.innerHTML = "";
-      chatSessions[id].messages.forEach(m => appendMessageRow(m.role === "user" ? "You" : "ChatTruX-AI", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image));
+      chatSessions[id].messages.forEach(m => appendMessageRow(m.role === "user" ? "You" : "ChatTruX-AI", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image, false, m.sources));
       renderSidebar(); if(innerWidth <= 768) closeSidebar();
     }
     function deleteChat(id) { if(confirm("Delete this chat?")) { delete chatSessions[id]; saveChatSessions(); if(currentChatId === id) startNewChat(); else renderSidebar(); } }
