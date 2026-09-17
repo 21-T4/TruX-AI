@@ -1,17 +1,20 @@
-const CACHE_NAME = 'trux-ai-v1';
+const CACHE_NAME = 'trux-ai-v3';
+
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
   '/icon-192.png',
-  '/icon-512.png',
-  'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;800&display=swap'
+  '/icon-512.png'
 ];
 
-// Install Service Worker and pre-cache static assets
+// Install and pre-cache the shell. Failures on individual assets must not
+// abort the whole install, otherwise a single 404 leaves the app uncached.
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.all(ASSETS_TO_CACHE.map((url) => cache.add(url).catch(() => {})))
+    )
   );
   self.skipWaiting();
 });
@@ -20,34 +23,58 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) return caches.delete(key);
-        })
-      )
+      Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
     )
   );
   self.clients.claim();
 });
 
-// Serve cached content offline; skip dynamic API routes
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET' || event.request.url.includes('/api/')) {
+  const request = event.request;
+
+  if (request.method !== 'GET' || request.url.includes('/api/')) return;
+
+  const url = new URL(request.url);
+  const isDocument =
+    request.mode === 'navigate' ||
+    request.destination === 'document' ||
+    url.pathname === '/' ||
+    url.pathname.endsWith('.html');
+
+  /* HTML: NETWORK FIRST.
+     This used to be cache-first, which meant a freshly deployed UI only
+     appeared on the *second* visit after an update. Now the newest markup
+     wins whenever the network is available, and the cache is only a
+     fallback for offline use. */
+  if (isDocument) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request).then((hit) => hit || caches.match('/index.html')))
+    );
     return;
   }
 
+  // Everything else: stale-while-revalidate.
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Return cached asset, update in background
-        fetch(event.request).then((networkResponse) => {
-          if (networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse));
+    caches.match(request).then((cached) => {
+      const network = fetch(request)
+        .then((response) => {
+          if (response && response.status === 200 && response.type !== 'opaque') {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
           }
-        }).catch(() => {});
-        return cachedResponse;
-      }
-      return fetch(event.request);
+          return response;
+        })
+        .catch(() => cached);
+
+      return cached || network;
     })
   );
 });

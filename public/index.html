@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover">
+  <meta name="description" content="ChatTruX-AI — a fast, secure intelligent workspace for deep thinking and focused work.">
   <title>ChatTruX-AI - Intelligent Workspace</title>
   <base target="_top">
   <link rel="manifest" href="/manifest.json">
@@ -37,18 +38,41 @@
       --ai-gradient: linear-gradient(135deg, #a855f7 0%, #6366f1 50%, #38bdf8 100%);
       --metallic-gradient: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(129,140,248,0.3) 50%, rgba(255,255,255,0.05) 100%);
       --max-width: 720px;
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --safe-b: env(safe-area-inset-bottom, 0px);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    
-    html, body {
-      width: 100%; height: 100%; 
+
+    html {
+      width: 100%; height: 100%;
+      background-color: var(--bg-base);
+      overflow: hidden;
+      /* clip (not hidden) keeps horizontal containment WITHOUT turning the
+         vertical axis into a scroll container that clips popovers. */
+      overflow-x: clip;
+    }
+
+    body {
+      width: 100%; height: 100%;
       background-color: var(--bg-base) !important;
       font-family: 'Plus Jakarta Sans', sans-serif;
       color: var(--txt-main);
-      overflow-x: hidden !important;
-      overflow-y: hidden;
+      overflow: hidden;
+      overflow-x: clip;
       display: flex;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
     }
 
     button, input, textarea, select { font: inherit; outline: none; border: none; }
@@ -68,7 +92,7 @@
 
     .colorful-bg { position: fixed; inset: 0; z-index: -5; background: radial-gradient(circle at 50% 0%, rgba(129, 140, 248, 0.08), transparent 65%); pointer-events: none; }
     
-    .shell { display: flex; width: 100%; height: 100%; z-index: 1; position: relative; background: #000000; overflow-x: hidden !important; }
+    .shell { display: flex; width: 100%; height: 100%; z-index: 1; position: relative; background: #000000; overflow-x: clip; }
     
     .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.88); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); z-index: 998; opacity: 0; transition: opacity 0.3s ease; }
     .sidebar-overlay.active { display: block; opacity: 1; }
@@ -104,7 +128,21 @@
     .profile-info b { font-size: 13px; display: block; text-overflow: ellipsis; overflow: hidden; color: #fff; }
     .profile-info small { font-size: 11px; color: var(--txt-muted); display: block; text-overflow: ellipsis; overflow: hidden; }
 
-    .main { flex: 1; height: 100%; display: flex; flex-direction: column; position: relative; min-width: 0; background: #000000; overflow-x: hidden !important; }
+    .main { flex: 1; height: 100%; display: flex; flex-direction: column; position: relative; min-width: 0; background: #000000; overflow-x: clip; }
+
+    /* Scrim behind the floating top bar. Without it, chat text scrolling
+       underneath collided with the buttons and became unreadable. */
+    .main::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 76px;
+      z-index: 95;
+      pointer-events: none;
+      background: linear-gradient(180deg, #000 0%, #000 46%, rgba(0,0,0,0.82) 70%, rgba(0,0,0,0) 100%);
+    }
+    /* The home screen doesn't scroll, so it needs no scrim. */
+    body.home-active .main::before { display: none; }
     
     .topbar {
       height: 64px;
@@ -139,18 +177,28 @@
       transition: all 0.2s ease;
     }
     .model-picker-btn:hover { background: #181826; border-color: rgba(129, 140, 248, 0.6); }
+    .model-picker-btn:active { transform: scale(0.97); }
     .model-picker-icon { font-size: 14px; }
-    .model-picker-btn .chevron { transition: transform 0.2s; }
-    .model-dropdown-menu.open + .model-picker-btn .chevron { transform: rotate(180deg); }
+    .model-picker-btn .chevron { transition: transform 0.22s var(--ease-out); }
+    /* was targeting a sibling that comes AFTER the button, so it never fired */
+    .model-picker-container.open .model-picker-btn .chevron { transform: rotate(180deg); }
 
     .model-dropdown-menu {
-      display: none; position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%);
-      width: 280px; padding: 6px; border-radius: 20px;
-      background: #0a0a10; border: 1px solid rgba(129, 140, 248, 0.25);
+      position: absolute; top: calc(100% + 8px); left: 50%;
+      width: 288px; max-width: calc(100vw - 32px); padding: 6px; border-radius: 20px;
+      background: rgba(10,10,16,0.97); border: 1px solid rgba(129, 140, 248, 0.25);
       box-shadow: 0 20px 50px rgba(0,0,0,0.95);
-      backdrop-filter: blur(20px); z-index: 1000; animation: fadeIn 0.2s ease;
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      z-index: 3000;
+      visibility: hidden; opacity: 0;
+      transform: translateX(-50%) translateY(-8px) scale(0.96);
+      transform-origin: top center; pointer-events: none;
+      transition: opacity 0.16s ease, transform 0.22s var(--ease-out), visibility 0.16s linear;
     }
-    .model-dropdown-menu.open { display: block; }
+    .model-dropdown-menu.open {
+      visibility: visible; opacity: 1; pointer-events: auto;
+      transform: translateX(-50%) translateY(0) scale(1);
+    }
 
     .model-item {
       display: flex; align-items: center; justify-content: space-between;
@@ -163,7 +211,7 @@
     .model-icon { font-size: 16px; }
     .model-info b { display: block; font-size: 13px; color: #fff; font-weight: 700; }
     .model-info small { display: block; font-size: 10px; color: var(--txt-muted); margin-top: 1px; }
-    .model-badge { font-size: 99px; font-weight: 800; padding: 3px 8px; border-radius: 99px; background: rgba(255,255,255,0.08); color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.05em; font-size: 9px; }
+    .model-badge { font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 99px; background: rgba(255,255,255,0.08); color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
     .model-badge.pro { background: rgba(192, 132, 252, 0.2); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.3); }
     .model-badge.img { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
 
@@ -193,9 +241,10 @@
       position: relative; 
       padding: 96px 24px 24px; 
       background: #000000; 
-      overflow-x: hidden !important; 
+      overflow-x: clip; 
     }
-    .hero { position: relative; width: min(780px, 100%); z-index: 2; text-align: center; padding: 10px 20px 20px; overflow-x: hidden !important; }
+    .hero { position: relative; width: min(780px, 100%); z-index: 2; text-align: center; padding: 10px 20px 20px; overflow-x: clip; animation: heroIn 0.6s var(--ease-out) both; }
+    @keyframes heroIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
     .badge { display: inline-flex; align-items: center; gap: 8px; padding: 7px 18px; border: 1px solid rgba(129, 140, 248, 0.35); border-radius: 99px; background: rgba(129, 140, 248, 0.1); color: #e0e7ff; font-size: 11.5px; font-weight: 800; letter-spacing: 0.14em; margin-bottom: 24px; }
     .badge i { width: 7px; height: 7px; border-radius: 50%; background: #818cf8; box-shadow: 0 0 12px #818cf8; }
     
@@ -251,11 +300,12 @@
       color: #f1f5f9; 
       font-size: 13.5px; 
       font-weight: 600; 
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); 
+      transition: transform 0.25s var(--ease-out), background 0.2s ease, border-color 0.2s ease, box-shadow 0.25s ease; 
       cursor: pointer; 
       box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
-      white-space: nowrap;
+      min-width: 0;
     }
+    .chip:active { transform: translateY(0) scale(0.98); }
     .chip:hover { 
       background: #161624; 
       border-color: rgba(129, 140, 248, 0.5); 
@@ -264,11 +314,23 @@
       box-shadow: 0 8px 25px rgba(129, 140, 248, 0.15); 
     }
 
-    .chat { display: none; flex: 1; overflow-y: auto; overflow-x: hidden !important; padding: 84px 20px 40px; scroll-behavior: smooth; background: #000000; }
+    .chat {
+      display: none; flex: 1;
+      overflow-y: auto; overflow-x: clip;
+      padding: 84px 20px 40px;
+      background: #000000;
+      overscroll-behavior-y: contain;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-gutter: stable;
+    }
     .chat::-webkit-scrollbar { width: 6px; }
+    .chat::-webkit-scrollbar-track { background: transparent; }
     .chat::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 10px; }
+    .chat::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
     
-    .row { max-width: var(--max-width); width: 100%; margin: 0 auto 28px; display: flex; flex-direction: column; overflow-x: hidden !important; }
+    .row { max-width: var(--max-width); width: 100%; margin: 0 auto 28px; display: flex; flex-direction: column; overflow-x: clip; }
+    .row.appear { animation: rowIn 0.34s var(--ease-out) both; }
+    @keyframes rowIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .label { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--txt-muted); margin-bottom: 8px; display: flex; align-items: center; }
     
     .trux-row .label { background: var(--ai-gradient); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 800; }
@@ -279,7 +341,7 @@
       max-width: 85%; align-self: flex-end; padding: 14px 18px; background: #11111a; color: #fff;
       border-radius: 18px 18px 4px 18px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
       border: 1px solid rgba(255, 255, 255, 0.1); font-weight: 500; font-size: 15px; line-height: 1.6;
-      word-break: break-word; overflow-x: hidden !important;
+      overflow-wrap: anywhere; overflow-x: clip;
     }
 
     /* Clean Typography */
@@ -291,11 +353,10 @@
       color: #f8fafc;
       font-size: 16px;
       font-weight: 500;
-      line-height: 1.5;
-      letter-spacing: 0.02em;
-      word-spacing: 0.12em;
-      word-break: break-word;
-      overflow-x: hidden !important;
+      line-height: 1.72;
+      letter-spacing: 0.005em;
+      overflow-wrap: anywhere;
+      overflow-x: clip;
     }
 
     /* ============ NEW: Beautiful flowing image generation card (GPT-style) ============ */
@@ -372,17 +433,103 @@
       color: rgba(255,255,255,0.75); z-index: 2;
     }
 
+    /* ============ Markdown typography ============ */
     .trux-bubble b, .trux-bubble strong { color: #ffffff; font-weight: 700; }
-    .trux-bubble p { margin-bottom: 20px; }
-    .trux-bubble ul, .trux-bubble ol { margin: 14px 0 20px 24px; }
-    .trux-bubble li { margin-bottom: 10px; }
-    .trux-bubble inline-code, .trux-bubble code { background: #0e0e18; padding: 3px 8px; border-radius: 6px; font-family: 'Fira Code', monospace; font-size: 0.88em; color: #38bdf8; border: 1px solid rgba(129, 140, 248, 0.25); white-space: normal; }
+    .trux-bubble em, .trux-bubble i { color: #e2e8f0; font-style: italic; }
+    .trux-bubble del { color: var(--txt-muted); }
+    .trux-bubble p { margin: 0 0 14px; }
+    .trux-bubble > *:last-child { margin-bottom: 0; }
+
+    .trux-bubble h1, .trux-bubble h2, .trux-bubble h3, .trux-bubble h4 {
+      font-family: "Space Grotesk", sans-serif; color: #fff;
+      line-height: 1.25; letter-spacing: -0.02em;
+      margin: 22px 0 10px;
+    }
+    .trux-bubble h1 { font-size: 23px; font-weight: 800; }
+    .trux-bubble h2 { font-size: 20px; font-weight: 800; }
+    .trux-bubble h3 { font-size: 17px; font-weight: 700; }
+    .trux-bubble h4 { font-size: 15px; font-weight: 700; color: #cbd5e1; }
+    .trux-bubble h1:first-child, .trux-bubble h2:first-child, .trux-bubble h3:first-child { margin-top: 4px; }
+
+    .trux-bubble ul, .trux-bubble ol { margin: 4px 0 16px; padding-left: 22px; }
+    .trux-bubble li { margin-bottom: 7px; padding-left: 2px; }
+    .trux-bubble li > ul, .trux-bubble li > ol { margin: 7px 0 2px; }
+    .trux-bubble ul { list-style: none; }
+    .trux-bubble ul > li { position: relative; }
+    .trux-bubble ul > li::before {
+      content: ""; position: absolute; left: -14px; top: 0.62em;
+      width: 5px; height: 5px; border-radius: 50%;
+      background: linear-gradient(135deg, #a855f7, #38bdf8);
+    }
+    .trux-bubble ol { list-style: decimal; }
+    .trux-bubble ol > li::marker { color: #818cf8; font-weight: 700; }
+
+    .trux-bubble blockquote {
+      margin: 14px 0 18px; padding: 12px 16px;
+      border-left: 3px solid rgba(129,140,248,0.65);
+      border-radius: 0 12px 12px 0;
+      background: rgba(129,140,248,0.07);
+      color: #cfd7e6;
+    }
+    .trux-bubble blockquote p:last-child { margin-bottom: 0; }
+
+    .trux-bubble hr { margin: 24px 0; border: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent); }
+
+    .trux-bubble a { color: #7dd3fc; text-decoration: none; border-bottom: 1px solid rgba(125,211,252,0.35); transition: all 0.18s ease; }
+    .trux-bubble a:hover { color: #bae6fd; border-bottom-color: #bae6fd; }
+
+    .trux-bubble code { background: #0e0e18; padding: 2.5px 7px; border-radius: 6px; font-family: 'Fira Code', monospace; font-size: 0.86em; color: #7dd3fc; border: 1px solid rgba(129, 140, 248, 0.25); overflow-wrap: anywhere; }
+
+    /* ============ Markdown tables ============ */
+    .table-wrap {
+      margin: 16px 0 20px;
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid rgba(129, 140, 248, 0.28);
+      border-radius: 14px;
+      background: #07070d;
+      box-shadow: 0 8px 26px rgba(0,0,0,0.55);
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-x: contain;
+    }
+    .table-wrap::-webkit-scrollbar { height: 6px; }
+    .table-wrap::-webkit-scrollbar-thumb { background: rgba(129,140,248,0.35); border-radius: 10px; }
+    .md-table { width: 100%; border-collapse: collapse; font-size: 13.5px; line-height: 1.55; }
+    .md-table th, .md-table td {
+      padding: 11px 15px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    .md-table thead th {
+      background: linear-gradient(180deg, rgba(129,140,248,0.16), rgba(129,140,248,0.06));
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border-bottom: 1px solid rgba(129,140,248,0.35);
+      position: sticky; top: 0;
+      white-space: nowrap;
+    }
+    .md-table tbody tr { transition: background 0.15s ease; }
+    .md-table tbody tr:nth-child(even) { background: rgba(255,255,255,0.018); }
+    .md-table tbody tr:hover { background: rgba(129,140,248,0.08); }
+    .md-table tbody tr:last-child td { border-bottom: none; }
+    .md-table td b, .md-table th b { color: #fff; }
+    .md-table .col-right { text-align: right; }
+    .md-table .col-center { text-align: center; }
     
     /* Code File Structural Cards */
     .code-file { display: flex; flex-direction: column; width: 100%; margin: 18px 0; border: 1px solid rgba(129, 140, 248, 0.3); border-radius: 16px; background: #08080f; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
     .code-file-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; background: #0c0c16; border-bottom: 1px solid rgba(255,255,255,0.06); }
     .code-file-info { display: flex; align-items: center; gap: 12px; min-width: 0; }
     .code-file-icon { display: grid; width: 34px; height: 34px; flex: 0 0 34px; place-items: center; border: 1px solid rgba(129, 140, 248, 0.4); border-radius: 10px; color: #818cf8; background: rgba(129, 140, 248, 0.1); font-size: 13px; font-family: 'Fira Code', monospace; font-weight: bold; }
+    /* min-width:0 is what actually lets the filename ellipsis instead of
+       sliding under the Copy / Download buttons. */
+    .code-file-meta { min-width: 0; flex: 1 1 auto; }
     .code-file-meta b { color: #fff; font-size: 13.5px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
     .code-file-meta small { color: var(--txt-muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-top: 1px; }
     .code-actions { display: flex; gap: 8px; flex-shrink: 0; }
@@ -428,24 +575,69 @@
       display: inline-block;
     }
 
-    /* ============ NEW: Gemini-style smooth line-by-line fade-in streaming ============ */
-    .stream-line {
+    /* ============ Gemini-style smooth progressive streaming ============ */
+    .md-stream { display: block; }
+
+    /* Every settled markdown block fades up exactly once, then is never
+       re-rendered again — that's what makes long answers stay buttery. */
+    .md-block {
       display: block;
-      opacity: 0;
-      transform: translateY(6px);
-      animation: lineFadeIn 0.38s cubic-bezier(.2,.7,.3,1) forwards;
+      animation: blockFadeIn 0.34s cubic-bezier(.2,.7,.3,1) both;
+      will-change: opacity, transform;
     }
-    @keyframes lineFadeIn {
-      0% { opacity: 0; transform: translateY(6px); }
-      100% { opacity: 1; transform: translateY(0); }
+    .md-block.settled { animation: none; will-change: auto; }
+    @keyframes blockFadeIn {
+      0%   { opacity: 0; transform: translateY(7px); filter: blur(1.5px); }
+      100% { opacity: 1; transform: translateY(0); filter: blur(0); }
     }
+
+    /* The in-progress block gets a soft trailing fade so new words
+       materialise instead of snapping in. */
+    .md-block.live {
+      animation: none;
+      -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 1.5em), rgba(0,0,0,0.45) 100%);
+      mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 1.5em), rgba(0,0,0,0.45) 100%);
+    }
+    .md-block.live.single-line {
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
+
+    .stream-caret {
+      display: inline-block;
+      width: 7px; height: 1.02em;
+      margin-left: 2px;
+      vertical-align: -0.16em;
+      border-radius: 2px;
+      background: linear-gradient(180deg, #c084fc, #38bdf8);
+      animation: caretPulse 1s ease-in-out infinite;
+    }
+    @keyframes caretPulse { 0%, 100% { opacity: 0.15; } 50% { opacity: 1; } }
+
+    .stream-stopped {
+      margin-top: 12px;
+      font-size: 12.5px;
+      color: var(--text-dim, #8b8b9a);
+      font-style: italic;
+    }
+
+    /* Live "file being written" card for an unterminated code fence */
+    .code-file.writing { border-color: rgba(129,140,248,0.55); }
+    .code-file.writing .code-file-icon { animation: caretPulse 1.2s ease-in-out infinite; }
     
     .actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
     .act { padding: 6px 14px; border-radius: 99px; border: 1px solid var(--glass-border); background: #0c0c12; color: var(--txt-muted); font-size: 11.5px; font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
     .act:hover { background: #161622; color: #fff; border-color: rgba(129, 140, 248, 0.4); }
 
-    .composer { padding: 12px 20px 32px; position: relative; z-index: 20; background: linear-gradient(to top, #000000 88%, transparent); display: flex; justify-content: center; overflow-x: hidden !important; }
-    .compose { width: min(var(--max-width), 100%); position: relative; overflow-x: visible !important; }
+    .composer {
+      padding: 12px 20px calc(24px + var(--safe-b));
+      position: relative; z-index: 200;
+      background: linear-gradient(to top, #000000 78%, rgba(0,0,0,0.85) 92%, transparent);
+      display: flex; justify-content: center;
+      /* NOTE: no overflow here — it used to clip the “+” menu, the image
+         preview and the jump-to-bottom pill out of existence. */
+    }
+    .compose { width: min(var(--max-width), 100%); position: relative; }
     
     .chip-container { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
     .file-chip { background: #12121c; border: 1px solid rgba(129, 140, 248, 0.35); padding: 7px 16px; border-radius: 99px; font-size: 12px; color: #fff; display: flex; align-items: center; gap: 8px; font-weight: 600; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
@@ -464,46 +656,61 @@
     
     .icon-btn { width: 40px; height: 40px; border-radius: 50%; background: transparent; color: #ffffff; font-size: 18px; display: grid; place-items: center; flex-shrink: 0; position: relative; }
     .icon-btn:hover { background: #161622; }
+    .icon-btn:active { transform: scale(0.9); }
+    .icon-btn.open { background: rgba(129,140,248,0.2); color: #c7d2fe; }
     .icon-btn.recording { color: var(--accent-4); background: rgba(244, 63, 94, 0.15); }
     .icon-btn svg { width: 20px; height: 20px; fill: none; stroke: #ffffff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     
+    /* Attach menu is FIXED to the viewport and anchored with JS, so no ancestor
+       (composer, main, shell) can ever clip it or steal its clicks again. */
     .attach-menu {
-      position: absolute; bottom: calc(100% + 10px); left: 16px;
-      display: none; min-width: 180px; padding: 6px;
+      position: fixed; left: 0; top: 0;
+      display: grid; gap: 3px; min-width: 190px; padding: 6px;
       border: 1px solid rgba(129,140,248,0.35); border-radius: 18px;
-      background: #0e0e16; box-shadow: 0 16px 40px rgba(0,0,0,.9);
-      z-index: 500;
-      opacity: 0; transform: translateY(8px) scale(0.96);
-      transition: opacity 0.18s ease, transform 0.18s cubic-bezier(.2,.7,.3,1);
+      background: rgba(14,14,22,0.97);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+      box-shadow: 0 18px 44px rgba(0,0,0,.92);
+      z-index: 4000;
+      visibility: hidden;
+      opacity: 0; transform: translateY(10px) scale(0.95);
+      transform-origin: bottom left;
+      transition: opacity 0.16s ease, transform 0.2s cubic-bezier(.2,.7,.3,1), visibility 0.16s linear;
       pointer-events: none;
     }
     .attach-menu.open {
-      display: grid; gap: 3px;
+      visibility: visible;
       opacity: 1; transform: translateY(0) scale(1);
       pointer-events: auto;
     }
-    .attach-menu button { display: flex; align-items: center; gap: 9px; width: 100%; padding: 10px; border-radius: 99px; background: transparent; color: #fff; font-size: 12px; font-weight: 600; text-align: left; }
-    .attach-menu button:hover { background: #1a1a28; }
+    .attach-menu button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 12px; border-radius: 99px; background: transparent; color: #fff; font-size: 12.5px; font-weight: 600; text-align: left; }
+    .attach-menu button:hover, .attach-menu button:focus-visible { background: #1e1e2e; }
     .attach-menu svg { width: 16px; height: 16px; fill: none; stroke: #ffffff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     
     .send-btn { width: 40px; height: 40px; border-radius: 50%; background: var(--ai-gradient); color: #fff; display: grid; place-items: center; flex-shrink: 0; box-shadow: 0 4px 15px rgba(129, 140, 248, 0.3); font-weight: 800; }
     .send-btn:active { transform: scale(0.92); }
 
-    textarea { flex: 1; min-height: 40px; max-height: 200px; padding: 8px 6px; resize: none; background: transparent; color: #fff; font-size: 15px; line-height: 1.5; font-family: 'Plus Jakarta Sans', sans-serif; }
+    /* 16px prevents iOS Safari from zooming the whole page on focus. */
+    textarea { flex: 1; min-height: 40px; max-height: 200px; padding: 8px 6px; resize: none; background: transparent; color: #fff; font-size: 16px; line-height: 1.5; font-family: 'Plus Jakarta Sans', sans-serif; }
     textarea::placeholder { color: rgba(255,255,255,0.45); }
 
-    .preview { display: none; position: absolute; bottom: calc(100% + 12px); left: 16px; padding: 6px; border-radius: 16px; background: #0e0e16; border: 1px solid var(--glass-border); }
+    .preview { display: none; position: absolute; bottom: calc(100% + 12px); left: 16px; padding: 6px; border-radius: 16px; background: #0e0e16; border: 1px solid var(--glass-border); z-index: 300; }
     .preview img { width: 60px; height: 60px; object-fit: cover; border-radius: 10px; }
     .preview button { position: absolute; right: -6px; top: -6px; width: 20px; height: 20px; border-radius: 50%; background: var(--accent-4); color: #fff; font-size: 11px; font-weight: bold; }
     .hint { text-align: center; color: var(--txt-muted); font-size: 11px; margin-top: 8px; font-weight: 500; }
 
     .scroll-down-btn {
-      display: none; position: absolute; bottom: calc(100% + 14px); right: 20px;
-      padding: 7px 14px; border-radius: 99px; background: #12121c; border: 1px solid rgba(129, 140, 248, 0.3);
-      color: #fff; font-size: 11px; font-weight: 700; box-shadow: 0 8px 25px rgba(0,0,0,0.8);
-      cursor: pointer; z-index: 30;
+      position: absolute; bottom: calc(100% + 14px); right: 8px;
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 15px; border-radius: 99px; background: rgba(18,18,28,0.95);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(129, 140, 248, 0.35);
+      color: #fff; font-size: 11.5px; font-weight: 700; box-shadow: 0 8px 25px rgba(0,0,0,0.8);
+      cursor: pointer; z-index: 300;
+      opacity: 0; transform: translateY(8px) scale(0.94); pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.25s var(--ease-out);
     }
-    .scroll-down-btn.visible { display: flex; align-items: center; gap: 6px; }
+    .scroll-down-btn.visible { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+    .scroll-down-btn:hover { border-color: rgba(129,140,248,0.7); }
 
     .modal { display: none; position: fixed; inset: 0; z-index: 2000; align-items: center; justify-content: center; padding: 20px; background: rgba(0, 0, 0, 0.92); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); animation: fadeIn 0.25s ease; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -600,15 +807,32 @@
       .sidebar { position: fixed; left: 0; top: 0; width: min(280px, 85vw); height: 100dvh; transform: translateX(-100%); margin: 0 !important; border-radius: 0 20px 20px 0; }
       .sidebar.open { transform: translateX(0); }
       .mobile-new { display: grid; }
-      .topbar { left: 110px; right: 60px; }
-      .chat { padding: 80px 16px 20px; }
-      .composer { padding: 12px 12px 24px; }
+      .topbar { left: 116px; right: 62px; }
+      .chat { padding: 82px 14px 18px; }
+      .main::before { height: 72px; }
+      .composer { padding: 10px 12px calc(16px + var(--safe-b)); }
+      .welcome { padding: 88px 18px 18px; }
       .welcome-title { font-size: clamp(32px, 8vw, 44px); }
       .welcome-subline { font-size: clamp(38px, 11vw, 56px); }
-      .user-bubble { max-width: 90%; }
+      .user-bubble { max-width: 92%; }
       .hint { display: none; }
       .chips { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-      .chip { font-size: 12px; padding: 10px 14px; }
+      .chip { font-size: 12px; padding: 11px 12px; line-height: 1.3; }
+      .trux-bubble { font-size: 15.5px; }
+      .md-table { font-size: 12.5px; }
+      .md-table th, .md-table td { padding: 9px 12px; }
+      .model-picker-btn { padding: 8px 13px; font-size: 11.5px; }
+      .attach-menu { min-width: 200px; }
+      .code-file-header { flex-wrap: wrap; gap: 10px; padding: 12px 14px; }
+      .code-file-info { flex: 1 1 100%; }
+      .code-actions { flex: 1 1 100%; }
+      .code-actions button { flex: 1 1 0; padding: 8px 10px; }
+      .card { padding: 22px 20px; border-radius: 20px; }
+    }
+
+    @media (max-width: 420px) {
+      .chips { grid-template-columns: 1fr; }
+      .bar { gap: 6px; padding: 8px 10px; }
     }
   </style>
 </head>
@@ -658,7 +882,7 @@
     <main class="main">
       <div class="topbar">
         <div class="model-picker-container">
-          <button class="model-picker-btn" id="modelPickerBtn" onclick="toggleModelDropdown(event)">
+          <button class="model-picker-btn" id="modelPickerBtn" onclick="toggleModelDropdown(event)" aria-haspopup="true" aria-expanded="false">
             <span class="model-picker-icon" id="currentModelIcon">⚡</span>
             <span class="model-picker-label" id="currentModelLabel">Core 4.0</span>
             <svg class="chevron" viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2" d="m6 9 6 6 6-6"/></svg>
@@ -743,7 +967,7 @@
               <button onclick="removeImage()">×</button>
             </div>
             
-            <button class="icon-btn" id="attachBtn" onclick="toggleAttachmentMenu(event)" title="Add photo" aria-label="Add photo">＋</button>
+            <button class="icon-btn" id="attachBtn" onclick="toggleAttachmentMenu(event)" title="Add photo" aria-label="Add photo" aria-haspopup="true" aria-expanded="false">＋</button>
             <div class="attach-menu" id="attachmentMenu" role="menu">
               <button type="button" onclick="openCamera()" role="menuitem"><svg viewBox="0 0 24 24"><path d="M4 7h3l1.4-2h7.2L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.5"/></svg>Camera</button>
               <button type="button" onclick="openPhotoLibrary()" role="menuitem"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="1.5"/><path d="m4 18 5-5 3 3 3-3 5 5"/></svg>Photos</button>
@@ -892,7 +1116,7 @@
       }
     }, 2800);
 
-    if("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(()=>{}));
+    addEventListener("load", () => { try { if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {}); } catch (e) {} });
     let deferredPrompt = null;
     addEventListener("beforeinstallprompt", e => {
       e.preventDefault(); deferredPrompt = e;
@@ -936,10 +1160,50 @@
         .finally(() => { isSigningIn = false; });
     }
 
+    /* =====================================================================
+       SAFE STORAGE
+       Touching localStorage throws in some contexts (Safari private mode,
+       embedded webviews, sandboxed iframes, storage disabled). That used to
+       kill this whole script on the very first line that read it, so the app
+       rendered nothing at all. Now it degrades to in-memory state instead.
+       ===================================================================== */
+    const store = (() => {
+      let backing = null;
+      let persistent = false;
+      try {
+        localStorage.setItem("__trux_probe", "1");
+        localStorage.removeItem("__trux_probe");
+        backing = localStorage;
+        persistent = true;
+      } catch (e) {
+        const mem = new Map();
+        backing = {
+          getItem: k => (mem.has(k) ? mem.get(k) : null),
+          setItem: (k, v) => mem.set(k, String(v)),
+          removeItem: k => mem.delete(k)
+        };
+      }
+      return {
+        available: persistent,
+        getItem(k) { try { return backing.getItem(k); } catch (e) { return null; } },
+        setItem(k, v) { try { backing.setItem(k, v); } catch (e) {} },
+        removeItem(k) { try { backing.removeItem(k); } catch (e) {} },
+        // Parse JSON defensively: one corrupted entry must not brick the app.
+        json(k, fallback) {
+          try {
+            const raw = backing.getItem(k);
+            if (raw === null || raw === "") return fallback;
+            const parsed = JSON.parse(raw);
+            return parsed === null || parsed === undefined ? fallback : parsed;
+          } catch (e) { return fallback; }
+        }
+      };
+    })();
+
     let currentModel = "base",
-        chatSessions = JSON.parse(localStorage.getItem("trux_chats")) || {},
-        pinnedInsights = JSON.parse(localStorage.getItem("trux_pinned")) || [],
-        feedbackCount = Number(localStorage.getItem("trux_feedback_count")) || 0,
+        chatSessions = store.json("trux_chats", {}),
+        pinnedInsights = store.json("trux_pinned", []),
+        feedbackCount = Number(store.getItem("trux_feedback_count")) || 0,
         currentChatId = null,
         isGenerating = false,
         activeAbortController = null,
@@ -951,11 +1215,20 @@
         recognition = null,
         isRecording = false,
         isScrolledUp = false,
+        activeStreamer = null,
         advancedThinkingEnabled = false;
 
     function toggleModelDropdown(e) {
       e?.stopPropagation();
-      getEl("modelDropdown").classList.toggle("open");
+      closeAttachmentMenu();
+      let open = getEl("modelDropdown").classList.toggle("open");
+      getEl("modelPickerBtn").closest(".model-picker-container").classList.toggle("open", open);
+      getEl("modelPickerBtn").setAttribute("aria-expanded", open ? "true" : "false");
+    }
+    function closeModelDropdown() {
+      getEl("modelDropdown").classList.remove("open");
+      getEl("modelPickerBtn").closest(".model-picker-container").classList.remove("open");
+      getEl("modelPickerBtn").setAttribute("aria-expanded", "false");
     }
 
     function selectModel(m, e) {
@@ -971,7 +1244,7 @@
       getEl("currentModelIcon").innerText = icons[m];
 
       document.querySelectorAll(".model-item").forEach(x => x.classList.toggle("active", x.dataset.model === m));
-      getEl("modelDropdown").classList.remove("open");
+      closeModelDropdown();
     }
 
     function toggleAdvancedThinking() {
@@ -984,14 +1257,14 @@
       if(!text) return alert("Please enter your feedback.");
       
       feedbackCount++;
-      localStorage.setItem("trux_feedback_count", feedbackCount);
+      store.setItem("trux_feedback_count", feedbackCount);
       getEl("feedbackInput").value = "";
       updateFeedbackCounterUI();
 
       if(feedbackCount >= 100) {
         alert(`🎉 100th Feedback Threshold Reached!\n\nDispatched batch feedback report directly to support.`);
         feedbackCount = 0;
-        localStorage.setItem("trux_feedback_count", 0);
+        store.setItem("trux_feedback_count", 0);
         updateFeedbackCounterUI();
       } else {
         alert(`Thank you for your feedback! It has been recorded.\n\nTotal count: ${feedbackCount}/100`);
@@ -1005,30 +1278,30 @@
 
     function getProUsageData() {
       let currentMonth = new Date().toISOString().slice(0, 7);
-      let u = JSON.parse(localStorage.getItem("trux_pro_usage")) || { tokensUsed: 0, monthReset: currentMonth };
-      if(u.monthReset !== currentMonth) { u = { tokensUsed: 0, monthReset: currentMonth }; localStorage.setItem("trux_pro_usage", JSON.stringify(u)); }
+      let u = store.json("trux_pro_usage", { tokensUsed: 0, monthReset: currentMonth });
+      if(u.monthReset !== currentMonth) { u = { tokensUsed: 0, monthReset: currentMonth }; store.setItem("trux_pro_usage", JSON.stringify(u)); }
       return u;
     }
     function recordProTokens(n) {
       let u = getProUsageData(); u.tokensUsed = Math.min(2000000, u.tokensUsed + n);
-      localStorage.setItem("trux_pro_usage", JSON.stringify(u)); updateAllUsageUI();
+      store.setItem("trux_pro_usage", JSON.stringify(u)); updateAllUsageUI();
     }
 
     function getCoreUsageData() {
       let currentMonth = new Date().toISOString().slice(0, 7);
-      let u = JSON.parse(localStorage.getItem("trux_core_usage")) || { tokensUsed: 0, monthReset: currentMonth };
-      if(u.monthReset !== currentMonth) { u = { tokensUsed: 0, monthReset: currentMonth }; localStorage.setItem("trux_core_usage", JSON.stringify(u)); }
+      let u = store.json("trux_core_usage", { tokensUsed: 0, monthReset: currentMonth });
+      if(u.monthReset !== currentMonth) { u = { tokensUsed: 0, monthReset: currentMonth }; store.setItem("trux_core_usage", JSON.stringify(u)); }
       return u;
     }
     function recordCoreTokens(n) {
       let u = getCoreUsageData(); u.tokensUsed = Math.min(5000000, u.tokensUsed + n);
-      localStorage.setItem("trux_core_usage", JSON.stringify(u)); updateAllUsageUI();
+      store.setItem("trux_core_usage", JSON.stringify(u)); updateAllUsageUI();
     }
 
     function getImageUsageData() {
       let currentMonth = new Date().toISOString().slice(0, 7);
-      let u = JSON.parse(localStorage.getItem("trux_image_usage")) || { count: 0, monthReset: currentMonth };
-      if(u.monthReset !== currentMonth) { u = { count: 0, monthReset: currentMonth }; localStorage.setItem("trux_image_usage", JSON.stringify(u)); }
+      let u = store.json("trux_image_usage", { count: 0, monthReset: currentMonth });
+      if(u.monthReset !== currentMonth) { u = { count: 0, monthReset: currentMonth }; store.setItem("trux_image_usage", JSON.stringify(u)); }
       return u;
     }
 
@@ -1048,15 +1321,15 @@
       updateFeedbackCounterUI();
     }
 
-    function saveTTSRate(val) { localStorage.setItem("trux_tts_rate", val); }
-    function saveCustomInstructions() { localStorage.setItem("trux_custom_instructions", getEl("customInstructions").value.trim()); alert("Instructions saved!"); }
-    function loadCustomInstructions() { let el = getEl("customInstructions"); if(el) el.value = localStorage.getItem("trux_custom_instructions") || ""; }
-    function toggleAmbientGlow(el) { let bg = getEl("bg"); if(bg) bg.style.display = el.checked ? "block" : "none"; localStorage.setItem("trux_ambient_glow", el.checked ? "true" : "false"); }
+    function saveTTSRate(val) { store.setItem("trux_tts_rate", val); }
+    function saveCustomInstructions() { store.setItem("trux_custom_instructions", getEl("customInstructions").value.trim()); alert("Instructions saved!"); }
+    function loadCustomInstructions() { let el = getEl("customInstructions"); if(el) el.value = store.getItem("trux_custom_instructions") || ""; }
+    function toggleAmbientGlow(el) { let bg = getEl("bg"); if(bg) bg.style.display = el.checked ? "block" : "none"; store.setItem("trux_ambient_glow", el.checked ? "true" : "false"); }
     function loadSettings() {
       let nT = getEl("neonGlowToggle"), aR = getEl("autoReadToggle"), tts = getEl("ttsRateSelect");
-      if(nT) { nT.checked = localStorage.getItem("trux_ambient_glow") !== "false"; toggleAmbientGlow(nT); }
-      if(aR) aR.checked = localStorage.getItem("trux_auto_read") === "true";
-      if(tts) tts.value = localStorage.getItem("trux_tts_rate") || "1.0";
+      if(nT) { nT.checked = store.getItem("trux_ambient_glow") !== "false"; toggleAmbientGlow(nT); }
+      if(aR) aR.checked = store.getItem("trux_auto_read") === "true";
+      if(tts) tts.value = store.getItem("trux_tts_rate") || "1.0";
       loadCustomInstructions();
     }
 
@@ -1069,8 +1342,8 @@
       let t = performance.now();
       try { await fetch("/api/chat", { cache: "no-store" }); alert(`Backend reachable: ${Math.round(performance.now() - t)} ms`); } catch { alert("Backend check failed."); }
     }
-    function resetAllSettings() { if(confirm("Reset all settings?")) { ["trux_custom_instructions", "trux_auto_read", "trux_ambient_glow", "trux_tts_rate"].forEach(k => localStorage.removeItem(k)); loadSettings(); } }
-    function clearAllHistory() { if(confirm("Delete all local chats?")) { chatSessions = {}; localStorage.removeItem("trux_chats"); startNewChat(); closeSettingsModal(); } }
+    function resetAllSettings() { if(confirm("Reset all settings?")) { ["trux_custom_instructions", "trux_auto_read", "trux_ambient_glow", "trux_tts_rate"].forEach(k => store.removeItem(k)); loadSettings(); } }
+    function clearAllHistory() { if(confirm("Delete all local chats?")) { chatSessions = {}; store.removeItem("trux_chats"); startNewChat(); closeSettingsModal(); } }
 
     function handleAuthAction() {
       if(!auth) return;
@@ -1095,7 +1368,7 @@
     function pinInsight(text) {
       if(pinnedInsights.includes(text)) return alert("Insight already pinned!");
       pinnedInsights.push(text);
-      localStorage.setItem("trux_pinned", JSON.stringify(pinnedInsights));
+      store.setItem("trux_pinned", JSON.stringify(pinnedInsights));
       alert("📌 Insight pinned!");
     }
     function openPinnedInsightsModal() {
@@ -1109,7 +1382,7 @@
     }
     function removePinnedInsight(idx) {
       pinnedInsights.splice(idx, 1);
-      localStorage.setItem("trux_pinned", JSON.stringify(pinnedInsights));
+      store.setItem("trux_pinned", JSON.stringify(pinnedInsights));
       openPinnedInsightsModal();
     }
     function closePinnedModal() { getEl("pinnedModal").style.display = "none"; }
@@ -1132,7 +1405,7 @@
       getEl("scrollDownBtn").classList.toggle("visible", isScrolledUp);
     });
     function scrollToBottom() {
-      chatContainer.scrollTop = chatContainer.scrollHeight;
+      chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: "smooth" });
       getEl("scrollDownBtn").classList.remove("visible");
     }
 
@@ -1173,7 +1446,7 @@
 
     function saveChatSessions() {
       try {
-        localStorage.setItem("trux_chats", JSON.stringify(chatSessions));
+        store.setItem("trux_chats", JSON.stringify(chatSessions));
         return;
       } catch (e) {
         // Quota exceeded — most likely because old chats are carrying large
@@ -1186,7 +1459,7 @@
           });
         });
         try {
-          localStorage.setItem("trux_chats", JSON.stringify(chatSessions));
+          store.setItem("trux_chats", JSON.stringify(chatSessions));
           return;
         } catch (e2) {
           // Still too big — drop the oldest chats one at a time until it fits.
@@ -1196,7 +1469,7 @@
             if (oldestId === currentChatId) continue;
             delete chatSessions[oldestId];
             try {
-              localStorage.setItem("trux_chats", JSON.stringify(chatSessions));
+              store.setItem("trux_chats", JSON.stringify(chatSessions));
               return;
             } catch (e3) { /* keep pruning */ }
           }
@@ -1204,7 +1477,7 @@
           try {
             let keep = currentChatId && chatSessions[currentChatId] ? { [currentChatId]: chatSessions[currentChatId] } : {};
             chatSessions = keep;
-            localStorage.setItem("trux_chats", JSON.stringify(chatSessions));
+            store.setItem("trux_chats", JSON.stringify(chatSessions));
           } catch { /* give up silently, chat still works in-memory */ }
         }
       }
@@ -1212,6 +1485,7 @@
 
     function startNewChat() {
       document.body.classList.add("home-active"); activeAbortController?.abort();
+      activeStreamer?.cancel(); activeStreamer = null;
       getEl("chatContainer").innerHTML = ""; getEl("chatContainer").style.display = "none";
       getEl("welcomeScreen").style.display = "flex"; currentChatId = null; renderSidebar();
       pastedTextBlocks = []; renderFileChips();
@@ -1222,21 +1496,65 @@
       let p = getEl("promptInput"); 
       p.style.height = "auto"; 
       p.style.height = Math.min(p.scrollHeight, 200) + "px";
-
-      if (detectCodeInInput(p.value)) {
-        let textToAttach = p.value;
-        p.value = "";
-        p.style.height = "40px";
-        attachCodeAsFile(textToAttach);
-      }
+      // Code is only auto-attached on PASTE now. Doing it while typing used to
+      // swallow long normal messages into a “file” chip mid-sentence.
     }
     
-    /* ============ Fixed attach menu toggle ============ */
+    /* =====================================================================
+       ATTACH (“+”) MENU
+       It is position:fixed and anchored in JS. Two things used to break it:
+       the composer's overflow clipped it away, and it sat below other UI in
+       the stacking order — so it was invisible and/or unclickable.
+       ===================================================================== */
+    function positionAttachmentMenu() {
+      let menu = getEl("attachmentMenu"), btn = getEl("attachBtn");
+      if (!menu || !btn) return;
+
+      let b = btn.getBoundingClientRect();
+      // offsetWidth/Height ignore the closed-state scale transform, so the
+      // menu can be measured while it is still hidden.
+      let w = menu.offsetWidth, h = menu.offsetHeight;
+      let gap = 10, margin = 8;
+
+      let left = Math.max(margin, Math.min(b.left, window.innerWidth - w - margin));
+      let top = b.top - h - gap;
+
+      // Not enough room above? Drop it below the button instead.
+      if (top < margin) {
+        top = Math.min(b.bottom + gap, window.innerHeight - h - margin);
+        menu.style.transformOrigin = "top left";
+      } else {
+        menu.style.transformOrigin = "bottom left";
+      }
+
+      menu.style.left = Math.round(left) + "px";
+      menu.style.top = Math.round(top) + "px";
+    }
+
     function toggleAttachmentMenu(e) {
       e?.stopPropagation();
-      getEl("attachmentMenu").classList.toggle("open");
+      let menu = getEl("attachmentMenu");
+      if (menu.classList.contains("open")) return closeAttachmentMenu();
+
+      closeModelDropdown();
+      positionAttachmentMenu();
+      menu.classList.add("open");
+      getEl("attachBtn").classList.add("open");
+      getEl("attachBtn").setAttribute("aria-expanded", "true");
     }
-    function closeAttachmentMenu() { getEl("attachmentMenu").classList.remove("open"); }
+
+    function closeAttachmentMenu() {
+      getEl("attachmentMenu")?.classList.remove("open");
+      getEl("attachBtn")?.classList.remove("open");
+      getEl("attachBtn")?.setAttribute("aria-expanded", "false");
+    }
+
+    addEventListener("resize", () => {
+      if (getEl("attachmentMenu")?.classList.contains("open")) positionAttachmentMenu();
+    });
+    addEventListener("scroll", e => {
+      if (e.target === chatContainer || e.target === document) closeAttachmentMenu();
+    }, true);
     function openCamera() { closeAttachmentMenu(); getEl("cameraUpload").click(); }
     function openPhotoLibrary() { closeAttachmentMenu(); getEl("imageUpload").click(); }
     
@@ -1271,29 +1589,261 @@
       return map[String(language || "").toLowerCase()] || "txt";
     }
 
-    function renderFormattedText(t) {
-      if(!t) return ""; let h = escapeHtml(t);
-      let fileTokens = [];
-      
-      h = h.replace(/```([\w-]*)\n?([\s\S]*?)```/g, (m, lang, c) => {
-        let id = `code_${++codeBlockCounter}_${Date.now()}`;
-        let displayLang = lang || "Text", extension = codeFileExtension(lang), filename = `chattrux-output.${extension}`;
-        let lineCount = c.trim().split('\n').length;
-        let sandboxBtn = (extension === 'html' || extension === 'js') ? `<button onclick="openCodeSandbox('${id}')">▶ Run</button>` : '';
-        
-        let fileCard = `<div class="code-file"><div class="code-file-header"><div class="code-file-info"><span class="code-file-icon">&lt;/&gt;</span><div class="code-file-meta"><b>${filename}</b><small>${displayLang.toUpperCase()} · ${lineCount} Lines</small></div></div><div class="code-actions">${sandboxBtn}<button onclick="copyCodeToClipboard(this,'${id}')">Copy</button><button onclick="downloadCode(this.previousElementSibling ? '' : '${id}','${filename}')">Download</button></div></div><textarea id="${id}" hidden>${c.trim()}</textarea></div>`;
-        fileTokens.push(fileCard);
-        return `@@TRUX_CODE_FILE_${fileTokens.length - 1}@@`;
+    /* =====================================================================
+       MARKDOWN RENDERER
+       Full block-level markdown: tables, headings, lists, quotes, rules,
+       links and code files. The old renderer only understood bold/italic
+       and code fences, which is exactly why tables came out as raw pipes.
+       ===================================================================== */
+
+    function buildCodeCard(lang, rawCode, isWriting) {
+      let id = `code_${++codeBlockCounter}_${Math.random().toString(36).slice(2, 8)}`;
+      let code = String(rawCode).replace(/\s+$/, "");
+      let displayLang = (lang || "text").toLowerCase();
+      let extension = codeFileExtension(lang);
+      let filename = `chattrux-output.${extension}`;
+      let lineCount = code ? code.split("\n").length : 0;
+      let runnable = (extension === "html" || extension === "js");
+
+      if (isWriting) {
+        return `<div class="code-file writing"><div class="code-file-header"><div class="code-file-info">` +
+          `<span class="code-file-icon">&lt;/&gt;</span><div class="code-file-meta"><b>${escapeHtml(filename)}</b>` +
+          `<small>${escapeHtml(displayLang.toUpperCase())} · writing ${lineCount} lines…</small></div></div></div></div>`;
+      }
+
+      return `<div class="code-file"><div class="code-file-header"><div class="code-file-info">` +
+        `<span class="code-file-icon">&lt;/&gt;</span><div class="code-file-meta"><b>${escapeHtml(filename)}</b>` +
+        `<small>${escapeHtml(displayLang.toUpperCase())} · ${lineCount} Lines</small></div></div>` +
+        `<div class="code-actions">` +
+        (runnable ? `<button type="button" onclick="openCodeSandbox('${id}')">▶ Run</button>` : ``) +
+        `<button type="button" onclick="copyCodeToClipboard(this,'${id}')">Copy</button>` +
+        `<button type="button" onclick="downloadCode('${id}','${filename}')">Download</button>` +
+        `</div></div><textarea id="${id}" hidden>${escapeHtml(code)}</textarea></div>`;
+    }
+
+    /* Inline markdown, applied to text that is ALREADY html-escaped. */
+    function renderInline(escaped) {
+      let codeSpans = [];
+      let s = String(escaped);
+
+      // `code` — pulled out first so nothing else mangles its contents.
+      s = s.replace(/`([^`\n]+)`/g, (m, c) => {
+        codeSpans.push(`<code>${c}</code>`);
+        return `\u0000C${codeSpans.length - 1}\u0000`;
       });
 
-      h = h.replace(/`([^`]+)`/g, '<inline-code>$1</inline-code>').replace(/\*\*(.*?)\*\*/g, "<b>$1</b>").replace(/\*(.*?)\*/g, "<i>$1</i>").replace(/\n/g, "<br>");
-      return h.replace(/@@TRUX_CODE_FILE_(\d+)@@/g, (m, index) => fileTokens[Number(index)] || "");
+      // [label](url) and bare urls
+      s = s.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g,
+        (m, label, url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`);
+      s = s.replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g,
+        (m, pre, url) => `${pre}<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
+
+      s = s.replace(/~~([^~]+)~~/g, "<del>$1</del>");
+      s = s.replace(/\*\*\*([^*]+)\*\*\*/g, "<b><em>$1</em></b>");
+      s = s.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+      s = s.replace(/(^|[^\w*])\*([^*\n]+)\*(?=[^\w*]|$)/g, "$1<em>$2</em>");
+      s = s.replace(/(^|[^\w_])_([^_\n]+)_(?=[^\w_]|$)/g, "$1<em>$2</em>");
+
+      return s.replace(/\u0000C(\d+)\u0000/g, (m, i) => codeSpans[Number(i)] || "");
+    }
+
+    function isTableSeparator(line) {
+      return /^\s*\|?[\s]*:?-{2,}:?[\s]*(\|[\s]*:?-{2,}:?[\s]*)*\|?\s*$/.test(line) && line.includes("-");
+    }
+
+    function splitTableRow(line) {
+      let s = line.trim().replace(/^\|/, "").replace(/\|$/, "");
+      let cells = [], cur = "", escaped = false;
+      for (let ch of s) {
+        if (escaped) { cur += ch; escaped = false; continue; }
+        if (ch === "\\") { escaped = true; continue; }
+        if (ch === "|") { cells.push(cur); cur = ""; continue; }
+        cur += ch;
+      }
+      cells.push(cur);
+      return cells.map(c => c.trim());
+    }
+
+    function buildTable(headerLine, alignLine, bodyLines) {
+      let heads = splitTableRow(headerLine);
+      let aligns = splitTableRow(alignLine).map(a => {
+        let left = a.startsWith(":"), right = a.endsWith(":");
+        if (left && right) return "col-center";
+        if (right) return "col-right";
+        return "";
+      });
+
+      let thead = "<tr>" + heads.map((h, i) =>
+        `<th class="${aligns[i] || ""}">${renderInline(escapeHtml(h))}</th>`).join("") + "</tr>";
+
+      let tbody = bodyLines.map(line => {
+        let cells = splitTableRow(line);
+        while (cells.length < heads.length) cells.push("");
+        return "<tr>" + cells.slice(0, heads.length).map((c, i) =>
+          `<td class="${aligns[i] || ""}">${renderInline(escapeHtml(c))}</td>`).join("") + "</tr>";
+      }).join("");
+
+      return `<div class="table-wrap"><table class="md-table"><thead>${thead}</thead><tbody>${tbody}</tbody></table></div>`;
+    }
+
+    function buildList(items, ordered) {
+      // items: [{ indent, text }] — supports one level of nesting.
+      let baseIndent = Math.min(...items.map(i => i.indent));
+      let openTag = ordered ? "<ol>" : "<ul>";
+      let closeTag = ordered ? "</ol>" : "</ul>";
+
+      let html = openTag;
+      let nestOpen = false;   // a nested list is currently open
+      let liOpen = false;     // the parent <li> holding it is still unclosed
+
+      items.forEach(item => {
+        let nested = item.indent > baseIndent + 1;
+        let li = `<li>${renderInline(escapeHtml(item.text))}`;
+
+        if (nested) {
+          // Nested lists must live INSIDE the preceding <li> to be valid HTML.
+          if (!nestOpen) { html += openTag; nestOpen = true; }
+          html += li + "</li>";
+        } else {
+          if (nestOpen) { html += closeTag; nestOpen = false; }
+          if (liOpen) { html += "</li>"; liOpen = false; }
+          html += li;
+          liOpen = true;
+        }
+      });
+
+      if (nestOpen) html += closeTag;
+      if (liOpen) html += "</li>";
+      return html + closeTag;
+    }
+
+    /*
+     * allowOpenFence: when streaming, the tail of the text may contain a
+     * fence that hasn't been closed yet. We render that as a live
+     * "writing file…" card instead of leaking backticks into the chat.
+     */
+    function renderFormattedText(t, allowOpenFence) {
+      if (t === null || t === undefined || t === "") return "";
+
+      let src = String(t).replace(/\r\n/g, "\n");
+      let cards = [];
+
+      src = src.replace(/```([\w+#.-]*)[ \t]*\n?([\s\S]*?)```/g, (m, lang, code) => {
+        cards.push(buildCodeCard(lang, code, false));
+        return `\n\n\u0000F${cards.length - 1}\u0000\n\n`;
+      });
+
+      // A single unterminated fence left over (streaming in progress).
+      let openFence = src.indexOf("```");
+      if (openFence !== -1) {
+        let rest = src.slice(openFence + 3);
+        let nl = rest.indexOf("\n");
+        let lang = (nl === -1 ? rest : rest.slice(0, nl)).trim();
+        let code = nl === -1 ? "" : rest.slice(nl + 1);
+        cards.push(buildCodeCard(lang, code, !!allowOpenFence));
+        src = src.slice(0, openFence) + `\n\n\u0000F${cards.length - 1}\u0000\n`;
+      }
+
+      let lines = src.split("\n");
+      let out = [];
+      let para = [];
+      let quote = [];
+      let list = null;
+
+      function flushPara() {
+        if (!para.length) return;
+        out.push(`<p>${renderInline(escapeHtml(para.join("\n"))).replace(/\n/g, "<br>")}</p>`);
+        para = [];
+      }
+      function flushQuote() {
+        if (!quote.length) return;
+        out.push(`<blockquote><p>${renderInline(escapeHtml(quote.join("\n"))).replace(/\n/g, "<br>")}</p></blockquote>`);
+        quote = [];
+      }
+      function flushList() {
+        if (!list) return;
+        out.push(buildList(list.items, list.ordered));
+        list = null;
+      }
+      function flushAll() { flushPara(); flushQuote(); flushList(); }
+
+      for (let i = 0; i < lines.length; i++) {
+        let line = lines[i];
+        let trimmed = line.trim();
+
+        // code-file placeholder
+        let ph = trimmed.match(/^\u0000F(\d+)\u0000$/);
+        if (ph) { flushAll(); out.push(cards[Number(ph[1])] || ""); continue; }
+
+        if (!trimmed) { flushAll(); continue; }
+
+        // horizontal rule
+        if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmed)) { flushAll(); out.push("<hr>"); continue; }
+
+        // heading
+        let h = trimmed.match(/^(#{1,6})\s+(.*)$/);
+        if (h) {
+          flushAll();
+          let level = Math.min(h[1].length, 4);
+          out.push(`<h${level}>${renderInline(escapeHtml(h[2].replace(/\s*#+\s*$/, "")))}</h${level}>`);
+          continue;
+        }
+
+        // table: header row followed by an alignment row
+        if (trimmed.includes("|") && i + 1 < lines.length && isTableSeparator(lines[i + 1])) {
+          flushAll();
+          let body = [];
+          let j = i + 2;
+          while (j < lines.length && lines[j].trim().includes("|") && lines[j].trim()) {
+            body.push(lines[j]);
+            j++;
+          }
+          out.push(buildTable(trimmed, lines[i + 1], body));
+          i = j - 1;
+          continue;
+        }
+
+        // blockquote
+        if (/^>\s?/.test(trimmed)) {
+          flushPara(); flushList();
+          quote.push(trimmed.replace(/^>\s?/, ""));
+          continue;
+        }
+        flushQuote();
+
+        // list items
+        let indent = line.match(/^\s*/)[0].replace(/\t/g, "  ").length;
+        let ul = trimmed.match(/^[-*+]\s+(.*)$/);
+        let ol = trimmed.match(/^(\d+)[.)]\s+(.*)$/);
+
+        if (ul || ol) {
+          flushPara();
+          let ordered = !!ol;
+          let text = ul ? ul[1] : ol[2];
+          if (list && list.ordered !== ordered) flushList();
+          if (!list) list = { ordered, items: [] };
+          list.items.push({ indent, text });
+          continue;
+        }
+
+        // continuation of the previous list item
+        if (list && indent >= 2) {
+          list.items[list.items.length - 1].text += " " + trimmed;
+          continue;
+        }
+        flushList();
+
+        para.push(trimmed);
+      }
+
+      flushAll();
+      return out.join("");
     }
 
     function speakText(t) {
       if(!("speechSynthesis" in window)) return; speechSynthesis.cancel();
       let ut = new SpeechSynthesisUtterance(t.replace(/```[\s\S]*?```/g,"Code file attached.").replace(/\*\*(.*?)\*\*/g,"$1").replace(/\*(.*?)\*/g,"$1").replace(/`/g,""));
-      ut.rate = parseFloat(localStorage.getItem("trux_tts_rate") || "1.0");
+      ut.rate = parseFloat(store.getItem("trux_tts_rate") || "1.0");
       speechSynthesis.speak(ut);
     }
     
@@ -1336,8 +1886,9 @@
       });
     }
 
-    function appendMessageRow(label, text, rc, bc, imageUrl) {
-      let chatContainer = getEl("chatContainer"), r = document.createElement("div"); r.className = `row ${rc}`;
+    function appendMessageRow(label, text, rc, bc, imageUrl, animate) {
+      let chatContainer = getEl("chatContainer"), r = document.createElement("div");
+      r.className = `row ${rc}` + (animate ? " appear" : "");
       let textContent = typeof text === "string" ? text : text?.text || "";
 
       if(rc.includes("user-row")) {
@@ -1352,7 +1903,7 @@
         let bubble = r.querySelector(".bubble");
         let actions = r.querySelector(".actions");
 
-        bubble.innerHTML = renderFormattedText(textContent);
+        bubble.innerHTML = renderFormattedText(textContent, false);
 
         if(imageUrl) {
           let wrap = document.createElement("div"); wrap.className = "gen-image-wrap";
@@ -1376,53 +1927,160 @@
       chatContainer.appendChild(r); chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
-    /* ============ NEW: smooth Gemini-style line-by-line streaming reveal ============ */
-    function streamRenderLines(container, fullText, onDone) {
-      // Split the already-formatted HTML into meaningful chunks (by <br> which represents newlines,
-      // and by sentence-ending punctuation for long paragraphs), then fade each chunk in quickly.
-      let html = renderFormattedText(fullText);
-      // Split on <br> tags first, keeping structural HTML (code-file cards) intact as single chunks.
-      let parts = html.split(/(<div class="code-file">[\s\S]*?<\/div><\/div>)/g);
-      let chunks = [];
-      parts.forEach(part => {
-        if (/^<div class="code-file">/.test(part)) {
-          chunks.push(part);
-        } else if (part) {
-          part.split(/(<br>)/g).forEach(seg => { if (seg) chunks.push(seg); });
-        }
-      });
-      // Merge <br> tokens onto the previous chunk so each visual line is one fade-in unit.
-      let lines = [];
-      chunks.forEach(c => {
-        if (c === "<br>" && lines.length) lines[lines.length - 1] += c;
-        else lines.push(c);
-      });
+    /* =====================================================================
+       PROGRESSIVE STREAM RENDERER (Gemini-feel, but fast)
 
-      container.innerHTML = "";
-      let i = 0;
-      let speed = 55; // ms between lines — fast but readable
-      function next() {
-        if (i >= lines.length) { if (onDone) onDone(); return; }
-        let span = document.createElement("span");
-        span.className = "stream-line";
-        span.innerHTML = lines[i];
-        container.appendChild(span);
-        i++;
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-        setTimeout(next, speed);
-      }
-      next();
+       Previously the whole answer was buffered until the request finished and
+       only THEN revealed at 55ms per line — so a 40-line answer took an extra
+       2+ seconds after it had already arrived. Now:
+
+         • text is revealed as it arrives, paced on requestAnimationFrame
+         • the reveal rate catches up proportionally, so it never lags behind
+         • settled markdown blocks are rendered ONCE and never touched again,
+           so only the small trailing block is re-parsed each frame
+         • the trailing block carries a soft mask + caret so words materialise
+       ===================================================================== */
+
+    function isNearBottom(el, slack) {
+      return (el.scrollHeight - el.scrollTop - el.clientHeight) <= (slack || 120);
     }
 
-    function finalizeResponse(id, aid, text, prompt, voice) {
-      let b = getEl(id);
-      if(b) {
-        b.classList.remove("thinking");
-        streamRenderLines(b, text, () => {
-          chatContainer.scrollTop = chatContainer.scrollHeight;
-        });
+    /* Split into top-level blocks on blank lines, but never inside a fence. */
+    function splitStreamBlocks(text) {
+      let lines = text.split("\n");
+      let blocks = [];
+      let cur = [];
+      let inFence = false;
+
+      for (let line of lines) {
+        if (/^\s*```/.test(line)) {
+          cur.push(line);
+          if (inFence) { blocks.push(cur.join("\n")); cur = []; inFence = false; }
+          else inFence = true;
+          continue;
+        }
+        if (!inFence && !line.trim()) {
+          if (cur.length) { blocks.push(cur.join("\n")); cur = []; }
+          continue;
+        }
+        cur.push(line);
       }
-      
+      if (cur.length) blocks.push(cur.join("\n"));
+      return blocks;
+    }
+
+    function createStreamRenderer(bubble) {
+      bubble.innerHTML = '<div class="md-stream"></div>';
+      let host = bubble.firstElementChild;
+
+      let target = "";        // everything received so far
+      let shown = 0;          // how many characters are currently revealed
+      let settled = 0;        // number of blocks already committed to the DOM
+      let liveEl = null;
+      let liveHtml = "";
+      let finished = false;
+      let stopped = false;
+      let rafId = null;
+      let doneCb = null;
+
+      function commitBlock(html, isLive) {
+        let el = document.createElement("div");
+        el.className = "md-block" + (isLive ? " live" : "");
+        el.innerHTML = html;
+        host.appendChild(el);
+        return el;
+      }
+
+      function paint() {
+        let visible = target.slice(0, shown);
+        let blocks = splitStreamBlocks(visible);
+        if (!blocks.length) return;
+
+        // Commit every block except the last one — those are final.
+        while (settled < blocks.length - 1) {
+          if (liveEl) { host.removeChild(liveEl); liveEl = null; liveHtml = ""; }
+          let el = commitBlock(renderFormattedText(blocks[settled], false), false);
+          // let the fade-in play, then freeze it so it never re-animates
+          setTimeout(() => el.classList.add("settled"), 400);
+          settled++;
+        }
+
+        // Re-render only the trailing, in-progress block.
+        let tail = blocks[blocks.length - 1];
+        let html = renderFormattedText(tail, !finished);
+        if (!finished) html += '<span class="stream-caret"></span>';
+
+        if (html === liveHtml) return;
+        liveHtml = html;
+
+        if (!liveEl) liveEl = commitBlock(html, true);
+        else liveEl.innerHTML = html;
+
+        liveEl.classList.toggle("single-line", liveEl.offsetHeight < 46);
+      }
+
+      function tick() {
+        if (stopped) return;
+
+        let stick = isNearBottom(chatContainer);
+        let remaining = target.length - shown;
+
+        if (remaining > 0) {
+          // Proportional catch-up: fast on big backlogs, gentle on small ones.
+          let step = Math.max(4, Math.ceil(remaining / 4));
+          shown = Math.min(target.length, shown + step);
+
+          // Avoid stopping mid-word so text never looks chopped.
+          if (shown < target.length) {
+            let probe = shown;
+            while (probe < target.length && probe - shown < 14 && /\S/.test(target[probe])) probe++;
+            if (probe - shown < 14) shown = probe;
+          }
+          paint();
+          if (stick) chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        if (finished && shown >= target.length) {
+          // Final, authoritative render — no caret, no live mask.
+          host.innerHTML = renderFormattedText(target, false);
+          if (stick) chatContainer.scrollTop = chatContainer.scrollHeight;
+          rafId = null;
+          if (doneCb) { let cb = doneCb; doneCb = null; cb(); }
+          return;
+        }
+
+        rafId = requestAnimationFrame(tick);
+      }
+
+      function start() {
+        if (rafId === null && !stopped) rafId = requestAnimationFrame(tick);
+      }
+
+      return {
+        push(chunk) { target += chunk; start(); },
+        setText(text) { target = text; start(); },
+        finish(cb) { finished = true; doneCb = cb; start(); },
+        cancel() {
+          stopped = true;
+          if (rafId !== null) cancelAnimationFrame(rafId);
+          rafId = null;
+        },
+        get received() { return target; }
+      };
+    }
+
+    function finalizeResponse(id, aid, text, prompt, voice, streamer) {
+      let b = getEl(id);
+      if (b) {
+        b.classList.remove("thinking");
+        if (streamer) {
+          streamer.setText(text);
+          streamer.finish();
+        } else {
+          b.innerHTML = renderFormattedText(text, false);
+        }
+      }
+
       chatSessions[currentChatId].messages.push({ role: "trux", text }); 
       saveChatSessions();
       
@@ -1455,10 +2113,10 @@
       getEl("welcomeScreen").style.display = "none";
       let chatContainer = getEl("chatContainer"); chatContainer.style.display = "block";
 
-      appendMessageRow("You", basePrompt, "user-row", "user-bubble");
+      appendMessageRow("You", basePrompt, "user-row", "user-bubble", null, true);
       getEl("promptInput").value = ""; handleInputChange();
 
-      let row = document.createElement("div"); row.className = "row trux-row";
+      let row = document.createElement("div"); row.className = "row trux-row appear";
       let aid = "a_" + Date.now();
       row.innerHTML = `<div class="label">ChatTruX-AI</div><div class="bubble trux-bubble">
           <div class="gen-image-card">
@@ -1483,7 +2141,7 @@
 
         let bubble = row.querySelector(".bubble");
         let replyText = payload.reply || "Your image is ready.";
-        bubble.innerHTML = renderFormattedText(replyText);
+        bubble.innerHTML = renderFormattedText(replyText, false);
         let wrap = document.createElement("div"); wrap.className = "gen-image-wrap";
         let img = document.createElement("img"); img.src = payload.image.dataUrl; img.alt = payload.image.alt || "Generated image";
         img.onload = () => img.classList.add("loaded");
@@ -1502,7 +2160,7 @@
 
         let iu = getImageUsageData();
         iu.count = typeof payload.imageGenerationsUsed === "number" ? payload.imageGenerationsUsed : iu.count + 1;
-        localStorage.setItem("trux_image_usage", JSON.stringify(iu));
+        store.setItem("trux_image_usage", JSON.stringify(iu));
         updateAllUsageUI();
       } catch(e) {
         let bubble = row.querySelector(".bubble");
@@ -1518,8 +2176,14 @@
       const text = message.toLowerCase().trim();
       const nouns = /\b(image|img|picture|pic|photo|art|artwork|illustration|poster|logo|drawing|painting|avatar|icon|wallpaper|meme|graphic|thumbnail|banner)\b/;
       if (!nouns.test(text)) return false;
-      // Don't hijack genuine "look at/explain this image" requests (relevant mainly when a photo is attached).
-      const analysisIntent = /\b(analyz|analys|describe|explain|identify|read|extract|caption|what.?s in|what is in|ocr)\b/;
+
+      // A noun alone is not enough — "what's a good icon library for react" is a
+      // normal question. An explicit generation verb must be present too.
+      const verbs = /\b(generate|create|draw|make|design|render|paint|illustrate|imagine|sketch|produce|give me|show me)\b/;
+      if (!verbs.test(text)) return false;
+
+      // Don't hijack genuine "look at/explain this image" requests.
+      const analysisIntent = /\b(analyz|analys|describe|explain|identify|read|extract|caption|what.?s in|what is in|ocr|library|package|framework|npm|install)\b/;
       if (analysisIntent.test(text)) return false;
       return true;
     }
@@ -1559,11 +2223,11 @@
       getEl("welcomeScreen").style.display = "none";
       let chatContainer = getEl("chatContainer"); chatContainer.style.display = "block";
       
-      appendMessageRow("You", basePrompt + (attachedText ? "\n\n[Code File Attached]" : "") + (selectedImageBase64 ? "\n[Image Attached]" : ""), "user-row", "user-bubble");
+      appendMessageRow("You", basePrompt + (attachedText ? "\n\n[Code File Attached]" : "") + (selectedImageBase64 ? "\n[Image Attached]" : ""), "user-row", "user-bubble", null, true);
       promptInput.value = ""; let img = selectedImageBase64; removeImage(); pastedTextBlocks = []; renderFileChips(); handleInputChange();
 
       let id = "b_" + Date.now(), aid = "a_" + Date.now(), sid = "s_" + Date.now(), row = document.createElement("div");
-      row.className = "row trux-row";
+      row.className = "row trux-row appear";
       
       /* Pure Floating Text Metallic Shine Gemini-Style Thinking Indicator */
       row.innerHTML = `<div class="label">ChatTruX-AI</div><div class="bubble trux-bubble thinking" id="${id}"><div class="thinking-container"><span class="thinking-sparkle">✦</span><span class="status-msg" id="${sid}">Thinking…</span></div></div><div class="actions" id="${aid}"></div>`;
@@ -1579,7 +2243,7 @@
         let res = await fetch("/api/chat", {
           method: "POST", headers: { "Content-Type": "application/json", "Accept": "text/event-stream" },
           signal: activeAbortController.signal,
-          body: JSON.stringify({ message: prompt, tier: currentModel, advancedThinking: advancedThinkingEnabled, history: chatSessions[currentChatId].messages.slice(0, -1).slice(-6), image: img, systemInstruction: localStorage.getItem("trux_custom_instructions") || "", userId: auth?.currentUser?.uid || null })
+          body: JSON.stringify({ message: prompt, tier: currentModel, advancedThinking: advancedThinkingEnabled, history: chatSessions[currentChatId].messages.slice(0, -1).slice(-6), image: img, systemInstruction: store.getItem("trux_custom_instructions") || "", userId: auth?.currentUser?.uid || null })
         });
         if(!res.ok) {
           let errorPayload = await res.json().catch(() => ({}));
@@ -1589,10 +2253,28 @@
         if(!res.body) throw Error("Streaming body unavailable.");
         
         let rd = res.body.getReader(), dec = new TextDecoder(), buf = "", full = "", fin = null;
-        
+
+        // The renderer is created lazily on the very first token, so the
+        // thinking indicator stays visible until real content exists.
+        function ensureStreamer() {
+          if (activeStreamer) return activeStreamer;
+          let bubble = getEl(id);
+          if (!bubble) return null;
+          clearInterval(timer);
+          bubble.classList.remove("thinking");
+          activeStreamer = createStreamRenderer(bubble);
+          return activeStreamer;
+        }
+
         function ev(raw) {
           if(!raw) return; let j; try { j = JSON.parse(raw); } catch { return; }
-          if(j.type === "chunk") full += j.text || "";
+          if(j.type === "chunk") {
+            let piece = j.text || "";
+            if (!piece) return;
+            full += piece;
+            let s = ensureStreamer();
+            if (s) s.push(piece);
+          }
           else if(j.type === "final") fin = j.text || "";
           else if(j.type === "status") { let e = getEl(sid); if(e) e.innerText = j.status || "Processing…"; }
           else if(j.type === "error") throw Error(j.error || "Streaming error.");
@@ -1606,11 +2288,22 @@
         }
         let text = (fin !== null ? fin : full).trim(); if(!text) throw Error("No response received.");
         clearInterval(timer);
-        
-        finalizeResponse(id, aid, text, prompt, voice);
+
+        let streamer = ensureStreamer();
+        finalizeResponse(id, aid, text, prompt, voice, streamer);
+        activeStreamer = null;
       } catch(e) {
-        clearInterval(timer); let b = getEl(id);
-        if(b) { b.classList.remove("thinking"); b.innerHTML = e.name === "AbortError" ? "Generation stopped." : "Error: " + escapeHtml(e.message); }
+        clearInterval(timer);
+        activeStreamer?.cancel();
+        activeStreamer = null;
+        let b = getEl(id);
+        if(b) {
+          b.classList.remove("thinking");
+          let partial = e.name === "AbortError" && b.innerText.trim() ? b.innerHTML : "";
+          b.innerHTML = partial
+            ? partial + '<div class="stream-stopped">Generation stopped.</div>'
+            : (e.name === "AbortError" ? "Generation stopped." : "Error: " + escapeHtml(e.message));
+        }
         isGenerating = false; activeAbortController = null; getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
       }
     }
@@ -1640,7 +2333,7 @@
     addEventListener("click", e => {
       let ctx = getEl("contextMenu"); if(ctx && !ctx.contains(e.target)) ctx.style.display = "none";
       let menu = getEl("attachmentMenu"); if(menu && !menu.contains(e.target) && !getEl("attachBtn").contains(e.target)) closeAttachmentMenu();
-      let modelPicker = getEl("modelDropdown"); if(modelPicker && !modelPicker.contains(e.target) && !getEl("modelPickerBtn").contains(e.target)) modelPicker.classList.remove("open");
+      let modelPicker = getEl("modelDropdown"); if(modelPicker && !modelPicker.contains(e.target) && !getEl("modelPickerBtn").contains(e.target)) closeModelDropdown();
     });
 
     getEl("promptInput").addEventListener("keydown", e => {
@@ -1658,7 +2351,7 @@
     getEl("pinnedModal")?.addEventListener("click", e => { if(e.target === getEl("pinnedModal")) closePinnedModal(); });
     getEl("loginWallModal")?.addEventListener("click", e => { if(e.target === getEl("loginWallModal")) closeLoginWall(); });
     
-    addEventListener("keydown", e => { if(e.key === "Escape") { closeProfileModal(); closeSettingsModal(); closeSandboxModal(); closePinnedModal(); closeLoginWall(); getEl("contextMenu").style.display = "none"; closeSidebar(); getEl("modelDropdown").classList.remove("open"); } });
+    addEventListener("keydown", e => { if(e.key === "Escape") { closeProfileModal(); closeSettingsModal(); closeSandboxModal(); closePinnedModal(); closeLoginWall(); getEl("contextMenu").style.display = "none"; closeSidebar(); closeModelDropdown(); closeAttachmentMenu(); } });
 
     document.body.classList.add("home-active"); loadSettings(); renderSidebar(); updateAllUsageUI(); handleInputChange();
   </script>

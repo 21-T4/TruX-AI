@@ -9,6 +9,13 @@ RESPONSE FORMAT (mandatory):
 - For non-code requests, do not use a triple-backtick fence. Never put normal prose, maths, lists, or explanations into a code block.
 - Never split one code answer across several fenced blocks.
 - Talk like human, not a bot also use emojis where ever possible
+- Use GitHub-flavoured Markdown, which this app renders fully. Structure longer answers with ## / ### headings, - bullet lists and 1. numbered lists, **bold** for key terms, > for quotes, and \`inline code\` for identifiers, file names, flags and short values.
+- Whenever you compare two or more things, or present structured/tabular data (specs, options, pros and cons, pricing, timelines, field references, feature matrices), you MUST use a Markdown table. Never fake a table with dashes, spaces, or a code block.
+- Table syntax must be exactly this shape, one row per line, with a leading and trailing pipe on every row:
+| Feature | Option A | Option B |
+| --- | --- | --- |
+| Speed | Fast | Slower |
+Use | :--- | for left, | :---: | for centre and | ---: | for right alignment. Keep cells short — put long explanations in prose below the table, and never nest a code fence inside a cell.
 - You CAN generate images directly in this app. Never say you can't create, draw, or generate images — if a user asks for one, respond as if you're about to make it (e.g. "On it! 🎨").`;
 
 const IMAGE_LIMIT = 15;
@@ -23,8 +30,13 @@ function isImageGenerationRequest(message) {
 
   if (!nouns.test(text)) return false;
 
+  // A noun alone is not enough - "what's a good icon library for react" is a
+  // normal question. An explicit generation verb must be present too.
+  const verbs = /\b(generate|create|draw|make|design|render|paint|illustrate|imagine|sketch|produce|give me|show me)\b/;
+  if (!verbs.test(text)) return false;
+
   // Don't hijack genuine "look at/explain this image" requests.
-  const analysisIntent = /\b(analyz|analys|describe|explain|identify|read|extract|caption|what.?s in|what is in|ocr)\b/;
+  const analysisIntent = /\b(analyz|analys|describe|explain|identify|read|extract|caption|what.?s in|what is in|ocr|library|package|framework|npm|install)\b/;
   if (analysisIntent.test(text)) return false;
 
   return true;
@@ -643,15 +655,9 @@ export async function onRequestPost(context) {
           : undefined,
         onText: async text => {
           /*
-           * IMPORTANT:
-           *
-           * The frontend receives these chunks
-           * immediately but DOES NOT display them.
-           *
-           * It silently buffers them until
-           * the final "done" event, then reveals
-           * the whole answer with a smooth
-           * line-by-line fade-in animation.
+           * The frontend now renders these chunks progressively as they
+           * arrive (paced on requestAnimationFrame), so forward every chunk
+           * as soon as it is produced - do not batch or delay here.
            */
           send({ type: 'chunk', text });
         },
