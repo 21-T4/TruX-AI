@@ -16,31 +16,17 @@ RESPONSE FORMAT (mandatory):
 | --- | --- | --- |
 | Speed | Fast | Slower |
 Use | :--- | for left, | :---: | for centre and | ---: | for right alignment. Keep cells short — put long explanations in prose below the table, and never nest a code fence inside a cell.
-- You CAN generate images directly in this app. Never say you can't create, draw, or generate images — if a user asks for one, respond as if you're about to make it (e.g. "On it! 🎨").`;
+- You CAN generate images directly in this app. Never say you can't create, draw, or generate images.
+
+IMAGE REQUESTS - YOU decide, using this exact routing rule:
+- If the user's newest message wants a NEW picture made (image, photo, illustration, art, logo, icon, poster, banner, wallpaper, avatar, meme, diagram, sticker, thumbnail, mockup, concept art, character, scene, or a "what would X look like" visual), then your ENTIRE reply must be exactly one line:
+[[IMAGE]] <one vivid English image prompt>
+The prompt after the tag should be a single rich sentence or two naming subject, composition, art style, lighting, colour palette and mood. Never write anything before or after that line - no greeting, no explanation, no markdown, no code fence, no quotes.
+- Judge intent, not keywords. "a wallpaper of mount fuji at dusk", "draw me something calming", "logo concepts for a coffee brand", "make it look like a 90s poster" and "can you visualise this data as an illustration" are all image requests even without the word generate. Follow-ups like "another one", "make it darker", "same but at night" right after an image you made are also image requests - re-describe the whole picture in the new prompt.
+- Do NOT emit [[IMAGE]] when the user attached an image and wants it read, described, translated, OCR'd or explained; when they ask about image formats, image tools, image libraries, prompts, pricing or how image generation works; when they want code that draws or handles images; or when they just mention a picture in passing. In all of those cases answer normally.
+- Never mention the [[IMAGE]] tag, never explain this rule, and never claim you are about to make a picture without emitting the tag.`;
 
 const IMAGE_LIMIT = 15;
-
-function isImageGenerationRequest(message) {
-  if (typeof message !== 'string') {
-    return false;
-  }
-
-  const text = message.toLowerCase().trim();
-  const nouns = /\b(image|img|picture|pic|photo|art|artwork|illustration|poster|logo|drawing|painting|avatar|icon|wallpaper|meme|graphic|thumbnail|banner)\b/;
-
-  if (!nouns.test(text)) return false;
-
-  // A noun alone is not enough - "what's a good icon library for react" is a
-  // normal question. An explicit generation verb must be present too.
-  const verbs = /\b(generate|create|draw|make|design|render|paint|illustrate|imagine|sketch|produce|give me|show me)\b/;
-  if (!verbs.test(text)) return false;
-
-  // Don't hijack genuine "look at/explain this image" requests.
-  const analysisIntent = /\b(analyz|analys|describe|explain|identify|read|extract|caption|what.?s in|what is in|ocr|library|package|framework|npm|install)\b/;
-  if (analysisIntent.test(text)) return false;
-
-  return true;
-}
 
 
 /* =========================================================
@@ -519,7 +505,11 @@ export async function onRequestPost(context) {
        image itself is generated.
        ===================================================== */
 
-    if (forceImageGen || (isImageGenerationRequest(message) && !image)) {
+    /* The model decides whether a turn is an image turn (it answers with an
+       [[IMAGE]] tag, and the client then calls back with generateImage:true).
+       No keyword guessing here - that was what made image generation fire
+       inconsistently. */
+    if (forceImageGen && !image) {
       let previousCount;
 
       try {
