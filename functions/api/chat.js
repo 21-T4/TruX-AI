@@ -19,16 +19,15 @@ function isImageGenerationRequest(message) {
   }
 
   const text = message.toLowerCase().trim();
-  const verbs = /\b(generate|gen|create|draw|make|produce|design|paint|render|illustrate|sketch|show\s*me|give\s*me)\b/;
   const nouns = /\b(image|img|picture|pic|photo|art|artwork|illustration|poster|logo|drawing|painting|avatar|icon|wallpaper|meme|graphic|thumbnail|banner)\b/;
 
   if (!nouns.test(text)) return false;
-  if (verbs.test(text)) return true;
-  // Bare noun phrasing like "image of sukuna", "sukuna wallpaper", "logo for my brand"
-  if (/\b(of|for)\b/.test(text)) return true;
-  // Very short messages that are just a noun + subject (e.g. "cat photo")
-  if (text.split(/\s+/).length <= 6) return true;
-  return false;
+
+  // Don't hijack genuine "look at/explain this image" requests.
+  const analysisIntent = /\b(analyz|analys|describe|explain|identify|read|extract|caption|what.?s in|what is in|ocr)\b/;
+  if (analysisIntent.test(text)) return false;
+
+  return true;
 }
 
 
