@@ -1476,10 +1476,10 @@
 
     function isImageGenerationRequest(message) {
       if (typeof message !== 'string') return false;
-      return (
-        /\b(generate|create|draw|make|produce|design)\b[\s\S]{0,80}\b(image|picture|art|artwork|illustration|photo|poster|logo)\b/i.test(message) ||
-        /\b(draw|illustrate|paint|render)\b\s+(?:me\s+)?(?:a|an|the)\b/i.test(message)
-      );
+      const text = message.toLowerCase();
+      const verbs = /\b(generate|gen|create|draw|make|produce|design|paint|render|illustrate|sketch|show\s*me|give\s*me)\b/;
+      const nouns = /\b(image|img|picture|pic|photo|art|artwork|illustration|poster|logo|drawing|painting|avatar|icon|wallpaper|meme|graphic|thumbnail|banner)\b/;
+      return verbs.test(text) && nouns.test(text);
     }
 
     async function sendPrompt() {
