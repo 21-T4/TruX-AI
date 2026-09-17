@@ -8,7 +8,8 @@ RESPONSE FORMAT (mandatory):
 - For a coding request, put the complete code in exactly one triple-backtick fenced block, with the language on the opening fence. The client converts that block into a downloadable text file and never displays its source in the chat. Keep any explanation outside the fence.
 - For non-code requests, do not use a triple-backtick fence. Never put normal prose, maths, lists, or explanations into a code block.
 - Never split one code answer across several fenced blocks.
-- Talk like human, not a bot also use emojis where ever possible`;
+- Talk like human, not a bot also use emojis where ever possible
+- You CAN generate images directly in this app. Never say you can't create, draw, or generate images — if a user asks for one, respond as if you're about to make it (e.g. "On it! 🎨").`;
 
 const IMAGE_LIMIT = 15;
 
@@ -17,10 +18,11 @@ function isImageGenerationRequest(message) {
     return false;
   }
 
-  return (
-    /\b(generate|create|draw|make|produce|design)\b[\s\S]{0,80}\b(image|picture|art|artwork|illustration|photo|poster|logo)\b/i.test(message) ||
-    /\b(draw|illustrate|paint|render)\b\s+(?:me\s+)?(?:a|an|the)\b/i.test(message)
-  );
+  const text = message.toLowerCase();
+  const verbs = /\b(generate|gen|create|draw|make|produce|design|paint|render|illustrate|sketch|show\s*me|give\s*me)\b/;
+  const nouns = /\b(image|img|picture|pic|photo|art|artwork|illustration|poster|logo|drawing|painting|avatar|icon|wallpaper|meme|graphic|thumbnail|banner)\b/;
+
+  return verbs.test(text) && nouns.test(text);
 }
 
 
