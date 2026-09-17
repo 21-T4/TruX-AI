@@ -1171,6 +1171,45 @@
     }
     function removeFileChip(id) { pastedTextBlocks = pastedTextBlocks.filter(b => b.id !== id); renderFileChips(); }
 
+    function saveChatSessions() {
+      try {
+        localStorage.setItem("trux_chats", JSON.stringify(chatSessions));
+        return;
+      } catch (e) {
+        // Quota exceeded — most likely because old chats are carrying large
+        // base64 image data URLs. Strip images from every chat except the
+        // one currently open, then retry.
+        Object.keys(chatSessions).forEach(id => {
+          if (id === currentChatId) return;
+          (chatSessions[id].messages || []).forEach(m => {
+            if (m.image) m.image = null;
+          });
+        });
+        try {
+          localStorage.setItem("trux_chats", JSON.stringify(chatSessions));
+          return;
+        } catch (e2) {
+          // Still too big — drop the oldest chats one at a time until it fits.
+          let ids = Object.keys(chatSessions);
+          for (let i = 0; i < ids.length; i++) {
+            let oldestId = ids[i];
+            if (oldestId === currentChatId) continue;
+            delete chatSessions[oldestId];
+            try {
+              localStorage.setItem("trux_chats", JSON.stringify(chatSessions));
+              return;
+            } catch (e3) { /* keep pruning */ }
+          }
+          // Last resort — keep only the current chat.
+          try {
+            let keep = currentChatId && chatSessions[currentChatId] ? { [currentChatId]: chatSessions[currentChatId] } : {};
+            chatSessions = keep;
+            localStorage.setItem("trux_chats", JSON.stringify(chatSessions));
+          } catch { /* give up silently, chat still works in-memory */ }
+        }
+      }
+    }
+
     function startNewChat() {
       document.body.classList.add("home-active"); activeAbortController?.abort();
       getEl("chatContainer").innerHTML = ""; getEl("chatContainer").style.display = "none";
@@ -1385,7 +1424,7 @@
       }
       
       chatSessions[currentChatId].messages.push({ role: "trux", text }); 
-      localStorage.setItem("trux_chats", JSON.stringify(chatSessions));
+      saveChatSessions();
       
       let tokensUsed = Math.ceil((prompt.length + text.length) / 4);
       if(currentModel === "pro") recordProTokens(tokensUsed);
@@ -1411,7 +1450,7 @@
 
       if(!currentChatId) { currentChatId = "chat_" + Date.now(); chatSessions[currentChatId] = { title: basePrompt ? basePrompt.slice(0, 32) : "Image", messages: [] }; }
       chatSessions[currentChatId].messages.push({ role: "user", text: basePrompt });
-      localStorage.setItem("trux_chats", JSON.stringify(chatSessions));
+      saveChatSessions();
 
       getEl("welcomeScreen").style.display = "none";
       let chatContainer = getEl("chatContainer"); chatContainer.style.display = "block";
@@ -1452,7 +1491,7 @@
         wrap.appendChild(img); bubble.appendChild(wrap);
 
         chatSessions[currentChatId].messages.push({ role: "trux", text: replyText, image: payload.image.dataUrl });
-        localStorage.setItem("trux_chats", JSON.stringify(chatSessions));
+        saveChatSessions();
 
         let a = getEl(aid);
         if(a) {
@@ -1477,15 +1516,12 @@
     function isImageGenerationRequest(message) {
       if (typeof message !== 'string') return false;
       const text = message.toLowerCase().trim();
-      const verbs = /\b(generate|gen|create|draw|make|produce|design|paint|render|illustrate|sketch|show\s*me|give\s*me)\b/;
       const nouns = /\b(image|img|picture|pic|photo|art|artwork|illustration|poster|logo|drawing|painting|avatar|icon|wallpaper|meme|graphic|thumbnail|banner)\b/;
       if (!nouns.test(text)) return false;
-      if (verbs.test(text)) return true;
-      // Bare noun phrasing like "image of sukuna", "sukuna wallpaper", "logo for my brand"
-      if (/\b(of|for)\b/.test(text)) return true;
-      // Very short messages that are just a noun + subject (e.g. "cat photo")
-      if (text.split(/\s+/).length <= 6) return true;
-      return false;
+      // Don't hijack genuine "look at/explain this image" requests (relevant mainly when a photo is attached).
+      const analysisIntent = /\b(analyz|analys|describe|explain|identify|read|extract|caption|what.?s in|what is in|ocr)\b/;
+      if (analysisIntent.test(text)) return false;
+      return true;
     }
 
     async function sendPrompt() {
@@ -1518,7 +1554,7 @@
 
       if(!currentChatId) { currentChatId = "chat_" + Date.now(); chatSessions[currentChatId] = { title: basePrompt ? basePrompt.slice(0, 32) : "Query", messages: [] }; }
       chatSessions[currentChatId].messages.push({ role: "user", text: prompt });
-      localStorage.setItem("trux_chats", JSON.stringify(chatSessions));
+      saveChatSessions();
       
       getEl("welcomeScreen").style.display = "none";
       let chatContainer = getEl("chatContainer"); chatContainer.style.display = "block";
@@ -1597,7 +1633,7 @@
       chatSessions[id].messages.forEach(m => appendMessageRow(m.role === "user" ? "You" : "ChatTruX-AI", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image));
       renderSidebar(); if(innerWidth <= 768) closeSidebar();
     }
-    function deleteChat(id) { if(confirm("Delete this chat?")) { delete chatSessions[id]; localStorage.setItem("trux_chats", JSON.stringify(chatSessions)); if(currentChatId === id) startNewChat(); else renderSidebar(); } }
+    function deleteChat(id) { if(confirm("Delete this chat?")) { delete chatSessions[id]; saveChatSessions(); if(currentChatId === id) startNewChat(); else renderSidebar(); } }
 
     getEl("contextMenuDeleteBtn").onclick = () => { if(contextMenuTargetId) { deleteChat(contextMenuTargetId); contextMenuTargetId = null; getEl("contextMenu").style.display = "none"; } };
     
