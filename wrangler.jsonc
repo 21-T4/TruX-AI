@@ -1,0 +1,31 @@
+{
+  "name": "chattrux-ai",
+  "main": "functions/api/chat.js",
+  "compatibility_date": "2024-09-23",
+
+  // Serves everything in /public as your static frontend.
+  // The fetch handler in chat.js falls back to this binding
+  // for any request that isn't under /api/*.
+  "assets": {
+    "directory": "public",
+    "binding": "ASSETS"
+  },
+
+  // Replace <YOUR_KV_NAMESPACE_ID> with the ID of the KV namespace
+  // you use for image-generation limits (Workers & Pages -> KV in
+  // the dashboard, or `wrangler kv namespace list`).
+  "kv_namespaces": [
+    {
+      "binding": "IMAGE_LIMIT_KV",
+      "id": "<YOUR_KV_NAMESPACE_ID>"
+    }
+  ]
+
+  // GCP_PROJECT_ID, GCP_CLIENT_EMAIL and GCP_PRIVATE_KEY are secrets,
+  // not plain vars - do NOT put them in this file. Set them instead
+  // via:
+  //   wrangler secret put GCP_PROJECT_ID
+  //   wrangler secret put GCP_CLIENT_EMAIL
+  //   wrangler secret put GCP_PRIVATE_KEY
+  // or in the dashboard under Settings -> Variables and Secrets.
+}
