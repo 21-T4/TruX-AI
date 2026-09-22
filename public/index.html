@@ -1082,7 +1082,7 @@
     .scroll-down-btn.visible { opacity: 1; visibility: visible; pointer-events: auto; transform: translate(-50%, 0) scale(1); }
     .scroll-down-btn:hover { background: var(--bg-4); color: #fff; }
 
-    .chip-container { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+    .chip-container { display: flex; flex-wrap: wrap; gap: 6px; }
     .file-chip {
       display: inline-flex; align-items: center; gap: 8px;
       padding: 6px 8px 6px 11px;
@@ -1648,7 +1648,23 @@
         scroll-behavior: auto !important;
       }
     }
-  </style>
+  
+    .full-page-modal { padding: 0 !important; }
+    .full-page-modal .card {
+      width: 100vw !important; max-width: 100vw !important;
+      height: 100vh !important; max-height: 100vh !important;
+      border-radius: 0 !important; margin: 0 !important;
+      display: flex; flex-direction: column;
+    }
+    .composer-attachments {
+      display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px;
+    }
+</style>
+
+  <!-- KaTeX -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 </head>
 <body class="home-active">
   <div class="bg" id="bg"><div class="bg-orb"></div></div>
@@ -1842,25 +1858,25 @@
               </svg>
             </button>
           </div>
-          <div class="hint"><kbd>Enter</kbd> to send · <kbd>Shift</kbd> + <kbd>Enter</kbd> for a new line</div>
+          <div class="hint">AI can make mistakes. Please verify important info.</div>
         </div>
       </section>
     </main>
   </div>
 
-  <div class="modal" id="profileModal">
+  <div class="modal full-page-modal" id="profileModal">
     <div class="card">
       <button class="close" onclick="closeProfileModal()">×</button>
-      <img class="modal-avatar" id="modalAvatar">
+      <div style="max-width: 600px; margin: 0 auto; width: 100%; padding-top: 40px; padding-bottom: 80px;"><div class="mtitle" style="margin-bottom: 30px; font-size: 28px;">Your Profile</div><div style="display: flex; align-items: center; gap: 20px; margin-bottom: 40px; padding: 20px; background: var(--bg-2); border-radius: 16px; border: 1px solid var(--line-2);"><img class="modal-avatar" id="modalAvatar" style="margin: 0; width: 72px; height: 72px; border-radius: 50%;">
       <div class="center">
         <div class="mtitle" id="modalName">User Name</div>
         <div class="msub" id="modalEmail">user@email.com</div>
       </div>
-      <button class="mbtn danger" onclick="confirmSignOut()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17l5-5-5-5M20 12H9M12 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6"/></svg>Sign out</button>
+      <button class="mbtn danger" onclick="confirmSignOut()" style="width: 100%; justify-content: center; padding: 14px;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17l5-5-5-5M20 12H9M12 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6"/></svg>Sign out of TruX</button></div>
     </div>
   </div>
 
-  <div class="modal" id="settingsModal">
+  <div class="modal full-page-modal" id="settingsModal">
     <div class="card">
       <button class="close" onclick="closeSettingsModal()">×</button>
       <div class="mtitle">Settings & Feedback</div>
@@ -2976,7 +2992,7 @@
         attachSources(r, sources);
       }
 
-      chatContainer.appendChild(r); chatContainer.scrollTop = chatContainer.scrollHeight;
+      chatContainer.appendChild(r); chatContainer.scrollTop = chatContainer.scrollHeight; setTimeout(applyKaTeX, 50);
     }
 
     /* =====================================================================
@@ -3134,7 +3150,7 @@
       }
 
       let cleanSources = Array.isArray(sources) ? sources.filter(x => x && x.uri).slice(0, 6) : [];
-      chatSessions[currentChatId].messages.push(cleanSources.length ? { role: "trux", text, sources: cleanSources } : { role: "trux", text });
+      setTimeout(applyKaTeX, 50); chatSessions[currentChatId].messages.push(cleanSources.length ? { role: "trux", text, sources: cleanSources } : { role: "trux", text });
       saveChatSessions();
       if(b) attachSources(b.closest(".row"), cleanSources);
       
