@@ -1082,7 +1082,7 @@
     .scroll-down-btn.visible { opacity: 1; visibility: visible; pointer-events: auto; transform: translate(-50%, 0) scale(1); }
     .scroll-down-btn:hover { background: var(--bg-4); color: #fff; }
 
-    .chip-container { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip-container { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
     .file-chip {
       display: inline-flex; align-items: center; gap: 8px;
       padding: 6px 8px 6px 11px;
@@ -1648,23 +1648,7 @@
         scroll-behavior: auto !important;
       }
     }
-  
-    .full-page-modal { padding: 0 !important; }
-    .full-page-modal .card {
-      width: 100vw !important; max-width: 100vw !important;
-      height: 100vh !important; max-height: 100vh !important;
-      border-radius: 0 !important; margin: 0 !important;
-      display: flex; flex-direction: column;
-    }
-    .composer-attachments {
-      display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px;
-    }
-</style>
-
-  <!-- KaTeX -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  </style>
 </head>
 <body class="home-active">
   <div class="bg" id="bg"><div class="bg-orb"></div></div>
@@ -1858,7 +1842,7 @@
               </svg>
             </button>
           </div>
-          <div class="hint">AI can make mistakes. Please verify important info.</div>
+          <div class="hint"><kbd>Enter</kbd> to send · <kbd>Shift</kbd> + <kbd>Enter</kbd> for a new line</div>
         </div>
       </section>
     </main>
@@ -2992,7 +2976,7 @@
         attachSources(r, sources);
       }
 
-      chatContainer.appendChild(r); chatContainer.scrollTop = chatContainer.scrollHeight; setTimeout(applyKaTeX, 50);
+      chatContainer.appendChild(r); chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
     /* =====================================================================
@@ -3150,7 +3134,7 @@
       }
 
       let cleanSources = Array.isArray(sources) ? sources.filter(x => x && x.uri).slice(0, 6) : [];
-      setTimeout(applyKaTeX, 50); chatSessions[currentChatId].messages.push(cleanSources.length ? { role: "trux", text, sources: cleanSources } : { role: "trux", text });
+      chatSessions[currentChatId].messages.push(cleanSources.length ? { role: "trux", text, sources: cleanSources } : { role: "trux", text });
       saveChatSessions();
       if(b) attachSources(b.closest(".row"), cleanSources);
       
