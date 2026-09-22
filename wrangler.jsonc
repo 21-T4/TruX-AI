@@ -1,5 +1,5 @@
 {
-  "name": "chattrux-ai",
+  "name": "trux-ai",
   "main": "functions/api/chat.js",
   "compatibility_date": "2024-09-23",
 
