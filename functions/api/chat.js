@@ -3,22 +3,13 @@ const LOCATION = 'global';
 const BASE_PERSONA = `You are ChatTruX-AI Made by TruX-Technologies. Do not disclose your name or creator unless asked.
 
 RESPONSE FORMAT (mandatory):
-- Never write LaTeX for anything, not even for figures. Do not use $...$, \\(...\\), \\[...\\], \\frac, \\sqrt, or any LaTeX command.
-- Display math problems very cleanly, u must highlight the equation or the numerical values must seperate them from text by leaving lines displaying them is very clean and easily understandable manner.
-- Every single fraction must be rendered as a single cohesive unit using Unicode superscript digits for the numerator, the official Fraction Slash character (U+2044, ⁄), and Unicode subscript digits for the denominator. You can use triangle shape for triangle and other shapes for other figures
----Examples of how you MUST output fractions:-
-   - Instead of 1/2 or \frac{1}{2}, output: ¹⁄₂
-   - Instead of 3/4 or \frac{3}{4}, output: ³⁄₄
-   - Instead of 11/12 or \frac{11}{12}, output: ¹¹⁄₁₂
-   - Instead of 234/567, output: ²³⁴⁄₅₆₇
-
-Reference Tables for your output:
-- Numerator (Superscripts): ⁰ ¹ ² ³ ⁴ ⁵ ⁶ ⁷ ⁸ ⁹
-- Fraction Slash: ⁄
-- Denominator (Subscripts): ₀ ₁ ₂ ₃ ₄ ₅ ₆ ₇ ₈ ₉
-
-Strictly adhere to this format for ALL fractions, small or large, inside paragraphs or standalone lines
-- Write maths as readable normal text, never in a code block. Use Unicode superscripts and roots: x², x³, √x, not x^2, x^3, or sqrt(x). For simple fractions use Unicode where available (½, ¼, ¾); otherwise write "a over b" rather than a/b. The app can typeset ordinary fractions, but your answer must still be understandable as plain text.
+- For all mathematics, use standard LaTeX so the client's KaTeX renderer can typeset it.
+- Wrap inline math in single dollar signs, e.g. $x^2 + y^2 = z^2$.
+- Wrap standalone/display equations in double dollar signs on their own line, e.g.
+  $$\\frac{a}{b} = c$$
+- Use normal LaTeX commands: \\frac{}{}, \\sqrt{}, ^{} for exponents, _{} for subscripts, \\pi, \\theta, \\sum, \\int, \\cdot, \\times, etc. Do not convert these to Unicode characters yourself - the client-side KaTeX renderer handles the visual formatting.
+- Never mix the two styles (no Unicode-fraction hacks alongside LaTeX), and never nest a $$ ... $$ block inside a $ ... $ block.
+- Display math problems cleanly: separate standalone equations or numerical results onto their own line rather than burying them mid-paragraph.
 - For a coding request, put the complete code in exactly one triple-backtick fenced block, with the language on the opening fence. The client converts that block into a downloadable text file and never displays its source in the chat. Keep any explanation outside the fence.
 - For non-code requests, do not use a triple-backtick fence. Never put normal prose, maths, lists, or explanations into a code block.
 - Never split one code answer across several fenced blocks.
@@ -42,6 +33,25 @@ The prompt after the tag should be a single rich sentence or two naming subject,
 
 const IMAGE_LIMIT = 15;
 
+// CORS - adjust the origin to your actual frontend domain once you have it,
+// '*' is fine for testing but is wide open.
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+};
+
+function withCors(response) {
+  const newHeaders = new Headers(response.headers);
+  for (const [key, value] of Object.entries(CORS_HEADERS)) {
+    newHeaders.set(key, value);
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: newHeaders
+  });
+}
 
 /* =========================================================
    GOOGLE SERVICE ACCOUNT AUTHENTICATION
@@ -465,20 +475,18 @@ function createSseResponse(startStreaming) {
       'Content-Type': 'text/event-stream; charset=utf-8',
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       'Pragma': 'no-cache',
-      'X-Accel-Buffering': 'no',
-      'Access-Control-Allow-Origin': '*'
+      ...CORS_HEADERS
     }
   });
 }
 
 
 /* =========================================================
-   MAIN POST HANDLER
+   MAIN POST HANDLER (chat / image)
    ========================================================= */
 
-export async function onRequestPost(context) {
+async function handleChatRequest(request, env) {
   try {
-    const { request, env } = context;
     const body = await request.json();
 
     const {
@@ -503,7 +511,7 @@ export async function onRequestPost(context) {
       : (request.headers.get('cf-connecting-ip') || 'anonymous');
 
     if (!message && !image) {
-      return Response.json({ error: 'Message or image required.' }, { status: 400 });
+      return withCors(Response.json({ error: 'Message or image required.' }, { status: 400 }));
     }
 
     const accessToken = await createGoogleAccessToken(env);
@@ -529,7 +537,7 @@ export async function onRequestPost(context) {
       try {
         previousCount = await checkImageLimit(userIdentifier, env);
       } catch (limitError) {
-        return Response.json({ imageLimitReached: true, reply: limitError.message });
+        return withCors(Response.json({ imageLimitReached: true, reply: limitError.message }));
       }
 
       try {
@@ -544,7 +552,7 @@ export async function onRequestPost(context) {
         const used = previousCount + 1;
         const remaining = Math.max(IMAGE_LIMIT - used, 0);
 
-        return Response.json({
+        return withCors(Response.json({
           reply: 'Your image is ready.',
           image: {
             dataUrl: result.dataUrl,
@@ -554,12 +562,12 @@ export async function onRequestPost(context) {
           imageGenerated: true,
           imageGenerationsUsed: used,
           imageGenerationsRemaining: remaining
-        });
+        }));
       } catch (imageError) {
-        return Response.json(
+        return withCors(Response.json(
           { reply: `Failed to generate image: ${imageError.message}`, imageGenerated: false },
           { status: 500 }
-        );
+        ));
       }
     }
 
@@ -690,16 +698,46 @@ export async function onRequestPost(context) {
     });
   } catch (error) {
     console.error('Vertex AI Error:', error);
-
-    return Response.json({ error: error.message || 'Server error' }, { status: 500 });
+    return withCors(Response.json({ error: error.message || 'Server error' }, { status: 500 }));
   }
 }
-
 
 /* =========================================================
    SIMPLE HEALTH CHECK
    ========================================================= */
 
-export async function onRequestGet() {
-  return Response.json({ ok: true, service: 'ChatTruX-AI Vertex backend' });
+function handleHealthCheck() {
+  return withCors(Response.json({ ok: true, service: 'ChatTruX-AI Vertex backend' }));
 }
+
+/* =========================================================
+   WORKER ENTRY POINT
+   Plain Cloudflare Workers do NOT use the Pages Functions
+   onRequestGet/onRequestPost file-routing convention - that
+   only works when this file lives under a Pages project's
+   /functions directory and Pages builds routes from the file
+   path. A standalone Worker needs one exported `fetch` handler
+   that inspects the request itself, which is what caused your
+   404s after the migration.
+   ========================================================= */
+
+export default {
+  async fetch(request, env, ctx) {
+    // Handle CORS preflight for every route.
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: CORS_HEADERS });
+    }
+
+    // GET -> health check (matches the old onRequestGet).
+    if (request.method === 'GET') {
+      return handleHealthCheck();
+    }
+
+    // POST -> chat / image generation (matches the old onRequestPost).
+    if (request.method === 'POST') {
+      return handleChatRequest(request, env);
+    }
+
+    return withCors(new Response('Not found', { status: 404 }));
+  }
+};
