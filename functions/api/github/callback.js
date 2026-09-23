@@ -50,10 +50,20 @@ export async function onRequestGet({ request, env }) {
   }
 
   const profileResponse = await fetch('https://api.github.com/user', {
-    headers: { Authorization: `Bearer ${tokenPayload.access_token}`, Accept: 'application/vnd.github+json' }
+    headers: {
+      Authorization: `Bearer ${tokenPayload.access_token}`,
+      Accept: 'application/vnd.github+json',
+      'User-Agent': 'TruX-Code'
+    }
   });
-  const profile = await profileResponse.json();
-  if (!profileResponse.ok || !profile.login) return new Response('GitHub profile lookup failed.', { status: 502 });
+  const profileText = await profileResponse.text();
+  let profile;
+  try {
+    profile = JSON.parse(profileText);
+  } catch {
+    throw new Error(`GitHub profile lookup returned HTTP ${profileResponse.status}: ${profileText.slice(0, 160)}`);
+  }
+  if (!profileResponse.ok || !profile.login) return new Response(`GitHub profile lookup failed: ${profile.message || 'unknown error'}`, { status: 502 });
 
   const sessionId = randomId();
   await kv.put(`github_session_${sessionId}`, JSON.stringify({
