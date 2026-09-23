@@ -2,6 +2,7 @@
   "name": "TruX-AI",
   "short_name": "TruX-AI",
   "description": "Multi-Engine AI Assistant powered by TruX Technologies",
+  "id": "/",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
