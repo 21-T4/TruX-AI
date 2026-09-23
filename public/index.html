@@ -1982,6 +1982,29 @@
     @media (prefers-reduced-motion: no-preference) {
       .row.appear, .hero, .chip, .settings-nav button, .settings-card, .file-chip, .preview, .developer-banner { will-change: transform, opacity; }
     }
+
+    /* TruX-Code: dedicated coding workspace */
+    .coding-workspace .welcome{display:none!important}
+    .coding-workspace .chat-container{max-width:1180px}
+    .trux-code-workspace{display:none;width:min(1180px,100%);margin:0 auto;padding:34px 24px 12px;animation:rise .32s var(--ease-out)}
+    .coding-workspace .trux-code-workspace{display:block}
+    .code-hero{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;padding:24px;border:1px solid rgba(111,137,255,.28);border-radius:20px;background:linear-gradient(135deg,rgba(84,102,255,.16),rgba(21,20,31,.86) 48%,rgba(153,91,255,.10));box-shadow:0 20px 60px rgba(0,0,0,.22)}
+    .code-kicker{font:650 10px/1 var(--font-mono);letter-spacing:.16em;color:#bfc8ff;text-transform:uppercase}
+    .code-title{margin:9px 0 7px;font-size:clamp(28px,4vw,45px);letter-spacing:-.06em}.code-title span{color:#aebcff}
+    .code-copy{max-width:620px;color:var(--txt-3);font-size:13px;line-height:1.55}
+    .code-connect{display:inline-flex;align-items:center;gap:8px;flex:none;padding:11px 14px;border:1px solid rgba(139,154,255,.45);border-radius:11px;background:#707fff;color:white;font-weight:700;box-shadow:0 9px 24px rgba(85,93,255,.24)}
+    .code-connect:hover{transform:translateY(-1px);background:#8491ff}
+    .code-grid{display:grid;grid-template-columns:220px 1fr;gap:12px;margin-top:12px;min-height:290px}
+    .code-pane{border:1px solid var(--line);background:rgba(14,14,20,.74);border-radius:16px;padding:15px}
+    .code-pane-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;font:650 10px/1 var(--font-mono);letter-spacing:.12em;color:var(--txt-3);text-transform:uppercase}
+    .code-repo-empty{padding:18px 4px;color:var(--txt-4);font-size:12px;line-height:1.5}
+    .code-dot{width:7px;height:7px;border-radius:50%;background:#8a98ff;box-shadow:0 0 12px #8a98ff}
+    .code-capability{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05)}.code-capability:last-child{border:0}
+    .code-capability b{display:block;font-size:13px}.code-capability small{display:block;margin-top:3px;color:var(--txt-4);font-size:11px;line-height:1.4}
+    .coding-workspace .composer{border-color:rgba(132,145,255,.42);box-shadow:0 14px 45px rgba(72,79,220,.14)}
+    .coding-workspace .hint{font-size:11px}.coding-workspace .hint kbd{display:none}
+    @media(max-width:700px){.trux-code-workspace{padding:18px 14px 8px}.code-hero{align-items:flex-start;flex-direction:column}.code-grid{grid-template-columns:1fr;min-height:0}.code-pane{min-height:118px}}
+
   </style>
 </head>
 <body class="home-active">
@@ -2054,7 +2077,7 @@
 
         <div class="trux-mode-switch" id="truxModeSwitch" aria-label="Workspace mode">
           <button type="button" class="trux-mode-btn active" data-trux-mode="chat" onclick="setWorkspaceMode('chat')">Chat</button>
-          <button type="button" class="trux-mode-btn" data-trux-mode="coding" onclick="setWorkspaceMode('coding')">Coding</button>
+          <button type="button" class="trux-mode-btn" data-trux-mode="coding" onclick="setWorkspaceMode('coding')">TruX-Code</button>
           <button type="button" class="trux-mode-btn" data-trux-mode="deep-research" onclick="setWorkspaceMode('deep-research')">Deep Research</button>
         </div>
 
@@ -2067,6 +2090,30 @@
           </button>
         </div>
       </div>
+
+
+      <section class="trux-code-workspace" id="truxCodeWorkspace" aria-label="TruX-Code workspace">
+        <div class="code-hero">
+          <div>
+            <div class="code-kicker">Agentic coding workspace</div>
+            <h1 class="code-title">TruX-<span>Code</span></h1>
+            <p class="code-copy">Plan deeply, inspect your repository, and produce focused changes. Connect GitHub only when you want TruX-Code to read or edit a repository.</p>
+          </div>
+          <button class="code-connect" type="button" onclick="connectCodeRepository()"><span>⌘</span><span id="codeConnectLabel">Connect GitHub</span></button>
+        </div>
+        <div class="code-grid">
+          <aside class="code-pane">
+            <div class="code-pane-head"><span>Repository</span><i class="code-dot"></i></div>
+            <div class="code-repo-empty" id="codeRepoStatus">No repository connected.<br>TruX-Code will always ask before writing a change.</div>
+          </aside>
+          <div class="code-pane">
+            <div class="code-pane-head"><span>How TruX-Code works</span><span>PRO · DEEP</span></div>
+            <div class="code-capability"><span>✦</span><div><b>Deep reasoning</b><small>Gemini Pro is used for implementation decisions and careful code review.</small></div></div>
+            <div class="code-capability"><span>⌕</span><div><b>Tool-aware research</b><small>It can ground technical questions with current web sources when useful.</small></div></div>
+            <div class="code-capability"><span>↗</span><div><b>Permissioned Git edits</b><small>Repository writes require a connected account and an explicit confirmation.</small></div></div>
+          </div>
+        </div>
+      </section>
 
       <section class="welcome" id="welcomeScreen">
         <div class="hero">
@@ -2169,7 +2216,7 @@
               </svg>
             </button>
           </div>
-          <div class="hint"><kbd>Enter</kbd> to send · <kbd>Shift</kbd> + <kbd>Enter</kbd> for a new line</div>
+          <div class="hint">AI can make mistakes. Check important code and changes.</div>
         </div>
       </section>
     </main>
@@ -2526,14 +2573,22 @@
       updateAllUsageUI();
     }
 
+    function connectCodeRepository() {
+      if(!auth?.currentUser) return openLoginWall();
+      const returnTo = encodeURIComponent(location.pathname + location.search + "#code");
+      location.assign("/api/github/authorize?returnTo=" + returnTo);
+    }
+
     function setWorkspaceMode(mode) {
       workspaceMode = mode || "chat";
+      const isCoding = workspaceMode === "coding";
+      document.body.classList.toggle("coding-workspace", isCoding);
       document.querySelectorAll("[data-trux-mode]").forEach(x => x.classList.toggle("active", x.dataset.truxMode === workspaceMode));
       document.querySelectorAll("[data-trux-menu-mode]").forEach(x => x.classList.toggle("active", x.dataset.truxMenuMode === workspaceMode));
       const p = getEl("promptInput");
-      if(p) p.placeholder = ({chat:"Ask TruX…",coding:"Describe the code you want to build…","deep-research":"What should I research deeply?",image:"Describe the image you want…"})[workspaceMode] || "Ask TruX…";
+      if(p) p.placeholder = ({chat:"Ask TruX…",coding:"Let's Code","deep-research":"Research deeply…",image:"Describe the image you want…"})[workspaceMode] || "Ask TruX…";
       const think = getEl("thinkingBtn");
-      if(think) think.classList.toggle("active", advancedThinkingEnabled || workspaceMode === "deep-research");
+      if(think) think.classList.toggle("active", advancedThinkingEnabled || workspaceMode === "deep-research" || isCoding);
     }
 
     function toggleAdvancedThinking() {
@@ -3789,8 +3844,12 @@
       if(!prompt && !selectedImageBase64 && !allAttachments.length) return;
 
       const owner = isTruxDeveloper(auth?.currentUser);
-      if(!owner && currentModel === "pro" && getProUsageData().tokensUsed >= 1000000) return toast("TruX Pro monthly limit reached.", "err");
-      if(!owner && workspaceMode === "deep-research" && getProUsageData().tokensUsed >= 1000000) return toast("Deep Research monthly limit reached.", "err");
+      const month = new Date().toISOString().slice(0, 7);
+      const modeUsage = store.json("trux_mode_usage", { month, codingTokens: 0, deepResearchRuns: 0 });
+      if(modeUsage.month !== month) { modeUsage.month = month; modeUsage.codingTokens = 0; modeUsage.deepResearchRuns = 0; store.setItem("trux_mode_usage", JSON.stringify(modeUsage)); }
+      if(!owner && workspaceMode === "coding" && modeUsage.codingTokens >= 150000) return toast("TruX-Code monthly limit reached (150k tokens).", "err");
+      if(!owner && workspaceMode === "deep-research" && modeUsage.deepResearchRuns >= 1) return toast("Deep Research is limited to one run per month.", "err");
+      if(!owner && currentModel === "pro" && workspaceMode !== "coding" && getProUsageData().tokensUsed >= 1000000) return toast("TruX Pro monthly limit reached.", "err");
       if(workspaceMode === "image" && !selectedImageBase64) return generateImage(basePrompt || "Create a high-quality image", {explicitMode:true});
 
       /* No keyword gate here any more. Every turn goes to the model, and the
@@ -3828,7 +3887,7 @@
         let res = await fetch("/api/chat", {
           method: "POST", headers: { "Content-Type": "application/json", "Accept": "text/event-stream" },
           signal: activeAbortController.signal,
-          body: JSON.stringify({ message: prompt, tier: workspaceMode === "deep-research" ? "ultra" : currentModel, mode: workspaceMode, advancedThinking: advancedThinkingEnabled || workspaceMode === "deep-research", history: chatSessions[currentChatId].messages.slice(0, -1).slice(-6), image: img, attachments: allAttachments, systemInstruction: store.getItem("trux_custom_instructions") || "", userId: auth?.currentUser?.uid || null, userEmail: auth?.currentUser?.email || "" })
+          body: JSON.stringify({ message: prompt, tier: (workspaceMode === "deep-research" || workspaceMode === "coding") ? "ultra" : currentModel, mode: workspaceMode, advancedThinking: advancedThinkingEnabled || workspaceMode === "deep-research" || workspaceMode === "coding", history: chatSessions[currentChatId].messages.slice(0, -1).slice(-6), image: img, attachments: allAttachments, systemInstruction: store.getItem("trux_custom_instructions") || "", userId: auth?.currentUser?.uid || null, userEmail: auth?.currentUser?.email || "" })
         });
         if(!res.ok) {
           let errorPayload = await res.json().catch(() => ({}));
