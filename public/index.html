@@ -2010,6 +2010,36 @@
     @media(max-width:700px){.trux-code-workspace{padding:18px 14px 8px}.code-hero{align-items:flex-start;flex-direction:column}.code-grid{grid-template-columns:1fr;min-height:0}.code-pane{min-height:118px}.coding-workspace .code-grid > .code-pane:nth-child(n+2){display:none!important}.coding-workspace .trux-code-workspace{max-height:calc(100dvh - 54px - 96px);overflow-y:auto;overflow-x:hidden;flex:0 1 auto}}
 
   </style>
+
+<style id="trux-github-agent-styles">
+.github-proposal-card{
+  margin-top:14px;
+  padding:14px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:14px;
+  background:rgba(255,255,255,.045);
+}
+.github-proposal-title{font-weight:700;margin-bottom:5px}
+.github-proposal-summary{opacity:.82;font-size:.9rem;line-height:1.45}
+.github-proposal-files{display:flex;flex-direction:column;gap:7px;margin:12px 0}
+.github-proposal-file{padding:9px 10px;border-radius:10px;background:rgba(0,0,0,.16)}
+.github-proposal-file-name{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.84rem;overflow-wrap:anywhere}
+.github-proposal-file-stats{opacity:.68;font-size:.76rem;margin-top:3px}
+.github-proposal-card details{margin-top:8px}
+.github-proposal-card summary{cursor:pointer;opacity:.82;font-size:.82rem}
+.github-proposal-diff{display:grid;gap:8px;margin-top:8px}
+.github-proposal-diff pre{margin:0;padding:9px;white-space:pre-wrap;overflow:auto;max-height:180px;border-radius:9px;background:rgba(0,0,0,.22);font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace}
+.github-proposal-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.github-proposal-actions button{border:0;border-radius:10px;padding:9px 12px;font:inherit;cursor:pointer}
+.github-proposal-apply{background:currentColor;color:#090909}
+.github-proposal-cancel{background:rgba(255,255,255,.09);color:inherit}
+.github-proposal-status{margin-top:9px;font-size:.82rem;opacity:.78}
+@media(max-width:700px){
+  .github-proposal-card{padding:11px;margin-top:11px}
+  .github-proposal-actions button{flex:1 1 100%}
+}
+</style>
+
 </head>
 <body class="home-active">
   <div class="bg" id="bg"><div class="bg-orb"></div></div>
@@ -2581,9 +2611,9 @@
     async function loadCodeRepositories(){
       const status=getEl("codeRepoStatus"), select=getEl("codeRepoSelect"); if(!status)return;
       status.innerText="Importing repositories…";
-      try{const r=await fetch("/api/github/repos",{credentials:"same-origin"}),d=await r.json();if(!r.ok)throw Error(d.error||"Import failed");codeRepos=d.repositories||[];getEl("codeConnectLabel").innerText="Refresh repositories";if(select){select.hidden=false;select.innerHTML='<option value="">Select repository…</option>'+codeRepos.map(x=>'<option value="'+escapeHtml(x.full_name)+'">'+escapeHtml(x.full_name)+'</option>').join("");}status.innerText="Connected as @"+d.login+". Select a repository."}catch(e){status.innerText="Repository import failed: "+e.message}
+      try{const r=await fetch("/api/github/repos",{credentials:"same-origin"}),d=await r.json();if(!r.ok)throw Error(d.error||"Import failed");codeRepos=d.repositories||[];getEl("codeConnectLabel").innerText="Refresh repositories";if(select){select.hidden=false;select.innerHTML='<option value="">Select repository…</option>'+codeRepos.map(x=>'<option value="'+escapeHtml(x.full_name)+'">'+escapeHtml(x.full_name)+'</option>').join("");const active=store.getItem("trux_code_active_repository")||"";if(active){select.value=active;const chosen=codeRepos.find(x=>x.full_name===active);if(chosen)store.setItem("trux_code_active_branch",chosen.default_branch||"");}}status.innerText=active?("Connected as @"+d.login+" · "+active):("Connected as @"+d.login+". Select a repository.")}catch(e){status.innerText="Repository import failed: "+e.message}
     }
-    function selectCodeRepository(n){const x=codeRepos.find(x=>x.full_name===n),s=getEl("codeRepoStatus");if(x){store.setItem("trux_code_active_repository",n);s.innerHTML="<b>"+escapeHtml(n)+"</b><br>Imported · "+escapeHtml(x.default_branch||"default")+" branch"}}
+    function selectCodeRepository(n){const x=codeRepos.find(x=>x.full_name===n),s=getEl("codeRepoStatus");if(x){store.setItem("trux_code_active_repository",n);store.setItem("trux_code_active_branch",x.default_branch||"");s.innerHTML="<b>"+escapeHtml(n)+"</b><br>Imported · "+escapeHtml(x.default_branch||"default")+" branch"}}
     function connectCodeRepository(){if(codeRepos.length)return loadCodeRepositories();
       if(!auth?.currentUser) return openLoginWall();
       const returnTo = encodeURIComponent(location.pathname + location.search + "#code");
@@ -3820,6 +3850,122 @@
       }
     }
 
+
+    function githubProposalPreview(text) {
+      const clean = String(text || "");
+      if (clean.length <= 1400) return clean;
+      return clean.slice(0, 1400) + "\n…";
+    }
+
+    function renderGithubProposalCard(bubble, proposal) {
+      if(!bubble || !proposal) return;
+      bubble.querySelector(".github-proposal-card")?.remove();
+
+      const card = document.createElement("div");
+      card.className = "github-proposal-card";
+
+      const title = document.createElement("div");
+      title.className = "github-proposal-title";
+      title.textContent = "GitHub changes ready for review";
+
+      const summary = document.createElement("div");
+      summary.className = "github-proposal-summary";
+      summary.textContent = proposal.summary || "TruX-Code prepared repository changes.";
+
+      const files = document.createElement("div");
+      files.className = "github-proposal-files";
+
+      (proposal.edits || []).forEach(edit => {
+        const file = document.createElement("div");
+        file.className = "github-proposal-file";
+
+        const name = document.createElement("div");
+        name.className = "github-proposal-file-name";
+        name.textContent = edit.path || "unknown file";
+
+        const stats = document.createElement("div");
+        stats.className = "github-proposal-file-stats";
+        stats.textContent = `Replace ${Number(edit.oldChars || String(edit.oldText || "").length).toLocaleString()} chars → ${Number(edit.newChars || String(edit.newText || "").length).toLocaleString()} chars`;
+
+        const details = document.createElement("details");
+        const summaryEl = document.createElement("summary");
+        summaryEl.textContent = "Review exact change";
+        const diff = document.createElement("div");
+        diff.className = "github-proposal-diff";
+
+        const oldBox = document.createElement("pre");
+        oldBox.textContent = "OLD\n" + githubProposalPreview(edit.oldText);
+        const newBox = document.createElement("pre");
+        newBox.textContent = "NEW\n" + githubProposalPreview(edit.newText);
+
+        diff.append(oldBox, newBox);
+        details.append(summaryEl, diff);
+        file.append(name, stats, details);
+        files.appendChild(file);
+      });
+
+      const actions = document.createElement("div");
+      actions.className = "github-proposal-actions";
+
+      const apply = document.createElement("button");
+      apply.className = "github-proposal-apply";
+      apply.textContent = "Apply changes";
+      apply.onclick = () => applyGithubProposal(proposal, card, apply, cancel, status);
+
+      const cancel = document.createElement("button");
+      cancel.className = "github-proposal-cancel";
+      cancel.textContent = "Cancel";
+      cancel.onclick = () => {
+        apply.disabled = true;
+        cancel.disabled = true;
+        status.textContent = "Changes were not applied.";
+      };
+
+      const status = document.createElement("div");
+      status.className = "github-proposal-status";
+      status.textContent = `Nothing has been written yet · ${proposal.repository || "GitHub"}${proposal.branch ? " · " + proposal.branch : ""}`;
+
+      actions.append(apply, cancel);
+      card.append(title, summary, files, actions, status);
+      bubble.appendChild(card);
+      card.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+
+    async function applyGithubProposal(proposal, card, apply, cancel, status) {
+      if(!proposal || !Array.isArray(proposal.edits) || !proposal.edits.length) return;
+      apply.disabled = true;
+      cancel.disabled = true;
+      status.textContent = "Checking the repository and applying changes…";
+
+      try {
+        const r = await fetch("/api/github/apply-edits", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            repository: proposal.repository,
+            branch: proposal.branch || "",
+            edits: proposal.edits,
+            message: proposal.commitMessage || "Update files with TruX-Code",
+            confirmed: true
+          })
+        });
+        const d = await r.json().catch(() => ({}));
+        if(!r.ok) throw Error(d.error || "GitHub rejected the changes.");
+
+        const commits = (d.results || []).map(x => x.commit).filter(Boolean);
+        status.textContent = commits.length
+          ? `Applied successfully · ${commits.length} commit${commits.length === 1 ? "" : "s"} created.`
+          : "Applied successfully.";
+        card.dataset.applied = "true";
+        apply.textContent = "Applied";
+      } catch(e) {
+        status.textContent = e.message || "The changes could not be applied.";
+        apply.disabled = false;
+        cancel.disabled = false;
+      }
+    }
+
     /* Re-runs the last user turn: drops the trailing assistant message from
        history and its row from the DOM, then re-sends. */
     function regenerateLast() {
@@ -3903,7 +4049,7 @@
         let res = await fetch("/api/chat", {
           method: "POST", headers: { "Content-Type": "application/json", "Accept": "text/event-stream" },
           signal: activeAbortController.signal,
-          body: JSON.stringify({ message: prompt, tier: (workspaceMode === "deep-research" || workspaceMode === "coding") ? "ultra" : currentModel, mode: workspaceMode, advancedThinking: advancedThinkingEnabled || workspaceMode === "deep-research" || workspaceMode === "coding", history: chatSessions[currentChatId].messages.slice(0, -1).slice(-6), image: img, attachments: allAttachments, systemInstruction: store.getItem("trux_custom_instructions") || "", userId: auth?.currentUser?.uid || null, userEmail: auth?.currentUser?.email || "" })
+          body: JSON.stringify({ message: prompt, tier: (workspaceMode === "deep-research" || workspaceMode === "coding") ? "ultra" : currentModel, mode: workspaceMode, advancedThinking: advancedThinkingEnabled || workspaceMode === "deep-research" || workspaceMode === "coding", history: chatSessions[currentChatId].messages.slice(0, -1).slice(-6), image: img, attachments: allAttachments, systemInstruction: store.getItem("trux_custom_instructions") || "", userId: auth?.currentUser?.uid || null, userEmail: auth?.currentUser?.email || "", githubRepository: workspaceMode === "coding" ? (store.getItem("trux_code_active_repository") || "") : "", githubBranch: workspaceMode === "coding" ? (store.getItem("trux_code_active_branch") || "") : "" })
         });
         if(!res.ok) {
           let errorPayload = await res.json().catch(() => ({}));
@@ -3913,6 +4059,7 @@
         if(!res.body) throw Error("Streaming body unavailable.");
         
         let rd = res.body.getReader(), dec = new TextDecoder(), buf = "", full = "", fin = null;
+        let githubProposal = null;
         /* Web pages the model actually consulted when it ran a Google search. */
         let turnSources = [];
 
@@ -3963,6 +4110,7 @@
           }
           else if(j.type === "final") fin = j.text || "";
           else if(j.type === "status") { let e = getEl(sid); if(e) e.innerText = j.status || "Processing…"; }
+          else if(j.type === "github_proposal") { githubProposal = j.proposal || null; let st = getEl(sid); if (st) st.innerText = "GitHub changes ready for review…"; }
           else if(j.type === "grounding") { turnSources = (j.grounding && j.grounding.sources) || []; }
           else if(j.type === "usage" && j.kind === "pro") {
             let u = getProUsageData();
@@ -3979,7 +4127,9 @@
           let es = buf.split(/\r?\n\r?\n/); buf = es.pop() || "";
           for(let x of es) { let ls = x.split(/\r?\n/).filter(l => l.startsWith("data:")); if(ls.length) ev(ls.map(l => l.slice(5).trimStart()).join("\n")); }
         }
-        let text = (fin !== null ? fin : full).trim(); if(!text) throw Error("No response received.");
+        let text = (fin !== null ? fin : full).trim();
+        if(!text && githubProposal) text = "I prepared the GitHub changes for your review. Nothing has been written yet.";
+        if(!text) throw Error("No response received.");
         sniffRoute();
         clearInterval(timer);
 
@@ -4003,6 +4153,10 @@
 
         let streamer = ensureStreamer();
         finalizeResponse(id, aid, text, prompt, voice, streamer, turnSources);
+        if(githubProposal) {
+          const bubble = getEl(id);
+          if(bubble) renderGithubProposalCard(bubble, githubProposal);
+        }
         activeStreamer = null;
       } catch(e) {
         clearInterval(timer);
