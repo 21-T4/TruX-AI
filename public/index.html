@@ -1989,6 +1989,9 @@
     .trux-code-workspace{display:none;width:min(1180px,100%);margin:0 auto;padding:34px 24px 12px;animation:rise .32s var(--ease-out)}
     .coding-workspace .trux-code-workspace{display:block}
     .trux-code-workspace.code-workspace-dismissed{display:none!important}
+    .code-repo-select{width:100%;margin-top:10px;padding:9px;border:1px solid var(--line);border-radius:9px;background:var(--bg-3);font-size:12px}
+    .coding-workspace #chatContainer{max-width:1180px;border-top:1px solid var(--line);margin-top:12px;padding-top:16px}
+    .coding-workspace .welcome{display:none!important}
     .code-hero{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;padding:24px;border:1px solid rgba(111,137,255,.28);border-radius:20px;background:linear-gradient(135deg,rgba(84,102,255,.16),rgba(21,20,31,.86) 48%,rgba(153,91,255,.10));box-shadow:0 20px 60px rgba(0,0,0,.22)}
     .code-kicker{font:650 10px/1 var(--font-mono);letter-spacing:.16em;color:#bfc8ff;text-transform:uppercase}
     .code-title{margin:9px 0 7px;font-size:clamp(28px,4vw,45px);letter-spacing:-.06em}.code-title span{color:#aebcff}
@@ -2105,7 +2108,7 @@
         <div class="code-grid">
           <aside class="code-pane">
             <div class="code-pane-head"><span>Repository</span><i class="code-dot"></i></div>
-            <div class="code-repo-empty" id="codeRepoStatus">No repository connected.<br>TruX-Code will always ask before writing a change.</div>
+            <div class="code-repo-empty" id="codeRepoStatus">No repository connected.<br>TruX-Code will always ask before writing a change.</div><select id="codeRepoSelect" class="code-repo-select" hidden onchange="selectCodeRepository(this.value)" aria-label="Repository"></select>
           </aside>
           <div class="code-pane">
             <div class="code-pane-head"><span>How TruX-Code works</span><span>PRO · DEEP</span></div>
@@ -2578,7 +2581,7 @@
     async function loadCodeRepositories(){
       const status=getEl("codeRepoStatus"), select=getEl("codeRepoSelect"); if(!status)return;
       status.innerText="Importing repositories…";
-      try{const r=await fetch("/api/github/repos",{credentials:"same-origin"}),d=await r.json();if(!r.ok)throw Error(d.error||"Import failed");codeRepos=d.repositories||[];getEl("codeConnectLabel").innerText="Refresh repositories";select.hidden=false;select.innerHTML='<option value="">Select repository…</option>'+codeRepos.map(x=>'<option value="'+escapeHtml(x.full_name)+'">'+escapeHtml(x.full_name)+'</option>').join("");status.innerText="Connected as @"+d.login+". Select a repository."}catch(e){status.innerText="Repository import failed: "+e.message}
+      try{const r=await fetch("/api/github/repos",{credentials:"same-origin"}),d=await r.json();if(!r.ok)throw Error(d.error||"Import failed");codeRepos=d.repositories||[];getEl("codeConnectLabel").innerText="Refresh repositories";if(select){select.hidden=false;select.innerHTML='<option value="">Select repository…</option>'+codeRepos.map(x=>'<option value="'+escapeHtml(x.full_name)+'">'+escapeHtml(x.full_name)+'</option>').join("");}status.innerText="Connected as @"+d.login+". Select a repository."}catch(e){status.innerText="Repository import failed: "+e.message}
     }
     function selectCodeRepository(n){const x=codeRepos.find(x=>x.full_name===n),s=getEl("codeRepoStatus");if(x){store.setItem("trux_code_active_repository",n);s.innerHTML="<b>"+escapeHtml(n)+"</b><br>Imported · "+escapeHtml(x.default_branch||"default")+" branch"}}
     function connectCodeRepository(){if(codeRepos.length)return loadCodeRepositories();
