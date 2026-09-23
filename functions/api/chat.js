@@ -23,6 +23,8 @@ function isDeveloperEmail(email) {
 
 const IMAGE_LIMIT = 15;
 const PRO_TOKEN_LIMIT = 1000000;
+const CODING_TOKEN_LIMIT = 150000;
+const DEEP_RESEARCH_LIMIT = 1;
 
 
 /* =========================================================
@@ -199,6 +201,21 @@ async function recordProTokenUsage(userIdentifier, previousCount, delta, env) {
   return next;
 }
 
+
+async function getModeUsage(userIdentifier, mode, env) {
+  const kv = getTruxImagesKV(env);
+  const key = `mode_usage_${mode}_${userIdentifier}_${getCurrentMonthKey()}`;
+  const value = await kv.get(key);
+  return value ? parseInt(value, 10) || 0 : 0;
+}
+
+async function recordModeUsage(userIdentifier, mode, previousCount, delta, limit, env) {
+  const kv = getTruxImagesKV(env);
+  const key = `mode_usage_${mode}_${userIdentifier}_${getCurrentMonthKey()}`;
+  const next = Math.min(limit, Math.max(0, previousCount + Math.max(0, Math.ceil(delta || 0))));
+  await kv.put(key, String(next));
+  return next;
+}
 
 /* =========================================================
    STANDARD VERTEX REQUEST
@@ -516,8 +533,10 @@ export async function onRequestPost(context) {
     }
 
     const researchMode = mode === 'deep-research';
-    const effectiveTier = researchMode ? 'ultra' : (tier || 'base');
-    const proTier = effectiveTier === 'pro' || effectiveTier === 'ultra' || researchMode;
+    const codingMode = mode === 'coding';
+    // TruX-Code always uses the deep-reasoning Pro model, independently of the chat picker.
+    const effectiveTier = (researchMode || codingMode) ? 'ultra' : (tier || 'base');
+    const proTier = effectiveTier === 'pro' || effectiveTier === 'ultra' || researchMode || codingMode;
 
     const accessToken = await createGoogleAccessToken(env);
     const projectId = env.GCP_PROJECT_ID;
@@ -582,15 +601,19 @@ export async function onRequestPost(context) {
        NORMAL TEXT STREAM (works the same for every tier)
        ===================================================== */
 
-    if (proTier && !developerAccount) {
-      let usedProTokens = 0;
+    if (!developerAccount && (codingMode || researchMode || proTier)) {
       try {
-        usedProTokens = await getProTokenUsage(userIdentifier, env);
+        if (codingMode && await getModeUsage(userIdentifier, 'coding', env) >= CODING_TOKEN_LIMIT) {
+          return Response.json({ error: 'TruX-Code monthly token limit reached (150k tokens).' }, { status: 429 });
+        }
+        if (researchMode && await getModeUsage(userIdentifier, 'deep_research', env) >= DEEP_RESEARCH_LIMIT) {
+          return Response.json({ error: 'Deep Research is limited to one run per month.' }, { status: 429 });
+        }
+        if (!codingMode && !researchMode && proTier && await getProTokenUsage(userIdentifier, env) >= PRO_TOKEN_LIMIT) {
+          return Response.json({ error: 'Pro monthly token limit reached. Core remains available.' }, { status: 429 });
+        }
       } catch (usageError) {
         return Response.json({ error: usageError.message || 'Usage store unavailable.' }, { status: 500 });
-      }
-      if (usedProTokens >= PRO_TOKEN_LIMIT) {
-        return Response.json({ error: 'Pro monthly token limit reached. Core remains available.' }, { status: 429 });
       }
     }
 
@@ -605,8 +628,8 @@ export async function onRequestPost(context) {
     const effectiveAdvancedThinking = !!advancedThinking || researchMode || effectiveTier === 'ultra';
     const modeInstruction = researchMode
       ? `\n\n[DEEP RESEARCH MODE]: Use Google Search grounding for fresh, niche, or source-backed information. Synthesize multiple relevant sources and distinguish facts from inference. Use Gemini 3.1 Pro Preview.`
-      : mode === 'coding'
-        ? `\n\n[CODING MODE]: Prioritize complete, maintainable code, careful debugging, and concise implementation notes. Preserve existing APIs when possible.`
+      : codingMode
+        ? `\n\n[TRUX-CODE MODE]: Think deeply before answering. Prioritize complete, maintainable code, careful debugging, tests, and concise implementation notes. Use Google Search grounding for current framework or library details when useful. Never claim you changed a repository unless the user explicitly confirmed the proposed Git write.`
         : '';
     const thinkingInstruction = effectiveAdvancedThinking
       ? `${combinedSystemInstruction}${modeInstruction}\n\n[REASONING MODE]: Take extra time to reason carefully, check assumptions and calculations, then return only the concise final answer. Do not expose private chain-of-thought.`
@@ -733,11 +756,21 @@ export async function onRequestPost(context) {
         }
 
         if (proTier && !developerAccount) {
-          const currentUsage = await getProTokenUsage(userIdentifier, env);
           const inputChars = JSON.stringify(contents).length + String(systemInstruction || '').length;
           const estimatedTokens = Math.ceil((inputChars + firstResult.text.length) / 4);
-          const nextUsage = await recordProTokenUsage(userIdentifier, currentUsage, estimatedTokens, env);
-          send({ type: 'usage', kind: 'pro', tokensUsed: nextUsage, tokensLimit: PRO_TOKEN_LIMIT });
+          if (codingMode) {
+            const previous = await getModeUsage(userIdentifier, 'coding', env);
+            const nextUsage = await recordModeUsage(userIdentifier, 'coding', previous, estimatedTokens, CODING_TOKEN_LIMIT, env);
+            send({ type: 'usage', kind: 'coding', tokensUsed: nextUsage, tokensLimit: CODING_TOKEN_LIMIT });
+          } else if (researchMode) {
+            const previous = await getModeUsage(userIdentifier, 'deep_research', env);
+            const nextUsage = await recordModeUsage(userIdentifier, 'deep_research', previous, 1, DEEP_RESEARCH_LIMIT, env);
+            send({ type: 'usage', kind: 'deep-research', tokensUsed: nextUsage, tokensLimit: DEEP_RESEARCH_LIMIT });
+          } else {
+            const currentUsage = await getProTokenUsage(userIdentifier, env);
+            const nextUsage = await recordProTokenUsage(userIdentifier, currentUsage, estimatedTokens, env);
+            send({ type: 'usage', kind: 'pro', tokensUsed: nextUsage, tokensLimit: PRO_TOKEN_LIMIT });
+          }
         }
 
         return;
