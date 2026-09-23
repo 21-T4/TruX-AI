@@ -16,7 +16,7 @@ function getCookie(request, name) {
 }
 
 function validRepo(value) {
-  return /^[\\w.-]+\\/[\\w.-]+$/.test(String(value || ''));
+  return /^[\w.-]+\/[\w.-]+$/.test(String(value || ''));
 }
 
 function validPath(value) {
@@ -37,7 +37,7 @@ function utf8ToBase64(value) {
 }
 
 function base64ToUtf8(value) {
-  const normalized = String(value || '').replace(/\\s/g, '');
+  const normalized = String(value || '').replace(/\s/g, '');
   const binary = atob(normalized);
   const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
   return new TextDecoder().decode(bytes);
