@@ -11,6 +11,7 @@ function randomId() {
 }
 
 export async function onRequestGet({ request, env }) {
+  try {
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
@@ -57,4 +58,9 @@ export async function onRequestGet({ request, env }) {
       'Set-Cookie': `trux_github_session=${sessionId}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_TTL_SECONDS}${secure}`
     }
   });
+
+  } catch (error) {
+    console.error('GitHub OAuth callback failed', error);
+    return new Response(`GitHub connection could not be completed: ${error?.message || 'unknown error'}`, { status: 500 });
+  }
 }
