@@ -2594,7 +2594,7 @@
       workspaceMode = mode || "chat";
       const isCoding = workspaceMode === "coding";
       document.body.classList.toggle("coding-workspace", isCoding);
-      if(isCoding) { getEl("truxCodeWorkspace")?.classList.remove("code-workspace-dismissed"); loadCodeRepositories(); }
+      if(isCoding) { const codeHome = getEl("truxCodeWorkspace"); codeHome?.classList.remove("code-workspace-dismissed"); codeHome?.style.removeProperty("display"); loadCodeRepositories(); }
       document.querySelectorAll("[data-trux-mode]").forEach(x => x.classList.toggle("active", x.dataset.truxMode === workspaceMode));
       document.querySelectorAll("[data-trux-menu-mode]").forEach(x => x.classList.toggle("active", x.dataset.truxMenuMode === workspaceMode));
       const p = getEl("promptInput");
@@ -3745,7 +3745,7 @@
       opts = opts || {};
       let imagePrompt = opts.imagePrompt || basePrompt;
       document.body.classList.remove("home-active");
-      if(workspaceMode === "coding") getEl("truxCodeWorkspace")?.classList.add("code-workspace-dismissed");
+      if(workspaceMode === "coding") { const codeHome = getEl("truxCodeWorkspace"); codeHome?.classList.add("code-workspace-dismissed"); codeHome?.style.setProperty("display", "none", "important"); }
       isGenerating = true; isScrolledUp = false;
       getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>'; getEl("actionBtn").classList.add("stop"); getEl("actionBtn").classList.remove("ready");
 
