@@ -21,7 +21,7 @@ export async function onRequestGet({ request, env }) {
 
   const url = new URL(request.url);
   const state = randomId();
-  const redirectUri = env.GITHUB_REDIRECT_URI || new URL('/api/github/callback', url.origin).toString();
+  const redirectUri = env.GITHUB_REDIRECT_URI || 'https://www.chat.trux.website/api/github/callback';
   const kv = getKv(env);
 
   await kv.put(`github_oauth_state_${state}`, JSON.stringify({
