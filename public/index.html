@@ -2574,7 +2574,14 @@
       updateAllUsageUI();
     }
 
-    function connectCodeRepository() {
+    let codeRepos=[];
+    async function loadCodeRepositories(){
+      const status=getEl("codeRepoStatus"), select=getEl("codeRepoSelect"); if(!status)return;
+      status.innerText="Importing repositories…";
+      try{const r=await fetch("/api/github/repos",{credentials:"same-origin"}),d=await r.json();if(!r.ok)throw Error(d.error||"Import failed");codeRepos=d.repositories||[];getEl("codeConnectLabel").innerText="Refresh repositories";select.hidden=false;select.innerHTML='<option value="">Select repository…</option>'+codeRepos.map(x=>'<option value="'+escapeHtml(x.full_name)+'">'+escapeHtml(x.full_name)+'</option>').join("");status.innerText="Connected as @"+d.login+". Select a repository."}catch(e){status.innerText="Repository import failed: "+e.message}
+    }
+    function selectCodeRepository(n){const x=codeRepos.find(x=>x.full_name===n),s=getEl("codeRepoStatus");if(x){store.setItem("trux_code_active_repository",n);s.innerHTML="<b>"+escapeHtml(n)+"</b><br>Imported · "+escapeHtml(x.default_branch||"default")+" branch"}}
+    function connectCodeRepository(){if(codeRepos.length)return loadCodeRepositories();
       if(!auth?.currentUser) return openLoginWall();
       const returnTo = encodeURIComponent(location.pathname + location.search + "#code");
       location.assign("/api/github/authorize?returnTo=" + returnTo);
@@ -2584,7 +2591,7 @@
       workspaceMode = mode || "chat";
       const isCoding = workspaceMode === "coding";
       document.body.classList.toggle("coding-workspace", isCoding);
-      if(isCoding) getEl("truxCodeWorkspace")?.classList.remove("code-workspace-dismissed");
+      if(isCoding) { getEl("truxCodeWorkspace")?.classList.remove("code-workspace-dismissed"); loadCodeRepositories(); }
       document.querySelectorAll("[data-trux-mode]").forEach(x => x.classList.toggle("active", x.dataset.truxMode === workspaceMode));
       document.querySelectorAll("[data-trux-menu-mode]").forEach(x => x.classList.toggle("active", x.dataset.truxMenuMode === workspaceMode));
       const p = getEl("promptInput");
@@ -4102,7 +4109,7 @@
     
     addEventListener("keydown", e => { if(e.key === "Escape") { closeProfileModal(); closeSettingsModal(); closeSandboxModal(); closePinnedModal(); closeLoginWall(); getEl("contextMenu").style.display = "none"; closeSidebar(); closeModelDropdown(); closeAttachmentMenu(); } });
 
-    document.body.classList.add("home-active"); loadSettings(); renderSidebar(); updateAllUsageUI(); handleInputChange(); setWorkspaceMode("chat");
+    document.body.classList.add("home-active"); loadSettings(); renderSidebar(); updateAllUsageUI(); handleInputChange(); setWorkspaceMode(location.hash === "#code" ? "coding" : "chat");
   </script>
 </body>
 </html>
