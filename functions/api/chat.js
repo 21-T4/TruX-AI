@@ -245,7 +245,7 @@ async function getGithubSession(request, env) {
 }
 
 function validGithubRepo(value) {
-  return /^[\\w.-]+\\/[\\w.-]+$/.test(String(value || ''));
+  return /^[\w.-]+\/[\w.-]+$/.test(String(value || ''));
 }
 
 function validGithubPath(value) {
@@ -256,7 +256,7 @@ function validGithubPath(value) {
 }
 
 function decodeGithubBase64(value) {
-  const binary = atob(String(value || '').replace(/\\s/g, ''));
+  const binary = atob(String(value || '').replace(/\s/g, ''));
   const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
   return new TextDecoder().decode(bytes);
 }
