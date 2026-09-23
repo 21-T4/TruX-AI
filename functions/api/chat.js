@@ -217,6 +217,240 @@ async function recordModeUsage(userIdentifier, mode, previousCount, delta, limit
   return next;
 }
 
+
+/* =========================================================
+   GITHUB WORKSPACE TOOLS — TruX-Code can inspect a connected
+   repository, but writes are always returned as a proposal.
+   The browser must explicitly confirm before /apply-edits runs.
+   ========================================================= */
+
+function getGithubKv(env) {
+  const kv = env.TRUX_GITHUB_KV || env['TruX-Images'] || env.TruX_Images || env.IMAGE_LIMIT_KV;
+  if (!kv) throw new Error('TRUX_GITHUB_KV binding is missing.');
+  return kv;
+}
+
+function getRequestCookie(request, name) {
+  return (request.headers.get('Cookie') || '')
+    .split(';')
+    .map(v => v.trim())
+    .find(v => v.startsWith(name + '='))
+    ?.slice(name.length + 1) || '';
+}
+
+async function getGithubSession(request, env) {
+  const sessionId = getRequestCookie(request, 'trux_github_session');
+  if (!sessionId) return null;
+  return await getGithubKv(env).get('github_session_' + sessionId, 'json');
+}
+
+function validGithubRepo(value) {
+  return /^[\\w.-]+\\/[\\w.-]+$/.test(String(value || ''));
+}
+
+function validGithubPath(value) {
+  return typeof value === 'string'
+    && value.length > 0
+    && value.length < 500
+    && !value.split('/').includes('..');
+}
+
+function decodeGithubBase64(value) {
+  const binary = atob(String(value || '').replace(/\\s/g, ''));
+  const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+async function githubApi(session, url, options = {}) {
+  return fetch(url, {
+    ...options,
+    headers: {
+      Authorization: 'Bearer ' + session.token,
+      Accept: 'application/vnd.github+json',
+      'User-Agent': 'TruX-Code',
+      ...(options.headers || {})
+    }
+  });
+}
+
+async function githubSearchCode(session, repository, query) {
+  const cleanQuery = String(query || '').trim();
+  if (!cleanQuery) return { results: [] };
+
+  const q = cleanQuery.includes('repo:') ? cleanQuery : cleanQuery + ' repo:' + repository;
+  const response = await githubApi(
+    session,
+    'https://api.github.com/search/code?q=' + encodeURIComponent(q) + '&per_page=8',
+    { headers: { Accept: 'application/vnd.github.text-match+json, application/vnd.github+json' } }
+  );
+  const payload = await response.json();
+
+  if (!response.ok) throw new Error(payload?.message || 'GitHub code search failed.');
+
+  return {
+    results: (payload.items || []).slice(0, 8).map(item => ({
+      path: item.path,
+      name: item.name,
+      score: item.score,
+      matches: Array.isArray(item.text_matches)
+        ? item.text_matches.slice(0, 3).map(m => String(m.fragment || '').slice(0, 800))
+        : []
+    }))
+  };
+}
+
+async function githubReadFile(session, repository, path, branch, startLine, endLine) {
+  if (!validGithubPath(path)) throw new Error('Invalid repository path.');
+
+  const refQuery = branch ? '?ref=' + encodeURIComponent(branch) : '';
+  const response = await githubApi(
+    session,
+    'https://api.github.com/repos/' + repository + '/contents/' + encodeURI(path) + refQuery
+  );
+  const payload = await response.json();
+
+  if (!response.ok) throw new Error(payload?.message || 'GitHub file read failed.');
+  if (Array.isArray(payload) || !payload?.content) throw new Error('That path is not a text file.');
+
+  const fullContent = decodeGithubBase64(payload.content);
+  const lines = fullContent.split('\n');
+  const from = Number.isInteger(startLine) && startLine > 0 ? startLine : 1;
+  const to = Number.isInteger(endLine) && endLine >= from ? Math.min(endLine, lines.length) : lines.length;
+  const selected = lines.slice(from - 1, to).join('\n');
+
+  return {
+    path,
+    sha: payload.sha || null,
+    branch: branch || null,
+    totalLines: lines.length,
+    startLine: from,
+    endLine: to,
+    content: selected.slice(0, 220000)
+  };
+}
+
+async function validateGithubProposal(session, repository, edits, branch) {
+  if (!Array.isArray(edits) || !edits.length || edits.length > 8) {
+    throw new Error('A GitHub proposal must contain between 1 and 8 file edits.');
+  }
+
+  const normalized = [];
+
+  for (const edit of edits) {
+    const path = edit?.path;
+    const oldText = typeof edit?.oldText === 'string' ? edit.oldText : '';
+    const newText = typeof edit?.newText === 'string' ? edit.newText : '';
+
+    if (!validGithubPath(path) || !oldText || oldText.length > 100000 || newText.length > 100000) {
+      throw new Error('Invalid GitHub edit for ' + String(path || 'unknown') + '.');
+    }
+
+    const current = await githubReadFile(session, repository, path, branch);
+    const first = current.content.indexOf(oldText);
+    const second = first < 0 ? -1 : current.content.indexOf(oldText, first + oldText.length);
+
+    if (first < 0 || second >= 0) {
+      throw new Error(
+        'The exact edit target for ' + path + ' was not found exactly once. Read the current file again before proposing changes.'
+      );
+    }
+
+    normalized.push({
+      path,
+      oldText,
+      newText,
+      oldChars: oldText.length,
+      newChars: newText.length
+    });
+  }
+
+  return normalized;
+}
+
+function getGithubToolDeclarations() {
+  return [
+    {
+      name: 'github_search_code',
+      description: 'Search the active connected GitHub repository for code, filenames, symbols, or configuration relevant to the user request. Use this before guessing which file to change.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'A concise code search query such as a function name, UI label, route, CSS class, or error text.' }
+        },
+        required: ['query']
+      }
+    },
+    {
+      name: 'github_read_file',
+      description: 'Read the current contents of a text file in the active connected GitHub repository. Use this before proposing an edit. You may request a line range for large files.',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'Repository-relative file path.' },
+          start_line: { type: 'integer', description: 'Optional 1-based starting line.' },
+          end_line: { type: 'integer', description: 'Optional 1-based ending line.' }
+        },
+        required: ['path']
+      }
+    },
+    {
+      name: 'github_propose_changes',
+      description: 'Prepare exact text replacements for the user to review. This function NEVER writes to GitHub. Every oldText must match the current file exactly once. After this call the app will show an Apply Changes confirmation button.',
+      parameters: {
+        type: 'object',
+        properties: {
+          summary: { type: 'string', description: 'Brief human-readable summary of what will change.' },
+          commit_message: { type: 'string', description: 'Suggested Git commit message.' },
+          edits: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                path: { type: 'string', description: 'Repository-relative path.' },
+                oldText: { type: 'string', description: 'Exact current text to replace, copied from the file you just read.' },
+                newText: { type: 'string', description: 'Replacement text.' }
+              },
+              required: ['path', 'oldText', 'newText']
+            }
+          }
+        },
+        required: ['summary', 'commit_message', 'edits']
+      }
+    }
+  ];
+}
+
+async function executeGithubToolCall(session, repository, branch, call) {
+  const name = call?.name;
+  const args = call?.args || {};
+
+  if (name === 'github_search_code') return await githubSearchCode(session, repository, args.query);
+
+  if (name === 'github_read_file') {
+    return await githubReadFile(
+      session,
+      repository,
+      args.path,
+      branch,
+      Number.isInteger(args.start_line) ? args.start_line : null,
+      Number.isInteger(args.end_line) ? args.end_line : null
+    );
+  }
+
+  if (name === 'github_propose_changes') {
+    const edits = await validateGithubProposal(session, repository, args.edits, branch);
+    return {
+      proposalReady: true,
+      summary: String(args.summary || 'Proposed repository changes.').slice(0, 1000),
+      commitMessage: String(args.commit_message || 'Update files with TruX-Code').slice(0, 250),
+      edits
+    };
+  }
+
+  throw new Error('Unknown GitHub tool: ' + String(name || ''));
+}
+
+
 /* =========================================================
    STANDARD VERTEX REQUEST
    ========================================================= */
@@ -293,7 +527,8 @@ async function streamVertexGemini({ model, contents, systemInstruction, tools, a
   const decoder = new TextDecoder();
 
   let buffer = '';
-  let functionCall = null;
+  let functionCalls = [];
+  let lastCandidateContent = null;
   let groundingMetadata = null;
   let accumulatedText = '';
 
@@ -304,6 +539,7 @@ async function streamVertexGemini({ model, contents, systemInstruction, tools, a
     try { parsed = JSON.parse(rawData); } catch { return; }
 
     const candidate = parsed?.candidates?.[0];
+    if (candidate?.content) lastCandidateContent = candidate.content;
     const parts = candidate?.content?.parts || [];
 
     if (candidate?.groundingMetadata) groundingMetadata = candidate.groundingMetadata;
@@ -314,7 +550,7 @@ async function streamVertexGemini({ model, contents, systemInstruction, tools, a
         if (onText) await onText(part.text);
       }
 
-      if (part.functionCall) functionCall = part.functionCall;
+      if (part.functionCall) functionCalls.push(part.functionCall);
     }
   }
 
@@ -360,7 +596,7 @@ async function streamVertexGemini({ model, contents, systemInstruction, tools, a
     if (trailingData.length) await processSseData(trailingData.join('\n'));
   }
 
-  return { text: accumulatedText, functionCall, groundingMetadata };
+  return { text: accumulatedText, functionCall: functionCalls[0] || null, functionCalls, functionCallContent: lastCandidateContent, groundingMetadata };
 }
 
 
@@ -514,7 +750,9 @@ export async function onRequestPost(context) {
       userEmail,
       developer,
       advancedThinking,
-      generateImage: forceImageGen
+      generateImage: forceImageGen,
+      githubRepository,
+      githubBranch
     } = body;
 
     /*
@@ -629,7 +867,7 @@ export async function onRequestPost(context) {
     const modeInstruction = researchMode
       ? `\n\n[DEEP RESEARCH MODE]: Use Google Search grounding for fresh, niche, or source-backed information. Synthesize multiple relevant sources and distinguish facts from inference. Use Gemini 3.1 Pro Preview.`
       : codingMode
-        ? `\n\n[TRUX-CODE MODE]: Think deeply before answering. Prioritize complete, maintainable code, careful debugging, tests, and concise implementation notes. Use Google Search grounding for current framework or library details when useful. Never claim you changed a repository unless the user explicitly confirmed the proposed Git write.`
+        ? `\n\n[TRUX-CODE MODE]: Think deeply before answering. Prioritize complete, maintainable code, careful debugging, tests, and concise implementation notes. Never claim you changed a repository.\n\n[CONNECTED GITHUB WORKSPACE]: The active repository is ${String(githubRepository || 'none')}; branch ${String(githubBranch || 'default')}. When GitHub tools are available, inspect the repository with github_search_code and github_read_file before changing anything. Then use github_propose_changes with exact oldText/newText replacements. github_propose_changes NEVER writes to GitHub; it creates a user-reviewable proposal. Never say that a change was applied until the user explicitly confirms it in the UI.`
         : '';
     const thinkingInstruction = effectiveAdvancedThinking
       ? `${combinedSystemInstruction}${modeInstruction}\n\n[REASONING MODE]: Take extra time to reason carefully, check assumptions and calculations, then return only the concise final answer. Do not expose private chain-of-thought.`
@@ -709,17 +947,27 @@ export async function onRequestPost(context) {
          First streamed generation
          ------------------------------------------------- */
 
-      const firstResult = await streamVertexGemini({
-        model: targetModel,
-        contents,
-        systemInstruction: thinkingInstruction,
-        tools: [
-          {
-            // Google Search grounding is model-directed. Gemini only searches
-            // when live web information would improve the answer.
-            googleSearch: {}
-          }
-        ],
+      const githubSession = codingMode && validGithubRepo(githubRepository)
+        ? await getGithubSession(request, env)
+        : null;
+
+      if (codingMode && validGithubRepo(githubRepository) && !githubSession?.token) {
+        send({ type: 'status', status: 'GitHub is selected but not connected. Reconnect GitHub to inspect the repository.' });
+      }
+
+      const modelTools = githubSession && codingMode && validGithubRepo(githubRepository)
+        ? [{ functionDeclarations: getGithubToolDeclarations() }]
+        : [{ googleSearch: {} }];
+
+      let agentContents = contents.slice();
+      let finalResult = null;
+
+      for (let agentRound = 0; agentRound < 7; agentRound++) {
+        const result = await streamVertexGemini({
+          model: targetModel,
+          contents: agentContents,
+          systemInstruction: thinkingInstruction,
+          tools: modelTools,
         accessToken,
         projectId,
         generationConfig: effectiveAdvancedThinking
@@ -742,22 +990,63 @@ export async function onRequestPost(context) {
         onStatus: async status => {
           send({ type: 'status', status });
         }
-      });
+        });
 
-      /* -------------------------------------------------
-         No tool call → finished naturally
-         ------------------------------------------------- */
+        if (result.functionCalls?.length) {
+          if (!result.functionCallContent) throw new Error('GitHub tool call returned without model content.');
 
-      if (!firstResult.functionCall) {
-        const grounding = getGroundingData(firstResult.groundingMetadata);
+          agentContents.push(result.functionCallContent);
+          const responseParts = [];
 
+          for (const call of result.functionCalls) {
+            try {
+              const callResult = githubSession && codingMode && validGithubRepo(githubRepository)
+                ? await executeGithubToolCall(githubSession, githubRepository, githubBranch, call)
+                : { error: 'GitHub workspace is not connected.' };
+
+              if (call?.name === 'github_propose_changes' && callResult?.proposalReady) {
+                send({
+                  type: 'github_proposal',
+                  proposal: {
+                    repository: githubRepository,
+                    branch: githubBranch || null,
+                    summary: callResult.summary,
+                    commitMessage: callResult.commitMessage,
+                    edits: callResult.edits
+                  }
+                });
+              }
+
+              responseParts.push({
+                functionResponse: {
+                  name: call.name,
+                  response: { output: callResult }
+                }
+              });
+            } catch (toolError) {
+              responseParts.push({
+                functionResponse: {
+                  name: call?.name || 'unknown',
+                  response: { error: toolError?.message || 'GitHub tool failed.' }
+                }
+              });
+            }
+          }
+
+          agentContents.push({ role: 'user', parts: responseParts });
+          continue;
+        }
+
+        finalResult = result;
+
+        const grounding = getGroundingData(finalResult.groundingMetadata);
         if (grounding.sources.length || grounding.searchSuggestionHtml) {
           send({ type: 'grounding', grounding });
         }
 
         if (proTier && !developerAccount) {
-          const inputChars = JSON.stringify(contents).length + String(systemInstruction || '').length;
-          const estimatedTokens = Math.ceil((inputChars + firstResult.text.length) / 4);
+          const inputChars = JSON.stringify(agentContents).length + String(systemInstruction || '').length;
+          const estimatedTokens = Math.ceil((inputChars + finalResult.text.length) / 4);
           if (codingMode) {
             const previous = await getModeUsage(userIdentifier, 'coding', env);
             const nextUsage = await recordModeUsage(userIdentifier, 'coding', previous, estimatedTokens, CODING_TOKEN_LIMIT, env);
@@ -776,9 +1065,7 @@ export async function onRequestPost(context) {
         return;
       }
 
-      // Google Search requests do not permit normal function tools in the
-      // same call. Image prompts are routed above before text generation.
-      return;
+      throw new Error('GitHub agent reached its tool-call limit without producing a final answer.');
     });
   } catch (error) {
     console.error('Vertex AI Error:', error);
