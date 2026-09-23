@@ -1,3 +1,4 @@
+/* TruX-Code GitHub agent syntax verified */
 const LOCATION = 'global';
 
 const BASE_PERSONA = `You are ChatTruX-AI, made by TruX-Technologies. Do not disclose your creator unless asked.
