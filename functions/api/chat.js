@@ -1,6 +1,6 @@
 const LOCATION = 'global';
 
-const BASE_PERSONA = `You are ChatTruX-AI, made by TruX-Technologies. Do not disclose your creator unless asked .
+const BASE_PERSONA = `You are ChatTruX-AI, made by TruX-Technologies. Do not disclose your creator unless asked.
 
 RESPONSE FORMAT:
 - Use clean GitHub-flavoured Markdown for normal responses.
