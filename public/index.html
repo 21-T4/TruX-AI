@@ -2623,7 +2623,7 @@
           getEl("userAvatar").src = u.photoURL || "https://ui-avatars.com/api/?name=User&background=111111&color=fff";
           closeLoginWall();
           updateNotificationButton();
-          if(Notification.permission === "granted") syncTruxNotificationsSilently();
+          if("Notification" in window && Notification.permission === "granted") syncTruxNotificationsSilently();
         } else {
           getEl("userName").innerText = "Guest User";
           getEl("userEmail").innerText = "Tap to sign in";
@@ -4279,6 +4279,83 @@
       sendPrompt();
     }
 
+    async function runCodeBackgroundJob({ row, id, aid, sid, tsid, prompt, voice, requestBody, timer }) {
+      let start;
+      try {
+        start = await fetch("/api/background/start", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...requestBody, mode: "coding", backgroundJobId: "" })
+        });
+      } catch {
+        return false;
+      }
+
+      const startData = await start.json().catch(() => ({}));
+      if(!start.ok) {
+        if(start.status === 404 || start.status === 413 || start.status === 503 || startData.backgroundUnavailable) return false;
+        throw Error(startData.error || "Background coding could not be started.");
+      }
+
+      const jobId = startData.jobId;
+      if(!jobId) return false;
+
+      clearInterval(timer);
+      getEl(sid).innerText = "TruX-Code is running in the background…";
+      activeAbortController = new AbortController();
+
+      let seenEvents = 0;
+      const startedAt = Date.now();
+      const maxRuntime = 15 * 60 * 1000;
+
+      while(Date.now() - startedAt < maxRuntime) {
+        const response = await fetch("/api/background/status?jobId=" + encodeURIComponent(jobId), {
+          cache: "no-store",
+          credentials: "same-origin",
+          signal: activeAbortController.signal
+        });
+
+        if(response.status === 404) {
+          await new Promise(r => setTimeout(r, 900));
+          continue;
+        }
+
+        const state = await response.json().catch(() => ({}));
+        if(!response.ok) throw Error(state.error || "Background coding status failed.");
+
+        const events = Array.isArray(state.events) ? state.events : [];
+        while(seenEvents < events.length) {
+          const event = events[seenEvents++];
+          appendToolStatusLine(tsid, event?.tool || "TruX-Code", event?.status || "");
+        }
+
+        if(state.status === "error") {
+          throw Error(state.error || "The background coding request failed.");
+        }
+
+        if(state.status === "complete") {
+          const finalText = String(state.final || "").trim();
+          if(!finalText) throw Error("The background coding request finished without a final response.");
+
+          stopToolStatusTyping();
+          const streamer = createStreamRenderer(getEl(id));
+          finalizeResponse(id, aid, finalText, prompt, voice, streamer, []);
+          if(state.proposal) {
+            const bubble = getEl(id);
+            if(bubble) renderGithubProposalCard(bubble, state.proposal);
+          }
+          activeStreamer = null;
+          activeAbortController = null;
+          return true;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 850));
+      }
+
+      throw Error("TruX-Code background job exceeded its maximum runtime.");
+    }
+
     async function sendPrompt() {
       // Sign-in wall appears only when the person actually tries to send a message.
       if(!auth?.currentUser) {
@@ -4337,12 +4414,35 @@
       let phrases = getThinkingPhrases(basePrompt), pi = 0;
       let timer = setInterval(() => { let e = getEl(sid); if(e) e.innerText = phrases[pi = (pi + 1) % phrases.length]; }, 2800);
 
+      const requestBody = {
+        message: prompt,
+        tier: (workspaceMode === "deep-research" || workspaceMode === "coding") ? "ultra" : currentModel,
+        mode: workspaceMode,
+        advancedThinking: advancedThinkingEnabled || workspaceMode === "deep-research" || workspaceMode === "coding",
+        history: chatSessions[currentChatId].messages.slice(0, -1).slice(-6),
+        image: img,
+        attachments: allAttachments,
+        systemInstruction: store.getItem("trux_custom_instructions") || "",
+        userId: auth?.currentUser?.uid || null,
+        userEmail: auth?.currentUser?.email || "",
+        githubRepository: workspaceMode === "coding" ? (store.getItem("trux_code_active_repository") || "") : "",
+        githubBranch: workspaceMode === "coding" ? (store.getItem("trux_code_active_branch") || "") : "",
+        notifyOnComplete: true
+      };
+
+      if(workspaceMode === "coding") {
+        const handledInBackground = await runCodeBackgroundJob({
+          row, id, aid, sid, tsid, prompt, voice, requestBody, timer
+        });
+        if(handledInBackground) return;
+      }
+
       activeAbortController = new AbortController();
       try {
         let res = await fetch("/api/chat", {
           method: "POST", headers: { "Content-Type": "application/json", "Accept": "text/event-stream" },
           signal: activeAbortController.signal,
-          body: JSON.stringify({ message: prompt, tier: (workspaceMode === "deep-research" || workspaceMode === "coding") ? "ultra" : currentModel, mode: workspaceMode, advancedThinking: advancedThinkingEnabled || workspaceMode === "deep-research" || workspaceMode === "coding", history: chatSessions[currentChatId].messages.slice(0, -1).slice(-6), image: img, attachments: allAttachments, systemInstruction: store.getItem("trux_custom_instructions") || "", userId: auth?.currentUser?.uid || null, userEmail: auth?.currentUser?.email || "", githubRepository: workspaceMode === "coding" ? (store.getItem("trux_code_active_repository") || "") : "", githubBranch: workspaceMode === "coding" ? (store.getItem("trux_code_active_branch") || "") : "" })
+          body: JSON.stringify(requestBody)
         });
         if(!res.ok) {
           let errorPayload = await res.json().catch(() => ({}));
@@ -4405,6 +4505,7 @@
           else if(j.type === "final") fin = j.text || "";
           else if(j.type === "status") { let e = getEl(sid); if(e) e.innerText = j.status || "Processing…"; }
           else if(j.type === "tool_status") { appendToolStatusLine(tsid, j.tool, j.status); }
+          else if(j.type === "heartbeat") { /* keep-alive event; intentionally no UI work */ }
           else if(j.type === "github_proposal") { githubProposal = j.proposal || null; hideToolStatus(tsid); let st = getEl(sid); if (st) st.innerText = "GitHub changes ready for review…"; }
           else if(j.type === "grounding") { turnSources = (j.grounding && j.grounding.sources) || []; }
           else if(j.type === "usage" && j.kind === "pro") {
