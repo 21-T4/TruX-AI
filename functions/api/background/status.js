@@ -14,7 +14,9 @@ export async function onRequestGet({ request, env }) {
     const job = await getKv(env).get('trux_background_job_' + id, 'json');
     if (!job) return Response.json({ error: 'Background job not found.' }, { status: 404 });
 
-    return Response.json(job, {
+    const { jobSecret, ...safeJob } = job;
+
+    return Response.json(safeJob, {
       headers: { 'Cache-Control': 'no-store' }
     });
   } catch (error) {
