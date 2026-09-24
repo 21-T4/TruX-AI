@@ -904,6 +904,43 @@
       -webkit-background-clip: text; background-clip: text; color: transparent;
       animation: metallicShine 2.1s linear infinite;
     }
+    .thinking-container {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+    }
+    .thinking-tool {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      width: min(100%, 520px);
+      padding-left: 1px;
+    }
+    .thinking-tool-name {
+      display: inline-flex;
+      align-items: center;
+      min-height: 19px;
+      padding: 3px 7px;
+      border: 1px solid var(--line-2);
+      border-radius: 7px;
+      background: var(--bg-2);
+      color: var(--txt-3);
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      font-weight: 650;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .thinking-tool-detail {
+      color: var(--txt-3);
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      line-height: 1.45;
+      letter-spacing: 0.01em;
+      min-height: 17px;
+    }
 
     /* ---------- streaming ---------- */
     .md-stream { display: block; }
@@ -3966,6 +4003,44 @@
       }
     }
 
+
+    let toolStatusTypeTimer = null;
+    function stopToolStatusTyping() {
+      if(toolStatusTypeTimer) {
+        clearInterval(toolStatusTypeTimer);
+        toolStatusTypeTimer = null;
+      }
+    }
+    function showToolStatus(toolId, nameId, detailId, tool, detail) {
+      const wrap = getEl(toolId), name = getEl(nameId), text = getEl(detailId);
+      if(!wrap || !name || !text) return;
+      stopToolStatusTyping();
+      const safeTool = String(tool || "GitHub Tool");
+      const safeDetail = String(detail || "");
+      wrap.hidden = false;
+      wrap.style.display = "flex";
+      name.innerText = "Tool · " + safeTool;
+      text.innerText = "";
+      let i = 0;
+      if(!safeDetail) return;
+      toolStatusTypeTimer = setInterval(() => {
+        if(i >= safeDetail.length) {
+          stopToolStatusTyping();
+          return;
+        }
+        i += 1;
+        text.innerText = safeDetail.slice(0, i);
+      }, 22);
+    }
+    function hideToolStatus(toolId) {
+      stopToolStatusTyping();
+      const wrap = getEl(toolId);
+      if(wrap) {
+        wrap.hidden = true;
+        wrap.style.display = "none";
+      }
+    }
+
     /* Re-runs the last user turn: drops the trailing assistant message from
        history and its row from the DOM, then re-sends. */
     function regenerateLast() {
@@ -4036,7 +4111,8 @@
       row.className = "row trux-row appear";
       
       /* Pure Floating Text Metallic Shine Gemini-Style Thinking Indicator */
-      row.innerHTML = `<div class="label">${BRAND_LABEL}</div><div class="bubble trux-bubble thinking" id="${id}"><div class="thinking-container"><span class="thinking-sparkle"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 3.5l1.6 4.4 4.4 1.6-4.4 1.6L12 15.5l-1.6-4.4L6 9.5l4.4-1.6L12 3.5Z\"/><path d=\"M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z\"/></svg></span><span class="status-msg" id="${sid}">Thinking…</span></div></div><div class="actions" id="${aid}"></div>`;
+      let tsid = "ts_" + Date.now(), tnid = "tn_" + Date.now(), tdid = "td_" + Date.now();
+      row.innerHTML = `<div class="label">${BRAND_LABEL}</div><div class="bubble trux-bubble thinking" id="${id}"><div class="thinking-container"><div class="thinking-main"><span class="status-msg" id="${sid}">Thinking…</span></div><div class="thinking-tool" id="${tsid}" hidden><span class="thinking-tool-name" id="${tnid}">Tool · GitHub</span><span class="thinking-tool-detail" id="${tdid}"></span></div></div></div><div class="actions" id="${aid}"></div>`;
       
       chatContainer.appendChild(row);
       chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -4087,6 +4163,7 @@
         // thinking indicator stays visible until real content exists.
         function ensureStreamer() {
           if (activeStreamer) return activeStreamer;
+          hideToolStatus(tsid);
           let bubble = getEl(id);
           if (!bubble) return null;
           clearInterval(timer);
@@ -4110,7 +4187,8 @@
           }
           else if(j.type === "final") fin = j.text || "";
           else if(j.type === "status") { let e = getEl(sid); if(e) e.innerText = j.status || "Processing…"; }
-          else if(j.type === "github_proposal") { githubProposal = j.proposal || null; let st = getEl(sid); if (st) st.innerText = "GitHub changes ready for review…"; }
+          else if(j.type === "tool_status") { showToolStatus(tsid, tnid, tdid, j.tool, j.status); }
+          else if(j.type === "github_proposal") { githubProposal = j.proposal || null; hideToolStatus(tsid); let st = getEl(sid); if (st) st.innerText = "GitHub changes ready for review…"; }
           else if(j.type === "grounding") { turnSources = (j.grounding && j.grounding.sources) || []; }
           else if(j.type === "usage" && j.kind === "pro") {
             let u = getProUsageData();
@@ -4132,6 +4210,7 @@
         if(!text) throw Error("No response received.");
         sniffRoute();
         clearInterval(timer);
+        hideToolStatus(tsid);
 
         /* The model asked for a picture — hand this turn to the image model,
            reusing the row that is already on screen. */
@@ -4160,6 +4239,7 @@
         activeStreamer = null;
       } catch(e) {
         clearInterval(timer);
+        hideToolStatus(tsid);
         activeStreamer?.cancel();
         activeStreamer = null;
         let b = getEl(id);
