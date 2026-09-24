@@ -28,7 +28,8 @@ export async function onRequestPost({ request, env }) {
       status: body?.status || existing.status,
       events: Array.isArray(body?.events) ? body.events.slice(-30) : (existing.events || []),
       final: typeof body?.final === 'string' ? body.final : existing.final,
-      error: typeof body?.error === 'string' ? body.error : existing.error
+      error: typeof body?.error === 'string' ? body.error : existing.error,
+      proposal: body?.proposal && typeof body.proposal === 'object' ? body.proposal : (existing.proposal || null)
     };
 
     await kv.put(key, JSON.stringify(next), { expirationTtl: 24 * 60 * 60 });
