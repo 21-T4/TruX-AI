@@ -2,15 +2,10 @@ const APP_ORIGIN_FALLBACK = 'https://www.chat.trux.website';
 
 async function updateJob(env, payload) {
   const origin = String(env.TRUX_APP_ORIGIN || APP_ORIGIN_FALLBACK).replace(/\/$/, '');
-  const secret = String(env.TRUX_BACKGROUND_SECRET || '');
-  if (!secret) throw new Error('TRUX_BACKGROUND_SECRET is missing in the consumer Worker.');
 
   await fetch(origin + '/api/background/update', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-TruX-Background-Secret': secret
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   });
 }
