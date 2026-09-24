@@ -1,0 +1,8 @@
+name = "trux-background-consumer"
+main = "trux-background.js"
+compatibility_date = "2026-09-24"
+
+[[queues.consumers]]
+queue = "trux-background"
+max_batch_size = 1
+max_batch_timeout = 1
