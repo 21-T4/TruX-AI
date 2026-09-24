@@ -149,6 +149,76 @@ async function createGoogleAccessToken(env) {
 }
 
 
+
+function getPushKv(env) {
+  const kv = env.TRUX_BACKGROUND_KV || env.TRUX_GITHUB_KV || env['TruX-Images'] || env.TruX_Images || env.IMAGE_LIMIT_KV;
+  if (!kv) throw new Error('Push notification KV binding is missing.');
+  return kv;
+}
+
+async function sendFcmNotification(userIdentifier, env, title, body, data = {}) {
+  if (!userIdentifier) return;
+  const kv = getPushKv(env);
+  const key = 'trux_push_tokens_' + String(userIdentifier);
+  let tokens = [];
+  try {
+    tokens = await kv.get(key, 'json') || [];
+  } catch {
+    return;
+  }
+
+  if (!Array.isArray(tokens) || !tokens.length) return;
+
+  let accessToken;
+  try {
+    accessToken = await createGoogleAccessToken(env);
+  } catch {
+    return;
+  }
+
+  const projectId = env.GCP_PROJECT_ID;
+  const remaining = [];
+
+  for (const token of tokens.slice(0, 10)) {
+    if (!token || typeof token !== 'string') continue;
+    try {
+      const response = await fetch('https://fcm.googleapis.com/v1/projects/' + encodeURIComponent(projectId) + '/messages:send', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + accessToken,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: {
+            token,
+            notification: {
+              title: String(title || 'TruX-AI').slice(0, 120),
+              body: String(body || 'Your response is ready.').slice(0, 240)
+            },
+            data: Object.fromEntries(
+              Object.entries(data || {}).map(([k, v]) => [String(k), String(v ?? '')])
+            )
+          }
+        })
+      });
+
+      if (response.ok) {
+        remaining.push(token);
+      } else if (response.status !== 404 && response.status !== 400) {
+        remaining.push(token);
+      }
+    } catch {
+      remaining.push(token);
+    }
+  }
+
+  try {
+    await kv.put(key, JSON.stringify(remaining));
+  } catch {
+    // Notification delivery must never break the chat response.
+  }
+}
+
 /* =========================================================
    IMAGE LIMIT (resets every calendar month) — shared across ALL models
    ========================================================= */
@@ -779,6 +849,8 @@ function createSseResponse(startStreaming) {
         }
       };
 
+      const heartbeat = setInterval(() => send({ type: 'heartbeat', ts: Date.now() }), 5000);
+
       try {
         await startStreaming({ send });
         send({ type: 'done' });
@@ -786,6 +858,8 @@ function createSseResponse(startStreaming) {
       } catch (error) {
         send({ type: 'error', error: error?.message || 'Streaming error.' });
         controller.close();
+      } finally {
+        clearInterval(heartbeat);
       }
     }
   });
@@ -826,7 +900,9 @@ export async function onRequestPost(context) {
       advancedThinking,
       generateImage: forceImageGen,
       githubRepository,
-      githubBranch
+      githubBranch,
+      notifyOnComplete = true,
+      backgroundJobId = ''
     } = body;
 
     /*
@@ -886,6 +962,18 @@ export async function onRequestPost(context) {
         });
 
         if (!developerAccount) await recordSuccessfulImage(userIdentifier, previousCount, env);
+
+        if (notifyOnComplete) {
+          try {
+            await sendFcmNotification(
+              userIdentifier,
+              env,
+              'TruX-AI',
+              'Your image is ready.',
+              { type: 'image', jobId: backgroundJobId || '' }
+            );
+          } catch {}
+        }
 
         const used = developerAccount ? previousCount : previousCount + 1;
         const remaining = developerAccount ? null : Math.max(IMAGE_LIMIT - used, 0);
@@ -1213,6 +1301,18 @@ export async function onRequestPost(context) {
 
         if (finalText) {
           send({ type: 'final', text: finalText });
+        }
+
+        if (notifyOnComplete) {
+          try {
+            await sendFcmNotification(
+              userIdentifier,
+              env,
+              codingMode ? 'TruX-Code' : 'TruX-AI',
+              codingMode ? 'Your coding response is ready.' : 'Your response is ready.',
+              { type: codingMode ? 'coding' : 'chat', jobId: backgroundJobId || '' }
+            );
+          } catch {}
         }
 
         if (proTier && !developerAccount) {
