@@ -30,6 +30,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
 
   <style>
     /* ============================================================
@@ -2027,9 +2028,15 @@
     .coding-workspace .trux-code-workspace{display:block}
     .trux-code-workspace.code-workspace-dismissed{display:none!important}
     .code-repo-select{width:100%;margin-top:10px;padding:9px;border:1px solid var(--line);border-radius:9px;background:var(--bg-3);font-size:12px}
-    .coding-workspace #chatContainer{max-width:1180px;border-top:1px solid var(--line);margin-top:12px;padding-top:16px}
+    .coding-workspace #codeChatContainer{max-width:1180px;border-top:1px solid var(--line);margin-top:12px;padding-top:16px}
+    body:not(.coding-workspace) #codeChatContainer{display:none!important}
+    .coding-workspace #chatContainer{display:none!important}
+    .coding-workspace #codeChatContainer{display:block}
     .coding-workspace .welcome{display:none!important}
     .code-hero{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;padding:24px;border:1px solid rgba(111,137,255,.28);border-radius:20px;background:linear-gradient(135deg,rgba(84,102,255,.16),rgba(21,20,31,.86) 48%,rgba(153,91,255,.10));box-shadow:0 20px 60px rgba(0,0,0,.22)}
+    .code-hero-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;align-items:center}
+    .code-disconnect,.code-notify{height:40px;padding:0 13px;border-radius:11px;border:1px solid var(--line-2);background:rgba(8,8,12,.72);color:var(--txt-2);font-size:12px;font-weight:650;white-space:nowrap}
+    .code-disconnect:hover,.code-notify:hover{color:#fff;background:var(--bg-3);border-color:var(--line-3)}
     .code-kicker{font:650 10px/1 var(--font-mono);letter-spacing:.16em;color:#bfc8ff;text-transform:uppercase}
     .code-title{margin:9px 0 7px;font-size:clamp(28px,4vw,45px);letter-spacing:-.06em}.code-title span{color:#aebcff}
     .code-copy{max-width:620px;color:var(--txt-3);font-size:13px;line-height:1.55}
@@ -2170,7 +2177,11 @@
             <h1 class="code-title">TruX-<span>Code</span></h1>
             <p class="code-copy">Plan deeply, inspect your repository, and produce focused changes. Connect GitHub only when you want TruX-Code to read or edit a repository.</p>
           </div>
-          <button class="code-connect" type="button" onclick="connectCodeRepository()"><span>⌘</span><span id="codeConnectLabel">Connect GitHub</span></button>
+          <div class="code-hero-actions">
+            <button class="code-connect" type="button" onclick="connectCodeRepository()"><span>⌘</span><span id="codeConnectLabel">Connect GitHub</span></button>
+            <button class="code-disconnect" type="button" id="codeDisconnectButton" onclick="disconnectCodeRepository()" hidden>Disconnect</button>
+            <button class="code-notify" type="button" id="codeNotifyButton" onclick="enableTruxNotifications()">Enable notifications</button>
+          </div>
         </div>
         <div class="code-grid">
           <aside class="code-pane">
@@ -2230,6 +2241,7 @@
       </section>
 
       <div class="chat" id="chatContainer"></div>
+      <div class="chat" id="codeChatContainer"></div>
 
       <section class="composer">
         <div class="compose">
@@ -2648,19 +2660,76 @@
     async function loadCodeRepositories(){
       const status=getEl("codeRepoStatus"), select=getEl("codeRepoSelect"); if(!status)return;
       status.innerText="Importing repositories…";
-      try{const r=await fetch("/api/github/repos",{credentials:"same-origin"}),d=await r.json();if(!r.ok)throw Error(d.error||"Import failed");codeRepos=d.repositories||[];getEl("codeConnectLabel").innerText="Refresh repositories";if(select){select.hidden=false;select.innerHTML='<option value="">Select repository…</option>'+codeRepos.map(x=>'<option value="'+escapeHtml(x.full_name)+'">'+escapeHtml(x.full_name)+'</option>').join("");const active=store.getItem("trux_code_active_repository")||"";if(active){select.value=active;const chosen=codeRepos.find(x=>x.full_name===active);if(chosen)store.setItem("trux_code_active_branch",chosen.default_branch||"");}}status.innerText=active?("Connected as @"+d.login+" · "+active):("Connected as @"+d.login+". Select a repository.")}catch(e){status.innerText="Repository import failed: "+e.message}
+      const active = store.getItem("trux_code_active_repository") || "";
+      try{
+        const r=await fetch("/api/github/repos",{credentials:"same-origin"});
+        const d=await r.json();
+        if(!r.ok)throw Error(d.error||"Import failed");
+        codeRepos=d.repositories||[];
+        getEl("codeConnectLabel").innerText="Refresh repositories";
+        if(select){
+          select.hidden=false;
+          select.innerHTML='<option value="">Select repository…</option>'+codeRepos.map(x=>'<option value="'+escapeHtml(x.full_name)+'">'+escapeHtml(x.full_name)+'</option>').join("");
+          if(active){
+            select.value=active;
+            const chosen=codeRepos.find(x=>x.full_name===active);
+            if(chosen)store.setItem("trux_code_active_branch",chosen.default_branch||"");
+          }
+        }
+        updateCodeGithubButtons(true);
+        status.innerText=active?("Connected as @"+d.login+" · "+active):("Connected as @"+d.login+". Select a repository.");
+      }catch(e){
+        updateCodeGithubButtons(false);
+        status.innerText="Repository import failed: "+e.message;
+      }
     }
-    function selectCodeRepository(n){const x=codeRepos.find(x=>x.full_name===n),s=getEl("codeRepoStatus");if(x){store.setItem("trux_code_active_repository",n);store.setItem("trux_code_active_branch",x.default_branch||"");s.innerHTML="<b>"+escapeHtml(n)+"</b><br>Imported · "+escapeHtml(x.default_branch||"default")+" branch"}}
-    function connectCodeRepository(){if(codeRepos.length)return loadCodeRepositories();
+    function updateCodeGithubButtons(connected){
+      const connect=getEl("codeConnectLabel");
+      const disconnect=getEl("codeDisconnectButton");
+      if(connect) connect.innerText=connected ? "Refresh repositories" : "Connect GitHub";
+      if(disconnect) disconnect.hidden=!connected;
+      const select=getEl("codeRepoSelect");
+      if(!connected && select){ select.hidden=true; select.innerHTML='<option value="">Select repository…</option>'; }
+    }
+    function selectCodeRepository(n){
+      const x=codeRepos.find(x=>x.full_name===n),s=getEl("codeRepoStatus");
+      if(x){
+        store.setItem("trux_code_active_repository",n);
+        store.setItem("trux_code_active_branch",x.default_branch||"");
+        if(s)s.innerHTML="<b>"+escapeHtml(n)+"</b><br>Imported · "+escapeHtml(x.default_branch||"default")+" branch";
+      }
+    }
+    function connectCodeRepository(){
+      if(codeRepos.length)return loadCodeRepositories();
       if(!auth?.currentUser) return openLoginWall();
       const returnTo = encodeURIComponent(location.pathname + location.search + "#code");
       location.assign("/api/github/authorize?returnTo=" + returnTo);
+    }
+    async function disconnectCodeRepository(){
+      try{
+        const r=await fetch("/api/github/disconnect",{method:"POST",credentials:"same-origin"});
+        const d=await r.json().catch(()=>({}));
+        if(!r.ok)throw Error(d.error||"Disconnect failed.");
+      }catch(e){return toast("GitHub disconnect failed: "+e.message,"err");}
+      codeRepos=[];
+      store.removeItem("trux_code_active_repository");
+      store.removeItem("trux_code_active_branch");
+      updateCodeGithubButtons(false);
+      const s=getEl("codeRepoStatus");
+      if(s)s.innerHTML="No repository connected.<br>TruX-Code will always ask before writing a change.";
+      toast("GitHub disconnected.","ok");
+    }
+
+    function getActiveChatContainer() {
+      return getEl(workspaceMode === "coding" ? "codeChatContainer" : "chatContainer");
     }
 
     function setWorkspaceMode(mode) {
       workspaceMode = mode || "chat";
       const isCoding = workspaceMode === "coding";
       document.body.classList.toggle("coding-workspace", isCoding);
+      getEl("chatContainer").style.display = isCoding ? "none" : "block";
+      getEl("codeChatContainer").style.display = isCoding ? "block" : "none";
       if(isCoding) { const codeHome = getEl("truxCodeWorkspace"); codeHome?.classList.remove("code-workspace-dismissed"); codeHome?.style.removeProperty("display"); loadCodeRepositories(); }
       document.querySelectorAll("[data-trux-mode]").forEach(x => x.classList.toggle("active", x.dataset.truxMode === workspaceMode));
       document.querySelectorAll("[data-trux-menu-mode]").forEach(x => x.classList.toggle("active", x.dataset.truxMenuMode === workspaceMode));
@@ -2848,16 +2917,19 @@
       else { s.classList.add("collapsed"); }
     }
 
-    const chatContainer = getEl("chatContainer");
-    chatContainer.addEventListener("scroll", function() {
-      isScrolledUp = (this.scrollHeight - this.scrollTop - this.clientHeight) > 80;
-      getEl("scrollDownBtn").classList.toggle("visible", isScrolledUp && this.children.length > 0);
-      /* Drives the hairline under the top bar - it only appears once content
-         has actually scrolled beneath it. */
-      document.body.classList.toggle("scrolled", this.scrollTop > 4);
-    });
+    function bindChatScroll(container) {
+      container?.addEventListener("scroll", function() {
+        if(this !== getActiveChatContainer()) return;
+        isScrolledUp = (this.scrollHeight - this.scrollTop - this.clientHeight) > 80;
+        getEl("scrollDownBtn").classList.toggle("visible", isScrolledUp && this.children.length > 0);
+        document.body.classList.toggle("scrolled", this.scrollTop > 4);
+      });
+    }
+    bindChatScroll(getEl("chatContainer"));
+    bindChatScroll(getEl("codeChatContainer"));
     function scrollToBottom() {
-      chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: "smooth" });
+      const container = getActiveChatContainer();
+      container?.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
       getEl("scrollDownBtn").classList.remove("visible");
     }
 
@@ -2962,6 +3034,8 @@
       stopToolStatusTyping();
       activeStreamer?.cancel(); activeStreamer = null;
       getEl("chatContainer").innerHTML = ""; getEl("chatContainer").style.display = "none";
+      getEl("codeChatContainer").innerHTML = ""; getEl("codeChatContainer").style.display = "none";
+      getEl("truxCodeWorkspace")?.classList.remove("code-workspace-dismissed");
       getEl("welcomeScreen").style.display = "flex"; currentChatId = null; renderSidebar();
       pastedTextBlocks = []; fileAttachments = []; renderFileChips();
       isScrolledUp = false; getEl("scrollDownBtn").classList.remove("visible");
@@ -3586,7 +3660,7 @@
     }
 
     function appendMessageRow(label, text, rc, bc, imageUrl, animate, sources) {
-      let chatContainer = getEl("chatContainer"), r = document.createElement("div");
+      let chatContainer = getActiveChatContainer(), r = document.createElement("div");
       r.className = `row ${rc}` + (animate ? " appear" : "");
       let textContent = typeof text === "string" ? text : text?.text || "";
 
@@ -3721,6 +3795,7 @@
       function tick() {
         if (stopped) return;
 
+        const chatContainer = getActiveChatContainer();
         let stick = isNearBottom(chatContainer);
         let remaining = target.length - shown;
 
@@ -3817,14 +3892,14 @@
       isGenerating = true; isScrolledUp = false;
       getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>'; getEl("actionBtn").classList.add("stop"); getEl("actionBtn").classList.remove("ready");
 
-      if(!currentChatId) { currentChatId = "chat_" + Date.now(); chatSessions[currentChatId] = { title: basePrompt ? basePrompt.slice(0, 32) : "Image", messages: [] }; }
+      if(!currentChatId) { currentChatId = "chat_" + Date.now(); chatSessions[currentChatId] = { title: basePrompt ? basePrompt.slice(0, 32) : "Image", mode: workspaceMode, messages: [] }; }
       if(!opts.reuseTurn) {
         chatSessions[currentChatId].messages.push({ role: "user", text: basePrompt });
         saveChatSessions();
       }
 
       getEl("welcomeScreen").style.display = "none";
-      let chatContainer = getEl("chatContainer"); chatContainer.style.display = "block";
+      let chatContainer = getActiveChatContainer(); chatContainer.style.display = "block";
 
       if(!opts.reuseTurn) {
         appendMessageRow("You", basePrompt, "user-row", "user-bubble", null, true);
@@ -4053,7 +4128,7 @@
       while(msgs.length && msgs[msgs.length - 1].role !== "user") msgs.pop();
       msgs.pop();
       saveChatSessions();
-      let rows = getEl("chatContainer").querySelectorAll(".row");
+      let rows = getActiveChatContainer().querySelectorAll(".row");
       for(let i = rows.length - 1; i >= 0; i--) {
         let isUser = rows[i].classList.contains("user-row");
         rows[i].remove();
@@ -4098,12 +4173,13 @@
       getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>'; getEl("actionBtn").classList.add("stop"); getEl("actionBtn").classList.remove("ready");
       let voice = wasInputByVoice; wasInputByVoice = false;
 
-      if(!currentChatId) { currentChatId = "chat_" + Date.now(); chatSessions[currentChatId] = { title: basePrompt ? basePrompt.slice(0, 32) : "Query", messages: [] }; }
+      if(!currentChatId) { currentChatId = "chat_" + Date.now(); chatSessions[currentChatId] = { title: basePrompt ? basePrompt.slice(0, 32) : "Query", mode: workspaceMode, messages: [] }; }
+      chatSessions[currentChatId].mode = workspaceMode;
       chatSessions[currentChatId].messages.push({ role: "user", text: prompt });
       saveChatSessions();
       
       getEl("welcomeScreen").style.display = "none";
-      let chatContainer = getEl("chatContainer"); chatContainer.style.display = "block";
+      let chatContainer = getActiveChatContainer(); chatContainer.style.display = "block";
       
       appendMessageRow("You", basePrompt + attachmentLabel + (selectedImageBase64 ? "\n[Image Attached]" : ""), "user-row", "user-bubble", null, true);
       promptInput.value = ""; let img = selectedImageBase64; removeImage(); pastedTextBlocks = []; fileAttachments = []; renderFileChips(); handleInputChange();
@@ -4317,8 +4393,15 @@
       });
     }
     function loadChatSession(id) {
-      if(!chatSessions[id]) return; document.body.classList.remove("home-active"); activeAbortController?.abort(); currentChatId = id;
-      getEl("welcomeScreen").style.display = "none"; let cC = getEl("chatContainer"); cC.style.display = "block"; cC.innerHTML = "";
+      if(!chatSessions[id]) return;
+      document.body.classList.remove("home-active");
+      activeAbortController?.abort();
+      currentChatId = id;
+      setWorkspaceMode(chatSessions[id].mode || "chat");
+      getEl("chatContainer").innerHTML = "";
+      getEl("codeChatContainer").innerHTML = "";
+      const cC = getActiveChatContainer();
+      cC.style.display = "block";
       chatSessions[id].messages.forEach(m => appendMessageRow(m.role === "user" ? "You" : "ChatTruX-AI", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image, false, m.sources));
       renderSidebar(); if(innerWidth <= 768) closeSidebar();
     }
