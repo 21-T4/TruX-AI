@@ -2959,6 +2959,7 @@
 
     function startNewChat() {
       document.body.classList.add("home-active"); activeAbortController?.abort();
+      stopToolStatusTyping();
       activeStreamer?.cancel(); activeStreamer = null;
       getEl("chatContainer").innerHTML = ""; getEl("chatContainer").style.display = "none";
       getEl("welcomeScreen").style.display = "flex"; currentChatId = null; renderSidebar();
