@@ -33,6 +33,7 @@ export async function onRequestPost({ request, env }) {
     const cookie = request.headers.get('Cookie') || '';
     const payload = {
       jobId: randomId(),
+      jobSecret: randomId(),
       body: { ...body, notifyOnComplete: true },
       cookie,
       createdAt: Date.now()
@@ -59,6 +60,8 @@ export async function onRequestPost({ request, env }) {
         }],
         final: null,
         error: null,
+        proposal: null,
+        jobSecret: payload.jobSecret,
         createdAt: payload.createdAt
       }),
       { expirationTtl: 24 * 60 * 60 }
