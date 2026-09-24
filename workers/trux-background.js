@@ -95,6 +95,11 @@ async function processJob(job, env) {
         return;
       }
 
+      if (event.type === 'github_proposal') {
+        await updateJob(env, { jobId, status: 'running', events, proposal: event.proposal || null });
+        return;
+      }
+
       if (event.type === 'final') {
         finalText = String(event.text || '');
       }
