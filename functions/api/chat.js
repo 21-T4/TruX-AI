@@ -330,6 +330,37 @@ async function githubReadFile(session, repository, path, branch, startLine, endL
   };
 }
 
+async function githubImportRepository(session, repository, branch) {
+  const ref = branch ? encodeURIComponent(branch) : 'HEAD';
+  const response = await githubApi(
+    session,
+    'https://api.github.com/repos/' + repository + '/git/trees/' + ref + '?recursive=1'
+  );
+  const payload = await response.json();
+
+  if (!response.ok) throw new Error(payload?.message || 'GitHub repository import failed.');
+
+  const tree = Array.isArray(payload.tree) ? payload.tree : [];
+  const blobs = tree
+    .filter(item => item?.type === 'blob' && typeof item.path === 'string')
+    .map(item => ({
+      path: item.path,
+      size: Number(item.size) || 0
+    }));
+
+  const maxFiles = 500;
+  const selected = blobs.slice(0, maxFiles);
+
+  return {
+    repository,
+    branch: branch || null,
+    totalFiles: blobs.length,
+    returnedFiles: selected.length,
+    truncated: !!payload.truncated || blobs.length > maxFiles,
+    files: selected
+  };
+}
+
 async function validateGithubProposal(session, repository, edits, branch) {
   if (!Array.isArray(edits) || !edits.length || edits.length > 8) {
     throw new Error('A GitHub proposal must contain between 1 and 8 file edits.');
@@ -370,6 +401,15 @@ async function validateGithubProposal(session, repository, edits, branch) {
 
 function getGithubToolDeclarations() {
   return [
+    {
+      name: 'github_import_repository',
+      description: 'Import the connected GitHub repository structure for the current branch. Use this first when the user asks to import, load, open, map, or inspect the whole repository. It returns the repository file tree and sizes; then use github_search_code and github_read_file for specific content.',
+      parameters: {
+        type: 'object',
+        properties: {},
+        required: []
+      }
+    },
     {
       name: 'github_search_code',
       description: 'Search the active connected GitHub repository for code, filenames, symbols, or configuration relevant to the user request. Use this before guessing which file to change.',
@@ -424,6 +464,8 @@ function getGithubToolDeclarations() {
 async function executeGithubToolCall(session, repository, branch, call) {
   const name = call?.name;
   const args = call?.args || {};
+
+  if (name === 'github_import_repository') return await githubImportRepository(session, repository, branch);
 
   if (name === 'github_search_code') return await githubSearchCode(session, repository, args.query);
 
@@ -963,6 +1005,55 @@ export async function onRequestPost(context) {
       let agentContents = contents.slice();
       let finalResult = null;
 
+
+      const explicitRepoImport = codingMode
+        && githubSession
+        && validGithubRepo(githubRepository)
+        && /(?:import|load|open|map)\b[\s\S]{0,120}\b(?:repo|repository|github)\b/i.test(String(message || ''));
+
+      if (explicitRepoImport) {
+        send({
+          type: 'tool_status',
+          tool: 'GitHub Import',
+          status: "I’m configuring your repository workspace…"
+        });
+
+        try {
+          const imported = await githubImportRepository(githubSession, githubRepository, githubBranch);
+          send({
+            type: 'tool_status',
+            tool: 'GitHub Import',
+            status: "I’m importing your repository structure and mapping its files…"
+          });
+
+          agentContents.push({
+            role: 'user',
+            parts: [{
+              text: '[GITHUB REPOSITORY IMPORT RESULT]\n' + JSON.stringify(imported)
+            }]
+          });
+
+          send({
+            type: 'tool_status',
+            tool: 'GitHub Import',
+            status: "Repository imported. I’m preparing it for code-aware analysis…"
+          });
+        } catch (importError) {
+          send({
+            type: 'tool_status',
+            tool: 'GitHub Import',
+            status: "I couldn’t import the repository yet: " + String(importError?.message || 'unknown error')
+          });
+          agentContents.push({
+            role: 'user',
+            parts: [{
+              text: '[GITHUB REPOSITORY IMPORT ERROR]\n' + String(importError?.message || 'unknown error')
+            }]
+          });
+        }
+      }
+
+
       for (let agentRound = 0; agentRound < 7; agentRound++) {
         const result = await streamVertexGemini({
           model: targetModel,
@@ -1000,10 +1091,44 @@ export async function onRequestPost(context) {
           const responseParts = [];
 
           for (const call of result.functionCalls) {
+            const toolLabels = {
+              github_import_repository: 'GitHub Import',
+              github_search_code: 'GitHub Search',
+              github_read_file: 'GitHub File Reader',
+              github_propose_changes: 'GitHub Change Planner'
+            };
+            const toolName = toolLabels[call?.name] || 'GitHub Tool';
+            const rawPath = call?.args?.path ? String(call.args.path) : '';
+            const startMessage = call?.name === 'github_import_repository'
+              ? "I’m configuring your repo and importing its structure…"
+              : call?.name === 'github_search_code'
+                ? "I’m searching your repo for the relevant code…"
+                : call?.name === 'github_read_file'
+                  ? "I’m reading " + rawPath + " so I can work from the current version…"
+                  : call?.name === 'github_propose_changes'
+                    ? "I’m preparing exact changes for your review…"
+                    : "I’m working with the connected GitHub workspace…";
+
+            send({ type: 'tool_status', tool: toolName, status: startMessage });
+
             try {
               const callResult = githubSession && codingMode && validGithubRepo(githubRepository)
                 ? await executeGithubToolCall(githubSession, githubRepository, githubBranch, call)
                 : { error: 'GitHub workspace is not connected.' };
+
+              send({
+                type: 'tool_status',
+                tool: toolName,
+                status: call?.name === 'github_import_repository'
+                  ? "Repository structure imported. I’m checking what matters for your request…"
+                  : call?.name === 'github_search_code'
+                    ? "Search complete. I’m using the matching files and symbols now…"
+                    : call?.name === 'github_read_file'
+                      ? "File loaded. I’m using its current contents now…"
+                      : call?.name === 'github_propose_changes'
+                        ? "Exact replacements prepared. I’m waiting for your review…"
+                        : "GitHub workspace step complete…"
+              });
 
               if (call?.name === 'github_propose_changes' && callResult?.proposalReady) {
                 send({
@@ -1045,9 +1170,14 @@ export async function onRequestPost(context) {
           send({ type: 'grounding', grounding });
         }
 
+        const finalText = String(finalResult?.text || '').trim();
+        if (finalText) {
+          send({ type: 'final', text: finalText });
+        }
+
         if (proTier && !developerAccount) {
           const inputChars = JSON.stringify(agentContents).length + String(systemInstruction || '').length;
-          const estimatedTokens = Math.ceil((inputChars + finalResult.text.length) / 4);
+          const estimatedTokens = Math.ceil((inputChars + finalText.length) / 4);
           if (codingMode) {
             const previous = await getModeUsage(userIdentifier, 'coding', env);
             const nextUsage = await recordModeUsage(userIdentifier, 'coding', previous, estimatedTokens, CODING_TOKEN_LIMIT, env);
