@@ -6,12 +6,6 @@ function getKv(env) {
 
 export async function onRequestPost({ request, env }) {
   try {
-    const secret = String(env.TRUX_BACKGROUND_SECRET || '');
-    const supplied = String(request.headers.get('X-TruX-Background-Secret') || '');
-    if (!secret || supplied !== secret) {
-      return Response.json({ error: 'Unauthorized.' }, { status: 401 });
-    }
-
     const body = await request.json();
     const jobId = String(body?.jobId || '');
     if (!/^[a-zA-Z0-9_-]{20,100}$/.test(jobId)) {
@@ -22,6 +16,10 @@ export async function onRequestPost({ request, env }) {
     const key = 'trux_background_job_' + jobId;
     const existing = await kv.get(key, 'json');
     if (!existing) return Response.json({ error: 'Background job not found.' }, { status: 404 });
+
+    if (!body?.jobSecret || body.jobSecret !== existing.jobSecret) {
+      return Response.json({ error: 'Unauthorized.' }, { status: 401 });
+    }
 
     const next = {
       ...existing,
