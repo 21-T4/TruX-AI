@@ -28,6 +28,7 @@ async function processJob(job, env) {
   try {
     await updateJob(env, {
       jobId,
+      jobSecret: job.jobSecret,
       status: 'running',
       events
     });
@@ -80,7 +81,7 @@ async function processJob(job, env) {
           status: String(event.status || '')
         });
         events = events.slice(-30);
-        await updateJob(env, { jobId, status: 'running', events });
+        await updateJob(env, { jobId, jobSecret: job.jobSecret, status: 'running', events });
         return;
       }
 
@@ -91,12 +92,12 @@ async function processJob(job, env) {
           status: String(event.status || '')
         });
         events = events.slice(-30);
-        await updateJob(env, { jobId, status: 'running', events });
+        await updateJob(env, { jobId, jobSecret: job.jobSecret, status: 'running', events });
         return;
       }
 
       if (event.type === 'github_proposal') {
-        await updateJob(env, { jobId, status: 'running', events, proposal: event.proposal || null });
+        await updateJob(env, { jobId, jobSecret: job.jobSecret, status: 'running', events, proposal: event.proposal || null });
         return;
       }
 
@@ -144,6 +145,7 @@ async function processJob(job, env) {
 
     await updateJob(env, {
       jobId,
+      jobSecret: job.jobSecret,
       status: 'complete',
       events,
       final: finalText.trim(),
@@ -159,6 +161,7 @@ async function processJob(job, env) {
     try {
       await updateJob(env, {
         jobId,
+        jobSecret: job.jobSecret,
         status: 'error',
         events: events.slice(-30),
         final: null,
