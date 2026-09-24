@@ -331,10 +331,41 @@ async function githubReadFile(session, repository, path, branch, startLine, endL
 }
 
 async function githubImportRepository(session, repository, branch) {
-  const ref = branch ? encodeURIComponent(branch) : 'HEAD';
+  let treeSha = null;
+
+  if (branch) {
+    const branchResponse = await githubApi(
+      session,
+      'https://api.github.com/repos/' + repository + '/branches/' + encodeURIComponent(branch)
+    );
+    const branchPayload = await branchResponse.json();
+    if (!branchResponse.ok) throw new Error(branchPayload?.message || 'GitHub branch lookup failed.');
+    treeSha = branchPayload?.commit?.commit?.tree?.sha || null;
+  } else {
+    const repoResponse = await githubApi(
+      session,
+      'https://api.github.com/repos/' + repository
+    );
+    const repoPayload = await repoResponse.json();
+    if (!repoResponse.ok) throw new Error(repoPayload?.message || 'GitHub repository lookup failed.');
+
+    const defaultBranch = repoPayload?.default_branch;
+    if (!defaultBranch) throw new Error('GitHub did not return the repository default branch.');
+
+    const branchResponse = await githubApi(
+      session,
+      'https://api.github.com/repos/' + repository + '/branches/' + encodeURIComponent(defaultBranch)
+    );
+    const branchPayload = await branchResponse.json();
+    if (!branchResponse.ok) throw new Error(branchPayload?.message || 'GitHub branch lookup failed.');
+    treeSha = branchPayload?.commit?.commit?.tree?.sha || null;
+  }
+
+  if (!treeSha) throw new Error('GitHub did not return a repository tree SHA.');
+
   const response = await githubApi(
     session,
-    'https://api.github.com/repos/' + repository + '/git/trees/' + ref + '?recursive=1'
+    'https://api.github.com/repos/' + repository + '/git/trees/' + encodeURIComponent(treeSha) + '?recursive=1'
   );
   const payload = await response.json();
 
@@ -1004,7 +1035,7 @@ export async function onRequestPost(context) {
 
       let agentContents = contents.slice();
       let finalResult = null;
-
+      let repositoryImported = false;
 
       const explicitRepoImport = codingMode
         && githubSession
@@ -1026,6 +1057,7 @@ export async function onRequestPost(context) {
             status: "I’m importing your repository structure and mapping its files…"
           });
 
+          repositoryImported = true;
           agentContents.push({
             role: 'user',
             parts: [{
@@ -1116,6 +1148,10 @@ export async function onRequestPost(context) {
                 ? await executeGithubToolCall(githubSession, githubRepository, githubBranch, call)
                 : { error: 'GitHub workspace is not connected.' };
 
+              if (call?.name === 'github_import_repository' && !callResult?.error) {
+                repositoryImported = true;
+              }
+
               send({
                 type: 'tool_status',
                 tool: toolName,
@@ -1170,7 +1206,11 @@ export async function onRequestPost(context) {
           send({ type: 'grounding', grounding });
         }
 
-        const finalText = String(finalResult?.text || '').trim();
+        const finalText = String(finalResult?.text || '').trim()
+          || (repositoryImported
+            ? 'I finished importing your repository. Its file structure is loaded and ready for code-aware analysis.'
+            : '');
+
         if (finalText) {
           send({ type: 'final', text: finalText });
         }
