@@ -3249,9 +3249,11 @@
       const before = lastPromptInputValue;
       lastPromptInputValue = current;
 
-      if(!before || !current || current === before) return;
+      if(!current || current === before) return;
 
-      /* Find the exact changed segment without relying on clipboard APIs. */
+      /* When the composer was empty, the whole new value is the inserted
+         paste. This is the common Android case that the earlier fallback
+         accidentally skipped. */
       let prefix = 0;
       const maxPrefix = Math.min(before.length, current.length);
       while(prefix < maxPrefix && before.charCodeAt(prefix) === current.charCodeAt(prefix)) prefix++;
