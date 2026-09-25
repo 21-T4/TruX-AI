@@ -1175,6 +1175,17 @@ export async function onRequestPost(context) {
 
 
       for (let agentRound = 0; agentRound < 7; agentRound++) {
+        send({
+          type: 'status',
+          status: agentRound === 0
+            ? (researchMode
+              ? 'Understanding the research request…'
+              : codingMode
+                ? 'Understanding the coding request…'
+                : 'Understanding your request…')
+            : 'Using the latest results to refine the response…'
+        });
+
         const result = await streamVertexGemini({
           model: targetModel,
           contents: agentContents,
@@ -1205,6 +1216,10 @@ export async function onRequestPost(context) {
         });
 
         if (result.functionCalls?.length) {
+          send({
+            type: 'status',
+            status: codingMode ? 'Choosing the next repository action…' : 'Checking the relevant details…'
+          });
           if (!result.functionCallContent) throw new Error('GitHub tool call returned without model content.');
 
           agentContents.push(result.functionCallContent);
@@ -1288,6 +1303,15 @@ export async function onRequestPost(context) {
         }
 
         finalResult = result;
+
+        send({
+          type: 'status',
+          status: researchMode
+            ? 'Synthesizing the sources into a clear answer…'
+            : codingMode
+              ? 'Reviewing the result and preparing the final response…'
+              : 'Writing the final response…'
+        });
 
         const grounding = getGroundingData(finalResult.groundingMetadata);
         if (grounding.sources.length || grounding.searchSuggestionHtml) {
