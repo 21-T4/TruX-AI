@@ -2318,479 +2318,394 @@
 
 <style id="trux-home-design-2026-09-25">
   /* ============================================================
-     TRUX HOME — DARK SIGNATURE DESIGN
-     Visual-only. The existing HTML structure and JS actions stay intact.
+     TRUX HOME — DARK, BALANCED, MOBILE-FIRST
      ============================================================ */
 
-  body.home-active .welcome {
-    position: relative;
-    isolation: isolate;
-    display: flex;
-    flex: 1 1 auto;
-    min-height: 0;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    padding: 24px 18px 72px;
+  body.home-active .welcome{
+    position:relative;
+    isolation:isolate;
+    flex:1 1 auto;
+    min-height:0;
+    display:grid;
+    place-items:center;
+    overflow:hidden;
+    padding:24px 18px 18px;
     background:
-      radial-gradient(ellipse 65% 52% at 50% 22%, rgba(91,105,255,.115), transparent 68%),
-      radial-gradient(ellipse 42% 34% at 22% 45%, rgba(74,210,255,.035), transparent 72%),
-      radial-gradient(ellipse 42% 34% at 78% 55%, rgba(183,107,255,.035), transparent 72%);
+      radial-gradient(ellipse 70% 55% at 50% 35%, rgba(55,62,120,.065), transparent 70%),
+      radial-gradient(ellipse 44% 34% at 15% 48%, rgba(38,84,110,.025), transparent 72%),
+      radial-gradient(ellipse 44% 34% at 85% 48%, rgba(91,52,120,.022), transparent 72%);
   }
 
-  /* soft spotlight + grid texture */
-  body.home-active .welcome::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -2;
+  /* faint depth, intentionally very dark */
+  body.home-active .welcome::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    z-index:-2;
     background:
-      linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
-    background-size: 42px 42px;
-    mask-image: linear-gradient(to bottom, black 0%, rgba(0,0,0,.5) 42%, transparent 78%);
-    -webkit-mask-image: linear-gradient(to bottom, black 0%, rgba(0,0,0,.5) 42%, transparent 78%);
-    opacity: .24;
-    pointer-events: none;
+      linear-gradient(rgba(255,255,255,.012) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.012) 1px, transparent 1px);
+    background-size:52px 52px;
+    mask-image:linear-gradient(to bottom, #000 0%, rgba(0,0,0,.42) 45%, transparent 78%);
+    -webkit-mask-image:linear-gradient(to bottom, #000 0%, rgba(0,0,0,.42) 45%, transparent 78%);
+    opacity:.22;
+    pointer-events:none;
   }
 
-  body.home-active .welcome::after {
-    content: "";
-    position: absolute;
-    z-index: -1;
-    width: min(820px, 120vw);
-    height: min(820px, 90vh);
-    left: 50%;
-    top: 34%;
-    transform: translate(-50%, -50%);
+  body.home-active .welcome::after{
+    content:"";
+    position:absolute;
+    width:min(760px,110vw);
+    height:500px;
+    left:50%;
+    top:40%;
+    transform:translate(-50%,-50%);
+    z-index:-1;
+    background:radial-gradient(circle, rgba(83,93,170,.055), transparent 64%);
+    filter:blur(55px);
+    pointer-events:none;
+  }
+
+  /* Keep the whole composition together and slightly below visual center. */
+  body.home-active .hero{
+    width:min(720px,100%);
+    max-width:720px;
+    margin:7vh auto 0;
+    padding:0;
+    text-align:center;
+    align-items:center;
+    animation:truxHomeFade .42s var(--ease-out) both !important;
+  }
+
+  @keyframes truxHomeFade{
+    from{opacity:0;transform:translateY(7px)}
+    to{opacity:1;transform:none}
+  }
+
+  body.home-active .hero::before{
+    width:min(520px,90vw);
+    height:180px;
+    top:-10%;
+    opacity:.38;
+    filter:blur(58px);
+  }
+
+  body.home-active .welcome-title{
+    display:flex;
+    align-items:baseline;
+    justify-content:center;
+    gap:10px;
+    width:100%;
+    margin:0;
+    font-size:clamp(50px,7vw,72px);
+    line-height:.96;
+    letter-spacing:-.07em;
+    white-space:nowrap;
+    text-align:center;
+  }
+
+  body.home-active .welcome-title .home-muted{
+    display:inline;
+    color:#777781;
+    font-family:var(--font-body);
+    font-size:.50em;
+    font-weight:600;
+    line-height:1;
+    letter-spacing:-.035em;
+    opacity:.92;
+  }
+
+  body.home-active .welcome-title .brand-x{
+    display:inline;
+    font-size:1em;
+    font-weight:850;
+    letter-spacing:-.075em;
+    background:linear-gradient(120deg,#7b92ff 0%,#6f7eff 44%,#a878ff 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 10px 22px rgba(92,102,220,.16));
+  }
+
+  body.home-active .welcome-minimal{
+    margin:16px auto 0;
+    color:#777782;
+    font-size:15px;
+    line-height:1.45;
+    letter-spacing:-.01em;
+  }
+
+  body.home-active .welcome-minimal::before{
+    content:none;
+  }
+
+  body.home-active .chips{
+    width:100%;
+    max-width:700px;
+    margin:27px auto 0;
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:9px;
+  }
+
+  body.home-active .chip{
+    position:relative;
+    min-width:0;
+    min-height:82px;
+    padding:11px 12px;
+    display:flex;
+    flex-direction:row;
+    align-items:center;
+    gap:10px;
+    border-radius:15px;
+    border:1px solid rgba(255,255,255,.065);
     background:
-      radial-gradient(circle at 50% 36%, rgba(105,121,255,.10), transparent 37%),
-      radial-gradient(circle at 50% 55%, rgba(176,124,255,.045), transparent 55%);
-    filter: blur(44px);
-    pointer-events: none;
-  }
-
-  /* Stable flex centering — no transform animation fighting layout. */
-  body.home-active .hero {
-    position: relative;
-    width: min(760px, 100%);
-    max-width: 760px;
-    margin: 0 auto;
-    padding: 0;
-    text-align: center;
-    align-items: center;
-    animation: truxHomeFade .48s var(--ease-out) both !important;
-  }
-
-  @keyframes truxHomeFade {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  /* Intentional two-level brand hierarchy. */
-  body.home-active .welcome-title {
-    width: 100%;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1px;
-    font-size: clamp(58px, 9vw, 86px);
-    line-height: .92;
-    letter-spacing: -.07em;
-    white-space: normal;
-    text-align: center;
-  }
-
-  body.home-active .welcome-title .home-muted {
-    display: block;
-    color: #81818c;
-    font-family: var(--font-body);
-    font-size: .38em;
-    font-weight: 650;
-    line-height: 1.1;
-    letter-spacing: .11em;
-    text-transform: uppercase;
-    opacity: .9;
-  }
-
-  body.home-active .welcome-title .brand-x {
-    display: block;
-    margin: 0;
-    font-size: 1em;
-    font-weight: 850;
-    letter-spacing: -.075em;
-    color: transparent;
-    background:
-      linear-gradient(115deg, #7ea0ff 3%, #7188ff 34%, #a77cff 70%, #c18dff 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 12px 28px rgba(88,102,255,.20));
-  }
-
-  body.home-active .welcome-minimal {
-    position: relative;
-    margin: 20px auto 0;
-    color: #858592;
-    font-size: 16px;
-    line-height: 1.45;
-    letter-spacing: -.01em;
-  }
-
-  body.home-active .welcome-minimal::before {
-    content: "YOUR INTELLIGENT WORKSPACE";
-    display: block;
-    margin-bottom: 7px;
-    color: #575762;
-    font: 600 9px/1 var(--font-mono);
-    letter-spacing: .18em;
-  }
-
-  body.home-active .chips {
-    width: min(720px, 100%);
-    max-width: 720px;
-    margin: 34px auto 0;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 11px;
-  }
-
-  body.home-active .chip {
-    position: relative;
-    min-width: 0;
-    min-height: 98px;
-    padding: 15px 16px;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 12px;
-    overflow: hidden;
-    border-radius: 18px;
-    border: 1px solid rgba(255,255,255,.085);
-    background:
-      linear-gradient(145deg, rgba(24,25,34,.88), rgba(10,10,14,.95));
+      linear-gradient(145deg,rgba(15,16,22,.94),rgba(8,8,12,.98));
     box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.045),
-      inset 0 -18px 36px rgba(0,0,0,.10),
-      0 14px 30px rgba(0,0,0,.20);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    transform: translateZ(0);
+      inset 0 1px 0 rgba(255,255,255,.028),
+      0 10px 24px rgba(0,0,0,.16);
+    transform:none;
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
     transition:
-      transform .24s var(--ease-out),
-      border-color .24s var(--ease),
-      background .24s var(--ease),
-      box-shadow .24s var(--ease);
+      transform .20s var(--ease-out),
+      border-color .20s var(--ease),
+      background .20s var(--ease),
+      box-shadow .20s var(--ease);
   }
 
-  /* Accent bloom per card. */
-  body.home-active .chip::before {
-    content: "";
-    position: absolute;
-    width: 180px;
-    height: 180px;
-    left: -100px;
-    top: -92px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(109,131,255,.10), transparent 68%);
-    pointer-events: none;
-    transition: transform .28s var(--ease-out);
+  body.home-active .chip::before{
+    content:"";
+    position:absolute;
+    width:150px;
+    height:150px;
+    left:-82px;
+    top:-78px;
+    border-radius:50%;
+    background:radial-gradient(circle,rgba(96,109,230,.055),transparent 68%);
+    pointer-events:none;
+    opacity:.8;
+    transition:transform .24s var(--ease-out);
   }
 
-  body.home-active .chip:nth-child(2)::before {
-    background: radial-gradient(circle, rgba(86,171,255,.085), transparent 68%);
+  body.home-active .chip::after{
+    content:"";
+    position:absolute;
+    left:15px;
+    right:15px;
+    top:0;
+    height:1px;
+    background:linear-gradient(90deg,transparent,rgba(125,139,255,.14),transparent);
+    pointer-events:none;
   }
 
-  body.home-active .chip:nth-child(3)::before {
-    background: radial-gradient(circle, rgba(176,124,255,.09), transparent 68%);
+  body.home-active .chip-ico{
+    position:relative;
+    z-index:1;
+    width:36px;
+    height:36px;
+    flex:0 0 36px;
+    border-radius:10px;
+    color:#9eacff;
+    background:rgba(90,104,220,.075);
+    border:1px solid rgba(127,143,255,.14);
+    box-shadow:none;
   }
 
-  body.home-active .chip:nth-child(4)::before {
-    background: radial-gradient(circle, rgba(109,131,255,.10), transparent 68%);
+  body.home-active .chip-txt{
+    position:relative;
+    z-index:1;
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    gap:3px;
+    text-align:left;
   }
 
-  body.home-active .chip::after {
-    content: "";
-    position: absolute;
-    left: 14px;
-    right: 14px;
-    top: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(133,149,255,.25), transparent);
-    opacity: .75;
-    pointer-events: none;
+  body.home-active .chip-txt b{
+    font-size:14px;
+    line-height:1.1;
+    font-weight:700;
+    letter-spacing:-.018em;
+    color:#e9e9ef;
+    white-space:nowrap;
   }
 
-  body.home-active .chip-ico {
-    position: relative;
-    z-index: 1;
-    width: 42px;
-    height: 42px;
-    flex: 0 0 42px;
-    border-radius: 13px;
-    background:
-      linear-gradient(145deg, rgba(107,130,255,.17), rgba(107,130,255,.045));
-    border: 1px solid rgba(132,147,255,.22);
-    color: #aebbff;
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.06),
-      0 8px 22px rgba(62,76,184,.14);
-    transition:
-      color .22s var(--ease),
-      background .22s var(--ease),
-      border-color .22s var(--ease),
-      box-shadow .22s var(--ease),
-      transform .22s var(--ease-out);
+  body.home-active .chip-txt i{
+    display:block;
+    max-width:190px;
+    font-size:10.5px;
+    line-height:1.25;
+    font-style:normal;
+    color:#666672;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
   }
 
-  body.home-active .chip-txt {
-    position: relative;
-    z-index: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    text-align: left;
-  }
-
-  body.home-active .chip-txt b {
-    display: block;
-    font-size: 15px;
-    font-weight: 700;
-    line-height: 1.1;
-    letter-spacing: -.018em;
-    color: #efeff4;
-    white-space: nowrap;
-  }
-
-  body.home-active .chip-txt i {
-    display: block;
-    max-width: 190px;
-    font-style: normal;
-    font-size: 11.5px;
-    line-height: 1.25;
-    letter-spacing: -.005em;
-    color: #73737e;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  body.home-active .chip-go {
-    position: relative;
-    z-index: 1;
-    display: inline-flex;
-    margin-left: auto;
-    color: #5e5e69;
-    opacity: .5;
-    transform: translateX(-3px);
-    transition: color .22s var(--ease), opacity .22s var(--ease), transform .22s var(--ease-out);
+  body.home-active .chip-go{
+    position:relative;
+    z-index:1;
+    display:inline-flex;
+    margin-left:auto;
+    opacity:.22;
+    transform:none;
   }
 
   body.home-active .chip:hover,
-  body.home-active .chip:focus-visible {
-    transform: translateY(-3px);
-    border-color: rgba(132,147,255,.34);
-    background:
-      linear-gradient(145deg, rgba(30,31,43,.94), rgba(12,12,17,.98));
+  body.home-active .chip:focus-visible{
+    transform:translateY(-2px);
+    border-color:rgba(126,143,255,.22);
+    background:linear-gradient(145deg,rgba(19,20,28,.98),rgba(9,9,14,.99));
     box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.065),
-      0 20px 42px rgba(0,0,0,.34),
-      0 0 34px rgba(91,105,255,.07);
+      inset 0 1px 0 rgba(255,255,255,.04),
+      0 14px 30px rgba(0,0,0,.22);
   }
 
   body.home-active .chip:hover::before,
-  body.home-active .chip:focus-visible::before {
-    transform: translate(24px, 22px) scale(1.12);
+  body.home-active .chip:focus-visible::before{
+    transform:translate(18px,15px);
   }
 
   body.home-active .chip:hover .chip-ico,
-  body.home-active .chip:focus-visible .chip-ico {
-    color: #f3f5ff;
-    background:
-      linear-gradient(145deg, rgba(109,131,255,.27), rgba(176,124,255,.09));
-    border-color: rgba(142,155,255,.38);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.08),
-      0 10px 28px rgba(62,76,184,.22);
-    transform: scale(1.025);
+  body.home-active .chip:focus-visible .chip-ico{
+    color:#eef0ff;
+    background:rgba(96,110,235,.12);
+    border-color:rgba(140,153,255,.26);
   }
 
   body.home-active .chip:hover .chip-go,
-  body.home-active .chip:focus-visible .chip-go {
-    color: #aeb9ff;
-    opacity: .9;
-    transform: translateX(0);
+  body.home-active .chip:focus-visible .chip-go{
+    color:#aeb8ff;
+    opacity:.78;
   }
 
-  /* Keep the composer floating cleanly below the home stage. */
-  body.home-active .composer {
-    padding-top: 4px;
-    padding-bottom: calc(12px + var(--safe-b));
-    background:
-      linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.46) 35%, #000 100%);
+  body.home-active .composer{
+    padding-top:4px;
+    padding-bottom:calc(11px + var(--safe-b));
+    background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.18));
   }
 
-  body.home-active .compose {
-    max-width: 720px;
+  body.home-active .compose{
+    max-width:720px;
   }
 
-  body.home-active .bar {
-    background:
-      linear-gradient(145deg, rgba(25,25,32,.96), rgba(18,18,24,.98));
-    border-color: rgba(255,255,255,.12);
+  body.home-active .bar{
+    background:rgba(14,14,19,.985);
+    border-color:rgba(255,255,255,.09);
     box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.05),
-      0 18px 44px rgba(0,0,0,.48),
-      0 0 0 1px rgba(109,131,255,.025);
+      inset 0 1px 0 rgba(255,255,255,.035),
+      0 16px 36px rgba(0,0,0,.42);
   }
 
-  @media (max-width: 768px) {
-    body.home-active .welcome {
-      padding: 24px 13px 60px;
+  @media(max-width:768px){
+    body.home-active .welcome{
+      padding:0 12px 8px;
+      place-items:center;
     }
 
-    body.home-active .hero {
-      width: min(640px, 100%);
+    body.home-active .hero{
+      width:min(640px,100%);
+      margin:8vh auto 0;
     }
 
-    body.home-active .welcome-title {
-      font-size: clamp(54px, 14vw, 76px);
+    body.home-active .welcome-title{
+      gap:8px;
+      font-size:clamp(48px,12vw,62px);
+      letter-spacing:-.065em;
     }
 
-    body.home-active .welcome-title .home-muted {
-      font-size: .30em;
-      letter-spacing: .13em;
+    body.home-active .welcome-title .home-muted{
+      font-size:.48em;
     }
 
-    body.home-active .welcome-minimal {
-      margin-top: 18px;
-      font-size: 15px;
+    body.home-active .welcome-minimal{
+      margin-top:13px;
+      font-size:14px;
     }
 
-    body.home-active .chips {
-      width: 100%;
-      margin-top: 28px;
-      gap: 9px;
+    body.home-active .chips{
+      margin-top:22px;
+      gap:8px;
     }
 
-    body.home-active .chip {
-      min-height: 94px;
-      padding: 13px 12px;
-      gap: 10px;
-      border-radius: 16px;
+    body.home-active .chip{
+      min-height:76px;
+      padding:10px 10px;
+      gap:8px;
+      border-radius:14px;
     }
 
-    body.home-active .chip-ico {
-      width: 37px;
-      height: 37px;
-      flex-basis: 37px;
-      border-radius: 11px;
+    body.home-active .chip-ico{
+      width:32px;
+      height:32px;
+      flex-basis:32px;
+      border-radius:9px;
     }
 
-    body.home-active .chip-txt b {
-      font-size: 14px;
+    body.home-active .chip-txt b{
+      font-size:13px;
     }
 
-    body.home-active .chip-txt i {
-      max-width: 140px;
-      font-size: 10.5px;
-    }
-  }
-
-  @media (max-width: 520px) {
-    body.home-active .welcome {
-      padding: 20px 11px 52px;
-    }
-
-    body.home-active .welcome-title {
-      font-size: clamp(48px, 15vw, 66px);
-    }
-
-    body.home-active .welcome-title .home-muted {
-      font-size: .28em;
-      letter-spacing: .12em;
-    }
-
-    body.home-active .welcome-minimal {
-      margin-top: 15px;
-      font-size: 14px;
-    }
-
-    body.home-active .welcome-minimal::before {
-      font-size: 8px;
-      letter-spacing: .16em;
-      margin-bottom: 6px;
-    }
-
-    body.home-active .chips {
-      margin-top: 23px;
-      gap: 8px;
-    }
-
-    body.home-active .chip {
-      min-height: 84px;
-      padding: 11px 10px;
-      gap: 8px;
-      border-radius: 15px;
-    }
-
-    body.home-active .chip-ico {
-      width: 33px;
-      height: 33px;
-      flex-basis: 33px;
-      border-radius: 10px;
-    }
-
-    body.home-active .chip-txt b {
-      font-size: 13px;
-    }
-
-    body.home-active .chip-txt i {
-      max-width: 116px;
-      font-size: 10px;
+    body.home-active .chip-txt i{
+      max-width:145px;
+      font-size:9.8px;
     }
   }
 
-  @media (max-width: 390px) {
-    body.home-active .welcome {
-      padding-left: 9px;
-      padding-right: 9px;
+  @media(max-width:430px){
+    body.home-active .hero{
+      margin:10vh auto 0;
     }
 
-    body.home-active .welcome-title {
-      font-size: 48px;
+    body.home-active .welcome-title{
+      gap:6px;
+      font-size:clamp(43px,12.4vw,51px);
     }
 
-    body.home-active .chips {
-      gap: 7px;
+    body.home-active .welcome-title .home-muted{
+      font-size:.46em;
     }
 
-    body.home-active .chip {
-      min-height: 80px;
-      padding: 10px 9px;
+    body.home-active .welcome-minimal{
+      font-size:13.5px;
     }
 
-    body.home-active .chip-ico {
-      width: 30px;
-      height: 30px;
-      flex-basis: 30px;
+    body.home-active .chips{
+      margin-top:19px;
+      gap:7px;
     }
 
-    body.home-active .chip-txt b {
-      font-size: 12.5px;
+    body.home-active .chip{
+      min-height:70px;
+      padding:9px 8px;
+      gap:7px;
     }
 
-    body.home-active .chip-txt i {
-      display: none;
+    body.home-active .chip-ico{
+      width:29px;
+      height:29px;
+      flex-basis:29px;
+    }
+
+    body.home-active .chip-txt b{
+      font-size:12.3px;
+    }
+
+    body.home-active .chip-txt i{
+      display:none;
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    body.home-active .hero {
-      animation: none !important;
+  @media(max-height:700px){
+    body.home-active .hero{
+      margin:4vh auto 0;
+    }
+  }
+
+  @media(prefers-reduced-motion:reduce){
+    body.home-active .hero{
+      animation:none !important;
     }
   }
 </style>
@@ -4707,9 +4622,16 @@
       if(!opts.row) chatContainer.appendChild(row);
       chatContainer.scrollTop = chatContainer.scrollHeight;
 
-      activeAbortController = new AbortController();
-      try {
-        let res = await fetch("/api/chat", {
+      let reconnecting = false;
+      while (true) {
+        if (navigator.onLine === false) {
+          await waitForInternet(sid);
+          if (!isGenerating) return;
+        }
+
+        activeAbortController = new AbortController();
+        try {
+          let res = await fetch("/api/chat", {
           method: "POST", headers: { "Content-Type": "application/json" },
           signal: activeAbortController.signal,
           body: JSON.stringify({ message: imagePrompt, tier: currentModel, mode: "image", generateImage: true, userId: auth?.currentUser?.uid || null, userEmail: auth?.currentUser?.email || "" })
@@ -5021,6 +4943,82 @@
       throw Error("TruX-Code background job exceeded its maximum runtime.");
     }
 
+
+    function setThinkingStatus(statusId, text) {
+      const el = getEl(statusId);
+      if (el && text) el.innerText = text;
+    }
+
+    function isNetworkFailure(error) {
+      if (!error || error.name === "AbortError") return false;
+      const msg = String(error.message || error || "").toLowerCase();
+      return navigator.onLine === false ||
+        /failed to fetch|networkerror|network error|load failed|err_internet_disconnected|err_network_changed|connection reset|connection closed|fetch failed/i.test(msg);
+    }
+
+    function waitForInternet(statusId) {
+      return new Promise(resolve => {
+        let pulse;
+        const finish = () => {
+          cleanup();
+          setThinkingStatus(statusId, "Internet connection restored — continuing…");
+          resolve();
+        };
+        const cleanup = () => {
+          window.removeEventListener("online", finish);
+          if (pulse) clearInterval(pulse);
+        };
+
+        setThinkingStatus(statusId, "Waiting for internet connection…");
+        window.addEventListener("online", finish, { once: true });
+
+        pulse = setInterval(() => {
+          if (navigator.onLine) finish();
+          else setThinkingStatus(statusId, "Still waiting for internet connection…");
+        }, 1500);
+      });
+    }
+
+    function activityPlan(prompt, mode) {
+      const p = String(prompt || "").toLowerCase();
+      if (mode === "coding") return [
+        "Understanding the coding request…",
+        "Planning the implementation…",
+        "Checking the relevant code…",
+        "Preparing the response…"
+      ];
+      if (mode === "deep-research") return [
+        "Understanding the research request…",
+        "Checking relevant information…",
+        "Comparing the useful details…",
+        "Synthesizing the answer…"
+      ];
+      if (/fix|bug|error|issue|problem|debug/.test(p)) return [
+        "Understanding the issue…",
+        "Diagnosing the relevant details…",
+        "Working through the fix…",
+        "Checking the response…"
+      ];
+      if (/code|function|html|css|javascript|python|java|sql/.test(p)) return [
+        "Understanding the code request…",
+        "Planning the solution…",
+        "Working through the implementation…",
+        "Preparing the answer…"
+      ];
+      if (/explain|why|how|what|describe/.test(p)) return [
+        "Understanding the question…",
+        "Working through the key details…",
+        "Structuring the explanation…",
+        "Preparing the answer…"
+      ];
+      return [
+        "Understanding your request…",
+        "Working through the details…",
+        "Structuring the response…",
+        "Preparing the final answer…"
+      ];
+    }
+
     async function sendPrompt() {
       // Sign-in wall appears only when the person actually tries to send a message.
       if(!auth?.currentUser) {
@@ -5076,8 +5074,12 @@
       chatContainer.appendChild(row);
       chatContainer.scrollTop = chatContainer.scrollHeight;
 
-      let phrases = getThinkingPhrases(basePrompt), pi = 0;
-      let timer = setInterval(() => { let e = getEl(sid); if(e) e.innerText = phrases[pi = (pi + 1) % phrases.length]; }, 2800);
+      const activities = activityPlan(basePrompt, workspaceMode);
+      let pi = 0;
+      let timer = setInterval(() => {
+        const e = getEl(sid);
+        if (e) e.innerText = activities[pi = (pi + 1) % activities.length];
+      }, 3000);
 
       const requestBody = {
         message: prompt,
@@ -5168,8 +5170,13 @@
             if (s) { if (!s.received) s.setText(full); else s.push(piece); }
           }
           else if(j.type === "final") fin = j.text || "";
-          else if(j.type === "status") { let e = getEl(sid); if(e) e.innerText = j.status || "Processing…"; }
-          else if(j.type === "tool_status") { appendToolStatusLine(tsid, j.tool, j.status); }
+          else if(j.type === "status") {
+            setThinkingStatus(sid, j.status || "Working…");
+          }
+          else if(j.type === "tool_status") {
+            appendToolStatusLine(tsid, j.tool, j.status);
+            setThinkingStatus(sid, j.status || "Working…");
+          }
           else if(j.type === "heartbeat") { /* keep-alive event; intentionally no UI work */ }
           else if(j.type === "github_proposal") { githubProposal = j.proposal || null; hideToolStatus(tsid); let st = getEl(sid); if (st) st.innerText = "GitHub changes ready for review…"; }
           else if(j.type === "grounding") { turnSources = (j.grounding && j.grounding.sources) || []; }
@@ -5220,23 +5227,51 @@
           if(bubble) renderGithubProposalCard(bubble, githubProposal);
         }
         activeStreamer = null;
-      } catch(e) {
-        clearInterval(timer);
-        hideToolStatus(tsid);
-        activeStreamer?.cancel();
-        activeStreamer = null;
-        let b = getEl(id);
-        if(b) {
-          b.classList.remove("thinking");
-          let partial = e.name === "AbortError" && b.innerText.trim() ? b.innerHTML : "";
-          b.innerHTML = partial
-            ? partial + '<div class="stream-stopped">Generation stopped.</div>'
-            : (e.name === "AbortError" ? "Generation stopped." : "Error: " + escapeHtml(e.message));
+        return;
+        } catch(e) {
+          if (isNetworkFailure(e) && isGenerating) {
+            reconnecting = true;
+            activeStreamer?.cancel();
+            activeStreamer = null;
+
+            const b = getEl(id);
+            if (b) {
+              b.classList.remove("thinking");
+              b.innerHTML = '<div class="thinking-container"><div class="thinking-main"><span class="status-msg" id="' + sid + '">Waiting for internet connection…</span></div></div>';
+            }
+
+            setThinkingStatus(sid, "Connection lost — waiting for internet connection…");
+            clearInterval(timer);
+            await waitForInternet(sid);
+            if (!isGenerating) return;
+
+            const activitiesAfterReconnect = activityPlan(basePrompt, workspaceMode);
+            pi = 0;
+            timer = setInterval(() => {
+              const status = getEl(sid);
+              if (status) status.innerText = activitiesAfterReconnect[pi = (pi + 1) % activitiesAfterReconnect.length];
+            }, 3000);
+            continue;
+          }
+
+          clearInterval(timer);
+          hideToolStatus(tsid);
+          activeStreamer?.cancel();
+          activeStreamer = null;
+          let b = getEl(id);
+          if(b) {
+            b.classList.remove("thinking");
+            let partial = e.name === "AbortError" && b.innerText.trim() ? b.innerHTML : "";
+            b.innerHTML = partial
+              ? partial + '<div class="stream-stopped">Generation stopped.</div>'
+              : (e.name === "AbortError" ? "Generation stopped." : "Error: " + escapeHtml(e.message));
+          }
+          isGenerating = false; activeAbortController = null; getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>'; getEl("actionBtn").classList.remove("stop"); handleInputChange();
+          return;
         }
-        isGenerating = false; activeAbortController = null; getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>'; getEl("actionBtn").classList.remove("stop"); handleInputChange();
       }
     }
-    function handleActionButton() { if(isGenerating) { activeAbortController?.abort(); isGenerating = false; getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>'; getEl("actionBtn").classList.remove("stop"); handleInputChange(); return; } sendPrompt(); }
+    function handleActionButton { if(isGenerating) { activeAbortController?.abort(); isGenerating = false; getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>'; getEl("actionBtn").classList.remove("stop"); handleInputChange(); return; } sendPrompt(); }
 
     /* Chat ids are "chat_<epoch ms>", so the timestamp is free - use it to
        group history the way every serious assistant UI does. */
