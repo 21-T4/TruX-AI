@@ -3334,7 +3334,8 @@
     }
 
     function startNewChat() {
-      closeSidebar();
+      if(window.innerWidth <= 768) closeSidebar();
+      else getEl("sidebarOverlay")?.classList.remove("active");
       closeAttachmentMenu();
       closeModelDropdown();
       document.body.classList.add("home-active");
