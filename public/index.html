@@ -4342,7 +4342,7 @@
 
       const apply = document.createElement("button");
       apply.className = "github-proposal-apply";
-      apply.textContent = "Apply changes";
+      apply.textContent = "Confirm & commit";
       apply.onclick = () => applyGithubProposal(proposal, card, apply, cancel, status);
 
       const cancel = document.createElement("button");
@@ -4356,7 +4356,7 @@
 
       const status = document.createElement("div");
       status.className = "github-proposal-status";
-      status.textContent = `Nothing has been written yet · ${proposal.repository || "GitHub"}${proposal.branch ? " · " + proposal.branch : ""}`;
+      status.textContent = `Nothing has been written yet · review the changes before committing · ${proposal.repository || "GitHub"}${proposal.branch ? " · " + proposal.branch : ""}`;
 
       actions.append(apply, cancel);
       card.append(title, summary, files, actions, status);
@@ -4424,33 +4424,21 @@
       const wrap = getEl(toolId);
       if(!wrap) return;
 
+      const toolName = String(tool || "TruX-Code");
       if(phase === "start") {
-        const line = document.createElement("div");
-        line.className = "thinking-tool-line active";
-        line.dataset.tool = String(tool || "TruX-Code");
-        const label = document.createElement("span");
-        label.textContent = String(detail || tool || "Working…");
-        line.appendChild(label);
-        wrap.appendChild(line);
-        wrap.hidden = false;
-        wrap.style.display = "flex";
-        typeToolDetail(label, detail || tool || "Working…");
-      } else {
-        const active = Array.from(wrap.querySelectorAll(".thinking-tool-line.active"))
-          .reverse()
-          .find(el => el.dataset.tool === String(tool || "TruX-Code"));
-        if(active) {
-          active.classList.remove("active");
-          active.classList.add("completed");
-          const label = active.firstElementChild;
-          if(label) label.textContent = String(detail || tool || "Tool step complete.");
-        } else {
-          const line = document.createElement("div");
-          line.className = "thinking-tool-line completed";
-          line.textContent = String(detail || tool || "Tool step complete.");
-          wrap.appendChild(line);
-        }
+        /* The active tool is rendered inside the same thinking bar as the
+           normal status text. Do not create another floating/boxed element. */
+        wrap.dataset.activeTool = toolName;
+        wrap.dataset.activeDetail = String(detail || toolName || "Working…");
+        return;
       }
+
+      const line = document.createElement("div");
+      line.className = "thinking-tool-line completed";
+      line.textContent = String(detail || wrap.dataset.activeDetail || toolName || "Tool step complete.");
+      wrap.appendChild(line);
+      wrap.dataset.activeTool = "";
+      wrap.dataset.activeDetail = "";
 
       wrap.hidden = false;
       wrap.style.display = "flex";
@@ -4550,7 +4538,27 @@
             }
             continue;
           }
-          appendToolStatusLine(tsid, event?.tool || "TruX-Code", event?.status || "");
+          if(event?.type === "tool_status") {
+            appendToolStatusLine(tsid, event.tool || "TruX-Code", event.status || "", event.phase || "complete");
+            if(event.phase === "start") {
+              clearInterval(timer);
+              stopToolStatusTyping();
+              const status = getEl(sid);
+              if(status) typeToolDetail(status, event.status || event.tool || "Working…");
+            } else {
+              const status = getEl(sid);
+              if(status) setThinkingStatus(sid, "Thinking…");
+              clearInterval(timer);
+              const activitiesNow = activityPlan(prompt, workspaceMode);
+              let ai = 0;
+              timer = setInterval(() => {
+                const e = getEl(sid);
+                if(e) e.innerText = activitiesNow[ai = (ai + 1) % activitiesNow.length];
+              }, 3000);
+            }
+          } else if(event?.type === "status") {
+            setThinkingStatus(sid, event.status || "Thinking…");
+          }
         }
 
         if(state.status === "error") {
