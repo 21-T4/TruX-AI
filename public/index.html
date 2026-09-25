@@ -2709,6 +2709,122 @@
     }
   }
 </style>
+<style id="trux-home-final-dark-polish-2026-09-25">
+  body.home-active .welcome{
+    background:
+      radial-gradient(ellipse 72% 54% at 50% 38%, rgba(47,52,92,.045), transparent 70%),
+      linear-gradient(180deg,#030306 0%,#010103 100%);
+  }
+  body.home-active .welcome::before{
+    opacity:.11;
+  }
+  body.home-active .welcome::after{
+    background:radial-gradient(circle,rgba(55,61,118,.035),transparent 66%);
+    filter:blur(62px);
+  }
+  body.home-active .hero{
+    width:min(700px,100%);
+    margin:11vh auto 0;
+  }
+  body.home-active .welcome-title{
+    font-size:clamp(46px,6.5vw,66px);
+    letter-spacing:-.072em;
+  }
+  body.home-active .welcome-title .home-muted{
+    color:#666670;
+    font-size:.46em;
+  }
+  body.home-active .welcome-title .brand-x{
+    background:linear-gradient(120deg,#7184e8 0%,#6473ea 48%,#9168d7 100%);
+    filter:drop-shadow(0 9px 20px rgba(84,91,180,.12));
+  }
+  body.home-active .welcome-minimal{
+    margin-top:14px;
+    color:#696974;
+    font-size:14px;
+  }
+  body.home-active .chips{
+    max-width:680px;
+    margin-top:22px;
+    gap:8px;
+  }
+  body.home-active .chip{
+    min-height:76px;
+    padding:10px 12px;
+    border-radius:14px;
+    border-color:rgba(255,255,255,.052);
+    background:linear-gradient(145deg,rgba(11,11,15,.97),rgba(5,5,8,.99));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.022),0 10px 23px rgba(0,0,0,.20);
+  }
+  body.home-active .chip-ico{
+    width:34px;height:34px;flex-basis:34px;border-radius:10px;
+    color:#919cff;background:rgba(86,97,190,.055);border-color:rgba(125,138,240,.11);
+  }
+  body.home-active .chip-txt b{font-size:13.5px;color:#e1e1e8}
+  body.home-active .chip-txt i{font-size:10px;color:#5e5e68}
+  body.home-active .chip-go{opacity:.18}
+  body.home-active .composer{
+    background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.12));
+  }
+  body.home-active .bar{
+    background:rgba(11,11,15,.985);
+    border-color:rgba(255,255,255,.075);
+  }
+
+  @media(max-width:768px){
+    body.home-active .hero{
+      width:100%;
+      margin:14vh auto 0;
+    }
+    body.home-active .welcome-title{
+      font-size:clamp(43px,11.5vw,56px);
+      gap:6px;
+    }
+    body.home-active .welcome-title .home-muted{
+      font-size:.43em;
+    }
+    body.home-active .welcome-minimal{
+      margin-top:12px;
+      font-size:13.5px;
+    }
+    body.home-active .chips{
+      width:100%;
+      margin-top:20px;
+      gap:7px;
+    }
+    body.home-active .chip{
+      min-height:72px;
+      padding:9px 9px;
+      gap:8px;
+    }
+    body.home-active .chip-ico{
+      width:30px;height:30px;flex-basis:30px;border-radius:9px;
+    }
+    body.home-active .chip-txt b{font-size:12.5px}
+    body.home-active .chip-txt i{font-size:9.5px;max-width:125px}
+  }
+
+  @media(max-width:430px){
+    body.home-active .hero{margin:12vh auto 0}
+    body.home-active .welcome-title{
+      font-size:clamp(39px,11.6vw,48px);
+      gap:5px;
+    }
+    body.home-active .welcome-title .home-muted{font-size:.41em}
+    body.home-active .welcome-minimal{font-size:13px}
+    body.home-active .chips{margin-top:18px;gap:6px}
+    body.home-active .chip{
+      min-height:68px;
+      padding:8px 7px;
+      border-radius:12px;
+    }
+    body.home-active .chip-ico{
+      width:28px;height:28px;flex-basis:28px;border-radius:8px;
+    }
+    body.home-active .chip-txt b{font-size:12px}
+    body.home-active .chip-txt i{display:none}
+  }
+</style>
 </head>
 <body class="home-active">
   <div class="bg" id="bg"><div class="bg-orb"></div></div>
@@ -4622,16 +4738,9 @@
       if(!opts.row) chatContainer.appendChild(row);
       chatContainer.scrollTop = chatContainer.scrollHeight;
 
-      let reconnecting = false;
-      while (true) {
-        if (navigator.onLine === false) {
-          await waitForInternet(sid);
-          if (!isGenerating) return;
-        }
-
-        activeAbortController = new AbortController();
-        try {
-          let res = await fetch("/api/chat", {
+      activeAbortController = new AbortController();
+      try {
+        let res = await fetch("/api/chat", {
           method: "POST", headers: { "Content-Type": "application/json" },
           signal: activeAbortController.signal,
           body: JSON.stringify({ message: imagePrompt, tier: currentModel, mode: "image", generateImage: true, userId: auth?.currentUser?.uid || null, userEmail: auth?.currentUser?.email || "" })
@@ -4959,22 +5068,28 @@
     function waitForInternet(statusId) {
       return new Promise(resolve => {
         let pulse;
-        const finish = () => {
+        const finish = (restored = true) => {
           cleanup();
-          setThinkingStatus(statusId, "Internet connection restored — continuing…");
+          if (restored) setThinkingStatus(statusId, "Internet connection restored — continuing…");
           resolve();
         };
         const cleanup = () => {
-          window.removeEventListener("online", finish);
+          window.removeEventListener("online", finishOnline);
           if (pulse) clearInterval(pulse);
         };
+        const finishOnline = () => finish(true);
 
         setThinkingStatus(statusId, "Waiting for internet connection…");
-        window.addEventListener("online", finish, { once: true });
+        window.addEventListener("online", finishOnline, { once: true });
 
         pulse = setInterval(() => {
-          if (navigator.onLine) finish();
-          else setThinkingStatus(statusId, "Still waiting for internet connection…");
+          if (!isGenerating) {
+            finish(false);
+          } else if (navigator.onLine) {
+            finish(true);
+          } else {
+            setThinkingStatus(statusId, "Still waiting for internet connection…");
+          }
         }, 1500);
       });
     }
@@ -5076,6 +5191,8 @@
 
       const activities = activityPlan(basePrompt, workspaceMode);
       let pi = 0;
+      let initialStatus = getEl(sid);
+      if (initialStatus) initialStatus.innerText = activities[0];
       let timer = setInterval(() => {
         const e = getEl(sid);
         if (e) e.innerText = activities[pi = (pi + 1) % activities.length];
@@ -5104,9 +5221,15 @@
         if(handledInBackground) return;
       }
 
-      activeAbortController = new AbortController();
-      try {
-        let res = await fetch("/api/chat", {
+      while (true) {
+        if (navigator.onLine === false) {
+          await waitForInternet(sid);
+          if (!isGenerating) return;
+        }
+
+        activeAbortController = new AbortController();
+        try {
+          let res = await fetch("/api/chat", {
           method: "POST", headers: { "Content-Type": "application/json", "Accept": "text/event-stream" },
           signal: activeAbortController.signal,
           body: JSON.stringify(requestBody)
@@ -5230,13 +5353,12 @@
         return;
         } catch(e) {
           if (isNetworkFailure(e) && isGenerating) {
-            reconnecting = true;
             activeStreamer?.cancel();
             activeStreamer = null;
 
             const b = getEl(id);
             if (b) {
-              b.classList.remove("thinking");
+              b.classList.add("thinking");
               b.innerHTML = '<div class="thinking-container"><div class="thinking-main"><span class="status-msg" id="' + sid + '">Waiting for internet connection…</span></div></div>';
             }
 
@@ -5269,6 +5391,7 @@
           isGenerating = false; activeAbortController = null; getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>'; getEl("actionBtn").classList.remove("stop"); handleInputChange();
           return;
         }
+      }
       }
     }
     function handleActionButton { if(isGenerating) { activeAbortController?.abort(); isGenerating = false; getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>'; getEl("actionBtn").classList.remove("stop"); handleInputChange(); return; } sendPrompt(); }
