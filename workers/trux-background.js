@@ -86,6 +86,8 @@ async function processJob(job, env) {
       if (event.type === 'tool_status') {
         events.push({
           id: ++seq,
+          type: 'tool_status',
+          phase: event.phase || 'complete',
           tool: String(event.tool || 'GitHub Tool'),
           status: String(event.status || '')
         });
