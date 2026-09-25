@@ -99,6 +99,7 @@ async function processJob(job, env) {
       if (event.type === 'status') {
         events.push({
           id: ++seq,
+          type: 'status',
           tool: 'TruX-Code',
           status: String(event.status || '')
         });
