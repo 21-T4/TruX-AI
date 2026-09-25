@@ -918,7 +918,7 @@
       align-items: flex-start;
       gap: 4px;
       width: min(100%, 660px);
-      margin: 4px 0 0;
+      margin: 0 0 5px;
       padding: 0;
     }
     .thinking-tool-line {
@@ -4426,8 +4426,7 @@
 
       const toolName = String(tool || "TruX-Code");
       if(phase === "start") {
-        /* The active tool is rendered inside the same thinking bar as the
-           normal status text. Do not create another floating/boxed element. */
+        /* Active tool text lives only in the same thinking bar. */
         wrap.dataset.activeTool = toolName;
         wrap.dataset.activeDetail = String(detail || toolName || "Working…");
         return;
@@ -4505,6 +4504,7 @@
 
       let seenEvents = 0;
       let backgroundStreamer = null;
+      let backgroundToolActive = false;
       const startedAt = Date.now();
       const maxRuntime = 15 * 60 * 1000;
 
@@ -4526,26 +4526,16 @@
         const events = Array.isArray(state.events) ? state.events : [];
         while(seenEvents < events.length) {
           const event = events[seenEvents++];
-          if(event?.type === "text") {
-            const progressText = String(event.text || "");
-            if(progressText) {
-              const bubble = getEl(id);
-              if(bubble) {
-                bubble.classList.remove("thinking");
-                backgroundStreamer = backgroundStreamer || createStreamRenderer(bubble);
-                backgroundStreamer.push(progressText);
-              }
-            }
-            continue;
-          }
           if(event?.type === "tool_status") {
             appendToolStatusLine(tsid, event.tool || "TruX-Code", event.status || "", event.phase || "complete");
             if(event.phase === "start") {
+              backgroundToolActive = true;
               clearInterval(timer);
               stopToolStatusTyping();
               const status = getEl(sid);
               if(status) typeToolDetail(status, event.status || event.tool || "Working…");
             } else {
+              backgroundToolActive = false;
               const status = getEl(sid);
               if(status) setThinkingStatus(sid, "Thinking…");
               clearInterval(timer);
@@ -4558,6 +4548,19 @@
             }
           } else if(event?.type === "status") {
             setThinkingStatus(sid, event.status || "Thinking…");
+          } else if(event?.type === "text") {
+            /* Background progress text is connection keep-alive while a tool is
+               active; do not display it as answer prose. */
+            if(backgroundToolActive) continue;
+            const progressText = String(event.text || "");
+            if(progressText) {
+              const bubble = getEl(id);
+              if(bubble) {
+                bubble.classList.remove("thinking");
+                backgroundStreamer = backgroundStreamer || createStreamRenderer(bubble);
+                backgroundStreamer.push(progressText);
+              }
+            }
           }
         }
 
@@ -4720,7 +4723,7 @@
       /* Inline TruX-Code tool trace: the current action lives in the same
          thinking text treatment; completed actions remain as plain text below. */
       let tsid = "ts_" + Date.now();
-      row.innerHTML = `<div class="label">${BRAND_LABEL}</div><div class="trux-response-stack"><div class="bubble trux-bubble thinking" id="${id}"><div class="thinking-container"><div class="thinking-main"><span class="status-msg" id="${sid}">Thinking…</span></div></div></div><div class="thinking-tool-trace" id="${tsid}" hidden></div></div><div class="actions" id="${aid}"></div>`;
+      row.innerHTML = `<div class="label">${BRAND_LABEL}</div><div class="trux-response-stack"><div class="thinking-tool-trace" id="${tsid}" hidden></div><div class="bubble trux-bubble thinking" id="${id}"><div class="thinking-container"><div class="thinking-main"><span class="status-msg" id="${sid}">Thinking…</span></div></div></div></div><div class="actions" id="${aid}"></div>`;
       
       chatContainer.appendChild(row);
       chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -4779,6 +4782,7 @@
         
         let rd = res.body.getReader(), dec = new TextDecoder(), buf = "", full = "", fin = null;
         let githubProposal = null;
+        let toolInProgress = false;
         /* Web pages the model actually consulted when it ran a Google search. */
         let turnSources = [];
 
@@ -4821,11 +4825,13 @@
             let piece = j.text || "";
             if (!piece) return;
             full += piece;
+            /* In TruX-Code, progress emitted while a tool is running is only
+               there to keep the SSE connection alive. Keep the active tool in
+               the thinking bar instead of leaking progress prose into the answer. */
+            if(workspaceMode === "coding" && toolInProgress) return;
             sniffRoute();
             if (!routeSettled || imageRoute) return;   // nothing rendered yet
             let s = ensureStreamer();
-            /* s.received is the text rendered so far; if the sniff swallowed the
-               first characters, seed the renderer with the whole buffer. */
             if (s) { if (!s.received) s.setText(full); else s.push(piece); }
           }
           else if(j.type === "final") fin = j.text || "";
@@ -4836,17 +4842,19 @@
             const phase = j.phase || "complete";
             appendToolStatusLine(tsid, j.tool, j.status, phase);
             if(phase === "start") {
+              toolInProgress = true;
               stopToolStatusTyping();
               clearInterval(timer);
               const status = getEl(sid);
               if(status) typeToolDetail(status, j.status || j.tool || "Working…");
             } else {
+              toolInProgress = false;
               const status = getEl(sid);
               if(status) setThinkingStatus(sid, "Thinking…");
               const activitiesNow = activityPlan(basePrompt, workspaceMode);
               if(isGenerating) {
                 clearInterval(timer);
-                let next = Math.max(0, activitiesNow.indexOf(status?.innerText || "")) + 1;
+                let next = 0;
                 timer = setInterval(() => {
                   const e = getEl(sid);
                   if(e) e.innerText = activitiesNow[next = (next + 1) % activitiesNow.length];
