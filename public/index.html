@@ -2171,6 +2171,42 @@
 
 
 
+<style id="trux-home-black-bug-fix-2026-09-25">
+  body.home-active .welcome{
+    position:relative;
+    background:
+      radial-gradient(ellipse 76% 58% at 50% 22%, rgba(109,131,255,.105), transparent 68%),
+      radial-gradient(ellipse 48% 38% at 20% 42%, rgba(77,111,170,.024), transparent 72%),
+      radial-gradient(ellipse 48% 38% at 80% 45%, rgba(128,87,170,.022), transparent 72%),
+      linear-gradient(180deg,#050508 0%,#030305 62%,#000 100%);
+    background-repeat:no-repeat;
+  }
+
+  body.home-active .welcome::after{
+    content:"";
+    position:absolute;
+    left:0;
+    right:0;
+    bottom:0;
+    height:38%;
+    z-index:-1;
+    background:linear-gradient(180deg,transparent,rgba(0,0,0,.34));
+    pointer-events:none;
+  }
+
+  /* Prevent a separate black composer layer from creating a hard horizontal
+     seam under the home surface. */
+  body.home-active .composer{
+    background:transparent !important;
+  }
+
+  @media(max-width:768px){
+    body.home-active .welcome{
+      min-height:0;
+      padding-bottom:12px;
+    }
+  }
+</style>
 </head>
 <body class="home-active">
   <div class="bg" id="bg"><div class="bg-orb"></div></div>
