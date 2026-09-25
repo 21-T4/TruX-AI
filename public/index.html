@@ -915,92 +915,37 @@
     .thinking-tool-trace {
       display: flex;
       flex-direction: column;
-      gap: 7px;
+      align-items: flex-start;
+      gap: 4px;
       width: min(100%, 660px);
-      margin: 6px 0 0 13px;
-      padding: 2px 0 2px 14px;
-      position: relative;
-    }
-    .thinking-tool-trace::before {
-      content: "";
-      position: absolute;
-      left: 0;
-      top: 4px;
-      bottom: 4px;
-      width: 1px;
-      background: linear-gradient(180deg, rgba(255,255,255,.16), rgba(109,131,255,.55), rgba(176,124,255,.25));
-      opacity: .75;
+      margin: 4px 0 0;
+      padding: 0;
     }
     .thinking-tool-line {
-      position: relative;
-      display: grid;
-      grid-template-columns: auto minmax(0,1fr);
-      gap: 9px;
-      align-items: start;
-      padding: 8px 10px;
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: 11px;
-      background:
-        linear-gradient(115deg, rgba(255,255,255,.055), rgba(255,255,255,.018) 42%, rgba(109,131,255,.06)),
-        rgba(7,7,10,.72);
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,.05),
-        0 8px 24px rgba(0,0,0,.16);
-      overflow: hidden;
+      display: block;
+      color: var(--txt-3);
+      font-size: 13.5px;
+      line-height: 1.45;
+      font-weight: 500;
+      letter-spacing: -0.003em;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: none;
+      box-shadow: none;
     }
-    .thinking-tool-line::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      background: linear-gradient(100deg, transparent 16%, rgba(255,255,255,.075) 34%, transparent 52%);
-      background-size: 220% 100%;
-      animation: toolMetalSweep 2.8s linear infinite;
-      opacity: .55;
-    }
-    @keyframes toolMetalSweep {
-      0% { background-position: 180% 0; }
-      100% { background-position: -180% 0; }
-    }
-    .thinking-tool-dot {
-      width: 7px;
-      height: 7px;
-      margin-top: 6px;
-      border-radius: 999px;
-      background: linear-gradient(135deg, var(--acc), var(--acc-2));
-      box-shadow: 0 0 12px rgba(109,131,255,.7);
-      position: relative;
-      z-index: 1;
-    }
-    .thinking-tool-copy {
-      position: relative;
-      z-index: 1;
-      min-width: 0;
-    }
-    .thinking-tool-name {
-      display: inline-flex;
-      align-items: center;
-      min-height: 18px;
-      padding: 2px 6px;
-      border-radius: 6px;
-      color: #d9dcff;
-      border: 1px solid rgba(130,145,255,.22);
-      background: linear-gradient(180deg, rgba(109,131,255,.13), rgba(176,124,255,.055));
+    .thinking-tool-line.completed::before {
+      content: "✓ ";
+      color: var(--txt-4);
       font-family: var(--font-mono);
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
     }
-    .thinking-tool-detail {
+    .thinking-tool-line.active {
       color: var(--txt-2);
+    }
+    .thinking-tool-line.active::before {
+      content: "› ";
+      color: var(--acc);
       font-family: var(--font-mono);
-      font-size: 11.5px;
-      line-height: 1.5;
-      letter-spacing: 0.005em;
-      min-height: 17px;
-      margin-top: 4px;
-      white-space: pre-wrap;
     }
 
     /* ---------- streaming ---------- */
@@ -2907,25 +2852,70 @@
     }
 
     function setWorkspaceMode(mode) {
-      workspaceMode = mode || "chat";
-      const isCoding = workspaceMode === "coding";
+      const nextMode = mode || "chat";
+      const previousMode = workspaceMode;
+      const leavingCoding = previousMode === "coding" && nextMode !== "coding";
+      const enteringCoding = previousMode !== "coding" && nextMode === "coding";
+
       closeAttachmentMenu();
       closeModelDropdown();
+
+      /* Crossing the Code/Chat boundary gets a clean shell. This prevents the
+         code workspace DOM, active stream, or stale scroll state from leaking
+         into the normal chat home. */
+      if(leavingCoding || enteringCoding) {
+        activeAbortController?.abort();
+        stopToolStatusTyping();
+        activeStreamer?.cancel();
+        activeStreamer = null;
+        isGenerating = false;
+        currentChatId = null;
+        getEl("chatContainer").innerHTML = "";
+        getEl("codeChatContainer").innerHTML = "";
+        pastedTextBlocks = [];
+        fileAttachments = [];
+        renderFileChips();
+        getEl("promptInput").value = "";
+        isScrolledUp = false;
+        document.body.classList.remove("scrolled");
+        getEl("scrollDownBtn")?.classList.remove("visible");
+      }
+
+      workspaceMode = nextMode;
+      const isCoding = workspaceMode === "coding";
       syncMobileSidebarState();
       document.body.classList.toggle("coding-workspace", isCoding);
       document.body.classList.toggle("home-active", !isCoding && !currentChatId);
-      /* The home screen and an empty chat must never share the flex column.
-         setWorkspaceMode("chat") runs at startup, so showing the empty chat here
-         was creating the large black half-screen underneath the home cards. */
+
+      /* The home screen is the landing surface after leaving TruX-Code. */
+      if(!isCoding && leavingCoding) {
+        getEl("welcomeScreen").style.display = "flex";
+      } else if(isCoding) {
+        getEl("welcomeScreen").style.display = "none";
+      }
+
       getEl("chatContainer").style.display = isCoding ? "none" : (currentChatId ? "block" : "none");
       getEl("codeChatContainer").style.display = isCoding ? "block" : "none";
-      if(isCoding) { const codeHome = getEl("truxCodeWorkspace"); codeHome?.classList.remove("code-workspace-dismissed"); codeHome?.style.removeProperty("display"); loadCodeRepositories(); }
+
+      const codeHome = getEl("truxCodeWorkspace");
+      if(isCoding) {
+        codeHome?.classList.remove("code-workspace-dismissed");
+        codeHome?.style.removeProperty("display");
+        loadCodeRepositories();
+      } else {
+        codeHome?.classList.add("code-workspace-dismissed");
+      }
+
       document.querySelectorAll("[data-trux-mode]").forEach(x => x.classList.toggle("active", x.dataset.truxMode === workspaceMode));
       document.querySelectorAll("[data-trux-menu-mode]").forEach(x => x.classList.toggle("active", x.dataset.truxMenuMode === workspaceMode));
       const p = getEl("promptInput");
       if(p) p.placeholder = ({chat:"Ask TruX…",coding:"Let's Code","deep-research":"Research deeply…",image:"Describe the image you want…"})[workspaceMode] || "Ask TruX…";
       const think = getEl("thinkingBtn");
       if(think) think.classList.toggle("active", advancedThinkingEnabled || workspaceMode === "deep-research" || isCoding);
+
+      if(leavingCoding) {
+        renderSidebar();
+      }
     }
 
     function toggleAdvancedThinking() {
@@ -4429,35 +4419,49 @@
       };
       step();
     }
-    function appendToolStatusLine(toolId, tool, detail) {
+    function appendToolStatusLine(toolId, tool, detail, phase = "complete") {
       if(workspaceMode !== "coding") return;
       const wrap = getEl(toolId);
       if(!wrap) return;
+
+      if(phase === "start") {
+        const line = document.createElement("div");
+        line.className = "thinking-tool-line active";
+        line.dataset.tool = String(tool || "TruX-Code");
+        const label = document.createElement("span");
+        label.textContent = String(detail || tool || "Working…");
+        line.appendChild(label);
+        wrap.appendChild(line);
+        wrap.hidden = false;
+        wrap.style.display = "flex";
+        typeToolDetail(label, detail || tool || "Working…");
+      } else {
+        const active = Array.from(wrap.querySelectorAll(".thinking-tool-line.active"))
+          .reverse()
+          .find(el => el.dataset.tool === String(tool || "TruX-Code"));
+        if(active) {
+          active.classList.remove("active");
+          active.classList.add("completed");
+          const label = active.firstElementChild;
+          if(label) label.textContent = String(detail || tool || "Tool step complete.");
+        } else {
+          const line = document.createElement("div");
+          line.className = "thinking-tool-line completed";
+          line.textContent = String(detail || tool || "Tool step complete.");
+          wrap.appendChild(line);
+        }
+      }
+
       wrap.hidden = false;
       wrap.style.display = "flex";
-
-      const line = document.createElement("div");
-      line.className = "thinking-tool-line";
-      const dot = document.createElement("span");
-      dot.className = "thinking-tool-dot";
-      const copy = document.createElement("div");
-      copy.className = "thinking-tool-copy";
-      const name = document.createElement("div");
-      name.className = "thinking-tool-name";
-      name.textContent = "Tool · " + String(tool || "TruX-Code");
-      const text = document.createElement("div");
-      text.className = "thinking-tool-detail";
-      copy.append(name, text);
-      line.append(dot, copy);
-      wrap.appendChild(line);
-      typeToolDetail(text, detail);
       wrap.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
     function hideToolStatus(toolId) {
       stopToolStatusTyping();
       const wrap = getEl(toolId);
       if(!wrap) return;
-      if(workspaceMode !== "coding") {
+      wrap.querySelectorAll(".thinking-tool-line.active").forEach(line => line.remove());
+      if(!wrap.children.length) {
         wrap.hidden = true;
         wrap.style.display = "none";
       }
@@ -4705,7 +4709,8 @@
       let id = "b_" + Date.now(), aid = "a_" + Date.now(), sid = "s_" + Date.now(), row = document.createElement("div");
       row.className = "row trux-row appear";
       
-      /* Pure Floating Text Metallic Shine Gemini-Style Thinking Indicator */
+      /* Inline TruX-Code tool trace: the current action lives in the same
+         thinking text treatment; completed actions remain as plain text below. */
       let tsid = "ts_" + Date.now();
       row.innerHTML = `<div class="label">${BRAND_LABEL}</div><div class="trux-response-stack"><div class="bubble trux-bubble thinking" id="${id}"><div class="thinking-container"><div class="thinking-main"><span class="status-msg" id="${sid}">Thinking…</span></div></div></div><div class="thinking-tool-trace" id="${tsid}" hidden></div></div><div class="actions" id="${aid}"></div>`;
       
@@ -4820,8 +4825,26 @@
             setThinkingStatus(sid, j.status || "Working…");
           }
           else if(j.type === "tool_status") {
-            appendToolStatusLine(tsid, j.tool, j.status);
-            setThinkingStatus(sid, j.status || "Working…");
+            const phase = j.phase || "complete";
+            appendToolStatusLine(tsid, j.tool, j.status, phase);
+            if(phase === "start") {
+              stopToolStatusTyping();
+              clearInterval(timer);
+              const status = getEl(sid);
+              if(status) typeToolDetail(status, j.status || j.tool || "Working…");
+            } else {
+              const status = getEl(sid);
+              if(status) setThinkingStatus(sid, "Thinking…");
+              const activitiesNow = activityPlan(basePrompt, workspaceMode);
+              if(isGenerating) {
+                clearInterval(timer);
+                let next = Math.max(0, activitiesNow.indexOf(status?.innerText || "")) + 1;
+                timer = setInterval(() => {
+                  const e = getEl(sid);
+                  if(e) e.innerText = activitiesNow[next = (next + 1) % activitiesNow.length];
+                }, 3000);
+              }
+            }
           }
           else if(j.type === "heartbeat") { /* keep-alive event; intentionally no UI work */ }
           else if(j.type === "github_proposal") { githubProposal = j.proposal || null; hideToolStatus(tsid); let st = getEl(sid); if (st) st.innerText = "GitHub changes ready for review…"; }
