@@ -69,6 +69,20 @@ async function processJob(job, env) {
         return;
       }
 
+      if (event.type === 'progress') {
+        const progress = String(event.text || '');
+        if (progress) {
+          events.push({
+            id: ++seq,
+            type: 'text',
+            text: progress
+          });
+          events = events.slice(-30);
+          await updateJob(env, { jobId, jobSecret: job.jobSecret, status: 'running', events });
+        }
+        return;
+      }
+
       if (event.type === 'tool_status') {
         events.push({
           id: ++seq,
