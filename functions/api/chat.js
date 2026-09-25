@@ -849,6 +849,9 @@ function createSseResponse(startStreaming) {
         }
       };
 
+      // Flush an SSE byte immediately, then continue with a 5s heartbeat.
+      // This is important for long TruX-Code requests behind Cloudflare.
+      send({ type: 'heartbeat', ts: Date.now() });
       const heartbeat = setInterval(() => send({ type: 'heartbeat', ts: Date.now() }), 5000);
 
       try {
@@ -868,7 +871,7 @@ function createSseResponse(startStreaming) {
     status: 200,
     headers: {
       'Content-Type': 'text/event-stream; charset=utf-8',
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Cache-Control': 'no-cache, no-store, must-revalidate, no-transform',
       'Pragma': 'no-cache',
       'X-Accel-Buffering': 'no',
       'Access-Control-Allow-Origin': '*'
@@ -926,8 +929,13 @@ export async function onRequestPost(context) {
     const effectiveTier = (researchMode || codingMode) ? 'ultra' : (tier || 'base');
     const proTier = effectiveTier === 'pro' || effectiveTier === 'ultra' || researchMode || codingMode;
 
-    const accessToken = await createGoogleAccessToken(env);
     const projectId = env.GCP_PROJECT_ID;
+    // TruX-Code opens its SSE response before Google authentication so the
+    // browser receives bytes immediately and can keep the connection alive.
+    let accessToken = null;
+    if (!codingMode) {
+      accessToken = await createGoogleAccessToken(env);
+    }
 
     /* =====================================================
        IMAGE GENERATION — available from ANY model tier now.
@@ -1029,7 +1037,7 @@ export async function onRequestPost(context) {
     const modeInstruction = researchMode
       ? `\n\n[DEEP RESEARCH MODE]: Use Google Search grounding for fresh, niche, or source-backed information. Synthesize multiple relevant sources and distinguish facts from inference. Use Gemini 3.1 Pro Preview.`
       : codingMode
-        ? `\n\n[TRUX-CODE MODE]: Think deeply before answering. Prioritize complete, maintainable code, careful debugging, tests, and concise implementation notes. Never claim you changed a repository.\n\n[CONNECTED GITHUB WORKSPACE]: The active repository is ${String(githubRepository || 'none')}; branch ${String(githubBranch || 'default')}. When GitHub tools are available, inspect the repository with github_search_code and github_read_file before changing anything. Then use github_propose_changes with exact oldText/newText replacements. github_propose_changes NEVER writes to GitHub; it creates a user-reviewable proposal. Never say that a change was applied until the user explicitly confirms it in the UI.`
+        ? `\n\n[TRUX-CODE MODE]: Think deeply before answering, but never expose private chain-of-thought. Prioritize complete, maintainable code, careful debugging, tests, and concise implementation notes. Never claim you changed a repository. Before each GitHub tool call, emit one brief user-visible progress sentence describing the action (not private reasoning). After each tool returns, emit one brief user-visible progress sentence describing what was completed and what you will do next. These progress sentences are intentionally concise and may stream while coding.\n\n[CONNECTED GITHUB WORKSPACE]: The active repository is ${String(githubRepository || 'none')}; branch ${String(githubBranch || 'default')}. When GitHub tools are available, inspect the repository with github_search_code and github_read_file before changing anything. Then use github_propose_changes with exact oldText/newText replacements. github_propose_changes NEVER writes to GitHub; it creates a user-reviewable proposal. Never say that a change was applied until the user explicitly confirms it in the UI.`
         : '';
     const thinkingInstruction = effectiveAdvancedThinking
       ? `${combinedSystemInstruction}${modeInstruction}\n\n[REASONING MODE]: Take extra time to reason carefully, check assumptions and calculations, then return only the concise final answer. Do not expose private chain-of-thought.`
@@ -1109,6 +1117,8 @@ export async function onRequestPost(context) {
          First streamed generation
          ------------------------------------------------- */
 
+      if (!accessToken) accessToken = await createGoogleAccessToken(env);
+
       const githubSession = codingMode && validGithubRepo(githubRepository)
         ? await getGithubSession(request, env)
         : null;
@@ -1120,6 +1130,15 @@ export async function onRequestPost(context) {
       const modelTools = githubSession && codingMode && validGithubRepo(githubRepository)
         ? [{ functionDeclarations: getGithubToolDeclarations() }]
         : [{ googleSearch: {} }];
+
+      if (codingMode) {
+        send({
+          type: 'progress',
+          text: githubSession && validGithubRepo(githubRepository)
+            ? "I’m starting by inspecting the connected repository…\n\n"
+            : "I’m starting by breaking the coding request into the first concrete step…\n\n"
+        });
+      }
 
       let agentContents = contents.slice();
       let finalResult = null;
@@ -1198,7 +1217,9 @@ export async function onRequestPost(context) {
               thinkingConfig: {
                 // Gemini 3 uses levels; combining this with a numeric
                 // thinkingBudget makes the Vertex API reject the request.
-                thinkingLevel: 'HIGH'
+                // Medium is used for TruX-Code to reduce long silent waits
+                // while retaining substantial reasoning for repository work.
+                thinkingLevel: codingMode ? 'MEDIUM' : 'HIGH'
               }
             }
           : undefined,
@@ -1246,6 +1267,16 @@ export async function onRequestPost(context) {
 
             send({ type: 'tool_status', tool: toolName, status: startMessage });
 
+            send({
+              type: 'progress',
+              text: ({
+                github_import_repository: "I’m importing the repository structure so I can work from the current files…",
+                github_search_code: "I’m searching the repository for the exact code that needs attention…",
+                github_read_file: "I’m reading the current file before changing anything…",
+                github_propose_changes: "I’ve identified the change and I’m preparing the exact patch for review…"
+              }[call?.name] || "I’m working through the next coding step…") + "\n\n"
+            });
+
             try {
               const callResult = githubSession && codingMode && validGithubRepo(githubRepository)
                 ? await executeGithubToolCall(githubSession, githubRepository, githubBranch, call)
@@ -1281,6 +1312,16 @@ export async function onRequestPost(context) {
                   }
                 });
               }
+
+              send({
+                type: 'progress',
+                text: ({
+                  github_import_repository: "The repository map is ready. I’m using it to focus the next step…",
+                  github_search_code: "The matching code is found. I’m using those results to decide the next change…",
+                  github_read_file: "The current file is loaded. I’m checking its surrounding logic before proposing the fix…",
+                  github_propose_changes: "The exact replacements are prepared. They’re ready for your review…"
+                }[call?.name] || "That coding step is complete. I’m moving to the next one…") + "\n\n"
+              });
 
               responseParts.push({
                 functionResponse: {
