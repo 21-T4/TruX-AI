@@ -2315,10 +2315,11 @@
 
 
 
-<style id="trux-home-final-layout-2026-09-25">
+
+<style id="trux-home-design-2026-09-25">
   /* ============================================================
-     TRUX HOME — FINAL VISUAL COMPOSITION
-     The home screen is intentionally compact and centered.
+     TRUX HOME — DARK SIGNATURE DESIGN
+     Visual-only. The existing HTML structure and JS actions stay intact.
      ============================================================ */
 
   body.home-active .welcome {
@@ -2327,228 +2328,309 @@
     display: flex;
     flex: 1 1 auto;
     min-height: 0;
-    align-items: flex-start;
-    justify-content: flex-start;
+    align-items: center;
+    justify-content: center;
     overflow: hidden;
-    padding: 0 18px;
+    padding: 24px 18px 72px;
     background:
-      radial-gradient(ellipse 72% 48% at 50% 10%, rgba(109,131,255,.105), transparent 70%),
-      radial-gradient(ellipse 62% 42% at 50% 56%, rgba(176,124,255,.03), transparent 74%);
+      radial-gradient(ellipse 65% 52% at 50% 22%, rgba(91,105,255,.115), transparent 68%),
+      radial-gradient(ellipse 42% 34% at 22% 45%, rgba(74,210,255,.035), transparent 72%),
+      radial-gradient(ellipse 42% 34% at 78% 55%, rgba(183,107,255,.035), transparent 72%);
   }
 
+  /* soft spotlight + grid texture */
   body.home-active .welcome::before {
     content: "";
     position: absolute;
-    z-index: -1;
-    width: 760px;
-    height: 520px;
-    left: 50%;
-    top: 35%;
-    transform: translate(-50%, -50%);
+    inset: 0;
+    z-index: -2;
     background:
-      radial-gradient(circle at 50% 42%, rgba(109,131,255,.048), transparent 44%),
-      radial-gradient(circle at 42% 60%, rgba(176,124,255,.024), transparent 38%);
-    filter: blur(46px);
+      linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: linear-gradient(to bottom, black 0%, rgba(0,0,0,.5) 42%, transparent 78%);
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, rgba(0,0,0,.5) 42%, transparent 78%);
+    opacity: .24;
     pointer-events: none;
   }
 
-  body.home-active .hero {
+  body.home-active .welcome::after {
+    content: "";
     position: absolute;
+    z-index: -1;
+    width: min(820px, 120vw);
+    height: min(820px, 90vh);
     left: 50%;
-    top: 46%;
+    top: 34%;
     transform: translate(-50%, -50%);
-    width: min(760px, calc(100% - 36px));
+    background:
+      radial-gradient(circle at 50% 36%, rgba(105,121,255,.10), transparent 37%),
+      radial-gradient(circle at 50% 55%, rgba(176,124,255,.045), transparent 55%);
+    filter: blur(44px);
+    pointer-events: none;
+  }
+
+  /* Stable flex centering — no transform animation fighting layout. */
+  body.home-active .hero {
+    position: relative;
+    width: min(760px, 100%);
     max-width: 760px;
-    margin: 0;
+    margin: 0 auto;
     padding: 0;
     text-align: center;
     align-items: center;
+    animation: truxHomeFade .48s var(--ease-out) both !important;
   }
 
-  body.home-active .hero::before {
-    width: min(610px, 96vw);
-    height: 190px;
-    top: -25%;
-    opacity: .56;
-    filter: blur(50px);
+  @keyframes truxHomeFade {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
-  /* One-line lockup. */
+  /* Intentional two-level brand hierarchy. */
   body.home-active .welcome-title {
-    display: block;
     width: 100%;
     margin: 0;
-    font-size: clamp(46px, 6vw, 68px);
-    line-height: 1;
-    letter-spacing: -.065em;
-    white-space: nowrap;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    font-size: clamp(58px, 9vw, 86px);
+    line-height: .92;
+    letter-spacing: -.07em;
+    white-space: normal;
     text-align: center;
-    text-wrap: nowrap;
   }
 
   body.home-active .welcome-title .home-muted {
-    display: inline;
-    color: transparent;
-    background: linear-gradient(180deg, #a0a0aa 0%, #696973 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
+    display: block;
+    color: #81818c;
+    font-family: var(--font-body);
+    font-size: .38em;
     font-weight: 650;
-    letter-spacing: -.052em;
+    line-height: 1.1;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+    opacity: .9;
   }
 
   body.home-active .welcome-title .brand-x {
-    display: inline;
+    display: block;
     margin: 0;
+    font-size: 1em;
+    font-weight: 850;
     letter-spacing: -.075em;
-    text-shadow:
-      0 0 34px rgba(109,131,255,.22),
-      0 0 72px rgba(176,124,255,.08);
+    color: transparent;
+    background:
+      linear-gradient(115deg, #7ea0ff 3%, #7188ff 34%, #a77cff 70%, #c18dff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 12px 28px rgba(88,102,255,.20));
   }
 
   body.home-active .welcome-minimal {
-    margin: 14px 0 0;
-    color: #878792;
-    font-size: 15.5px;
-    line-height: 1.4;
-    letter-spacing: -.012em;
+    position: relative;
+    margin: 20px auto 0;
+    color: #858592;
+    font-size: 16px;
+    line-height: 1.45;
+    letter-spacing: -.01em;
+  }
+
+  body.home-active .welcome-minimal::before {
+    content: "YOUR INTELLIGENT WORKSPACE";
+    display: block;
+    margin-bottom: 7px;
+    color: #575762;
+    font: 600 9px/1 var(--font-mono);
+    letter-spacing: .18em;
   }
 
   body.home-active .chips {
-    width: 100%;
-    max-width: 700px;
-    margin: 24px auto 0;
+    width: min(720px, 100%);
+    max-width: 720px;
+    margin: 34px auto 0;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 9px;
+    gap: 11px;
   }
 
   body.home-active .chip {
     position: relative;
     min-width: 0;
-    min-height: 76px;
-    padding: 11px 13px;
+    min-height: 98px;
+    padding: 15px 16px;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: flex-start;
-    gap: 10px;
-    border-radius: 15px;
-    border: 1px solid rgba(255,255,255,.075);
-    background: rgba(13,13,18,.80);
+    gap: 12px;
+    overflow: hidden;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,.085);
+    background:
+      linear-gradient(145deg, rgba(24,25,34,.88), rgba(10,10,14,.95));
     box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.03),
-      0 10px 24px rgba(0,0,0,.13);
-    transform: none;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+      inset 0 1px 0 rgba(255,255,255,.045),
+      inset 0 -18px 36px rgba(0,0,0,.10),
+      0 14px 30px rgba(0,0,0,.20);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    transform: translateZ(0);
+    transition:
+      transform .24s var(--ease-out),
+      border-color .24s var(--ease),
+      background .24s var(--ease),
+      box-shadow .24s var(--ease);
   }
 
+  /* Accent bloom per card. */
   body.home-active .chip::before {
     content: "";
     position: absolute;
-    width: 130px;
-    height: 130px;
-    left: -70px;
-    top: -70px;
+    width: 180px;
+    height: 180px;
+    left: -100px;
+    top: -92px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(109,131,255,.065), transparent 68%);
+    background: radial-gradient(circle, rgba(109,131,255,.10), transparent 68%);
     pointer-events: none;
-    opacity: .72;
-    transition: transform .25s var(--ease-out);
+    transition: transform .28s var(--ease-out);
+  }
+
+  body.home-active .chip:nth-child(2)::before {
+    background: radial-gradient(circle, rgba(86,171,255,.085), transparent 68%);
+  }
+
+  body.home-active .chip:nth-child(3)::before {
+    background: radial-gradient(circle, rgba(176,124,255,.09), transparent 68%);
+  }
+
+  body.home-active .chip:nth-child(4)::before {
+    background: radial-gradient(circle, rgba(109,131,255,.10), transparent 68%);
   }
 
   body.home-active .chip::after {
     content: "";
     position: absolute;
-    left: 15px;
-    right: 15px;
+    left: 14px;
+    right: 14px;
     top: 0;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(130,145,255,.16), transparent);
+    background: linear-gradient(90deg, transparent, rgba(133,149,255,.25), transparent);
+    opacity: .75;
     pointer-events: none;
   }
 
   body.home-active .chip-ico {
     position: relative;
     z-index: 1;
-    width: 34px;
-    height: 34px;
-    flex: 0 0 34px;
-    border-radius: 10px;
-    background: rgba(109,131,255,.09);
-    border-color: rgba(126,143,255,.16);
-    box-shadow: none;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border-radius: 13px;
+    background:
+      linear-gradient(145deg, rgba(107,130,255,.17), rgba(107,130,255,.045));
+    border: 1px solid rgba(132,147,255,.22);
+    color: #aebbff;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.06),
+      0 8px 22px rgba(62,76,184,.14);
+    transition:
+      color .22s var(--ease),
+      background .22s var(--ease),
+      border-color .22s var(--ease),
+      box-shadow .22s var(--ease),
+      transform .22s var(--ease-out);
   }
 
   body.home-active .chip-txt {
     position: relative;
     z-index: 1;
     min-width: 0;
-    gap: 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
     text-align: left;
   }
 
   body.home-active .chip-txt b {
     display: block;
-    font-size: 13.5px;
+    font-size: 15px;
     font-weight: 700;
+    line-height: 1.1;
     letter-spacing: -.018em;
+    color: #efeff4;
     white-space: nowrap;
   }
 
   body.home-active .chip-txt i {
     display: block;
-    max-width: 170px;
-    font-size: 10.5px;
+    max-width: 190px;
+    font-style: normal;
+    font-size: 11.5px;
     line-height: 1.25;
-    color: #70707b;
+    letter-spacing: -.005em;
+    color: #73737e;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   body.home-active .chip-go {
-    display: inline-flex;
     position: relative;
     z-index: 1;
+    display: inline-flex;
     margin-left: auto;
-    opacity: .25;
-    transform: none;
+    color: #5e5e69;
+    opacity: .5;
+    transform: translateX(-3px);
+    transition: color .22s var(--ease), opacity .22s var(--ease), transform .22s var(--ease-out);
   }
 
   body.home-active .chip:hover,
   body.home-active .chip:focus-visible {
-    transform: translateY(-2px);
-    border-color: rgba(126,143,255,.25);
-    background: rgba(18,18,25,.92);
+    transform: translateY(-3px);
+    border-color: rgba(132,147,255,.34);
+    background:
+      linear-gradient(145deg, rgba(30,31,43,.94), rgba(12,12,17,.98));
     box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.045),
-      0 14px 30px rgba(0,0,0,.20);
+      inset 0 1px 0 rgba(255,255,255,.065),
+      0 20px 42px rgba(0,0,0,.34),
+      0 0 34px rgba(91,105,255,.07);
   }
 
   body.home-active .chip:hover::before,
   body.home-active .chip:focus-visible::before {
-    transform: translate(16px, 14px);
+    transform: translate(24px, 22px) scale(1.12);
   }
 
   body.home-active .chip:hover .chip-ico,
   body.home-active .chip:focus-visible .chip-ico {
-    color: #eef0ff;
-    border-color: rgba(140,153,255,.30);
-    background: rgba(109,131,255,.16);
+    color: #f3f5ff;
+    background:
+      linear-gradient(145deg, rgba(109,131,255,.27), rgba(176,124,255,.09));
+    border-color: rgba(142,155,255,.38);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.08),
+      0 10px 28px rgba(62,76,184,.22);
+    transform: scale(1.025);
   }
 
   body.home-active .chip:hover .chip-go,
   body.home-active .chip:focus-visible .chip-go {
-    opacity: .8;
-    color: #aeb8ff;
+    color: #aeb9ff;
+    opacity: .9;
+    transform: translateX(0);
   }
 
+  /* Keep the composer floating cleanly below the home stage. */
   body.home-active .composer {
     padding-top: 4px;
-    padding-bottom: calc(10px + var(--safe-b));
-    background: transparent;
+    padding-bottom: calc(12px + var(--safe-b));
+    background:
+      linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.46) 35%, #000 100%);
   }
 
   body.home-active .compose {
@@ -2556,135 +2638,159 @@
   }
 
   body.home-active .bar {
-    background: rgba(20,20,26,.97);
-    border-color: rgba(255,255,255,.105);
+    background:
+      linear-gradient(145deg, rgba(25,25,32,.96), rgba(18,18,24,.98));
+    border-color: rgba(255,255,255,.12);
     box-shadow:
-      0 1px 0 rgba(255,255,255,.045) inset,
-      0 16px 36px rgba(0,0,0,.38);
+      inset 0 1px 0 rgba(255,255,255,.05),
+      0 18px 44px rgba(0,0,0,.48),
+      0 0 0 1px rgba(109,131,255,.025);
   }
 
   @media (max-width: 768px) {
     body.home-active .welcome {
-      padding: 0 13px;
+      padding: 24px 13px 60px;
     }
 
     body.home-active .hero {
-      top: 45%;
-      width: min(640px, calc(100% - 26px));
+      width: min(640px, 100%);
     }
 
     body.home-active .welcome-title {
-      font-size: clamp(39px, 9.4vw, 53px);
-      letter-spacing: -.06em;
+      font-size: clamp(54px, 14vw, 76px);
     }
 
     body.home-active .welcome-title .home-muted {
-      letter-spacing: -.045em;
+      font-size: .30em;
+      letter-spacing: .13em;
     }
 
     body.home-active .welcome-minimal {
-      margin-top: 11px;
+      margin-top: 18px;
+      font-size: 15px;
+    }
+
+    body.home-active .chips {
+      width: 100%;
+      margin-top: 28px;
+      gap: 9px;
+    }
+
+    body.home-active .chip {
+      min-height: 94px;
+      padding: 13px 12px;
+      gap: 10px;
+      border-radius: 16px;
+    }
+
+    body.home-active .chip-ico {
+      width: 37px;
+      height: 37px;
+      flex-basis: 37px;
+      border-radius: 11px;
+    }
+
+    body.home-active .chip-txt b {
       font-size: 14px;
     }
 
-    body.home-active .chips {
-      margin-top: 20px;
-      gap: 8px;
-    }
-
-    body.home-active .chip {
-      min-height: 70px;
-      padding: 10px 11px;
-      gap: 8px;
-      border-radius: 13px;
-    }
-
-    body.home-active .chip-ico {
-      width: 31px;
-      height: 31px;
-      flex-basis: 31px;
-      border-radius: 9px;
-    }
-
-    body.home-active .chip-txt b {
-      font-size: 12.8px;
-    }
-
     body.home-active .chip-txt i {
-      max-width: 130px;
-      font-size: 10px;
-    }
-
-    body.home-active .chip-go {
-      display: none;
+      max-width: 140px;
+      font-size: 10.5px;
     }
   }
 
-  @media (max-width: 420px) {
-    body.home-active .hero {
-      top: 43%;
-      width: calc(100% - 22px);
+  @media (max-width: 520px) {
+    body.home-active .welcome {
+      padding: 20px 11px 52px;
     }
 
     body.home-active .welcome-title {
-      font-size: clamp(35px, 10.3vw, 43px);
+      font-size: clamp(48px, 15vw, 66px);
+    }
+
+    body.home-active .welcome-title .home-muted {
+      font-size: .28em;
+      letter-spacing: .12em;
     }
 
     body.home-active .welcome-minimal {
-      font-size: 13.5px;
+      margin-top: 15px;
+      font-size: 14px;
+    }
+
+    body.home-active .welcome-minimal::before {
+      font-size: 8px;
+      letter-spacing: .16em;
+      margin-bottom: 6px;
     }
 
     body.home-active .chips {
-      margin-top: 18px;
+      margin-top: 23px;
+      gap: 8px;
+    }
+
+    body.home-active .chip {
+      min-height: 84px;
+      padding: 11px 10px;
+      gap: 8px;
+      border-radius: 15px;
+    }
+
+    body.home-active .chip-ico {
+      width: 33px;
+      height: 33px;
+      flex-basis: 33px;
+      border-radius: 10px;
+    }
+
+    body.home-active .chip-txt b {
+      font-size: 13px;
+    }
+
+    body.home-active .chip-txt i {
+      max-width: 116px;
+      font-size: 10px;
+    }
+  }
+
+  @media (max-width: 390px) {
+    body.home-active .welcome {
+      padding-left: 9px;
+      padding-right: 9px;
+    }
+
+    body.home-active .welcome-title {
+      font-size: 48px;
+    }
+
+    body.home-active .chips {
       gap: 7px;
     }
 
     body.home-active .chip {
-      min-height: 66px;
-      padding: 9px 8px;
-      gap: 7px;
+      min-height: 80px;
+      padding: 10px 9px;
     }
 
     body.home-active .chip-ico {
-      width: 29px;
-      height: 29px;
-      flex-basis: 29px;
+      width: 30px;
+      height: 30px;
+      flex-basis: 30px;
     }
 
     body.home-active .chip-txt b {
-      font-size: 12.2px;
+      font-size: 12.5px;
     }
 
     body.home-active .chip-txt i {
-      font-size: 9.4px;
-      max-width: 104px;
-    }
-  }
-</style>
-
-<style id="trux-home-position-fix-2026-09-25">
-  /* The base .hero animation previously overwrote the translate() used by
-     the mobile centered home layout, sending the entire home UI off-screen. */
-  body.home-active .hero {
-    animation: truxHomeHeroIn .42s var(--ease-out) both !important;
-    transform: translate(-50%, -50%);
-  }
-
-  @keyframes truxHomeHeroIn {
-    from {
-      opacity: 0;
-      transform: translate(-50%, calc(-50% + 10px));
-    }
-    to {
-      opacity: 1;
-      transform: translate(-50%, -50%);
+      display: none;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
     body.home-active .hero {
       animation: none !important;
-      transform: translate(-50%, -50%);
     }
   }
 </style>
