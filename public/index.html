@@ -4512,6 +4512,7 @@
       activeAbortController = new AbortController();
 
       let seenEvents = 0;
+      let backgroundStreamer = null;
       const startedAt = Date.now();
       const maxRuntime = 15 * 60 * 1000;
 
@@ -4533,6 +4534,18 @@
         const events = Array.isArray(state.events) ? state.events : [];
         while(seenEvents < events.length) {
           const event = events[seenEvents++];
+          if(event?.type === "text") {
+            const progressText = String(event.text || "");
+            if(progressText) {
+              const bubble = getEl(id);
+              if(bubble) {
+                bubble.classList.remove("thinking");
+                backgroundStreamer = backgroundStreamer || createStreamRenderer(bubble);
+                backgroundStreamer.push(progressText);
+              }
+            }
+            continue;
+          }
           appendToolStatusLine(tsid, event?.tool || "TruX-Code", event?.status || "");
         }
 
@@ -4545,7 +4558,7 @@
           if(!finalText) throw Error("The background coding request finished without a final response.");
 
           stopToolStatusTyping();
-          const streamer = createStreamRenderer(getEl(id));
+          const streamer = backgroundStreamer || createStreamRenderer(getEl(id));
           finalizeResponse(id, aid, finalText, prompt, voice, streamer, []);
           if(state.proposal) {
             const bubble = getEl(id);
@@ -4791,7 +4804,7 @@
 
         function ev(raw) {
           if(!raw) return; let j; try { j = JSON.parse(raw); } catch { return; }
-          if(j.type === "chunk") {
+          if(j.type === "progress" || j.type === "chunk") {
             let piece = j.text || "";
             if (!piece) return;
             full += piece;
