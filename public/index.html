@@ -2314,10 +2314,11 @@
 
 
 
+
 <style id="trux-home-final-layout-2026-09-25">
   /* ============================================================
-     TRUX HOME — FINAL MOBILE / DESKTOP COMPOSITION
-     Visual-only layer. Existing actions and JS remain untouched.
+     TRUX HOME — FINAL VISUAL COMPOSITION
+     The home screen is intentionally compact and centered.
      ============================================================ */
 
   body.home-active .welcome {
@@ -2326,165 +2327,157 @@
     display: flex;
     flex: 1 1 auto;
     min-height: 0;
-    align-items: center;
-    justify-content: center;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 26px 18px clamp(118px, 14vh, 170px);
+    align-items: flex-start;
+    justify-content: flex-start;
+    overflow: hidden;
+    padding: 0 18px;
     background:
-      radial-gradient(ellipse 72% 42% at 50% 9%, rgba(109,131,255,.105), transparent 72%),
-      radial-gradient(ellipse 58% 42% at 52% 54%, rgba(176,124,255,.038), transparent 74%);
+      radial-gradient(ellipse 72% 48% at 50% 10%, rgba(109,131,255,.105), transparent 70%),
+      radial-gradient(ellipse 62% 42% at 50% 56%, rgba(176,124,255,.03), transparent 74%);
   }
 
   body.home-active .welcome::before {
     content: "";
     position: absolute;
     z-index: -1;
-    width: min(760px, 125vw);
+    width: 760px;
     height: 520px;
     left: 50%;
-    top: 31%;
+    top: 35%;
     transform: translate(-50%, -50%);
     background:
-      radial-gradient(circle at 50% 36%, rgba(109,131,255,.055), transparent 42%),
-      radial-gradient(circle at 45% 64%, rgba(176,124,255,.028), transparent 36%);
+      radial-gradient(circle at 50% 42%, rgba(109,131,255,.048), transparent 44%),
+      radial-gradient(circle at 42% 60%, rgba(176,124,255,.024), transparent 38%);
     filter: blur(46px);
     pointer-events: none;
   }
 
-  body.home-active .welcome::after {
-    content: "";
-    position: absolute;
-    inset: auto 0 0;
-    height: 34%;
-    z-index: -1;
-    background: linear-gradient(180deg, transparent, rgba(0,0,0,.34));
-    pointer-events: none;
-  }
-
   body.home-active .hero {
-    width: min(760px, 100%);
+    position: absolute;
+    left: 50%;
+    top: 46%;
+    transform: translate(-50%, -50%);
+    width: min(760px, calc(100% - 36px));
     max-width: 760px;
-    margin: 0 auto;
+    margin: 0;
     padding: 0;
     text-align: center;
     align-items: center;
   }
 
   body.home-active .hero::before {
-    width: min(620px, 100vw);
+    width: min(610px, 96vw);
     height: 190px;
-    top: -12%;
-    opacity: .62;
-    filter: blur(52px);
+    top: -25%;
+    opacity: .56;
+    filter: blur(50px);
   }
 
-  /* One-line brand lockup: lighter, cleaner and much less top-heavy. */
+  /* One-line lockup. */
   body.home-active .welcome-title {
-    display: flex;
-    align-items: baseline;
-    justify-content: center;
-    flex-wrap: nowrap;
-    gap: 13px;
+    display: block;
     width: 100%;
-    font-size: clamp(48px, 6.2vw, 68px);
-    line-height: .98;
+    margin: 0;
+    font-size: clamp(46px, 6vw, 68px);
+    line-height: 1;
     letter-spacing: -.065em;
+    white-space: nowrap;
+    text-align: center;
     text-wrap: nowrap;
-    text-shadow: 0 10px 40px rgba(0,0,0,.18);
   }
 
   body.home-active .welcome-title .home-muted {
     display: inline;
     color: transparent;
-    background: linear-gradient(180deg, #9d9da8 0%, #686872 100%);
+    background: linear-gradient(180deg, #a0a0aa 0%, #696973 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     font-weight: 650;
-    letter-spacing: -.05em;
+    letter-spacing: -.052em;
   }
 
   body.home-active .welcome-title .brand-x {
     display: inline;
-    margin-top: 0;
+    margin: 0;
     letter-spacing: -.075em;
     text-shadow:
       0 0 34px rgba(109,131,255,.22),
-      0 0 70px rgba(176,124,255,.08);
+      0 0 72px rgba(176,124,255,.08);
   }
 
   body.home-active .welcome-minimal {
-    margin-top: 15px;
-    color: #858590;
+    margin: 14px 0 0;
+    color: #878792;
     font-size: 15.5px;
-    line-height: 1.45;
+    line-height: 1.4;
     letter-spacing: -.012em;
   }
 
   body.home-active .chips {
-    width: min(720px, 100%);
-    max-width: 720px;
-    margin: 28px auto 0;
+    width: 100%;
+    max-width: 700px;
+    margin: 24px auto 0;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    gap: 9px;
   }
 
   body.home-active .chip {
+    position: relative;
     min-width: 0;
-    min-height: 86px;
-    padding: 13px 14px;
+    min-height: 76px;
+    padding: 11px 13px;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: flex-start;
-    gap: 11px;
-    border-radius: 16px;
-    border: 1px solid rgba(255,255,255,.08);
-    background: rgba(13,13,18,.78);
+    gap: 10px;
+    border-radius: 15px;
+    border: 1px solid rgba(255,255,255,.075);
+    background: rgba(13,13,18,.80);
     box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.035),
-      0 12px 28px rgba(0,0,0,.14);
+      inset 0 1px 0 rgba(255,255,255,.03),
+      0 10px 24px rgba(0,0,0,.13);
     transform: none;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
   }
 
   body.home-active .chip::before {
     content: "";
     position: absolute;
-    width: 150px;
-    height: 150px;
-    left: -78px;
-    top: -80px;
+    width: 130px;
+    height: 130px;
+    left: -70px;
+    top: -70px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(109,131,255,.075), transparent 68%);
+    background: radial-gradient(circle, rgba(109,131,255,.065), transparent 68%);
     pointer-events: none;
-    opacity: .75;
-    transition: transform .26s var(--ease-out), opacity .26s var(--ease);
+    opacity: .72;
+    transition: transform .25s var(--ease-out);
   }
 
   body.home-active .chip::after {
     content: "";
     position: absolute;
-    left: 16px;
-    right: 16px;
+    left: 15px;
+    right: 15px;
     top: 0;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(130,145,255,.18), transparent);
+    background: linear-gradient(90deg, transparent, rgba(130,145,255,.16), transparent);
     pointer-events: none;
   }
 
   body.home-active .chip-ico {
     position: relative;
     z-index: 1;
-    width: 38px;
-    height: 38px;
-    flex: 0 0 38px;
-    border-radius: 11px;
-    background: rgba(109,131,255,.10);
-    border: 1px solid rgba(126,143,255,.18);
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    border-radius: 10px;
+    background: rgba(109,131,255,.09);
+    border-color: rgba(126,143,255,.16);
     box-shadow: none;
   }
 
@@ -2492,13 +2485,13 @@
     position: relative;
     z-index: 1;
     min-width: 0;
-    gap: 3px;
+    gap: 2px;
     text-align: left;
   }
 
   body.home-active .chip-txt b {
     display: block;
-    font-size: 14.5px;
+    font-size: 13.5px;
     font-weight: 700;
     letter-spacing: -.018em;
     white-space: nowrap;
@@ -2506,9 +2499,9 @@
 
   body.home-active .chip-txt i {
     display: block;
-    max-width: 180px;
-    font-size: 11px;
-    line-height: 1.28;
+    max-width: 170px;
+    font-size: 10.5px;
+    line-height: 1.25;
     color: #70707b;
     white-space: nowrap;
     overflow: hidden;
@@ -2516,47 +2509,45 @@
   }
 
   body.home-active .chip-go {
+    display: inline-flex;
     position: relative;
     z-index: 1;
-    display: inline-flex;
     margin-left: auto;
-    opacity: .3;
+    opacity: .25;
     transform: none;
   }
 
   body.home-active .chip:hover,
   body.home-active .chip:focus-visible {
     transform: translateY(-2px);
-    border-color: rgba(126,143,255,.28);
+    border-color: rgba(126,143,255,.25);
     background: rgba(18,18,25,.92);
     box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.05),
-      0 16px 34px rgba(0,0,0,.22);
+      inset 0 1px 0 rgba(255,255,255,.045),
+      0 14px 30px rgba(0,0,0,.20);
   }
 
   body.home-active .chip:hover::before,
   body.home-active .chip:focus-visible::before {
-    transform: translate(20px, 16px) scale(1.08);
-    opacity: 1;
+    transform: translate(16px, 14px);
   }
 
   body.home-active .chip:hover .chip-ico,
   body.home-active .chip:focus-visible .chip-ico {
-    color: #f4f5ff;
-    border-color: rgba(140,153,255,.32);
-    background: rgba(109,131,255,.18);
-    box-shadow: none;
+    color: #eef0ff;
+    border-color: rgba(140,153,255,.30);
+    background: rgba(109,131,255,.16);
   }
 
   body.home-active .chip:hover .chip-go,
   body.home-active .chip:focus-visible .chip-go {
-    opacity: .85;
+    opacity: .8;
     color: #aeb8ff;
   }
 
   body.home-active .composer {
     padding-top: 4px;
-    padding-bottom: calc(13px + var(--safe-b));
+    padding-bottom: calc(10px + var(--safe-b));
     background: transparent;
   }
 
@@ -2565,66 +2556,63 @@
   }
 
   body.home-active .bar {
-    background: rgba(20,20,26,.96);
+    background: rgba(20,20,26,.97);
     border-color: rgba(255,255,255,.105);
     box-shadow:
       0 1px 0 rgba(255,255,255,.045) inset,
-      0 18px 42px rgba(0,0,0,.40);
+      0 16px 36px rgba(0,0,0,.38);
   }
 
   @media (max-width: 768px) {
     body.home-active .welcome {
-      padding: 18px 13px clamp(106px, 12vh, 145px);
+      padding: 0 13px;
     }
 
     body.home-active .hero {
-      width: min(640px, 100%);
-    }
-
-    body.home-active .hero::before {
-      width: 700px;
-      height: 180px;
-      top: -9%;
-      filter: blur(46px);
-      opacity: .58;
+      top: 45%;
+      width: min(640px, calc(100% - 26px));
     }
 
     body.home-active .welcome-title {
-      gap: 9px;
-      font-size: clamp(40px, 10.2vw, 56px);
+      font-size: clamp(39px, 9.4vw, 53px);
+      letter-spacing: -.06em;
+    }
+
+    body.home-active .welcome-title .home-muted {
+      letter-spacing: -.045em;
     }
 
     body.home-active .welcome-minimal {
-      margin-top: 12px;
-      font-size: 14.5px;
+      margin-top: 11px;
+      font-size: 14px;
     }
 
     body.home-active .chips {
-      margin-top: 23px;
-      gap: 9px;
+      margin-top: 20px;
+      gap: 8px;
     }
 
     body.home-active .chip {
-      min-height: 78px;
-      padding: 11px;
-      border-radius: 14px;
-      gap: 9px;
+      min-height: 70px;
+      padding: 10px 11px;
+      gap: 8px;
+      border-radius: 13px;
     }
 
     body.home-active .chip-ico {
-      width: 33px;
-      height: 33px;
-      flex-basis: 33px;
-      border-radius: 10px;
+      width: 31px;
+      height: 31px;
+      flex-basis: 31px;
+      border-radius: 9px;
     }
 
     body.home-active .chip-txt b {
-      font-size: 13.5px;
+      font-size: 12.8px;
     }
 
     body.home-active .chip-txt i {
-      max-width: 150px;
-      font-size: 10.5px;
+      max-width: 130px;
+      font-size: 10px;
     }
 
     body.home-active .chip-go {
@@ -2632,62 +2620,44 @@
     }
   }
 
-  @media (max-width: 520px) {
-    body.home-active .welcome {
-      padding-left: 11px;
-      padding-right: 11px;
+  @media (max-width: 420px) {
+    body.home-active .hero {
+      top: 43%;
+      width: calc(100% - 22px);
     }
 
     body.home-active .welcome-title {
-      gap: 7px;
-      font-size: clamp(36px, 10.8vw, 46px);
+      font-size: clamp(35px, 10.3vw, 43px);
     }
 
     body.home-active .welcome-minimal {
-      font-size: 14px;
+      font-size: 13.5px;
     }
 
     body.home-active .chips {
-      margin-top: 21px;
-      gap: 8px;
+      margin-top: 18px;
+      gap: 7px;
     }
 
     body.home-active .chip {
-      min-height: 74px;
-      padding: 10px 9px;
-      gap: 8px;
-      border-radius: 13px;
+      min-height: 66px;
+      padding: 9px 8px;
+      gap: 7px;
     }
 
     body.home-active .chip-ico {
-      width: 30px;
-      height: 30px;
-      flex-basis: 30px;
-      border-radius: 9px;
+      width: 29px;
+      height: 29px;
+      flex-basis: 29px;
     }
 
     body.home-active .chip-txt b {
-      font-size: 12.5px;
+      font-size: 12.2px;
     }
 
     body.home-active .chip-txt i {
-      font-size: 9.8px;
-      max-width: 112px;
-    }
-  }
-
-  @media (max-width: 370px) {
-    body.home-active .welcome-title {
-      gap: 5px;
-      font-size: 36px;
-    }
-
-    body.home-active .chip-txt i {
-      display: none;
-    }
-
-    body.home-active .chip {
-      min-height: 70px;
+      font-size: 9.4px;
+      max-width: 104px;
     }
   }
 </style>
@@ -2809,10 +2779,7 @@
 
       <section class="welcome" id="welcomeScreen">
         <div class="hero">
-          <h1 class="welcome-title">
-            <span class="home-muted">Welcome to</span>
-            <span class="brand-x">TruX</span>
-          </h1>
+          <h1 class="welcome-title"><span class="home-muted">Welcome to</span> <span class="brand-x">TruX</span></h1>
           <p class="welcome-minimal">What would you like to work on?</p>
 
           <div class="chips" aria-label="Quick starts">
