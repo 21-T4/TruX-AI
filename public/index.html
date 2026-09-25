@@ -2914,7 +2914,10 @@
       syncMobileSidebarState();
       document.body.classList.toggle("coding-workspace", isCoding);
       document.body.classList.toggle("home-active", !isCoding && !currentChatId);
-      getEl("chatContainer").style.display = isCoding ? "none" : "block";
+      /* The home screen and an empty chat must never share the flex column.
+         setWorkspaceMode("chat") runs at startup, so showing the empty chat here
+         was creating the large black half-screen underneath the home cards. */
+      getEl("chatContainer").style.display = isCoding ? "none" : (currentChatId ? "block" : "none");
       getEl("codeChatContainer").style.display = isCoding ? "block" : "none";
       if(isCoding) { const codeHome = getEl("truxCodeWorkspace"); codeHome?.classList.remove("code-workspace-dismissed"); codeHome?.style.removeProperty("display"); loadCodeRepositories(); }
       document.querySelectorAll("[data-trux-mode]").forEach(x => x.classList.toggle("active", x.dataset.truxMode === workspaceMode));
