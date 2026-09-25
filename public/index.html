@@ -3147,9 +3147,33 @@
       return hasCodeBlock || (hasCodePattern && isLongStructure);
     }
 
+    function shouldAttachPastedText(text) {
+      return !!text && (text.split(/\r?\n/).length > 15 || detectCodeInInput(text));
+    }
+
+    function getPasteText(e) {
+      try {
+        const clip = e?.clipboardData || e?.dataTransfer || window.clipboardData;
+        return clip?.getData?.("text/plain") || clip?.getData?.("text") || "";
+      } catch (_) {
+        return "";
+      }
+    }
+
+    /* Android/mobile browsers can expose the paste through beforeinput while
+       leaving clipboardData empty on the later paste event. Handle both paths. */
+    getEl("promptInput").addEventListener("beforeinput", e => {
+      if(e.inputType !== "insertFromPaste") return;
+      const text = getPasteText(e);
+      if(shouldAttachPastedText(text)) {
+        e.preventDefault();
+        attachCodeAsFile(text);
+      }
+    });
+
     getEl("promptInput").addEventListener("paste", e => {
-      let text = (e.clipboardData || window.clipboardData).getData('text');
-      if(text.split(/\r?\n/).length > 15 || detectCodeInInput(text)) {
+      const text = getPasteText(e);
+      if(shouldAttachPastedText(text)) {
         e.preventDefault();
         attachCodeAsFile(text);
       }
