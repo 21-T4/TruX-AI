@@ -2112,7 +2112,176 @@
     .coding-workspace .hint{font-size:11px}.coding-workspace .hint kbd{display:none}
     @media(max-width:700px){.trux-code-workspace{padding:18px 14px 8px}.code-hero{align-items:flex-start;flex-direction:column}.code-grid{grid-template-columns:1fr;min-height:0}.code-pane{min-height:118px}.coding-workspace .code-grid > .code-pane:nth-child(n+2){display:none!important}.coding-workspace .trux-code-workspace{max-height:calc(100dvh - 54px - 96px);overflow-y:auto;overflow-x:hidden;flex:0 1 auto}}
 
-  </style>
+  
+    /* ============================================================
+       TRUX UI CLEANUP — 2026-09-25
+       ============================================================ */
+
+    /* A closed mobile drawer must never leave a black full-screen scrim behind. */
+    .sidebar-overlay {
+      pointer-events: none;
+      z-index: 800;
+    }
+    .sidebar-overlay.active {
+      pointer-events: auto;
+    }
+    @media (min-width: 769px) {
+      .sidebar-overlay,
+      .sidebar-overlay.active {
+        display: none !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+    }
+
+    /* Remove the heavy black composer fade; chat and composer are already separate flex regions. */
+    .composer {
+      background: transparent;
+    }
+
+    /* Home: less decoration, less vertical noise, clearer first action. */
+    body.home-active .welcome {
+      padding: 24px 22px 8px;
+    }
+    body.home-active .hero {
+      max-width: 760px;
+      padding-bottom: 0;
+    }
+    body.home-active .hero::before {
+      width: min(620px, 92%);
+      height: 220px;
+      top: -10%;
+      opacity: .6;
+      filter: blur(58px);
+    }
+    body.home-active .welcome-title {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: clamp(46px, 7vw, 76px);
+      line-height: .94;
+      letter-spacing: -.055em;
+    }
+    body.home-active .welcome-title .home-muted {
+      color: #8b8b95;
+      font-weight: 600;
+    }
+    .welcome-minimal {
+      margin: 18px 0 0;
+      color: var(--txt-3);
+      font-size: 16px;
+      line-height: 1.5;
+      letter-spacing: -.01em;
+    }
+    body.home-active .chips-head {
+      display: none !important;
+    }
+    body.home-active .chips {
+      max-width: 700px;
+      margin-top: 34px;
+      gap: 10px;
+    }
+    body.home-active .chip {
+      min-height: 72px;
+      padding: 14px 16px;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 11px;
+      border-radius: 15px;
+      background: rgba(16,16,20,.72);
+      box-shadow: none;
+    }
+    body.home-active .chip-ico {
+      width: 34px;
+      height: 34px;
+      flex-basis: 34px;
+      border-radius: 10px;
+    }
+    body.home-active .chip-txt {
+      gap: 0;
+    }
+    body.home-active .chip-txt b {
+      font-size: 14.5px;
+    }
+    body.home-active .chip-txt i {
+      display: none;
+    }
+    body.home-active .chip-go {
+      position: static;
+      display: inline-flex;
+      margin-left: auto;
+      opacity: .45;
+      transform: none;
+    }
+    body.home-active .chip:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 26px rgba(0,0,0,.28);
+    }
+    body.home-active .chip:hover .chip-go {
+      opacity: 1;
+    }
+
+    /* Keep the top mode selector useful, but visually quiet on the home screen. */
+    body.home-active .trux-mode-switch {
+      background: transparent;
+      border-color: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+
+    @media (max-width: 768px) {
+      body.home-active .welcome {
+        padding: 20px 14px 8px;
+      }
+      body.home-active .welcome-title {
+        font-size: clamp(40px, 12vw, 58px);
+      }
+      .welcome-minimal {
+        margin-top: 14px;
+        font-size: 15px;
+      }
+      body.home-active .chips {
+        margin-top: 28px;
+        gap: 9px;
+      }
+      body.home-active .chip {
+        min-height: 64px;
+        padding: 12px 13px;
+      }
+      body.home-active .chip-txt b {
+        font-size: 13.5px;
+      }
+      body.home-active .chip-ico {
+        width: 31px;
+        height: 31px;
+        flex-basis: 31px;
+      }
+    }
+
+    @media (max-width: 420px) {
+      body.home-active .chips {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      body.home-active .chip {
+        min-height: 60px;
+        padding: 11px 10px;
+        gap: 8px;
+      }
+      body.home-active .chip-txt b {
+        font-size: 13px;
+      }
+      body.home-active .chip-ico {
+        width: 29px;
+        height: 29px;
+        flex-basis: 29px;
+      }
+      body.home-active .chip-go {
+        display: none;
+      }
+    }
+</style>
 
 <style id="trux-github-agent-styles">
 .github-proposal-card{
@@ -2261,44 +2430,34 @@
 
       <section class="welcome" id="welcomeScreen">
         <div class="hero">
-          <div class="badge" style="margin-bottom:26px"><i></i>TruX Workspace · Online</div>
-
           <h1 class="welcome-title">
-            <div>Welcome,</div>
-            <div class="welcome-subline">I am Tru<span class="brand-x">X</span></div>
+            <span class="home-muted">Welcome to</span>
+            <span class="brand-x">TruX</span>
           </h1>
-          
-          <div class="animated-sub">
-            <span>Ask me about</span>
-            <span class="cycling-text-wrapper">
-              <span class="cycling-text" id="cyclingText">Software</span>
-            </span>
+          <p class="welcome-minimal">What would you like to work on?</p>
+
+          <div class="chips" aria-label="Quick starts">
+            <button type="button" class="chip" onclick="quickPrompt('Write a clean JavaScript function for...')">
+              <span class="chip-ico"><svg viewBox="0 0 24 24"><path d="m9 8-4 4 4 4M15 8l4 4-4 4"/></svg></span>
+              <span class="chip-txt"><b>Code</b></span>
+              <span class="chip-go"><svg viewBox="0 0 24 24"><path d="M5 12h13m0 0-5-5m5 5-5 5"/></svg></span>
+            </button>
+            <button type="button" class="chip" onclick="quickPrompt('Analyze the following text...')">
+              <span class="chip-ico"><svg viewBox="0 0 24 24"><path d="M4 19h16M7 16V9M12 16V5M17 16v-4"/></svg></span>
+              <span class="chip-txt"><b>Analyze</b></span>
+              <span class="chip-go"><svg viewBox="0 0 24 24"><path d="M5 12h13m0 0-5-5m5 5-5 5"/></svg></span>
+            </button>
+            <button type="button" class="chip" onclick="quickPrompt('Draft a concise professional email about...')">
+              <span class="chip-ico"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 13l8-5.5"/><rect x="3.5" y="5" width="17" height="14" rx="2.5"/></svg></span>
+              <span class="chip-txt"><b>Write</b></span>
+              <span class="chip-go"><svg viewBox="0 0 24 24"><path d="M5 12h13m0 0-5-5m5 5-5 5"/></svg></span>
+            </button>
+            <button type="button" class="chip" onclick="quickPrompt('Generate an image of...')">
+              <span class="chip-ico"><svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="m4.5 18 5-5 3 3 2.5-2.5 4.5 4.5"/></svg></span>
+              <span class="chip-txt"><b>Create</b></span>
+              <span class="chip-go"><svg viewBox="0 0 24 24"><path d="M5 12h13m0 0-5-5m5 5-5 5"/></svg></span>
+            </button>
           </div>
-
-      <div class="chips-head">Start with</div>
-
-      <div class="chips">
-        <button type="button" class="chip" onclick="quickPrompt('Write a clean JavaScript function for...')">
-          <span class="chip-ico"><svg viewBox="0 0 24 24"><path d="m9 8-4 4 4 4M15 8l4 4-4 4"/></svg></span>
-          <span class="chip-txt"><b>Coding &amp; logic</b><i>Write, refactor and explain code</i></span>
-          <span class="chip-go"><svg viewBox="0 0 24 24"><path d="M5 12h13m0 0-5-5m5 5-5 5"/></svg></span>
-        </button>
-        <button type="button" class="chip" onclick="quickPrompt('Analyze the following text...')">
-          <span class="chip-ico"><svg viewBox="0 0 24 24"><path d="M4 19h16M7 16V9M12 16V5M17 16v-4"/></svg></span>
-          <span class="chip-txt"><b>Data analysis</b><i>Find patterns, build tables, compare</i></span>
-          <span class="chip-go"><svg viewBox="0 0 24 24"><path d="M5 12h13m0 0-5-5m5 5-5 5"/></svg></span>
-        </button>
-        <button type="button" class="chip" onclick="quickPrompt('Draft a concise professional email about...')">
-          <span class="chip-ico"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 13l8-5.5"/><rect x="3.5" y="5" width="17" height="14" rx="2.5"/></svg></span>
-          <span class="chip-txt"><b>Technical writing</b><i>Docs, emails and clear summaries</i></span>
-          <span class="chip-go"><svg viewBox="0 0 24 24"><path d="M5 12h13m0 0-5-5m5 5-5 5"/></svg></span>
-        </button>
-        <button type="button" class="chip" onclick="quickPrompt('Generate an image of...')">
-          <span class="chip-ico"><svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="m4.5 18 5-5 3 3 2.5-2.5 4.5 4.5"/></svg></span>
-          <span class="chip-txt"><b>Image generation</b><i>Diagrams, concepts and visuals</i></span>
-          <span class="chip-go"><svg viewBox="0 0 24 24"><path d="M5 12h13m0 0-5-5m5 5-5 5"/></svg></span>
-        </button>
-      </div>
         </div>
       </section>
 
@@ -2851,7 +3010,11 @@
     function setWorkspaceMode(mode) {
       workspaceMode = mode || "chat";
       const isCoding = workspaceMode === "coding";
+      closeAttachmentMenu();
+      closeModelDropdown();
+      syncMobileSidebarState();
       document.body.classList.toggle("coding-workspace", isCoding);
+      document.body.classList.toggle("home-active", !isCoding && !currentChatId);
       getEl("chatContainer").style.display = isCoding ? "none" : "block";
       getEl("codeChatContainer").style.display = isCoding ? "block" : "none";
       if(isCoding) { const codeHome = getEl("truxCodeWorkspace"); codeHome?.classList.remove("code-workspace-dismissed"); codeHome?.style.removeProperty("display"); loadCodeRepositories(); }
@@ -3032,14 +3195,31 @@
     function toggleSidebar(e) {
       if(e) e.stopPropagation();
       let s = getEl("sidebarNode"), overlay = getEl("sidebarOverlay");
-      if(window.innerWidth <= 768) { s.classList.toggle("open"); overlay.classList.toggle("active"); } 
-      else { s.classList.toggle("collapsed"); }
+      if(window.innerWidth <= 768) {
+        s.classList.toggle("open");
+        overlay.classList.toggle("active", s.classList.contains("open"));
+      } else {
+        s.classList.toggle("collapsed");
+        overlay.classList.remove("active");
+      }
     }
     function closeSidebar() {
       let s = getEl("sidebarNode"), overlay = getEl("sidebarOverlay");
-      if(window.innerWidth <= 768) { s.classList.remove("open"); overlay.classList.remove("active"); } 
-      else { s.classList.add("collapsed"); }
+      s.classList.remove("open");
+      overlay.classList.remove("active");
+      if(window.innerWidth > 768) s.classList.add("collapsed");
     }
+    function syncMobileSidebarState() {
+      const s = getEl("sidebarNode"), overlay = getEl("sidebarOverlay");
+      if(!s || !overlay) return;
+      if(window.innerWidth > 768) {
+        s.classList.remove("open");
+        overlay.classList.remove("active");
+      } else {
+        overlay.classList.toggle("active", s.classList.contains("open"));
+      }
+    }
+    addEventListener("resize", syncMobileSidebarState);
 
     function bindChatScroll(container) {
       container?.addEventListener("scroll", function() {
@@ -3154,7 +3334,12 @@
     }
 
     function startNewChat() {
-      document.body.classList.add("home-active"); activeAbortController?.abort();
+      closeSidebar();
+      closeAttachmentMenu();
+      closeModelDropdown();
+      document.body.classList.add("home-active");
+      activeAbortController?.abort();
+      document.body.classList.remove("scrolled");
       stopToolStatusTyping();
       activeStreamer?.cancel(); activeStreamer = null;
       getEl("chatContainer").innerHTML = ""; getEl("chatContainer").style.display = "none";
