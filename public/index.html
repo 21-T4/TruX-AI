@@ -2172,17 +2172,16 @@
 
 
 <style id="trux-home-surface-fix-2026-09-25">
-  /*
-   * HOME SURFACE FIX
-   * The previous home patch used gradients that intentionally reached #000
-   * before the viewport ended, creating the black "block" below the hero.
-   * Keep one continuous, near-black surface for the entire welcome region.
-   */
+  /* The black band was the composer section's own background gradient.
+     Keep the entire home stage visually continuous while leaving the
+     composer/bar layout and behavior untouched. */
+  body.home-active .main{
+    background:#030304;
+  }
 
   body.home-active .welcome{
     position:relative;
     isolation:isolate;
-    overflow:hidden;
     background:#030304 !important;
   }
 
@@ -2193,39 +2192,13 @@
     z-index:-1;
     pointer-events:none;
     background:
-      radial-gradient(ellipse 74% 58% at 50% 18%, rgba(92,104,205,.085), transparent 70%),
-      radial-gradient(ellipse 52% 38% at 12% 42%, rgba(61,111,148,.018), transparent 72%),
-      radial-gradient(ellipse 52% 38% at 88% 46%, rgba(115,76,156,.018), transparent 72%);
+      radial-gradient(ellipse 74% 58% at 50% 18%, rgba(92,104,205,.075), transparent 70%),
+      radial-gradient(ellipse 52% 38% at 12% 42%, rgba(61,111,148,.016), transparent 72%),
+      radial-gradient(ellipse 52% 38% at 88% 46%, rgba(115,76,156,.016), transparent 72%);
   }
 
-  body.home-active .hero{
-    position:relative;
-    z-index:1;
-  }
-
-  /* Never introduce a second black band directly above the composer. */
   body.home-active .composer{
-    background:#000 !important;
-  }
-
-  /* The old home hero uses auto margins; keep that behavior, but make the
-     available stage predictable on narrow screens. */
-  @media (max-width:768px){
-    body.home-active .welcome{
-      min-height:0;
-      padding-top:24px;
-      padding-bottom:18px;
-    }
-    body.home-active .composer{
-      padding-top:6px;
-    }
-  }
-
-  @media (max-height:720px) and (min-width:769px){
-    body.home-active .welcome{
-      padding-top:18px;
-      padding-bottom:12px;
-    }
+    background:transparent !important;
   }
 </style>
 </head>
