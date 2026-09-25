@@ -2312,6 +2312,328 @@
 }
 </style>
 
+
+<style id="trux-home-enhancement-2026-09-25">
+  /* ============================================================
+     TRUX HOME ENHANCEMENT — 2026-09-25
+     Fix the dead-black mobile home area and restore visual depth
+     without touching chat, Trux-Code, tools, or composer logic.
+     ============================================================ */
+
+  body.home-active .welcome {
+    position: relative;
+    isolation: isolate;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    padding: clamp(22px, 4.5vh, 48px) 14px clamp(86px, 9vh, 118px);
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 78% 46% at 50% 5%, rgba(109,131,255,.17), rgba(109,131,255,0) 72%),
+      radial-gradient(ellipse 70% 52% at 50% 67%, rgba(176,124,255,.095), rgba(176,124,255,0) 74%),
+      linear-gradient(180deg, #08080e 0%, #05050a 52%, #020205 100%);
+  }
+
+  body.home-active .welcome::before {
+    content: "";
+    position: absolute;
+    z-index: -2;
+    width: min(760px, 120vw);
+    height: min(760px, 92vw);
+    left: 50%;
+    top: 31%;
+    transform: translate(-50%, -50%);
+    background:
+      radial-gradient(circle at 50% 40%, rgba(109,131,255,.075), transparent 42%),
+      radial-gradient(circle at 38% 54%, rgba(176,124,255,.055), transparent 34%),
+      radial-gradient(circle at 64% 62%, rgba(73,112,255,.045), transparent 31%);
+    filter: blur(42px);
+    pointer-events: none;
+  }
+
+  body.home-active .welcome::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 30%;
+    z-index: -1;
+    background: linear-gradient(180deg, rgba(0,0,0,0), rgba(1,1,4,.46));
+    pointer-events: none;
+  }
+
+  body.home-active .hero {
+    width: min(720px, 100%);
+    max-width: 720px;
+    margin: 0 auto;
+    padding: clamp(12px, 2vh, 24px) 0 0;
+  }
+
+  body.home-active .hero::before {
+    width: min(680px, 110vw);
+    height: 250px;
+    top: -7%;
+    opacity: .9;
+    filter: blur(56px);
+  }
+
+  body.home-active .welcome-title {
+    font-size: clamp(48px, 13vw, 68px);
+    line-height: .92;
+    letter-spacing: -.06em;
+    text-shadow: 0 10px 40px rgba(0,0,0,.24);
+  }
+
+  body.home-active .welcome-title .home-muted {
+    color: #92929d;
+    background: linear-gradient(180deg, #9b9ba6 0%, #62626d 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  body.home-active .brand-x {
+    text-shadow: 0 0 42px rgba(109,131,255,.34), 0 0 80px rgba(176,124,255,.16);
+  }
+
+  body.home-active .welcome-minimal {
+    margin-top: 16px;
+    color: #858590;
+    font-size: 16px;
+    letter-spacing: -.014em;
+  }
+
+  body.home-active .chips {
+    width: 100%;
+    max-width: 700px;
+    margin-top: 30px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  body.home-active .chip {
+    position: relative;
+    min-height: 104px;
+    padding: 16px;
+    overflow: hidden;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    border-radius: 19px;
+    border: 1px solid rgba(255,255,255,.095);
+    background:
+      linear-gradient(145deg, rgba(27,28,40,.9), rgba(11,11,16,.94));
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.055),
+      inset 0 -20px 40px rgba(0,0,0,.13),
+      0 16px 34px rgba(0,0,0,.22);
+    transform: translateY(0);
+  }
+
+  body.home-active .chip::before {
+    content: "";
+    position: absolute;
+    width: 130px;
+    height: 130px;
+    left: -52px;
+    top: -65px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(109,131,255,.12), transparent 68%);
+    opacity: .9;
+    pointer-events: none;
+    transition: transform .3s var(--ease-out), opacity .3s var(--ease);
+  }
+
+  body.home-active .chip::after {
+    content: "";
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(109,131,255,0), rgba(109,131,255,.33), rgba(176,124,255,0));
+    opacity: .55;
+    pointer-events: none;
+  }
+
+  body.home-active .chip-ico {
+    position: relative;
+    z-index: 1;
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+    border-radius: 13px;
+    background: linear-gradient(145deg, rgba(109,131,255,.20), rgba(176,124,255,.075));
+    border-color: rgba(126,143,255,.28);
+    box-shadow: 0 8px 24px rgba(35,44,130,.20);
+  }
+
+  body.home-active .chip-txt {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+    gap: 4px;
+  }
+
+  body.home-active .chip-txt b {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -.02em;
+  }
+
+  body.home-active .chip-txt i {
+    display: block;
+    font-style: normal;
+    color: #777783;
+    font-size: 11.5px;
+    line-height: 1.28;
+    letter-spacing: -.008em;
+    max-width: 150px;
+  }
+
+  body.home-active .chip-go {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    margin-left: auto;
+    color: #767686;
+    opacity: .55;
+    transform: translateX(-1px);
+    transition: opacity .22s var(--ease), transform .22s var(--ease), color .22s var(--ease);
+  }
+
+  body.home-active .chip:hover,
+  body.home-active .chip:focus-visible {
+    transform: translateY(-3px);
+    border-color: rgba(126,143,255,.34);
+    background:
+      linear-gradient(145deg, rgba(31,32,48,.95), rgba(12,12,18,.97));
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.07),
+      0 18px 42px rgba(0,0,0,.32),
+      0 0 28px rgba(81,98,236,.08);
+  }
+
+  body.home-active .chip:hover::before,
+  body.home-active .chip:focus-visible::before {
+    transform: translate(26px, 18px) scale(1.12);
+    opacity: 1;
+  }
+
+  body.home-active .chip:hover .chip-ico,
+  body.home-active .chip:focus-visible .chip-ico {
+    color: #f6f7ff;
+    border-color: rgba(140,153,255,.4);
+    background: linear-gradient(145deg, rgba(109,131,255,.37), rgba(176,124,255,.16));
+    box-shadow: 0 10px 25px rgba(54,66,194,.28);
+  }
+
+  body.home-active .chip:hover .chip-go,
+  body.home-active .chip:focus-visible .chip-go {
+    opacity: 1;
+    transform: translateX(2px);
+    color: #aeb8ff;
+  }
+
+  body.home-active .composer {
+    padding-top: 8px;
+    background:
+      linear-gradient(180deg, rgba(3,3,7,.35), rgba(0,0,0,.92) 62%);
+  }
+
+  body.home-active .bar {
+    background: rgba(23,23,29,.91);
+    border-color: rgba(255,255,255,.115);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.05) inset,
+      0 22px 52px rgba(0,0,0,.52),
+      0 0 0 1px rgba(109,131,255,.025);
+  }
+
+  @media (max-width: 768px) {
+    body.home-active .welcome {
+      padding: 18px 14px clamp(82px, 9vh, 106px);
+    }
+
+    body.home-active .hero {
+      padding-top: 6px;
+    }
+
+    body.home-active .chips {
+      margin-top: 27px;
+      gap: 10px;
+    }
+
+    body.home-active .chip {
+      min-height: 100px;
+      padding: 15px 13px;
+      border-radius: 18px;
+    }
+
+    body.home-active .chip-ico {
+      width: 39px;
+      height: 39px;
+      flex-basis: 39px;
+    }
+
+    body.home-active .chip-txt b {
+      font-size: 14px;
+    }
+
+    body.home-active .chip-txt i {
+      font-size: 11px;
+      max-width: 125px;
+    }
+  }
+
+  @media (max-width: 420px) {
+    body.home-active .welcome {
+      padding-left: 12px;
+      padding-right: 12px;
+    }
+
+    body.home-active .welcome-title {
+      font-size: clamp(43px, 12.6vw, 54px);
+    }
+
+    body.home-active .welcome-minimal {
+      font-size: 14.5px;
+    }
+
+    body.home-active .chips {
+      gap: 9px;
+      margin-top: 24px;
+    }
+
+    body.home-active .chip {
+      min-height: 94px;
+      padding: 13px 11px;
+      gap: 9px;
+    }
+
+    body.home-active .chip-ico {
+      width: 35px;
+      height: 35px;
+      flex-basis: 35px;
+      border-radius: 11px;
+    }
+
+    body.home-active .chip-txt b {
+      font-size: 13.5px;
+    }
+
+    body.home-active .chip-txt i {
+      font-size: 10.5px;
+      line-height: 1.24;
+    }
+
+    body.home-active .chip-go {
+      display: none;
+    }
+  }
+</style>
 </head>
 <body class="home-active">
   <div class="bg" id="bg"><div class="bg-orb"></div></div>
@@ -2439,22 +2761,22 @@
           <div class="chips" aria-label="Quick starts">
             <button type="button" class="chip" onclick="quickPrompt('Write a clean JavaScript function for...')">
               <span class="chip-ico"><svg viewBox="0 0 24 24"><path d="m9 8-4 4 4 4M15 8l4 4-4 4"/></svg></span>
-              <span class="chip-txt"><b>Code</b></span>
+              <span class="chip-txt"><b>Code</b><i>Build, debug &amp; refactor</i></span>
               <span class="chip-go"><svg viewBox="0 0 24 24"><path d="M5 12h13m0 0-5-5m5 5-5 5"/></svg></span>
             </button>
             <button type="button" class="chip" onclick="quickPrompt('Analyze the following text...')">
               <span class="chip-ico"><svg viewBox="0 0 24 24"><path d="M4 19h16M7 16V9M12 16V5M17 16v-4"/></svg></span>
-              <span class="chip-txt"><b>Analyze</b></span>
+              <span class="chip-txt"><b>Analyze</b><i>Explore data &amp; ideas</i></span>
               <span class="chip-go"><svg viewBox="0 0 24 24"><path d="M5 12h13m0 0-5-5m5 5-5 5"/></svg></span>
             </button>
             <button type="button" class="chip" onclick="quickPrompt('Draft a concise professional email about...')">
               <span class="chip-ico"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 13l8-5.5"/><rect x="3.5" y="5" width="17" height="14" rx="2.5"/></svg></span>
-              <span class="chip-txt"><b>Write</b></span>
+              <span class="chip-txt"><b>Write</b><i>Draft, rewrite &amp; polish</i></span>
               <span class="chip-go"><svg viewBox="0 0 24 24"><path d="M5 12h13m0 0-5-5m5 5-5 5"/></svg></span>
             </button>
             <button type="button" class="chip" onclick="quickPrompt('Generate an image of...')">
               <span class="chip-ico"><svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="m4.5 18 5-5 3 3 2.5-2.5 4.5 4.5"/></svg></span>
-              <span class="chip-txt"><b>Create</b></span>
+              <span class="chip-txt"><b>Create</b><i>Generate visuals &amp; concepts</i></span>
               <span class="chip-go"><svg viewBox="0 0 24 24"><path d="M5 12h13m0 0-5-5m5 5-5 5"/></svg></span>
             </button>
           </div>
