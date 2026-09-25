@@ -3160,22 +3160,66 @@
       }
     }
 
-    /* Android/mobile browsers can expose the paste through beforeinput while
-       leaving clipboardData empty on the later paste event. Handle both paths. */
+    /* Long paste handling:
+       On Android the paste event's clipboardData can be empty, while
+       beforeinput/input still exposes the actual edit. Keep the pre-paste
+       value and recover the inserted text from the resulting textarea value. */
+    let pendingPromptPaste = null;
+
     getEl("promptInput").addEventListener("beforeinput", e => {
       if(e.inputType !== "insertFromPaste") return;
+
+      const p = e.target;
       const text = getPasteText(e);
+
       if(shouldAttachPastedText(text)) {
         e.preventDefault();
+        pendingPromptPaste = null;
         attachCodeAsFile(text);
+        return;
       }
+
+      const start = typeof p.selectionStart === "number" ? p.selectionStart : p.value.length;
+      const end = typeof p.selectionEnd === "number" ? p.selectionEnd : start;
+      pendingPromptPaste = {
+        value: p.value,
+        start,
+        end,
+        timer: setTimeout(() => { pendingPromptPaste = null; }, 1000)
+      };
     });
 
     getEl("promptInput").addEventListener("paste", e => {
       const text = getPasteText(e);
+
       if(shouldAttachPastedText(text)) {
         e.preventDefault();
+        if(pendingPromptPaste?.timer) clearTimeout(pendingPromptPaste.timer);
+        pendingPromptPaste = null;
         attachCodeAsFile(text);
+      }
+    });
+
+    getEl("promptInput").addEventListener("input", e => {
+      const pending = pendingPromptPaste;
+      if(!pending) return;
+      if(pending.timer) clearTimeout(pending.timer);
+      pendingPromptPaste = null;
+
+      const p = e.target;
+      const before = pending.value;
+      const start = pending.start;
+      const end = pending.end;
+
+      /* Recover exactly the text inserted by the paste, even when the browser
+         gave us no clipboardData. */
+      const insertedLength = Math.max(0, p.value.length - before.length + (end - start));
+      const inserted = p.value.slice(start, start + insertedLength);
+
+      if(shouldAttachPastedText(inserted)) {
+        p.value = before;
+        attachCodeAsFile(inserted);
+        handleInputChange();
       }
     });
 
