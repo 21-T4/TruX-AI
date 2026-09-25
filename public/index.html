@@ -3148,7 +3148,7 @@
     }
 
     function shouldAttachPastedText(text) {
-      return !!text && (text.split(/\r?\n/).length > 15 || detectCodeInInput(text));
+      return !!text && (text.split(/\r\n|\r|\n|\u2028|\u2029/).length > 15 || detectCodeInInput(text));
     }
 
     function getPasteText(e) {
