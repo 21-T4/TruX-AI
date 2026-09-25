@@ -3216,24 +3216,56 @@
       }
     });
 
+    /* Final fallback: some Android keyboards/WebViews expose paste only as
+       a normal "input" edit. Compare the value before and after every input,
+       so long pasted text is caught even when paste/beforeinput contain no
+       clipboard data at all. */
+    let lastPromptInputValue = getEl("promptInput").value || "";
+
     getEl("promptInput").addEventListener("input", e => {
-      const pending = pendingPromptPaste;
-      if(!pending) return;
-      if(pending.timer) clearTimeout(pending.timer);
-      pendingPromptPaste = null;
-
       const p = e.target;
-      const before = pending.value;
-      const start = pending.start;
-      const end = pending.end;
+      const current = p.value;
+      const pending = pendingPromptPaste;
 
-      /* Recover exactly the text inserted by the paste, even when the browser
-         gave us no clipboardData. */
-      const insertedLength = Math.max(0, p.value.length - before.length + (end - start));
-      const inserted = p.value.slice(start, start + insertedLength);
+      if(pending) {
+        if(pending.timer) clearTimeout(pending.timer);
+        pendingPromptPaste = null;
+
+        const before = pending.value;
+        const start = pending.start;
+        const end = pending.end;
+        const insertedLength = Math.max(0, current.length - before.length + (end - start));
+        const inserted = current.slice(start, start + insertedLength);
+
+        if(shouldAttachPastedText(inserted)) {
+          p.value = before;
+          lastPromptInputValue = before;
+          attachCodeAsFile(inserted);
+          handleInputChange();
+          return;
+        }
+      }
+
+      const before = lastPromptInputValue;
+      lastPromptInputValue = current;
+
+      if(!before || !current || current === before) return;
+
+      /* Find the exact changed segment without relying on clipboard APIs. */
+      let prefix = 0;
+      const maxPrefix = Math.min(before.length, current.length);
+      while(prefix < maxPrefix && before.charCodeAt(prefix) === current.charCodeAt(prefix)) prefix++;
+
+      let suffix = 0;
+      const maxSuffix = Math.min(before.length - prefix, current.length - prefix);
+      while(suffix < maxSuffix &&
+            before.charCodeAt(before.length - 1 - suffix) === current.charCodeAt(current.length - 1 - suffix)) suffix++;
+
+      const inserted = current.slice(prefix, current.length - suffix);
 
       if(shouldAttachPastedText(inserted)) {
         p.value = before;
+        lastPromptInputValue = before;
         attachCodeAsFile(inserted);
         handleInputChange();
       }
