@@ -3190,6 +3190,7 @@
     });
 
     getEl("promptInput").addEventListener("paste", e => {
+      const p = e.target;
       const text = getPasteText(e);
 
       if(shouldAttachPastedText(text)) {
@@ -3197,6 +3198,21 @@
         if(pendingPromptPaste?.timer) clearTimeout(pendingPromptPaste.timer);
         pendingPromptPaste = null;
         attachCodeAsFile(text);
+        return;
+      }
+
+      /* Some mobile WebViews fire paste but expose no clipboard payload.
+         Capture the pre-paste selection here so the following input event
+         can recover the inserted text from the textarea itself. */
+      if(!text && !pendingPromptPaste) {
+        const start = typeof p.selectionStart === "number" ? p.selectionStart : p.value.length;
+        const end = typeof p.selectionEnd === "number" ? p.selectionEnd : start;
+        pendingPromptPaste = {
+          value: p.value,
+          start,
+          end,
+          timer: setTimeout(() => { pendingPromptPaste = null; }, 1000)
+        };
       }
     });
 
