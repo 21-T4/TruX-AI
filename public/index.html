@@ -2661,6 +2661,33 @@
     }
   }
 </style>
+
+<style id="trux-home-position-fix-2026-09-25">
+  /* The base .hero animation previously overwrote the translate() used by
+     the mobile centered home layout, sending the entire home UI off-screen. */
+  body.home-active .hero {
+    animation: truxHomeHeroIn .42s var(--ease-out) both !important;
+    transform: translate(-50%, -50%);
+  }
+
+  @keyframes truxHomeHeroIn {
+    from {
+      opacity: 0;
+      transform: translate(-50%, calc(-50% + 10px));
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, -50%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body.home-active .hero {
+      animation: none !important;
+      transform: translate(-50%, -50%);
+    }
+  }
+</style>
 </head>
 <body class="home-active">
   <div class="bg" id="bg"><div class="bg-orb"></div></div>
