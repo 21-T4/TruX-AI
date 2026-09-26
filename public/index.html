@@ -4290,9 +4290,9 @@
       return clean.slice(0, 1400) + "\n…";
     }
 
-    function renderGithubProposalCard(bubble, proposal) {
+    function renderGithubProposalCard(container, proposal) {
       if(!bubble || !proposal) return;
-      bubble.querySelector(".github-proposal-card")?.remove();
+      container.querySelector(".github-proposal-card")?.remove();
 
       const card = document.createElement("div");
       card.className = "github-proposal-card";
@@ -4342,7 +4342,7 @@
 
       const apply = document.createElement("button");
       apply.className = "github-proposal-apply";
-      apply.textContent = "Confirm & commit";
+      apply.textContent = "Apply changes";
       apply.onclick = () => applyGithubProposal(proposal, card, apply, cancel, status);
 
       const cancel = document.createElement("button");
@@ -4356,11 +4356,11 @@
 
       const status = document.createElement("div");
       status.className = "github-proposal-status";
-      status.textContent = `Nothing has been written yet · review the changes before committing · ${proposal.repository || "GitHub"}${proposal.branch ? " · " + proposal.branch : ""}`;
+      status.textContent = `Nothing has been written yet · review the changes, then tap Apply changes · ${proposal.repository || "GitHub"}${proposal.branch ? " · " + proposal.branch : ""}`;
 
       actions.append(apply, cancel);
       card.append(title, summary, files, actions, status);
-      bubble.appendChild(card);
+      container.appendChild(card);
       card.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
 
@@ -4577,7 +4577,8 @@
           finalizeResponse(id, aid, finalText, prompt, voice, streamer, []);
           if(state.proposal) {
             const bubble = getEl(id);
-            if(bubble) renderGithubProposalCard(bubble, state.proposal);
+            const host = bubble?.closest(".trux-response-stack") || bubble;
+            if(host) renderGithubProposalCard(host, state.proposal);
           }
           activeStreamer = null;
           activeAbortController = null;
@@ -4863,7 +4864,15 @@
             }
           }
           else if(j.type === "heartbeat") { /* keep-alive event; intentionally no UI work */ }
-          else if(j.type === "github_proposal") { githubProposal = j.proposal || null; hideToolStatus(tsid); let st = getEl(sid); if (st) st.innerText = "GitHub changes ready for review…"; }
+          else if(j.type === "github_proposal") {
+            githubProposal = j.proposal || null;
+            hideToolStatus(tsid);
+            let st = getEl(sid);
+            if (st) st.innerText = "GitHub changes ready for review…";
+            const bubble = getEl(id);
+            const host = bubble?.closest(".trux-response-stack") || bubble;
+            if (host && githubProposal) renderGithubProposalCard(host, githubProposal);
+          }
           else if(j.type === "grounding") { turnSources = (j.grounding && j.grounding.sources) || []; }
           else if(j.type === "usage" && j.kind === "pro") {
             let u = getProUsageData();
@@ -4909,7 +4918,8 @@
         finalizeResponse(id, aid, text, prompt, voice, streamer, turnSources);
         if(githubProposal) {
           const bubble = getEl(id);
-          if(bubble) renderGithubProposalCard(bubble, githubProposal);
+          const host = bubble?.closest(".trux-response-stack") || bubble;
+          if(host) renderGithubProposalCard(host, githubProposal);
         }
         activeStreamer = null;
         return;
