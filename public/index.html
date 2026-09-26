@@ -4296,6 +4296,7 @@
 
       const card = document.createElement("div");
       card.className = "github-proposal-card";
+      card.dataset.chatId = currentChatId || "";
 
       const title = document.createElement("div");
       title.className = "github-proposal-title";
@@ -4308,7 +4309,13 @@
       const files = document.createElement("div");
       files.className = "github-proposal-files";
 
-      (proposal.edits || []).forEach(edit => {
+      const proposalEdits = Array.isArray(proposal.edits) ? proposal.edits : [];
+      const duplicatePaths = proposalEdits
+        .map(edit => String(edit?.path || "").trim())
+        .filter(Boolean)
+        .filter((path, index, paths) => paths.indexOf(path) !== index);
+
+      (proposalEdits).forEach(edit => {
         const file = document.createElement("div");
         file.className = "github-proposal-file";
 
@@ -4358,15 +4365,26 @@
       status.className = "github-proposal-status";
       status.textContent = `Nothing has been written yet · review the changes, then tap Apply changes · ${proposal.repository || "GitHub"}${proposal.branch ? " · " + proposal.branch : ""}`;
 
+      if(duplicatePaths.length) {
+        apply.disabled = true;
+        cancel.disabled = true;
+        status.textContent = "This proposal is invalid because " + duplicatePaths.join(", ") + " appears more than once. TruX-Code must prepare one combined edit per file.";
+      }
+
       actions.append(apply, cancel);
       card.append(title, summary, files, actions, status);
       container.appendChild(card);
       card.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
 
-    function appendGithubCommitResponse(proposal, commit) {
-      if (!commit?.sha || !currentChatId) return;
+    function appendGithubCommitResponse(proposal, commit, chatId = currentChatId) {
+      if (!commit?.sha) return;
       if (proposal?.__commitResponseShown) return;
+
+      const targetChatId = chatId || currentChatId;
+      const session = targetChatId ? chatSessions[targetChatId] : null;
+      if(!session?.messages) return;
+
       proposal.__commitResponseShown = true;
 
       const shortSha = commit.shortSha || String(commit.sha).slice(0, 7);
@@ -4380,7 +4398,7 @@
 
 [View commit on GitHub](${commit.url || `https://github.com/${proposal.repository}/commit/${commit.sha}`})`;
 
-      chatSessions[currentChatId].messages.push({
+      session.messages.push({
         role: "trux",
         text: responseText,
         githubCommit: {
@@ -4427,7 +4445,7 @@
         card.dataset.applied = "true";
         delete card.dataset.applying;
         apply.textContent = "Applied";
-        appendGithubCommitResponse(proposal, d.commit);
+        appendGithubCommitResponse(proposal, d.commit, card?.dataset.chatId || currentChatId);
       } catch(e) {
         delete card.dataset.applying;
         status.textContent = e.message || "The changes could not be safely applied.";
