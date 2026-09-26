@@ -69,7 +69,16 @@ async function processJob(job, env) {
         return;
       }
 
-      if (event.type === 'progress') {
+      if (event.type === 'progress' || event.type === 'chunk') {
+        /*
+         * Both event types carry visible text, but they have different
+         * meanings:
+         *   - progress = TruX-Code keep-alive / activity prose
+         *   - chunk   = actual model response text
+         *
+         * The background worker must forward BOTH. Previously it only handled
+         * progress, so streamed model text was silently discarded.
+         */
         const progress = String(event.text || '');
         if (progress) {
           events.push({
