@@ -1143,6 +1143,27 @@ export async function onRequestPost(context) {
       let agentContents = contents.slice();
       let finalResult = null;
       let repositoryImported = false;
+      let githubProposalPrepared = false;
+
+      /* A coding request that asks for a repository change must not terminate
+         on an intermediate text-only turn such as "the repo is imported, now
+         I'll make the changes". Keep the agent loop alive until it produces
+         the reviewable github_propose_changes tool result. */
+      const changeRequested = codingMode && /\b(?:fix|change|modify|update|refactor|add|remove|delete|implement|adjust|edit|improve|repair|bug|broken|issue)\b/i.test(String(message || ''));
+
+      function continueCodingAgent() {
+        agentContents.push({
+          role: 'user',
+          parts: [{
+            text:
+              '[TRUX-CODE CONTINUE INSTRUCTION]\n' +
+              'Do not finish with a conversational status update yet. The user requested repository changes. ' +
+              'Continue inspecting the current repository files as needed, then call github_propose_changes with ' +
+              'exact oldText/newText replacements. The proposal must be prepared before you give a final answer. ' +
+              'Do not claim the change is applied; the user must review and explicitly apply it in the UI.'
+          }]
+        });
+      }
 
       const explicitRepoImport = codingMode
         && githubSession
@@ -1306,6 +1327,7 @@ export async function onRequestPost(context) {
               });
 
               if (call?.name === 'github_propose_changes' && callResult?.proposalReady) {
+                githubProposalPrepared = true;
                 send({
                   type: 'github_proposal',
                   proposal: {
@@ -1345,6 +1367,34 @@ export async function onRequestPost(context) {
           }
 
           agentContents.push({ role: 'user', parts: responseParts });
+          continue;
+        }
+
+        /*
+         * Gemini can occasionally answer with a progress sentence after a
+         * repository import instead of immediately issuing its next tool call.
+         * For actual change requests, that sentence is not a valid final turn:
+         * keep the agent loop alive and explicitly ask it to continue to the
+         * reviewable proposal.
+         */
+        if (changeRequested && githubSession && validGithubRepo(githubRepository) && !githubProposalPrepared) {
+          if (result?.functionCallContent) {
+            agentContents.push(result.functionCallContent);
+          } else if (result?.text) {
+            agentContents.push({
+              role: 'model',
+              parts: [{ text: String(result.text) }]
+            });
+          }
+          send({
+            type: 'status',
+            status: 'The repository is loaded. I’m continuing to the exact code changes…'
+          });
+          send({
+            type: 'progress',
+            text: 'I’m continuing the coding pass so the requested changes can be prepared for review…\n\n'
+          });
+          continueCodingAgent();
           continue;
         }
 
