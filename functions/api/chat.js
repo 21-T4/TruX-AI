@@ -1149,7 +1149,7 @@ export async function onRequestPost(context) {
          on an intermediate text-only turn such as "the repo is imported, now
          I'll make the changes". Keep the agent loop alive until it produces
          the reviewable github_propose_changes tool result. */
-      const changeRequested = codingMode && /\b(?:fix|change|modify|update|refactor|add|remove|delete|implement|adjust|edit|improve|repair|bug|broken|issue)\b/i.test(String(message || ''));
+      const changeRequested = codingMode && /\b(?:fix(?:es|ed|ing)?|change(?:s|d)?|modify(?:ies|ied|ing|s)?|update(?:s|d|ing)?|refactor(?:s|ed|ing)?|add(?:s|ed|ing)?|remove(?:s|d|ing)?|delete(?:s|d|ing)?|implement(?:s|ed|ing)?|adjust(?:s|ed|ing)?|edit(?:s|ed|ing)?|improve(?:s|d|ing)?|repair(?:s|ed|ing)?|make|build|create|design|redesign|enhance|customize|restyle|darken|bug|broken|issue)\b/i.test(String(message || ''));
 
       function continueCodingAgent() {
         agentContents.push({
