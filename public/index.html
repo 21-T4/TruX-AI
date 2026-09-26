@@ -4364,11 +4364,44 @@
       card.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
 
+    function appendGithubCommitResponse(proposal, commit) {
+      if (!commit?.sha || !currentChatId) return;
+      if (proposal?.__commitResponseShown) return;
+      proposal.__commitResponseShown = true;
+
+      const shortSha = commit.shortSha || String(commit.sha).slice(0, 7);
+      const fileCount = Array.isArray(proposal?.edits) ? proposal.edits.length : 0;
+      const responseText =
+        `Done — I applied the reviewed changes to ${proposal.repository || "your GitHub repository"} and verified the saved result.
+
+**Commit:** \`${shortSha}\`
+**Files:** ${fileCount}
+**Message:** ${commit.message || proposal.commitMessage || "Update files with TruX-Code"}
+
+[View commit on GitHub](${commit.url || `https://github.com/${proposal.repository}/commit/${commit.sha}`})`;
+
+      chatSessions[currentChatId].messages.push({
+        role: "trux",
+        text: responseText,
+        githubCommit: {
+          sha: commit.sha,
+          url: commit.url || "",
+          message: commit.message || ""
+        }
+      });
+      saveChatSessions();
+
+      appendMessageRow("ChatTruX-AI", responseText, "trux-row", "trux-bubble", null, true);
+    }
+
     async function applyGithubProposal(proposal, card, apply, cancel, status) {
       if(!proposal || !Array.isArray(proposal.edits) || !proposal.edits.length) return;
+      if(card?.dataset.applied === "true" || card?.dataset.applying === "true") return;
+
+      card.dataset.applying = "true";
       apply.disabled = true;
       cancel.disabled = true;
-      status.textContent = "Checking the repository and applying changes…";
+      status.textContent = "Validating the reviewed changes against the current repository…";
 
       try {
         const r = await fetch("/api/github/apply-edits", {
@@ -4384,21 +4417,24 @@
           })
         });
         const d = await r.json().catch(() => ({}));
-        if(!r.ok) throw Error(d.error || "GitHub rejected the changes.");
 
-        const commits = (d.results || []).map(x => x.commit).filter(Boolean);
-        status.textContent = commits.length
-          ? `Applied successfully · ${commits.length} commit${commits.length === 1 ? "" : "s"} created.`
-          : "Applied successfully.";
+        if(!r.ok || d.ok !== true || d.applied !== true || d.verified !== true || !d.commit?.sha) {
+          throw Error(d.error || "GitHub did not confirm a verified apply.");
+        }
+
+        const shortSha = d.commit.shortSha || String(d.commit.sha).slice(0, 7);
+        status.textContent = `Applied & verified · one commit ${shortSha} created.`;
         card.dataset.applied = "true";
+        delete card.dataset.applying;
         apply.textContent = "Applied";
+        appendGithubCommitResponse(proposal, d.commit);
       } catch(e) {
-        status.textContent = e.message || "The changes could not be applied.";
+        delete card.dataset.applying;
+        status.textContent = e.message || "The changes could not be safely applied.";
         apply.disabled = false;
         cancel.disabled = false;
       }
     }
-
 
     const toolStatusTimers = new Set();
     function stopToolStatusTyping() {
