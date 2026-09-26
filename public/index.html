@@ -4291,7 +4291,7 @@
     }
 
     function renderGithubProposalCard(container, proposal) {
-      if(!bubble || !proposal) return;
+      if(!container || !proposal) return;
       container.querySelector(".github-proposal-card")?.remove();
 
       const card = document.createElement("div");
