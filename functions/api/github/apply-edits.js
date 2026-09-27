@@ -1,11 +1,7 @@
 const MAX_FILE_BYTES = 1024 * 1024;
 const MAX_EDITS = 8;
 
-function getKv(env) {
-  const kv = env.TRUX_GITHUB_KV || env['TruX-Images'] || env.TruX_Images || env.IMAGE_LIMIT_KV;
-  if (!kv) throw new Error('TRUX_GITHUB_KV binding is missing.');
-  return kv;
-}
+import { getGithubSession } from '../../github-session.js';
 
 function getCookie(request, name) {
   return (request.headers.get('Cookie') || '')
@@ -70,8 +66,7 @@ function countExact(source, needle) {
 
 export async function onRequestPost({ request, env }) {
   try {
-    const sessionId = getCookie(request, 'trux_github_session');
-    const session = sessionId ? await getKv(env).get('github_session_' + sessionId, 'json') : null;
+    const session = await getGithubSession(request, env);
     if (!session?.token) {
       return Response.json({ error: 'Connect GitHub before applying repository changes.' }, { status: 401 });
     }
