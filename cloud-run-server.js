@@ -2,7 +2,6 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createCloudRunEnv } from "./functions/cloud-run-kv.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -43,6 +42,46 @@ function mimeType(file) {
   }[ext] || "application/octet-stream";
 }
 
+function forwardedOrigin(req) {
+  const forwardedProto = String(req.headers["x-forwarded-proto"] || "http")
+    .split(",")[0]
+    .trim() || "http";
+  const forwardedHost = String(req.headers["x-forwarded-host"] || req.headers.host || `localhost:${PORT}`)
+    .split(",")[0]
+    .trim();
+  return `${forwardedProto}://${forwardedHost}`;
+}
+
+function createRuntimeEnv(req) {
+  const env = { ...process.env };
+  if (!env.TRUX_APP_ORIGIN) env.TRUX_APP_ORIGIN = forwardedOrigin(req);
+
+  /*
+   * Cloudflare Queues are not available inside a normal Cloud Run container.
+   * Expose a small compatibility adapter so the existing background route can
+   * keep the same interface. The job is started after the HTTP response path
+   * returns, and the existing worker code performs the status persistence.
+   */
+  env.TRUX_BACKGROUND_QUEUE = {
+    async send(payload) {
+      Promise.resolve().then(async () => {
+        try {
+          const worker = await import("./workers/trux-background.js");
+          if (!worker?.default?.queue) throw new Error("Cloud Run background worker is unavailable.");
+          await worker.default.queue(
+            { messages: [{ body: payload }] },
+            env
+          );
+        } catch (error) {
+          console.error("Cloud Run background job failed:", error);
+        }
+      });
+    }
+  };
+
+  return env;
+}
+
 async function loadHandler(modulePath) {
   return import(path.resolve(__dirname, modulePath));
 }
@@ -54,26 +93,28 @@ async function readBody(req) {
 }
 
 function makeRequest(req, body) {
-  const host = req.headers.host || `localhost:${PORT}`;
-  const forwardedProto = String(req.headers['x-forwarded-proto'] || 'http').split(',')[0].trim();
-  const protocol = forwardedProto === 'https' ? 'https' : 'http';
+  const host = req.headers["x-forwarded-host"] || req.headers.host || `localhost:${PORT}`;
+  const forwardedProto = String(req.headers["x-forwarded-proto"] || "http")
+    .split(",")[0]
+    .trim() || "http";
+
   const headers = new Headers();
   for (const [key, value] of Object.entries(req.headers)) {
     if (Array.isArray(value)) headers.set(key, value.join(", "));
     else if (value != null) headers.set(key, value);
   }
 
-  return new Request(`${protocol}://${host}${req.url}`, {
+  return new Request(`${forwardedProto}://${host}${req.url}`, {
     method: req.method,
     headers,
     body: req.method === "GET" || req.method === "HEAD" ? undefined : body,
   });
 }
 
-function contextFor(request) {
+function contextFor(request, env) {
   return {
     request,
-    env: createCloudRunEnv(process.env),
+    env,
     params: {},
     waitUntil(promise) {
       Promise.resolve(promise).catch(error => console.error("waitUntil failed:", error));
@@ -85,6 +126,7 @@ async function sendResponse(res, response) {
   res.statusCode = response.status;
   response.headers.forEach((value, key) => res.setHeader(key, value));
   if (!response.body) return res.end();
+
   const reader = response.body.getReader();
   try {
     while (true) {
@@ -103,7 +145,7 @@ async function handleApi(req, res, route) {
     const mod = await loadHandler(route);
     const body = req.method === "GET" || req.method === "HEAD" ? undefined : await readBody(req);
     const request = makeRequest(req, body);
-    const context = contextFor(request);
+    const context = contextFor(request, createRuntimeEnv(req));
     let response;
 
     if (req.method === "GET" && mod.onRequestGet) response = await mod.onRequestGet(context);
@@ -113,10 +155,15 @@ async function handleApi(req, res, route) {
 
     await sendResponse(res, response);
   } catch (error) {
-    console.error(error);
+    console.error("API route failed:", error);
     res.statusCode = 500;
     res.setHeader("Content-Type", "application/json; charset=utf-8");
-    res.end(JSON.stringify({ error: "Internal server error" }));
+    res.end(JSON.stringify({
+      error: "Internal server error",
+      detail: process.env.NODE_ENV === "production"
+        ? undefined
+        : String(error?.message || error)
+    }));
   }
 }
 
