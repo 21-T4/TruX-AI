@@ -8,10 +8,7 @@ function randomId() {
   return [...crypto.getRandomValues(new Uint8Array(24))].map(byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
-function cloudRunOrigin(request, env) {
-  const configured = String(env.TRUX_APP_ORIGIN || '').trim().replace(/\/$/, '');
-  if (/^https?:\/\//i.test(configured)) return configured;
-
+function cloudRunOrigin(request) {
   const forwardedProto = String(request.headers.get('x-forwarded-proto') || 'https')
     .split(',')[0]
     .trim() || 'https';
