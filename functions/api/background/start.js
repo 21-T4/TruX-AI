@@ -55,8 +55,9 @@ export async function onRequestPost({ request, env }) {
         status: 'queued',
         events: [{
           id: 1,
+          type: 'status',
           tool: 'TruX-Code',
-          status: 'I’m preparing a background coding workspace…'
+          status: 'Thinking…'
         }],
         final: null,
         error: null,
