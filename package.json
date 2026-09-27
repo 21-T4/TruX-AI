@@ -1,0 +1,11 @@
+{
+  "name": "trux-ai-cloud-run",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node cloud-run-server.js"
+  }
+}
