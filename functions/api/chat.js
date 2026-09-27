@@ -1140,6 +1140,17 @@ export async function onRequestPost(context) {
          the reviewable github_propose_changes tool result. */
       const changeRequested = codingMode && /\b(?:fix(?:es|ed|ing)?|change(?:s|d)?|modify(?:ies|ied|ing|s)?|update(?:s|d|ing)?|refactor(?:s|ed|ing)?|add(?:s|ed|ing)?|remove(?:s|d|ing)?|delete(?:s|d|ing)?|implement(?:s|ed|ing)?|adjust(?:s|ed|ing)?|edit(?:s|ed|ing)?|improve(?:s|d|ing)?|repair(?:s|ed|ing)?|make|build|create|design|redesign|enhance|customize|restyle|darken|bug|broken|issue)\b/i.test(String(message || ''));
 
+      function extractUserProgress(value) {
+        const clean = String(value || '')
+          .replace(/```[\s\S]*?```/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        if (!clean) return '';
+        const sentence = clean.match(/^.{1,240}?[.!?](?:\s|$)/);
+        return String(sentence?.[0] || clean.slice(0, 240)).trim();
+      }
+
       function continueCodingAgent() {
         agentContents.push({
           role: 'user',
@@ -1231,19 +1242,16 @@ export async function onRequestPost(context) {
               thinkingConfig: {
                 // Gemini 3 uses levels; combining this with a numeric
                 // thinkingBudget makes the Vertex API reject the request.
-                // Medium is used for TruX-Code to reduce long silent waits
-                // while retaining substantial reasoning for repository work.
                 thinkingLevel: codingMode ? 'MEDIUM' : 'HIGH'
               }
             }
           : undefined,
         onText: async text => {
-          /*
-           * The frontend now renders these chunks progressively as they
-           * arrive (paced on requestAnimationFrame), so forward every chunk
-           * as soon as it is produced - do not batch or delay here.
-           */
-          send({ type: 'chunk', text });
+          if (codingMode) {
+            modelRoundText += String(text || '');
+          } else {
+            send({ type: 'chunk', text });
+          }
         },
         onStatus: async status => {
           send({ type: 'status', status });
@@ -1251,10 +1259,10 @@ export async function onRequestPost(context) {
         });
 
         if (result.functionCalls?.length) {
-          send({
-            type: 'status',
-            status: codingMode ? 'Choosing the next repository action…' : 'Checking the relevant details…'
-          });
+          const progressLine = codingMode
+            ? extractUserProgress(modelRoundText || result.text)
+            : '';
+          if (progressLine) send({ type: 'status', status: progressLine });
           if (!result.functionCallContent) throw new Error('GitHub tool call returned without model content.');
 
           agentContents.push(result.functionCallContent);
@@ -1269,17 +1277,10 @@ export async function onRequestPost(context) {
             };
             const toolName = toolLabels[call?.name] || 'GitHub Tool';
             const rawPath = call?.args?.path ? String(call.args.path) : '';
-            const startMessage = call?.name === 'github_import_repository'
-              ? "I’m configuring your repo and importing its structure…"
-              : call?.name === 'github_search_code'
-                ? "I’m searching your repo for the relevant code…"
-                : call?.name === 'github_read_file'
-                  ? "I’m reading " + rawPath + " so I can work from the current version…"
-                  : call?.name === 'github_propose_changes'
-                    ? "I’m preparing exact changes for your review…"
-                    : "I’m working with the connected GitHub workspace…";
+            const toolTarget = rawPath ? toolName + ' · ' + rawPath : toolName;
+            const activeExplanation = progressLine || ('Working with ' + toolTarget + '…');
 
-            send({ type: 'tool_status', tool: toolName, phase: 'start', status: startMessage });
+            send({ type: 'tool_status', tool: toolName, phase: 'start', status: activeExplanation });
 
             send({
               type: 'progress',
@@ -1304,15 +1305,7 @@ export async function onRequestPost(context) {
                 type: 'tool_status',
                 tool: toolName,
                 phase: 'complete',
-                status: call?.name === 'github_import_repository'
-                  ? "Repository structure imported. I’m checking what matters for your request…"
-                  : call?.name === 'github_search_code'
-                    ? "Search complete. I’m using the matching files and symbols now…"
-                    : call?.name === 'github_read_file'
-                      ? "File loaded. I’m using its current contents now…"
-                      : call?.name === 'github_propose_changes'
-                        ? "Exact replacements prepared. I’m waiting for your review…"
-                        : "GitHub workspace step complete…"
+                status: 'Completed ' + toolTarget + '.'
               });
 
               if (call?.name === 'github_propose_changes' && callResult?.proposalReady) {
@@ -1375,14 +1368,8 @@ export async function onRequestPost(context) {
               parts: [{ text: String(result.text) }]
             });
           }
-          send({
-            type: 'status',
-            status: 'The repository is loaded. I’m continuing to the exact code changes…'
-          });
-          send({
-            type: 'progress',
-            text: 'I’m continuing the coding pass so the requested changes can be prepared for review…\n\n'
-          });
+          const progressLine = extractUserProgress(result?.text);
+          if (progressLine) send({ type: 'status', status: progressLine });
           continueCodingAgent();
           continue;
         }
