@@ -1166,7 +1166,7 @@ export async function onRequestPost(context) {
           type: 'tool_status',
           tool: 'GitHub Import',
           phase: 'start',
-          status: "I’m configuring your repository workspace…"
+          status: 'GitHub Import · repository workspace'
         });
 
         try {
@@ -1175,7 +1175,7 @@ export async function onRequestPost(context) {
             type: 'tool_status',
             tool: 'GitHub Import',
             phase: 'start',
-            status: "I’m importing your repository structure and mapping its files…"
+            status: 'GitHub Import · repository structure'
           });
 
           repositoryImported = true;
@@ -1190,14 +1190,14 @@ export async function onRequestPost(context) {
             type: 'tool_status',
             tool: 'GitHub Import',
             phase: 'complete',
-            status: "Repository imported. I’m preparing it for code-aware analysis…"
+            status: 'Completed GitHub Import · repository structure.'
           });
         } catch (importError) {
           send({
             type: 'tool_status',
             tool: 'GitHub Import',
             phase: 'complete',
-            status: "I couldn’t import the repository yet: " + String(importError?.message || 'unknown error')
+            status: 'GitHub Import failed: ' + String(importError?.message || 'unknown error')
           });
           agentContents.push({
             role: 'user',
@@ -1275,16 +1275,6 @@ export async function onRequestPost(context) {
             const activeExplanation = progressLine || ('Working with ' + toolTarget + '…');
 
             send({ type: 'tool_status', tool: toolName, phase: 'start', status: activeExplanation });
-
-            send({
-              type: 'progress',
-              text: ({
-                github_import_repository: "I’m importing the repository structure so I can work from the current files…",
-                github_search_code: "I’m searching the repository for the exact code that needs attention…",
-                github_read_file: "I’m reading the current file before changing anything…",
-                github_propose_changes: "I’ve identified the change and I’m preparing the exact patch for review…"
-              }[call?.name] || "I’m working through the next coding step…") + "\n\n"
-            });
 
             try {
               const callResult = githubSession && codingMode && validGithubRepo(githubRepository)
