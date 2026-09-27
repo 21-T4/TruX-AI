@@ -16,8 +16,9 @@ async function processJob(job, env) {
 
   let events = [{
     id: 1,
+    type: 'status',
     tool: 'TruX-Code',
-    status: 'Background worker started. I’m continuing your coding request safely…'
+    status: 'Thinking…'
   }];
 
   try {
