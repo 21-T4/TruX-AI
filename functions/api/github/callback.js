@@ -1,4 +1,4 @@
-import { createGithubSessionCookie, readOAuthState, clearOAuthStateCookie } from '../../github-session.js';
+import { createGithubSessionCookie, readOAuthState } from '../../github-session.js';
 
 
 function randomId() {
@@ -61,10 +61,7 @@ export async function onRequestGet({ request, env }) {
     status: 302,
     headers: {
       Location: pending.returnTo || '/',
-      'Set-Cookie': [
-        await createGithubSessionCookie(env, { token: tokenPayload.access_token, login: profile.login }, request),
-        clearOAuthStateCookie(request)
-      ].join(', ')
+      'Set-Cookie': await createGithubSessionCookie(env, { token: tokenPayload.access_token, login: profile.login }, request)
     }
   });
 
