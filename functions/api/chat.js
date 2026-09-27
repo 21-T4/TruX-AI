@@ -1120,15 +1120,6 @@ export async function onRequestPost(context) {
         ? [{ functionDeclarations: getGithubToolDeclarations() }]
         : [{ googleSearch: {} }];
 
-      if (codingMode) {
-        send({
-          type: 'progress',
-          text: githubSession && validGithubRepo(githubRepository)
-            ? "I’m starting by inspecting the connected repository…\n\n"
-            : "I’m starting by breaking the coding request into the first concrete step…\n\n"
-        });
-      }
-
       let agentContents = contents.slice();
       let finalResult = null;
       let repositoryImported = false;
@@ -1219,16 +1210,19 @@ export async function onRequestPost(context) {
 
 
       for (let agentRound = 0; agentRound < 7; agentRound++) {
-        send({
-          type: 'status',
-          status: agentRound === 0
-            ? (researchMode
-              ? 'Understanding the research request…'
-              : codingMode
-                ? 'Understanding the coding request…'
+        if (!codingMode) {
+          send({
+            type: 'status',
+            status: agentRound === 0
+              ? (researchMode
+                ? 'Understanding the research request…'
                 : 'Understanding your request…')
-            : 'Using the latest results to refine the response…'
-        });
+              : 'Using the latest results to refine the response…'
+          });
+        }
+
+        let modelRoundText = '';
+        if (codingMode) send({ type: 'status', status: 'Thinking…' });
 
         const result = await streamVertexGemini({
           model: targetModel,
@@ -1322,16 +1316,6 @@ export async function onRequestPost(context) {
                 });
               }
 
-              send({
-                type: 'progress',
-                text: ({
-                  github_import_repository: "The repository map is ready. I’m using it to focus the next step…",
-                  github_search_code: "The matching code is found. I’m using those results to decide the next change…",
-                  github_read_file: "The current file is loaded. I’m checking its surrounding logic before proposing the fix…",
-                  github_propose_changes: "The exact replacements are prepared. They’re ready for your review…"
-                }[call?.name] || "That coding step is complete. I’m moving to the next one…") + "\n\n"
-              });
-
               responseParts.push({
                 functionResponse: {
                   name: call.name,
@@ -1376,14 +1360,14 @@ export async function onRequestPost(context) {
 
         finalResult = result;
 
-        send({
-          type: 'status',
-          status: researchMode
-            ? 'Synthesizing the sources into a clear answer…'
-            : codingMode
-              ? 'Reviewing the result and preparing the final response…'
+        if (!codingMode) {
+          send({
+            type: 'status',
+            status: researchMode
+              ? 'Synthesizing the sources into a clear answer…'
               : 'Writing the final response…'
-        });
+          });
+        }
 
         const grounding = getGroundingData(finalResult.groundingMetadata);
         if (grounding.sources.length || grounding.searchSuggestionHtml) {
