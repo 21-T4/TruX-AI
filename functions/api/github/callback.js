@@ -1,10 +1,5 @@
-const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
+import { createGithubSessionCookie, readOAuthState, clearOAuthStateCookie } from '../../github-session.js';
 
-function getKv(env) {
-  const kv = env.TRUX_GITHUB_KV || env['TruX-Images'] || env.TruX_Images || env.IMAGE_LIMIT_KV;
-  if (!kv) throw new Error('TRUX_GITHUB_KV binding is missing.');
-  return kv;
-}
 
 function randomId() {
   return [...crypto.getRandomValues(new Uint8Array(32))].map(byte => byte.toString(16).padStart(2, '0')).join('');
@@ -17,11 +12,8 @@ export async function onRequestGet({ request, env }) {
   const state = url.searchParams.get('state');
   if (!code || !state) return new Response('Missing GitHub OAuth code or state.', { status: 400 });
 
-  const kv = getKv(env);
-  const stateKey = `github_oauth_state_${state}`;
-  const pending = await kv.get(stateKey, 'json');
-  if (!pending) return new Response('GitHub connection request expired. Please try again.', { status: 400 });
-  await kv.delete(stateKey);
+  const pending = await readOAuthState(request, env);
+  if (!pending || pending.state !== state) return new Response('GitHub connection request expired or is invalid. Please try again.', { status: 400 });
 
   const tokenBody = new URLSearchParams({
     client_id: String(env.GIT_CLIENT_ID || ''),
@@ -65,18 +57,14 @@ export async function onRequestGet({ request, env }) {
   }
   if (!profileResponse.ok || !profile.login) return new Response(`GitHub profile lookup failed: ${profile.message || 'unknown error'}`, { status: 502 });
 
-  const sessionId = randomId();
-  await kv.put(`github_session_${sessionId}`, JSON.stringify({
-    token: tokenPayload.access_token,
-    login: profile.login
-  }), { expirationTtl: SESSION_TTL_SECONDS });
-
-  const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : '';
   return new Response(null, {
     status: 302,
     headers: {
       Location: pending.returnTo || '/',
-      'Set-Cookie': `trux_github_session=${sessionId}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_TTL_SECONDS}${secure}`
+      'Set-Cookie': [
+        await createGithubSessionCookie(env, { token: tokenPayload.access_token, login: profile.login }, request),
+        clearOAuthStateCookie(request)
+      ].join(', ')
     }
   });
 
