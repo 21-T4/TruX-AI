@@ -26,8 +26,8 @@ function base64url(value) {
   return Buffer.from(value)
     .toString("base64")
     .replace(/=/g, "")
-    .replace(/\\+/g, "-")
-    .replace(/\\//g, "_");
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
 }
 
 async function accessToken(env) {
