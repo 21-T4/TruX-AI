@@ -3,8 +3,6 @@ import { getGithubSession } from '../../github-session.js';
 const MAX_FILE_BYTES = 1024 * 1024;
 const MAX_EDITS = 8;
 
-import { getGithubSession } from '../../github-session.js';
-
 function validRepo(value) {
   return /^[\w.-]+\/[\w.-]+$/.test(String(value || ''));
 }
