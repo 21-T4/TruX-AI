@@ -2081,6 +2081,7 @@
     }
 
 
+    .trux-response-stack{width:min(900px,100%)}.thinking-container{display:flex;align-items:center;justify-content:space-between;gap:12px}.thinking-elapsed{font:600 10px/1 var(--font-mono);letter-spacing:.08em;color:var(--txt-4);white-space:nowrap}.thinking-tool-trace{margin:0 0 10px;padding:10px 12px;border:1px solid rgba(134,149,255,.22);border-radius:12px;background:linear-gradient(135deg,rgba(89,104,235,.09),rgba(18,18,27,.5));gap:6px}.thinking-tool-line{font:500 12px/1.45 var(--font-mono);color:#bdc7ff}.coding-workspace .topbar{border-bottom-color:rgba(134,149,255,.25)}.coding-workspace .composer{background:linear-gradient(135deg,rgba(20,22,42,.92),rgba(12,12,18,.96));border-color:rgba(134,149,255,.38)}
 </style>
 
 <style id="trux-github-agent-styles">
@@ -2332,7 +2333,7 @@
               <div class="trux-plus-grid">
                 <button type="button" class="trux-plus-item active" data-trux-menu-mode="chat" onclick="setWorkspaceMode('chat');closeAttachmentMenu()"><span>✦</span><span><b>Chat</b><small>General answers</small></span></button>
                 <button type="button" class="trux-plus-item" data-trux-menu-mode="coding" onclick="setWorkspaceMode('coding');closeAttachmentMenu()"><span>&lt;/&gt;</span><span><b>Coding</b><small>Build, debug, refactor</small></span></button>
-                <button type="button" class="trux-plus-item" data-trux-menu-mode="deep-research" onclick="setWorkspaceMode('deep-research');closeAttachmentMenu()"><span>◌</span><span><b>Deep Research</b><small>Gemini 3.1 Pro Preview + web</small></span></button>
+                <button type="button" class="trux-plus-item" data-trux-menu-mode="deep-research" onclick="setWorkspaceMode('deep-research');closeAttachmentMenu()"><span>◌</span><span><b>Deep Research</b><small>TruX-Code reasoning engine + web</small></span></button>
                 <button type="button" class="trux-plus-item" data-trux-menu-mode="image" onclick="setWorkspaceMode('image');closeAttachmentMenu()"><span>◈</span><span><b>Create image</b><small>Gemini image generation</small></span></button>
               </div>
               <div class="trux-plus-sep"></div>
@@ -2340,7 +2341,7 @@
               <div class="trux-plus-grid">
                 <button type="button" class="trux-plus-item active" data-model="base" onclick="selectModel('base',event);closeAttachmentMenu()"><span>ϟ</span><span><b>Core 4.0</b><small>Unlimited core access</small></span></button>
                 <button type="button" class="trux-plus-item" data-model="pro" onclick="selectModel('pro',event);closeAttachmentMenu()"><span>✦</span><span><b>Pro 5.0</b><small>1,000,000 tokens/month</small></span></button>
-                <button type="button" class="trux-plus-item trux-owner-only" data-model="ultra" onclick="selectModel('ultra',event);closeAttachmentMenu()"><span>∞</span><span><b>TruX-Ultra 6.5</b><small>Gemini 3.1 Pro Preview · owner</small></span></button>
+                <button type="button" class="trux-plus-item trux-owner-only" data-model="ultra" onclick="selectModel('ultra',event);closeAttachmentMenu()"><span>∞</span><span><b>TruX-Ultra 6.5</b><small>TruX-Code reasoning engine · owner</small></span></button>
               </div>
               <div class="trux-plus-sep"></div>
               <button type="button" onclick="openFileLibrary()" role="menuitem"><svg viewBox="0 0 24 24"><path d="M5 4.5h9l4 4V19.5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-14a1 1 0 0 1 1-1Z"/><path d="M13 4.5v4h4M7.5 13h9M7.5 16h7"/></svg>Files</button>
@@ -4166,6 +4167,8 @@
 
     function finalizeResponse(id, aid, text, prompt, voice, streamer, sources) {
       let b = getEl(id);
+      const responseRow = b?.closest(".row");
+      if(responseRow?._elapsedTimer) clearInterval(responseRow._elapsedTimer);
       if (b) {
         b.classList.remove("thinking");
         if (streamer) {
@@ -4778,10 +4781,13 @@
       /* Inline TruX-Code tool trace: the current action lives in the same
          thinking text treatment; completed actions remain as plain text below. */
       let tsid = "ts_" + Date.now();
-      row.innerHTML = `<div class="label">${BRAND_LABEL}</div><div class="trux-response-stack"><div class="thinking-tool-trace" id="${tsid}" hidden></div><div class="bubble trux-bubble thinking" id="${id}"><div class="thinking-container"><div class="thinking-main"><span class="status-msg" id="${sid}">Thinking…</span></div></div></div></div><div class="actions" id="${aid}"></div>`;
+      row.innerHTML = `<div class="label">${BRAND_LABEL}</div><div class="trux-response-stack"><div class="thinking-tool-trace" id="${tsid}" hidden></div><div class="bubble trux-bubble thinking" id="${id}"><div class="thinking-container"><div class="thinking-main"><span class="status-msg" id="${sid}">Working…</span></div><span class="thinking-elapsed" id="elapsed_${id}">0s</span></div></div></div><div class="actions" id="${aid}"></div>`;
       
       chatContainer.appendChild(row);
       chatContainer.scrollTop = chatContainer.scrollHeight;
+      const elapsedEl = getEl("elapsed_" + id);
+      const startedAt = Date.now();
+      row._elapsedTimer = setInterval(() => { if(elapsedEl) elapsedEl.innerText = Math.floor((Date.now() - startedAt) / 1000) + "s"; }, 1000);
 
       const activities = activityPlan(basePrompt, workspaceMode);
       let pi = 0;
@@ -5003,6 +5009,8 @@
           }
 
           clearInterval(timer);
+          const failedRow = getEl(id)?.closest(".row");
+          if(failedRow?._elapsedTimer) clearInterval(failedRow._elapsedTimer);
           hideToolStatus(tsid);
           activeStreamer?.cancel();
           activeStreamer = null;
