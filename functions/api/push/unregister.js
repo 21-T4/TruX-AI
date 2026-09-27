@@ -1,7 +1,7 @@
+import { getCloudRunKv } from '../../cloud-run-store.js';
+
 function getKv(env) {
-  const kv = env.TRUX_BACKGROUND_KV || env.TRUX_GITHUB_KV || env['TruX-Images'] || env.TruX_Images || env.IMAGE_LIMIT_KV;
-  if (!kv) throw new Error('Push notification KV binding is missing.');
-  return kv;
+  return getCloudRunKv(env);
 }
 
 export async function onRequestPost({ request, env }) {
