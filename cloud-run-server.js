@@ -2,6 +2,7 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createCloudRunEnv } from "./functions/cloud-run-kv.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -72,7 +73,7 @@ function makeRequest(req, body) {
 function contextFor(request) {
   return {
     request,
-    env: process.env,
+    env: createCloudRunEnv(process.env),
     params: {},
     waitUntil(promise) {
       Promise.resolve(promise).catch(error => console.error("waitUntil failed:", error));
