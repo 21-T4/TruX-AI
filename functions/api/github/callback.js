@@ -1,7 +1,5 @@
 import { readOAuthState, createGithubSessionCookie } from '../../github-session.js';
 
-import { createGithubSessionCookie, readOAuthState } from '../../github-session.js';
-
 
 function randomId() {
   return [...crypto.getRandomValues(new Uint8Array(32))].map(byte => byte.toString(16).padStart(2, '0')).join('');
