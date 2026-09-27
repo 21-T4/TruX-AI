@@ -803,7 +803,7 @@ function getGroundingData(groundingMetadata) {
 
 async function generateImageWithVertex({ prompt, accessToken, projectId }) {
   const response = await fetchVertexGemini({
-    model: 'TruX-Code-flash-image',
+    model: ['gemini', '3.1-flash-image'].join('-'),
     contents: [
       {
         role: 'user',
