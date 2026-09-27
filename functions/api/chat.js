@@ -839,7 +839,7 @@ function createSseResponse(startStreaming) {
       };
 
       // Flush an SSE byte immediately, then continue with a 5s heartbeat.
-      // This is important for long TruX-Code requests behind Cloudflare.
+      // This is important for long TruX-Code requests behind Cloud Run.
       send({ type: 'heartbeat', ts: Date.now() });
       const heartbeat = setInterval(() => send({ type: 'heartbeat', ts: Date.now() }), 5000);
 
@@ -901,7 +901,7 @@ export async function onRequestPost(context) {
      * Authentication is intentionally NOT enforced here.
      *
      * If userId exists, it is used for image limits.
-     * Otherwise the Cloudflare IP is used.
+     * Otherwise the request IP is used.
      */
     const developerAccount = isDeveloperEmail(userEmail);
     const userIdentifier = userId
