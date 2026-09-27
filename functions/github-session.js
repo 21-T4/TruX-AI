@@ -70,7 +70,9 @@ function cookieValue(request, name) {
 }
 
 function cookieHeader(name, value, maxAge, request) {
-  const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : '';
+  const forwardedProto = String(request.headers.get('x-forwarded-proto') || '').split(',')[0].trim().toLowerCase();
+  const protocol = forwardedProto || new URL(request.url).protocol;
+  const secure = protocol === 'https:' ? '; Secure' : '';
   return name + '=' + value + '; HttpOnly; SameSite=Lax; Path=/; Max-Age=' + maxAge + secure;
 }
 
