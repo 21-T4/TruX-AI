@@ -1,3 +1,6 @@
+import { getCloudRunKv } from '../cloud-run-store.js';
+import { getGithubSession } from '../github-session.js';
+
 /* TruX-Code GitHub agent syntax verified */
 const LOCATION = 'global';
 
@@ -151,9 +154,7 @@ async function createGoogleAccessToken(env) {
 
 
 function getPushKv(env) {
-  const kv = env.TRUX_BACKGROUND_KV || env.TRUX_GITHUB_KV || env['TruX-Images'] || env.TruX_Images || env.IMAGE_LIMIT_KV;
-  if (!kv) throw new Error('Push notification KV binding is missing.');
-  return kv;
+  return getCloudRunKv(env);
 }
 
 async function sendFcmNotification(userIdentifier, env, title, body, data = {}) {
@@ -229,9 +230,7 @@ function getCurrentMonthKey() {
 }
 
 function getTruxImagesKV(env) {
-  const kv = env['TruX-Images'] || env.TruX_Images || env.IMAGE_LIMIT_KV;
-  if (!kv) throw new Error('TruX-Images KV binding is missing.');
-  return kv;
+  return getCloudRunKv(env);
 }
 
 async function getImageCount(userIdentifier, env) {
@@ -295,25 +294,7 @@ async function recordModeUsage(userIdentifier, mode, previousCount, delta, limit
    The browser must explicitly confirm before /apply-edits runs.
    ========================================================= */
 
-function getGithubKv(env) {
-  const kv = env.TRUX_GITHUB_KV || env['TruX-Images'] || env.TruX_Images || env.IMAGE_LIMIT_KV;
-  if (!kv) throw new Error('TRUX_GITHUB_KV binding is missing.');
-  return kv;
-}
 
-function getRequestCookie(request, name) {
-  return (request.headers.get('Cookie') || '')
-    .split(';')
-    .map(v => v.trim())
-    .find(v => v.startsWith(name + '='))
-    ?.slice(name.length + 1) || '';
-}
-
-async function getGithubSession(request, env) {
-  const sessionId = getRequestCookie(request, 'trux_github_session');
-  if (!sessionId) return null;
-  return await getGithubKv(env).get('github_session_' + sessionId, 'json');
-}
 
 function validGithubRepo(value) {
   return /^[\w.-]+\/[\w.-]+$/.test(String(value || ''));
