@@ -54,13 +54,15 @@ async function readBody(req) {
 
 function makeRequest(req, body) {
   const host = req.headers.host || `localhost:${PORT}`;
+  const forwardedProto = String(req.headers['x-forwarded-proto'] || 'http').split(',')[0].trim();
+  const protocol = forwardedProto === 'https' ? 'https' : 'http';
   const headers = new Headers();
   for (const [key, value] of Object.entries(req.headers)) {
     if (Array.isArray(value)) headers.set(key, value.join(", "));
     else if (value != null) headers.set(key, value);
   }
 
-  return new Request(`http://${host}${req.url}`, {
+  return new Request(`${protocol}://${host}${req.url}`, {
     method: req.method,
     headers,
     body: req.method === "GET" || req.method === "HEAD" ? undefined : body,
