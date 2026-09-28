@@ -36,6 +36,7 @@ export async function onRequestPost({ request, env }) {
       jobSecret: randomId(),
       body: { ...body, notifyOnComplete: true },
       cookie,
+      origin: new URL(request.url).origin,
       createdAt: Date.now()
     };
 
