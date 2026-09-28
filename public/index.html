@@ -4636,18 +4636,8 @@
           } else if(event?.type === "status") {
             setThinkingStatus(sid, event.status || "");
           } else if(event?.type === "text") {
-            /* Coding activity is delivered through status events. Legacy text
-               events stay inert so they cannot throw or become answer prose. */
-            continue;
-            const progressText = String(event.text || "");
-            if(progressText) {
-              const bubble = getEl(id);
-              if(bubble) {
-                bubble.classList.remove("thinking");
-                backgroundStreamer = backgroundStreamer || createStreamRenderer(bubble);
-                backgroundStreamer.push(progressText);
-              }
-            }
+            /* Legacy background text events are intentionally ignored.
+               Live coding activity is represented by status/tool-status events. */
           }
         }
 
@@ -4680,7 +4670,8 @@
 
     function setThinkingStatus(statusId, text) {
       const el = getEl(statusId);
-      if (el && text) el.innerText = text;
+      if (!el) return;
+      el.textContent = text == null ? "" : String(text);
     }
 
     function isNetworkFailure(error) {
@@ -4719,6 +4710,20 @@
       });
     }
 
+    function looksLikeImageGenerationRequest(text) {
+      const value = String(text || "").trim().toLowerCase();
+      if (!value) return false;
+
+      // Do not hijack requests that are clearly asking about an existing image.
+      if (/\b(analy[sz]e|describe|explain|read|ocr|identify|interpret|what(?:'s| is) in)\b/.test(value)) {
+        return false;
+      }
+
+      const imageNoun = /\b(image|picture|photo|poster|wallpaper|illustration|artwork|logo|avatar)\b/.test(value);
+      const generationVerb = /\b(generate|create|draw|make|design|render|paint|illustrate)\b/.test(value);
+      return generationVerb && (imageNoun || /\b(draw|generate|create|paint|illustrate)\b/.test(value));
+    }
+
     async function sendPrompt() {
       // Sign-in wall appears only when the person actually tries to send a message.
       if(!auth?.currentUser) {
@@ -4742,6 +4747,10 @@
       if(!owner && workspaceMode === "deep-research" && modeUsage.deepResearchRuns >= 1) return toast("Deep Research is limited to one run per month.", "err");
       if(!owner && currentModel === "pro" && workspaceMode !== "coding" && getProUsageData().tokensUsed >= 1000000) return toast("TruX Pro monthly limit reached.", "err");
       if(workspaceMode === "image" && !selectedImageBase64) return generateImage(basePrompt || "Create a high-quality image", {explicitMode:true});
+
+      if(workspaceMode === "chat" && !selectedImageBase64 && !allAttachments.length && looksLikeImageGenerationRequest(prompt)) {
+        return generateImage(basePrompt, { imagePrompt: basePrompt });
+      }
 
       /* No keyword gate here any more. Every turn goes to the model, and the
          model answers with an "[[IMAGE]] <prompt>" line when it judges that a
@@ -4842,7 +4851,6 @@
           let up = head.slice(0, IMG_TAG.length).toUpperCase();
           if (up === IMG_TAG) {
             imageRoute = true; routeSettled = true;
-            clearInterval(timer);
             let st = getEl(sid); if (st) st.innerText = "Composing your image…";
             return;
           }
@@ -4857,7 +4865,6 @@
           hideToolStatus(tsid);
           let bubble = getEl(id);
           if (!bubble) return null;
-          clearInterval(timer);
           bubble.classList.remove("thinking");
           activeStreamer = createStreamRenderer(bubble);
           return activeStreamer;
@@ -4921,6 +4928,14 @@
           let es = buf.split(/\r?\n\r?\n/); buf = es.pop() || "";
           for(let x of es) { let ls = x.split(/\r?\n/).filter(l => l.startsWith("data:")); if(ls.length) ev(ls.map(l => l.slice(5).trimStart()).join("\n")); }
         }
+        buf += dec.decode();
+        if (buf.trim()) {
+          const trailingFrames = buf.split(/\r?\n\r?\n/);
+          for (const frame of trailingFrames) {
+            const ls = frame.split(/\r?\n/).filter(l => l.startsWith("data:"));
+            if (ls.length) ev(ls.map(l => l.slice(5).trimStart()).join("\n"));
+          }
+        }
         let text = (fin !== null ? fin : full).trim();
         if(!text && githubProposal) text = "I prepared the GitHub changes for your review. Nothing has been written yet.";
         if(!text) throw Error("No response received.");
@@ -4971,7 +4986,6 @@
             continue;
           }
 
-          clearInterval(timer);
           const failedRow = getEl(id)?.closest(".row");
           if(failedRow?._elapsedTimer) clearInterval(failedRow._elapsedTimer);
           hideToolStatus(tsid);
