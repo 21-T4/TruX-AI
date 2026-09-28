@@ -2300,7 +2300,35 @@
 
     ::selection { background: rgba(213,185,106,0.22); color: #fffdf7; }
 
-</style>
+
+    /* ============================================================
+       FULL CHAT SESSION VIEW
+       Opening an existing chat or starting a response must replace
+       the home stage with a full-height transcript workspace.
+       ============================================================ */
+    body.chat-session-active .welcome {
+      display: none !important;
+    }
+    body.chat-session-active .main {
+      min-height: 0;
+      height: 100%;
+    }
+    body.chat-session-active .chat {
+      flex: 1 1 auto;
+      min-height: 0;
+      height: auto;
+      max-height: none;
+      width: 100%;
+    }
+    body.chat-session-active .chat .row {
+      width: 100%;
+      max-width: min(1040px, 100%);
+    }
+    body.chat-session-active .composer {
+      flex: 0 0 auto;
+    }
+
+  </style>
 
 <style id="trux-github-agent-styles">
 .github-proposal-card{
@@ -4347,6 +4375,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       closeAttachmentMenu();
       closeModelDropdown();
       document.body.classList.add("home-active");
+      document.body.classList.remove("chat-session-active");
       document.body.removeAttribute("data-media-mode");
       workspaceMode="chat";
       activeAbortController?.abort();
@@ -5266,7 +5295,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     async function generateImage(basePrompt, opts) {
       opts = opts || {};
       let imagePrompt = opts.imagePrompt || basePrompt;
-      document.body.classList.remove("home-active");
+      enterChatWorkspace();
       document.body.removeAttribute("data-media-mode");
       if(workspaceMode === "coding") { const codeHome = getEl("truxCodeWorkspace"); codeHome?.classList.add("code-workspace-dismissed"); codeHome?.style.setProperty("display", "none", "important"); }
       isGenerating = true; isScrolledUp = false;
@@ -5804,7 +5833,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
          model answers with an "[[IMAGE]] <prompt>" line when it judges that a
          picture is what was asked for — see the image routing below. */
       
-      document.body.classList.remove("home-active");
+      enterChatWorkspace();
       if(workspaceMode === "coding") getEl("truxCodeWorkspace")?.classList.add("code-workspace-dismissed");
       isGenerating = true; isScrolledUp = false;
       getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>'; getEl("actionBtn").classList.add("stop"); getEl("actionBtn").classList.remove("ready");
@@ -6062,7 +6091,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       if(!owner && !auth?.currentUser) return toast("Sign in to use Video generation.","err");
       if(!owner && currentModel!=="pro") return toast("Video generation is available to Pro accounts and Owner access.","err");
 
-      document.body.classList.remove("home-active");
+      enterChatWorkspace();
       document.body.removeAttribute("data-media-mode");
       isGenerating=true; isScrolledUp=false;
       getEl("btnIcon").innerHTML='<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>';
@@ -6380,16 +6409,35 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         hL.appendChild(x);
       });
     }
+    function enterChatWorkspace() {
+      enterChatWorkspace();
+      document.body.classList.add("chat-session-active");
+      document.body.removeAttribute("data-media-mode");
+
+      const welcome = getEl("welcomeScreen");
+      if (welcome) welcome.style.display = "none";
+
+      const active = getActiveChatContainer();
+      ["chatContainer", "codeChatContainer"].forEach(function(id) {
+        const el = getEl(id);
+        if (!el) return;
+        el.style.display = el === active ? "block" : "none";
+      });
+
+      if (active) {
+        active.classList.add("chat-session-view");
+      }
+      return active;
+    }
+
     function loadChatSession(id) {
       if(!chatSessions[id]) return;
-      document.body.classList.remove("home-active");
       activeAbortController?.abort();
       currentChatId = id;
       setWorkspaceMode(chatSessions[id].mode || "chat");
       getEl("chatContainer").innerHTML = "";
       getEl("codeChatContainer").innerHTML = "";
-      const cC = getActiveChatContainer();
-      cC.style.display = "block";
+      const cC = enterChatWorkspace();
       chatSessions[id].messages.forEach(m => appendMessageRow(m.role === "user" ? "You" : "ChatTruX-AI", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image, false, m.sources, m.video));
       renderSidebar(); if(innerWidth <= 768) closeSidebar();
     }
@@ -6537,7 +6585,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     }
 
 
-    document.body.classList.add("home-active"); loadSettings(); renderNotebooks(); renderSidebar(); updateAllUsageUI(); handleInputChange(); setWorkspaceMode("chat");
+    document.body.classList.remove("chat-session-active"); document.body.classList.add("home-active"); loadSettings(); renderNotebooks(); renderSidebar(); updateAllUsageUI(); handleInputChange(); setWorkspaceMode("chat");
   </script>
 </body>
 </html>
