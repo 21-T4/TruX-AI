@@ -2179,6 +2179,58 @@
     background:transparent !important;
   }
 </style>
+
+<style id="trux-sidebar-media-redesign">
+.sidebar{
+  position:fixed!important;inset:0!important;z-index:1200!important;width:100vw!important;max-width:none!important;
+  height:100dvh!important;min-height:100dvh!important;display:flex!important;flex-direction:column!important;
+  padding:max(22px,env(safe-area-inset-top)) clamp(18px,4vw,44px) max(18px,env(safe-area-inset-bottom))!important;
+  gap:0!important;border:0!important;border-radius:0!important;
+  background:radial-gradient(ellipse 70% 55% at 50% -10%,rgba(109,131,255,.10),transparent 70%),linear-gradient(180deg,rgba(7,7,9,.995),rgba(2,2,3,.995))!important;
+  box-shadow:0 0 100px rgba(0,0,0,.62),inset 0 1px 0 rgba(255,255,255,.025)!important;
+  transform:translate3d(-101%,0,0);opacity:0;visibility:hidden;pointer-events:none;
+  transition:transform 430ms var(--ease-out),opacity 240ms var(--ease),visibility 0s linear 430ms!important;
+}
+.sidebar.open{transform:translate3d(0,0,0)!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important;
+  transition:transform 430ms var(--ease-out),opacity 240ms var(--ease),visibility 0s linear 0s!important;}
+.sidebar.collapsed{margin-left:0!important;}
+.sidebar-header{display:flex;align-items:center;justify-content:space-between;gap:18px;flex:0 0 auto;padding:2px 0 18px;}
+.sidebar .brand{padding:0!important;}
+.sidebar-close{width:48px;height:48px;display:grid;place-items:center;border-radius:14px;color:var(--txt-2);border:1px solid transparent;background:transparent;}
+.sidebar-close:hover{background:rgba(255,255,255,.06);color:#fff}.sidebar-close:active{transform:scale(.96)}
+.sidebar-close svg{width:27px;height:27px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.sidebar-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:6px 2px 24px;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable;}
+.sidebar-nav{display:flex;flex-direction:column;gap:4px}
+.sidebar-item{position:relative;width:100%;min-height:62px;display:flex;align-items:center;gap:18px;padding:0 17px;border-radius:17px;color:#e7e7ec;text-align:left;border:1px solid transparent;background:transparent;font-size:clamp(16px,2.5vw,20px);font-weight:560;letter-spacing:-.018em;}
+.sidebar-item:hover{background:rgba(255,255,255,.055);border-color:rgba(255,255,255,.05);color:#fff}
+.sidebar-item:active{transform:scale(.992)}
+.sidebar-item svg{width:28px;height:28px;flex:0 0 28px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;color:#dedee5}
+.sidebar-item-badge{margin-left:auto;font:600 9px/1 var(--font-mono);letter-spacing:.12em;color:#aeb8ff;border:1px solid rgba(112,132,255,.25);background:rgba(95,113,235,.10);padding:6px 7px;border-radius:7px}
+.sidebar-search-wrap{margin:9px 0 0}
+.sidebar-search{min-height:56px;display:flex;align-items:center;gap:11px;border-radius:16px;background:rgba(20,20,24,.92);border:1px solid var(--line-2);padding:0 13px;animation:sidebarSearchIn 220ms var(--ease-out)}
+.sidebar-search svg{width:22px;height:22px;flex:0 0 22px;fill:none;stroke:var(--txt-3);stroke-width:1.9}
+.sidebar-search input{min-width:0;flex:1;height:46px;color:var(--txt);font-size:16px;background:transparent;border:0}
+.sidebar-search input::placeholder{color:var(--txt-4)}
+.sidebar-search button{width:34px;height:34px;border-radius:10px;color:var(--txt-3);font-size:24px;line-height:1}
+.sidebar-section{margin-top:29px}.sidebar-section-head{padding:0 17px 10px;color:#74747f;font-size:clamp(17px,2.5vw,20px);font-weight:570;letter-spacing:-.02em}
+.sidebar-subitem{min-height:60px;color:var(--txt-2)}
+.notebook-list{display:flex;flex-direction:column;gap:4px}
+.notebook-item{min-height:62px;display:flex;align-items:center;gap:16px;padding:0 17px 0 21px;border-radius:16px;color:#d8d8df;border:1px solid transparent;cursor:pointer}
+.notebook-item:hover{background:rgba(255,255,255,.045);color:#fff;border-color:rgba(255,255,255,.04)}
+.notebook-icon{width:28px;height:28px;display:grid;place-items:center;border:1px solid var(--line-2);border-radius:8px;background:rgba(255,255,255,.035);color:var(--txt-2)}
+.notebook-icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
+.notebook-item b{font-size:16px;font-weight:560}.recent-section{margin-top:33px}
+.history{display:flex!important;flex-direction:column!important;gap:4px!important;overflow:visible!important;padding:0 0 20px!important;margin:0!important;min-height:0!important}
+.history-head{font-size:10px!important;padding:14px 17px 7px!important}.hist{min-height:54px;display:flex;align-items:center;padding:0 17px!important;border-radius:15px!important;font-size:16px!important;color:var(--txt-2)!important}
+.hist.active{background:rgba(255,255,255,.055)!important;color:#fff!important}.hist.active::before{left:4px!important;width:2px!important}.empty{padding:16px 17px!important;font-size:14px!important}
+.profile{flex:0 0 auto;min-height:72px;margin-top:8px;padding:8px 12px 8px 10px!important;border-radius:18px!important;background:rgba(16,16,20,.92)!important;border:1px solid var(--line)!important;box-shadow:0 -8px 30px rgba(0,0,0,.18)}
+.avatar{width:48px!important;height:48px!important;border-radius:13px!important;flex-basis:48px!important}.profile-info b{font-size:16px!important}.profile-info small{font-size:12px!important}
+.profile-chevron{width:22px;height:22px;fill:none;stroke:var(--txt-4);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.sidebar-overlay{display:block!important;position:fixed!important;inset:0!important;z-index:1100!important;background:rgba(0,0,0,.72)!important;backdrop-filter:blur(5px)!important;-webkit-backdrop-filter:blur(5px)!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important;transition:opacity 260ms var(--ease),visibility 0s linear 260ms!important}
+.sidebar-overlay.active{opacity:1!important;visibility:visible!important;pointer-events:auto!important}
+body.sidebar-open .topbar{filter:brightness(.78)}
+@keyframes sidebarSearchIn{from{opacity:0;transform:translateY(-5px) scale(.99)}to{opacity:1;transform:none}}
+</style>
 </head>
 <body class="home-active">
   <div class="bg" id="bg"><div class="bg-orb"></div></div>
@@ -2203,30 +2255,68 @@
   <div class="shell">
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
-    <aside class="sidebar" id="sidebarNode">
-      <div class="brand">
-        <div class="logo" aria-label="ChatTruX-AI" role="img">
-          <img src="icon-192.png" alt="" width="38" height="38" draggable="false">
+    
+    <aside class="sidebar" id="sidebarNode" aria-label="TruX navigation">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="logo" aria-label="ChatTruX-AI" role="img">
+            <img src="icon-192.png" alt="" width="38" height="38" draggable="false">
+          </div>
+          <div><b>ChatTruX-AI</b><small>Intelligent workspace</small></div>
         </div>
-        <div><b>ChatTruX-AI</b><small>Intelligent workspace</small></div>
-      </div>
-      <div class="side-actions">
-        <button class="new-chat" onclick="startNewChat();closeSidebar()">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-          New chat
-        </button>
-        <button class="side-btn" onclick="openPinnedInsightsModal()" title="Pinned insights" aria-label="Pinned insights">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4.5h10v15l-5-3.8-5 3.8v-15Z"/></svg>
-        </button>
-        <button class="side-btn" id="sidebarInstallBtn" onclick="installPWA()" style="display:none" title="Install app" aria-label="Install app">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 19h14"/></svg>
+        <button class="sidebar-close" type="button" onclick="closeSidebar()" title="Close sidebar" aria-label="Close sidebar">
+          <svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>
         </button>
       </div>
-      <div class="side-search">
-        <svg viewBox="0 0 24 24" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>
-        <input id="historySearch" type="search" placeholder="Search chats" oninput="renderSidebar()" autocomplete="off">
+
+      <div class="sidebar-scroll">
+        <nav class="sidebar-nav" aria-label="Workspace">
+          <button class="sidebar-item" type="button" onclick="startNewChat();closeSidebar()">
+            <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>
+            <span>New chat</span>
+          </button>
+          <button class="sidebar-item" type="button" onclick="focusSidebarChatSearch()">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>
+            <span>Search chats</span>
+          </button>
+          <button class="sidebar-item" type="button" onclick="openMediaLibrary('image')">
+            <svg viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="3"/><circle cx="8.5" cy="9.5" r="1.4"/><path d="m5 18 5-5 3 3 2.5-2.5 4 4"/></svg>
+            <span>Images</span>
+          </button>
+          <button class="sidebar-item" type="button" onclick="setWorkspaceMode('video');closeSidebar()">
+            <svg viewBox="0 0 24 24"><path d="m8 5 11 7-11 7Z"/><rect x="3" y="4" width="18" height="16" rx="3"/></svg>
+            <span>Videos</span>
+            <small class="sidebar-item-badge">PRO</small>
+          </button>
+          <button class="sidebar-item" type="button" onclick="openMediaLibrary('all')">
+            <svg viewBox="0 0 24 24"><rect x="3.5" y="4" width="7" height="7" rx="2"/><rect x="13.5" y="4" width="7" height="7" rx="2"/><rect x="3.5" y="13" width="7" height="7" rx="2"/><rect x="13.5" y="13" width="7" height="7" rx="2"/></svg>
+            <span>Library</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-search-wrap" id="sidebarSearchWrap" hidden>
+          <div class="sidebar-search">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>
+            <input id="historySearch" type="search" placeholder="Search chats" oninput="renderSidebar()" autocomplete="off">
+            <button type="button" onclick="closeSidebarChatSearch()" title="Close search" aria-label="Close search">×</button>
+          </div>
+        </div>
+
+        <section class="sidebar-section">
+          <div class="sidebar-section-head"><span>Notebooks</span></div>
+          <button class="sidebar-item sidebar-subitem" type="button" onclick="createNotebook()">
+            <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            <span>New notebook</span>
+          </button>
+          <div class="notebook-list" id="notebookList"></div>
+        </section>
+
+        <section class="sidebar-section recent-section">
+          <div class="sidebar-section-head"><span>Recent</span></div>
+          <div class="history" id="historyList"></div>
+        </section>
       </div>
-      <div class="history" id="historyList"></div>
+
       <div class="profile" onclick="handleAuthAction()">
         <img class="avatar" id="userAvatar" src="https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff">
         <div class="profile-info">
@@ -2234,6 +2324,7 @@
           <small id="userEmail">Tap to sign in</small>
           <span class="developer-badge" id="developerBadge">Owner</span>
         </div>
+        <svg class="profile-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
       </div>
     </aside>
 
@@ -2403,6 +2494,21 @@
     </main>
   </div>
 
+
+  <div class="media-library-modal" id="mediaLibraryModal" role="dialog" aria-modal="true" aria-label="TruX Library">
+    <div class="media-library-page">
+      <div class="media-library-head">
+        <div class="media-library-title"><h2>Library</h2><p>Your generated images and videos, saved on this device.</p></div>
+        <button class="media-library-close" type="button" onclick="closeMediaLibrary()" aria-label="Close library">×</button>
+      </div>
+      <div class="media-library-toolbar">
+        <button class="media-tab active" data-media-filter="all" onclick="openMediaLibrary('all')">All</button>
+        <button class="media-tab" data-media-filter="image" onclick="openMediaLibrary('image')">Images</button>
+        <button class="media-tab" data-media-filter="video" onclick="openMediaLibrary('video')">Videos</button>
+      </div>
+      <div class="media-library-grid" id="mediaLibraryGrid"></div>
+    </div>
+  </div>
   <div class="modal" id="profileModal">
     <div class="card profile-upgrade-card">
       <button class="close" onclick="closeProfileModal()">×</button>
