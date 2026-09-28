@@ -4880,7 +4880,7 @@
           }
           else if(j.type === "final") fin = j.text || "";
           else if(j.type === "status") {
-            setThinkingStatus(sid, j.status || "Working…");
+            setThinkingStatus(sid, j.status || "");
           }
           else if(j.type === "tool_status") {
             const phase = j.phase || "complete";
@@ -4888,11 +4888,11 @@
             if(phase === "start") {
               toolInProgress = true;
               const status = getEl(sid);
-              if(status) setThinkingStatus(sid, j.status || j.tool || "Working…");
+              if(status) setThinkingStatus(sid, j.status || j.tool || "");
             } else {
               toolInProgress = false;
               const status = getEl(sid);
-              if(status) setThinkingStatus(sid, "Thinking…");
+              if(status) setThinkingStatus(sid, "");
             }
           }
           else if(j.type === "heartbeat") { /* keep-alive event; intentionally no UI work */ }
