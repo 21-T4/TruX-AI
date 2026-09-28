@@ -2083,10 +2083,11 @@
 
 
     .trux-response-stack{width:min(900px,100%)}
-.thinking-container{display:flex;flex-direction:column;align-items:flex-start;gap:5px;width:100%}
-.thinking-main{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%}
-.thinking-elapsed{font:500 11px/1 var(--font-mono);letter-spacing:.04em;color:var(--txt-4);white-space:nowrap;flex:0 0 auto}
-.thinking-tool-trace{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;margin:0;padding:0;background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important}
+.thinking-container{display:flex;flex-direction:column;align-items:flex-start;gap:7px;width:100%}
+.thinking-elapsed{order:1;font:600 12px/1 var(--font-mono);letter-spacing:.08em;color:var(--txt-3);white-space:nowrap;flex:0 0 auto}
+.thinking-main{order:2;display:flex;align-items:center;gap:10px;width:100%}
+.status-msg{min-height:32px;display:inline-flex;align-items:center;max-width:min(100%,720px);padding:6px 11px;border-radius:10px;border:1px solid var(--line);background:rgba(37,37,37,.72);color:var(--txt-2);font-size:16px;line-height:1.15;font-weight:650;letter-spacing:-.008em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.thinking-tool-trace{order:3;display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;margin:0;padding:0;background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important}
 .thinking-tool-line{display:block;font:500 12.5px/1.45 var(--font-mono);color:var(--txt-4);padding:0;border:0;border-radius:0;background:none;box-shadow:none;animation:none}
 .thinking-tool-line.completed{color:var(--txt-4);animation:none}
 .thinking-tool-line.completed::before{content:"✓ ";color:var(--txt-4);animation:none}
@@ -5625,10 +5626,25 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     }
 
 
+    function compactAiActivity(text) {
+      const raw = String(text == null ? "" : text).replace(/\s+/g," ").replace(/[.!?]+$/g,"").trim();
+      if (!raw) return "";
+      const words = raw.split(" ").filter(Boolean);
+      return words.length <= 4 ? raw : words.slice(0,4).join(" ") + "…";
+    }
+
     function setThinkingStatus(statusId, text) {
       const el = getEl(statusId);
       if (!el) return;
-      el.textContent = text == null ? "" : String(text);
+      el.textContent = compactAiActivity(text);
+      el.title = String(text == null ? "" : text);
+    }
+
+    function formatThinkingClock(ms) {
+      const total = Math.max(0, Math.floor(ms / 1000));
+      const minutes = Math.floor(total / 60);
+      const seconds = total % 60;
+      return String(minutes).padStart(2,"0") + ":" + String(seconds).padStart(2,"0");
     }
 
     function isNetworkFailure(error) {
@@ -5746,14 +5762,14 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
          area as the active model status, then the entire trace is replaced by
          the final answer. */
       let tsid = "ts_" + Date.now();
-      row.innerHTML = `<div class="label">${BRAND_LABEL}</div><div class="trux-response-stack"><div class="bubble trux-bubble thinking" id="${id}"><div class="thinking-container"><div class="thinking-tool-trace" id="${tsid}" hidden></div><div class="thinking-main"><span class="status-msg" id="${sid}">Thinking…</span><span class="thinking-elapsed" id="elapsed_${id}">0s</span></div></div></div><div class="actions" id="${aid}"></div>`;
+      row.innerHTML = `<div class="label">${BRAND_LABEL}</div><div class="trux-response-stack"><div class="bubble trux-bubble thinking" id="${id}"><div class="thinking-container"><span class="thinking-elapsed" id="elapsed_${id}">00:00</span><div class="thinking-main"><span class="status-msg" id="${sid}">Waiting for AI activity…</span></div><div class="thinking-tool-trace" id="${tsid}" hidden></div></div></div><div class="actions" id="${aid}"></div>`;
 
       chatContainer.appendChild(row);
       chatContainer.scrollTop = chatContainer.scrollHeight;
       row._startedAt = Date.now();
       const elapsedEl = getEl("elapsed_" + id);
       row._elapsedTimer = setInterval(() => {
-        if(elapsedEl) elapsedEl.innerText = formatCodexElapsed(Date.now() - row._startedAt);
+        if(elapsedEl) elapsedEl.innerText = formatThinkingClock(Date.now() - row._startedAt);
       }, 1000);
 
       const requestBody = {
@@ -5947,7 +5963,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
             const b = getEl(id);
             if (b) {
               b.classList.add("thinking");
-              b.innerHTML = '<div class="thinking-container"><div class="thinking-tool-trace" id="' + tsid + '" hidden></div><div class="thinking-main"><span class="status-msg" id="' + sid + '">Waiting for internet connection…</span><span class="thinking-elapsed" id="elapsed_' + id + '">0s</span></div></div>';
+              b.innerHTML = '<div class="thinking-container"><span class="thinking-elapsed" id="elapsed_' + id + '">00:00</span><div class="thinking-main"><span class="status-msg" id="' + sid + '">Waiting for network…</span></div><div class="thinking-tool-trace" id="' + tsid + '" hidden></div></div>';
             }
 
             setThinkingStatus(sid, "Connection lost — waiting for internet connection…");
