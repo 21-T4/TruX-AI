@@ -2231,6 +2231,17 @@
 body.sidebar-open .topbar{filter:brightness(.78)}
 @keyframes sidebarSearchIn{from{opacity:0;transform:translateY(-5px) scale(.99)}to{opacity:1;transform:none}}
 </style>
+<style id="trux-video-library-style">
+.gen-video-wrap{width:min(680px,100%);margin-top:10px;border-radius:15px;overflow:hidden;border:1px solid var(--line);background:#070709}.gen-video-wrap video{display:block;width:100%;height:auto;max-height:70vh;background:#000}
+.gen-video-card{position:relative;min-height:120px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid var(--line);border-radius:14px;background:#0b0b0e}.video-shimmer{position:absolute;inset:0;background:linear-gradient(105deg,transparent 25%,rgba(255,255,255,.045) 50%,transparent 75%);background-size:220% 100%;animation:genSweep 1.7s linear infinite;pointer-events:none}.gen-video-card .gen-image-label{position:relative;z-index:1}
+.media-library-modal{position:fixed;inset:0;z-index:2000;display:none;background:rgba(0,0,0,.80);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}.media-library-modal.open{display:flex}
+.media-library-page{width:100%;height:100%;display:flex;flex-direction:column;background:linear-gradient(180deg,#09090b,#030304);animation:mediaPageIn .3s var(--ease-out)}@keyframes mediaPageIn{from{opacity:0;transform:translateY(8px) scale(.995)}to{opacity:1;transform:none}}
+.media-library-head{flex:0 0 auto;min-height:80px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:max(16px,env(safe-area-inset-top)) clamp(18px,4vw,38px) 12px;border-bottom:1px solid var(--line)}.media-library-title h2{font-family:var(--font-disp);font-size:28px;color:#fff;letter-spacing:-.04em}.media-library-title p{margin-top:4px;color:var(--txt-4);font-size:12px}.media-library-close{width:46px;height:46px;border-radius:13px;color:var(--txt-2);font-size:30px;line-height:1}.media-library-close:hover{background:rgba(255,255,255,.05);color:#fff}
+.media-library-toolbar{flex:0 0 auto;display:flex;gap:7px;align-items:center;padding:12px clamp(18px,4vw,38px);overflow-x:auto;border-bottom:1px solid rgba(255,255,255,.045)}.media-tab{min-height:38px;padding:0 13px;border-radius:11px;color:var(--txt-3);border:1px solid transparent;white-space:nowrap;font-size:12px;font-weight:650}.media-tab.active{color:#fff;background:rgba(109,131,255,.12);border-color:rgba(109,131,255,.22)}
+.media-library-grid{flex:1;min-height:0;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;align-content:start;padding:20px clamp(18px,4vw,38px) 42px}.media-card{overflow:hidden;border-radius:16px;background:#0d0d10;border:1px solid var(--line);animation:mediaCardIn .24s var(--ease-out) both}@keyframes mediaCardIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.media-card-media{width:100%;background:#070709;aspect-ratio:16/10;display:block;object-fit:cover}.media-card-body{padding:12px}.media-card-kind{font:600 9px/1 var(--font-mono);letter-spacing:.12em;color:var(--txt-4)}.media-card-prompt{margin-top:7px;color:var(--txt-2);font-size:12px;line-height:1.45;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}.media-card-actions{display:flex;gap:6px;margin-top:10px}.media-card-actions button{min-height:32px;padding:0 9px;border-radius:9px;font-size:11px;font-weight:650;color:var(--txt-3);background:transparent;border:1px solid transparent}.media-card-actions button:hover{color:#fff;background:rgba(255,255,255,.05);border-color:var(--line)}
+.media-empty{grid-column:1/-1;min-height:260px;display:grid;place-items:center;text-align:center;color:var(--txt-4);font-size:14px}@media(max-width:600px){.media-library-grid{grid-template-columns:1fr}}
+</style>
 </head>
 <body class="home-active">
   <div class="bg" id="bg"><div class="bg-orb"></div></div>
@@ -4130,7 +4141,7 @@ body.sidebar-open .topbar{filter:brightness(.78)}
       if(actions) row.insertBefore(strip, actions); else row.appendChild(strip);
     }
 
-    function appendMessageRow(label, text, rc, bc, imageUrl, animate, sources) {
+    function appendMessageRow(label, text, rc, bc, imageUrl, animate, sources, videoUrl) {
       let chatContainer = getActiveChatContainer(), r = document.createElement("div");
       r.className = `row ${rc}` + (animate ? " appear" : "");
       let textContent = typeof text === "string" ? text : text?.text || "";
@@ -4157,6 +4168,19 @@ body.sidebar-open .topbar{filter:brightness(.78)}
           let dlBtn = document.createElement("button"); dlBtn.className = "act"; dlBtn.title = "Download image"; dlBtn.innerHTML = ICON.down + "Download";
           dlBtn.onclick = () => { let l = document.createElement("a"); l.href = imageUrl; l.download = `chattrux-image-${Date.now()}.png`; l.click(); };
           actions.appendChild(dlBtn);
+        }
+
+        if(videoUrl) {
+          let wrap = document.createElement("div");
+          wrap.className = "gen-video-wrap";
+          let video = document.createElement("video");
+          video.src = videoUrl; video.controls = true; video.preload = "metadata"; video.playsInline = true;
+          wrap.appendChild(video);
+          bubble.appendChild(wrap);
+          let openBtn = document.createElement("button");
+          openBtn.className = "act"; openBtn.title = "Open video"; openBtn.textContent = "Open";
+          openBtn.onclick = () => window.open(videoUrl, "_blank", "noopener");
+          actions.appendChild(openBtn);
         }
 
         let readBtn = document.createElement("button"); readBtn.className = "act"; readBtn.title = "Read aloud"; readBtn.innerHTML = ICON.speak + "Read"; readBtn.onclick = () => speakText(textContent);
@@ -4444,6 +4468,7 @@ body.sidebar-open .topbar{filter:brightness(.78)}
         wrap.appendChild(img); bubble.appendChild(wrap);
 
         chatSessions[currentChatId].messages.push({ role: "trux", text: replyText, image: payload.image.dataUrl });
+        await saveGeneratedMedia({ type:"image", dataUrl:payload.image.dataUrl, prompt:imagePrompt, mimeType:"image/png" });
         saveChatSessions();
 
         let a = getEl(aid);
@@ -5129,6 +5154,156 @@ body.sidebar-open .topbar{filter:brightness(.78)}
         }
       }
     }
+    async function generateVideo(basePrompt) {
+      const owner=isTruxDeveloper(auth?.currentUser);
+      if(!owner && !auth?.currentUser) return toast("Sign in to use Video generation.","err");
+      if(!owner && currentModel!=="pro") return toast("Video generation is available to Pro accounts and Owner access.","err");
+
+      document.body.classList.remove("home-active");
+      isGenerating=true; isScrolledUp=false;
+      getEl("btnIcon").innerHTML='<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>';
+      getEl("actionBtn").classList.add("stop"); getEl("actionBtn").classList.remove("ready");
+      if(!currentChatId) {
+        currentChatId="chat_"+Date.now();
+        chatSessions[currentChatId]={title:(basePrompt||"Video").slice(0,32),mode:"video",messages:[]};
+      }
+      chatSessions[currentChatId].mode="video";
+      chatSessions[currentChatId].messages.push({role:"user",text:basePrompt});
+      saveChatSessions();
+      getEl("welcomeScreen").style.display="none";
+      const chatContainer=getActiveChatContainer(); chatContainer.style.display="block";
+      appendMessageRow("You",basePrompt,"user-row","user-bubble",null,true);
+
+      const row=document.createElement("div"); row.className="row trux-row appear";
+      const id="v_"+Date.now(), aid="a_"+Date.now(), sid="s_"+Date.now();
+      row.innerHTML='<div class="label">'+BRAND_LABEL+'</div><div class="bubble trux-bubble" id="'+id+'"><div class="gen-video-card"><div class="gen-image-label" id="'+sid+'">Generating video…</div><span class="video-shimmer"></span></div></div><div class="actions" id="'+aid+'"></div>';
+      chatContainer.appendChild(row); chatContainer.scrollTop=chatContainer.scrollHeight; row._startedAt=Date.now();
+      activeAbortController=new AbortController();
+      const timer=setInterval(()=>{ const el=getEl(sid); if(el) el.textContent="Generating video · "+formatCodexElapsed(Date.now()-row._startedAt); },1000);
+
+      try {
+        const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json","Accept":"text/event-stream"},signal:activeAbortController.signal,body:JSON.stringify({message:basePrompt,tier:currentModel,mode:"video",userId:auth?.currentUser?.uid||null,userEmail:auth?.currentUser?.email||"",notifyOnComplete:true})});
+        if(!res.ok){ const p=await res.json().catch(()=>({})); throw Error(p.error||p.reply||"Video generation failed."); }
+        if(!res.body) throw Error("Video streaming body unavailable.");
+        const reader=res.body.getReader(), decoder=new TextDecoder();
+        let buffer="", result=null;
+        const parseFrame=raw=>{ if(!raw) return; let j; try{j=JSON.parse(raw);}catch{return;} if(j.type==="status"){const el=getEl(sid); if(el&&j.status) el.textContent=j.status;} else if(j.type==="result"){result=j;} else if(j.type==="error"){throw Error(j.error||"Video generation failed.");} };
+        while(true){
+          const part=await reader.read(); if(part.done) break;
+          buffer+=decoder.decode(part.value,{stream:true});
+          const frames=buffer.split(/\r?\n\r?\n/); buffer=frames.pop()||"";
+          for(const frame of frames){ const lines=frame.split(/\r?\n/).filter(x=>x.startsWith("data:")); if(lines.length) parseFrame(lines.map(x=>x.slice(5).trimStart()).join("\n")); }
+        }
+        buffer+=decoder.decode();
+        if(buffer.trim()){ const lines=buffer.split(/\r?\n/).filter(x=>x.startsWith("data:")); if(lines.length) parseFrame(lines.map(x=>x.slice(5).trimStart()).join("\n")); }
+        if(!result?.video?.url) throw Error("Video generation returned no playable video.");
+
+        const bubble=getEl(id);
+        bubble.innerHTML=renderFormattedText(result.reply||"Your video is ready.",false); scheduleTruxMath(bubble);
+        const wrap=document.createElement("div"); wrap.className="gen-video-wrap";
+        const video=document.createElement("video"); video.src=result.video.url; video.controls=true; video.preload="metadata"; video.playsInline=true; wrap.appendChild(video); bubble.appendChild(wrap);
+        const reply=result.reply||"Your video is ready.";
+        chatSessions[currentChatId].messages.push({role:"trux",text:reply,video:result.video.url});
+        saveChatSessions();
+        await saveGeneratedMedia({type:"video",url:result.video.url,prompt:basePrompt,mimeType:result.video.mimeType||"video/mp4"});
+        const actions=getEl(aid); if(actions){ const openBtn=document.createElement("button"); openBtn.className="act"; openBtn.textContent="Open"; openBtn.onclick=()=>window.open(result.video.url,"_blank","noopener"); actions.appendChild(openBtn); }
+      } catch(e) {
+        const bubble=getEl(id); if(bubble) bubble.innerHTML=e.name==="AbortError"?"Generation stopped.":"Error: "+escapeHtml(e.message);
+      } finally {
+        clearInterval(timer); isGenerating=false; activeAbortController=null;
+        getEl("btnIcon").innerHTML='<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15-2z"/>';
+        getEl("actionBtn").classList.remove("stop"); handleInputChange();
+      }
+    }
+
+    let mediaDbPromise = null;
+    function openTruxMediaDB() {
+      if(mediaDbPromise) return mediaDbPromise;
+      mediaDbPromise = new Promise((resolve,reject) => {
+        if(!window.indexedDB) return reject(new Error("IndexedDB is unavailable."));
+        const request = indexedDB.open("trux_media_library",1);
+        request.onupgradeneeded = () => {
+          const db = request.result;
+          if(!db.objectStoreNames.contains("media")) db.createObjectStore("media",{keyPath:"id"});
+        };
+        request.onsuccess=()=>resolve(request.result);
+        request.onerror=()=>reject(request.error || new Error("Media library unavailable."));
+      });
+      return mediaDbPromise;
+    }
+    async function saveGeneratedMedia(item) {
+      try {
+        const db=await openTruxMediaDB();
+        await new Promise((resolve,reject)=>{
+          const tx=db.transaction("media","readwrite");
+          tx.objectStore("media").put({
+            id:item.id || ("media_"+Date.now()+"_"+Math.random().toString(36).slice(2,8)),
+            type:item.type, dataUrl:item.dataUrl || null, url:item.url || null,
+            prompt:String(item.prompt || "").slice(0,1200), mimeType:item.mimeType || "", createdAt:item.createdAt || Date.now()
+          });
+          tx.oncomplete=resolve; tx.onerror=()=>reject(tx.error || new Error("Library write failed."));
+        });
+      } catch(e) {}
+    }
+    async function listGeneratedMedia(filter) {
+      try {
+        const db=await openTruxMediaDB();
+        return await new Promise((resolve,reject)=>{
+          const tx=db.transaction("media","readonly");
+          const req=tx.objectStore("media").getAll();
+          req.onsuccess=()=>{
+            let rows=Array.isArray(req.result)?req.result:[];
+            rows.sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0));
+            if(filter && filter!=="all") rows=rows.filter(x=>x.type===filter);
+            resolve(rows);
+          };
+          req.onerror=()=>reject(req.error || new Error("Library read failed."));
+        });
+      } catch(e) { return []; }
+    }
+    async function deleteGeneratedMedia(id) {
+      try {
+        const db=await openTruxMediaDB();
+        await new Promise((resolve,reject)=>{
+          const tx=db.transaction("media","readwrite");
+          tx.objectStore("media").delete(id); tx.oncomplete=resolve; tx.onerror=()=>reject(tx.error);
+        });
+        renderMediaLibrary(currentMediaFilter);
+      } catch(e) {}
+    }
+    let currentMediaFilter="all";
+    async function openMediaLibrary(filter) {
+      currentMediaFilter=filter || "all";
+      const modal=getEl("mediaLibraryModal"), grid=getEl("mediaLibraryGrid");
+      if(!modal || !grid) return;
+      setSidebarOpen(false);
+      modal.classList.add("open");
+      document.querySelectorAll("[data-media-filter]").forEach(x=>x.classList.toggle("active",x.dataset.mediaFilter===currentMediaFilter));
+      await renderMediaLibrary(currentMediaFilter);
+    }
+    async function renderMediaLibrary(filter) {
+      const grid=getEl("mediaLibraryGrid"); if(!grid) return;
+      grid.innerHTML="<div class=\"media-empty\">Loading library…</div>";
+      const rows=await listGeneratedMedia(filter);
+      if(!rows.length) { grid.innerHTML="<div class=\"media-empty\">No generated media yet.<br>Create an image or video and it will appear here.</div>"; return; }
+      grid.innerHTML="";
+      rows.forEach((m,index)=>{
+        const card=document.createElement("article"); card.className="media-card"; card.style.animationDelay=Math.min(index*25,300)+"ms";
+        const mediaHost=document.createElement("div");
+        if(m.type==="image" && m.dataUrl) { const img=document.createElement("img"); img.className="media-card-media"; img.src=m.dataUrl; img.alt=m.prompt || "Generated image"; mediaHost.appendChild(img); }
+        else if(m.type==="video" && m.url) { const v=document.createElement("video"); v.className="media-card-media"; v.src=m.url; v.controls=true; v.preload="metadata"; v.playsInline=true; mediaHost.appendChild(v); }
+        card.appendChild(mediaHost);
+        const body=document.createElement("div"); body.className="media-card-body";
+        const kind=document.createElement("div"); kind.className="media-card-kind"; kind.textContent=m.type==="video"?"VIDEO":"IMAGE";
+        const p=document.createElement("div"); p.className="media-card-prompt"; p.textContent=m.prompt || "Generated media";
+        const actions=document.createElement("div"); actions.className="media-card-actions";
+        const openBtn=document.createElement("button"); openBtn.textContent="Open"; openBtn.onclick=()=>{ const u=m.url || m.dataUrl; if(u) window.open(u,"_blank","noopener"); };
+        const delBtn=document.createElement("button"); delBtn.textContent="Delete"; delBtn.onclick=()=>deleteGeneratedMedia(m.id);
+        actions.append(openBtn,delBtn); body.append(kind,p,actions); card.appendChild(body); grid.appendChild(card);
+      });
+    }
+    function closeMediaLibrary(){ getEl("mediaLibraryModal")?.classList.remove("open"); }
+
     function handleActionButton() { if(isGenerating) { activeAbortController?.abort(); isGenerating = false; getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>'; getEl("actionBtn").classList.remove("stop"); handleInputChange(); return; } sendPrompt(); }
 
     /* Chat ids are "chat_<epoch ms>", so the timestamp is free - use it to
@@ -5248,7 +5423,7 @@ body.sidebar-open .topbar{filter:brightness(.78)}
       getEl("codeChatContainer").innerHTML = "";
       const cC = getActiveChatContainer();
       cC.style.display = "block";
-      chatSessions[id].messages.forEach(m => appendMessageRow(m.role === "user" ? "You" : "ChatTruX-AI", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image, false, m.sources));
+      chatSessions[id].messages.forEach(m => appendMessageRow(m.role === "user" ? "You" : "ChatTruX-AI", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image, false, m.sources, m.video));
       renderSidebar(); if(innerWidth <= 768) closeSidebar();
     }
     function deleteChat(id) { if(confirm("Delete this chat?")) { delete chatSessions[id]; saveChatSessions(); if(currentChatId === id) startNewChat(); else renderSidebar(); } }
@@ -5276,7 +5451,7 @@ body.sidebar-open .topbar{filter:brightness(.78)}
     getEl("pinnedModal")?.addEventListener("click", e => { if(e.target === getEl("pinnedModal")) closePinnedModal(); });
     getEl("loginWallModal")?.addEventListener("click", e => { if(e.target === getEl("loginWallModal")) closeLoginWall(); });
     
-    addEventListener("keydown", e => { if(e.key === "Escape") { closeProfileModal(); closeSettingsModal(); closeSandboxModal(); closePinnedModal(); closeLoginWall(); getEl("contextMenu").style.display = "none"; closeSidebar(); closeModelDropdown(); closeAttachmentMenu(); } });
+    addEventListener("keydown", e => { if(e.key === "Escape") { closeMediaLibrary(); closeProfileModal(); closeSettingsModal(); closeSandboxModal(); closePinnedModal(); closeLoginWall(); getEl("contextMenu").style.display = "none"; closeSidebar(); closeModelDropdown(); closeAttachmentMenu(); } });
 
     document.body.classList.add("home-active"); loadSettings(); renderNotebooks(); renderSidebar(); updateAllUsageUI(); handleInputChange(); setWorkspaceMode("chat");
   </script>
