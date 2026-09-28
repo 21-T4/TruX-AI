@@ -2242,6 +2242,42 @@ body.sidebar-open .topbar{filter:brightness(.78)}
 .media-card-media{width:100%;background:#070709;aspect-ratio:16/10;display:block;object-fit:cover}.media-card-body{padding:12px}.media-card-kind{font:600 9px/1 var(--font-mono);letter-spacing:.12em;color:var(--txt-4)}.media-card-prompt{margin-top:7px;color:var(--txt-2);font-size:12px;line-height:1.45;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}.media-card-actions{display:flex;gap:6px;margin-top:10px}.media-card-actions button{min-height:32px;padding:0 9px;border-radius:9px;font-size:11px;font-weight:650;color:var(--txt-3);background:transparent;border:1px solid transparent}.media-card-actions button:hover{color:#fff;background:rgba(255,255,255,.05);border-color:var(--line)}
 .media-empty{grid-column:1/-1;min-height:260px;display:grid;place-items:center;text-align:center;color:var(--txt-4);font-size:14px}@media(max-width:600px){.media-library-grid{grid-template-columns:1fr}}
 </style>
+<style id="trux-profile-settings-location-refresh">
+#profileModal{padding:0;background:rgba(0,0,0,.82);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+#profileModal .card{width:100%;height:100%;max-height:none;max-width:none;overflow-y:auto;margin:0;padding:0;border:0;border-radius:0;background:linear-gradient(180deg,#09090b,#050506);box-shadow:none}
+#profileModal .card>.close{top:18px;right:22px;z-index:4;width:40px;height:40px;border-radius:12px;font-size:27px}
+#profileModal .card>div:first-of-type{padding:34px clamp(18px,6vw,80px) 20px!important;max-width:980px;margin:0 auto}
+#profileModal .modal-avatar{width:82px;height:82px;border-radius:23px;margin:0;border:1px solid var(--line-2);box-shadow:0 18px 42px rgba(0,0,0,.35)}
+#profileModal .mtitle{font-family:var(--font-disp);font-size:clamp(28px,5vw,44px)}
+#profileModal .msub{font-size:15px;color:var(--txt-2)}
+#profileModal .profile-list-group-title{max-width:900px;margin:24px auto 10px;padding:0 clamp(18px,6vw,80px);color:var(--txt-4);font:600 10px/1 var(--font-mono);letter-spacing:.14em;text-transform:uppercase}
+.profile-option-list{max-width:900px;margin:0 auto;overflow:hidden;border:1px solid var(--line);border-radius:20px;background:rgba(10,10,12,.84);box-shadow:0 22px 55px rgba(0,0,0,.2)}
+.profile-option-row{width:100%;min-height:74px;display:grid;grid-template-columns:44px minmax(0,1fr) 20px;gap:14px;align-items:center;padding:11px 18px;text-align:left;background:rgba(11,11,14,.6);color:var(--txt);border-bottom:1px solid rgba(255,255,255,.065);transition:background .18s var(--ease),transform .18s var(--ease)}
+.profile-option-row:last-child{border-bottom:0}
+.profile-option-row:hover{background:rgba(255,255,255,.045)}
+.profile-option-row:active{transform:scale(.998)}
+.profile-option-icon{width:38px;height:38px;display:grid;place-items:center;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid var(--line);color:var(--txt-2);font-size:17px;font-weight:650}
+.profile-option-copy{min-width:0}.profile-option-copy b{display:block;color:var(--txt);font-size:15px;font-weight:620}.profile-option-copy small{display:block;margin-top:3px;color:var(--txt-4);font-size:11px;line-height:1.45}.profile-option-chevron{color:var(--txt-4);font-size:27px;line-height:1}
+.profile-owner-only{display:none}body.developer-mode .profile-owner-only{display:grid}
+.profile-detail-view{max-width:900px;margin:22px auto 40px;padding:0 clamp(18px,6vw,80px)}
+.profile-detail-back{display:inline-flex;align-items:center;gap:7px;min-height:38px;padding:0 9px;border-radius:10px;color:var(--txt-3);font-size:13px;font-weight:600;border:1px solid transparent}.profile-detail-back:hover{color:#fff;background:var(--bg-3);border-color:var(--line)}
+.profile-detail-title{margin-top:18px;font-family:var(--font-disp);font-size:30px;letter-spacing:-.035em;color:#fff}.profile-detail-subtitle{margin-top:6px;color:var(--txt-3);font-size:13px;line-height:1.55}.profile-detail-body{margin-top:18px}.profile-detail-body .detail-callout{padding:17px;border-radius:16px;background:rgba(18,18,22,.82);border:1px solid var(--line)}.profile-detail-body .detail-callout+.detail-callout{margin-top:10px}.profile-detail-body .detail-callout h4{margin-bottom:7px;color:#fff;font-size:14px}.profile-detail-body .detail-callout p{color:var(--txt-3);font-size:13px;line-height:1.6}.detail-stack-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.detail-stack-actions .mbtn{width:auto;padding:0 13px;margin-top:0}
+.profile-detail-view[hidden]{display:none!important}
+.profile-meta-grid-large{max-width:900px;margin:0 auto 18px;padding:0 clamp(18px,6vw,80px)}
+.profile-actions-row{max-width:900px;margin:14px auto 40px;padding:0 clamp(18px,6vw,80px)}
+.media-library-grid{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable}
+.media-gen-workspace{display:none;position:relative;overflow:hidden;width:min(1120px,calc(100% - 40px));min-height:220px;margin:18px auto 8px;border-radius:28px;border:1px solid var(--line-2);background:linear-gradient(135deg,rgba(18,18,24,.96),rgba(8,8,12,.97));box-shadow:0 25px 80px rgba(0,0,0,.34);isolation:isolate}
+.media-gen-inner{position:relative;z-index:2;max-width:760px;padding:44px 46px}.media-gen-kicker{display:flex;align-items:center;gap:7px;color:var(--txt-3);font:650 10px/1 var(--font-mono);letter-spacing:.14em}.media-gen-kicker span{color:var(--acc);font-size:14px}.media-gen-workspace h1{margin-top:13px;font-family:var(--font-disp);font-size:clamp(32px,5vw,54px);line-height:1.02;letter-spacing:-.045em;color:#fff}.media-gen-workspace p{max-width:630px;margin-top:12px;color:var(--txt-3);font-size:14px;line-height:1.65}.media-gen-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:20px}.media-gen-primary,.media-gen-secondary{min-height:42px;padding:0 15px;border-radius:12px;border:1px solid var(--line-2);font-size:13px;font-weight:650}.media-gen-primary{color:#fff;background:linear-gradient(135deg,var(--acc),var(--acc-2));border-color:transparent}.media-gen-secondary{color:var(--txt-2);background:var(--bg-3)}.media-gen-orbit{position:absolute;pointer-events:none;border-radius:50%;filter:blur(10px)}.media-gen-orbit-a{width:260px;height:260px;right:-70px;top:-120px;background:radial-gradient(circle,rgba(109,131,255,.22),transparent 67%)}.media-gen-orbit-b{width:330px;height:260px;right:120px;bottom:-160px;background:radial-gradient(circle,rgba(176,124,255,.17),transparent 68%)}
+body[data-media-mode="image"] #imageWorkspace,body[data-media-mode="video"] #videoWorkspace{display:block;animation:mediaSurfaceIn .34s var(--ease-out) both}@keyframes mediaSurfaceIn{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:none}}
+.home-look-list{display:flex;flex-direction:column;gap:7px}.home-look-option{width:100%;display:grid;grid-template-columns:36px minmax(0,1fr) 24px;align-items:center;gap:11px;min-height:62px;padding:8px 10px;border-radius:13px;border:1px solid transparent;color:var(--txt-2);text-align:left;background:transparent}.home-look-option:hover{background:rgba(255,255,255,.04);border-color:var(--line);color:#fff}.home-look-option span:nth-child(2) b{display:block;color:var(--txt);font-size:13.5px}.home-look-option span:nth-child(2) small{display:block;margin-top:3px;color:var(--txt-4);font-size:10.5px}.home-look-check{font-style:normal;color:transparent}.home-look-option.active{background:var(--acc-soft);border-color:var(--acc-line)}.home-look-option.active .home-look-check{color:var(--acc)}.home-look-swatch{width:30px;height:30px;border-radius:10px;border:1px solid var(--line-2)}.swatch-midnight{background:linear-gradient(135deg,#101118,#050506)}.swatch-graphite{background:linear-gradient(135deg,#22262b,#0c0d10)}.swatch-violet{background:linear-gradient(135deg,#2a1d3f,#0b0811)}.swatch-ember{background:linear-gradient(135deg,#3a2820,#0d0908)}.setting-note{margin-top:8px;color:var(--txt-4);font-size:11px;line-height:1.5}.mrow-sub{display:block;margin-top:3px;color:var(--txt-4);font-size:11px;font-weight:450;line-height:1.45}.location-status{margin-top:8px;color:var(--txt-4);font:500 11px/1.5 var(--font-mono)}
+.settings-mobile-select{display:none;min-width:170px;height:40px;padding:0 12px;border-radius:11px;background:var(--bg-3);border:1px solid var(--line-2);color:var(--txt);font-size:12px;font-weight:600}.settings-mobile-select option{background:#101114;color:#fff}
+.trux-consent-modal{z-index:5200}.consent-card{width:min(460px,100%);padding:28px 24px 24px;border-radius:24px;background:var(--bg-2);border:1px solid var(--line-2);box-shadow:0 34px 90px rgba(0,0,0,.72)}.consent-icon{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;color:#fff;background:var(--bg-4);border:1px solid var(--line-2);font-size:23px;margin-bottom:18px}.consent-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}.consent-actions .mbtn{margin-top:0}.consent-primary{background:linear-gradient(135deg,var(--acc),var(--acc-2));border-color:transparent}
+body[data-home-look="graphite"] .welcome-title{text-shadow:0 18px 50px rgba(180,190,205,.08)}body[data-home-look="graphite"] .welcome .chip{background:linear-gradient(145deg,rgba(30,32,37,.92),rgba(12,13,16,.95))}
+body[data-home-look="violet"] .welcome-title{text-shadow:0 18px 50px rgba(176,124,255,.22)}body[data-home-look="violet"] .welcome .chip{background:linear-gradient(145deg,rgba(28,20,39,.92),rgba(11,9,17,.96));border-color:rgba(176,124,255,.16)}
+body[data-home-look="ember"] .welcome-title{text-shadow:0 18px 50px rgba(255,161,91,.17)}body[data-home-look="ember"] .welcome .chip{background:linear-gradient(145deg,rgba(35,27,22,.92),rgba(13,10,9,.96));border-color:rgba(255,161,91,.14)}
+body[data-home-look="graphite"] .bg::before{background:radial-gradient(ellipse at 50% 0%,rgba(174,184,196,.11),rgba(0,0,0,0) 64%)}body[data-home-look="violet"] .bg::before{background:radial-gradient(ellipse at 50% 0%,rgba(176,124,255,.19),rgba(0,0,0,0) 64%)}body[data-home-look="ember"] .bg::before{background:radial-gradient(ellipse at 50% 0%,rgba(255,161,91,.13),rgba(0,0,0,0) 64%)}
+@media(max-width:760px){#profileModal .card>div:first-of-type{padding:22px 16px 16px!important}.profile-option-list{margin:0 12px}.profile-option-row{min-height:68px;padding:9px 12px;grid-template-columns:38px minmax(0,1fr) 18px;gap:10px}.profile-option-icon{width:33px;height:33px;border-radius:10px;font-size:15px}.profile-option-copy b{font-size:13.5px}.profile-option-copy small{font-size:10px}.profile-meta-grid-large,.profile-actions-row{padding:0 12px}.profile-detail-view{padding:0 12px}.settings-mobile-select{display:block}#settingsModal .settings-topbar{gap:10px;padding:0 12px}#settingsModal .settings-topbar .settings-title .msub{display:none}#settingsModal .settings-topbar .settings-title .mtitle{font-size:18px}#settingsModal .settings-topbar .close{position:static;flex:0 0 36px;width:36px;height:36px;margin:0}#settingsModal .settings-sidebar{display:none}.media-gen-workspace{width:calc(100% - 20px);margin:10px auto 6px;border-radius:22px;min-height:230px}.media-gen-inner{padding:30px 24px 32px}.media-gen-workspace h1{font-size:34px}}@media(max-width:470px){.consent-actions{grid-template-columns:1fr}}
+</style>
 </head>
 <body class="home-active">
   <div class="bg" id="bg"><div class="bg-orb"></div></div>
@@ -2290,7 +2326,7 @@ body.sidebar-open .topbar{filter:brightness(.78)}
             <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>
             <span>Search chats</span>
           </button>
-          <button class="sidebar-item" type="button" onclick="openMediaLibrary('image')">
+          <button class="sidebar-item" type="button" onclick="setWorkspaceMode('image');closeSidebar()">
             <svg viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="3"/><circle cx="8.5" cy="9.5" r="1.4"/><path d="m5 18 5-5 3 3 2.5-2.5 4 4"/></svg>
             <span>Images</span>
           </button>
@@ -2369,6 +2405,32 @@ body.sidebar-open .topbar{filter:brightness(.78)}
         </div>
       </div>
 
+
+      <section class="media-gen-workspace" id="imageWorkspace" aria-label="Image generation workspace">
+        <div class="media-gen-orbit media-gen-orbit-a"></div><div class="media-gen-orbit media-gen-orbit-b"></div>
+        <div class="media-gen-inner">
+          <div class="media-gen-kicker"><span>◈</span> IMAGE STUDIO</div>
+          <h1>Create an image with TruX.</h1>
+          <p>Describe what you want in the chat bar below. Finished images are automatically saved to Library.</p>
+          <div class="media-gen-actions">
+            <button type="button" class="media-gen-secondary" onclick="openMediaLibrary('image')">Open image library</button>
+            <button type="button" class="media-gen-primary" onclick="quickPrompt('Create an image of ')">Start creating</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="media-gen-workspace" id="videoWorkspace" aria-label="Video generation workspace">
+        <div class="media-gen-orbit media-gen-orbit-a"></div><div class="media-gen-orbit media-gen-orbit-b"></div>
+        <div class="media-gen-inner">
+          <div class="media-gen-kicker"><span>▶</span> VIDEO STUDIO · PRO</div>
+          <h1>Turn a prompt into video.</h1>
+          <p>Describe the scene, style, camera movement and mood. Completed videos stay available in Library.</p>
+          <div class="media-gen-actions">
+            <button type="button" class="media-gen-secondary" onclick="openMediaLibrary('video')">Open video library</button>
+            <button type="button" class="media-gen-primary" onclick="quickPrompt('Create a cinematic video of ')">Start creating</button>
+          </div>
+        </div>
+      </section>
 
       <section class="trux-code-workspace" id="truxCodeWorkspace" aria-label="TruX-Code workspace">
         <div class="code-hero">
@@ -2506,6 +2568,15 @@ body.sidebar-open .topbar{filter:brightness(.78)}
   </div>
 
 
+  <div class="modal trux-consent-modal" id="locationConsentModal" aria-label="Location access">
+    <div class="consent-card">
+      <div class="consent-icon">⌖</div>
+      <div class="mtitle">Allow location access?</div>
+      <div class="msub">TruX can use your device location for nearby and location-aware answers. You can turn this off later in Personalization.</div>
+      <div class="consent-actions"><button type="button" class="mbtn" onclick="dismissLocationConsent(false)">Not now</button><button type="button" class="mbtn consent-primary" onclick="dismissLocationConsent(true)">Use my location</button></div>
+    </div>
+  </div>
+
   <div class="media-library-modal" id="mediaLibraryModal" role="dialog" aria-modal="true" aria-label="TruX Library">
     <div class="media-library-page">
       <div class="media-library-head">
@@ -2541,6 +2612,26 @@ body.sidebar-open .topbar{filter:brightness(.78)}
         <div class="mrow"><span>Usage & limits</span><button class="mbtn" onclick="closeProfileModal();openSettingsModal();switchSettingsSection('usage')">View</button></div>
         <div class="mrow"><span>Developer access</span><span class="badge" style="margin-left:auto">Standard</span></div>
       </div>
+      <div class="profile-list-group-title profile-options-label">Account & workspace</div>
+      <div class="profile-option-list" id="profileOptionList">
+        <button type="button" class="profile-option-row" onclick="openProfileOption('account')"><span class="profile-option-icon account-icon">G</span><span class="profile-option-copy"><b>Manage your account</b><small>Open your connected Google account</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" onclick="openProfileOption('usage')"><span class="profile-option-icon">◔</span><span class="profile-option-copy"><b>Usage & limits</b><small>View Core, Pro and image usage</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" onclick="openProfileOption('personalization')"><span class="profile-option-icon">✦</span><span class="profile-option-copy"><b>Personalization</b><small>Instructions, home UI looks and location access</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" onclick="openProfileOption('notifications')"><span class="profile-option-icon">♧</span><span class="profile-option-copy"><b>Notifications</b><small>Response and generation alerts</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" onclick="openProfileOption('memory')"><span class="profile-option-icon">▤</span><span class="profile-option-copy"><b>Memory & data</b><small>Import or export your local TruX workspace</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" onclick="openProfileOption('avatar')"><span class="profile-option-icon">◌</span><span class="profile-option-copy"><b>Avatar</b><small>Choose or reset your profile image</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" onclick="openProfileOption('appearance')"><span class="profile-option-icon">◐</span><span class="profile-option-copy"><b>Appearance</b><small>Choose the TruX home experience</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" onclick="openProfileOption('settings')"><span class="profile-option-icon">⚙</span><span class="profile-option-copy"><b>Settings</b><small>Open every detailed TruX setting</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" onclick="openProfileOption('help')"><span class="profile-option-icon">?</span><span class="profile-option-copy"><b>Help & privacy</b><small>Privacy controls and useful shortcuts</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row profile-owner-only" onclick="openProfileOption('developer')"><span class="profile-option-icon">⌘</span><span class="profile-option-copy"><b>Developer workspace</b><small>Developer-only controls and identity</small></span><span class="profile-option-chevron">›</span></button>
+      </div>
+      <section class="profile-detail-view" id="profileDetailView" hidden>
+        <button type="button" class="profile-detail-back" onclick="closeProfileOption()">‹ <span>Profile</span></button>
+        <div class="profile-detail-title" id="profileDetailTitle">Details</div>
+        <div class="profile-detail-subtitle" id="profileDetailSubtitle"></div>
+        <div class="profile-detail-body" id="profileDetailBody"></div>
+      </section>
+
       <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
         <button class="mbtn" onclick="closeProfileModal();openPinnedInsightsModal()">Pinned insights</button>
         <button class="mbtn" onclick="closeProfileModal();openSettingsModal()">Settings</button>
@@ -2561,6 +2652,7 @@ body.sidebar-open .topbar{filter:brightness(.78)}
           <button type="button" data-settings-section="appearance" onclick="switchSettingsSection('appearance', this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16"/></svg>Appearance</button>
           <button type="button" data-settings-section="voice" onclick="switchSettingsSection('voice', this)"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8"/></svg>Voice</button>
           <button type="button" data-settings-section="personalization" onclick="switchSettingsSection('personalization', this)"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v13H4z"/><path d="M8 9h8M8 13h5"/></svg>Personalization</button>
+          <button type="button" data-settings-section="notifications" onclick="switchSettingsSection('notifications', this)"><svg viewBox="0 0 24 24"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 8h18c0 7-1 8-3 8Z"/><path d="M10 21h4"/></svg>Notifications</button>
           <button type="button" data-settings-section="usage" onclick="switchSettingsSection('usage', this)"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/></svg>Usage</button>
           <button type="button" data-settings-section="data" onclick="switchSettingsSection('data', this)"><svg viewBox="0 0 24 24"><path d="M4 7.5h16M5.5 7.5v11h13v-11M8 4.5h8"/><path d="M9 11v4M12 11v4M15 11v4"/></svg>Data & tools</button>
           <button type="button" class="developer-nav" data-settings-section="developer" onclick="switchSettingsSection('developer', this)"><svg viewBox="0 0 24 24"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 4l-4 16"/></svg>Developer</button>
@@ -2574,6 +2666,11 @@ body.sidebar-open .topbar{filter:brightness(.78)}
             <div class="mtitle">Settings</div>
             <div class="msub">Tune your TruX workspace without leaving the app.</div>
           </div>
+          <select id="settingsMobileSelect" class="settings-mobile-select" aria-label="Settings section" onchange="switchSettingsSection(this.value)">
+            <option value="general">General</option><option value="appearance">Appearance</option><option value="voice">Voice</option>
+            <option value="personalization">Personalization</option><option value="notifications">Notifications</option>
+            <option value="usage">Usage</option><option value="data">Data & privacy</option><option value="developer">Developer</option>
+          </select>
           <button class="close" type="button" onclick="closeSettingsModal()" aria-label="Close settings">×</button>
         </header>
 
@@ -2607,9 +2704,35 @@ body.sidebar-open .topbar{filter:brightness(.78)}
             </section>
 
             <section class="settings-section" data-settings-content="personalization">
-              <div class="settings-section-head"><h2>Personalization</h2><p>Tell TruX how you prefer answers to look and sound.</p></div>
+              <div class="settings-section-head"><h2>Personalization</h2><p>Change how TruX looks, responds and uses device context.</p></div>
               <div class="settings-card">
                 <div class="sect"><h4>System Instructions</h4><textarea id="customInstructions" class="instr" placeholder="How should TruX respond?"></textarea><button class="mbtn" onclick="saveCustomInstructions()">Save Instructions</button></div>
+              </div>
+              <div class="settings-card">
+                <div class="sect"><h4>Home UI look</h4>
+                  <div class="home-look-list">
+                    <button type="button" class="home-look-option" data-home-look-option="midnight" onclick="applyHomeLook('midnight')"><span class="home-look-swatch swatch-midnight"></span><span><b>Midnight</b><small>Deep black with the default TruX glow</small></span><i class="home-look-check">✓</i></button>
+                    <button type="button" class="home-look-option" data-home-look-option="graphite" onclick="applyHomeLook('graphite')"><span class="home-look-swatch swatch-graphite"></span><span><b>Graphite</b><small>Quiet charcoal surfaces</small></span><i class="home-look-check">✓</i></button>
+                    <button type="button" class="home-look-option" data-home-look-option="violet" onclick="applyHomeLook('violet')"><span class="home-look-swatch swatch-violet"></span><span><b>Violet</b><small>Dark indigo atmosphere</small></span><i class="home-look-check">✓</i></button>
+                    <button type="button" class="home-look-option" data-home-look-option="ember" onclick="applyHomeLook('ember')"><span class="home-look-swatch swatch-ember"></span><span><b>Ember</b><small>Warm dark editorial feel</small></span><i class="home-look-check">✓</i></button>
+                  </div>
+                  <div class="setting-note">Saved locally on this device. No live preview or animated mode switching.</div>
+                </div>
+              </div>
+              <div class="settings-card">
+                <div class="sect"><h4>Location access</h4>
+                  <div class="mrow"><span><b>Let TruX use your location</b><small class="mrow-sub">Used for location-aware answers and research.</small></span><label class="toggle"><input id="locationAccessToggle" type="checkbox" onchange="toggleTruxLocationAccess(this.checked)"><span class="slider"></span></label></div>
+                  <div class="location-status" id="locationStatusText">Checking location permission…</div>
+                  <button class="mbtn" type="button" onclick="requestTruxLocation({interactive:true,force:true})">Refresh location access</button>
+                </div>
+              </div>
+            </section>
+
+            <section class="settings-section" data-settings-content="notifications">
+              <div class="settings-section-head"><h2>Notifications</h2><p>Let TruX alert this device when work finishes.</p></div>
+              <div class="settings-card">
+                <div class="mrow"><span><b>Response notifications</b><small class="mrow-sub">Text, image and video completion alerts.</small></span><label class="toggle"><input id="notificationsToggle" type="checkbox" onchange="toggleTruxNotificationsSetting(this.checked)"><span class="slider"></span></label></div>
+                <div class="location-status" id="notificationStatusText">Checking notification permission…</div>
               </div>
             </section>
 
@@ -2773,9 +2896,12 @@ body.sidebar-open .topbar{filter:brightness(.78)}
         if(u) {
           getEl("userName").innerText = u.displayName || "User";
           getEl("userEmail").innerText = u.email || "";
-          getEl("userAvatar").src = u.photoURL || "https://ui-avatars.com/api/?name=User&background=111111&color=fff";
+          applyStoredAvatar(u);
           closeLoginWall();
           updateNotificationButton();
+          updateLocationSettingUI();
+          updateNotificationSettingsUI();
+          maybeAskForLocation();
           if("Notification" in window && Notification.permission === "granted") syncTruxNotificationsSilently();
         } else {
           getEl("userName").innerText = "Guest User";
@@ -2784,6 +2910,7 @@ body.sidebar-open .topbar{filter:brightness(.78)}
         }
       });
     }
+    applyHomeLook(store.getItem("trux_home_look") || "midnight", false);
     initFirebase();
 
     function updateNotificationButton() {
@@ -2902,7 +3029,9 @@ body.sidebar-open .topbar{filter:brightness(.78)}
         isRecording = false,
         isScrolledUp = false,
         activeStreamer = null,
-        advancedThinkingEnabled = false;
+        advancedThinkingEnabled = false,
+        truxLocationCache = null,
+        currentProfileOption = null;
 
     function toggleModelDropdown(e) {
       e?.stopPropagation();
@@ -3001,6 +3130,179 @@ body.sidebar-open .topbar{filter:brightness(.78)}
       return getEl(workspaceMode === "coding" ? "codeChatContainer" : "chatContainer");
     }
 
+
+    const TRUX_HOME_LOOKS = new Set(["midnight","graphite","violet","ember"]);
+
+    function applyHomeLook(name, persist) {
+      const next = TRUX_HOME_LOOKS.has(name) ? name : "midnight";
+      document.body.dataset.homeLook = next;
+      document.querySelectorAll("[data-home-look-option]").forEach(function(el){ el.classList.toggle("active", el.dataset.homeLookOption === next); });
+      document.querySelectorAll("[data-profile-look]").forEach(function(el){ el.classList.toggle("active", el.dataset.profileLook === next); });
+      if(persist !== false) store.setItem("trux_home_look", next);
+    }
+
+    function updateLocationSettingUI() {
+      const toggle=getEl("locationAccessToggle"), status=getEl("locationStatusText");
+      const enabled=store.getItem("trux_location_enabled") !== "false";
+      if(toggle) toggle.checked=enabled;
+      if(!status) return;
+      if(!("geolocation" in navigator)) status.textContent="Location is not supported by this browser.";
+      else if(!enabled) status.textContent="Location access is off. TruX will not request it.";
+      else if(truxLocationCache) status.textContent="Location available for this session.";
+      else if(store.getItem("trux_location_granted")==="true") status.textContent="Permission granted. Waiting for a fresh position.";
+      else if(store.getItem("trux_location_granted")==="false") status.textContent="Permission unavailable or denied.";
+      else status.textContent="Location access is enabled. TruX will ask when needed.";
+    }
+
+    function toggleTruxLocationAccess(enabled) {
+      store.setItem("trux_location_enabled", enabled ? "true" : "false");
+      if(!enabled){ truxLocationCache=null; store.setItem("trux_location_granted","false"); updateLocationSettingUI(); return; }
+      requestTruxLocation({interactive:true,force:true});
+      updateLocationSettingUI();
+    }
+
+    function requestTruxLocation(options) {
+      options=options||{};
+      const interactive=!!options.interactive, force=!!options.force;
+      if(store.getItem("trux_location_enabled")==="false" || !("geolocation" in navigator)){ updateLocationSettingUI(); return Promise.resolve(null); }
+      if(truxLocationCache && !force) return Promise.resolve(truxLocationCache);
+      return new Promise(function(resolve){
+        navigator.geolocation.getCurrentPosition(function(pos){
+          truxLocationCache={latitude:Number(pos.coords.latitude),longitude:Number(pos.coords.longitude),accuracy:Number(pos.coords.accuracy||0)};
+          store.setItem("trux_location_granted","true"); store.setItem("trux_location_prompted","true"); updateLocationSettingUI();
+          if(interactive) toast("Location access enabled for TruX.","ok");
+          resolve(truxLocationCache);
+        },function(err){
+          store.setItem("trux_location_granted","false"); updateLocationSettingUI();
+          if(interactive) toast(err && err.code===1 ? "Location permission was denied. You can enable it later in Personalization." : "TruX could not access your location right now.","err");
+          resolve(null);
+        },{enableHighAccuracy:false,maximumAge:300000,timeout:12000});
+      });
+    }
+
+    function getTruxLocationForTurn(){
+      if(store.getItem("trux_location_enabled")==="false") return Promise.resolve(null);
+      if(truxLocationCache) return Promise.resolve(truxLocationCache);
+      if(store.getItem("trux_location_granted")==="false") return Promise.resolve(null);
+      return requestTruxLocation({interactive:false});
+    }
+
+    function dismissLocationConsent(useLocation){
+      store.setItem("trux_location_prompted","true");
+      getEl("locationConsentModal") && getEl("locationConsentModal").classList.remove("active");
+      if(useLocation){ store.setItem("trux_location_enabled","true"); requestTruxLocation({interactive:true,force:true}); }
+      else { store.setItem("trux_location_enabled","false"); truxLocationCache=null; updateLocationSettingUI(); }
+    }
+
+    function maybeAskForLocation(){
+      if(!auth || !auth.currentUser) return;
+      if(store.getItem("trux_location_prompted")==="true" || store.getItem("trux_location_enabled")==="false") return;
+      if(!("geolocation" in navigator)){ store.setItem("trux_location_prompted","true"); return; }
+      setTimeout(function(){ const el=getEl("locationConsentModal"); if(el) el.classList.add("active"); },380);
+    }
+
+    function applyStoredAvatar(user){
+      const override=store.getItem("trux_avatar_override")||"";
+      const src=override || (user && user.photoURL) || "https://ui-avatars.com/api/?name=User&background=111111&color=fff";
+      if(getEl("userAvatar")) getEl("userAvatar").src=src;
+      if(getEl("modalAvatar")) getEl("modalAvatar").src=src;
+    }
+
+    function openAvatarPicker(){
+      let input=getEl("profileAvatarUpload");
+      if(!input){
+        input=document.createElement("input"); input.id="profileAvatarUpload"; input.type="file"; input.accept="image/*"; input.hidden=true;
+        input.onchange=handleProfileAvatarUpload; document.body.appendChild(input);
+      }
+      input.click();
+    }
+
+    function handleProfileAvatarUpload(event){
+      const file=event && event.target && event.target.files && event.target.files[0];
+      if(!file || !file.type.startsWith("image/")) return;
+      const reader=new FileReader();
+      reader.onload=function(e){ const data=String(e.target.result||""); if(!data)return; store.setItem("trux_avatar_override",data); applyStoredAvatar(auth&&auth.currentUser); toast("Profile avatar updated on this device.","ok"); };
+      reader.readAsDataURL(file);
+    }
+
+    function resetAvatarOverride(){ store.removeItem("trux_avatar_override"); applyStoredAvatar(auth&&auth.currentUser); toast("Profile avatar reset.","ok"); }
+
+    function exportTruxMemory(){
+      const payload={version:1,exportedAt:new Date().toISOString(),chats:chatSessions,pinnedInsights:pinnedInsights,customInstructions:store.getItem("trux_custom_instructions")||"",homeLook:store.getItem("trux_home_look")||"midnight"};
+      const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}), url=URL.createObjectURL(blob), a=document.createElement("a");
+      a.href=url; a.download="trux-memory-export.json"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(url);},500);
+    }
+
+    function importTruxMemory(){
+      const input=document.createElement("input"); input.type="file"; input.accept="application/json,.json";
+      input.onchange=async function(){
+        const file=input.files&&input.files[0]; if(!file)return;
+        try{
+          const data=JSON.parse(await file.text());
+          if(data && data.chats && typeof data.chats==="object"){ chatSessions=Object.assign({},chatSessions,data.chats); saveChatSessions(); }
+          if(data && Array.isArray(data.pinnedInsights)){ pinnedInsights=Array.from(new Set(pinnedInsights.concat(data.pinnedInsights))); store.setItem("trux_pinned",JSON.stringify(pinnedInsights)); }
+          if(data && typeof data.customInstructions==="string") store.setItem("trux_custom_instructions",data.customInstructions);
+          if(data && TRUX_HOME_LOOKS.has(data.homeLook)) applyHomeLook(data.homeLook);
+          loadSettings(); renderSidebar(); toast("TruX memory imported.","ok");
+        }catch(e){ toast("Could not import that memory file.","err"); }
+      };
+      input.click();
+    }
+
+    function profileDetailData(key){
+      const owner=isTruxDeveloper(auth&&auth.currentUser);
+      const c=getCoreUsageData(), p=getProUsageData(), i=getImageUsageData();
+      if(key==="account") return {title:"Manage your account",subtitle:"Your connected sign-in and account controls.",html:'<div class="detail-callout"><h4>Connected account</h4><p>'+escapeHtml((auth&&auth.currentUser&&auth.currentUser.email)||"No account")+'</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="window.open(&#39;https://myaccount.google.com/&#39;,&#39;_blank&#39;,&#39;noopener&#39;)">Open Google Account</button></div></div>'};
+      if(key==="usage") return {title:"Usage & limits",subtitle:"Your current workspace usage.",html:'<div class="settings-card"><div class="sect"><h4>Core 4.0</h4><div class="usage"><i style="width:12%"></i></div><div class="utxt">Unlimited · '+Number(c.tokensUsed||0).toLocaleString()+' tokens used</div></div><div class="sect"><h4>Pro 5.0</h4><div class="usage"><i style="width:'+(owner?"100%":Math.min(100,(Number(p.tokensUsed||0)/1000000)*100))+'%"></i></div><div class="utxt">'+(owner?"Unlimited · ":"")+Number(p.tokensUsed||0).toLocaleString()+' / 1,000,000 Tokens</div></div><div class="sect"><h4>Image generations</h4><div class="usage"><i style="width:'+Math.min(100,(Number(i.count||0)/15)*100)+'%"></i></div><div class="utxt">'+Number(i.count||0)+' / 15 Images</div></div></div><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption();openSettingsModal();switchSettingsSection('usage')">Open usage settings</button></div>'};
+      if(key==="personalization") return {title:"Personalization",subtitle:"Controls that shape your TruX experience.",html:'<div class="detail-callout"><h4>Everything is editable</h4><p>System instructions, four home UI looks and location access are managed from Personalization.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption();openSettingsModal();switchSettingsSection('personalization')">Open personalization</button></div></div>'};
+      if(key==="notifications") return {title:"Notifications",subtitle:"Completion alerts for this device.",html:'<div class="settings-card"><div class="mrow"><span><b>Response notifications</b><small class="mrow-sub">Text, image and video completion alerts.</small></span><label class="toggle"><input id="profileNotificationsToggle" type="checkbox" onchange="toggleTruxNotificationsSetting(this.checked)"><span class="slider"></span></label></div><div class="location-status" id="profileNotificationStatus"></div></div>'};
+      if(key==="memory") return {title:"Memory & data",subtitle:"Move your local TruX workspace between devices.",html:'<div class="detail-callout"><h4>Export</h4><p>Save local chats, pinned insights, custom instructions and the selected home look.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="exportTruxMemory()">Export memory</button></div></div><div class="detail-callout"><h4>Import</h4><p>Merge a previously exported TruX JSON file into this browser.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="importTruxMemory()">Import memory</button></div></div>'};
+      if(key==="avatar") return {title:"Avatar",subtitle:"Choose the image shown in your TruX profile.",html:'<div class="detail-callout"><h4>Profile image</h4><p>Choose a local image or reset to your connected Google photo.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="openAvatarPicker()">Choose image</button><button class="mbtn" type="button" onclick="resetAvatarOverride()">Reset avatar</button></div></div>'};
+      if(key==="appearance") return {title:"Appearance",subtitle:"Pick one of four saved TruX home looks.",html:'<div class="settings-card"><div class="sect"><h4>Home UI look</h4><div class="home-look-list"><button type="button" class="home-look-option" data-profile-look="midnight" onclick="applyHomeLook('midnight')"><span class="home-look-swatch swatch-midnight"></span><span><b>Midnight</b><small>Deep black and cool glow</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="graphite" onclick="applyHomeLook('graphite')"><span class="home-look-swatch swatch-graphite"></span><span><b>Graphite</b><small>Quiet charcoal contrast</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="violet" onclick="applyHomeLook('violet')"><span class="home-look-swatch swatch-violet"></span><span><b>Violet</b><small>Dark indigo atmosphere</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="ember" onclick="applyHomeLook('ember')"><span class="home-look-swatch swatch-ember"></span><span><b>Ember</b><small>Warm dark editorial feel</small></span><i class="home-look-check">✓</i></button></div></div></div>'};
+      if(key==="settings") return {title:"Settings",subtitle:"Open the complete TruX preferences page.",html:'<div class="detail-callout"><h4>Detailed controls</h4><p>General, Appearance, Voice, Personalization, Notifications, Usage, Data & privacy and Developer are all available.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption();openSettingsModal()">Open Settings</button></div></div>'};
+      if(key==="help") return {title:"Help & privacy",subtitle:"Quick guidance and privacy controls.",html:'<div class="detail-callout"><h4>Location privacy</h4><p>Location access can be turned off at any time from Personalization.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption();openSettingsModal();switchSettingsSection('personalization')">Location settings</button></div></div><div class="detail-callout"><h4>Quick help</h4><p>Use + for Coding, Deep Research, image generation, files, camera and photos. Use Library to revisit generated media.</p></div>'};
+      if(key==="developer" && owner) return {title:"Developer workspace",subtitle:"Developer-only TruX controls and identity.",html:'<div class="detail-callout"><h4>Developer recognition</h4><p>This account has access to the developer workspace and owner controls.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption();openSettingsModal();switchSettingsSection('developer')">Open developer settings</button></div></div>'};
+      return {title:"Profile",subtitle:"Choose a profile setting.",html:'<div class="detail-callout"><p>That option is not available for this account.</p></div>'};
+    }
+
+    function openProfileOption(key){
+      currentProfileOption=key;
+      const home=getEl("profileOptionList"), label=document.querySelector(".profile-options-label"), detail=getEl("profileDetailView");
+      const data=profileDetailData(key);
+      if(home) home.style.display="none";
+      if(label) label.style.display="none";
+      if(detail){ detail.hidden=false; getEl("profileDetailTitle").textContent=data.title; getEl("profileDetailSubtitle").textContent=data.subtitle; getEl("profileDetailBody").innerHTML=data.html; }
+      if(key==="notifications"){
+        const t=getEl("profileNotificationsToggle"); if(t) t.checked=("Notification" in window && Notification.permission==="granted");
+        const s=getEl("profileNotificationStatus"); if(s) s.textContent=("Notification" in window) ? "Permission: "+Notification.permission : "Notifications are not supported.";
+      }
+      if(key==="appearance") applyHomeLook(document.body.dataset.homeLook||"midnight",false);
+      const scroller=getEl("profileModal"); if(scroller) scroller.scrollTop=0;
+    }
+
+    function closeProfileOption(){
+      currentProfileOption=null;
+      const home=getEl("profileOptionList"), label=document.querySelector(".profile-options-label"), detail=getEl("profileDetailView");
+      if(home) home.style.display="";
+      if(label) label.style.display="";
+      if(detail) detail.hidden=true;
+      const scroller=getEl("profileModal"); if(scroller) scroller.scrollTop=0;
+    }
+
+    function updateNotificationSettingsUI(){
+      const granted=("Notification" in window && Notification.permission==="granted");
+      const t=getEl("notificationsToggle"); if(t) t.checked=granted;
+      const pt=getEl("profileNotificationsToggle"); if(pt) pt.checked=granted;
+      const s=getEl("notificationStatusText"); if(s) s.textContent=("Notification" in window) ? "Permission: "+Notification.permission : "Notifications are not supported.";
+      const ps=getEl("profileNotificationStatus"); if(ps) ps.textContent=("Notification" in window) ? "Permission: "+Notification.permission : "Notifications are not supported.";
+    }
+
+    async function toggleTruxNotificationsSetting(enabled){
+      if(!enabled){ updateNotificationSettingsUI(); return; }
+      await enableTruxNotifications();
+      updateNotificationSettingsUI();
+    }
+
     function setWorkspaceMode(mode) {
       const nextMode = mode || "chat";
       const previousMode = workspaceMode;
@@ -3033,16 +3335,16 @@ body.sidebar-open .topbar{filter:brightness(.78)}
 
       workspaceMode = nextMode;
       const isCoding = workspaceMode === "coding";
+      const isMedia = workspaceMode === "image" || workspaceMode === "video";
+      if(isMedia) document.body.dataset.mediaMode=workspaceMode; else document.body.removeAttribute("data-media-mode");
       syncMobileSidebarState();
       document.body.classList.toggle("coding-workspace", isCoding);
       document.body.classList.toggle("home-active", !isCoding && !currentChatId);
 
       /* The home screen is the landing surface after leaving TruX-Code. */
-      if(!isCoding && leavingCoding) {
-        getEl("welcomeScreen").style.display = "flex";
-      } else if(isCoding) {
-        getEl("welcomeScreen").style.display = "none";
-      }
+      if(!isCoding && !isMedia && leavingCoding) getEl("welcomeScreen").style.display="flex";
+      else if(isCoding || isMedia) getEl("welcomeScreen").style.display="none";
+      else if(!currentChatId) getEl("welcomeScreen").style.display="flex";
 
       getEl("chatContainer").style.display = isCoding ? "none" : (currentChatId ? "block" : "none");
       getEl("codeChatContainer").style.display = isCoding ? "block" : "none";
@@ -3156,6 +3458,9 @@ body.sidebar-open .topbar{filter:brightness(.78)}
       if(aR) aR.checked = store.getItem("trux_auto_read") === "true";
       if(tts) tts.value = store.getItem("trux_tts_rate") || "1.0";
       loadCustomInstructions();
+      applyHomeLook(store.getItem("trux_home_look") || "midnight", false);
+      updateLocationSettingUI();
+      updateNotificationSettingsUI();
     }
 
     function exportChatData() {
@@ -3167,15 +3472,16 @@ body.sidebar-open .topbar{filter:brightness(.78)}
       let t = performance.now();
       try { await fetch("/api/chat", { cache: "no-store" }); toast(`Backend reachable - ${Math.round(performance.now() - t)} ms`, "ok"); } catch { toast("Backend check failed.", "err"); }
     }
-    function resetAllSettings() { if(confirm("Reset all settings?")) { ["trux_custom_instructions", "trux_auto_read", "trux_ambient_glow", "trux_tts_rate"].forEach(k => store.removeItem(k)); loadSettings(); } }
+    function resetAllSettings() { if(confirm("Reset all settings?")) { ["trux_custom_instructions","trux_auto_read","trux_ambient_glow","trux_tts_rate","trux_home_look","trux_location_enabled","trux_location_granted","trux_location_prompted","trux_avatar_override"].forEach(k => store.removeItem(k)); loadSettings(); } }
     function clearAllHistory() { if(confirm("Delete all local chats?")) { chatSessions = {}; store.removeItem("trux_chats"); startNewChat(); closeSettingsModal(); } }
 
     function handleAuthAction() {
       if(!auth) return;
       if(!auth.currentUser) return openLoginWall();
-      getEl("modalAvatar").src = auth.currentUser.photoURL || getEl("userAvatar").src;
+      applyStoredAvatar(auth.currentUser);
       getEl("modalName").innerText = auth.currentUser.displayName || "User";
       getEl("modalEmail").innerText = auth.currentUser.email || "";
+      const ownerBadge=document.querySelector(".owner-profile-badge"); if(ownerBadge) ownerBadge.style.display=isTruxDeveloper(auth.currentUser) ? "inline-flex" : "none";
       getEl("profilePlanText").innerText = isTruxDeveloper(auth.currentUser) ? "Owner" : (currentModel === "pro" ? "Pro" : "Core");
       getEl("profileModelText").innerText = ({base:"Core 4.0",pro:"Pro 5.0",ultra:"TruX-Ultra 6.5"})[currentModel] || "Core 4.0";
       getEl("profileLimitText").innerText = "Unlimited";
@@ -3191,10 +3497,13 @@ body.sidebar-open .topbar{filter:brightness(.78)}
       });
       const scroller = document.querySelector(".settings-main-scroll");
       if (scroller) scroller.scrollTop = 0;
+      const mobileSelect=getEl("settingsMobileSelect"); if(mobileSelect) mobileSelect.value=name;
     }
     function openSettingsModal() {
       updateAllUsageUI();
       loadSettings();
+      updateLocationSettingUI();
+      updateNotificationSettingsUI();
       getEl("settingsModal").style.display = "flex";
       const first = document.querySelector('.settings-nav button[data-settings-section="general"]');
       switchSettingsSection("general", first);
@@ -3511,6 +3820,8 @@ body.sidebar-open .topbar{filter:brightness(.78)}
       closeAttachmentMenu();
       closeModelDropdown();
       document.body.classList.add("home-active");
+      document.body.removeAttribute("data-media-mode");
+      workspaceMode="chat";
       activeAbortController?.abort();
       document.body.classList.remove("scrolled");
       stopToolStatusTyping();
@@ -4415,6 +4726,7 @@ body.sidebar-open .topbar{filter:brightness(.78)}
       opts = opts || {};
       let imagePrompt = opts.imagePrompt || basePrompt;
       document.body.classList.remove("home-active");
+      document.body.removeAttribute("data-media-mode");
       if(workspaceMode === "coding") { const codeHome = getEl("truxCodeWorkspace"); codeHome?.classList.add("code-workspace-dismissed"); codeHome?.style.setProperty("display", "none", "important"); }
       isGenerating = true; isScrolledUp = false;
       getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>'; getEl("actionBtn").classList.add("stop"); getEl("actionBtn").classList.remove("ready");
@@ -4901,6 +5213,8 @@ body.sidebar-open .topbar{filter:brightness(.78)}
         return generateImage(basePrompt, { imagePrompt: basePrompt });
       }
 
+      const locationContext=await getTruxLocationForTurn();
+
       /* No keyword gate here any more. Every turn goes to the model, and the
          model answers with an "[[IMAGE]] <prompt>" line when it judges that a
          picture is what was asked for — see the image routing below. */
@@ -4950,6 +5264,7 @@ body.sidebar-open .topbar{filter:brightness(.78)}
         systemInstruction: store.getItem("trux_custom_instructions") || "",
         userId: auth?.currentUser?.uid || null,
         userEmail: auth?.currentUser?.email || "",
+        location: locationContext,
         githubRepository: workspaceMode === "coding" ? (store.getItem("trux_code_active_repository") || "") : "",
         githubBranch: workspaceMode === "coding" ? (store.getItem("trux_code_active_branch") || "") : "",
         notifyOnComplete: true
@@ -5160,6 +5475,7 @@ body.sidebar-open .topbar{filter:brightness(.78)}
       if(!owner && currentModel!=="pro") return toast("Video generation is available to Pro accounts and Owner access.","err");
 
       document.body.classList.remove("home-active");
+      document.body.removeAttribute("data-media-mode");
       isGenerating=true; isScrolledUp=false;
       getEl("btnIcon").innerHTML='<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>';
       getEl("actionBtn").classList.add("stop"); getEl("actionBtn").classList.remove("ready");
@@ -5271,6 +5587,20 @@ body.sidebar-open .topbar{filter:brightness(.78)}
         renderMediaLibrary(currentMediaFilter);
       } catch(e) {}
     }
+
+    async function downloadGeneratedMedia(item){
+      const url=item && (item.url || item.dataUrl);
+      if(!url) return toast("Media is not available for download.","err");
+      try{
+        const response=await fetch(url,{credentials:"same-origin"});
+        if(!response.ok) throw Error("Media request failed.");
+        const blob=await response.blob(), objectUrl=URL.createObjectURL(blob), a=document.createElement("a");
+        a.href=objectUrl; a.download=(item.type==="video"?"trux-video-":"trux-image-")+Date.now()+(item.type==="video"?".mp4":".png");
+        document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(objectUrl);},1200);
+      }catch(e){
+        const a=document.createElement("a"); a.href=url; a.target="_blank"; a.rel="noopener"; a.click();
+      }
+    }
     let currentMediaFilter="all";
     async function openMediaLibrary(filter) {
       currentMediaFilter=filter || "all";
@@ -5298,8 +5628,9 @@ body.sidebar-open .topbar{filter:brightness(.78)}
         const p=document.createElement("div"); p.className="media-card-prompt"; p.textContent=m.prompt || "Generated media";
         const actions=document.createElement("div"); actions.className="media-card-actions";
         const openBtn=document.createElement("button"); openBtn.textContent="Open"; openBtn.onclick=()=>{ const u=m.url || m.dataUrl; if(u) window.open(u,"_blank","noopener"); };
+        const downloadBtn=document.createElement("button"); downloadBtn.textContent="Download"; downloadBtn.onclick=()=>downloadGeneratedMedia(m);
         const delBtn=document.createElement("button"); delBtn.textContent="Delete"; delBtn.onclick=()=>deleteGeneratedMedia(m.id);
-        actions.append(openBtn,delBtn); body.append(kind,p,actions); card.appendChild(body); grid.appendChild(card);
+        actions.append(openBtn,downloadBtn,delBtn); body.append(kind,p,actions); card.appendChild(body); grid.appendChild(card);
       });
     }
     function closeMediaLibrary(){ getEl("mediaLibraryModal")?.classList.remove("open"); }
