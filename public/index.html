@@ -2911,7 +2911,6 @@ body[data-home-look="graphite"] .bg::before{background:radial-gradient(ellipse a
         }
       });
     }
-    applyHomeLook(store.getItem("trux_home_look") || "midnight", false);
     initFirebase();
 
     function updateNotificationButton() {
@@ -3033,6 +3032,8 @@ body[data-home-look="graphite"] .bg::before{background:radial-gradient(ellipse a
         advancedThinkingEnabled = false,
         truxLocationCache = null,
         currentProfileOption = null;
+
+    applyHomeLook(store.getItem("trux_home_look") || "midnight", false);
 
     function toggleModelDropdown(e) {
       e?.stopPropagation();
