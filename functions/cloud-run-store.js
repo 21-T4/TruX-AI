@@ -27,7 +27,35 @@ function pemToArrayBuffer(pem) {
 
 async function googleAccessToken(env) {
   if (cachedAccessToken && Date.now() < cachedTokenExpiry - 60000) return cachedAccessToken;
-  if (!env.GCP_CLIENT_EMAIL || !env.GCP_PRIVATE_KEY) throw new Error('GCP service-account credentials are not configured.');
+
+  // On Cloud Run, use the attached service account through the metadata
+  // server first. The explicit JWT credentials remain as a fallback.
+  const metadataUrls = [
+    'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token',
+    'http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token'
+  ];
+
+  if (env.K_SERVICE || env.K_REVISION || env.K_CONFIGURATION) {
+    for (const url of metadataUrls) {
+      try {
+        const response = await fetch(url, {
+          headers: { 'Metadata-Flavor': 'Google' }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data?.access_token) {
+            cachedAccessToken = data.access_token;
+            cachedTokenExpiry = Date.now() + ((Number(data.expires_in) || 3600) * 1000);
+            return cachedAccessToken;
+          }
+        }
+      } catch {
+        // Fall through to the explicit service-account credentials.
+      }
+    }
+  }
+
+  if (!env.GCP_CLIENT_EMAIL || !env.GCP_PRIVATE_KEY) throw new Error('Google credentials are unavailable for Cloud Run state storage.');
 
   const now = Math.floor(Date.now() / 1000);
   const header = base64UrlEncode(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
