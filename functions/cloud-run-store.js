@@ -25,6 +25,42 @@ function pemToArrayBuffer(pem) {
   return bytes.buffer;
 }
 
+async function cloudProjectId(env) {
+  const configured = String(
+    env.GCP_PROJECT_ID ||
+    env.GOOGLE_CLOUD_PROJECT ||
+    env.GCLOUD_PROJECT ||
+    env.PROJECT_ID ||
+    ''
+  ).trim();
+
+  if (configured) return configured;
+
+  if (env.K_SERVICE || env.K_REVISION || env.K_CONFIGURATION) {
+    const metadataUrls = [
+      'http://metadata.google.internal/computeMetadata/v1/project/project-id',
+      'http://169.254.169.254/computeMetadata/v1/project/project-id'
+    ];
+
+    for (const url of metadataUrls) {
+      try {
+        const response = await fetch(url, {
+          headers: { 'Metadata-Flavor': 'Google' }
+        });
+
+        if (response.ok) {
+          const value = (await response.text()).trim();
+          if (value) return value;
+        }
+      } catch {
+        // Try the next metadata endpoint.
+      }
+    }
+  }
+
+  return '';
+}
+
 async function googleAccessToken(env) {
   if (cachedAccessToken && Date.now() < cachedTokenExpiry - 60000) return cachedAccessToken;
 
@@ -121,7 +157,7 @@ function memoryPut(key, value, options = {}) {
 }
 
 async function firestoreGet(env, key) {
-  const projectId = String(env.GCP_PROJECT_ID || env.GOOGLE_CLOUD_PROJECT || env.GCLOUD_PROJECT || '').trim();
+  const projectId = await cloudProjectId(env);
   if (!projectId || firestoreDisabled) return null;
   const token = await googleAccessToken(env);
   const id = await docId(key);
@@ -143,7 +179,7 @@ async function firestoreGet(env, key) {
 }
 
 async function firestorePut(env, key, value, options = {}) {
-  const projectId = String(env.GCP_PROJECT_ID || '').trim();
+  const projectId = await cloudProjectId(env);
   if (!projectId || firestoreDisabled) return false;
   const token = await googleAccessToken(env);
   const id = await docId(key);
@@ -168,7 +204,7 @@ async function firestorePut(env, key, value, options = {}) {
 }
 
 async function firestoreDelete(env, key) {
-  const projectId = String(env.GCP_PROJECT_ID || '').trim();
+  const projectId = await cloudProjectId(env);
   if (!projectId || firestoreDisabled) return false;
   const token = await googleAccessToken(env);
   const id = await docId(key);
