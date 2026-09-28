@@ -158,11 +158,10 @@ async function handleApi(req, res, route) {
     console.error("API route failed:", error);
     res.statusCode = 500;
     res.setHeader("Content-Type", "application/json; charset=utf-8");
+    const detail = String(error?.message || error || "Unknown server error.");
     res.end(JSON.stringify({
       error: "Internal server error",
-      detail: process.env.NODE_ENV === "production"
-        ? undefined
-        : String(error?.message || error)
+      detail
     }));
   }
 }
