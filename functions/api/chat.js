@@ -122,7 +122,7 @@ async function createGoogleAccessToken(env) {
   }
 
   const projectId = String(
-    env.GCP_PROJECT_ID || env.GOOGLE_CLOUD_PROJECT || env.GCLOUD_PROJECT || ''
+    env.GCP_PROJECT_ID || env.GOOGLE_CLOUD_PROJECT || env.GCLOUD_PROJECT || env.PROJECT_ID || 'trux-ai'
   ).trim();
   const clientEmail = String(
     env.GCP_CLIENT_EMAIL || env.GOOGLE_CLIENT_EMAIL || ''
