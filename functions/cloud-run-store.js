@@ -55,12 +55,14 @@ async function googleAccessToken(env) {
     }
   }
 
-  if (!env.GCP_CLIENT_EMAIL || !env.GCP_PRIVATE_KEY) throw new Error('Google credentials are unavailable for Cloud Run state storage.');
+  const clientEmail = String(env.GCP_CLIENT_EMAIL || env.GOOGLE_CLIENT_EMAIL || '').trim();
+  const privateKey = String(env.GCP_PRIVATE_KEY || env.GOOGLE_PRIVATE_KEY || '');
+  if (!clientEmail || !privateKey) throw new Error('Google credentials are unavailable for Cloud Run state storage.');
 
   const now = Math.floor(Date.now() / 1000);
   const header = base64UrlEncode(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
   const claims = base64UrlEncode(JSON.stringify({
-    iss: env.GCP_CLIENT_EMAIL,
+    iss: clientEmail,
     scope: 'https://www.googleapis.com/auth/datastore',
     aud: 'https://oauth2.googleapis.com/token',
     iat: now,
@@ -69,7 +71,7 @@ async function googleAccessToken(env) {
   const unsigned = header + '.' + claims;
   const key = await crypto.subtle.importKey(
     'pkcs8',
-    await pemToArrayBuffer(env.GCP_PRIVATE_KEY),
+    await pemToArrayBuffer(privateKey),
     { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
     false,
     ['sign']
@@ -119,7 +121,7 @@ function memoryPut(key, value, options = {}) {
 }
 
 async function firestoreGet(env, key) {
-  const projectId = String(env.GCP_PROJECT_ID || '').trim();
+  const projectId = String(env.GCP_PROJECT_ID || env.GOOGLE_CLOUD_PROJECT || env.GCLOUD_PROJECT || '').trim();
   if (!projectId || firestoreDisabled) return null;
   const token = await googleAccessToken(env);
   const id = await docId(key);
