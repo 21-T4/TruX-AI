@@ -3048,7 +3048,7 @@ body.sidebar-open .topbar{filter:brightness(.78)}
       document.querySelectorAll("[data-trux-mode]").forEach(x => x.classList.toggle("active", x.dataset.truxMode === workspaceMode));
       document.querySelectorAll("[data-trux-menu-mode]").forEach(x => x.classList.toggle("active", x.dataset.truxMenuMode === workspaceMode));
       const p = getEl("promptInput");
-      if(p) p.placeholder = ({chat:"Ask TruX…",coding:"Let's Code","deep-research":"Research deeply…",image:"Describe the image you want…"})[workspaceMode] || "Ask TruX…";
+      if(p) p.placeholder = ({chat:"Ask TruX…",coding:"Let's Code","deep-research":"Research deeply…",image:"Describe the image you want…",video:"Describe the video you want…"})[workspaceMode] || "Ask TruX…";
       const think = getEl("thinkingBtn");
       if(think) think.classList.toggle("active", advancedThinkingEnabled || workspaceMode === "deep-research" || isCoding);
 
@@ -3223,34 +3223,47 @@ body.sidebar-open .topbar{filter:brightness(.78)}
     }
     function closePinnedModal() { getEl("pinnedModal").style.display = "none"; }
     
+    function setSidebarOpen(open) {
+      const s = getEl("sidebarNode"), overlay = getEl("sidebarOverlay");
+      if(!s) return;
+      s.classList.toggle("open", !!open);
+      overlay?.classList.toggle("active", !!open);
+      document.body.classList.toggle("sidebar-open", !!open);
+    }
+
     function toggleSidebar(e) {
       if(e) e.stopPropagation();
-      let s = getEl("sidebarNode"), overlay = getEl("sidebarOverlay");
-      if(window.innerWidth <= 768) {
-        s.classList.toggle("open");
-        overlay.classList.toggle("active", s.classList.contains("open"));
-      } else {
-        s.classList.toggle("collapsed");
-        overlay.classList.remove("active");
-      }
+      const s = getEl("sidebarNode");
+      setSidebarOpen(!s?.classList.contains("open"));
     }
+
     function closeSidebar() {
-      let s = getEl("sidebarNode"), overlay = getEl("sidebarOverlay");
-      s.classList.remove("open");
-      overlay.classList.remove("active");
-      if(window.innerWidth > 768) s.classList.add("collapsed");
+      setSidebarOpen(false);
+      closeSidebarChatSearch();
     }
+
     function syncMobileSidebarState() {
       const s = getEl("sidebarNode"), overlay = getEl("sidebarOverlay");
       if(!s || !overlay) return;
-      if(window.innerWidth > 768) {
-        s.classList.remove("open");
-        overlay.classList.remove("active");
-      } else {
-        overlay.classList.toggle("active", s.classList.contains("open"));
-      }
+      const open = s.classList.contains("open");
+      overlay.classList.toggle("active", open);
+      document.body.classList.toggle("sidebar-open", open);
     }
     addEventListener("resize", syncMobileSidebarState);
+
+    function focusSidebarChatSearch() {
+      const wrap = getEl("sidebarSearchWrap"), input = getEl("historySearch");
+      if(!wrap || !input) return;
+      wrap.hidden = false;
+      requestAnimationFrame(() => input.focus());
+    }
+
+    function closeSidebarChatSearch() {
+      const wrap = getEl("sidebarSearchWrap"), input = getEl("historySearch");
+      if(!wrap) return;
+      wrap.hidden = true;
+      if(input && input.value) { input.value = ""; renderSidebar(); }
+    }
 
     function bindChatScroll(container) {
       container?.addEventListener("scroll", function() {
@@ -3483,8 +3496,7 @@ body.sidebar-open .topbar{filter:brightness(.78)}
     }
 
     function startNewChat() {
-      if(window.innerWidth <= 768) closeSidebar();
-      else getEl("sidebarOverlay")?.classList.remove("active");
+      closeSidebar();
       closeAttachmentMenu();
       closeModelDropdown();
       document.body.classList.add("home-active");
@@ -4852,6 +4864,12 @@ body.sidebar-open .topbar{filter:brightness(.78)}
       if(!owner && workspaceMode === "coding" && modeUsage.codingTokens >= 150000) return toast("TruX-Code monthly limit reached (150k tokens).", "err");
       if(!owner && workspaceMode === "deep-research" && modeUsage.deepResearchRuns >= 1) return toast("Deep Research is limited to one run per month.", "err");
       if(!owner && currentModel === "pro" && workspaceMode !== "coding" && getProUsageData().tokensUsed >= 1000000) return toast("TruX Pro monthly limit reached.", "err");
+      if(workspaceMode === "video") {
+        if(!owner && !auth?.currentUser) return toast("Sign in to use Video generation.", "err");
+        if(!owner && currentModel !== "pro") return toast("Video generation is available to Pro accounts and Owner access.", "err");
+        return generateVideo(basePrompt || prompt);
+      }
+
       if(workspaceMode === "image" && !selectedImageBase64) return generateImage(basePrompt || "Create a high-quality image", {explicitMode:true});
 
       if(workspaceMode === "chat" && !selectedImageBase64 && !allAttachments.length && looksLikeImageGenerationRequest(prompt)) {
@@ -5142,7 +5160,54 @@ body.sidebar-open .topbar{filter:brightness(.78)}
         .trim();
     }
 
+    const TRUX_NOTEBOOKS_KEY = "trux_notebooks";
+
+    function getNotebooks() {
+      const fallback = [{ id:"notebook_trux", title:"TruX-AI" }];
+      const value = store.json(TRUX_NOTEBOOKS_KEY, fallback);
+      return Array.isArray(value) && value.length ? value : fallback;
+    }
+
+    function renderNotebooks() {
+      const host = getEl("notebookList");
+      if(!host) return;
+      host.innerHTML = "";
+      getNotebooks().forEach(n => {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "notebook-item";
+        item.onclick = () => openNotebook(n.id);
+        const icon = document.createElement("span");
+        icon.className = "notebook-icon";
+        icon.innerHTML = '<svg viewBox="0 0 24 24"><path d="M5 4.5h8.5L18.5 9v10A1.5 1.5 0 0 1 17 20.5H5A1.5 1.5 0 0 1 3.5 19V6A1.5 1.5 0 0 1 5 4.5Z"/><path d="M13 4.5V9h5"/></svg>';
+        const label = document.createElement("b");
+        label.textContent = n.title;
+        item.append(icon, label);
+        host.appendChild(item);
+      });
+    }
+
+    function createNotebook() {
+      const title = prompt("Notebook name");
+      const clean = String(title || "").trim().slice(0,60);
+      if(!clean) return;
+      const notebooks = getNotebooks();
+      notebooks.push({ id:"notebook_" + Date.now(), title:clean });
+      store.setItem(TRUX_NOTEBOOKS_KEY, JSON.stringify(notebooks));
+      renderNotebooks();
+    }
+
+    function openNotebook(id) {
+      const notebook = getNotebooks().find(n => n.id === id);
+      if(!notebook) return;
+      store.setItem("trux_active_notebook", notebook.id);
+      closeSidebar();
+      startNewChat();
+      toast("Opened " + notebook.title + ".", "ok");
+    }
+
     function renderSidebar() {
+      renderNotebooks();
       let hL = getEl("historyList"); if(!hL) return;
       let q = (getEl("historySearch")?.value || "").trim().toLowerCase();
       let ids = Object.keys(chatSessions).reverse();
@@ -5213,7 +5278,7 @@ body.sidebar-open .topbar{filter:brightness(.78)}
     
     addEventListener("keydown", e => { if(e.key === "Escape") { closeProfileModal(); closeSettingsModal(); closeSandboxModal(); closePinnedModal(); closeLoginWall(); getEl("contextMenu").style.display = "none"; closeSidebar(); closeModelDropdown(); closeAttachmentMenu(); } });
 
-    document.body.classList.add("home-active"); loadSettings(); renderSidebar(); updateAllUsageUI(); handleInputChange(); setWorkspaceMode("chat");
+    document.body.classList.add("home-active"); loadSettings(); renderNotebooks(); renderSidebar(); updateAllUsageUI(); handleInputChange(); setWorkspaceMode("chat");
   </script>
 </body>
 </html>
