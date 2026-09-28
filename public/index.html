@@ -2447,6 +2447,24 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
   body[data-home-look="split"] .welcome{padding-left:12px;padding-right:12px}
 }
 @media(max-width:760px){#profileModal .card>div:first-of-type{padding:22px 16px 16px!important}.profile-option-list{margin:0 12px}.profile-option-row{min-height:68px;padding:9px 12px;grid-template-columns:38px minmax(0,1fr) 18px;gap:10px}.profile-option-icon{width:33px;height:33px;border-radius:10px;font-size:15px}.profile-option-copy b{font-size:13.5px}.profile-option-copy small{font-size:10px}.profile-meta-grid-large,.profile-actions-row{padding:0 12px}.profile-detail-view{padding:0 12px}.settings-mobile-select{display:block}#settingsModal .settings-topbar{gap:10px;padding:0 12px}#settingsModal .settings-topbar .settings-title .msub{display:none}#settingsModal .settings-topbar .settings-title .mtitle{font-size:18px}#settingsModal .settings-topbar .close{position:static;flex:0 0 36px;width:36px;height:36px;margin:0}#settingsModal .settings-sidebar{display:none}.media-gen-workspace{width:calc(100% - 20px);margin:10px auto 6px;border-radius:22px;min-height:230px}.media-gen-inner{padding:30px 24px 32px}.media-gen-workspace h1{font-size:34px}}@media(max-width:470px){.consent-actions{grid-template-columns:1fr}}
+    /* Clean Mono/Dark home: no colored backgrounds, gradients or decorative copy. */
+    body[data-home-look="mono"]{--bg:#0b0b0b;--bg-1:#0e0e0e;--bg-2:#141414;--bg-3:#1a1a1a;--bg-4:#222;--line:rgba(255,255,255,.07);--line-2:rgba(255,255,255,.12);--line-3:rgba(255,255,255,.20);--txt:#f2f2f2;--txt-2:#a7a7a7;--txt-3:#707070;--txt-4:#4a4a4a;--acc:#e6e6e6;--acc-2:#bdbdbd;--acc-3:#8d8d8d;--acc-soft:rgba(255,255,255,.07);--acc-line:rgba(255,255,255,.16)}
+    body[data-home-look="dark"]{--bg:#0b0b0b;--bg-1:#101010;--bg-2:#151515;--bg-3:#1c1c1c;--bg-4:#242424;--line:rgba(255,255,255,.075);--line-2:rgba(255,255,255,.13);--line-3:rgba(255,255,255,.22);--txt:#f4f4f4;--txt-2:#aaa;--txt-3:#777;--txt-4:#4b4b4b;--acc:#f4f4f4;--acc-2:#c8c8c8;--acc-3:#999;--acc-soft:rgba(255,255,255,.075);--acc-line:rgba(255,255,255,.17)}
+    body[data-home-look="mono"] .bg,body[data-home-look="dark"] .bg{display:none}
+    body[data-home-look="mono"] .topbar,body[data-home-look="dark"] .topbar{background:#000}
+    body[data-home-look="mono"] .sidebar{background:#0a0a0a}
+    body[data-home-look="dark"] .sidebar{background:#0d0d0d}
+    body[data-home-look="mono"] .welcome,body[data-home-look="dark"] .welcome{padding:0 24px 8px}
+    body[data-home-look="mono"] .hero,body[data-home-look="dark"] .hero{max-width:760px;justify-content:center}
+    body[data-home-look="mono"] .hero>.badge,body[data-home-look="mono"] .animated-sub,body[data-home-look="mono"] .chips-head,body[data-home-look="mono"] .chips,body[data-home-look="dark"] .hero>.badge,body[data-home-look="dark"] .animated-sub,body[data-home-look="dark"] .chips-head,body[data-home-look="dark"] .chips{display:none}
+    body[data-home-look="mono"] .welcome-title,body[data-home-look="dark"] .welcome-title{font-size:clamp(46px,7vw,72px);margin:0;letter-spacing:-.055em}
+    body[data-home-look="mono"] .hero::after,body[data-home-look="dark"] .hero::after{content:none!important;display:none!important}
+    body[data-home-look="mono"] .brand-x,body[data-home-look="dark"] .brand-x{color:inherit;background:none;-webkit-text-fill-color:currentColor}
+    .notebook-item{position:relative}
+    .notebook-delete{width:30px;height:30px;flex:0 0 30px;margin-left:auto;display:grid;place-items:center;border-radius:8px;color:var(--txt-3);background:transparent;border:1px solid transparent;opacity:.7;transition:opacity .16s var(--ease),background .16s var(--ease),color .16s var(--ease),border-color .16s var(--ease)}
+    .notebook-item:hover .notebook-delete,.notebook-delete:focus-visible{opacity:1}
+    .notebook-delete:hover{color:#fff;background:rgba(255,255,255,.07);border-color:var(--line)}
+    .notebook-delete svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 </style>
 </head>
 <body class="home-active">
@@ -2882,12 +2900,10 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
                 <div class="sect"><h4>Home UI layout</h4>
                   <p class="mrow-sub" style="margin:-3px 0 12px">Default keeps the current TruX home. Every other preset changes the layout and visual language instead of only recoloring it.</p>
                   <div class="home-look-list">
-                    <button type="button" class="home-look-option" data-home-look-option="midnight" onclick="applyHomeLook(&quot;midnight&quot;)"><span class="home-look-swatch swatch-midnight"></span><span><b>Default · Midnight</b><small>Current balanced TruX home with its original launcher</small></span><i class="home-look-check">✓</i></button>
-                    <button type="button" class="home-look-option" data-home-look-option="simple" onclick="applyHomeLook(&quot;simple&quot;)"><span class="home-look-swatch swatch-graphite"></span><span><b>Simple · Clean</b><small>Stripped-down home with no launcher cards</small></span><i class="home-look-check">✓</i></button>
-                    <button type="button" class="home-look-option" data-home-look-option="prism" onclick="applyHomeLook(&quot;prism&quot;)"><span class="home-look-swatch swatch-violet"></span><span><b>Prism · Advanced</b><small>More complex two-zone dashboard with a cool spectrum</small></span><i class="home-look-check">✓</i></button>
-                    <button type="button" class="home-look-option" data-home-look-option="colorful" onclick="applyHomeLook(&quot;colorful&quot;)"><span class="home-look-swatch swatch-violet"></span><span><b>Colorflow · Vibrant</b><small>Multi-color gradients and brighter floating launch blocks</small></span><i class="home-look-check">✓</i></button>
-                    <button type="button" class="home-look-option" data-home-look-option="black" onclick="applyHomeLook(&quot;black&quot;)"><span class="home-look-swatch swatch-midnight"></span><span><b>Pure Black · Mono</b><small>True black background with almost no decoration</small></span><i class="home-look-check">✓</i></button>
-                    <button type="button" class="home-look-option" data-home-look-option="split" onclick="applyHomeLook(&quot;split&quot;)"><span class="home-look-swatch swatch-graphite"></span><span><b>Split Studio · Rearranged</b><small>Identity on the left and a vertical launch rail on the right</small></span><i class="home-look-check">✓</i></button>
+                    <button type="button" class="home-look-option" data-home-look-option="midnight" onclick="applyHomeLook(&quot;midnight&quot;)"><span class="home-look-swatch swatch-midnight"></span><span><b>Default</b><small>Keep the normal TruX home layout</small></span><i class="home-look-check">✓</i></button>
+                    <button type="button" class="home-look-option" data-home-look-option="mono" onclick="applyHomeLook(&quot;mono&quot;)"><span class="home-look-swatch swatch-graphite"></span><span><b>Mono</b><small>Flat monochrome ChatGPT-style home</small></span><i class="home-look-check">✓</i></button>
+                    <button type="button" class="home-look-option" data-home-look-option="dark" onclick="applyHomeLook(&quot;dark&quot;)"><span class="home-look-swatch swatch-midnight"></span><span><b>Dark</b><small>Clean dark surfaces with no colored background</small></span><i class="home-look-check">✓</i></button>
+                    <button type="button" class="home-look-option" data-home-look-option="black" onclick="applyHomeLook(&quot;black&quot;)"><span class="home-look-swatch swatch-midnight"></span><span><b>Black</b><small>Pure black, minimal interface</small></span><i class="home-look-check">✓</i></button>
                   </div>
                   <div class="setting-note">Saved on this device and restored automatically when TruX opens.</div>
                 </div>
@@ -3301,12 +3317,15 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     }
 
 
-    const TRUX_HOME_LOOKS = new Set(["midnight","simple","prism","colorful","black","split"]);
+    const TRUX_HOME_LOOKS = new Set(["midnight","mono","dark","black"]);
+    const TRUX_HOME_LOOK_ALIASES = { simple:"mono", prism:"dark", colorful:"dark", split:"dark" };
     applyHomeLook(store.getItem("trux_home_look") || "midnight", false);
     initFirebase();
 
     function applyHomeLook(name, persist) {
-      const next = TRUX_HOME_LOOKS.has(name) ? name : "midnight";
+      const raw = String(name || "").toLowerCase();
+      const nextName = TRUX_HOME_LOOK_ALIASES[raw] || raw;
+      const next = TRUX_HOME_LOOKS.has(nextName) ? nextName : "midnight";
       document.body.dataset.homeLook = next;
       document.querySelectorAll("[data-home-look-option]").forEach(function(el){ el.classList.toggle("active", el.dataset.homeLookOption === next); });
       document.querySelectorAll("[data-profile-look]").forEach(function(el){ el.classList.toggle("active", el.dataset.profileLook === next); });
@@ -5870,8 +5889,8 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
     function getNotebooks() {
       const fallback = [{ id:"notebook_trux", title:"TruX-AI" }];
-      const value = store.json(TRUX_NOTEBOOKS_KEY, fallback);
-      return Array.isArray(value) && value.length ? value : fallback;
+      const value = store.json(TRUX_NOTEBOOKS_KEY, null);
+      return Array.isArray(value) ? value : fallback;
     }
 
     function renderNotebooks() {
@@ -5879,16 +5898,30 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       if(!host) return;
       host.innerHTML = "";
       getNotebooks().forEach(n => {
-        const item = document.createElement("button");
-        item.type = "button";
+        const item = document.createElement("div");
         item.className = "notebook-item";
+        item.setAttribute("role","button");
+        item.tabIndex = 0;
         item.onclick = () => openNotebook(n.id);
+        item.onkeydown = e => { if(e.key === "Enter" || e.key === " ") { e.preventDefault(); openNotebook(n.id); } };
+
         const icon = document.createElement("span");
         icon.className = "notebook-icon";
         icon.innerHTML = '<svg viewBox="0 0 24 24"><path d="M5 4.5h8.5L18.5 9v10A1.5 1.5 0 0 1 17 20.5H5A1.5 1.5 0 0 1 3.5 19V6A1.5 1.5 0 0 1 5 4.5Z"/><path d="M13 4.5V9h5"/></svg>';
+
         const label = document.createElement("b");
         label.textContent = n.title;
-        item.append(icon, label);
+        label.title = n.title;
+
+        const del = document.createElement("button");
+        del.type = "button";
+        del.className = "notebook-delete";
+        del.setAttribute("aria-label","Delete " + n.title);
+        del.title = "Delete notebook";
+        del.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M9 7V5h6v2m-8 0 1 13h8l1-13M10 11v5M14 11v5"/></svg>';
+        del.onclick = e => { e.preventDefault(); e.stopPropagation(); deleteNotebook(n.id); };
+
+        item.append(icon, label, del);
         host.appendChild(item);
       });
     }
@@ -5901,6 +5934,17 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       notebooks.push({ id:"notebook_" + Date.now(), title:clean });
       store.setItem(TRUX_NOTEBOOKS_KEY, JSON.stringify(notebooks));
       renderNotebooks();
+    }
+
+    function deleteNotebook(id) {
+      const notebook = getNotebooks().find(n => n.id === id);
+      if(!notebook) return;
+      if(!confirm("Delete " + JSON.stringify(notebook.title) + "?")) return;
+      const notebooks = getNotebooks().filter(n => n.id !== id);
+      store.setItem(TRUX_NOTEBOOKS_KEY, JSON.stringify(notebooks));
+      if(store.getItem("trux_active_notebook") === id) store.removeItem("trux_active_notebook");
+      renderNotebooks();
+      toast("Notebook deleted.","ok");
     }
 
     function openNotebook(id) {
