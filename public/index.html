@@ -2610,7 +2610,7 @@
       }
     }, 2800);
 
-    addEventListener("load", () => { try { if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {}); } catch (e) {} });
+    addEventListener("load", () => { try { if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js?v=20260928-2").catch(() => {}); } catch (e) {} });
     let deferredPrompt = null;
     addEventListener("beforeinstallprompt", e => {
       e.preventDefault(); deferredPrompt = e;
