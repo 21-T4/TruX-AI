@@ -2277,6 +2277,54 @@ body[data-home-look="graphite"] .welcome-title{text-shadow:0 18px 50px rgba(180,
 body[data-home-look="violet"] .welcome-title{text-shadow:0 18px 50px rgba(176,124,255,.22)}body[data-home-look="violet"] .welcome .chip{background:linear-gradient(145deg,rgba(28,20,39,.92),rgba(11,9,17,.96));border-color:rgba(176,124,255,.16)}
 body[data-home-look="ember"] .welcome-title{text-shadow:0 18px 50px rgba(255,161,91,.17)}body[data-home-look="ember"] .welcome .chip{background:linear-gradient(145deg,rgba(35,27,22,.92),rgba(13,10,9,.96));border-color:rgba(255,161,91,.14)}
 body[data-home-look="graphite"] .bg::before{background:radial-gradient(ellipse at 50% 0%,rgba(174,184,196,.11),rgba(0,0,0,0) 64%)}body[data-home-look="violet"] .bg::before{background:radial-gradient(ellipse at 50% 0%,rgba(176,124,255,.19),rgba(0,0,0,0) 64%)}body[data-home-look="ember"] .bg::before{background:radial-gradient(ellipse at 50% 0%,rgba(255,161,91,.13),rgba(0,0,0,0) 64%)}
+
+/* ============================================================
+   PERSONALIZATION: full home-page layout presets
+   These rebuild the home composition, spacing and launcher geometry,
+   rather than only changing accent colors.
+   ============================================================ */
+body[data-home-look="focus"] .welcome { padding: 24px clamp(22px,4vw,56px) 10px; }
+body[data-home-look="focus"] .hero { max-width: 1120px; align-items: flex-start; text-align: left; }
+body[data-home-look="focus"] .hero::before { left: 18%; transform: translateX(-20%); width: 620px; }
+body[data-home-look="focus"] .welcome-title { font-size: clamp(48px,6.6vw,76px); }
+body[data-home-look="focus"] .animated-sub { justify-content: flex-start; }
+body[data-home-look="focus"] .chips-head { max-width: 1120px; margin-top: 38px; }
+body[data-home-look="focus"] .chips { max-width: 1120px; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; }
+body[data-home-look="focus"] .chip { min-height: 154px; padding: 20px; border-radius: 18px; }
+
+body[data-home-look="studio"] .welcome { padding: 18px 20px 8px; }
+body[data-home-look="studio"] .hero { max-width: 1180px; padding-bottom: 6px; }
+body[data-home-look="studio"] .welcome-title { font-size: clamp(54px,8vw,96px); }
+body[data-home-look="studio"] .animated-sub { margin-top: 14px; }
+body[data-home-look="studio"] .chips-head { max-width: 980px; margin-top: 30px; }
+body[data-home-look="studio"] .chips { max-width: 980px; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; }
+body[data-home-look="studio"] .chip { min-height: 108px; padding: 16px 18px; border-radius: 16px; justify-content: flex-start; }
+body[data-home-look="studio"] .chip-go { opacity: .9; transform: none; }
+
+body[data-home-look="minimal"] .welcome { padding: 18px 20px 8px; }
+body[data-home-look="minimal"] .hero { max-width: 760px; }
+body[data-home-look="minimal"] .hero > .badge,
+body[data-home-look="minimal"] .animated-sub,
+body[data-home-look="minimal"] .chips-head { display: none; }
+body[data-home-look="minimal"] .welcome-title { font-size: clamp(42px,6vw,68px); margin-bottom: 28px; }
+body[data-home-look="minimal"] .chips { max-width: 700px; grid-template-columns: 1fr; gap: 8px; margin-top: 0; }
+body[data-home-look="minimal"] .chip {
+  min-height: 68px; padding: 12px 16px; border-radius: 15px;
+  flex-direction: row; align-items: center; justify-content: flex-start; gap: 14px;
+}
+body[data-home-look="minimal"] .chip-ico { width: 34px; height: 34px; flex-basis: 34px; }
+body[data-home-look="minimal"] .chip-go { opacity: .75; transform: none; top: 50%; right: 16px; translate: 0 -50%; }
+body[data-home-look="minimal"] .chip-txt { padding-right: 18px; }
+
+@media (max-width: 768px) {
+  body[data-home-look="focus"] .welcome,
+  body[data-home-look="studio"] .welcome { padding-left: 16px; padding-right: 16px; }
+  body[data-home-look="focus"] .chips,
+  body[data-home-look="studio"] .chips { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+  body[data-home-look="focus"] .chip { min-height: 118px; }
+  body[data-home-look="studio"] .chip { min-height: 96px; flex-direction: column; align-items: flex-start; }
+}
+
 @media(max-width:760px){#profileModal .card>div:first-of-type{padding:22px 16px 16px!important}.profile-option-list{margin:0 12px}.profile-option-row{min-height:68px;padding:9px 12px;grid-template-columns:38px minmax(0,1fr) 18px;gap:10px}.profile-option-icon{width:33px;height:33px;border-radius:10px;font-size:15px}.profile-option-copy b{font-size:13.5px}.profile-option-copy small{font-size:10px}.profile-meta-grid-large,.profile-actions-row{padding:0 12px}.profile-detail-view{padding:0 12px}.settings-mobile-select{display:block}#settingsModal .settings-topbar{gap:10px;padding:0 12px}#settingsModal .settings-topbar .settings-title .msub{display:none}#settingsModal .settings-topbar .settings-title .mtitle{font-size:18px}#settingsModal .settings-topbar .close{position:static;flex:0 0 36px;width:36px;height:36px;margin:0}#settingsModal .settings-sidebar{display:none}.media-gen-workspace{width:calc(100% - 20px);margin:10px auto 6px;border-radius:22px;min-height:230px}.media-gen-inner{padding:30px 24px 32px}.media-gen-workspace h1{font-size:34px}}@media(max-width:470px){.consent-actions{grid-template-columns:1fr}}
 </style>
 </head>
@@ -2710,14 +2758,15 @@ body[data-home-look="graphite"] .bg::before{background:radial-gradient(ellipse a
                 <div class="sect"><h4>System Instructions</h4><textarea id="customInstructions" class="instr" placeholder="How should TruX respond?"></textarea><button class="mbtn" onclick="saveCustomInstructions()">Save Instructions</button></div>
               </div>
               <div class="settings-card">
-                <div class="sect"><h4>Home UI look</h4>
+                <div class="sect"><h4>Home UI layout</h4>
+                  <p class="mrow-sub" style="margin:-3px 0 12px">These presets rebuild the home page composition, spacing and card layout. They are more than color themes.</p>
                   <div class="home-look-list">
-                    <button type="button" class="home-look-option" data-home-look-option="midnight" onclick="applyHomeLook(&quot;midnight&quot;)"><span class="home-look-swatch swatch-midnight"></span><span><b>Midnight</b><small>Deep black with the default TruX glow</small></span><i class="home-look-check">✓</i></button>
-                    <button type="button" class="home-look-option" data-home-look-option="graphite" onclick="applyHomeLook(&quot;graphite&quot;)"><span class="home-look-swatch swatch-graphite"></span><span><b>Graphite</b><small>Quiet charcoal surfaces</small></span><i class="home-look-check">✓</i></button>
-                    <button type="button" class="home-look-option" data-home-look-option="violet" onclick="applyHomeLook(&quot;violet&quot;)"><span class="home-look-swatch swatch-violet"></span><span><b>Violet</b><small>Dark indigo atmosphere</small></span><i class="home-look-check">✓</i></button>
-                    <button type="button" class="home-look-option" data-home-look-option="ember" onclick="applyHomeLook(&quot;ember&quot;)"><span class="home-look-swatch swatch-ember"></span><span><b>Ember</b><small>Warm dark editorial feel</small></span><i class="home-look-check">✓</i></button>
+                    <button type="button" class="home-look-option" data-home-look-option="midnight" onclick="applyHomeLook(&quot;midnight&quot;)"><span class="home-look-swatch swatch-midnight"></span><span><b>Midnight · Balanced</b><small>Centered hero with the default 2×2 workspace grid</small></span><i class="home-look-check">✓</i></button>
+                    <button type="button" class="home-look-option" data-home-look-option="focus" onclick="applyHomeLook(&quot;focus&quot;)"><span class="home-look-swatch swatch-graphite"></span><span><b>Focus · Dashboard</b><small>Left-aligned hero with a wider four-column launch area</small></span><i class="home-look-check">✓</i></button>
+                    <button type="button" class="home-look-option" data-home-look-option="studio" onclick="applyHomeLook(&quot;studio&quot;)"><span class="home-look-swatch swatch-violet"></span><span><b>Studio · Workspace</b><small>Larger canvas with compact launch tiles</small></span><i class="home-look-check">✓</i></button>
+                    <button type="button" class="home-look-option" data-home-look-option="minimal" onclick="applyHomeLook(&quot;minimal&quot;)"><span class="home-look-swatch swatch-ember"></span><span><b>Minimal · Quick Start</b><small>Stripped-down home with a clean one-column launcher</small></span><i class="home-look-check">✓</i></button>
                   </div>
-                  <div class="setting-note">Saved locally on this device. No live preview or animated mode switching.</div>
+                  <div class="setting-note">Saved on this device and restored automatically when TruX opens.</div>
                 </div>
               </div>
               <div class="settings-card">
@@ -2881,13 +2930,10 @@ body[data-home-look="graphite"] .bg::before{background:radial-gradient(ellipse a
 
       try {
         firebaseMessaging = firebase.messaging();
+        /* Foreground stays silent. Background completion notifications are
+           rendered by public/sw.js as full OS notifications. */
         if(!pushMessageBound) {
-          firebaseMessaging.onMessage(payload => {
-            if(document.visibilityState === "visible") {
-              const body = payload?.notification?.body || "Your TruX response is ready.";
-              toast(body, "ok");
-            }
-          });
+          firebaseMessaging.onMessage(() => {});
           pushMessageBound = true;
         }
       } catch {}
@@ -3018,6 +3064,7 @@ body[data-home-look="graphite"] .bg::before{background:radial-gradient(ellipse a
         feedbackCount = Number(store.getItem("trux_feedback_count")) || 0,
         currentChatId = null,
         isGenerating = false,
+        sendPromptInFlight = false,
         activeAbortController = null,
         selectedImageBase64 = null,
         pastedTextBlocks = [],
@@ -3131,7 +3178,7 @@ body[data-home-look="graphite"] .bg::before{background:radial-gradient(ellipse a
     }
 
 
-    const TRUX_HOME_LOOKS = new Set(["midnight","graphite","violet","ember"]);
+    const TRUX_HOME_LOOKS = new Set(["midnight","focus","studio","minimal"]);
     applyHomeLook(store.getItem("trux_home_look") || "midnight", false);
     initFirebase();
 
@@ -3260,7 +3307,7 @@ body[data-home-look="graphite"] .bg::before{background:radial-gradient(ellipse a
       if(key==="notifications") return {title:"Notifications",subtitle:"Completion alerts for this device.",html:'<div class="settings-card"><div class="mrow"><span><b>Response notifications</b><small class="mrow-sub">Text, image and video completion alerts.</small></span><label class="toggle"><input id="profileNotificationsToggle" type="checkbox" onchange="toggleTruxNotificationsSetting(this.checked)"><span class="slider"></span></label></div><div class="location-status" id="profileNotificationStatus"></div></div>'};
       if(key==="memory") return {title:"Memory & data",subtitle:"Move your local TruX workspace between devices.",html:'<div class="detail-callout"><h4>Export</h4><p>Save local chats, pinned insights, custom instructions and the selected home look.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="exportTruxMemory()">Export memory</button></div></div><div class="detail-callout"><h4>Import</h4><p>Merge a previously exported TruX JSON file into this browser.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="importTruxMemory()">Import memory</button></div></div>'};
       if(key==="avatar") return {title:"Avatar",subtitle:"Choose the image shown in your TruX profile.",html:'<div class="detail-callout"><h4>Profile image</h4><p>Choose a local image or reset to your connected Google photo.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="openAvatarPicker()">Choose image</button><button class="mbtn" type="button" onclick="resetAvatarOverride()">Reset avatar</button></div></div>'};
-      if(key==="appearance") return {title:"Appearance",subtitle:"Pick one of four saved TruX home looks.",html:'<div class="settings-card"><div class="sect"><h4>Home UI look</h4><div class="home-look-list"><button type="button" class="home-look-option" data-profile-look="midnight" onclick="applyHomeLook(&quot;midnight&quot;)"><span class="home-look-swatch swatch-midnight"></span><span><b>Midnight</b><small>Deep black and cool glow</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="graphite" onclick="applyHomeLook(&quot;graphite&quot;)"><span class="home-look-swatch swatch-graphite"></span><span><b>Graphite</b><small>Quiet charcoal contrast</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="violet" onclick="applyHomeLook(&quot;violet&quot;)"><span class="home-look-swatch swatch-violet"></span><span><b>Violet</b><small>Dark indigo atmosphere</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="ember" onclick="applyHomeLook(&quot;ember&quot;)"><span class="home-look-swatch swatch-ember"></span><span><b>Ember</b><small>Warm dark editorial feel</small></span><i class="home-look-check">✓</i></button></div></div></div>'};
+      if(key==="appearance") return {title:"Appearance",subtitle:"Choose a full home-page layout preset.",html:'<div class="settings-card"><div class="sect"><h4>Home UI layout</h4><p class="mrow-sub">Each choice changes the structure, spacing and launcher layout of the home page.</p><div class="home-look-list"><button type="button" class="home-look-option" data-profile-look="midnight" onclick="applyHomeLook(&quot;midnight&quot;)"><span class="home-look-swatch swatch-midnight"></span><span><b>Midnight · Balanced</b><small>Centered 2×2 launcher</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="focus" onclick="applyHomeLook(&quot;focus&quot;)"><span class="home-look-swatch swatch-graphite"></span><span><b>Focus · Dashboard</b><small>Left-aligned 4-column launcher</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="studio" onclick="applyHomeLook(&quot;studio&quot;)"><span class="home-look-swatch swatch-violet"></span><span><b>Studio · Workspace</b><small>Large canvas, compact tiles</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="minimal" onclick="applyHomeLook(&quot;minimal&quot;)"><span class="home-look-swatch swatch-ember"></span><span><b>Minimal · Quick Start</b><small>One-column launcher</small></span><i class="home-look-check">✓</i></button></div></div></div>'};
       if(key==="settings") return {title:"Settings",subtitle:"Open the complete TruX preferences page.",html:'<div class="detail-callout"><h4>Detailed controls</h4><p>General, Appearance, Voice, Personalization, Notifications, Usage, Data & privacy and Developer are all available.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption();openSettingsModal()">Open Settings</button></div></div>'};
       if(key==="help") return {title:"Help & privacy",subtitle:"Quick guidance and privacy controls.",html:'<div class="detail-callout"><h4>Location privacy</h4><p>Location access can be turned off at any time from Personalization.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption();openSettingsModal();switchSettingsSection(&quot;personalization&quot;)">Location settings</button></div></div><div class="detail-callout"><h4>Quick help</h4><p>Use + for Coding, Deep Research, image generation, files, camera and photos. Use Library to revisit generated media.</p></div>'};
       if(key==="developer" && owner) return {title:"Developer workspace",subtitle:"Developer-only TruX controls and identity.",html:'<div class="detail-callout"><h4>Developer recognition</h4><p>This account has access to the developer workspace and owner controls.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption();openSettingsModal();switchSettingsSection(&quot;developer&quot;)">Open developer settings</button></div></div>'};
@@ -5182,7 +5229,7 @@ body[data-home-look="graphite"] .bg::before{background:radial-gradient(ellipse a
       return generationVerb && (imageNoun || /\b(draw|generate|create|paint|illustrate)\b/.test(value));
     }
 
-    async function sendPrompt() {
+    async function sendPromptImpl() {
       // Sign-in wall appears only when the person actually tries to send a message.
       if(!auth?.currentUser) {
         openLoginWall();
@@ -5216,7 +5263,8 @@ body[data-home-look="graphite"] .bg::before{background:radial-gradient(ellipse a
         return generateImage(basePrompt, { imagePrompt: basePrompt });
       }
 
-      const locationContext=await getTruxLocationForTurn();
+      /* Start location lookup without making chat wait on a slow GPS fix. */
+      const locationPromise=getTruxLocationForTurn();
 
       /* No keyword gate here any more. Every turn goes to the model, and the
          model answers with an "[[IMAGE]] <prompt>" line when it judges that a
@@ -5267,7 +5315,10 @@ body[data-home-look="graphite"] .bg::before{background:radial-gradient(ellipse a
         systemInstruction: store.getItem("trux_custom_instructions") || "",
         userId: auth?.currentUser?.uid || null,
         userEmail: auth?.currentUser?.email || "",
-        location: locationContext,
+        location: await Promise.race([
+          locationPromise,
+          new Promise(resolve => setTimeout(() => resolve(null), 900))
+        ]),
         githubRepository: workspaceMode === "coding" ? (store.getItem("trux_code_active_repository") || "") : "",
         githubBranch: workspaceMode === "coding" ? (store.getItem("trux_code_active_branch") || "") : "",
         notifyOnComplete: true
@@ -5638,7 +5689,30 @@ body[data-home-look="graphite"] .bg::before{background:radial-gradient(ellipse a
     }
     function closeMediaLibrary(){ getEl("mediaLibraryModal")?.classList.remove("open"); }
 
-    function handleActionButton() { if(isGenerating) { activeAbortController?.abort(); isGenerating = false; getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>'; getEl("actionBtn").classList.remove("stop"); handleInputChange(); return; } sendPrompt(); }
+    function handleActionButton() {
+      /* Block duplicate taps during async preparation. Once generation starts,
+         the button remains the normal Stop control. */
+      if(sendPromptInFlight && !isGenerating) return;
+      if(isGenerating) {
+        activeAbortController?.abort();
+        isGenerating = false;
+        getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
+        getEl("actionBtn").classList.remove("stop");
+        handleInputChange();
+        return;
+      }
+      sendPrompt();
+    }
+
+    async function sendPrompt() {
+      if(sendPromptInFlight) return;
+      sendPromptInFlight=true;
+      try {
+        return await sendPromptImpl();
+      } finally {
+        sendPromptInFlight=false;
+      }
+    }
 
     /* Chat ids are "chat_<epoch ms>", so the timestamp is free - use it to
        group history the way every serious assistant UI does. */
