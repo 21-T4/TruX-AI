@@ -2465,6 +2465,101 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     .notebook-item:hover .notebook-delete,.notebook-delete:focus-visible{opacity:1}
     .notebook-delete:hover{color:#fff;background:rgba(255,255,255,.07);border-color:var(--line)}
     .notebook-delete svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+    /* ============================================================
+       APPEARANCE PRESETS + ACCENT PALETTE
+       ============================================================ */
+    body[data-accent="blue"]{--acc:#6d8cff;--acc-2:#91b8ff;--acc-3:#3955c7;--acc-soft:rgba(109,140,255,.14);--acc-line:rgba(120,150,255,.42)}
+    body[data-accent="cyan"]{--acc:#20d7ff;--acc-2:#79efff;--acc-3:#0090b0;--acc-soft:rgba(32,215,255,.13);--acc-line:rgba(32,215,255,.38)}
+    body[data-accent="purple"]{--acc:#9a6cff;--acc-2:#c7a9ff;--acc-3:#6140cf;--acc-soft:rgba(154,108,255,.14);--acc-line:rgba(172,135,255,.42)}
+    body[data-accent="pink"]{--acc:#ff5fb3;--acc-2:#ff9fd1;--acc-3:#c53d80;--acc-soft:rgba(255,95,179,.13);--acc-line:rgba(255,120,195,.38)}
+    body[data-accent="red"]{--acc:#ff5b68;--acc-2:#ff9198;--acc-3:#c53643;--acc-soft:rgba(255,91,104,.13);--acc-line:rgba(255,115,125,.38)}
+    body[data-accent="orange"]{--acc:#ff9a3d;--acc-2:#ffc17f;--acc-3:#c86616;--acc-soft:rgba(255,154,61,.14);--acc-line:rgba(255,165,90,.40)}
+    body[data-accent="yellow"]{--acc:#f1d75a;--acc-2:#fff0a1;--acc-3:#a38b16;--acc-soft:rgba(241,215,90,.13);--acc-line:rgba(255,230,120,.38)}
+    body[data-accent="green"]{--acc:#56d58c;--acc-2:#91efb7;--acc-3:#24905a;--acc-soft:rgba(86,213,140,.13);--acc-line:rgba(100,225,155,.38)}
+    body[data-accent="teal"]{--acc:#38d0b5;--acc-2:#7be8d5;--acc-3:#238b78;--acc-soft:rgba(56,208,181,.13);--acc-line:rgba(75,220,194,.38)}
+    body[data-accent="white"]{--acc:#f5f5f5;--acc-2:#d0d0d0;--acc-3:#999;--acc-soft:rgba(255,255,255,.09);--acc-line:rgba(255,255,255,.18)}
+    body[data-accent] .brand-x{background:none;-webkit-text-fill-color:var(--acc);color:var(--acc)}
+    .accent-options{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+    .accent-option{width:34px;height:34px;padding:4px;border-radius:50%;border:2px solid transparent;background:transparent;display:grid;place-items:center}
+    .accent-option i{display:block;width:100%;height:100%;border-radius:50%;background:var(--swatch,#888);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
+    .accent-option.active{border-color:var(--txt)}
+    .accent-option[data-accent-option="blue"]{--swatch:#6d8cff}.accent-option[data-accent-option="cyan"]{--swatch:#20d7ff}.accent-option[data-accent-option="purple"]{--swatch:#9a6cff}.accent-option[data-accent-option="pink"]{--swatch:#ff5fb3}.accent-option[data-accent-option="red"]{--swatch:#ff5b68}.accent-option[data-accent-option="orange"]{--swatch:#ff9a3d}.accent-option[data-accent-option="yellow"]{--swatch:#f1d75a}.accent-option[data-accent-option="green"]{--swatch:#56d58c}.accent-option[data-accent-option="teal"]{--swatch:#38d0b5}.accent-option[data-accent-option="white"]{--swatch:#f5f5f5}
+
+    body[data-home-look="black"]{--bg:#000;--bg-1:#000;--bg-2:#060606;--bg-3:#0c0c0c;--bg-4:#111;--line:rgba(255,255,255,.06);--line-2:rgba(255,255,255,.11);--txt:#ededed;--txt-2:#999;--txt-3:#626262;--txt-4:#383838}
+    body[data-home-look="black"] .bg{display:none}
+    body[data-home-look="black"] .welcome-title,body[data-home-look="black"] .animated-sub,body[data-home-look="black"] .hero>.badge,body[data-home-look="black"] .chips-head,body[data-home-look="black"] .chips{display:none!important}
+    body[data-home-look="black"] .welcome{padding:0}
+    body[data-home-look="black"] .hero{display:none}
+    body[data-home-look="black"] .topbar{background:#000}
+    body[data-home-look="black"] .sidebar{background:#000}
+    
+    body[data-home-look="mono"]{--bg:#101010;--bg-1:#151515;--bg-2:#191919;--bg-3:#202020;--bg-4:#282828;--line:rgba(255,255,255,.07);--line-2:rgba(255,255,255,.12);--txt:#f0f0f0;--txt-2:#aaa;--txt-3:#777;--txt-4:#4b4b4b}
+    body[data-home-look="mono"] .bg{display:none}
+    body[data-home-look="mono"] .welcome{padding:0 24px 8px}
+    body[data-home-look="mono"] .hero{max-width:760px;justify-content:center}
+    body[data-home-look="mono"] .hero>.badge,body[data-home-look="mono"] .animated-sub,body[data-home-look="mono"] .chips-head,body[data-home-look="mono"] .chips{display:none}
+    body[data-home-look="mono"] .welcome-title{font-size:clamp(46px,7vw,72px);margin:0;letter-spacing:-.055em}
+    body[data-home-look="mono"] .hero::after{content:none!important;display:none!important}
+
+    /* A full, deliberately different colorful dashboard. */
+    body[data-home-look="aurora"]{--bg:#070914;--bg-1:#0b1020;--bg-2:#11172c;--bg-3:#18223f;--bg-4:#202c4f;--txt:#f5f8ff;--txt-2:#b8c3df;--txt-3:#7784a7;--txt-4:#4d5878;--line:rgba(150,180,255,.10);--line-2:rgba(150,180,255,.18)}
+    body[data-home-look="aurora"] .bg{display:block}
+    body[data-home-look="aurora"] .bg::before{top:-8vh;left:12%;width:85vw;height:120vh;transform:none;background:radial-gradient(circle at 16% 18%,rgba(71,230,255,.25),transparent 27%),radial-gradient(circle at 78% 18%,rgba(194,98,255,.28),transparent 29%),radial-gradient(circle at 50% 92%,rgba(62,120,255,.22),transparent 34%);filter:blur(40px)}
+    body[data-home-look="aurora"] .bg::after{background:radial-gradient(circle at 25% 75%,rgba(255,80,190,.10),transparent 30%),radial-gradient(circle at 80% 75%,rgba(86,255,188,.09),transparent 30%)}
+    body[data-home-look="aurora"] .welcome{padding:20px 24px 8px}
+    body[data-home-look="aurora"] .hero{max-width:1160px;display:grid;grid-template-columns:1.15fr .85fr;grid-template-rows:auto auto 1fr;gap:18px 34px;text-align:left;align-items:center}
+    body[data-home-look="aurora"] .hero>.badge{grid-column:1;grid-row:1;margin-bottom:0!important}
+    body[data-home-look="aurora"] .welcome-title{grid-column:1;grid-row:2;font-size:clamp(56px,7vw,90px);text-shadow:0 20px 70px rgba(100,180,255,.20)}
+    body[data-home-look="aurora"] .animated-sub{grid-column:1;grid-row:3;justify-content:flex-start;align-self:start}
+    body[data-home-look="aurora"] .chips-head{grid-column:2;grid-row:1;margin:0}
+    body[data-home-look="aurora"] .chips{grid-column:2;grid-row:2 / span 2;display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0;max-width:none}
+    body[data-home-look="aurora"] .chip{min-height:122px;padding:18px;border-radius:20px;background:linear-gradient(145deg,rgba(49,63,112,.72),rgba(9,12,25,.88));border:1px solid rgba(140,180,255,.17);box-shadow:0 20px 50px rgba(0,0,0,.25),inset 0 1px rgba(255,255,255,.06)}
+    body[data-home-look="aurora"] .chip:nth-child(1){box-shadow:0 20px 50px rgba(33,191,255,.12),inset 0 1px rgba(100,220,255,.18)}
+    body[data-home-look="aurora"] .chip:nth-child(2){box-shadow:0 20px 50px rgba(173,90,255,.13),inset 0 1px rgba(190,130,255,.17)}
+    body[data-home-look="aurora"] .chip:nth-child(3){box-shadow:0 20px 50px rgba(255,92,184,.10),inset 0 1px rgba(255,130,190,.16)}
+    body[data-home-look="aurora"] .chip:nth-child(4){box-shadow:0 20px 50px rgba(75,244,166,.10),inset 0 1px rgba(110,255,190,.15)}
+    body[data-home-look="aurora"] .chip:hover{transform:translateY(-3px);border-color:rgba(180,210,255,.28);box-shadow:0 25px 60px rgba(0,0,0,.34)}
+
+    /* Full white + sky-blue mode. Existing components inherit vars, while these
+       overrides explicitly repaint drawers, settings and modal surfaces. */
+    body[data-home-look="sky"]{--bg:#f7fbff;--bg-1:#ffffff;--bg-2:#ffffff;--bg-3:#eef7ff;--bg-4:#e3f1ff;--line:rgba(24,79,120,.10);--line-2:rgba(24,79,120,.16);--line-3:rgba(24,79,120,.24);--txt:#11253a;--txt-2:#4f6478;--txt-3:#73879a;--txt-4:#9aacbb;--acc:#2f87ff;--acc-2:#6eb2ff;--acc-3:#1764ce;--acc-soft:rgba(47,135,255,.10);--acc-line:rgba(47,135,255,.30)}
+    body[data-home-look="sky"] .bg{display:block}
+    body[data-home-look="sky"] .bg::before{top:-18vh;left:50%;width:100vw;height:80vh;transform:translateX(-50%);background:radial-gradient(circle at 50% 0%,rgba(81,170,255,.22),transparent 60%);filter:blur(28px)}
+    body[data-home-look="sky"] .bg::after{background:radial-gradient(circle at 10% 100%,rgba(101,190,255,.10),transparent 35%)}
+    body[data-home-look="sky"] .sidebar{background:#fff;border-right-color:rgba(24,79,120,.09)}
+    body[data-home-look="sky"] .topbar{background:rgba(255,255,255,.88);border-bottom-color:rgba(24,79,120,.07);color:#11253a}
+    body[data-home-look="sky"] .new-chat,body[data-home-look="sky"] .model-item,body[data-home-look="sky"] .profile,body[data-home-look="sky"] .model-dropdown-menu,body[data-home-look="sky"] .settings-card,body[data-home-look="sky"] .settings-topbar,body[data-home-look="sky"] .settings-sidebar,body[data-home-look="sky"] .settings-main,body[data-home-look="sky"] .profile-options,body[data-home-look="sky"] .profile-detail,body[data-home-look="sky"] .context-menu{background:#fff;color:#11253a;border-color:rgba(24,79,120,.10)}
+    body[data-home-look="sky"] .side-search input{background:#f7fbff;color:#11253a}
+    body[data-home-look="sky"] .welcome-title{color:#11253a}
+    body[data-home-look="sky"] .welcome-title .welcome-subline{color:#355675}
+    body[data-home-look="sky"] .chat .trux-bubble,body[data-home-look="sky"] .chat .assistant{color:#172f46}
+    body[data-home-look="sky"] ::selection{background:rgba(47,135,255,.20);color:#11253a}
+    body[data-home-look="sky"] .composer .bar,body[data-home-look="sky"] .composer{color:#11253a}
+    body[data-home-look="sky"] .chip{background:#fff;border-color:rgba(24,79,120,.10);box-shadow:0 12px 30px rgba(48,112,170,.08)}
+    
+    /* Studio: asymmetrical workspace with strong panels and a more editorial feel. */
+    body[data-home-look="studio"]{--bg:#0c0e12;--bg-1:#11151b;--bg-2:#151a22;--bg-3:#1d2530;--bg-4:#27313d;--line:rgba(255,255,255,.07);--line-2:rgba(255,255,255,.13)}
+    body[data-home-look="studio"] .bg{display:block}
+    body[data-home-look="studio"] .bg::before{top:5%;left:-5%;width:70vw;height:90vh;transform:none;background:radial-gradient(circle at 20% 40%,rgba(65,145,255,.16),transparent 48%),radial-gradient(circle at 70% 80%,rgba(166,100,255,.12),transparent 40%);filter:blur(35px)}
+    body[data-home-look="studio"] .welcome{padding:18px 22px 8px}
+    body[data-home-look="studio"] .hero{max-width:1180px;display:grid;grid-template-columns:minmax(0,1fr) 360px;grid-template-rows:auto 1fr;gap:24px 58px;align-items:center;text-align:left}
+    body[data-home-look="studio"] .welcome-title{grid-column:1;grid-row:1 / span 2;font-size:clamp(58px,7vw,96px)}
+    body[data-home-look="studio"] .hero>.badge{grid-column:2;grid-row:1;margin:0;align-self:end}
+    body[data-home-look="studio"] .animated-sub{grid-column:2;grid-row:2;justify-content:flex-start;align-self:start;margin-top:5px}
+    body[data-home-look="studio"] .chips-head{display:none}
+    body[data-home-look="studio"] .chips{grid-column:2;grid-row:2;align-self:end;display:grid;grid-template-columns:1fr;gap:8px;margin:150px 0 0;max-width:none}
+    body[data-home-look="studio"] .chip{min-height:62px;padding:10px 14px;border-radius:14px;background:rgba(19,24,31,.72);border-color:rgba(135,180,255,.12)}
+    body[data-home-look="studio"] .chip:hover{transform:translateX(4px)}
+    
+    @media(max-width:900px){
+      body[data-home-look="aurora"] .hero,body[data-home-look="studio"] .hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px}
+      body[data-home-look="aurora"] .animated-sub,body[data-home-look="studio"] .animated-sub{justify-content:center}
+      body[data-home-look="aurora"] .chips,body[data-home-look="studio"] .chips{width:100%;max-width:720px}
+      body[data-home-look="studio"] .chips{display:grid;grid-template-columns:1fr 1fr;margin:0}
+    }
+    @media(max-width:620px){
+      body[data-home-look="aurora"] .chips{grid-template-columns:1fr}
+    }
 </style>
 </head>
 <body class="home-active">
@@ -2900,10 +2995,27 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
                 <div class="sect"><h4>Home UI layout</h4>
                   <p class="mrow-sub" style="margin:-3px 0 12px">Default keeps the current TruX home. Every other preset changes the layout and visual language instead of only recoloring it.</p>
                   <div class="home-look-list">
-                    <button type="button" class="home-look-option" data-home-look-option="midnight" onclick="applyHomeLook(&quot;midnight&quot;)"><span class="home-look-swatch swatch-midnight"></span><span><b>Default</b><small>Keep the normal TruX home layout</small></span><i class="home-look-check">✓</i></button>
-                    <button type="button" class="home-look-option" data-home-look-option="mono" onclick="applyHomeLook(&quot;mono&quot;)"><span class="home-look-swatch swatch-graphite"></span><span><b>Mono</b><small>Flat monochrome ChatGPT-style home</small></span><i class="home-look-check">✓</i></button>
-                    <button type="button" class="home-look-option" data-home-look-option="dark" onclick="applyHomeLook(&quot;dark&quot;)"><span class="home-look-swatch swatch-midnight"></span><span><b>Dark</b><small>Clean dark surfaces with no colored background</small></span><i class="home-look-check">✓</i></button>
-                    <button type="button" class="home-look-option" data-home-look-option="black" onclick="applyHomeLook(&quot;black&quot;)"><span class="home-look-swatch swatch-midnight"></span><span><b>Black</b><small>Pure black, minimal interface</small></span><i class="home-look-check">✓</i></button>
+                    <button type="button" class="home-look-option" data-home-look-option="midnight" onclick="applyHomeLook(&quot;midnight&quot;)"><span class="home-look-swatch swatch-midnight"></span><span><b>Default</b><small>Original TruX home</small></span><i class="home-look-check">✓</i></button>
+                    <button type="button" class="home-look-option" data-home-look-option="black" onclick="applyHomeLook(&quot;black&quot;)"><span class="home-look-swatch swatch-midnight"></span><span><b>Pure Black</b><small>Absolute black, no welcome artwork or glow</small></span><i class="home-look-check">✓</i></button>
+                    <button type="button" class="home-look-option" data-home-look-option="mono" onclick="applyHomeLook(&quot;mono&quot;)"><span class="home-look-swatch swatch-graphite"></span><span><b>Mono</b><small>ChatGPT-like monochrome layout</small></span><i class="home-look-check">✓</i></button>
+                    <button type="button" class="home-look-option" data-home-look-option="aurora" onclick="applyHomeLook(&quot;aurora&quot;)"><span class="home-look-swatch swatch-violet"></span><span><b>Aurora</b><small>Complex colorful dashboard with layered glows</small></span><i class="home-look-check">✓</i></button>
+                    <button type="button" class="home-look-option" data-home-look-option="sky" onclick="applyHomeLook(&quot;sky&quot;)"><span class="home-look-swatch swatch-sky"></span><span><b>Sky Light</b><small>Full white/light-blue interface across every page</small></span><i class="home-look-check">✓</i></button>
+                    <button type="button" class="home-look-option" data-home-look-option="studio" onclick="applyHomeLook(&quot;studio&quot;)"><span class="home-look-swatch swatch-graphite"></span><span><b>Studio</b><small>Rearranged editorial workspace with richer panels</small></span><i class="home-look-check">✓</i></button>
+                  </div>
+                  <div class="accent-palette">
+                    <h4>Accent colour</h4>
+                    <div class="accent-options">
+                      <button type="button" class="accent-option" data-accent-option="blue" onclick="applyTruxAccent('blue')" aria-label="Blue"><i></i></button>
+                      <button type="button" class="accent-option" data-accent-option="cyan" onclick="applyTruxAccent('cyan')" aria-label="Cyan"><i></i></button>
+                      <button type="button" class="accent-option" data-accent-option="purple" onclick="applyTruxAccent('purple')" aria-label="Purple"><i></i></button>
+                      <button type="button" class="accent-option" data-accent-option="pink" onclick="applyTruxAccent('pink')" aria-label="Pink"><i></i></button>
+                      <button type="button" class="accent-option" data-accent-option="red" onclick="applyTruxAccent('red')" aria-label="Red"><i></i></button>
+                      <button type="button" class="accent-option" data-accent-option="orange" onclick="applyTruxAccent('orange')" aria-label="Orange"><i></i></button>
+                      <button type="button" class="accent-option" data-accent-option="yellow" onclick="applyTruxAccent('yellow')" aria-label="Yellow"><i></i></button>
+                      <button type="button" class="accent-option" data-accent-option="green" onclick="applyTruxAccent('green')" aria-label="Green"><i></i></button>
+                      <button type="button" class="accent-option" data-accent-option="teal" onclick="applyTruxAccent('teal')" aria-label="Teal"><i></i></button>
+                      <button type="button" class="accent-option" data-accent-option="white" onclick="applyTruxAccent('white')" aria-label="White"><i></i></button>
+                    </div>
                   </div>
                   <div class="setting-note">Saved on this device and restored automatically when TruX opens.</div>
                 </div>
@@ -3317,8 +3429,16 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     }
 
 
-    const TRUX_HOME_LOOKS = new Set(["midnight","mono","dark","black"]);
-    const TRUX_HOME_LOOK_ALIASES = { simple:"mono", prism:"dark", colorful:"dark", split:"dark" };
+    const TRUX_HOME_LOOKS = new Set(["midnight","black","mono","aurora","sky","studio"]);
+    const TRUX_HOME_LOOK_ALIASES = { simple:"mono", prism:"aurora", colorful:"aurora", split:"studio", dark:"mono" };
+    const TRUX_ACCENTS = new Set(["blue","cyan","purple","pink","red","orange","yellow","green","teal","white"]);
+    function applyTruxAccent(name, persist) {
+      const next = TRUX_ACCENTS.has(String(name || "").toLowerCase()) ? String(name).toLowerCase() : "blue";
+      document.body.dataset.accent = next;
+      document.querySelectorAll("[data-accent-option]").forEach(function(el){ el.classList.toggle("active", el.dataset.accentOption === next); });
+      if(persist !== false) store.setItem("trux_accent", next);
+    }
+    applyTruxAccent(store.getItem("trux_accent") || "blue", false);
     applyHomeLook(store.getItem("trux_home_look") || "midnight", false);
     initFirebase();
 
@@ -3445,11 +3565,11 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       const c=getCoreUsageData(), p=getProUsageData(), i=getImageUsageData();
       if(key==="account") return {title:"Manage your account",subtitle:"Your connected sign-in and account controls.",html:'<div class="detail-callout"><h4>Connected account</h4><p>'+escapeHtml((auth&&auth.currentUser&&auth.currentUser.email)||"No account")+'</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="window.open(&#39;https://myaccount.google.com/&#39;,&#39;_blank&#39;,&#39;noopener&#39;)">Open Google Account</button></div></div>'};
       if(key==="usage") return {title:"Usage & limits",subtitle:"Your current workspace usage.",html:'<div class="settings-card"><div class="sect"><h4>Core 4.0</h4><div class="usage"><i style="width:12%"></i></div><div class="utxt">Unlimited · '+Number(c.tokensUsed||0).toLocaleString()+' tokens used</div></div><div class="sect"><h4>Pro 5.0</h4><div class="usage"><i style="width:'+(owner?"100%":Math.min(100,(Number(p.tokensUsed||0)/1000000)*100))+'%"></i></div><div class="utxt">'+(owner?"Unlimited · ":"")+Number(p.tokensUsed||0).toLocaleString()+' / 1,000,000 Tokens</div></div><div class="sect"><h4>Image generations</h4><div class="usage"><i style="width:'+Math.min(100,(Number(i.count||0)/15)*100)+'%"></i></div><div class="utxt">'+Number(i.count||0)+' / 15 Images</div></div></div><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption();openSettingsModal();switchSettingsSection(&quot;usage&quot;)">Open usage settings</button></div>'};
-      if(key==="personalization") return {title:"Personalization",subtitle:"Controls that shape your TruX experience.",html:'<div class="detail-callout"><h4>Everything is editable</h4><p>System instructions, four home UI looks and location access are managed from Personalization.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption();openSettingsModal();switchSettingsSection(&quot;personalization&quot;)">Open personalization</button></div></div>'};
+      if(key==="personalization") return {title:"Personalization",subtitle:"Controls that shape your TruX experience.",html:'<div class="detail-callout"><h4>Everything is editable</h4><p>System instructions, home UI looks, accent colour and location access are managed from Personalization.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption();openSettingsModal();switchSettingsSection(&quot;personalization&quot;)">Open personalization</button></div></div>'};
       if(key==="notifications") return {title:"Notifications",subtitle:"Completion alerts for this device.",html:'<div class="settings-card"><div class="mrow"><span><b>Response notifications</b><small class="mrow-sub">Text, image and video completion alerts.</small></span><label class="toggle"><input id="profileNotificationsToggle" type="checkbox" onchange="toggleTruxNotificationsSetting(this.checked)"><span class="slider"></span></label></div><div class="location-status" id="profileNotificationStatus"></div></div>'};
-      if(key==="memory") return {title:"Memory & data",subtitle:"Move your local TruX workspace between devices.",html:'<div class="detail-callout"><h4>Export</h4><p>Save local chats, pinned insights, custom instructions and the selected home look.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="exportTruxMemory()">Export memory</button></div></div><div class="detail-callout"><h4>Import</h4><p>Merge a previously exported TruX JSON file into this browser.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="importTruxMemory()">Import memory</button></div></div>'};
+      if(key==="memory") return {title:"Memory & data",subtitle:"Move your local TruX workspace between devices.",html:'<div class="detail-callout"><h4>Export</h4><p>Save local chats, pinned insights, custom instructions, selected home look and accent colour.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="exportTruxMemory()">Export memory</button></div></div><div class="detail-callout"><h4>Import</h4><p>Merge a previously exported TruX JSON file into this browser.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="importTruxMemory()">Import memory</button></div></div>'};
       if(key==="avatar") return {title:"Avatar",subtitle:"Choose the image shown in your TruX profile.",html:'<div class="detail-callout"><h4>Profile image</h4><p>Choose a local image or reset to your connected Google photo.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="openAvatarPicker()">Choose image</button><button class="mbtn" type="button" onclick="resetAvatarOverride()">Reset avatar</button></div></div>'};
-      if(key==="appearance") return {title:"Appearance",subtitle:"Choose a completely different TruX home layout.",html:'<div class="settings-card"><div class="sect"><h4>Home UI layout</h4><p class="mrow-sub">The Default preset stays exactly as the current home. The other presets change structure, density and palette.</p><div class="home-look-list"><button type="button" class="home-look-option" data-profile-look="midnight" onclick="applyHomeLook(&quot;midnight&quot;)"><span class="home-look-swatch swatch-midnight"></span><span><b>Default · Midnight</b><small>Current balanced home</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="simple" onclick="applyHomeLook(&quot;simple&quot;)"><span class="home-look-swatch swatch-graphite"></span><span><b>Simple · Clean</b><small>No launcher cards</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="prism" onclick="applyHomeLook(&quot;prism&quot;)"><span class="home-look-swatch swatch-violet"></span><span><b>Prism · Advanced</b><small>Complex two-zone dashboard</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="colorful" onclick="applyHomeLook(&quot;colorful&quot;)"><span class="home-look-swatch swatch-violet"></span><span><b>Colorflow · Vibrant</b><small>Multi-color interface</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="black" onclick="applyHomeLook(&quot;black&quot;)"><span class="home-look-swatch swatch-midnight"></span><span><b>Pure Black · Mono</b><small>True black minimal UI</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="split" onclick="applyHomeLook(&quot;split&quot;)"><span class="home-look-swatch swatch-graphite"></span><span><b>Split Studio · Rearranged</b><small>Left identity + right launch rail</small></span><i class="home-look-check">✓</i></button></div></div></div>'};
+      if(key==="appearance") return {title:"Appearance",subtitle:"Choose your home experience and accent colour.",html:'<div class="settings-card"><div class="sect"><h4>Home UI</h4><div class="home-look-list"><button type="button" class="home-look-option" data-profile-look="midnight" onclick="applyHomeLook(&quot;midnight&quot;)"><span class="home-look-swatch swatch-midnight"></span><span><b>Default</b><small>Original TruX home</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="black" onclick="applyHomeLook(&quot;black&quot;)"><span class="home-look-swatch swatch-midnight"></span><span><b>Pure Black</b><small>Absolute black, no welcome artwork or glow</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="mono" onclick="applyHomeLook(&quot;mono&quot;)"><span class="home-look-swatch swatch-graphite"></span><span><b>Mono</b><small>ChatGPT-like monochrome layout</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="aurora" onclick="applyHomeLook(&quot;aurora&quot;)"><span class="home-look-swatch swatch-violet"></span><span><b>Aurora</b><small>Complex colorful dashboard with layered glows</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="sky" onclick="applyHomeLook(&quot;sky&quot;)"><span class="home-look-swatch swatch-sky"></span><span><b>Sky Light</b><small>Full white/light-blue interface</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="studio" onclick="applyHomeLook(&quot;studio&quot;)"><span class="home-look-swatch swatch-graphite"></span><span><b>Studio</b><small>Rearranged editorial workspace</small></span><i class="home-look-check">✓</i></button></div><div class="accent-palette"><h4>Accent colour</h4><div class="accent-options"><button type="button" class="accent-option" data-accent-option="blue" onclick="applyTruxAccent('blue')" aria-label="Blue"><i></i></button><button type="button" class="accent-option" data-accent-option="cyan" onclick="applyTruxAccent('cyan')" aria-label="Cyan"><i></i></button><button type="button" class="accent-option" data-accent-option="purple" onclick="applyTruxAccent('purple')" aria-label="Purple"><i></i></button><button type="button" class="accent-option" data-accent-option="pink" onclick="applyTruxAccent('pink')" aria-label="Pink"><i></i></button><button type="button" class="accent-option" data-accent-option="red" onclick="applyTruxAccent('red')" aria-label="Red"><i></i></button><button type="button" class="accent-option" data-accent-option="orange" onclick="applyTruxAccent('orange')" aria-label="Orange"><i></i></button><button type="button" class="accent-option" data-accent-option="yellow" onclick="applyTruxAccent('yellow')" aria-label="Yellow"><i></i></button><button type="button" class="accent-option" data-accent-option="green" onclick="applyTruxAccent('green')" aria-label="Green"><i></i></button><button type="button" class="accent-option" data-accent-option="teal" onclick="applyTruxAccent('teal')" aria-label="Teal"><i></i></button><button type="button" class="accent-option" data-accent-option="white" onclick="applyTruxAccent('white')" aria-label="White"><i></i></button></div></div></div></div>'};
       if(key==="settings") return {title:"Settings",subtitle:"Open the complete TruX preferences page.",html:'<div class="detail-callout"><h4>Detailed controls</h4><p>General, Appearance, Voice, Personalization, Notifications, Usage, Data & privacy and Developer are all available.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption();openSettingsModal()">Open Settings</button></div></div>'};
       if(key==="help") return {title:"Help & privacy",subtitle:"Quick guidance and privacy controls.",html:'<div class="detail-callout"><h4>Location privacy</h4><p>Location access can be turned off at any time from Personalization.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption();openSettingsModal();switchSettingsSection(&quot;personalization&quot;)">Location settings</button></div></div><div class="detail-callout"><h4>Quick help</h4><p>Use + for Coding, Deep Research, image generation, files, camera and photos. Use Library to revisit generated media.</p></div>'};
       if(key==="developer" && owner) return {title:"Developer workspace",subtitle:"Developer-only TruX controls and identity.",html:'<div class="detail-callout"><h4>Developer recognition</h4><p>This account has access to the developer workspace and owner controls.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption();openSettingsModal();switchSettingsSection(&quot;developer&quot;)">Open developer settings</button></div></div>'};
