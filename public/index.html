@@ -6410,7 +6410,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       });
     }
     function enterChatWorkspace() {
-      enterChatWorkspace();
+      document.body.classList.remove("home-active");
       document.body.classList.add("chat-session-active");
       document.body.removeAttribute("data-media-mode");
 
