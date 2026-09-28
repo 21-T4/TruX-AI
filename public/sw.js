@@ -1,4 +1,4 @@
-const CACHE_NAME = 'trux-ai-v5';
+const CACHE_NAME = 'trux-ai-v6';
 
 try {
   importScripts(
@@ -18,9 +18,10 @@ try {
   const messaging = firebase.messaging();
 
   messaging.onBackgroundMessage((payload) => {
-    const title = payload?.notification?.title || 'TruX-AI';
-    const body = payload?.notification?.body || 'Your response is ready.';
-    const url = payload?.data?.url || '/';
+    const data = payload?.data || {};
+    const title = data.title || payload?.notification?.title || 'TruX-AI';
+    const body = data.body || payload?.notification?.body || 'Your response is ready.';
+    const url = data.url || '/';
 
     self.registration.showNotification(title, {
       body,
