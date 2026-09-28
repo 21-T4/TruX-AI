@@ -2911,7 +2911,7 @@ body[data-home-look="graphite"] .bg::before{background:radial-gradient(ellipse a
         }
       });
     }
-    initFirebase();
+
 
     function updateNotificationButton() {
       const buttons = [getEl("notifyBtn"), getEl("codeNotifyButton")].filter(Boolean);
@@ -3133,6 +3133,7 @@ body[data-home-look="graphite"] .bg::before{background:radial-gradient(ellipse a
 
     const TRUX_HOME_LOOKS = new Set(["midnight","graphite","violet","ember"]);
     applyHomeLook(store.getItem("trux_home_look") || "midnight", false);
+    initFirebase();
 
     function applyHomeLook(name, persist) {
       const next = TRUX_HOME_LOOKS.has(name) ? name : "midnight";
