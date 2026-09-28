@@ -962,7 +962,7 @@ export async function onRequestPost(context) {
     const effectiveTier = (researchMode || codingMode) ? 'ultra' : (tier || 'base');
     const proTier = effectiveTier === 'pro' || effectiveTier === 'ultra' || researchMode || codingMode;
 
-    const projectId = String(env.GCP_PROJECT_ID || env.GOOGLE_CLOUD_PROJECT || env.GCLOUD_PROJECT || '').trim();
+    const projectId = String(env.GCP_PROJECT_ID || env.GOOGLE_CLOUD_PROJECT || env.GCLOUD_PROJECT || env.PROJECT_ID || 'trux-ai').trim();
     // TruX-Code opens its SSE response before Google authentication so the
     // browser receives bytes immediately and can keep the connection alive.
     let accessToken = null;
