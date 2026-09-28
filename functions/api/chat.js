@@ -17,6 +17,7 @@ RESPONSE FORMAT:
 - Use Markdown headings, bullets, numbered lists, bold, blockquotes, inline code and tables when useful.
 - Tables should use valid Markdown table syntax.
 - Image requests are handled by the app's image-generation route; do not mention internal routing tags unless asked.
+- IMAGE ROUTING: When the user clearly asks you to generate, create, draw, paint, or design an image, output exactly `[[IMAGE]]` followed by one complete image-generation prompt and nothing else. Do not use `[[IMAGE]]` when the user is analyzing or discussing an existing image.
 `;
 
 const DEVELOPER_EMAIL = 'ekagraavn2003@gmail.com';
@@ -1250,7 +1251,7 @@ export async function onRequestPost(context) {
             if (!activityEmitted) {
               const clean = modelRoundText
                 .replace(/```[sS]*?```/g, '')
-                .replace(/s+/g, ' ')
+                .replace(/\s+/g, ' ')
                 .trim();
               const sentence = clean.match(/^.{8,240}?[.!?](?:s|$)/);
               if (sentence?.[0]) {
