@@ -1026,7 +1026,7 @@ export async function onRequestPost(context) {
     const modeInstruction = researchMode
       ? `\n\n[DEEP RESEARCH MODE]: Use Google Search grounding for fresh, niche, or source-backed information. Synthesize multiple relevant sources and distinguish facts from inference. Use TruX-Code reasoning engine.`
       : codingMode
-        ? `\n\n[TRUX-CODE MODE]: Think deeply before answering, but never expose private chain-of-thought. Prioritize complete, maintainable code, careful debugging, tests, and concise implementation notes. Never claim you changed a repository. Before each GitHub tool call, emit one brief user-visible progress sentence describing the action (not private reasoning). After each tool returns, emit one brief user-visible progress sentence describing what was completed and what you will do next. These progress sentences are intentionally concise and may stream while coding.\n\n[CONNECTED GITHUB WORKSPACE]: The active repository is ${String(githubRepository || 'none')}; branch ${String(githubBranch || 'default')}. When GitHub tools are available, inspect the repository with github_search_code and github_read_file before changing anything. For ANY request that asks to modify, fix, update, refactor, add, remove, or otherwise change repository files, you MUST call github_propose_changes after reading the current files. Do not stop at a conversational confirmation such as “I can make that change” or “ready to commit”. The proposal tool produces the exact reviewable patch and causes the UI to show the explicit confirmation button. Use github_propose_changes with exact oldText/newText replacements. Each repository path must appear only once in the edits array; combine multiple changes for the same file into a single edit. github_propose_changes NEVER writes to GitHub; it creates a user-reviewable proposal. Never say that a change was applied until the user explicitly confirms it in the UI.`
+        ? `\n\n[TRUX-CODE MODE]: Think deeply before answering, but never expose private chain-of-thought. Prioritize complete, maintainable code, careful debugging, tests, and concise implementation notes. Never claim you changed a repository. Before each GitHub tool call, first emit one brief, natural user-facing activity sentence describing the action you are about to take; do not emit internal reasoning. After each tool returns, continue with the next relevant activity sentence instead of canned progress text.\n\n[CONNECTED GITHUB WORKSPACE]: The active repository is ${String(githubRepository || 'none')}; branch ${String(githubBranch || 'default')}. When GitHub tools are available, inspect the repository with github_search_code and github_read_file before changing anything. For ANY request that asks to modify, fix, update, refactor, add, remove, or otherwise change repository files, you MUST call github_propose_changes after reading the current files. Do not stop at a conversational confirmation such as “I can make that change” or “ready to commit”. The proposal tool produces the exact reviewable patch and causes the UI to show the explicit confirmation button. Use github_propose_changes with exact oldText/newText replacements. Each repository path must appear only once in the edits array; combine multiple changes for the same file into a single edit. github_propose_changes NEVER writes to GitHub; it creates a user-reviewable proposal. Never say that a change was applied until the user explicitly confirms it in the UI.`
         : '';
     const thinkingInstruction = effectiveAdvancedThinking
       ? `${combinedSystemInstruction}${modeInstruction}\n\n[REASONING MODE]: Take extra time to reason carefully, check assumptions and calculations, then return only the concise final answer. Do not expose private chain-of-thought.`
@@ -1222,7 +1222,7 @@ export async function onRequestPost(context) {
         }
 
         let modelRoundText = '';
-        if (codingMode) send({ type: 'status', status: 'Thinking…' });
+        let activityEmitted = false;
 
         const result = await streamVertexGemini({
           model: targetModel,
@@ -1242,7 +1242,25 @@ export async function onRequestPost(context) {
           : undefined,
         onText: async text => {
           if (codingMode) {
-            modelRoundText += String(text || '');
+            const piece = String(text || '');
+            modelRoundText += piece;
+
+            /* Only the model's explicit user-facing activity sentence is shown
+               in the status bar. Private reasoning is never rendered. */
+            if (!activityEmitted) {
+              const clean = modelRoundText
+                .replace(/```[sS]*?```/g, '')
+                .replace(/s+/g, ' ')
+                .trim();
+              const sentence = clean.match(/^.{8,240}?[.!?](?:s|$)/);
+              if (sentence?.[0]) {
+                const activity = sentence[0].trim();
+                if (activity) {
+                  send({ type: 'status', status: activity });
+                  activityEmitted = true;
+                }
+              }
+            }
           } else {
             send({ type: 'chunk', text });
           }
@@ -1272,7 +1290,7 @@ export async function onRequestPost(context) {
             const toolName = toolLabels[call?.name] || 'GitHub Tool';
             const rawPath = call?.args?.path ? String(call.args.path) : '';
             const toolTarget = rawPath ? toolName + ' · ' + rawPath : toolName;
-            const activeExplanation = progressLine || ('Working with ' + toolTarget + '…');
+            const activeExplanation = progressLine || toolTarget;
 
             send({ type: 'tool_status', tool: toolName, phase: 'start', status: activeExplanation });
 
@@ -1289,7 +1307,7 @@ export async function onRequestPost(context) {
                 type: 'tool_status',
                 tool: toolName,
                 phase: 'complete',
-                status: 'Completed ' + toolTarget + '.'
+                status: toolTarget
               });
 
               if (call?.name === 'github_propose_changes' && callResult?.proposalReady) {
