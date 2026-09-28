@@ -2615,16 +2615,16 @@ body[data-home-look="graphite"] .bg::before{background:radial-gradient(ellipse a
       </div>
       <div class="profile-list-group-title profile-options-label">Account & workspace</div>
       <div class="profile-option-list" id="profileOptionList">
-        <button type="button" class="profile-option-row" onclick="openProfileOption('account')"><span class="profile-option-icon account-icon">G</span><span class="profile-option-copy"><b>Manage your account</b><small>Open your connected Google account</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" onclick="openProfileOption('usage')"><span class="profile-option-icon">◔</span><span class="profile-option-copy"><b>Usage & limits</b><small>View Core, Pro and image usage</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" onclick="openProfileOption('personalization')"><span class="profile-option-icon">✦</span><span class="profile-option-copy"><b>Personalization</b><small>Instructions, home UI looks and location access</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" onclick="openProfileOption('notifications')"><span class="profile-option-icon">♧</span><span class="profile-option-copy"><b>Notifications</b><small>Response and generation alerts</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" onclick="openProfileOption('memory')"><span class="profile-option-icon">▤</span><span class="profile-option-copy"><b>Memory & data</b><small>Import or export your local TruX workspace</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" onclick="openProfileOption('avatar')"><span class="profile-option-icon">◌</span><span class="profile-option-copy"><b>Avatar</b><small>Choose or reset your profile image</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" onclick="openProfileOption('appearance')"><span class="profile-option-icon">◐</span><span class="profile-option-copy"><b>Appearance</b><small>Choose the TruX home experience</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" onclick="openProfileOption('settings')"><span class="profile-option-icon">⚙</span><span class="profile-option-copy"><b>Settings</b><small>Open every detailed TruX setting</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" onclick="openProfileOption('help')"><span class="profile-option-icon">?</span><span class="profile-option-copy"><b>Help & privacy</b><small>Privacy controls and useful shortcuts</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row profile-owner-only" onclick="openProfileOption('developer')"><span class="profile-option-icon">⌘</span><span class="profile-option-copy"><b>Developer workspace</b><small>Developer-only controls and identity</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="account"><span class="profile-option-icon account-icon">G</span><span class="profile-option-copy"><b>Manage your account</b><small>Open your connected Google account</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="usage"><span class="profile-option-icon">◔</span><span class="profile-option-copy"><b>Usage & limits</b><small>View Core, Pro and image usage</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="personalization"><span class="profile-option-icon">✦</span><span class="profile-option-copy"><b>Personalization</b><small>Instructions, home UI looks and location access</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="notifications"><span class="profile-option-icon">♧</span><span class="profile-option-copy"><b>Notifications</b><small>Response and generation alerts</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="memory"><span class="profile-option-icon">▤</span><span class="profile-option-copy"><b>Memory & data</b><small>Import or export your local TruX workspace</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="avatar"><span class="profile-option-icon">◌</span><span class="profile-option-copy"><b>Avatar</b><small>Choose or reset your profile image</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="appearance"><span class="profile-option-icon">◐</span><span class="profile-option-copy"><b>Appearance</b><small>Choose the TruX home experience</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="settings"><span class="profile-option-icon">⚙</span><span class="profile-option-copy"><b>Settings</b><small>Open every detailed TruX setting</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="help"><span class="profile-option-icon">?</span><span class="profile-option-copy"><b>Help & privacy</b><small>Privacy controls and useful shortcuts</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row profile-owner-only" data-profile-page="developer"><span class="profile-option-icon">⌘</span><span class="profile-option-copy"><b>Developer workspace</b><small>Developer-only controls and identity</small></span><span class="profile-option-chevron">›</span></button>
       </div>
       <section class="profile-detail-view" id="profileDetailView" hidden>
         <button type="button" class="profile-detail-back" onclick="closeProfileOption()">‹ <span>Profile</span></button>
@@ -2649,14 +2649,14 @@ body[data-home-look="graphite"] .bg::before{background:radial-gradient(ellipse a
           <div><b>TruX settings</b><small>Personal workspace</small></div>
         </div>
         <nav class="settings-nav" aria-label="Settings sections">
-          <button type="button" class="active" data-settings-section="general" onclick="switchSettingsSection('general', this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.6 1.6-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.1h-2.2v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-1.6-1.6.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H7v-2.2h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1L9.9 6l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6v-.1h2.2v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3L18.2 6l1.6 1.6-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.1v2.2H21a1.7 1.7 0 0 0-1.6 1Z"/></svg>General</button>
-          <button type="button" data-settings-section="appearance" onclick="switchSettingsSection('appearance', this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16"/></svg>Appearance</button>
-          <button type="button" data-settings-section="voice" onclick="switchSettingsSection('voice', this)"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8"/></svg>Voice</button>
-          <button type="button" data-settings-section="personalization" onclick="switchSettingsSection('personalization', this)"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v13H4z"/><path d="M8 9h8M8 13h5"/></svg>Personalization</button>
-          <button type="button" data-settings-section="notifications" onclick="switchSettingsSection('notifications', this)"><svg viewBox="0 0 24 24"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 8h18c0 7-1 8-3 8Z"/><path d="M10 21h4"/></svg>Notifications</button>
-          <button type="button" data-settings-section="usage" onclick="switchSettingsSection('usage', this)"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/></svg>Usage</button>
-          <button type="button" data-settings-section="data" onclick="switchSettingsSection('data', this)"><svg viewBox="0 0 24 24"><path d="M4 7.5h16M5.5 7.5v11h13v-11M8 4.5h8"/><path d="M9 11v4M12 11v4M15 11v4"/></svg>Data & tools</button>
-          <button type="button" class="developer-nav" data-settings-section="developer" onclick="switchSettingsSection('developer', this)"><svg viewBox="0 0 24 24"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 4l-4 16"/></svg>Developer</button>
+          <button type="button" class="active" data-settings-section="general" data-settings-page="general"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.6 1.6-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.1h-2.2v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-1.6-1.6.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H7v-2.2h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1L9.9 6l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6v-.1h2.2v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3L18.2 6l1.6 1.6-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.1v2.2H21a1.7 1.7 0 0 0-1.6 1Z"/></svg>General</button>
+          <button type="button" data-settings-section="appearance" data-settings-page="appearance"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16"/></svg>Appearance</button>
+          <button type="button" data-settings-section="voice" data-settings-page="voice"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8"/></svg>Voice</button>
+          <button type="button" data-settings-section="personalization" data-settings-page="personalization"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v13H4z"/><path d="M8 9h8M8 13h5"/></svg>Personalization</button>
+          <button type="button" data-settings-section="notifications" data-settings-page="notifications"><svg viewBox="0 0 24 24"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 8h18c0 7-1 8-3 8Z"/><path d="M10 21h4"/></svg>Notifications</button>
+          <button type="button" data-settings-section="usage" data-settings-page="usage"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/></svg>Usage</button>
+          <button type="button" data-settings-section="data" data-settings-page="data"><svg viewBox="0 0 24 24"><path d="M4 7.5h16M5.5 7.5v11h13v-11M8 4.5h8"/><path d="M9 11v4M12 11v4M15 11v4"/></svg>Data & tools</button>
+          <button type="button" class="developer-nav" data-settings-section="developer" data-settings-page="developer"><svg viewBox="0 0 24 24"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 4l-4 16"/></svg>Developer</button>
         </nav>
         <button type="button" class="settings-close" onclick="closeSettingsModal()"><svg viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/><path d="M9 12h11"/></svg>Back to chat</button>
       </aside>
@@ -2667,7 +2667,7 @@ body[data-home-look="graphite"] .bg::before{background:radial-gradient(ellipse a
             <div class="mtitle">Settings</div>
             <div class="msub">Tune your TruX workspace without leaving the app.</div>
           </div>
-          <select id="settingsMobileSelect" class="settings-mobile-select" aria-label="Settings section" onchange="switchSettingsSection(this.value)">
+          <select id="settingsMobileSelect" class="settings-mobile-select" aria-label="Settings section" onchange="openSettingsModal(this.value)">
             <option value="general">General</option><option value="appearance">Appearance</option><option value="voice">Voice</option>
             <option value="personalization">Personalization</option><option value="notifications">Notifications</option>
             <option value="usage">Usage</option><option value="data">Data & privacy</option><option value="developer">Developer</option>
@@ -5786,6 +5786,123 @@ body[data-home-look="graphite"] .bg::before{background:radial-gradient(ellipse a
     getEl("loginWallModal")?.addEventListener("click", e => { if(e.target === getEl("loginWallModal")) closeLoginWall(); });
     
     addEventListener("keydown", e => { if(e.key === "Escape") { closeMediaLibrary(); closeProfileModal(); closeSettingsModal(); closeSandboxModal(); closePinnedModal(); closeLoginWall(); getEl("contextMenu").style.display = "none"; closeSidebar(); closeModelDropdown(); closeAttachmentMenu(); } });
+
+
+    /* ============================================================
+       SETTINGS / PROFILE PAGE CONTROLLER
+       One real page at a time. The navigation is event-delegated so
+       touch/click behavior does not depend on fragile inline handlers.
+       ============================================================ */
+    function showSettingsPage(name){
+      const allowed=new Set(["general","appearance","voice","personalization","notifications","usage","data","developer"]);
+      const next=allowed.has(name) ? name : "general";
+      document.querySelectorAll("[data-settings-content]").forEach(function(section){
+        section.classList.toggle("active", section.getAttribute("data-settings-content")===next);
+      });
+      document.querySelectorAll("[data-settings-page]").forEach(function(btn){
+        btn.classList.toggle("active", btn.getAttribute("data-settings-page")===next);
+      });
+      const select=getEl("settingsMobileSelect");
+      if(select) select.value=next;
+      const scroller=document.querySelector(".settings-main-scroll");
+      if(scroller) scroller.scrollTop=0;
+      return next;
+    }
+
+    function switchSettingsSection(name){
+      showSettingsPage(name);
+    }
+
+    function openSettingsModal(section){
+      const modal=getEl("settingsModal");
+      if(!modal) return;
+      modal.classList.add("active");
+      modal.style.removeProperty("display");
+      loadSettings();
+      updateAllUsageUI();
+      updateLocationSettingUI();
+      updateNotificationSettingsUI();
+      showSettingsPage(section || "general");
+    }
+
+    function closeSettingsModal(){
+      const modal=getEl("settingsModal");
+      if(!modal) return;
+      modal.classList.remove("active");
+      modal.style.removeProperty("display");
+    }
+
+    function openProfileOption(key){
+      const allowed=new Set(["account","usage","personalization","notifications","memory","avatar","appearance","settings","help","developer"]);
+      const next=allowed.has(key) ? key : "help";
+      currentProfileOption=next;
+      const home=getEl("profileOptionList");
+      const label=document.querySelector(".profile-options-label");
+      const detail=getEl("profileDetailView");
+      const data=profileDetailData(next);
+      if(home) home.style.display="none";
+      if(label) label.style.display="none";
+      if(detail){
+        detail.hidden=false;
+        getEl("profileDetailTitle").textContent=data.title;
+        getEl("profileDetailSubtitle").textContent=data.subtitle;
+        getEl("profileDetailBody").innerHTML=data.html;
+      }
+      if(next==="notifications"){
+        const t=getEl("profileNotificationsToggle");
+        if(t) t.checked=("Notification" in window && Notification.permission==="granted");
+        const st=getEl("profileNotificationStatus");
+        if(st) st.textContent=("Notification" in window) ? "Permission: "+Notification.permission : "Notifications are not supported.";
+      }
+      if(next==="appearance") applyHomeLook(document.body.dataset.homeLook||"midnight",false);
+      getEl("profileModal")?.classList.add("profile-detail-open");
+      return next;
+    }
+
+    function closeProfileOption(){
+      currentProfileOption=null;
+      const home=getEl("profileOptionList");
+      const label=document.querySelector(".profile-options-label");
+      const detail=getEl("profileDetailView");
+      if(home) home.style.display="";
+      if(label) label.style.display="";
+      if(detail){ detail.hidden=true; detail.removeAttribute("hidden"); detail.hidden=true; }
+      getEl("profileModal")?.classList.remove("profile-detail-open");
+    }
+
+    function closeProfileModal(){
+      closeProfileOption();
+      const modal=getEl("profileModal");
+      if(modal){ modal.classList.remove("active"); modal.style.removeProperty("display"); }
+    }
+
+    /* Remove the last dependency on inline navigation handlers. */
+    const settingsModalNode=getEl("settingsModal");
+    if(settingsModalNode){
+      settingsModalNode.addEventListener("click",function(event){
+        const nav=event.target && event.target.closest ? event.target.closest("[data-settings-page]") : null;
+        if(nav && settingsModalNode.contains(nav)){
+          event.preventDefault();
+          event.stopPropagation();
+          showSettingsPage(nav.getAttribute("data-settings-page"));
+          return;
+        }
+      },true);
+    }
+
+    const profileModalNode=getEl("profileModal");
+    if(profileModalNode){
+      profileModalNode.addEventListener("click",function(event){
+        const route=event.target && event.target.closest ? event.target.closest("[data-profile-page]") : null;
+        if(route && profileModalNode.contains(route)){
+          event.preventDefault();
+          event.stopPropagation();
+          openProfileOption(route.getAttribute("data-profile-page"));
+          return;
+        }
+      },true);
+    }
+
 
     document.body.classList.add("home-active"); loadSettings(); renderNotebooks(); renderSidebar(); updateAllUsageUI(); handleInputChange(); setWorkspaceMode("chat");
   </script>
