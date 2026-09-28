@@ -121,16 +121,26 @@ async function createGoogleAccessToken(env) {
     }
   }
 
-  if (!env.GCP_PROJECT_ID) throw new Error('GCP_PROJECT_ID secret is missing.');
-  if (!env.GCP_CLIENT_EMAIL) throw new Error('GCP_CLIENT_EMAIL secret is missing.');
-  if (!env.GCP_PRIVATE_KEY) throw new Error('GCP_PRIVATE_KEY secret is missing.');
+  const projectId = String(
+    env.GCP_PROJECT_ID || env.GOOGLE_CLOUD_PROJECT || env.GCLOUD_PROJECT || ''
+  ).trim();
+  const clientEmail = String(
+    env.GCP_CLIENT_EMAIL || env.GOOGLE_CLIENT_EMAIL || ''
+  ).trim();
+  const privateKey = String(
+    env.GCP_PRIVATE_KEY || env.GOOGLE_PRIVATE_KEY || ''
+  );
+
+  if (!projectId) throw new Error('Google Cloud project ID is not configured.');
+  if (!clientEmail) throw new Error('Google service-account client email is not configured.');
+  if (!privateKey) throw new Error('Google service-account private key is not configured.');
 
   const now = Math.floor(Date.now() / 1000);
 
   const header = { alg: 'RS256', typ: 'JWT' };
 
   const claims = {
-    iss: env.GCP_CLIENT_EMAIL,
+    iss: clientEmail,
     scope: 'https://www.googleapis.com/auth/cloud-platform',
     aud: 'https://oauth2.googleapis.com/token',
     iat: now,
@@ -141,11 +151,11 @@ async function createGoogleAccessToken(env) {
   const encodedClaims = base64UrlEncode(JSON.stringify(claims));
   const unsignedJwt = `${encodedHeader}.${encodedClaims}`;
 
-  const privateKey = env.GCP_PRIVATE_KEY.replace(/\\n/g, '\n');
+  const privateKeyPem = privateKey.replace(/\\n/g, '\n');
 
   const cryptoKey = await crypto.subtle.importKey(
     'pkcs8',
-    await pemToArrayBuffer(privateKey),
+    await pemToArrayBuffer(privateKeyPem),
     { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
     false,
     ['sign']
@@ -211,7 +221,7 @@ async function sendFcmNotification(userIdentifier, env, title, body, data = {}) 
     return;
   }
 
-  const projectId = env.GCP_PROJECT_ID;
+  const projectId = String(env.GCP_PROJECT_ID || env.GOOGLE_CLOUD_PROJECT || env.GCLOUD_PROJECT || '').trim();
   const remaining = [];
 
   for (const token of tokens.slice(0, 10)) {
@@ -952,7 +962,7 @@ export async function onRequestPost(context) {
     const effectiveTier = (researchMode || codingMode) ? 'ultra' : (tier || 'base');
     const proTier = effectiveTier === 'pro' || effectiveTier === 'ultra' || researchMode || codingMode;
 
-    const projectId = env.GCP_PROJECT_ID;
+    const projectId = String(env.GCP_PROJECT_ID || env.GOOGLE_CLOUD_PROJECT || env.GCLOUD_PROJECT || '').trim();
     // TruX-Code opens its SSE response before Google authentication so the
     // browser receives bytes immediately and can keep the connection alive.
     let accessToken = null;
