@@ -39,6 +39,42 @@ const DEEP_RESEARCH_LIMIT = 1;
 let cachedAccessToken = null;
 let cachedTokenExpiry = 0;
 
+async function resolveGoogleProjectId(env) {
+  const configured = String(
+    env.GCP_PROJECT_ID ||
+    env.GOOGLE_CLOUD_PROJECT ||
+    env.GCLOUD_PROJECT ||
+    env.PROJECT_ID ||
+    ''
+  ).trim();
+
+  if (configured) return configured;
+
+  if (env.K_SERVICE || env.K_REVISION || env.K_CONFIGURATION) {
+    const metadataUrls = [
+      'http://metadata.google.internal/computeMetadata/v1/project/project-id',
+      'http://169.254.169.254/computeMetadata/v1/project/project-id'
+    ];
+
+    for (const url of metadataUrls) {
+      try {
+        const response = await fetch(url, {
+          headers: { 'Metadata-Flavor': 'Google' }
+        });
+
+        if (response.ok) {
+          const value = (await response.text()).trim();
+          if (value) return value;
+        }
+      } catch {
+        // Try the next metadata endpoint.
+      }
+    }
+  }
+
+  return 'trux-ai';
+}
+
 
 function base64UrlEncode(data) {
   let bytes;
@@ -121,9 +157,9 @@ async function createGoogleAccessToken(env) {
     }
   }
 
-  const projectId = String(
-    env.GCP_PROJECT_ID || env.GOOGLE_CLOUD_PROJECT || env.GCLOUD_PROJECT || env.PROJECT_ID || 'trux-ai'
-  ).trim();
+  const projectId = await resolveGoogleProjectId(env);
+  env.GCP_PROJECT_ID = projectId;
+
   const clientEmail = String(
     env.GCP_CLIENT_EMAIL || env.GOOGLE_CLIENT_EMAIL || ''
   ).trim();
@@ -962,7 +998,8 @@ export async function onRequestPost(context) {
     const effectiveTier = (researchMode || codingMode) ? 'ultra' : (tier || 'base');
     const proTier = effectiveTier === 'pro' || effectiveTier === 'ultra' || researchMode || codingMode;
 
-    const projectId = String(env.GCP_PROJECT_ID || env.GOOGLE_CLOUD_PROJECT || env.GCLOUD_PROJECT || env.PROJECT_ID || 'trux-ai').trim();
+    const projectId = await resolveGoogleProjectId(env);
+    env.GCP_PROJECT_ID = projectId;
     // TruX-Code opens its SSE response before Google authentication so the
     // browser receives bytes immediately and can keep the connection alive.
     let accessToken = null;
@@ -1162,7 +1199,7 @@ export async function onRequestPost(context) {
 
       const modelTools = githubSession && codingMode && validGithubRepo(githubRepository)
         ? [{ functionDeclarations: getGithubToolDeclarations() }]
-        : [{ googleSearch: {} }];
+        : (researchMode ? [{ googleSearch: {} }] : []);
 
       let agentContents = contents.slice();
       let finalResult = null;
