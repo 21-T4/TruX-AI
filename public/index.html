@@ -4599,7 +4599,6 @@
       const jobId = startData.jobId;
       if(!jobId) return false;
 
-      getEl(sid).innerText = "Thinking…";
       activeAbortController = new AbortController();
 
       let seenEvents = 0;
