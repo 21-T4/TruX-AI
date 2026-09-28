@@ -4663,11 +4663,25 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
     function splitTableRow(line) {
       let s = line.trim().replace(/^\|/, "").replace(/\|$/, "");
-      let cells = [], cur = "", escaped = false;
-      for (let ch of s) {
-        if (escaped) { cur += ch; escaped = false; continue; }
-        if (ch === "\\") { escaped = true; continue; }
-        if (ch === "|") { cells.push(cur); cur = ""; continue; }
+      let cells = [], cur = "";
+      for (let i = 0; i < s.length; i++) {
+        let ch = s[i];
+
+        // A backslash only escapes a pipe in Markdown table syntax.
+        // Preserve all other backslashes so LaTeX such as \\frac, \\sqrt,
+        // \\alpha, etc. survives intact inside table cells.
+        if (ch === "\\" && s[i + 1] === "|") {
+          cur += "|";
+          i++;
+          continue;
+        }
+
+        if (ch === "|") {
+          cells.push(cur);
+          cur = "";
+          continue;
+        }
+
         cur += ch;
       }
       cells.push(cur);
