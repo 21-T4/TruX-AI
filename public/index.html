@@ -4628,13 +4628,13 @@
             if(event.phase === "start") {
               const status = getEl(sid);
               if(status) status.dataset.activeTool = String(event.tool || "TruX-Code");
-              setThinkingStatus(sid, event.status || event.tool || "Working…");
+              setThinkingStatus(sid, event.status || event.tool || "");
             } else {
               const status = getEl(sid);
-              if(status) setThinkingStatus(sid, "Thinking…");
+              if(status) setThinkingStatus(sid, "");
             }
           } else if(event?.type === "status") {
-            setThinkingStatus(sid, event.status || "Thinking…");
+            setThinkingStatus(sid, event.status || "");
           } else if(event?.type === "text") {
             /* Background progress text is connection keep-alive while a tool is
                active; do not display it as answer prose. */
