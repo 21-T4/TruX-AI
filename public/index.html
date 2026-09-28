@@ -4828,7 +4828,8 @@
         });
         if(!res.ok) {
           let errorPayload = await res.json().catch(() => ({}));
-          throw Error(errorPayload.reply || errorPayload.error || "Backend Error (" + res.status + ")");
+          const detail = errorPayload.detail || errorPayload.reply || errorPayload.error;
+          throw Error(detail || "Backend Error (" + res.status + ")");
         }
 
         if(!res.body) throw Error("Streaming body unavailable.");
