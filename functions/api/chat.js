@@ -275,12 +275,15 @@ async function sendFcmNotification(userIdentifier, env, title, body, data = {}) 
         body: JSON.stringify({
           message: {
             token,
-            notification: {
-              title: String(title || 'TruX-AI').slice(0, 120),
-              body: String(body || 'Your response is ready.').slice(0, 240)
-            },
+            /* Data-only FCM keeps foreground delivery silent. The service
+               worker turns the same payload into the full OS notification
+               when the app is backgrounded. */
             data: Object.fromEntries(
-              Object.entries(data || {}).map(([k, v]) => [String(k), String(v ?? '')])
+              Object.entries({
+                ...(data || {}),
+                title: String(title || 'TruX-AI').slice(0, 120),
+                body: String(body || 'Your response is ready.').slice(0, 240)
+              }).map(([k, v]) => [String(k), String(v ?? '')])
             )
           }
         })
