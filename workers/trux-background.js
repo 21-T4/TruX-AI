@@ -1,4 +1,4 @@
-const APP_ORIGIN_FALLBACK = 'https://www.chat.trux.website';
+const APP_ORIGIN_FALLBACK = 'https://chat.trux.website';
 
 async function updateJob(env, payload) {
   const origin = String(env.TRUX_APP_ORIGIN || APP_ORIGIN_FALLBACK).replace(/\/$/, '');
