@@ -88,6 +88,39 @@ async function createGoogleAccessToken(env) {
     return cachedAccessToken;
   }
 
+  /*
+   * Cloud Run exposes Application Default Credentials through its metadata
+   * server. Prefer that path when available so chat/image generation does not
+   * fail just because a private-key environment variable was omitted or
+   * reformatted during deployment. Keep the explicit service-account JWT path
+   * below for non-Cloud-Run deployments.
+   */
+  const metadataUrls = [
+    'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token',
+    'http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token'
+  ];
+
+  if (env.K_SERVICE || env.K_REVISION || env.K_CONFIGURATION) {
+    for (const url of metadataUrls) {
+      try {
+        const response = await fetch(url, {
+          headers: { 'Metadata-Flavor': 'Google' }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data?.access_token) {
+            cachedAccessToken = data.access_token;
+            cachedTokenExpiry = Date.now() + ((Number(data.expires_in) || 3600) * 1000);
+            return cachedAccessToken;
+          }
+        }
+      } catch {
+        // Try the next metadata endpoint, then fall back to explicit credentials.
+      }
+    }
+  }
+
   if (!env.GCP_PROJECT_ID) throw new Error('GCP_PROJECT_ID secret is missing.');
   if (!env.GCP_CLIENT_EMAIL) throw new Error('GCP_CLIENT_EMAIL secret is missing.');
   if (!env.GCP_PRIVATE_KEY) throw new Error('GCP_PRIVATE_KEY secret is missing.');
