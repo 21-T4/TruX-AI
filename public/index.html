@@ -3033,8 +3033,6 @@ body[data-home-look="graphite"] .bg::before{background:radial-gradient(ellipse a
         truxLocationCache = null,
         currentProfileOption = null;
 
-    applyHomeLook(store.getItem("trux_home_look") || "midnight", false);
-
     function toggleModelDropdown(e) {
       e?.stopPropagation();
       const dropdown = getEl("modelDropdown"), button = getEl("modelPickerBtn");
@@ -3134,6 +3132,7 @@ body[data-home-look="graphite"] .bg::before{background:radial-gradient(ellipse a
 
 
     const TRUX_HOME_LOOKS = new Set(["midnight","graphite","violet","ember"]);
+    applyHomeLook(store.getItem("trux_home_look") || "midnight", false);
 
     function applyHomeLook(name, persist) {
       const next = TRUX_HOME_LOOKS.has(name) ? name : "midnight";
