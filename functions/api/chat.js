@@ -27,6 +27,9 @@ function isDeveloperEmail(email) {
 
 
 const IMAGE_LIMIT = 15;
+const VIDEO_MODEL = "veo-3.1-fast-generate-001";
+const VIDEO_LOCATION = "us-central1";
+const VIDEO_MAX_POLL_MS = 20 * 60 * 1000;
 const PRO_TOKEN_LIMIT = 1000000;
 const CODING_TOKEN_LIMIT = 150000;
 const DEEP_RESEARCH_LIMIT = 1;
@@ -902,6 +905,62 @@ async function generateImageWithVertex({ prompt, accessToken, projectId }) {
 
 
 /* =========================================================
+   VEO VIDEO GENERATION
+   ========================================================= */
+function getVideoOutputUri(env) {
+  return String(env.TRUX_VIDEO_OUTPUT_GCS_URI || env.VIDEO_OUTPUT_GCS_URI || "").trim().replace(/\/+$/,"");
+}
+function videoSafePathPart(value) {
+  return String(value || "anonymous").replace(/[^a-zA-Z0-9_-]/g,"_").slice(0,48) || "anonymous";
+}
+function videoDelay(ms) { return new Promise(resolve => setTimeout(resolve,ms)); }
+async function generateVideoWithVertex({ prompt, accessToken, projectId, env, onStatus }) {
+  if(!accessToken) throw new Error("Google access token missing.");
+  const outputBase=getVideoOutputUri(env);
+  if(!outputBase.startsWith("gs://")) throw new Error("Video output storage is not configured. Set TRUX_VIDEO_OUTPUT_GCS_URI to a gs:// bucket prefix.");
+  const randomPart = typeof crypto.randomUUID === "function" ? crypto.randomUUID() : String(Math.random()).slice(2);
+  const folder=outputBase+"/trux-video-"+Date.now()+"-"+videoSafePathPart(randomPart);
+  const model=String(env.TRUX_VIDEO_MODEL || VIDEO_MODEL);
+  const location=String(env.TRUX_VIDEO_LOCATION || VIDEO_LOCATION);
+  const baseUrl="https://"+location+"-aiplatform.googleapis.com/v1/projects/"+projectId+"/locations/"+location+"/publishers/google/models/"+model;
+  const startResponse=await fetch(baseUrl+":predictLongRunning",{
+    method:"POST",
+    headers:{"Content-Type":"application/json","Authorization":"Bearer "+accessToken},
+    body:JSON.stringify({
+      instances:[{prompt:String(prompt || "").slice(0,8000)}],
+      parameters:{storageUri:folder+"/",sampleCount:1,aspectRatio:"16:9",durationSeconds:8,resolution:"720p"}
+    })
+  });
+  if(!startResponse.ok){ const errorText=await startResponse.text(); throw new Error("Vertex AI "+model+" Error: "+errorText); }
+  const started=await startResponse.json();
+  const operationName=started && started.name;
+  if(!operationName) throw new Error("Vertex AI did not return a video operation.");
+  const deadline=Date.now()+VIDEO_MAX_POLL_MS;
+  let lastStatusAt=0;
+  while(Date.now()<deadline){
+    const now=Date.now();
+    if(onStatus && now-lastStatusAt>9000){ lastStatusAt=now; await onStatus("Generating video…"); }
+    await videoDelay(10000);
+    const pollResponse=await fetch(baseUrl+":fetchPredictOperation",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+accessToken},
+      body:JSON.stringify({operationName})
+    });
+    if(!pollResponse.ok){ const errorText=await pollResponse.text(); throw new Error("Vertex AI video status Error: "+errorText); }
+    const operation=await pollResponse.json();
+    if(operation && operation.done){
+      if(operation.error && operation.error.message) throw new Error(operation.error.message);
+      const v=(operation.response && operation.response.videos && operation.response.videos[0]) || null;
+      const gcsUri=(v && (v.gcsUri || v.uri)) || "";
+      if(!gcsUri) throw new Error("Vertex AI returned no generated video.");
+      return {gcsUri:gcsUri,mimeType:(v && v.mimeType) || "video/mp4",operationName:operationName};
+    }
+  }
+  throw new Error("Video generation exceeded the 20-minute operation window.");
+}
+
+
+/* =========================================================
    STREAM RESPONSE HELPER
    ========================================================= */
 
@@ -1005,6 +1064,34 @@ export async function onRequestPost(context) {
     let accessToken = null;
     if (!codingMode) {
       accessToken = await createGoogleAccessToken(env);
+    }
+
+    /* =====================================================
+       VIDEO GENERATION — Pro + Owner only.
+       Owner access has no application-level video limit.
+       ===================================================== */
+    if(mode === "video") {
+      if(!developerAccount && effectiveTier !== "pro") {
+        return createSseResponse(async ({send}) => {
+          send({type:"error",error:"Video generation is available to Pro accounts and Owner access."});
+        });
+      }
+      return createSseResponse(async ({send}) => {
+        send({type:"status",status:"Starting video generation…"});
+        try {
+          const result=await generateVideoWithVertex({
+            prompt:message || "Create a cinematic video.",
+            accessToken:accessToken,
+            projectId:projectId,
+            env:env,
+            onStatus:status => send({type:"status",status:status})
+          });
+          const appUrl="/api/video?uri="+encodeURIComponent(result.gcsUri);
+          send({type:"result",reply:"Your video is ready.",video:{url:appUrl,gcsUri:result.gcsUri,mimeType:result.mimeType}});
+        } catch(error) {
+          send({type:"error",error:(error && error.message) || "Video generation failed."});
+        }
+      });
     }
 
     /* =====================================================
