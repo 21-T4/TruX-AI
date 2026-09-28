@@ -478,6 +478,10 @@
       padding: 28px 24px 8px;
     }
     body.home-active .welcome { display: flex; }
+    /* Any non-home view must fully replace the welcome screen. The inline
+       display:flex used when starting a new chat must never leave it visible
+       behind an opened conversation or generated response. */
+    body:not(.home-active) .welcome { display: none !important; }
     .hero {
       position: relative;
       width: 100%; max-width: 900px;
@@ -6435,6 +6439,8 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       activeAbortController?.abort();
       currentChatId = id;
       setWorkspaceMode(chatSessions[id].mode || "chat");
+      const welcome = getEl("welcomeScreen");
+      if(welcome) welcome.style.display = "none";
       getEl("chatContainer").innerHTML = "";
       getEl("codeChatContainer").innerHTML = "";
       const cC = enterChatWorkspace();
