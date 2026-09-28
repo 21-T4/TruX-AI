@@ -2283,48 +2283,169 @@ body[data-home-look="graphite"] .bg::before{background:radial-gradient(ellipse a
    These rebuild the home composition, spacing and launcher geometry,
    rather than only changing accent colors.
    ============================================================ */
-body[data-home-look="focus"] .welcome { padding: 24px clamp(22px,4vw,56px) 10px; }
-body[data-home-look="focus"] .hero { max-width: 1120px; align-items: flex-start; text-align: left; }
-body[data-home-look="focus"] .hero::before { left: 18%; transform: translateX(-20%); width: 620px; }
-body[data-home-look="focus"] .welcome-title { font-size: clamp(48px,6.6vw,76px); }
-body[data-home-look="focus"] .animated-sub { justify-content: flex-start; }
-body[data-home-look="focus"] .chips-head { max-width: 1120px; margin-top: 38px; }
-body[data-home-look="focus"] .chips { max-width: 1120px; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; }
-body[data-home-look="focus"] .chip { min-height: 154px; padding: 20px; border-radius: 18px; }
+/* ============================================================
+   PERSONALIZATION HOME PRESETS
+   Midnight is the untouched/default TruX home.
+   Every other preset changes composition, density and palette.
+   ============================================================ */
 
-body[data-home-look="studio"] .welcome { padding: 18px 20px 8px; }
-body[data-home-look="studio"] .hero { max-width: 1180px; padding-bottom: 6px; }
-body[data-home-look="studio"] .welcome-title { font-size: clamp(54px,8vw,96px); }
-body[data-home-look="studio"] .animated-sub { margin-top: 14px; }
-body[data-home-look="studio"] .chips-head { max-width: 980px; margin-top: 30px; }
-body[data-home-look="studio"] .chips { max-width: 980px; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; }
-body[data-home-look="studio"] .chip { min-height: 108px; padding: 16px 18px; border-radius: 16px; justify-content: flex-start; }
-body[data-home-look="studio"] .chip-go { opacity: .9; transform: none; }
-
-body[data-home-look="minimal"] .welcome { padding: 18px 20px 8px; }
-body[data-home-look="minimal"] .hero { max-width: 760px; }
-body[data-home-look="minimal"] .hero > .badge,
-body[data-home-look="minimal"] .animated-sub,
-body[data-home-look="minimal"] .chips-head { display: none; }
-body[data-home-look="minimal"] .welcome-title { font-size: clamp(42px,6vw,68px); margin-bottom: 28px; }
-body[data-home-look="minimal"] .chips { max-width: 700px; grid-template-columns: 1fr; gap: 8px; margin-top: 0; }
-body[data-home-look="minimal"] .chip {
-  min-height: 68px; padding: 12px 16px; border-radius: 15px;
-  flex-direction: row; align-items: center; justify-content: flex-start; gap: 14px;
+/* SIMPLE — straight, calm, focused. No launcher cards. */
+body[data-home-look="simple"]{
+  --bg:#0b0c10; --bg-1:#101217; --bg-2:#151820; --bg-3:#1b1f28; --bg-4:#222733;
+  --line:rgba(255,255,255,.07); --line-2:rgba(255,255,255,.11);
+  --acc:#8ea2c8; --acc-2:#b9c6dd; --acc-3:#65789e;
 }
-body[data-home-look="minimal"] .chip-ico { width: 34px; height: 34px; flex-basis: 34px; }
-body[data-home-look="minimal"] .chip-go { opacity: .75; transform: none; top: 50%; right: 16px; translate: 0 -50%; }
-body[data-home-look="minimal"] .chip-txt { padding-right: 18px; }
-
-@media (max-width: 768px) {
-  body[data-home-look="focus"] .welcome,
-  body[data-home-look="studio"] .welcome { padding-left: 16px; padding-right: 16px; }
-  body[data-home-look="focus"] .chips,
-  body[data-home-look="studio"] .chips { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
-  body[data-home-look="focus"] .chip { min-height: 118px; }
-  body[data-home-look="studio"] .chip { min-height: 96px; flex-direction: column; align-items: flex-start; }
+body[data-home-look="simple"] .bg::before,
+body[data-home-look="simple"] .bg::after{opacity:.18}
+body[data-home-look="simple"] .welcome{padding:24px 24px 8px}
+body[data-home-look="simple"] .hero{max-width:760px;justify-content:center}
+body[data-home-look="simple"] .hero>.badge,
+body[data-home-look="simple"] .animated-sub,
+body[data-home-look="simple"] .chips-head,
+body[data-home-look="simple"] .chips{display:none}
+body[data-home-look="simple"] .welcome-title{font-size:clamp(54px,8vw,86px);margin-bottom:22px}
+body[data-home-look="simple"] .hero::after{
+  content:"A clean workspace for thinking, writing and building";
+  display:block;color:var(--txt-3);font-size:14px;letter-spacing:.01em;margin-top:4px
 }
 
+/* PRISM — denser / more complex, distinct cool spectrum. */
+body[data-home-look="prism"]{
+  --bg:#080914; --bg-1:#0d1020; --bg-2:#11162b; --bg-3:#171d38; --bg-4:#1e2548;
+  --line:rgba(124,180,255,.12); --line-2:rgba(159,119,255,.22);
+  --acc:#64d8ff; --acc-2:#c27cff; --acc-3:#5368ff;
+}
+body[data-home-look="prism"] .bg::before{
+  background:
+    radial-gradient(ellipse 42% 34% at 20% 18%,rgba(100,216,255,.26),transparent 70%),
+    radial-gradient(ellipse 38% 30% at 84% 16%,rgba(194,124,255,.24),transparent 70%),
+    radial-gradient(ellipse 58% 42% at 58% 100%,rgba(83,104,255,.20),transparent 72%);
+  filter:blur(38px)
+}
+body[data-home-look="prism"] .welcome{padding:20px 20px 8px}
+body[data-home-look="prism"] .hero{max-width:1160px;display:grid;grid-template-columns:1.15fr .85fr;grid-template-rows:auto auto 1fr;gap:18px 34px;align-items:center;text-align:left}
+body[data-home-look="prism"] .hero>.badge{grid-column:1;grid-row:1;margin-bottom:0!important}
+body[data-home-look="prism"] .welcome-title{grid-column:1;grid-row:2;font-size:clamp(52px,7vw,86px)}
+body[data-home-look="prism"] .animated-sub{grid-column:1;grid-row:3;justify-content:flex-start;align-self:start;margin-top:4px}
+body[data-home-look="prism"] .chips-head{grid-column:2;grid-row:1;margin:0 0 2px;max-width:none}
+body[data-home-look="prism"] .chips{grid-column:2;grid-row:2 / span 2;max-width:none;grid-template-columns:1fr 1fr;gap:10px;margin:0}
+body[data-home-look="prism"] .chip{
+  min-height:112px;padding:18px;border-radius:18px;
+  background:linear-gradient(145deg,rgba(38,46,92,.80),rgba(10,12,26,.94));
+  border:1px solid rgba(130,170,255,.16)
+}
+body[data-home-look="prism"] .chip-ico{background:linear-gradient(145deg,rgba(100,216,255,.18),rgba(194,124,255,.16));border-color:rgba(140,170,255,.26)}
+body[data-home-look="prism"] .chip:hover{box-shadow:0 20px 45px rgba(44,57,138,.34)}
+
+/* COLORFLOW — visibly colorful and playful; cards become floating color blocks. */
+body[data-home-look="colorful"]{
+  --bg:#0a0710; --bg-1:#120b18; --bg-2:#181022; --bg-3:#21152d; --bg-4:#2a1b38;
+  --line:rgba(255,255,255,.08); --line-2:rgba(255,255,255,.16);
+  --acc:#ff4fd8; --acc-2:#64f4ff; --acc-3:#8c5cff;
+}
+body[data-home-look="colorful"] .bg::before{
+  background:
+    radial-gradient(circle at 15% 20%,rgba(255,79,216,.25),transparent 28%),
+    radial-gradient(circle at 82% 18%,rgba(100,244,255,.23),transparent 30%),
+    radial-gradient(circle at 50% 90%,rgba(255,179,87,.20),transparent 34%);
+  filter:blur(44px)
+}
+body[data-home-look="colorful"] .bg::after{opacity:.45}
+body[data-home-look="colorful"] .welcome{padding:14px 18px 8px}
+body[data-home-look="colorful"] .hero{max-width:1120px}
+body[data-home-look="colorful"] .hero>.badge{background:linear-gradient(90deg,rgba(255,79,216,.10),rgba(100,244,255,.10));border-color:rgba(255,255,255,.14)}
+body[data-home-look="colorful"] .welcome-title .brand-x{
+  background:linear-gradient(90deg,#ff4fd8,#ffb357,#64f4ff,#8c5cff);
+  -webkit-background-clip:text;background-clip:text
+}
+body[data-home-look="colorful"] .animated-sub{color:#d8c7e4}
+body[data-home-look="colorful"] .chips-head{margin-top:34px;color:#8e789e}
+body[data-home-look="colorful"] .chips{grid-template-columns:repeat(4,1fr);gap:14px;max-width:1040px}
+body[data-home-look="colorful"] .chip{
+  min-height:146px;padding:20px;border-radius:24px;
+  background:linear-gradient(155deg,rgba(255,255,255,.07),rgba(255,255,255,.015));
+  border:1px solid rgba(255,255,255,.10)
+}
+body[data-home-look="colorful"] .chip:nth-child(1){box-shadow:inset 0 1px 0 rgba(255,79,216,.26),0 16px 36px rgba(110,36,104,.18)}
+body[data-home-look="colorful"] .chip:nth-child(2){box-shadow:inset 0 1px 0 rgba(100,244,255,.24),0 16px 36px rgba(30,97,112,.18)}
+body[data-home-look="colorful"] .chip:nth-child(3){box-shadow:inset 0 1px 0 rgba(255,179,87,.24),0 16px 36px rgba(121,78,34,.18)}
+body[data-home-look="colorful"] .chip:nth-child(4){box-shadow:inset 0 1px 0 rgba(140,92,255,.24),0 16px 36px rgba(72,43,117,.18)}
+body[data-home-look="colorful"] .chip-ico{color:#fff;border-color:rgba(255,255,255,.18);background:linear-gradient(135deg,rgba(255,79,216,.32),rgba(100,244,255,.18))}
+
+/* PURE BLACK — true black, monochrome, almost no decoration. */
+body[data-home-look="black"]{
+  --bg:#000; --bg-1:#000; --bg-2:#050505; --bg-3:#0a0a0a; --bg-4:#101010;
+  --line:rgba(255,255,255,.055); --line-2:rgba(255,255,255,.10);
+  --txt:#f5f5f5; --txt-2:#9b9b9b; --txt-3:#666; --txt-4:#3a3a3a;
+  --acc:#fff; --acc-2:#d8d8d8; --acc-3:#929292
+}
+body[data-home-look="black"] .bg{display:none}
+body[data-home-look="black"] .topbar{background:#000}
+body[data-home-look="black"] .welcome{padding:16px 18px 8px}
+body[data-home-look="black"] .hero{max-width:820px;min-height:100%;justify-content:center}
+body[data-home-look="black"] .hero>.badge,
+body[data-home-look="black"] .animated-sub,
+body[data-home-look="black"] .chips-head,
+body[data-home-look="black"] .chips{display:none}
+body[data-home-look="black"] .welcome-title{font-size:clamp(60px,10vw,112px);letter-spacing:-.065em}
+body[data-home-look="black"] .welcome-title>div:first-child{color:#6b6b6b;background:none;-webkit-text-fill-color:#6b6b6b}
+body[data-home-look="black"] .brand-x{color:#fff!important;background:none!important;-webkit-text-fill-color:#fff}
+body[data-home-look="black"] .hero::after{
+  content:"Ask anything";display:block;margin-top:22px;color:#777;font-size:14px;letter-spacing:.04em
+}
+
+/* SPLIT STUDIO — completely rearranged home: identity left, launch rail right. */
+body[data-home-look="split"]{
+  --bg:#090b0d; --bg-1:#0c0f12; --bg-2:#12171b; --bg-3:#182027; --bg-4:#202a33;
+  --line:rgba(180,220,235,.08); --line-2:rgba(180,220,235,.15);
+  --acc:#9be7ff; --acc-2:#bca5ff; --acc-3:#6ba7c8;
+}
+body[data-home-look="split"] .bg::before{
+  left:12%;width:70vw;height:100vh;
+  background:radial-gradient(ellipse at 20% 44%,rgba(155,231,255,.16),transparent 58%);
+  filter:blur(48px)
+}
+body[data-home-look="split"] .welcome{padding:20px 22px 8px}
+body[data-home-look="split"] .hero{
+  max-width:1180px;display:grid;grid-template-columns:minmax(0,1fr) 390px;
+  grid-template-rows:auto 1fr auto;gap:12px 60px;align-items:center;text-align:left
+}
+body[data-home-look="split"] .hero>.badge{grid-column:1;grid-row:1;margin:0 0 6px!important}
+body[data-home-look="split"] .welcome-title{grid-column:1;grid-row:2;align-self:center;font-size:clamp(56px,7vw,92px)}
+body[data-home-look="split"] .animated-sub{grid-column:1;grid-row:3;justify-content:flex-start;margin:0 0 8px}
+body[data-home-look="split"] .chips-head{grid-column:2;grid-row:1;margin:0 0 4px;align-self:end}
+body[data-home-look="split"] .chips{
+  grid-column:2;grid-row:2 / span 2;display:flex;flex-direction:column;gap:8px;
+  max-width:none;margin:0;align-self:stretch;justify-content:center
+}
+body[data-home-look="split"] .chip{
+  min-height:68px;padding:12px 15px;border-radius:14px;
+  flex-direction:row;align-items:center;gap:12px;justify-content:flex-start;
+  background:rgba(15,19,22,.78);border-color:rgba(155,231,255,.10)
+}
+body[data-home-look="split"] .chip-ico{width:34px;height:34px;flex-basis:34px}
+body[data-home-look="split"] .chip-go{opacity:.55;transform:none;top:50%;right:14px;translate:0 -50%}
+body[data-home-look="split"] .chip-txt i{font-size:11.5px}
+body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0 14px 32px rgba(0,0,0,.42)}
+
+@media(max-width:900px){
+  body[data-home-look="prism"] .hero,
+  body[data-home-look="split"] .hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px}
+  body[data-home-look="prism"] .animated-sub,
+  body[data-home-look="split"] .animated-sub{justify-content:center}
+  body[data-home-look="prism"] .chips,
+  body[data-home-look="split"] .chips{width:100%;max-width:720px}
+  body[data-home-look="split"] .chips{display:grid;grid-template-columns:1fr 1fr}
+  body[data-home-look="split"] .chip{min-height:92px;flex-direction:column;align-items:flex-start}
+}
+@media(max-width:620px){
+  body[data-home-look="prism"] .chips,
+  body[data-home-look="colorful"] .chips{grid-template-columns:1fr 1fr}
+  body[data-home-look="split"] .chips{grid-template-columns:1fr}
+  body[data-home-look="prism"] .welcome,
+  body[data-home-look="colorful"] .welcome,
+  body[data-home-look="split"] .welcome{padding-left:12px;padding-right:12px}
+}
 @media(max-width:760px){#profileModal .card>div:first-of-type{padding:22px 16px 16px!important}.profile-option-list{margin:0 12px}.profile-option-row{min-height:68px;padding:9px 12px;grid-template-columns:38px minmax(0,1fr) 18px;gap:10px}.profile-option-icon{width:33px;height:33px;border-radius:10px;font-size:15px}.profile-option-copy b{font-size:13.5px}.profile-option-copy small{font-size:10px}.profile-meta-grid-large,.profile-actions-row{padding:0 12px}.profile-detail-view{padding:0 12px}.settings-mobile-select{display:block}#settingsModal .settings-topbar{gap:10px;padding:0 12px}#settingsModal .settings-topbar .settings-title .msub{display:none}#settingsModal .settings-topbar .settings-title .mtitle{font-size:18px}#settingsModal .settings-topbar .close{position:static;flex:0 0 36px;width:36px;height:36px;margin:0}#settingsModal .settings-sidebar{display:none}.media-gen-workspace{width:calc(100% - 20px);margin:10px auto 6px;border-radius:22px;min-height:230px}.media-gen-inner{padding:30px 24px 32px}.media-gen-workspace h1{font-size:34px}}@media(max-width:470px){.consent-actions{grid-template-columns:1fr}}
 </style>
 </head>
@@ -2759,12 +2880,14 @@ body[data-home-look="minimal"] .chip-txt { padding-right: 18px; }
               </div>
               <div class="settings-card">
                 <div class="sect"><h4>Home UI layout</h4>
-                  <p class="mrow-sub" style="margin:-3px 0 12px">These presets rebuild the home page composition, spacing and card layout. They are more than color themes.</p>
+                  <p class="mrow-sub" style="margin:-3px 0 12px">Default keeps the current TruX home. Every other preset changes the layout and visual language instead of only recoloring it.</p>
                   <div class="home-look-list">
-                    <button type="button" class="home-look-option" data-home-look-option="midnight" onclick="applyHomeLook(&quot;midnight&quot;)"><span class="home-look-swatch swatch-midnight"></span><span><b>Midnight · Balanced</b><small>Centered hero with the default 2×2 workspace grid</small></span><i class="home-look-check">✓</i></button>
-                    <button type="button" class="home-look-option" data-home-look-option="focus" onclick="applyHomeLook(&quot;focus&quot;)"><span class="home-look-swatch swatch-graphite"></span><span><b>Focus · Dashboard</b><small>Left-aligned hero with a wider four-column launch area</small></span><i class="home-look-check">✓</i></button>
-                    <button type="button" class="home-look-option" data-home-look-option="studio" onclick="applyHomeLook(&quot;studio&quot;)"><span class="home-look-swatch swatch-violet"></span><span><b>Studio · Workspace</b><small>Larger canvas with compact launch tiles</small></span><i class="home-look-check">✓</i></button>
-                    <button type="button" class="home-look-option" data-home-look-option="minimal" onclick="applyHomeLook(&quot;minimal&quot;)"><span class="home-look-swatch swatch-ember"></span><span><b>Minimal · Quick Start</b><small>Stripped-down home with a clean one-column launcher</small></span><i class="home-look-check">✓</i></button>
+                    <button type="button" class="home-look-option" data-home-look-option="midnight" onclick="applyHomeLook(&quot;midnight&quot;)"><span class="home-look-swatch swatch-midnight"></span><span><b>Default · Midnight</b><small>Current balanced TruX home with its original launcher</small></span><i class="home-look-check">✓</i></button>
+                    <button type="button" class="home-look-option" data-home-look-option="simple" onclick="applyHomeLook(&quot;simple&quot;)"><span class="home-look-swatch swatch-graphite"></span><span><b>Simple · Clean</b><small>Stripped-down home with no launcher cards</small></span><i class="home-look-check">✓</i></button>
+                    <button type="button" class="home-look-option" data-home-look-option="prism" onclick="applyHomeLook(&quot;prism&quot;)"><span class="home-look-swatch swatch-violet"></span><span><b>Prism · Advanced</b><small>More complex two-zone dashboard with a cool spectrum</small></span><i class="home-look-check">✓</i></button>
+                    <button type="button" class="home-look-option" data-home-look-option="colorful" onclick="applyHomeLook(&quot;colorful&quot;)"><span class="home-look-swatch swatch-violet"></span><span><b>Colorflow · Vibrant</b><small>Multi-color gradients and brighter floating launch blocks</small></span><i class="home-look-check">✓</i></button>
+                    <button type="button" class="home-look-option" data-home-look-option="black" onclick="applyHomeLook(&quot;black&quot;)"><span class="home-look-swatch swatch-midnight"></span><span><b>Pure Black · Mono</b><small>True black background with almost no decoration</small></span><i class="home-look-check">✓</i></button>
+                    <button type="button" class="home-look-option" data-home-look-option="split" onclick="applyHomeLook(&quot;split&quot;)"><span class="home-look-swatch swatch-graphite"></span><span><b>Split Studio · Rearranged</b><small>Identity on the left and a vertical launch rail on the right</small></span><i class="home-look-check">✓</i></button>
                   </div>
                   <div class="setting-note">Saved on this device and restored automatically when TruX opens.</div>
                 </div>
@@ -3178,7 +3301,7 @@ body[data-home-look="minimal"] .chip-txt { padding-right: 18px; }
     }
 
 
-    const TRUX_HOME_LOOKS = new Set(["midnight","focus","studio","minimal"]);
+    const TRUX_HOME_LOOKS = new Set(["midnight","simple","prism","colorful","black","split"]);
     applyHomeLook(store.getItem("trux_home_look") || "midnight", false);
     initFirebase();
 
@@ -3307,7 +3430,7 @@ body[data-home-look="minimal"] .chip-txt { padding-right: 18px; }
       if(key==="notifications") return {title:"Notifications",subtitle:"Completion alerts for this device.",html:'<div class="settings-card"><div class="mrow"><span><b>Response notifications</b><small class="mrow-sub">Text, image and video completion alerts.</small></span><label class="toggle"><input id="profileNotificationsToggle" type="checkbox" onchange="toggleTruxNotificationsSetting(this.checked)"><span class="slider"></span></label></div><div class="location-status" id="profileNotificationStatus"></div></div>'};
       if(key==="memory") return {title:"Memory & data",subtitle:"Move your local TruX workspace between devices.",html:'<div class="detail-callout"><h4>Export</h4><p>Save local chats, pinned insights, custom instructions and the selected home look.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="exportTruxMemory()">Export memory</button></div></div><div class="detail-callout"><h4>Import</h4><p>Merge a previously exported TruX JSON file into this browser.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="importTruxMemory()">Import memory</button></div></div>'};
       if(key==="avatar") return {title:"Avatar",subtitle:"Choose the image shown in your TruX profile.",html:'<div class="detail-callout"><h4>Profile image</h4><p>Choose a local image or reset to your connected Google photo.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="openAvatarPicker()">Choose image</button><button class="mbtn" type="button" onclick="resetAvatarOverride()">Reset avatar</button></div></div>'};
-      if(key==="appearance") return {title:"Appearance",subtitle:"Choose a full home-page layout preset.",html:'<div class="settings-card"><div class="sect"><h4>Home UI layout</h4><p class="mrow-sub">Each choice changes the structure, spacing and launcher layout of the home page.</p><div class="home-look-list"><button type="button" class="home-look-option" data-profile-look="midnight" onclick="applyHomeLook(&quot;midnight&quot;)"><span class="home-look-swatch swatch-midnight"></span><span><b>Midnight · Balanced</b><small>Centered 2×2 launcher</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="focus" onclick="applyHomeLook(&quot;focus&quot;)"><span class="home-look-swatch swatch-graphite"></span><span><b>Focus · Dashboard</b><small>Left-aligned 4-column launcher</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="studio" onclick="applyHomeLook(&quot;studio&quot;)"><span class="home-look-swatch swatch-violet"></span><span><b>Studio · Workspace</b><small>Large canvas, compact tiles</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="minimal" onclick="applyHomeLook(&quot;minimal&quot;)"><span class="home-look-swatch swatch-ember"></span><span><b>Minimal · Quick Start</b><small>One-column launcher</small></span><i class="home-look-check">✓</i></button></div></div></div>'};
+      if(key==="appearance") return {title:"Appearance",subtitle:"Choose a completely different TruX home layout.",html:'<div class="settings-card"><div class="sect"><h4>Home UI layout</h4><p class="mrow-sub">The Default preset stays exactly as the current home. The other presets change structure, density and palette.</p><div class="home-look-list"><button type="button" class="home-look-option" data-profile-look="midnight" onclick="applyHomeLook(&quot;midnight&quot;)"><span class="home-look-swatch swatch-midnight"></span><span><b>Default · Midnight</b><small>Current balanced home</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="simple" onclick="applyHomeLook(&quot;simple&quot;)"><span class="home-look-swatch swatch-graphite"></span><span><b>Simple · Clean</b><small>No launcher cards</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="prism" onclick="applyHomeLook(&quot;prism&quot;)"><span class="home-look-swatch swatch-violet"></span><span><b>Prism · Advanced</b><small>Complex two-zone dashboard</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="colorful" onclick="applyHomeLook(&quot;colorful&quot;)"><span class="home-look-swatch swatch-violet"></span><span><b>Colorflow · Vibrant</b><small>Multi-color interface</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="black" onclick="applyHomeLook(&quot;black&quot;)"><span class="home-look-swatch swatch-midnight"></span><span><b>Pure Black · Mono</b><small>True black minimal UI</small></span><i class="home-look-check">✓</i></button><button type="button" class="home-look-option" data-profile-look="split" onclick="applyHomeLook(&quot;split&quot;)"><span class="home-look-swatch swatch-graphite"></span><span><b>Split Studio · Rearranged</b><small>Left identity + right launch rail</small></span><i class="home-look-check">✓</i></button></div></div></div>'};
       if(key==="settings") return {title:"Settings",subtitle:"Open the complete TruX preferences page.",html:'<div class="detail-callout"><h4>Detailed controls</h4><p>General, Appearance, Voice, Personalization, Notifications, Usage, Data & privacy and Developer are all available.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption();openSettingsModal()">Open Settings</button></div></div>'};
       if(key==="help") return {title:"Help & privacy",subtitle:"Quick guidance and privacy controls.",html:'<div class="detail-callout"><h4>Location privacy</h4><p>Location access can be turned off at any time from Personalization.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption();openSettingsModal();switchSettingsSection(&quot;personalization&quot;)">Location settings</button></div></div><div class="detail-callout"><h4>Quick help</h4><p>Use + for Coding, Deep Research, image generation, files, camera and photos. Use Library to revisit generated media.</p></div>'};
       if(key==="developer" && owner) return {title:"Developer workspace",subtitle:"Developer-only TruX controls and identity.",html:'<div class="detail-callout"><h4>Developer recognition</h4><p>This account has access to the developer workspace and owner controls.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption();openSettingsModal();switchSettingsSection(&quot;developer&quot;)">Open developer settings</button></div></div>'};
