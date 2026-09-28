@@ -1253,7 +1253,7 @@ export async function onRequestPost(context) {
                 .replace(/```[sS]*?```/g, '')
                 .replace(/\s+/g, ' ')
                 .trim();
-              const sentence = clean.match(/^.{8,240}?[.!?](?:s|$)/);
+              const sentence = clean.match(/^.{8,240}?[.!?](?:\s|$)/);
               if (sentence?.[0]) {
                 const activity = sentence[0].trim();
                 if (activity) {
