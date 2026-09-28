@@ -29,7 +29,7 @@ async function processJob(job, env) {
       events
     });
 
-    const origin = String(env.TRUX_APP_ORIGIN || APP_ORIGIN_FALLBACK).replace(/\/$/, '');
+    const origin = String(job.origin || env.TRUX_APP_ORIGIN || APP_ORIGIN_FALLBACK).replace(/\/$/, '');
     const body = {
       ...(job.body || {}),
       mode: 'coding',
