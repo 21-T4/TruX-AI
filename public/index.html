@@ -4318,7 +4318,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       if(!all.length) { c.style.display = "none"; c.innerHTML = ""; updateComposerAttachments(); return; }
       c.style.display = "flex";
       c.innerHTML = all.map(b => {
-        const label = b.snippet || `${b.name || 'Attachment'} · ${Math.ceil((b.size || (b.text || '').length) / 1024)} KB`;
+        const label = b.processing ? (b.name || "Attachment") + " · Processing…" : (b.snippet || (b.name || "Attachment") + " · " + Math.ceil((b.size || (b.text || "").length) / 1024) + " KB");
         return `<div class="file-chip"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3.5H7A1.5 1.5 0 0 0 5.5 5v14A1.5 1.5 0 0 0 7 20.5h10A1.5 1.5 0 0 0 18.5 19V8L14 3.5Z"/><path d="M13.5 4v4.5H18"/></svg> ${escapeHtml(label)} <button type="button" aria-label="Remove attachment" onclick="removeFileChip(${b.id})">×</button></div>`;
       }).join('');
       updateComposerAttachments();
@@ -4503,49 +4503,70 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     function openCamera() { closeAttachmentMenu(); getEl("cameraUpload").click(); }
     function openPhotoLibrary() { closeAttachmentMenu(); getEl("imageUpload").click(); }
 
-    function handleFileUpload(e) {
-      const files = Array.from(e.target.files || []);
-      if(!files.length) return;
-      let pending = files.slice(0, 8);
-      let remaining = pending.length;
-      const textLike = f => /^(text\/|application\/(json|javascript|xml|sql|yaml|x-yaml)|image\/svg\+xml)/i.test(f.type) || /\.(txt|md|markdown|json|csv|log|js|jsx|ts|tsx|html|css|xml|py|java|c|cpp|h|hpp|cs|go|rs|sql|sh|yaml|yml|toml|ini|env)$/i.test(f.name);
-      pending.forEach(file => {
-        const id = Date.now() + Math.floor(Math.random() * 100000);
-        if(file.type.startsWith('image/')) {
-          const r = new FileReader();
-          r.onload = ev => { selectedImageBase64 = ev.target.result; getEl("imagePreview").src = ev.target.result; getEl("imagePreviewContainer").classList.add("visible"); if(--remaining === 0){ renderFileChips(); handleInputChange(); } };
-          r.onerror = () => { if(--remaining === 0){ renderFileChips(); handleInputChange(); } };
-          r.readAsDataURL(file);
-          return;
-        }
-        if(textLike(file)) {
-          const r = new FileReader();
-          r.onload = ev => {
-            const text = String(ev.target.result || '');
-            fileAttachments.push({ id, name: file.name, size: file.size, mimeType: file.type || 'text/plain', text, snippet: `${file.name} · ${Math.ceil(file.size / 1024)} KB` });
-            if(--remaining === 0){ renderFileChips(); handleInputChange(); }
-          };
-          r.onerror = () => { toast(`Could not read ${file.name}.`, 'err'); if(--remaining === 0){ renderFileChips(); handleInputChange(); } };
-          r.readAsText(file);
-          return;
-        }
-        if(file.type === 'application/pdf') {
-          const r = new FileReader();
-          r.onload = ev => {
-            fileAttachments.push({ id, name: file.name, size: file.size, mimeType: file.type, dataUrl: ev.target.result, snippet: `${file.name} · PDF · ${Math.ceil(file.size / 1024)} KB` });
-            if(--remaining === 0){ renderFileChips(); handleInputChange(); }
-          };
-          r.onerror = () => { toast(`Could not read ${file.name}.`, 'err'); if(--remaining === 0){ renderFileChips(); handleInputChange(); } };
-          r.readAsDataURL(file);
-          return;
-        }
-        toast(`${file.name} is not a supported attachment type.`, 'err');
-        remaining--;
+    async function ingestLargeFile(file) {
+      if(!auth?.currentUser) { openLoginWall(); throw new Error("Sign in before uploading files."); }
+      const token = await auth.currentUser.getIdToken();
+      const uploadResponse = await fetch("/api/files/upload", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + token, "Content-Type": file.type || "application/octet-stream", "X-Trux-File-Name": encodeURIComponent(file.name) },
+        body: file
       });
-      e.target.value = '';
-      if(remaining === 0){ renderFileChips(); handleInputChange(); }
+      const uploaded = await uploadResponse.json().catch(() => ({}));
+      if(!uploadResponse.ok) throw new Error(uploaded.error || "File upload failed.");
+      const processResponse = await fetch("/api/files/process", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
+        body: JSON.stringify({ objectKey: uploaded.objectKey, mimeType: uploaded.mimeType, name: uploaded.name })
+      });
+      const processed = await processResponse.json().catch(() => ({}));
+      if(!processResponse.ok) throw new Error(processed.error || "File processing failed.");
+      return {
+        name: processed.file?.name || file.name,
+        size: processed.file?.size || file.size,
+        mimeType: processed.file?.mimeType || file.type || "application/octet-stream",
+        objectKey: processed.file?.objectKey || uploaded.objectKey,
+        processedKey: processed.file?.processedKey || null,
+        kind: processed.file?.kind || "file",
+        pages: processed.file?.pages ?? null,
+        rows: processed.file?.rows ?? null,
+        filesIncluded: processed.file?.filesIncluded ?? null,
+        filesSkipped: processed.file?.filesSkipped ?? null,
+        snippet: processed.file?.snippet || (file.name + " · " + Math.ceil(file.size / 1024) + " KB")
+      };
     }
-    
+
+    async function handleFileUpload(e) {
+      const files = Array.from(e.target.files || []).slice(0, 8);
+      if(!files.length) return;
+      if(!auth?.currentUser) { e.target.value = ""; openLoginWall(); return; }
+      for (const file of files) {
+        const id = Date.now() + Math.floor(Math.random() * 100000);
+        if(file.type.startsWith("image/")) {
+          await new Promise(resolve => {
+            const reader = new FileReader();
+            reader.onload = ev => { selectedImageBase64 = ev.target.result; getEl("imagePreview").src = ev.target.result; getEl("imagePreviewContainer").classList.add("visible"); resolve(); };
+            reader.onerror = () => { toast("Could not read " + file.name + ".", "err"); resolve(); };
+            reader.readAsDataURL(file);
+          });
+          continue;
+        }
+        const pending = { id, name: file.name, size: file.size, mimeType: file.type || "application/octet-stream", processing: true, snippet: file.name + " · Uploading…" };
+        fileAttachments.push(pending);
+        renderFileChips(); handleInputChange();
+        try {
+          const processed = await ingestLargeFile(file);
+          Object.assign(pending, processed, { processing: false });
+          pending.snippet = processed.snippet;
+          toast(file.name + " ready for analysis.", "ok");
+        } catch(error) {
+          fileAttachments = fileAttachments.filter(x => x.id !== id);
+          toast(file.name + ": " + (error?.message || "processing failed"), "err");
+        }
+        renderFileChips(); handleInputChange();
+      }
+      e.target.value = "";
+    }
+        
     function handleImageUpload(e) {
       let f = e.target.files[0]; if(!f || !f.type.startsWith("image/")) return;
       let r = new FileReader();
