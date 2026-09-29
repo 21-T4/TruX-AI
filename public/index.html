@@ -2824,29 +2824,32 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     body[data-home-look="sky"] .sidebar-overlay{background:rgba(25,65,100,.18);backdrop-filter:blur(3px)}
 
 
-    /* Final composer alignment: media modes sit slightly higher so the
-       workspace feels intentional, while the warning remains directly below
-       the text bar. */
-    .composer { padding-top: 0; }
+    /* Final composer alignment: every workspace uses the SAME composer
+       geometry and placement as the default Chat composer. Keeping the
+       composer free of transforms is also required because the attachment
+       menu is position:fixed and must use viewport coordinates. */
+    .composer {
+      padding-top: 0;
+      transform: none !important;
+    }
     body[data-media-mode="image"] .composer,
     body[data-media-mode="video"] .composer {
-      transform: translateY(-12px);
-      padding-bottom: calc(22px + var(--safe-b));
+      transform: none !important;
+      padding-bottom: calc(34px + var(--safe-b));
     }
     body[data-media-mode="image"] .composer .compose,
     body[data-media-mode="video"] .composer .compose {
-      max-width: 760px;
-      width: min(760px, calc(100% - 28px));
+      max-width: 700px;
+      width: 100%;
     }
     body[data-media-mode="image"] .composer .bar,
     body[data-media-mode="video"] .composer .bar {
       width: 100%;
-      align-items: center;
     }
     body[data-media-mode="image"] .composer .hint,
     body[data-media-mode="video"] .composer .hint {
       display: block;
-      margin-top: 8px;
+      margin-top: 9px;
       text-align: center;
     }
     .media-gen-short {
@@ -2858,16 +2861,30 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       line-height: 1.35 !important;
     }
     @media (max-width: 760px) {
+      .composer {
+        transform: none !important;
+      }
       body[data-media-mode="image"] .composer,
-      body[data-media-mode="video"] .composer { transform: translateY(-8px); }
+      body[data-media-mode="video"] .composer {
+        transform: none !important;
+      }
       .media-gen-short { max-width: calc(100vw - 48px); }
     }
 
-
-    @media (max-width: 760px) {
-      .composer { transform: translateY(-4px); }
-      body[data-media-mode="image"] .composer,
-      body[data-media-mode="video"] .composer { transform: translateY(-8px); }
+    /* Plus-menu stability: the menu is viewport-anchored to the exact
+       position of the + button and stays inside the screen. */
+    #attachmentMenu {
+      position: fixed !important;
+      z-index: 99999 !important;
+      max-height: min(72dvh, 620px);
+      overflow-y: auto;
+      overflow-x: hidden;
+      overscroll-behavior: contain;
+    }
+    .trux-plus-menu {
+      min-width: min(360px, calc(100vw - 24px));
+      max-width: min(390px, calc(100vw - 24px));
+      box-sizing: border-box;
     }
 </style>
 </head>
@@ -4550,21 +4567,37 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       if (!menu || !btn) return;
 
       let b = btn.getBoundingClientRect();
-      // offsetWidth/Height ignore the closed-state scale transform, so the
-      // menu can be measured while it is still hidden.
-      let w = menu.offsetWidth, h = menu.offsetHeight;
-      let gap = 10, margin = 8;
+      const margin = 8;
+      const gap = 10;
 
-      let left = Math.max(margin, Math.min(b.left, window.innerWidth - w - margin));
+      // Keep the popup fully inside the viewport and let it scroll internally
+      // instead of becoming clipped by the composer or a small phone viewport.
+      menu.style.maxHeight = Math.max(220, window.innerHeight - margin * 2) + "px";
+
+      // offsetWidth/Height are stable while the menu is in its open layout.
+      let w = Math.min(menu.offsetWidth || 360, window.innerWidth - margin * 2);
+      let h = Math.min(menu.offsetHeight || 0, window.innerHeight - margin * 2);
+
+      let left = Math.max(
+        margin,
+        Math.min(b.left, window.innerWidth - w - margin)
+      );
       let top = b.top - h - gap;
 
       // Not enough room above? Drop it below the button instead.
       if (top < margin) {
-        top = Math.min(b.bottom + gap, window.innerHeight - h - margin);
+        top = Math.min(
+          b.bottom + gap,
+          window.innerHeight - h - margin
+        );
         menu.style.transformOrigin = "top left";
       } else {
         menu.style.transformOrigin = "bottom left";
       }
+
+      // Final clamp protects against any fractional viewport/layout edge case.
+      top = Math.max(margin, Math.min(top, window.innerHeight - h - margin));
+      left = Math.max(margin, Math.min(left, window.innerWidth - w - margin));
 
       menu.style.left = Math.round(left) + "px";
       menu.style.top = Math.round(top) + "px";
