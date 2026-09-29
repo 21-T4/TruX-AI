@@ -17,7 +17,6 @@ const routes = {
   "/api/firebase-config": "./functions/api/firebase-config.js",
   "/api/files/upload": "./functions/api/files-upload.js",
   "/api/files/process": "./functions/api/files-process.js",
-  "/api/sandbox/execute": "./functions/api/sandbox-execute.js",
   "/api/background/start": "./functions/api/background/start.js",
   "/api/background/status": "./functions/api/background/status.js",
   "/api/background/update": "./functions/api/background/update.js",
