@@ -2895,6 +2895,13 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         </section>
       </div>
 
+      <div class="sidebar-install-wrap">
+        <button type="button" class="sidebar-install" id="sidebarInstallBtn" onclick="installPWA()" aria-label="Install TruX-AI">
+          <svg viewBox="0 0 24 24"><path d="M12 3v11m0 0-4-4m4 4 4-4"/><path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/></svg>
+          <span><b>Install TruX-AI</b><small>Add TruX-AI to your device</small></span>
+        </button>
+      </div>
+
       <div class="profile" onclick="handleAuthAction()">
         <img class="avatar" id="userAvatar" src="https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff">
         <div class="profile-info">
@@ -2942,7 +2949,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         <div class="media-gen-inner">
           <div class="media-gen-kicker"><span>◈</span> IMAGE STUDIO</div>
           <h1>Create an image with TruX.</h1>
-          <p>Describe what you want in the chat bar below. Finished images are automatically saved to Library.</p>
+          <p>Create images directly from the chat bar.</p>
           <div class="media-gen-actions">
             <button type="button" class="media-gen-secondary" onclick="openMediaLibrary('image')">Open image library</button>
             <button type="button" class="media-gen-primary" onclick="quickPrompt('Create an image of ')">Start creating</button>
@@ -2955,7 +2962,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         <div class="media-gen-inner">
           <div class="media-gen-kicker"><span>▶</span> VIDEO STUDIO · PRO</div>
           <h1>Turn a prompt into video.</h1>
-          <p>Describe the scene, style, camera movement and mood. Completed videos stay available in Library.</p>
+          <p>Create videos directly from the chat bar.</p>
           <div class="media-gen-actions">
             <button type="button" class="media-gen-secondary" onclick="openMediaLibrary('video')">Open video library</button>
             <button type="button" class="media-gen-primary" onclick="quickPrompt('Create a cinematic video of ')">Start creating</button>
@@ -2968,7 +2975,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           <div>
             <div class="code-kicker">Agentic coding workspace</div>
             <h1 class="code-title">TruX-<span>Code</span></h1>
-            <p class="code-copy">Plan deeply, inspect your repository, and produce focused changes. Connect GitHub only when you want TruX-Code to read or edit a repository.</p>
+            <p class="code-copy">Inspect, debug, refactor and improve code from GitHub or uploaded codebases.</p>
           </div>
           <div class="code-hero-actions">
             <button class="code-connect" type="button" onclick="connectCodeRepository()"><span>⌘</span><span id="codeConnectLabel">Connect GitHub</span></button>
@@ -3405,7 +3412,19 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       e.preventDefault(); deferredPrompt = e;
       let b = getEl("sidebarInstallBtn"); if(b) b.style.display = "block";
     });
-    async function installPWA() { if(!deferredPrompt) return; await deferredPrompt.prompt(); deferredPrompt = null; }
+    async function installPWA() {
+      if(deferredPrompt) {
+        await deferredPrompt.prompt();
+        const choice = await deferredPrompt.userChoice.catch(() => null);
+        deferredPrompt = null;
+        if(choice?.outcome === "accepted") getEl("sidebarInstallBtn")?.classList.add("installed");
+        return;
+      }
+      if(window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true) {
+        return toast("TruX-AI is already installed.", "ok");
+      }
+      toast("Use your browser's Install app or Add to Home screen option.", "ok");
+    }
 
     /* ============ Auth: sign-in wall only shown on demand ============ */
     let auth = null, provider = null, isSigningIn = false, firebaseMessaging = null, pushMessageBound = false;
