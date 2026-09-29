@@ -302,6 +302,20 @@
     .profile-info b { display: block; font-size: 13.5px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .profile-info small { display: block; font-size: 11.5px; color: var(--txt-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
 
+    /* PWA install control — always visible; prompt is enhanced when the browser supports it. */
+    .sidebar-install-wrap { display:block; margin-top:8px; }
+    .sidebar-install {
+      width:100%; min-height:38px; display:flex; align-items:center; justify-content:center; gap:8px;
+      padding:0 12px; border-radius:11px; border:1px solid var(--line-2);
+      background:var(--bg-2); color:var(--txt-2); font-size:12px; font-weight:650;
+      cursor:pointer; transition:background .18s var(--ease), color .18s var(--ease), border-color .18s var(--ease), transform .18s var(--ease);
+    }
+    .sidebar-install:hover { background:var(--bg-3); color:var(--txt); border-color:var(--line-3); }
+    .sidebar-install:active { transform:translateY(1px); }
+    .sidebar-install.installed { color:var(--acc); border-color:var(--acc-line); background:var(--acc-soft); }
+    .composer, .compose { width:100%; box-sizing:border-box; }
+    .compose { max-width:700px; margin-inline:auto; }
+
     .sidebar-overlay {
       display: none;
       position: fixed; inset: 0; z-index: 900;
@@ -3453,7 +3467,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       }
     }, 2800);
 
-    addEventListener("load", () => { try { if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js?v=20260928-3").catch(() => {}); } catch (e) {} });
+    addEventListener("load", () => { try { if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js?v=20260929-1").catch(() => {}); } catch (e) {} });
     let deferredPrompt = null;
     addEventListener("beforeinstallprompt", e => {
       e.preventDefault(); deferredPrompt = e;
