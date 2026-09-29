@@ -2848,6 +2848,11 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       .media-gen-short { max-width: calc(100vw - 48px); }
     }
 
+
+    body:not([data-media-mode]) .composer { transform: translateY(-6px); }
+    @media (max-width: 760px) {
+      body:not([data-media-mode]) .composer { transform: translateY(-4px); }
+    }
 </style>
 </head>
 <body class="home-active">
@@ -2992,7 +2997,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           <p>Create images directly from the chat bar.</p>
           <div class="media-gen-actions">
             <button type="button" class="media-gen-secondary" onclick="openMediaLibrary('image')">Open image library</button>
-            <button type="button" class="media-gen-primary" onclick="quickPrompt('Create an image of ')">Start creating</button>
+            <button type="button" class="media-gen-primary" onclick="quickPrompt('Let’s create an image of ')")>Start creating</button>
           </div>
         </div>
       </section>
@@ -3005,7 +3010,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           <p>Create videos directly from the chat bar.</p>
           <div class="media-gen-actions">
             <button type="button" class="media-gen-secondary" onclick="openMediaLibrary('video')">Open video library</button>
-            <button type="button" class="media-gen-primary" onclick="quickPrompt('Create a cinematic video of ')">Start creating</button>
+            <button type="button" class="media-gen-primary" onclick="quickPrompt('Let’s make a video of ')")>Start creating</button>
           </div>
         </div>
       </section>
