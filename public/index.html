@@ -2830,12 +2830,18 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
        menu is position:fixed and must use viewport coordinates. */
     .composer {
       padding-top: 0;
+      /* Keep the composer at the bottom in every workspace. Chat/code already
+         have a flexing transcript; media workspaces need this auto margin so
+         their fixed-height studio panel does not pull the composer upward. */
+      margin-top: auto;
+      padding-bottom: calc(42px + var(--safe-b));
       transform: none !important;
     }
     body[data-media-mode="image"] .composer,
     body[data-media-mode="video"] .composer {
+      margin-top: auto;
       transform: none !important;
-      padding-bottom: calc(34px + var(--safe-b));
+      padding-bottom: calc(42px + var(--safe-b));
     }
     body[data-media-mode="image"] .composer .compose,
     body[data-media-mode="video"] .composer .compose {
@@ -2862,10 +2868,14 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     }
     @media (max-width: 760px) {
       .composer {
+        margin-top: auto;
+        padding-bottom: calc(30px + var(--safe-b));
         transform: none !important;
       }
       body[data-media-mode="image"] .composer,
       body[data-media-mode="video"] .composer {
+        margin-top: auto;
+        padding-bottom: calc(30px + var(--safe-b));
         transform: none !important;
       }
       .media-gen-short { max-width: calc(100vw - 48px); }
