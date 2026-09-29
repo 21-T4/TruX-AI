@@ -3,7 +3,7 @@ import { pipeline } from 'node:stream/promises';
 import { getBucket, userFileKey } from '../../gcs-store.js';
 import { requireFirebaseUser } from '../../firebase-auth.js';
 
-const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
+const MAX_UPLOAD_BYTES = 30 * 1024 * 1024;
 
 export async function onRequestPost({ request, env }) {
   const user = await requireFirebaseUser(request, env);
@@ -15,7 +15,7 @@ export async function onRequestPost({ request, env }) {
     return Response.json({ error: 'File body is missing.' }, { status: 400 });
   }
   if (declaredSize > MAX_UPLOAD_BYTES) {
-    return Response.json({ error: 'Files are limited to 100 MB.' }, { status: 413 });
+    return Response.json({ error: 'Files are limited to 30 MB.' }, { status: 413 });
   }
 
   const objectKey = userFileKey(user.uid, name);
