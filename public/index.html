@@ -4021,10 +4021,12 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       updateNotificationSettingsUI();
     }
 
-    function setWorkspaceMode(mode) {
+    function setWorkspaceMode(mode, options) {
+      options = options || {};
       const nextMode = mode || "chat";
       const previousMode = workspaceMode;
       const modeChanged = nextMode !== previousMode || !!document.body.dataset.mediaMode;
+      const hardRefresh = options.reload !== false;
 
       closeAttachmentMenu(); closeModelDropdown();
 
@@ -4037,8 +4039,34 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         getEl("scrollDownBtn")?.classList.remove("visible");
         pastedTextBlocks = []; fileAttachments = []; renderFileChips();
 
-        // Instant soft-refresh: tear down both workspace surfaces first so
-        // stale Chat/TruX-Code layout cannot survive a mode transition.
+        /*
+         * Mode changes are a real workspace navigation event.
+         * The old implementation only swapped DOM containers, which could
+         * leave popup/focus/scroll state from Chat behind in Images, Video or
+         * TruX-Code. Persist the destination for one reload, then start with
+         * a completely fresh workspace.
+         *
+         * Existing chat-history navigation passes {reload:false} so opening
+         * an old chat still works without forcing a full page refresh.
+         */
+        if(hardRefresh) {
+          try {
+            sessionStorage.setItem("trux_mode_refresh", JSON.stringify({
+              mode: nextMode,
+              newChat: true,
+              at: Date.now()
+            }));
+          } catch(e) {}
+
+          workspaceMode = nextMode;
+          currentChatId = null;
+          document.body.removeAttribute("data-media-mode");
+          document.body.classList.remove("coding-workspace", "chat-session-active", "home-active");
+          location.reload();
+          return;
+        }
+
+        // Soft reset for internal navigation such as opening saved history.
         const chatView = getEl("chatContainer");
         const codeView = getEl("codeChatContainer");
         if(chatView) { chatView.style.display = "none"; chatView.innerHTML = ""; }
@@ -4078,7 +4106,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         codeHome?.classList.add("code-workspace-dismissed");
       }
 
-      // Rehydrate the same chat immediately in the newly selected workspace.
+      // Rehydrate the same chat only for internal/history navigation.
       if(modeChanged && currentChatId && chatSessions[currentChatId] && !isMedia) {
         const target = isCoding ? codeView : chatView;
         if(target) {
@@ -4106,7 +4134,6 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       if(think) think.classList.toggle("active", advancedThinkingEnabled || workspaceMode === "deep-research" || isCoding);
       renderSidebar();
     }
-
     function toggleAdvancedThinking() {
       advancedThinkingEnabled = !advancedThinkingEnabled;
       getEl("thinkingBtn").classList.toggle("active", advancedThinkingEnabled);
@@ -6702,7 +6729,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       if(!chatSessions[id]) return;
       activeAbortController?.abort();
       currentChatId = id;
-      setWorkspaceMode(chatSessions[id].mode || "chat");
+      setWorkspaceMode(chatSessions[id].mode || "chat", {reload:false});
       const welcome = getEl("welcomeScreen");
       if(welcome) welcome.style.display = "none";
       getEl("chatContainer").innerHTML = "";
@@ -6855,7 +6882,15 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     }
 
 
-    document.body.classList.remove("chat-session-active"); document.body.classList.add("home-active"); loadSettings(); renderNotebooks(); renderSidebar(); updateAllUsageUI(); handleInputChange(); setWorkspaceMode("chat");
+    let startupWorkspaceMode = "chat";
+    try {
+      const pending = JSON.parse(sessionStorage.getItem("trux_mode_refresh") || "null");
+      sessionStorage.removeItem("trux_mode_refresh");
+      const validModes = new Set(["chat","coding","deep-research","image","video"]);
+      if(pending && validModes.has(String(pending.mode))) startupWorkspaceMode = String(pending.mode);
+    } catch(e) {}
+    currentChatId = null;
+    document.body.classList.remove("chat-session-active"); document.body.classList.add("home-active"); loadSettings(); renderNotebooks(); renderSidebar(); updateAllUsageUI(); handleInputChange(); setWorkspaceMode(startupWorkspaceMode, {reload:false});
   </script>
 </body>
 </html>
