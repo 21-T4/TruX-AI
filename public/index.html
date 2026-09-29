@@ -4726,10 +4726,10 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       let runButton = "";
       if (runnable) {
         if (sandboxLanguage) {
-          runButton = '<button type="button" onclick="runCodeInSandbox(\\'' + id + '\\',\\'' + sandboxLanguage + '\\')">' +
+          runButton = '<button type="button" onclick="runCodeInSandbox(\'' + id + '\',\'' + sandboxLanguage + '\')">' +
             '<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M8 5.5v13l11-6.5-11-6.5Z"/></svg>Run</button>';
         } else {
-          runButton = '<button type="button" onclick="openCodeSandbox(\\'' + id + '\\')">' +
+          runButton = '<button type="button" onclick="openCodeSandbox(\'' + id + '\')">' +
             '<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M8 5.5v13l11-6.5-11-6.5Z"/></svg>Preview</button>';
         }
       }
@@ -4738,8 +4738,8 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         '<span class="code-file-icon">&lt;/&gt;</span><div class="code-file-meta"><b>' + escapeHtml(filename) + '</b>' +
         '<small>' + escapeHtml(displayLang.toUpperCase()) + ' · ' + lineCount + ' Lines</small></div></div>' +
         '<div class="code-actions">' + runButton +
-        '<button type="button" onclick="copyCodeToClipboard(this,\\'' + id + '\\')">Copy</button>' +
-        '<button type="button" onclick="downloadCode(\\'' + id + '\\',\\'' + filename + '\\')">Download</button>' +
+        '<button type="button" onclick="copyCodeToClipboard(this,\'' + id + '\')">Copy</button>' +
+        '<button type="button" onclick="downloadCode(\'' + id + '\',\'' + filename + '\')">Download</button>' +
         '</div></div>' + body +
         '<textarea id="' + id + '" hidden>' + escapeHtml(code) + '</textarea>' + expander +
         '</div>';
