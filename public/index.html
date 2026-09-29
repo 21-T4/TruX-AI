@@ -5914,12 +5914,22 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         openLoginWall();
         return;
       }
+      const authToken = await auth.currentUser.getIdToken();
 
       let promptInput = getEl("promptInput");
       let basePrompt = promptInput.value.trim();
       let prompt = basePrompt;
-      const allAttachments = pastedTextBlocks.map(b => ({ kind: "text", name: b.name || "pasted.txt", text: b.text }))
-        .concat(fileAttachments.map(b => ({ kind: b.dataUrl ? "file" : "text", name: b.name, text: b.text, dataUrl: b.dataUrl, mimeType: b.mimeType })));
+      const allAttachments = pastedTextBlocks.map(b => ({ kind: "text", name: b.name || "pasted.txt", text: b.text, mimeType: "text/plain" }))
+        .concat(fileAttachments.map(b => ({
+          kind: b.objectKey ? "stored" : (b.dataUrl ? "file" : "text"),
+          name: b.name,
+          text: b.text,
+          dataUrl: b.dataUrl,
+          mimeType: b.mimeType,
+          size: b.size,
+          objectKey: b.objectKey || null,
+          processedKey: b.processedKey || null
+        })));
       let attachmentLabel = allAttachments.length ? `\n\n[${allAttachments.length} file${allAttachments.length === 1 ? "" : "s"} attached]` : "";
       if(!prompt && !selectedImageBase64 && !allAttachments.length) return;
 
@@ -5957,7 +5967,18 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
       if(!currentChatId) { currentChatId = "chat_" + Date.now(); chatSessions[currentChatId] = { title: basePrompt ? basePrompt.slice(0, 32) : "Query", mode: workspaceMode, messages: [] }; }
       chatSessions[currentChatId].mode = workspaceMode;
-      chatSessions[currentChatId].messages.push({ role: "user", text: prompt });
+      chatSessions[currentChatId].messages.push({
+        role: "user",
+        text: prompt,
+        attachments: allAttachments.map(a => ({
+          name: a.name,
+          size: a.size || null,
+          mimeType: a.mimeType || "",
+          kind: a.kind || "file",
+          objectKey: a.objectKey || null,
+          processedKey: a.processedKey || null
+        }))
+      });
       saveChatSessions();
       
       getEl("welcomeScreen").style.display = "none";
@@ -6003,7 +6024,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         notifyOnComplete: true
       };
 
-      if(workspaceMode === "coding") {
+      if(workspaceMode === "coding" && !allAttachments.some(a => a?.objectKey)) {
         const handledInBackground = await runCodeBackgroundJob({
           row, id, aid, sid, tsid, prompt, voice, requestBody
         });
@@ -6019,7 +6040,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         activeAbortController = new AbortController();
         try {
           let res = await fetch("/api/chat", {
-          method: "POST", headers: { "Content-Type": "application/json", "Accept": "text/event-stream" },
+          method: "POST", headers: { "Content-Type": "application/json", "Accept": "text/event-stream", "Authorization": "Bearer " + authToken },
           signal: activeAbortController.signal,
           body: JSON.stringify(requestBody)
         });
