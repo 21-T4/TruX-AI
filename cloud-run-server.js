@@ -1,5 +1,6 @@
 import http from "node:http";
 import fs from "node:fs";
+import { Readable } from "node:stream";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -10,8 +11,13 @@ const PUBLIC_DIR = path.join(__dirname, "public");
 
 const routes = {
   "/api/chat": "./functions/api/chat.js",
+  "/api/chat/sync": "./functions/api/chat-sync.js",
+  "/api/chat/backup": "./functions/api/chat-backup.js",
   "/api/video": "./functions/api/video.js",
   "/api/firebase-config": "./functions/api/firebase-config.js",
+  "/api/files/upload": "./functions/api/files-upload.js",
+  "/api/files/process": "./functions/api/files-process.js",
+  "/api/sandbox/execute": "./functions/api/sandbox-execute.js",
   "/api/background/start": "./functions/api/background/start.js",
   "/api/background/status": "./functions/api/background/status.js",
   "/api/background/update": "./functions/api/background/update.js",
@@ -105,11 +111,13 @@ function makeRequest(req, body) {
     else if (value != null) headers.set(key, value);
   }
 
-  return new Request(`${forwardedProto}://${host}${req.url}`, {
+  const init = {
     method: req.method,
     headers,
-    body: req.method === "GET" || req.method === "HEAD" ? undefined : body,
-  });
+    body: req.method === "GET" || req.method === "HEAD" ? undefined : body
+  };
+  if (body instanceof ReadableStream) init.duplex = "half";
+  return new Request(`${forwardedProto}://${host}${req.url}`, init);
 }
 
 function contextFor(request, env) {
@@ -141,10 +149,13 @@ async function sendResponse(res, response) {
   res.end();
 }
 
-async function handleApi(req, res, route) {
+async function handleApi(req, res, route, pathname) {
   try {
     const mod = await loadHandler(route);
-    const body = req.method === "GET" || req.method === "HEAD" ? undefined : await readBody(req);
+    const streamingUpload = pathname === "/api/files/upload";
+    const body = req.method === "GET" || req.method === "HEAD"
+      ? undefined
+      : (streamingUpload ? Readable.toWeb(req) : await readBody(req));
     const request = makeRequest(req, body);
     const context = contextFor(request, createRuntimeEnv(req));
     let response;
@@ -201,7 +212,7 @@ const server = http.createServer(async (req, res) => {
       res.setHeader("Content-Type", "application/json; charset=utf-8");
       return res.end(JSON.stringify({ error: "API route not found" }));
     }
-    return handleApi(req, res, route);
+    return handleApi(req, res, route, pathname);
   }
   return serveStatic(req, res);
 });
