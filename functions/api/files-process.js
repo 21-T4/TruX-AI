@@ -4,7 +4,7 @@ import path from 'node:path';
 import { downloadBuffer, getBucket, getProcessedText, processedMetaKey, processedTextKey } from '../../gcs-store.js';
 import { requireFirebaseUser } from '../../firebase-auth.js';
 
-const MAX_PROCESS_BYTES = 100 * 1024 * 1024;
+const MAX_PROCESS_BYTES = 30 * 1024 * 1024;
 const MAX_EXTRACTED_CHARS = 5_000_000;
 const MAX_ZIP_FILES = 1500;
 const MAX_ZIP_FILE_BYTES = 800_000;
@@ -115,7 +115,7 @@ export async function onRequestPost({ request, env }) {
   const [metadata] = await file.getMetadata();
   const size = Number(metadata?.size || 0);
   if (size > MAX_PROCESS_BYTES) {
-    return Response.json({ error: 'Files are limited to 100 MB for processing.' }, { status: 413 });
+    return Response.json({ error: 'Files are limited to 30 MB for processing.' }, { status: 413 });
   }
 
   const buffer = await downloadBuffer(env, objectKey);
