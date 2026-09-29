@@ -1478,6 +1478,10 @@
       border: 1px solid var(--line-2);
       background: #fff;
     }
+    .sandbox-runner-output { margin-top:16px; border:1px solid var(--line-2); border-radius:var(--r-md); background:#050507; overflow:hidden; }
+    .sandbox-runner-meta { padding:10px 12px; border-bottom:1px solid var(--line); color:var(--txt-3); font:600 11px/1.4 var(--font-mono); letter-spacing:.06em; text-transform:uppercase; }
+    .sandbox-runner-pre { margin:0; min-height:260px; max-height:440px; overflow:auto; padding:14px; color:var(--txt); font:13px/1.55 var(--font-mono); white-space:pre-wrap; overflow-wrap:anywhere; }
+
 
     /* ---------- context menu ---------- */
     .context {
@@ -3318,11 +3322,15 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
   </div>
 
   <div class="modal" id="sandboxModal">
-    <div class="card" style="width: min(720px, 100%);">
+    <div class="card" style="width: min(820px, 100%);">
       <button class="close" onclick="closeSandboxModal()">×</button>
-      <div class="mtitle">Live Sandbox Renderer</div>
-      <div class="msub">Interactive visual output of generated web code.</div>
+      <div class="mtitle" id="sandboxTitle">Live Sandbox Renderer</div>
+      <div class="msub" id="sandboxSubtitle">Interactive visual output of generated web code.</div>
       <iframe id="sandboxFrame" class="sandbox-iframe"></iframe>
+      <div id="sandboxRunnerOutput" class="sandbox-runner-output" style="display:none;">
+        <div id="sandboxRunnerMeta" class="sandbox-runner-meta">Ready</div>
+        <pre id="sandboxRunnerPre" class="sandbox-runner-pre"></pre>
+      </div>
     </div>
   </div>
 
@@ -4073,10 +4081,56 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
     function openCodeSandbox(codeId) {
       let codeText = getEl(codeId)?.value || "";
-      getEl("sandboxFrame").srcdoc = codeText;
+      let frame = getEl("sandboxFrame"), output = getEl("sandboxRunnerOutput");
+      if(getEl("sandboxTitle")) getEl("sandboxTitle").textContent = "Live Sandbox Renderer";
+      if(getEl("sandboxSubtitle")) getEl("sandboxSubtitle").textContent = "Interactive visual output of generated web code.";
+      if(frame){ frame.style.display = "block"; frame.srcdoc = codeText; }
+      if(output) output.style.display = "none";
       getEl("sandboxModal").style.display = "flex";
     }
-    function closeSandboxModal() { getEl("sandboxModal").style.display = "none"; }
+
+    async function runCodeInSandbox(codeId, language) {
+      const codeText = getEl(codeId)?.value || "";
+      const frame = getEl("sandboxFrame"), output = getEl("sandboxRunnerOutput");
+      const meta = getEl("sandboxRunnerMeta"), pre = getEl("sandboxRunnerPre");
+      if(!codeText.trim()) return toast("There is no code to run.", "err");
+
+      getEl("sandboxModal").style.display = "flex";
+      if(frame) frame.style.display = "none";
+      if(output) output.style.display = "block";
+      if(getEl("sandboxTitle")) getEl("sandboxTitle").textContent = language === "python" ? "Python Sandbox" : "Node.js Sandbox";
+      if(getEl("sandboxSubtitle")) getEl("sandboxSubtitle").textContent = "Isolated execution · 10 second limit";
+      if(meta) meta.textContent = "Running…";
+      if(pre) pre.textContent = "";
+
+      try {
+        if(!auth?.currentUser){ openLoginWall(); throw new Error("Sign in before running code."); }
+        const token = await auth.currentUser.getIdToken();
+        const response = await fetch("/api/sandbox/execute", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+          body: JSON.stringify({ language, code: codeText })
+        });
+        const result = await response.json().catch(() => ({}));
+        if(!response.ok) throw new Error(result.error || "Sandbox request failed.");
+
+        if(meta) meta.textContent =
+          (result.ok ? "Completed" : (result.timedOut ? "Timed out" : "Exited with code " + result.exitCode)) +
+          " · " + (result.durationMs || 0) + " ms";
+
+        const out = String(result.stdout || ""), err = String(result.stderr || "");
+        if(pre) pre.textContent = (out + (err ? (out ? "\n\n" : "") + "[stderr]\n" + err : "")) || "(no output)";
+      } catch(error) {
+        if(meta) meta.textContent = "Execution failed";
+        if(pre) pre.textContent = String(error?.message || "Sandbox execution failed.");
+      }
+    }
+
+    function closeSandboxModal() {
+      getEl("sandboxModal").style.display = "none";
+      if(getEl("sandboxFrame")) getEl("sandboxFrame").srcdoc = "";
+      if(getEl("sandboxRunnerPre")) getEl("sandboxRunnerPre").textContent = "";
+    }
 
     function pinInsight(text) {
       if(pinnedInsights.includes(text)) return toast("That insight is already pinned.");
@@ -4646,40 +4700,49 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     }
 
     function buildCodeCard(lang, rawCode, isWriting) {
-      let id = `code_${++codeBlockCounter}_${Math.random().toString(36).slice(2, 8)}`;
+      let id = "code_" + (++codeBlockCounter) + "_" + Math.random().toString(36).slice(2, 8);
       let code = String(rawCode).replace(/\s+$/, "");
       let displayLang = (lang || "text").toLowerCase();
       let extension = codeFileExtension(lang);
-      let filename = `chattrux-output.${extension}`;
+      let filename = "chattrux-output." + extension;
       let lineCount = code ? code.split("\n").length : 0;
-      let runnable = (extension === "html" || extension === "js");
-
-      let body = `<div class="code-body"><pre><code>${highlightCode(escapeHtml(code))}</code></pre></div>`;
+      let sandboxLanguage = ["python","py"].includes(displayLang) ? "python" : (["javascript","js","node","nodejs"].includes(displayLang) ? "node" : "");
+      let runnable = extension === "html" || !!sandboxLanguage;
+      let body = '<div class="code-body"><pre><code>' + highlightCode(escapeHtml(code)) + '</code></pre></div>';
 
       if (isWriting) {
-        return `<div class="code-file writing"><div class="code-file-header"><div class="code-file-info">` +
-          `<span class="code-file-icon">&lt;/&gt;</span><div class="code-file-meta"><b>${escapeHtml(filename)}</b>` +
-          `<small>${escapeHtml(displayLang.toUpperCase())} · writing ${lineCount} lines…</small></div></div></div>` +
-          body + `</div>`;
+        return '<div class="code-file writing"><div class="code-file-header"><div class="code-file-info">' +
+          '<span class="code-file-icon">&lt;/&gt;</span><div class="code-file-meta"><b>' + escapeHtml(filename) + '</b>' +
+          '<small>' + escapeHtml(displayLang.toUpperCase()) + ' · writing ' + lineCount + ' lines…</small></div></div></div>' +
+          body + '</div>';
       }
 
-      // Long files start folded so a single answer never buries the thread.
       let folded = lineCount > 18;
       let expander = folded
-        ? `<button type="button" class="code-expand" data-lines="${lineCount}" onclick="toggleCodeCard(this)">` +
-          `<svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg><span>Show all ${lineCount} lines</span></button>`
-        : ``;
+        ? '<button type="button" class="code-expand" data-lines="' + lineCount + '" onclick="toggleCodeCard(this)">' +
+          '<svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg><span>Show all ' + lineCount + ' lines</span></button>'
+        : "";
 
-      return `<div class="code-file${folded ? " collapsed" : ""}"><div class="code-file-header"><div class="code-file-info">` +
-        `<span class="code-file-icon">&lt;/&gt;</span><div class="code-file-meta"><b>${escapeHtml(filename)}</b>` +
-        `<small>${escapeHtml(displayLang.toUpperCase())} · ${lineCount} Lines</small></div></div>` +
-        `<div class="code-actions">` +
-        (runnable ? `<button type="button" onclick="openCodeSandbox('${id}')"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5-11-6.5Z"/></svg>Run</button>` : ``) +
-        `<button type="button" onclick="copyCodeToClipboard(this,'${id}')">Copy</button>` +
-        `<button type="button" onclick="downloadCode('${id}','${filename}')">Download</button>` +
-        `</div></div>` + body +
-        `<textarea id="${id}" hidden>${escapeHtml(code)}</textarea>` + expander +
-        `</div>`;
+      let runButton = "";
+      if (runnable) {
+        if (sandboxLanguage) {
+          runButton = '<button type="button" onclick="runCodeInSandbox(\\'' + id + '\\',\\'' + sandboxLanguage + '\\')">' +
+            '<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M8 5.5v13l11-6.5-11-6.5Z"/></svg>Run</button>';
+        } else {
+          runButton = '<button type="button" onclick="openCodeSandbox(\\'' + id + '\\')">' +
+            '<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M8 5.5v13l11-6.5-11-6.5Z"/></svg>Preview</button>';
+        }
+      }
+
+      return '<div class="code-file' + (folded ? ' collapsed' : '') + '"><div class="code-file-header"><div class="code-file-info">' +
+        '<span class="code-file-icon">&lt;/&gt;</span><div class="code-file-meta"><b>' + escapeHtml(filename) + '</b>' +
+        '<small>' + escapeHtml(displayLang.toUpperCase()) + ' · ' + lineCount + ' Lines</small></div></div>' +
+        '<div class="code-actions">' + runButton +
+        '<button type="button" onclick="copyCodeToClipboard(this,\\'' + id + '\\')">Copy</button>' +
+        '<button type="button" onclick="downloadCode(\\'' + id + '\\',\\'' + filename + '\\')">Download</button>' +
+        '</div></div>' + body +
+        '<textarea id="' + id + '" hidden>' + escapeHtml(code) + '</textarea>' + expander +
+        '</div>';
     }
 
     /* Inline markdown, applied to text that is ALREADY html-escaped. */
