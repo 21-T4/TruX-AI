@@ -2808,6 +2808,46 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     body[data-home-look="sky"] .media-gen-workspace p{color:#73879a}
     body[data-home-look="sky"] .sidebar-overlay{background:rgba(25,65,100,.18);backdrop-filter:blur(3px)}
 
+
+    /* Final composer alignment: media modes sit slightly higher so the
+       workspace feels intentional, while the warning remains directly below
+       the text bar. */
+    .composer { padding-top: 0; }
+    body[data-media-mode="image"] .composer,
+    body[data-media-mode="video"] .composer {
+      transform: translateY(-12px);
+      padding-bottom: calc(22px + var(--safe-b));
+    }
+    body[data-media-mode="image"] .composer .compose,
+    body[data-media-mode="video"] .composer .compose {
+      max-width: 760px;
+      width: min(760px, calc(100% - 28px));
+    }
+    body[data-media-mode="image"] .composer .bar,
+    body[data-media-mode="video"] .composer .bar {
+      width: 100%;
+      align-items: center;
+    }
+    body[data-media-mode="image"] .composer .hint,
+    body[data-media-mode="video"] .composer .hint {
+      display: block;
+      margin-top: 8px;
+      text-align: center;
+    }
+    .media-gen-short {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: min(680px, calc(100vw - 80px));
+      font-size: 12.5px !important;
+      line-height: 1.35 !important;
+    }
+    @media (max-width: 760px) {
+      body[data-media-mode="image"] .composer,
+      body[data-media-mode="video"] .composer { transform: translateY(-8px); }
+      .media-gen-short { max-width: calc(100vw - 48px); }
+    }
+
 </style>
 </head>
 <body class="home-active">
@@ -3902,6 +3942,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       }
 
       workspaceMode = nextMode;
+      if(currentChatId && chatSessions[currentChatId]) chatSessions[currentChatId].mode = workspaceMode;
       const isCoding = workspaceMode === "coding";
       const isMedia = workspaceMode === "image" || workspaceMode === "video";
       if(isMedia) document.body.dataset.mediaMode = workspaceMode;
