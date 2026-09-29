@@ -1,5 +1,7 @@
 import { getCloudRunKv } from '../cloud-run-store.js';
 import { getGithubSession } from '../github-session.js';
+import { requireFirebaseUser } from '../firebase-auth.js';
+import { getProcessedText } from '../gcs-store.js';
 
 /* TruX-Code GitHub agent syntax verified */
 const LOCATION = 'global';
@@ -1011,6 +1013,54 @@ function createSseResponse(startStreaming) {
 }
 
 
+function queryTokens(query) {
+  return String(query || '').toLowerCase().replace(/[^a-z0-9_]+/g, ' ').split(/\s+/).filter(x => x.length >= 3).slice(0, 32);
+}
+
+function selectRelevantFileContext(text, query, maxChars = 120000) {
+  const source = String(text || '');
+  if (!source) return '';
+  if (source.length <= maxChars) return source;
+  const tokens = queryTokens(query);
+  const blocks = source.split(/(?=--- FILE: )/g).filter(Boolean);
+  const candidates = blocks.length > 1 ? blocks : (source.match(/[\s\S]{1,7000}/g) || [source]);
+  const ranked = candidates.map((block, index) => {
+    const lower = block.toLowerCase();
+    let score = index === 0 ? 1 : 0;
+    for (const token of tokens) {
+      let at = 0;
+      while ((at = lower.indexOf(token, at)) >= 0) { score++; at += token.length; }
+    }
+    return { block, score, index };
+  }).sort((a, b) => b.score - a.score || a.index - b.index);
+  const picked = [];
+  let used = 0;
+  for (const item of ranked) {
+    if (used + item.block.length > maxChars) continue;
+    picked.push(item);
+    used += item.block.length;
+    if (used >= maxChars * 0.9) break;
+  }
+  picked.sort((a, b) => a.index - b.index);
+  return picked.map(x => x.block).join('\n\n') + '\n\n[Large file context was selectively loaded using the user query.]';
+}
+
+async function resolveStoredAttachments(request, env, attachments, userId, query) {
+  const stored = (Array.isArray(attachments) ? attachments : []).filter(a => a?.objectKey);
+  if (!stored.length) return { uid: userId ? String(userId) : '', items: [] };
+  const verified = await requireFirebaseUser(request, env);
+  const uid = String(verified.uid);
+  if (userId && uid !== String(userId)) throw Object.assign(new Error('Attachment account does not match the signed-in account.'), { status: 403 });
+  const items = [];
+  for (const attachment of stored.slice(0, 8)) {
+    const objectKey = String(attachment.objectKey || '');
+    if (!objectKey.startsWith('users/' + uid + '/files/')) throw Object.assign(new Error('One of the attached files does not belong to this account.'), { status: 403 });
+    const rawText = await getProcessedText(env, uid, objectKey);
+    items.push({ ...attachment, text: selectRelevantFileContext(rawText, query || attachment.name || '', 120000) });
+  }
+  return { uid, items };
+}
+
 /* =========================================================
    MAIN POST HANDLER
    ========================================================= */
@@ -1215,6 +1265,12 @@ export async function onRequestPost(context) {
       ? `${combinedSystemInstruction}${modeInstruction}\n\n[REASONING MODE]: Take extra time to reason carefully, check assumptions and calculations, then return only the concise final answer. Do not expose private chain-of-thought.`
       : `${combinedSystemInstruction}${modeInstruction}`;
 
+    const storedAttachmentContext = await resolveStoredAttachments(request, env, attachments, userId, message);
+    const effectiveAttachments = (Array.isArray(attachments) ? attachments : []).map(a => ({ ...a }));
+    for (const stored of storedAttachmentContext.items) {
+      const index = effectiveAttachments.findIndex(a => String(a?.objectKey || '') === String(stored.objectKey || ''));
+      if (index >= 0) effectiveAttachments[index] = { ...effectiveAttachments[index], text: stored.text, kind: 'processed' };
+    }
     /* =====================================================
        HISTORY
        ===================================================== */
@@ -1264,8 +1320,8 @@ export async function onRequestPost(context) {
       });
     }
 
-    if (Array.isArray(attachments)) {
-      for (const attachment of attachments.slice(0, 8)) {
+    if (Array.isArray(effectiveAttachments)) {
+      for (const attachment of effectiveAttachments.slice(0, 8)) {
         if (attachment?.dataUrl && typeof attachment.dataUrl === 'string' && attachment.dataUrl.includes(',')) {
           const [header, base64Data] = attachment.dataUrl.split(',');
           const mimeMatch = header.match(/data:(.*?);/);
