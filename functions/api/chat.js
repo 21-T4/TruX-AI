@@ -1062,6 +1062,115 @@ async function resolveStoredAttachments(request, env, attachments, userId, query
 }
 
 /* =========================================================
+   CONVERSATION CONTEXT COMPRESSION
+   Keep the latest 5 real messages verbatim. Older messages are
+   compressed by a lightweight Flash-Lite model into a compact
+   factual memory block before the main model receives the turn.
+   ========================================================= */
+
+const HISTORY_RECENT_LIMIT = 5;
+const HISTORY_SUMMARY_MODEL = 'gemini-3.5-flash-lite';
+
+function normalizeHistoryMessages(history) {
+  return (Array.isArray(history) ? history : [])
+    .map(msg => ({
+      role: (msg?.role === 'trux' || msg?.role === 'model') ? 'model' : 'user',
+      text: String(msg?.text || '').trim()
+    }))
+    .filter(msg => msg.text);
+}
+
+function extractGeminiText(response) {
+  return (response?.candidates?.[0]?.content?.parts || [])
+    .map(part => typeof part?.text === 'string' ? part.text : '')
+    .join('')
+    .trim();
+}
+
+async function summarizeOlderHistory(olderMessages, accessToken, projectId) {
+  if (!olderMessages.length) return '';
+
+  const transcript = olderMessages
+    .map((msg, index) => {
+      const speaker = msg.role === 'model' ? 'AI' : 'User';
+      return `[${index + 1}] ${speaker}: ${msg.text}`;
+    })
+    .join('\n\n')
+    .slice(0, 180000);
+
+  const response = await fetchVertexGemini({
+    model: HISTORY_SUMMARY_MODEL,
+    contents: [{
+      role: 'user',
+      parts: [{
+        text:
+          'Compress the older part of this conversation into a concise factual memory for another AI. ' +
+          'Preserve important user goals, decisions, requirements, preferences, technical facts, unresolved problems, ' +
+          'and relevant names/identifiers. Remove greetings, repetition, filler, and obsolete details. ' +
+          'Do not invent facts. Return plain text only, preferably under 900 tokens.\n\n' +
+          transcript
+      }]
+    }],
+    systemInstruction:
+      'You are a conversation-memory compressor. Keep only information that can materially improve the next response. ' +
+      'Do not answer the user request; summarize the conversation history.',
+    accessToken,
+    projectId,
+    generationConfig: {
+      maxOutputTokens: 900,
+      temperature: 0.2
+    }
+  });
+
+  return extractGeminiText(response);
+}
+
+async function buildConversationHistory(history, accessToken, projectId) {
+  const normalized = normalizeHistoryMessages(history);
+  if (!normalized.length) return [];
+
+  const recent = normalized.slice(-HISTORY_RECENT_LIMIT);
+  const older = normalized.slice(0, -HISTORY_RECENT_LIMIT);
+
+  let summary = '';
+  if (older.length) {
+    summary = await summarizeOlderHistory(older, accessToken, projectId);
+  }
+
+  const result = [];
+
+  // Gemini conversation turns need to begin with a user role. If the
+  // five-message window starts on an assistant reply, retain all five
+  // messages and add a tiny synthetic user context marker before them.
+  if (recent[0]?.role === 'model') {
+    result.push({
+      role: 'user',
+      parts: [{
+        text: summary
+          ? `[OLDER CONVERSATION SUMMARY]\n${summary}\n\n[RECENT HISTORY CONTINUES]`
+          : '[RECENT HISTORY CONTINUES]'
+      }]
+    });
+  } else if (summary) {
+    // Attach the compressed older context to the first real user turn so
+    // no extra conversational turn is inserted into the five-message window.
+    recent[0] = {
+      ...recent[0],
+      text: `[OLDER CONVERSATION SUMMARY]\n${summary}\n\n[USER MESSAGE]\n${recent[0].text}`
+    };
+  }
+
+  for (const msg of recent) {
+    result.push({
+      role: msg.role,
+      parts: [{ text: msg.text }]
+    });
+  }
+
+  return result;
+}
+
+/* =========================================================
    MAIN POST HANDLER
    ========================================================= */
 
@@ -1273,34 +1382,10 @@ export async function onRequestPost(context) {
     }
     /* =====================================================
        HISTORY
+       =====================================================
+       The actual history compression runs inside the SSE response so
+       TruX-Code can open the stream first and avoid a long silent wait.
        ===================================================== */
-
-    let formattedHistory = [];
-
-    if (Array.isArray(history) && history.length > 0) {
-      const recentHistory = history.slice(-6);
-      let lastRole = null;
-
-      for (const msg of recentHistory) {
-        const role = (msg.role === 'trux' || msg.role === 'model') ? 'model' : 'user';
-
-        if (role !== lastRole && msg.text) {
-          formattedHistory.push({ role, parts: [{ text: String(msg.text) }] });
-          lastRole = role;
-        }
-      }
-    }
-
-    if (formattedHistory.length > 0 && formattedHistory[0].role === 'model') {
-      formattedHistory.shift();
-    }
-
-    if (
-      formattedHistory.length > 0 &&
-      formattedHistory[formattedHistory.length - 1].role === 'user'
-    ) {
-      formattedHistory.pop();
-    }
 
     /* =====================================================
        CURRENT MESSAGE
@@ -1336,11 +1421,20 @@ export async function onRequestPost(context) {
 
     currentParts.push({ text: message || (image ? 'Analyze the provided image.' : 'Analyze the attached files.') });
 
-    const contents = [...formattedHistory, { role: 'user', parts: currentParts }];
-
     const targetModel = getVertexModel(effectiveTier);
 
     return createSseResponse(async ({ send }) => {
+      // Build the shared context here so both Chat and TruX-Code use the
+      // exact same five-message + compressed-older-history policy.
+      let formattedHistory = [];
+      if (Array.isArray(history) && history.length > HISTORY_RECENT_LIMIT) {
+        send({ type: 'status', status: 'Compressing older conversation context…' });
+      }
+
+      if (!accessToken) accessToken = await createGoogleAccessToken(env);
+      formattedHistory = await buildConversationHistory(history, accessToken, projectId);
+
+      const contents = [...formattedHistory, { role: 'user', parts: currentParts }];
       /* -------------------------------------------------
          First streamed generation
          ------------------------------------------------- */
