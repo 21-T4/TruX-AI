@@ -3081,7 +3081,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
             
             <input id="imageUpload" type="file" accept="image/*" hidden onchange="handleImageUpload(event)">
             <input id="cameraUpload" type="file" accept="image/*" capture="environment" hidden onchange="handleImageUpload(event)">
-            <input id="fileUpload" type="file" accept=".txt,.md,.markdown,.json,.csv,.log,.js,.jsx,.ts,.tsx,.html,.css,.xml,.py,.java,.c,.cpp,.h,.hpp,.cs,.go,.rs,.sql,.sh,.yaml,.yml,.toml,.ini,.env,.pdf,image/*" hidden multiple onchange="handleFileUpload(event)">
+            <input id="fileUpload" type="file" accept=".txt,.md,.markdown,.json,.csv,.log,.js,.jsx,.ts,.tsx,.html,.css,.xml,.py,.java,.c,.cpp,.h,.hpp,.cs,.go,.rs,.sql,.sh,.yaml,.yml,.toml,.ini,.env,.pdf,.zip,image/*" hidden multiple onchange="handleFileUpload(event)">
             
             <textarea id="promptInput" rows="1" placeholder="Ask TruX…" oninput="handleInputChange()"></textarea>
 
@@ -3448,6 +3448,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           updateNotificationSettingsUI();
           maybeAskForLocation();
           if("Notification" in window && Notification.permission === "granted") syncTruxNotificationsSilently();
+          syncChatsToCloud(true);
         } else {
           getEl("userName").innerText = "Guest User";
           getEl("userEmail").innerText = "Tap to sign in";
@@ -4330,14 +4331,38 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     }
 
     let sidebarSyncTimer = null;
+    let cloudChatSyncTimer = null;
     function queueSidebarSync() {
       clearTimeout(sidebarSyncTimer);
       sidebarSyncTimer = setTimeout(() => { try { renderSidebar(); } catch (e) { /* ignore */ } }, 120);
+    }
+    async function syncChatsToCloud(immediate = false) {
+      if(!auth?.currentUser) return;
+      clearTimeout(cloudChatSyncTimer);
+      const run = async () => {
+        try {
+          const token = await auth.currentUser.getIdToken();
+          const response = await fetch("/api/chat/sync", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": "Bearer " + token
+            },
+            body: JSON.stringify({ chats: chatSessions })
+          });
+          if(!response.ok) console.warn("TruX cloud chat sync failed:", await response.text().catch(() => ""));
+        } catch(e) {
+          console.warn("TruX cloud chat sync unavailable:", e?.message || e);
+        }
+      };
+      if(immediate) return run();
+      cloudChatSyncTimer = setTimeout(run, 1400);
     }
     function saveChatSessions() {
       queueSidebarSync();
       try {
         store.setItem("trux_chats", JSON.stringify(chatSessions));
+        syncChatsToCloud();
         return;
       } catch (e) {
         // Quota exceeded — most likely because old chats are carrying large
@@ -4351,6 +4376,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         });
         try {
           store.setItem("trux_chats", JSON.stringify(chatSessions));
+          syncChatsToCloud();
           return;
         } catch (e2) {
           // Still too big — drop the oldest chats one at a time until it fits.
@@ -4361,6 +4387,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
             delete chatSessions[oldestId];
             try {
               store.setItem("trux_chats", JSON.stringify(chatSessions));
+              syncChatsToCloud();
               return;
             } catch (e3) { /* keep pruning */ }
           }
@@ -4369,6 +4396,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
             let keep = currentChatId && chatSessions[currentChatId] ? { [currentChatId]: chatSessions[currentChatId] } : {};
             chatSessions = keep;
             store.setItem("trux_chats", JSON.stringify(chatSessions));
+            syncChatsToCloud();
           } catch { /* give up silently, chat still works in-memory */ }
         }
       }
