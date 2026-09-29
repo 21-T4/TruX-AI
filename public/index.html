@@ -3872,46 +3872,34 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
     function setWorkspaceMode(mode) {
       const nextMode = mode || "chat";
+      if(nextMode === workspaceMode && !document.body.dataset.mediaMode) return;
+      closeAttachmentMenu(); closeModelDropdown();
+
       const previousMode = workspaceMode;
-      const leavingCoding = previousMode === "coding" && nextMode !== "coding";
-      const enteringCoding = previousMode !== "coding" && nextMode === "coding";
-
-      closeAttachmentMenu();
-      closeModelDropdown();
-
-      /* Crossing the Code/Chat boundary gets a clean shell. This prevents the
-         code workspace DOM, active stream, or stale scroll state from leaking
-         into the normal chat home. */
-      if(leavingCoding || enteringCoding) {
+      const crossingCodeBoundary = (previousMode === "coding") !== (nextMode === "coding");
+      if(crossingCodeBoundary) {
         activeAbortController?.abort();
         stopToolStatusTyping();
-        activeStreamer?.cancel();
-        activeStreamer = null;
+        activeStreamer?.cancel(); activeStreamer = null;
         isGenerating = false;
-        currentChatId = null;
-        getEl("chatContainer").innerHTML = "";
-        getEl("codeChatContainer").innerHTML = "";
-        pastedTextBlocks = [];
-        fileAttachments = [];
-        renderFileChips();
-        getEl("promptInput").value = "";
-        isScrolledUp = false;
+        pastedTextBlocks = []; fileAttachments = []; renderFileChips();
         document.body.classList.remove("scrolled");
         getEl("scrollDownBtn")?.classList.remove("visible");
+        getEl("chatContainer").innerHTML = "";
+        getEl("codeChatContainer").innerHTML = "";
       }
 
       workspaceMode = nextMode;
       const isCoding = workspaceMode === "coding";
       const isMedia = workspaceMode === "image" || workspaceMode === "video";
-      if(isMedia) document.body.dataset.mediaMode=workspaceMode; else document.body.removeAttribute("data-media-mode");
-      syncMobileSidebarState();
+      if(isMedia) document.body.dataset.mediaMode = workspaceMode;
+      else document.body.removeAttribute("data-media-mode");
       document.body.classList.toggle("coding-workspace", isCoding);
-      document.body.classList.toggle("home-active", !isCoding && !currentChatId);
+      document.body.classList.toggle("home-active", !isCoding && !isMedia && !currentChatId);
 
-      /* The home screen is the landing surface after leaving TruX-Code. */
-      if(!isCoding && !isMedia && leavingCoding) getEl("welcomeScreen").style.display="flex";
-      else if(isCoding || isMedia) getEl("welcomeScreen").style.display="none";
-      else if(!currentChatId) getEl("welcomeScreen").style.display="flex";
+      const welcome = getEl("welcomeScreen");
+      if(isCoding || isMedia) welcome.style.display = "none";
+      else if(!currentChatId) welcome.style.display = "flex";
 
       getEl("chatContainer").style.display = isCoding ? "none" : (currentChatId ? "block" : "none");
       getEl("codeChatContainer").style.display = isCoding ? "block" : "none";
@@ -3925,16 +3913,27 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         codeHome?.classList.add("code-workspace-dismissed");
       }
 
+      if(crossingCodeBoundary && currentChatId && chatSessions[currentChatId]) {
+        const target = isCoding ? getEl("codeChatContainer") : getEl("chatContainer");
+        target.style.display = "block";
+        (chatSessions[currentChatId].messages || []).forEach(m => appendMessageRow(
+          m.role === "user" ? "You" : "ChatTruX-AI",
+          m.text || "",
+          m.role === "user" ? "user-row" : "trux-row",
+          m.role === "user" ? "user-bubble" : "trux-bubble",
+          m.image || null, false, m.sources, m.video
+        ));
+        target.scrollTop = target.scrollHeight;
+      }
+
       document.querySelectorAll("[data-trux-mode]").forEach(x => x.classList.toggle("active", x.dataset.truxMode === workspaceMode));
       document.querySelectorAll("[data-trux-menu-mode]").forEach(x => x.classList.toggle("active", x.dataset.truxMenuMode === workspaceMode));
       const p = getEl("promptInput");
-      if(p) p.placeholder = ({chat:"Ask TruX…",coding:"Let's Code","deep-research":"Research deeply…",image:"Describe the image you want…",video:"Describe the video you want…"})[workspaceMode] || "Ask TruX…";
+      const placeholders = { chat:"Ask TruX…", coding:"Let’s code…", "deep-research":"Let’s research…", image:"Let’s create an image…", video:"Let’s make a video…" };
+      if(p) { p.placeholder = placeholders[workspaceMode] || "Ask TruX…"; p.style.height = "auto"; requestAnimationFrame(handleInputChange); }
       const think = getEl("thinkingBtn");
       if(think) think.classList.toggle("active", advancedThinkingEnabled || workspaceMode === "deep-research" || isCoding);
-
-      if(leavingCoding) {
-        renderSidebar();
-      }
+      renderSidebar();
     }
 
     function toggleAdvancedThinking() {
