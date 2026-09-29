@@ -2897,6 +2897,58 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       box-sizing: border-box;
     }
 </style>
+
+<style id="trux-context-composer-fix">
+  /* Compact PWA install control: icon-only instead of a full-width card. */
+  .sidebar-install-wrap{
+    display:flex!important;
+    justify-content:flex-end!important;
+    align-items:center;
+    margin-top:6px!important;
+  }
+  .sidebar-install{
+    width:38px!important;
+    min-width:38px!important;
+    height:38px!important;
+    min-height:38px!important;
+    padding:0!important;
+    gap:0!important;
+    display:grid!important;
+    place-items:center!important;
+    border-radius:10px!important;
+  }
+  .sidebar-install svg{
+    width:17px;
+    height:17px;
+    fill:none;
+    stroke:currentColor;
+    stroke-width:1.8;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
+
+  /* The safety hint belongs below the composer in every workspace, not only media. */
+  .composer .hint{
+    display:block!important;
+    margin-top:8px!important;
+  }
+
+  /* Keep Chat and TruX-Code composer slightly lifted while leaving media studio
+     positioning untouched. */
+  body:not([data-media-mode]) .composer .compose{
+    transform:translateY(-7px);
+  }
+
+  @media (max-width:760px){
+    body:not([data-media-mode]) .composer .compose{
+      transform:translateY(-5px);
+    }
+    .composer .hint{
+      font-size:11px!important;
+      line-height:1.3;
+    }
+  }
+</style>
 </head>
 <body class="home-active">
   <div class="bg" id="bg"><div class="bg-orb"></div></div>
@@ -2984,9 +3036,8 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       </div>
 
       <div class="sidebar-install-wrap">
-        <button type="button" class="sidebar-install" id="sidebarInstallBtn" onclick="installPWA()" aria-label="Install TruX-AI">
+        <button type="button" class="sidebar-install" id="sidebarInstallBtn" onclick="installPWA()" aria-label="Install TruX-AI" title="Install TruX-AI">
           <svg viewBox="0 0 24 24"><path d="M12 3v11m0 0-4-4m4 4 4-4"/><path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/></svg>
-          <span><b>Install TruX-AI</b><small>Add TruX-AI to your device</small></span>
         </button>
       </div>
 
@@ -6089,7 +6140,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         tier: (workspaceMode === "deep-research" || workspaceMode === "coding") ? "ultra" : currentModel,
         mode: workspaceMode,
         advancedThinking: advancedThinkingEnabled || workspaceMode === "deep-research" || workspaceMode === "coding",
-        history: chatSessions[currentChatId].messages.slice(0, -1).slice(-6),
+        history: (chatSessions[currentChatId]?.messages || []).slice(0, -1).map(m => ({ role: m.role, text: m.text || "" })),
         image: img,
         attachments: allAttachments,
         systemInstruction: store.getItem("trux_custom_instructions") || "",
