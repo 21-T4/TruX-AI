@@ -2933,15 +2933,16 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     margin-top:8px!important;
   }
 
-  /* Keep Chat and TruX-Code composer slightly lifted while leaving media studio
-     positioning untouched. */
+  /* Lift Chat / TruX-Code without transforming an ancestor of the fixed
+     attachment menu. A transform here would make position:fixed viewport
+     coordinates relative to the transformed composer wrapper. */
   body:not([data-media-mode]) .composer .compose{
-    transform:translateY(-7px);
+    margin-top:-7px;
   }
 
   @media (max-width:760px){
     body:not([data-media-mode]) .composer .compose{
-      transform:translateY(-5px);
+      margin-top:-5px;
     }
     .composer .hint{
       font-size:11px!important;
