@@ -441,7 +441,10 @@ async function githubSearchCode(session, repository, query) {
     'https://api.github.com/search/code?q=' + encodeURIComponent(q) + '&per_page=6',
     { headers: { Accept: 'application/vnd.github.text-match+json, application/vnd.github+json' } }
   );
-  const payload = await response.json();
+  const payload = await Promise.race([
+    response.json(),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('GitHub search response timed out.')), GITHUB_REQUEST_TIMEOUT_MS))
+  ]);
 
   if (!response.ok) throw new Error(payload?.message || 'GitHub code search failed.');
 
@@ -474,9 +477,15 @@ async function githubReadFile(session, repository, path, branch, startLine, endL
   const refQuery = branch ? '?ref=' + encodeURIComponent(branch) : '';
   const response = await githubApi(
     session,
-    'https://api.github.com/repos/' + repository + '/contents/' + encodeURI(path) + refQuery
+    'https://api.github.com/repos/' + repository + '/contents/' +
+      path.split('/').map(encodeURIComponent).join('/') + refQuery
   );
-  const payload = await response.json();
+  const payload = await Promise.race([
+    response.json(),
+    new Promise((_, reject) => setTimeout(() => reject(new Error(
+      'GitHub file reader response timed out after 15 seconds.'
+    )), GITHUB_REQUEST_TIMEOUT_MS))
+  ]);
 
   if (!response.ok) throw new Error(payload?.message || 'GitHub file read failed.');
   if (Array.isArray(payload) || !payload?.content) throw new Error('That path is not a text file.');
