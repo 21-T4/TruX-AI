@@ -401,7 +401,7 @@ function decodeGithubBase64(value) {
   return new TextDecoder().decode(bytes);
 }
 
-const GITHUB_REQUEST_TIMEOUT_MS = 15000;
+const GITHUB_REQUEST_TIMEOUT_MS = 10000;
 
 async function githubApi(session, url, options = {}) {
   const controller = new AbortController();
@@ -649,7 +649,7 @@ function getGithubToolDeclarations() {
     },
     {
       name: 'github_read_file',
-      description: 'Read the current contents of a text file in the active connected GitHub repository. Use this before proposing an edit. You may request a line range for large files.',
+      description: 'Read the current contents of a text file in the active connected GitHub repository. For large files, request start_line/end_line; an unbounded read returns a bounded window so a huge file cannot stall the agent.',
       parameters: {
         type: 'object',
         properties: {
