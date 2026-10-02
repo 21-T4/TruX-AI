@@ -1641,6 +1641,7 @@ export async function onRequestPost(context) {
 
         let modelRoundText = '';
         let activityEmitted = false;
+        let proposalFailedThisRound = false;
 
         if (codingMode) {
           send({
@@ -1776,6 +1777,7 @@ export async function onRequestPost(context) {
                 // A failed proposal must release the forced-tool lock so the
                 // next round can inspect the current file again and retry.
                 proposalToolRequired = false;
+                proposalFailedThisRound = true;
               }
 
               send({
@@ -1798,7 +1800,12 @@ export async function onRequestPost(context) {
           // Once at least one current file has been inspected for a requested
           // change, force the next Gemini turn to use the proposal tool instead
           // of spending another round on a natural-language status message.
-          if (changeRequested && githubInspectionCount > 0 && !githubProposalPrepared) {
+          if (
+            changeRequested &&
+            githubInspectionCount > 0 &&
+            !githubProposalPrepared &&
+            !proposalFailedThisRound
+          ) {
             proposalToolRequired = true;
           }
 
