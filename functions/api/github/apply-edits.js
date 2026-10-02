@@ -1,6 +1,7 @@
 import { getGithubSession } from '../../github-session.js';
 
 const MAX_FILE_BYTES = 1024 * 1024;
+const MAX_EDIT_TEXT_CHARS = 500000;
 const MAX_EDITS = 8;
 
 function validRepo(value) {
@@ -137,7 +138,7 @@ export async function onRequestPost({ request, env }) {
       const oldText = typeof edit?.oldText === 'string' ? edit.oldText : '';
       const newText = typeof edit?.newText === 'string' ? edit.newText : '';
 
-      if (!validPath(path) || oldText.length < 1 || oldText.length > 100000 || newText.length > 100000) {
+      if (!validPath(path) || oldText.length < 1 || oldText.length > MAX_EDIT_TEXT_CHARS || newText.length > MAX_EDIT_TEXT_CHARS) {
         return Response.json({ error: 'Invalid edit payload for ' + String(path || 'unknown') + '.' }, { status: 400 });
       }
 
