@@ -20,6 +20,7 @@ const routes = {
   "/api/background/start": "./functions/api/background/start.js",
   "/api/background/status": "./functions/api/background/status.js",
   "/api/background/update": "./functions/api/background/update.js",
+  "/api/background/execute": "./functions/api/background/execute.js",
   "/api/github/apply-edits": "./functions/api/github/apply-edits.js",
   "/api/github/authorize": "./functions/api/github/authorize.js",
   "/api/github/callback": "./functions/api/github/callback.js",
@@ -63,24 +64,42 @@ function createRuntimeEnv(req) {
   if (!env.TRUX_APP_ORIGIN) env.TRUX_APP_ORIGIN = forwardedOrigin(req);
 
   /*
-   * Cloudflare Queues are not available inside a normal Cloud Run container.
-   * Expose a small compatibility adapter so the existing background route can
-   * keep the same interface. The job is started after the HTTP response path
-   * returns, and the existing worker code performs the status persistence.
+   * Cloud Run cannot reliably keep a detached promise alive after the
+   * /api/background/start request finishes. Dispatch a second HTTP request
+   * to a dedicated worker endpoint instead. That request owns the long-running
+   * 20-minute job independently of the original browser request.
    */
   env.TRUX_BACKGROUND_QUEUE = {
     async send(payload) {
-      Promise.resolve().then(async () => {
-        try {
-          const worker = await import("./workers/trux-background.js");
-          if (!worker?.default?.queue) throw new Error("Cloud Run background worker is unavailable.");
-          await worker.default.queue(
-            { messages: [{ body: payload }] },
-            env
-          );
-        } catch (error) {
-          console.error("Cloud Run background job failed:", error);
-        }
+      const target = new URL("/api/background/execute", env.TRUX_APP_ORIGIN);
+      const client = target.protocol === "https:" ? (await import("node:https")).default : (await import("node:http")).default;
+      const body = JSON.stringify(payload);
+
+      await new Promise((resolve, reject) => {
+        const req = client.request({
+          protocol: target.protocol,
+          hostname: target.hostname,
+          port: target.port || undefined,
+          path: target.pathname + target.search,
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Content-Length": Buffer.byteLength(body),
+            "X-TruX-Background-Secret": String(payload?.jobSecret || "")
+          }
+        }, res => {
+          res.on("data", () => {});
+          res.on("end", () => {});
+        });
+
+        req.on("error", reject);
+
+        /*
+         * The payload is fully handed to the network as soon as the request
+         * finishes writing. Do not wait for the worker's 20-minute response.
+         */
+        req.on("finish", resolve);
+        req.end(body);
       });
     }
   };
