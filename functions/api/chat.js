@@ -578,13 +578,18 @@ async function githubImportRepository(session, repository, branch) {
 }
 
 async function validateGithubProposal(session, repository, edits, branch) {
-  if (!Array.isArray(edits) || !edits.length || edits.length > 8) {
-    throw new Error('A GitHub proposal must contain between 1 and 8 file edits.');
+  if (!Array.isArray(edits) || !edits.length || edits.length > 16) {
+    throw new Error('A GitHub proposal must contain between 1 and 16 requested edits.');
   }
 
-  const normalized = [];
-  const seenPaths = new Set();
-  const rawEdits = [];
+  /*
+   * The model can occasionally describe two independent changes for the same
+   * file as separate edits. That is harmless as long as the targets are
+   * distinct, so normalize them into one reviewable edit before returning the
+   * proposal. This keeps the UI/apply layer path-unique without forcing the
+   * model to perfectly serialize every same-file change in one call.
+   */
+  const grouped = new Map();
 
   for (const edit of edits) {
     const path = edit?.path;
@@ -595,37 +600,76 @@ async function validateGithubProposal(session, repository, edits, branch) {
       throw new Error('Invalid GitHub edit for ' + String(path || 'unknown') + '.');
     }
 
-    if (seenPaths.has(path)) {
-      throw new Error(
-        'The proposal contains the file ' + path + ' more than once. Combine all changes for that file into one edit and prepare the proposal again.'
-      );
-    }
-    seenPaths.add(path);
-    rawEdits.push({ path, oldText, newText });
+    if (!grouped.has(path)) grouped.set(path, []);
+    grouped.get(path).push({ oldText, newText });
   }
 
-  const checked = await Promise.all(rawEdits.map(async edit => {
-    const current = await githubReadFile(session, repository, edit.path, branch, 1, null, true);
-    const first = current.content.indexOf(edit.oldText);
-    const second = first < 0 ? -1 : current.content.indexOf(edit.oldText, first + edit.oldText.length);
+  if (grouped.size > 8) {
+    throw new Error('A GitHub proposal may target at most 8 unique files.');
+  }
 
-    if (first < 0 || second >= 0) {
+  const checked = await Promise.all(Array.from(grouped.entries()).map(async ([path, pathEdits]) => {
+    const current = await githubReadFile(session, repository, path, branch, 1, null, true);
+    const source = current.content;
+    const placements = [];
+
+    for (const edit of pathEdits) {
+      const first = source.indexOf(edit.oldText);
+      const second = first < 0 ? -1 : source.indexOf(edit.oldText, first + edit.oldText.length);
+
+      if (first < 0 || second >= 0) {
+        throw new Error(
+          'The exact edit target for ' + path + ' was not found exactly once. Read the current file again before proposing changes.'
+        );
+      }
+
+      placements.push({
+        start: first,
+        end: first + edit.oldText.length,
+        newText: edit.newText
+      });
+    }
+
+    placements.sort((a, b) => a.start - b.start);
+
+    for (let i = 1; i < placements.length; i++) {
+      if (placements[i].start < placements[i - 1].end) {
+        throw new Error(
+          'Multiple proposed edits for ' + path + ' overlap. Combine the overlapping changes into one edit and prepare the proposal again.'
+        );
+      }
+    }
+
+    const spanStart = placements[0].start;
+    const spanEnd = placements[placements.length - 1].end;
+    let cursor = spanStart;
+    let mergedNewText = '';
+
+    for (const placement of placements) {
+      mergedNewText += source.slice(cursor, placement.start);
+      mergedNewText += placement.newText;
+      cursor = placement.end;
+    }
+    mergedNewText += source.slice(cursor, spanEnd);
+
+    const mergedOldText = source.slice(spanStart, spanEnd);
+
+    if (mergedOldText.length > 100000 || mergedNewText.length > 100000) {
       throw new Error(
-        'The exact edit target for ' + edit.path + ' was not found exactly once. Read the current file again before proposing changes.'
+        'The combined edit for ' + path + ' is too large. Keep the proposed changes closer together or split them into smaller, non-overlapping areas.'
       );
     }
 
     return {
-      path: edit.path,
-      oldText: edit.oldText,
-      newText: edit.newText,
-      oldChars: edit.oldText.length,
-      newChars: edit.newText.length
+      path,
+      oldText: mergedOldText,
+      newText: mergedNewText,
+      oldChars: mergedOldText.length,
+      newChars: mergedNewText.length
     };
   }));
 
-  normalized.push(...checked);
-  return normalized;
+  return checked;
 }
 
 function getGithubToolDeclarations() {
