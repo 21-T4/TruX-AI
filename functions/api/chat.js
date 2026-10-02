@@ -1459,6 +1459,7 @@ export async function onRequestPost(context) {
 
       let agentContents = contents.slice();
       let finalResult = null;
+      let lastModelResult = null;
       let repositoryImported = false;
       let githubProposalPrepared = false;
 
@@ -1606,6 +1607,8 @@ export async function onRequestPost(context) {
         }
         });
 
+        lastModelResult = result;
+
         if (result.functionCalls?.length) {
           const progressLine = codingMode
             ? extractUserProgress(modelRoundText || result.text)
@@ -1683,6 +1686,17 @@ export async function onRequestPost(context) {
           }
 
           agentContents.push({ role: 'user', parts: responseParts });
+
+          // Once the exact reviewable proposal exists, no extra Gemini turn is
+          // needed. Continuing here only wastes tool calls and can hit the
+          // agent's per-request tool-call ceiling before the UI can finish.
+          if (githubProposalPrepared) {
+            finalResult = {
+              text: 'I prepared the requested GitHub changes for your review. Use Apply Changes to write them to the connected repository.'
+            };
+            break;
+          }
+
           continue;
         }
 
@@ -1766,7 +1780,20 @@ export async function onRequestPost(context) {
         return;
       }
 
-      throw new Error('GitHub agent reached its tool-call limit without producing a final answer.');
+      // Never turn an exhausted agent loop into a generic 500. Return the
+      // latest useful model text when available, and clearly report that a
+      // reviewable proposal was not produced yet when it was not.
+      if (!finalResult) {
+        const fallbackText = String(lastModelResult?.text || '').trim()
+          || (repositoryImported
+            ? 'I finished inspecting the connected repository, but I could not prepare a reviewable change proposal in this turn.'
+            : 'I could not complete the GitHub-assisted response in this turn. Please retry the request.');
+        send({ type: 'final', text: fallbackText });
+      } else if (finalResult?.text) {
+        send({ type: 'final', text: String(finalResult.text) });
+      }
+
+      return;
     });
   } catch (error) {
     console.error('Vertex AI Error:', error);
