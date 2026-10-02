@@ -64,7 +64,9 @@ async function processJob(job, env) {
     let lastLivePublishAt = 0;
     async function publishLiveState(force = false) {
       const now = Date.now();
-      if (!force && now - lastLivePublishAt < 250) return;
+      // Keep background state updates frequent enough for live UI without
+      // turning every streamed token into a datastore write.
+      if (!force && now - lastLivePublishAt < 750) return;
       lastLivePublishAt = now;
       await updateJob(env, { jobId, jobSecret: job.jobSecret, status: 'running', events, liveText });
     }
