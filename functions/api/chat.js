@@ -1569,22 +1569,18 @@ export async function onRequestPost(context) {
               thinkingConfig: {
                 // Gemini 3 uses levels; combining this with a numeric
                 // thinkingBudget makes the Vertex API reject the request.
-                thinkingLevel: codingMode ? 'MEDIUM' : 'HIGH'
+                thinkingLevel: 'HIGH'
               }
             }
           : undefined,
         onText: async text => {
-          if (codingMode) {
-            const piece = String(text || '');
-            modelRoundText += piece;
+          const piece = String(text || '');
+          if (!piece) return;
 
-            /* Only the model's explicit user-facing activity sentence is shown
-               in the status bar. Private reasoning is never rendered. */
+          if (codingMode) {
+            modelRoundText += piece;
             if (!activityEmitted) {
-              const clean = modelRoundText
-                .replace(/```[sS]*?```/g, '')
-                .replace(/\s+/g, ' ')
-                .trim();
+              const clean = modelRoundText.replace(/\s+/g, ' ').trim();
               const sentence = clean.match(/^.{8,240}?[.!?](?:\s|$)/);
               if (sentence?.[0]) {
                 const activity = sentence[0].trim();
@@ -1594,6 +1590,9 @@ export async function onRequestPost(context) {
                 }
               }
             }
+            const previewReady = /```[\w+#.-]*\s*\n/.test(modelRoundText) ||
+              (/\n\s*(?:#{1,6}\s|[-*]\s|\d+[.)]\s)/.test(modelRoundText) && modelRoundText.length >= 280);
+            if (previewReady) send({ type: 'chunk', text: piece });
           } else {
             send({ type: 'chunk', text });
           }
