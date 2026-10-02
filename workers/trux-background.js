@@ -95,6 +95,19 @@ async function processJob(job, env) {
         return;
       }
 
+      if (event.type === 'tool_status') {
+        events.push({
+          id: ++seq,
+          type: 'tool_status',
+          tool: String(event.tool || 'TruX-Code'),
+          phase: String(event.phase || 'complete'),
+          status: String(event.status || '')
+        });
+        events = events.slice(-30);
+        await updateJob(env, { jobId, jobSecret: job.jobSecret, status: 'running', events });
+        return;
+      }
+
       if (event.type === 'status') {
         events.push({
           id: ++seq,
