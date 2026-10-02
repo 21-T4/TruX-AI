@@ -59,6 +59,7 @@ async function processJob(job, env) {
     const decoder = new TextDecoder();
     let buffer = '';
     let finalText = '';
+    let liveText = '';
     let seq = 1;
 
     const handleEvent = async (raw) => {
@@ -71,39 +72,26 @@ async function processJob(job, env) {
       }
 
       if (event.type === 'progress' || event.type === 'chunk') {
-        /*
-         * Both event types carry visible text, but they have different
-         * meanings:
-         *   - progress = TruX-Code keep-alive / activity prose
-         *   - chunk   = actual model response text
-         *
-         * The background worker must forward BOTH. Previously it only handled
-         * progress, so streamed model text was silently discarded.
-         */
-        const progress = String(event.text || '');
-        if (progress) {
+        const piece = String(event.text || '');
+        if (piece) {
+          if (event.type === 'chunk') liveText += piece;
           events.push({
             id: ++seq,
-            type: 'text',
-            text: progress
+            type: event.type === 'chunk' ? 'text' : 'status',
+            text: piece,
+            status: event.type === 'progress' ? piece : undefined
           });
           events = events.slice(-30);
-          await updateJob(env, { jobId, jobSecret: job.jobSecret, status: 'running', events });
+          await updateJob(env, {
+            jobId,
+            jobSecret: job.jobSecret,
+            status: 'running',
+            events,
+            liveText
+          });
         }
         return;
       }
-
-      if (event.type === 'tool_status') {
-        events.push({
-          id: ++seq,
-          type: 'tool_status',
-          phase: event.phase || 'complete',
-          tool: String(event.tool || 'GitHub Tool'),
-          status: String(event.status || '')
-        });
-        events = events.slice(-30);
-        await updateJob(env, { jobId, jobSecret: job.jobSecret, status: 'running', events });
-        return;
       }
 
       if (event.type === 'status') {
@@ -171,6 +159,7 @@ async function processJob(job, env) {
       status: 'complete',
       events,
       final: finalText.trim(),
+      liveText,
       error: null
     });
   } catch (error) {
@@ -187,6 +176,7 @@ async function processJob(job, env) {
         status: 'error',
         events: events.slice(-30),
         final: null,
+        liveText,
         error: String(error?.message || 'Background coding request failed.')
       });
     } catch {
