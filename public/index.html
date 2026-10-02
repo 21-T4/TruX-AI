@@ -1003,8 +1003,6 @@
       color:transparent;
       animation:metallicShine 2.1s linear infinite;
     }
-    .background-run-button{color:var(--txt-2)}
-    .background-run-button:hover{color:#fff}
 
     /* ---------- streaming ---------- */
     .md-stream { display: block; }
@@ -4174,6 +4172,8 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           maybeAskForLocation();
           if("Notification" in window && Notification.permission === "granted") syncTruxNotificationsSilently();
           syncChatsToCloud(true);
+          // Resume any server-owned TruX-Code jobs saved before refresh/app close.
+          resumePersistedBackgroundJobs();
         } else {
           getEl("userName").innerText = "Guest User";
           getEl("userEmail").innerText = "Tap to sign in";
@@ -4301,6 +4301,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         isScrolledUp = false,
         activeStreamer = null,
         advancedThinkingEnabled = false,
+        backgroundJobWatchers = new Map(),
         truxLocationCache = null,
         currentProfileOption = null;
 
@@ -6462,138 +6463,251 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       sendPrompt();
     }
 
-    async function handoffCodeTurnToBackground(ctx) {
-      const { row, id, aid, sid, tsid, prompt, voice, requestBody, button } = ctx || {};
-      if (!row || row._backgroundHandover || !isGenerating) return;
+    function ensureBackgroundRow(chatId) {
+      if (chatId !== currentChatId || workspaceMode !== "coding") return null;
+      const chatContainer = getActiveChatContainer();
+      if (!chatContainer) return null;
 
-      row._backgroundHandover = true;
-      if (button) {
-        button.disabled = true;
-        button.textContent = "Starting background…";
-      }
+      const existing = Array.from(chatContainer.querySelectorAll(".row.trux-row"))
+        .find(row => row.dataset.backgroundJobId === String(chatSessions[chatId]?.activeBackgroundJobId || ""));
+      if (existing) return existing;
 
-      activeStreamer?.cancel();
-      activeStreamer = null;
-      setThinkingStatus(sid, "Moving coding turn to background");
-      activeAbortController?.abort();
+      const jobId = String(chatSessions[chatId]?.activeBackgroundJobId || "");
+      if (!jobId) return null;
 
-      try {
-        const started = await runCodeBackgroundJob(ctx);
-        if (!started) throw new Error("Background runner is unavailable.");
-      } catch (e) {
-        row._backgroundHandover = false;
-        if (button) {
-          button.disabled = false;
-          button.textContent = "Run in background";
-        }
-        setThinkingStatus(sid, e?.message || "Background run could not be started.");
-      }
+      const id = "bg_b_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+      const sid = "bg_s_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+      const tsid = "bg_ts_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+      const row = document.createElement("div");
+      row.className = "row trux-row appear";
+      row.dataset.backgroundJobId = jobId;
+      row.innerHTML =
+        '<div class="label">' + BRAND_LABEL + '</div>' +
+        '<div class="trux-response-stack">' +
+          '<div class="bubble trux-bubble thinking" id="' + id + '">' +
+            '<div class="thinking-container">' +
+              '<span class="thinking-elapsed" id="elapsed_' + id + '">00:00</span>' +
+              '<div class="thinking-main"><span class="thinking-particles" aria-hidden="true">' +
+                '<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>' +
+              '</span><span class="status-msg" id="' + sid + '" role="status" aria-live="polite">' +
+                '<span class="thinking-status-line latest">Continuing in background…</span>' +
+              '</span></div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="thinking-tool-trace" id="' + tsid + '" hidden></div>' +
+          '<div class="actions"></div>' +
+        '</div>';
+
+      chatContainer.appendChild(row);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+      row._startedAt = Date.now();
+
+      const elapsedEl = getEl("elapsed_" + id);
+      row._elapsedTimer = setInterval(() => {
+        if (elapsedEl) elapsedEl.innerText = formatThinkingClock(Date.now() - row._startedAt);
+      }, 1000);
+
+      return { row, id, sid, tsid };
     }
 
-    async function runCodeBackgroundJob({ row, id, aid, sid, tsid, prompt, voice, requestBody }) {
-      let start;
-      try {
-        start = await fetch("/api/background/start", {
-          method: "POST",
-          credentials: "same-origin",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...requestBody, mode: "coding", backgroundJobId: "" })
+    async function commitBackgroundResult(chatId, jobId, finalText, proposal) {
+      const session = chatSessions[chatId];
+      if (!session) return;
+
+      const alreadySaved = session.messages.some(m =>
+        m && m.role === "trux" && String(m.backgroundJobId || "") === String(jobId)
+      );
+
+      if (!alreadySaved && finalText) {
+        session.messages.push({
+          role: "trux",
+          text: finalText,
+          backgroundJobId: String(jobId)
         });
-      } catch (e) {
-        throw new Error("Could not reach the background runner. " + (e?.message || "Check the connection and try again."));
       }
+
+      if (String(session.activeBackgroundJobId || "") === String(jobId)) {
+        delete session.activeBackgroundJobId;
+      }
+      saveChatSessions();
+
+      if (chatId !== currentChatId || workspaceMode !== "coding") return;
+
+      const info = backgroundJobWatchers.get(String(jobId));
+      const row = info?.row;
+      if (row?._elapsedTimer) clearInterval(row._elapsedTimer);
+      if (row?.isConnected) row.remove();
+
+      if (finalText) {
+        appendMessageRow("ChatTruX-AI", finalText, "trux-row", "trux-bubble", null, false, [], null);
+      }
+
+      if (proposal) {
+        const rows = getActiveChatContainer().querySelectorAll(".row.trux-row");
+        const lastRow = rows[rows.length - 1];
+        const host = lastRow?.querySelector(".trux-response-stack") || lastRow;
+        if (host) renderGithubProposalCard(host, proposal);
+      }
+
+      isGenerating = false;
+      activeAbortController = null;
+      getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15-5z"/>';
+      getEl("actionBtn").classList.remove("stop");
+      handleInputChange();
+    }
+
+    async function watchBackgroundJob(chatId, jobId, options = {}) {
+      const key = String(jobId || "");
+      if (!key) return false;
+      const existingWatcher = backgroundJobWatchers.get(key);
+      if (existingWatcher) return existingWatcher.promise;
+
+      const controller = new AbortController();
+      const targetRow = options.row || null;
+      const state = {
+        controller,
+        row: targetRow,
+        id: options.id || "",
+        sid: options.sid || "",
+        tsid: options.tsid || "",
+        promise: null
+      };
+
+      state.promise = (async () => {
+        let seenEventIds = new Set();
+        let lastLiveText = "";
+        const startedAt = Number(chatSessions[chatId]?.backgroundStartedAt || Date.now());
+        const deadline = startedAt + 25 * 60 * 1000;
+
+        while (Date.now() < deadline) {
+          let response;
+          try {
+            response = await fetch("/api/background/status?jobId=" + encodeURIComponent(key), {
+              cache: "no-store",
+              credentials: "same-origin",
+              signal: controller.signal
+            });
+          } catch (error) {
+            if (error?.name === "AbortError") return false;
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            continue;
+          }
+
+          if (response.status === 404) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
+          }
+
+          const currentState = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            continue;
+          }
+
+          if (chatId === currentChatId && workspaceMode === "coding") {
+            const ensured = state.row ? { row: state.row, id: state.id, sid: state.sid, tsid: state.tsid } : ensureBackgroundRow(chatId);
+            if (ensured) {
+              state.row = ensured.row;
+              state.id = ensured.id;
+              state.sid = ensured.sid;
+              state.tsid = ensured.tsid;
+
+              const events = Array.isArray(currentState.events) ? currentState.events : [];
+              for (const event of events) {
+                const eventId = String(event?.id ?? "");
+                if (eventId && seenEventIds.has(eventId)) continue;
+                if (eventId) seenEventIds.add(eventId);
+
+                if (event?.type === "tool_status") {
+                  appendToolStatusLine(state.tsid, event.tool || "TruX-Code", event.status || "", event.phase || "complete");
+                } else if (event?.type === "status") {
+                  setThinkingStatus(state.sid, event.status || event.text || "");
+                }
+              }
+
+              if (typeof currentState.liveText === "string" && currentState.liveText !== lastLiveText) {
+                lastLiveText = currentState.liveText;
+                const bubble = getEl(state.id);
+                if (bubble) {
+                  bubble.classList.remove("thinking");
+                  if (!state._streamer) state._streamer = createStreamRenderer(bubble);
+                  state._streamer.setText(currentState.liveText);
+                }
+              }
+            }
+          }
+
+          if (currentState.status === "error") {
+            await commitBackgroundResult(
+              chatId,
+              key,
+              String(currentState.error || "The background coding request failed."),
+              currentState.proposal || null
+            );
+            return false;
+          }
+
+          if (currentState.status === "complete") {
+            await commitBackgroundResult(
+              chatId,
+              key,
+              String(currentState.final || currentState.liveText || "").trim(),
+              currentState.proposal || null
+            );
+            return true;
+          }
+
+          await new Promise(resolve => setTimeout(resolve, 850));
+        }
+
+        await commitBackgroundResult(chatId, key, "The background coding request exceeded its maximum runtime.", null);
+        return false;
+      })().finally(() => {
+        backgroundJobWatchers.delete(key);
+      });
+
+      backgroundJobWatchers.set(key, state);
+      return state.promise;
+    }
+
+    async function runCodeBackgroundJob({ row, id, sid, tsid, prompt, voice, requestBody, chatId }) {
+      const targetChatId = chatId || currentChatId;
+      if (!targetChatId || !chatSessions[targetChatId]) throw new Error("The coding chat session is unavailable.");
+
+      const existingJob = String(chatSessions[targetChatId].activeBackgroundJobId || "");
+      if (existingJob) {
+        return watchBackgroundJob(targetChatId, existingJob, { row, id, sid, tsid });
+      }
+
+      const start = await fetch("/api/background/start", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + (auth?.currentUser ? await auth.currentUser.getIdToken() : "") },
+        body: JSON.stringify({ ...requestBody, mode: "coding", backgroundJobId: "" })
+      });
 
       const startData = await start.json().catch(() => ({}));
-      if(!start.ok) {
-        if(start.status === 404 || start.status === 413 || start.status === 503 || startData.backgroundUnavailable) return false;
-        throw Error(startData.error || "Background coding could not be started.");
+      if (!start.ok) {
+        throw new Error(startData.error || "Background coding could not be started.");
       }
 
-      const jobId = startData.jobId;
-      if(!jobId) return false;
+      const jobId = String(startData.jobId || "");
+      if (!jobId) throw new Error("Background coding did not return a job id.");
 
-      activeAbortController = new AbortController();
+      chatSessions[targetChatId].activeBackgroundJobId = jobId;
+      chatSessions[targetChatId].backgroundStartedAt = Date.now();
+      saveChatSessions();
 
-      let seenEventIds = new Set();
-      let lastLiveText = "";
-      const startedAt = row?._startedAt || Date.now();
-      const maxRuntime = 20 * 60 * 1000;
-
-      while(Date.now() - startedAt < maxRuntime) {
-        const response = await fetch("/api/background/status?jobId=" + encodeURIComponent(jobId), {
-          cache: "no-store",
-          credentials: "same-origin",
-          signal: activeAbortController.signal
-        });
-
-        if(response.status === 404) {
-          await new Promise(r => setTimeout(r, 900));
-          continue;
-        }
-
-        const state = await response.json().catch(() => ({}));
-        if(!response.ok) throw Error(state.error || "Background coding status failed.");
-
-        const events = Array.isArray(state.events) ? state.events : [];
-        for (const event of events) {
-          const eventId = String(event?.id ?? "");
-          if (eventId && seenEventIds.has(eventId)) continue;
-          if (eventId) seenEventIds.add(eventId);
-
-          if(event?.type === "tool_status") {
-            appendToolStatusLine(tsid, event.tool || "TruX-Code", event.status || "", event.phase || "complete");
-            if(event.phase === "start") {
-              const status = getEl(sid);
-              if(status) status.dataset.activeTool = String(event.tool || "TruX-Code");
-              setThinkingStatus(sid, event.status || event.tool || "");
-            } else {
-              const status = getEl(sid);
-              if(status) setThinkingStatus(sid, "");
-            }
-          } else if(event?.type === "status") {
-            setThinkingStatus(sid, event.status || event.text || "");
-          }
-        }
-
-        /* Background jobs keep a cumulative live answer separate from the
-           rolling tool/status event window, so no streamed text is lost. */
-        if(typeof state.liveText === "string" && state.liveText !== lastLiveText) {
-          lastLiveText = state.liveText;
-          let bubble = getEl(id);
-          if(bubble) {
-            bubble.classList.remove("thinking");
-            if(!activeStreamer) activeStreamer = createStreamRenderer(bubble);
-            activeStreamer?.setText(state.liveText);
-          }
-          setThinkingStatus(sid, "");
-        }
-
-        if(state.status === "error") {
-          throw Error(state.error || "The background coding request failed.");
-        }
-
-        if(state.status === "complete") {
-          const finalText = String(state.final || "").trim();
-          if(!finalText) throw Error("The background coding request finished without a final response.");
-
-          stopToolStatusTyping();
-          finalizeResponse(id, aid, finalText, prompt, voice, activeStreamer, []);
-          if(state.proposal) {
-            const bubble = getEl(id);
-            const host = bubble?.closest(".trux-response-stack") || bubble;
-            if(host) renderGithubProposalCard(host, state.proposal);
-          }
-          activeStreamer = null;
-          activeAbortController = null;
-          return true;
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 850));
-      }
-
-      throw Error("TruX-Code background job exceeded its maximum runtime.");
+      return watchBackgroundJob(targetChatId, jobId, { row, id, sid, tsid });
     }
 
+    function resumePersistedBackgroundJobs() {
+      Object.keys(chatSessions).forEach(chatId => {
+        const jobId = String(chatSessions[chatId]?.activeBackgroundJobId || "");
+        if (!jobId) return;
+        watchBackgroundJob(chatId, jobId);
+      });
+    }
 
     function compactAiActivity(text) {
       const raw = String(text == null ? "" : text)
@@ -6761,7 +6875,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         }))
       });
       saveChatSessions();
-      
+
       getEl("welcomeScreen").style.display = "none";
       let chatContainer = getActiveChatContainer(); chatContainer.style.display = "block";
       
@@ -6785,16 +6899,6 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         if(elapsedEl) elapsedEl.innerText = formatThinkingClock(Date.now() - row._startedAt);
       }, 1000);
 
-      const liveActions = getEl(aid);
-      if (workspaceMode === "coding" && liveActions) {
-        const bgButton = document.createElement("button");
-        bgButton.type = "button";
-        bgButton.className = "act background-run-button";
-        bgButton.textContent = "Run in background";
-        liveActions.appendChild(bgButton);
-        row._backgroundButton = bgButton;
-      }
-
       const requestBody = {
         message: prompt,
         tier: (workspaceMode === "deep-research" || workspaceMode === "coding") ? "ultra" : currentModel,
@@ -6815,16 +6919,33 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         notifyOnComplete: true
       };
 
-      if (workspaceMode === "coding" && row._backgroundButton) {
-        row._backgroundButton.onclick = () => handoffCodeTurnToBackground({
-          row, id, aid, sid, tsid, prompt, voice, requestBody, button: row._backgroundButton
+      /* TruX-Code is server-owned from the beginning. The browser only
+         watches the job state, so mode switches, refreshes, and app closure
+         cannot create a second generation or kill the actual coding run. */
+      if (workspaceMode === "coding") {
+        const targetChatId = currentChatId;
+        void runCodeBackgroundJob({
+          row, id, sid, tsid, prompt, voice, requestBody, chatId: targetChatId
+        }).catch(error => {
+          const session = chatSessions[targetChatId];
+          if (session?.activeBackgroundJobId) delete session.activeBackgroundJobId;
+          if (session?.backgroundStartedAt) delete session.backgroundStartedAt;
+          saveChatSessions();
+          if (targetChatId === currentChatId && workspaceMode === "coding") {
+            const bubble = getEl(id);
+            if (bubble) {
+              bubble.classList.remove("thinking");
+              bubble.innerHTML = "Error: " + escapeHtml(error?.message || "Background coding could not be started.");
+            }
+            if (row?._elapsedTimer) clearInterval(row._elapsedTimer);
+            isGenerating = false;
+            getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15-5-15 2z"/>';
+            getEl("actionBtn").classList.remove("stop");
+            handleInputChange();
+          }
         });
+        return;
       }
-
-      /* Cloud Run supports long-lived SSE for TruX Code.
-         Use the direct stream so output stays live and is not delayed behind
-         background polling. The background helper remains available as a
-         future fallback but is no longer the primary coding path. */
 
       while (true) {
         if (navigator.onLine === false) {
@@ -7388,6 +7509,9 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       getEl("codeChatContainer").innerHTML = "";
       const cC = enterChatWorkspace();
       chatSessions[id].messages.forEach(m => appendMessageRow(m.role === "user" ? "You" : "ChatTruX-AI", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image, false, m.sources, m.video));
+      if (workspaceMode === "coding" && chatSessions[id].activeBackgroundJobId) {
+        watchBackgroundJob(id, String(chatSessions[id].activeBackgroundJobId));
+      }
       renderSidebar(); if(innerWidth <= 768) closeSidebar();
     }
     function deleteChat(id) { if(confirm("Delete this chat?")) { delete chatSessions[id]; saveChatSessions(); if(currentChatId === id) startNewChat(); else renderSidebar(); } }
