@@ -62,6 +62,9 @@ function forwardedOrigin(req) {
 function createRuntimeEnv(req) {
   const env = { ...process.env };
   if (!env.TRUX_APP_ORIGIN) env.TRUX_APP_ORIGIN = forwardedOrigin(req);
+  // Background work stays inside the Cloud Run container. Avoid public-domain
+  // routing so Cloudflare/browser connectivity cannot interrupt the worker.
+  env.TRUX_BACKGROUND_ORIGIN = env.TRUX_BACKGROUND_ORIGIN || ('http://127.0.0.1:' + PORT);
 
   /*
    * Cloud Run cannot reliably keep a detached promise alive after the
@@ -71,7 +74,7 @@ function createRuntimeEnv(req) {
    */
   env.TRUX_BACKGROUND_QUEUE = {
     async send(payload) {
-      const target = new URL("/api/background/execute", env.TRUX_APP_ORIGIN);
+      const target = new URL("/api/background/execute", env.TRUX_BACKGROUND_ORIGIN);
       const client = target.protocol === "https:" ? (await import("node:https")).default : (await import("node:http")).default;
       const body = JSON.stringify(payload);
 
