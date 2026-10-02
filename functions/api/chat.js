@@ -457,8 +457,19 @@ async function githubSearchCode(session, repository, query) {
   };
 }
 
+const githubFileReadCache = new Map();
+const GITHUB_DEFAULT_FILE_WINDOW = 600;
+
 async function githubReadFile(session, repository, path, branch, startLine, endLine) {
   if (!validGithubPath(path)) throw new Error('Invalid repository path.');
+
+  const normalizedBranch = String(branch || '');
+  const from = Number.isInteger(startLine) && startLine > 0 ? startLine : 1;
+  const requestedEnd = Number.isInteger(endLine) && endLine >= from ? endLine : null;
+  const cacheKey = repository + '|' + normalizedBranch + '|' + path + '|' + from + '|' + (requestedEnd || '');
+
+  const cached = githubFileReadCache.get(cacheKey);
+  if (cached && Date.now() - cached.at < 60000) return cached.value;
 
   const refQuery = branch ? '?ref=' + encodeURIComponent(branch) : '';
   const response = await githubApi(
@@ -472,19 +483,24 @@ async function githubReadFile(session, repository, path, branch, startLine, endL
 
   const fullContent = decodeGithubBase64(payload.content);
   const lines = fullContent.split('\n');
-  const from = Number.isInteger(startLine) && startLine > 0 ? startLine : 1;
-  const to = Number.isInteger(endLine) && endLine >= from ? Math.min(endLine, lines.length) : lines.length;
+  const to = requestedEnd
+    ? Math.min(requestedEnd, lines.length)
+    : Math.min(from + GITHUB_DEFAULT_FILE_WINDOW - 1, lines.length);
   const selected = lines.slice(from - 1, to).join('\n');
+  const truncated = to < lines.length;
 
-  return {
+  const value = {
     path,
     sha: payload.sha || null,
     branch: branch || null,
     totalLines: lines.length,
     startLine: from,
     endLine: to,
-    content: selected.slice(0, 220000)
+    truncated,
+    content: selected.slice(0, 120000)
   };
+  githubFileReadCache.set(cacheKey, { at: Date.now(), value });
+  return value;
 }
 
 async function githubImportRepository(session, repository, branch) {
@@ -556,6 +572,7 @@ async function validateGithubProposal(session, repository, edits, branch) {
 
   const normalized = [];
   const seenPaths = new Set();
+  const rawEdits = [];
 
   for (const edit of edits) {
     const path = edit?.path;
@@ -572,26 +589,30 @@ async function validateGithubProposal(session, repository, edits, branch) {
       );
     }
     seenPaths.add(path);
+    rawEdits.push({ path, oldText, newText });
+  }
 
-    const current = await githubReadFile(session, repository, path, branch);
-    const first = current.content.indexOf(oldText);
-    const second = first < 0 ? -1 : current.content.indexOf(oldText, first + oldText.length);
+  const checked = await Promise.all(rawEdits.map(async edit => {
+    const current = await githubReadFile(session, repository, edit.path, branch);
+    const first = current.content.indexOf(edit.oldText);
+    const second = first < 0 ? -1 : current.content.indexOf(edit.oldText, first + edit.oldText.length);
 
     if (first < 0 || second >= 0) {
       throw new Error(
-        'The exact edit target for ' + path + ' was not found exactly once. Read the current file again before proposing changes.'
+        'The exact edit target for ' + edit.path + ' was not found exactly once. Read the current file again before proposing changes.'
       );
     }
 
-    normalized.push({
-      path,
-      oldText,
-      newText,
-      oldChars: oldText.length,
-      newChars: newText.length
-    });
-  }
+    return {
+      path: edit.path,
+      oldText: edit.oldText,
+      newText: edit.newText,
+      oldChars: edit.oldText.length,
+      newChars: edit.newText.length
+    };
+  }));
 
+  normalized.push(...checked);
   return normalized;
 }
 
