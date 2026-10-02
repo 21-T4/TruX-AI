@@ -1,5 +1,29 @@
 import { getGithubSession } from '../../github-session.js';
 
+const GITHUB_REQUEST_TIMEOUT_MS = 15000;
+
+async function githubRequest(session, url, options = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), GITHUB_REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        Authorization: 'Bearer ' + session.token,
+        Accept: 'application/vnd.github+json',
+        'User-Agent': 'TruX-Code',
+        ...(options.headers || {})
+      }
+    });
+  } catch (error) {
+    if (error?.name === 'AbortError') throw new Error('GitHub request timed out after 15 seconds.');
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function validRepo(value) { return /^[\w.-]+\/[\w.-]+$/.test(String(value || '')); }
 function validPath(value) { return typeof value === 'string' && value.length > 0 && value.length < 500 && !value.split('/').includes('..'); }
 
@@ -13,11 +37,9 @@ export async function onRequestPost({ request, env }) {
     return Response.json({ error: 'Invalid repository edit request.' }, { status: 400 });
   }
 
-  const response = await fetch(`https://api.github.com/repos/${repository}/contents/${path}`, {
+  const response = await githubRequest(session, `https://api.github.com/repos/${repository}/contents/${path}`, {
     method: 'PUT',
     headers: {
-      Authorization: `Bearer ${session.token}`,
-      Accept: 'application/vnd.github+json',
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
