@@ -1663,6 +1663,12 @@ export async function onRequestPost(context) {
                 }
               });
             } catch (toolError) {
+              send({
+                type: 'tool_status',
+                tool: toolName,
+                phase: 'complete',
+                status: toolTarget + ' · failed: ' + String(toolError?.message || 'GitHub tool failed.')
+              });
               responseParts.push({
                 functionResponse: {
                   name: call?.name || 'unknown',
