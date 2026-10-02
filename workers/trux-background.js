@@ -89,8 +89,8 @@ async function processJob(job, env) {
             events,
             liveText
           });
+        }
         return;
-      }
       }
 
       if (event.type === 'status') {
