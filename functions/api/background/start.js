@@ -36,7 +36,8 @@ export async function onRequestPost({ request, env }) {
       jobSecret: randomId(),
       body: { ...body, notifyOnComplete: true },
       cookie,
-      origin: new URL(request.url).origin,
+      // Prefer the Cloud Run loopback origin for the background worker.
+      origin: String(env.TRUX_BACKGROUND_ORIGIN || new URL(request.url).origin).replace(/\/$/, ''),
       createdAt: Date.now()
     };
 
