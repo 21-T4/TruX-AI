@@ -982,14 +982,15 @@ function createSseResponse(startStreaming) {
         }
       };
 
-      // Flush an SSE byte immediately, then continue with a 5s heartbeat.
-      // This is important for long TruX-Code requests behind Cloud Run.
+      // Flush an SSE byte immediately, then continue with a 3s heartbeat.
+      // Frequent heartbeats keep deep TruX-Code runs visibly alive without
+      // changing the model's thinking level.
       let heartbeatCount = 0;
       send({ type: 'heartbeat', ts: Date.now(), count: heartbeatCount });
       const heartbeat = setInterval(() => {
         heartbeatCount += 1;
         send({ type: 'heartbeat', ts: Date.now(), count: heartbeatCount });
-      }, 5000);
+      }, 3000);
 
       try {
         await startStreaming({ send });
@@ -1561,6 +1562,13 @@ export async function onRequestPost(context) {
 
         let modelRoundText = '';
         let activityEmitted = false;
+
+        if (codingMode) {
+          send({
+            type: 'status',
+            status: agentRound === 0 ? 'Starting deep repository reasoning…' : 'Continuing repository analysis…'
+          });
+        }
 
         const result = await streamVertexGemini({
           model: targetModel,
