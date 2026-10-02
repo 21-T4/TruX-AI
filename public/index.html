@@ -6428,7 +6428,8 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
       activeAbortController = new AbortController();
 
-      let seenEvents = 0;
+      let seenEventIds = new Set();
+      let lastLiveText = "";
       const startedAt = row?._startedAt || Date.now();
       const maxRuntime = 20 * 60 * 1000;
 
@@ -6448,8 +6449,11 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         if(!response.ok) throw Error(state.error || "Background coding status failed.");
 
         const events = Array.isArray(state.events) ? state.events : [];
-        while(seenEvents < events.length) {
-          const event = events[seenEvents++];
+        for (const event of events) {
+          const eventId = String(event?.id ?? "");
+          if (eventId && seenEventIds.has(eventId)) continue;
+          if (eventId) seenEventIds.add(eventId);
+
           if(event?.type === "tool_status") {
             appendToolStatusLine(tsid, event.tool || "TruX-Code", event.status || "", event.phase || "complete");
             if(event.phase === "start") {
@@ -6461,11 +6465,22 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
               if(status) setThinkingStatus(sid, "");
             }
           } else if(event?.type === "status") {
-            setThinkingStatus(sid, event.status || "");
-          } else if(event?.type === "text") {
-            /* Legacy background text events are intentionally ignored.
-               Live coding activity is represented by status/tool-status events. */
+            setThinkingStatus(sid, event.status || event.text || "");
           }
+        }
+
+        /* Background jobs keep a cumulative live answer separate from the
+           rolling tool/status event window, so no streamed text is lost. */
+        if(typeof state.liveText === "string" && state.liveText !== lastLiveText) {
+          lastLiveText = state.liveText;
+          let bubble = getEl(id);
+          if(bubble) {
+            bubble.classList.remove("thinking");
+            if(!activeStreamer) activeStreamer = createStreamRenderer(bubble);
+            activeStreamer?.setText(state.liveText);
+          }
+          setThinkingStatus(sid, "");
+        }
         }
 
         if(state.status === "error") {
@@ -6477,7 +6492,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           if(!finalText) throw Error("The background coding request finished without a final response.");
 
           stopToolStatusTyping();
-          finalizeResponse(id, aid, finalText, prompt, voice, null, []);
+          finalizeResponse(id, aid, finalText, prompt, voice, activeStreamer, []);
           if(state.proposal) {
             const bubble = getEl(id);
             const host = bubble?.closest(".trux-response-stack") || bubble;
@@ -6781,14 +6796,17 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
             return;
           }
           else if(j.type === "chunk") {
-            if (workspaceMode === "coding") return;
             let piece = j.text || "";
             if (!piece) return;
             full += piece;
             sniffRoute();
             if (!routeSettled || imageRoute) return;
             let s = ensureStreamer();
-            if (s) { if (!s.received) s.setText(full); else s.push(piece); }
+            if (s) {
+              if (!s.received) s.setText(full);
+              else s.push(piece);
+            }
+          }
           }
           else if(j.type === "final") fin = j.text || "";
           else if(j.type === "status") {
