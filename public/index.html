@@ -6840,7 +6840,21 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
               if(status) setThinkingStatus(sid, "");
             }
           }
-          else if(j.type === "heartbeat") { /* keep-alive event; intentionally no UI work */ }
+          else if(j.type === "heartbeat") {
+            /* Cloud Run may keep the socket alive while Gemini's high-thinking
+               pass produces no visible tokens. Keep TruX-Code visibly alive
+               without changing or lowering the model's reasoning level. */
+            if (workspaceMode === "coding") {
+              const heartbeatCount = Number(j.count || 0);
+              const alive = [
+                "Reasoning through approach",
+                "Checking implementation details",
+                "Tracing repository dependencies",
+                "Reviewing edge cases"
+              ];
+              setThinkingStatus(sid, alive[heartbeatCount % alive.length]);
+            }
+          }
           else if(j.type === "github_proposal") {
             githubProposal = j.proposal || null;
             let st = getEl(sid);
