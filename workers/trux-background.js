@@ -1,7 +1,7 @@
 const APP_ORIGIN_FALLBACK = 'https://chat.trux.website';
 
 async function updateJob(env, payload) {
-  const origin = String(env.TRUX_APP_ORIGIN || APP_ORIGIN_FALLBACK).replace(/\/$/, '');
+  const origin = String(env.TRUX_BACKGROUND_ORIGIN || env.TRUX_APP_ORIGIN || APP_ORIGIN_FALLBACK).replace(/\/$/, '');
 
   await fetch(origin + '/api/background/update', {
     method: 'POST',
@@ -29,7 +29,7 @@ async function processJob(job, env) {
       events
     });
 
-    const origin = String(job.origin || env.TRUX_APP_ORIGIN || APP_ORIGIN_FALLBACK).replace(/\/$/, '');
+    const origin = String(job.origin || env.TRUX_BACKGROUND_ORIGIN || env.TRUX_APP_ORIGIN || APP_ORIGIN_FALLBACK).replace(/\/$/, '');
     const body = {
       ...(job.body || {}),
       mode: 'coding',
