@@ -401,26 +401,44 @@ function decodeGithubBase64(value) {
   return new TextDecoder().decode(bytes);
 }
 
+const GITHUB_REQUEST_TIMEOUT_MS = 15000;
+
 async function githubApi(session, url, options = {}) {
-  return fetch(url, {
-    ...options,
-    headers: {
-      Authorization: 'Bearer ' + session.token,
-      Accept: 'application/vnd.github+json',
-      'User-Agent': 'TruX-Code',
-      ...(options.headers || {})
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), GITHUB_REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        Authorization: 'Bearer ' + session.token,
+        Accept: 'application/vnd.github+json',
+        'User-Agent': 'TruX-Code',
+        ...(options.headers || {})
+      }
+    });
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error('GitHub request timed out after 15 seconds. The agent will continue with the next step.');
     }
-  });
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function githubSearchCode(session, repository, query) {
-  const cleanQuery = String(query || '').trim();
+  const cleanQuery = String(query || '')
+    .replace(/\brepo:[^\s]+\b/gi, '')
+    .trim()
+    .slice(0, 320);
   if (!cleanQuery) return { results: [] };
 
-  const q = cleanQuery.includes('repo:') ? cleanQuery : cleanQuery + ' repo:' + repository;
+  // Always scope model-generated searches to the active repository.
+  const q = cleanQuery + ' repo:' + repository;
   const response = await githubApi(
     session,
-    'https://api.github.com/search/code?q=' + encodeURIComponent(q) + '&per_page=8',
+    'https://api.github.com/search/code?q=' + encodeURIComponent(q) + '&per_page=6',
     { headers: { Accept: 'application/vnd.github.text-match+json, application/vnd.github+json' } }
   );
   const payload = await response.json();
@@ -640,6 +658,31 @@ function getGithubToolDeclarations() {
 }
 
 async function executeGithubToolCall(session, repository, branch, call) {
+  const name = call?.name;
+  const timeoutMs = name === 'github_import_repository' ? 45000
+    : name === 'github_propose_changes' ? 45000
+    : 20000;
+
+  let timer;
+  try {
+    return await Promise.race([
+      executeGithubToolCallInner(session, repository, branch, call),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(
+          name === 'github_import_repository'
+            ? 'GitHub repository import timed out after 45 seconds.'
+            : name === 'github_propose_changes'
+              ? 'GitHub change validation timed out after 45 seconds.'
+              : 'GitHub tool timed out after 20 seconds.'
+        )), timeoutMs);
+      })
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function executeGithubToolCallInner(session, repository, branch, call) {
   const name = call?.name;
   const args = call?.args || {};
 
