@@ -61,6 +61,14 @@ async function processJob(job, env) {
     let finalText = '';
     let liveText = '';
     let seq = 1;
+    let lastLivePublishAt = 0;
+    async function publishLiveState(force = false) {
+      const now = Date.now();
+      if (!force && now - lastLivePublishAt < 250) return;
+      lastLivePublishAt = now;
+      await updateJob(env, { jobId, jobSecret: job.jobSecret, status: 'running', events, liveText });
+    }
+
 
     const handleEvent = async (raw) => {
       if (!raw) return;
@@ -82,13 +90,7 @@ async function processJob(job, env) {
             status: event.type === 'progress' ? piece : undefined
           });
           events = events.slice(-30);
-          await updateJob(env, {
-            jobId,
-            jobSecret: job.jobSecret,
-            status: 'running',
-            events,
-            liveText
-          });
+          await publishLiveState(false);
         }
         return;
       }
