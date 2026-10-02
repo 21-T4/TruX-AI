@@ -61,6 +61,7 @@ export async function onRequestPost({ request, env }) {
           status: 'Thinking…'
         }],
         final: null,
+        liveText: '',
         error: null,
         proposal: null,
         jobSecret: payload.jobSecret,
