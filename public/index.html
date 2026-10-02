@@ -6353,20 +6353,40 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       if(!wrap) return;
 
       const toolName = String(tool || "TruX-Code");
+      const text = String(detail || toolName || "Tool step");
+
       if(phase === "start") {
-        /* Active tool text lives only in the same thinking bar. */
+        /* Keep the active tool visible below the elapsed timer. */
+        let line = wrap.querySelector(".thinking-tool-line.active");
+        if(!line) {
+          line = document.createElement("div");
+          line.className = "thinking-tool-line active";
+          wrap.appendChild(line);
+        }
+        line.textContent = text;
         wrap.dataset.activeTool = toolName;
-        wrap.dataset.activeDetail = String(detail || toolName || "Working…");
+        wrap.dataset.activeDetail = text;
+        wrap.hidden = false;
+        wrap.style.display = "flex";
+        wrap.scrollIntoView({ block: "nearest", behavior: "smooth" });
         return;
       }
 
-      const line = document.createElement("div");
-      line.className = "thinking-tool-line completed";
-      line.textContent = String(detail || wrap.dataset.activeDetail || toolName || "Tool step complete.");
-      wrap.appendChild(line);
+      /* Complete the visible active row instead of hiding the trace. */
+      const active = wrap.querySelector(".thinking-tool-line.active");
+      if(active) {
+        active.classList.remove("active");
+        active.classList.add("completed");
+        active.textContent = text || String(wrap.dataset.activeDetail || toolName);
+      } else {
+        const line = document.createElement("div");
+        line.className = "thinking-tool-line completed";
+        line.textContent = text;
+        wrap.appendChild(line);
+      }
+
       wrap.dataset.activeTool = "";
       wrap.dataset.activeDetail = "";
-
       wrap.hidden = false;
       wrap.style.display = "flex";
       wrap.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -6779,7 +6799,6 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         // thinking indicator stays visible until real content exists.
         function ensureStreamer() {
           if (activeStreamer) return activeStreamer;
-          hideToolStatus(tsid);
           let bubble = getEl(id);
           if (!bubble) return null;
           bubble.classList.remove("thinking");
@@ -6824,7 +6843,6 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           else if(j.type === "heartbeat") { /* keep-alive event; intentionally no UI work */ }
           else if(j.type === "github_proposal") {
             githubProposal = j.proposal || null;
-            hideToolStatus(tsid);
             let st = getEl(sid);
             if (st) st.innerText = "GitHub changes ready for review…";
             const bubble = getEl(id);
