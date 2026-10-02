@@ -89,7 +89,6 @@ async function processJob(job, env) {
             events,
             liveText
           });
-        }
         return;
       }
       }
