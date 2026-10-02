@@ -984,8 +984,12 @@ function createSseResponse(startStreaming) {
 
       // Flush an SSE byte immediately, then continue with a 5s heartbeat.
       // This is important for long TruX-Code requests behind Cloud Run.
-      send({ type: 'heartbeat', ts: Date.now() });
-      const heartbeat = setInterval(() => send({ type: 'heartbeat', ts: Date.now() }), 5000);
+      let heartbeatCount = 0;
+      send({ type: 'heartbeat', ts: Date.now(), count: heartbeatCount });
+      const heartbeat = setInterval(() => {
+        heartbeatCount += 1;
+        send({ type: 'heartbeat', ts: Date.now(), count: heartbeatCount });
+      }, 5000);
 
       try {
         await startStreaming({ send });
@@ -1069,7 +1073,7 @@ async function resolveStoredAttachments(request, env, attachments, userId, query
    ========================================================= */
 
 const HISTORY_RECENT_LIMIT = 5;
-const HISTORY_SUMMARY_MODEL = 'gemini-3.5-flash-lite';
+const HISTORY_SUMMARY_MODEL = 'gemini-3.1-flash-lite';
 
 function normalizeHistoryMessages(history) {
   return (Array.isArray(history) ? history : [])
@@ -1096,7 +1100,7 @@ async function summarizeOlderHistory(olderMessages, accessToken, projectId) {
       return `[${index + 1}] ${speaker}: ${msg.text}`;
     })
     .join('\n\n')
-    .slice(0, 180000);
+    .slice(-60000);
 
   const response = await fetchVertexGemini({
     model: HISTORY_SUMMARY_MODEL,
@@ -1117,7 +1121,7 @@ async function summarizeOlderHistory(olderMessages, accessToken, projectId) {
     accessToken,
     projectId,
     generationConfig: {
-      maxOutputTokens: 900,
+      maxOutputTokens: 700,
       temperature: 0.2
     }
   });
