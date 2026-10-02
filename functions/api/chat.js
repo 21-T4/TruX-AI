@@ -1590,9 +1590,9 @@ export async function onRequestPost(context) {
                 }
               }
             }
-            const previewReady = /```[\w+#.-]*\s*\n/.test(modelRoundText) ||
-              (/\n\s*(?:#{1,6}\s|[-*]\s|\d+[.)]\s)/.test(modelRoundText) && modelRoundText.length >= 280);
-            if (previewReady) send({ type: 'chunk', text: piece });
+            // TruX Code streams every answer token as soon as it is emitted.
+            // Do not gate visible output behind a code-fence or length threshold.
+            send({ type: 'chunk', text: piece });
           } else {
             send({ type: 'chunk', text });
           }
