@@ -31,16 +31,28 @@ function base64ToUtf8(value) {
   return new TextDecoder().decode(bytes);
 }
 
+const GITHUB_REQUEST_TIMEOUT_MS = 15000;
+
 async function githubRequest(session, url, options = {}) {
-  return fetch(url, {
-    ...options,
-    headers: {
-      Authorization: 'Bearer ' + session.token,
-      Accept: 'application/vnd.github+json',
-      'User-Agent': 'TruX-Code',
-      ...(options.headers || {})
-    }
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), GITHUB_REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        Authorization: 'Bearer ' + session.token,
+        Accept: 'application/vnd.github+json',
+        'User-Agent': 'TruX-Code',
+        ...(options.headers || {})
+      }
+    });
+  } catch (error) {
+    if (error?.name === 'AbortError') throw new Error('GitHub request timed out after 15 seconds.');
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function countExact(source, needle) {
