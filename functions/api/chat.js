@@ -591,12 +591,14 @@ async function validateGithubProposal(session, repository, edits, branch) {
    */
   const grouped = new Map();
 
+  const MAX_PROPOSAL_TEXT_CHARS = 500000;
+
   for (const edit of edits) {
     const path = edit?.path;
     const oldText = typeof edit?.oldText === 'string' ? edit.oldText : '';
     const newText = typeof edit?.newText === 'string' ? edit.newText : '';
 
-    if (!validGithubPath(path) || !oldText || oldText.length > 100000 || newText.length > 100000) {
+    if (!validGithubPath(path) || !oldText || oldText.length > MAX_PROPOSAL_TEXT_CHARS || newText.length > MAX_PROPOSAL_TEXT_CHARS) {
       throw new Error('Invalid GitHub edit for ' + String(path || 'unknown') + '.');
     }
 
@@ -654,7 +656,7 @@ async function validateGithubProposal(session, repository, edits, branch) {
 
     const mergedOldText = source.slice(spanStart, spanEnd);
 
-    if (mergedOldText.length > 100000 || mergedNewText.length > 100000) {
+    if (mergedOldText.length > MAX_PROPOSAL_TEXT_CHARS || mergedNewText.length > MAX_PROPOSAL_TEXT_CHARS) {
       throw new Error(
         'The combined edit for ' + path + ' is too large. Keep the proposed changes closer together or split them into smaller, non-overlapping areas.'
       );
