@@ -463,13 +463,13 @@ async function githubSearchCode(session, repository, query) {
 const githubFileReadCache = new Map();
 const GITHUB_DEFAULT_FILE_WINDOW = 600;
 
-async function githubReadFile(session, repository, path, branch, startLine, endLine) {
+async function githubReadFile(session, repository, path, branch, startLine, endLine, includeFullContent = false) {
   if (!validGithubPath(path)) throw new Error('Invalid repository path.');
 
   const normalizedBranch = String(branch || '');
   const from = Number.isInteger(startLine) && startLine > 0 ? startLine : 1;
   const requestedEnd = Number.isInteger(endLine) && endLine >= from ? endLine : null;
-  const cacheKey = repository + '|' + normalizedBranch + '|' + path + '|' + from + '|' + (requestedEnd || '');
+  const cacheKey = repository + '|' + normalizedBranch + '|' + path + '|' + from + '|' + (requestedEnd || '') + '|' + (includeFullContent ? 'full' : 'window');
 
   const cached = githubFileReadCache.get(cacheKey);
   if (cached && Date.now() - cached.at < 60000) return cached.value;
@@ -506,7 +506,10 @@ async function githubReadFile(session, repository, path, branch, startLine, endL
     startLine: from,
     endLine: to,
     truncated,
-    content: selected.slice(0, 120000)
+    // Normal model reads remain bounded so large repositories cannot flood
+    // the agent context. Proposal validation can opt into the complete file
+    // because that content stays server-side and is never sent back to Gemini.
+    content: includeFullContent ? fullContent : selected.slice(0, 120000)
   };
   githubFileReadCache.set(cacheKey, { at: Date.now(), value });
   return value;
@@ -602,7 +605,7 @@ async function validateGithubProposal(session, repository, edits, branch) {
   }
 
   const checked = await Promise.all(rawEdits.map(async edit => {
-    const current = await githubReadFile(session, repository, edit.path, branch);
+    const current = await githubReadFile(session, repository, edit.path, branch, 1, null, true);
     const first = current.content.indexOf(edit.oldText);
     const second = first < 0 ? -1 : current.content.indexOf(edit.oldText, first + edit.oldText.length);
 
