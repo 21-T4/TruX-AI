@@ -788,7 +788,7 @@ async function fetchVertexGemini({ model, contents, systemInstruction, tools, ac
    VERTEX STREAMING REQUEST
    ========================================================= */
 
-async function streamVertexGemini({ model, contents, systemInstruction, tools, accessToken, projectId, onText, onStatus, generationConfig }) {
+async function streamVertexGemini({ model, contents, systemInstruction, tools, toolConfig, accessToken, projectId, onText, onStatus, generationConfig }) {
   const url =
     `https://aiplatform.googleapis.com/v1/` +
     `projects/${projectId}/locations/${LOCATION}/` +
@@ -801,6 +801,7 @@ async function streamVertexGemini({ model, contents, systemInstruction, tools, a
   }
 
   if (tools?.length) payload.tools = tools;
+  if (toolConfig && tools?.length) payload.toolConfig = toolConfig;
   if (generationConfig) payload.generationConfig = generationConfig;
 
   const response = await fetch(url, {
@@ -1539,6 +1540,8 @@ export async function onRequestPost(context) {
       let lastModelResult = null;
       let repositoryImported = false;
       let githubProposalPrepared = false;
+      let githubInspectionCount = 0;
+      let proposalToolRequired = false;
 
       /* A coding request that asks for a repository change must not terminate
          on an intermediate text-only turn such as "the repo is imported, now
@@ -1651,7 +1654,15 @@ export async function onRequestPost(context) {
           contents: agentContents,
           systemInstruction: thinkingInstruction,
           tools: modelTools,
-        accessToken,
+          toolConfig: proposalToolRequired
+            ? {
+                functionCallingConfig: {
+                  mode: 'ANY',
+                  allowedFunctionNames: ['github_propose_changes']
+                }
+              }
+            : undefined,
+          accessToken,
         projectId,
         generationConfig: effectiveAdvancedThinking
           ? {
@@ -1726,6 +1737,13 @@ export async function onRequestPost(context) {
                 repositoryImported = true;
               }
 
+              if (
+                (call?.name === 'github_search_code' || call?.name === 'github_read_file') &&
+                !callResult?.error
+              ) {
+                githubInspectionCount += 1;
+              }
+
               send({
                 type: 'tool_status',
                 tool: toolName,
@@ -1754,6 +1772,12 @@ export async function onRequestPost(context) {
                 }
               });
             } catch (toolError) {
+              if (call?.name === 'github_propose_changes') {
+                // A failed proposal must release the forced-tool lock so the
+                // next round can inspect the current file again and retry.
+                proposalToolRequired = false;
+              }
+
               send({
                 type: 'tool_status',
                 tool: toolName,
@@ -1770,6 +1794,13 @@ export async function onRequestPost(context) {
           }
 
           agentContents.push({ role: 'user', parts: responseParts });
+
+          // Once at least one current file has been inspected for a requested
+          // change, force the next Gemini turn to use the proposal tool instead
+          // of spending another round on a natural-language status message.
+          if (changeRequested && githubInspectionCount > 0 && !githubProposalPrepared) {
+            proposalToolRequired = true;
+          }
 
           // Once the exact reviewable proposal exists, no extra Gemini turn is
           // needed. Continuing here only wastes tool calls and can hit the
@@ -1802,6 +1833,11 @@ export async function onRequestPost(context) {
           }
           const progressLine = extractUserProgress(result?.text);
           if (progressLine) send({ type: 'status', status: progressLine });
+
+          if (githubInspectionCount > 0 && !githubProposalPrepared) {
+            proposalToolRequired = true;
+          }
+
           continueCodingAgent();
           continue;
         }
