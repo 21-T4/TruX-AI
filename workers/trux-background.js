@@ -201,6 +201,8 @@ async function processJob(job, env) {
   }
 }
 
+export { processJob };
+
 export default {
   async queue(batch, env) {
     for (const message of batch.messages) {
