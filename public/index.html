@@ -6724,12 +6724,10 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         notifyOnComplete: true
       };
 
-      if(workspaceMode === "coding" && !allAttachments.some(a => a?.objectKey)) {
-        const handledInBackground = await runCodeBackgroundJob({
-          row, id, aid, sid, tsid, prompt, voice, requestBody
-        });
-        if(handledInBackground) return;
-      }
+      /* Cloud Run supports long-lived SSE for TruX Code.
+         Use the direct stream so output stays live and is not delayed behind
+         background polling. The background helper remains available as a
+         future fallback but is no longer the primary coding path. */
 
       while (true) {
         if (navigator.onLine === false) {
@@ -6880,7 +6878,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         /* Defensive: never show the routing tag if it slipped into prose. */
         text = text.replace(/\[\[IMAGE\]\]/gi, "").trim();
 
-        let streamer = workspaceMode === "coding" ? null : ensureStreamer();
+        let streamer = activeStreamer || ensureStreamer();
         finalizeResponse(id, aid, text, prompt, voice, streamer, turnSources);
         if(githubProposal) {
           const bubble = getEl(id);
