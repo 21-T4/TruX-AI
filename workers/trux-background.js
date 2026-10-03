@@ -59,6 +59,8 @@ async function processJob(job, env) {
     };
 
     if (job.cookie) headers.Cookie = String(job.cookie);
+    headers['X-Trux-Background-Job'] = jobId;
+    headers['X-Trux-Background-Secret'] = String(job.jobSecret || '');
 
     const response = await fetch(origin + '/api/chat', {
       method: 'POST',
