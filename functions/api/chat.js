@@ -1065,7 +1065,6 @@ async function streamVertexGemini({ model, contents, systemInstruction, tools, t
   let buffer = '';
   let functionCalls = [];
   const functionCallKeys = new Set();
-  let modelContentParts = [];
   let groundingMetadata = null;
   let accumulatedText = '';
 
@@ -1077,7 +1076,6 @@ async function streamVertexGemini({ model, contents, systemInstruction, tools, t
 
     const candidate = parsed?.candidates?.[0];
     const parts = candidate?.content?.parts || [];
-    if (Array.isArray(parts) && parts.length) modelContentParts.push(...parts);
 
     if (candidate?.groundingMetadata) groundingMetadata = candidate.groundingMetadata;
 
