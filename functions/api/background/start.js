@@ -1,6 +1,5 @@
 import { getCloudRunKv } from '../../cloud-run-store.js';
 
-const MAX_QUEUE_PAYLOAD = 100 * 1000;
 
 function getKv(env) {
   return getCloudRunKv(env);
@@ -40,14 +39,6 @@ export async function onRequestPost({ request, env }) {
       origin: String(env.TRUX_BACKGROUND_ORIGIN || new URL(request.url).origin).replace(/\/$/, ''),
       createdAt: Date.now()
     };
-
-    const encoded = JSON.stringify(payload);
-    if (encoded.length > MAX_QUEUE_PAYLOAD) {
-      return Response.json({
-        error: 'This coding request is too large for background mode. I will use live streaming instead.',
-        backgroundUnavailable: true
-      }, { status: 413 });
-    }
 
     const kv = getKv(env);
     await kv.put(
