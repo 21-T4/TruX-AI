@@ -6643,39 +6643,43 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         m && m.role === "trux" && String(m.backgroundJobId || "") === String(jobId)
       );
 
-      if (!alreadySaved && finalText) {
-        session.messages.push({
-          role: "trux",
-          text: finalText,
-          backgroundJobId: String(jobId)
-        });
-      }
-
-      if (String(session.activeBackgroundJobId || "") === String(jobId)) {
-        delete session.activeBackgroundJobId;
-      }
-      saveChatSessions();
-
-      if (chatId !== currentChatId || workspaceMode !== "coding") return;
-
-      const info = backgroundJobWatchers.get(String(jobId));
-      const row = info?.row;
-      if (row?._elapsedTimer) clearInterval(row._elapsedTimer);
-      if (row?.isConnected) row.remove();
-
-      if (finalText) {
-        appendMessageRow("ChatTruX-AI", finalText, "trux-row", "trux-bubble", null, false, [], null);
-      }
-
        if (proposal && !finalText) {
          finalText = "I prepared the GitHub changes for your review. Nothing has been written yet.";
        }
-      if (proposal) {
-        const rows = getActiveChatContainer().querySelectorAll(".row.trux-row");
-        const lastRow = rows[rows.length - 1];
-        const host = lastRow?.querySelector(".trux-response-stack") || lastRow;
-        if (host) renderGithubProposalCard(host, proposal);
-      }
+
+       if (!alreadySaved && finalText) {
+         const savedMessage = {
+           role: "trux",
+           text: finalText,
+           backgroundJobId: String(jobId)
+         };
+         if (proposal) savedMessage.githubProposal = proposal;
+         session.messages.push(savedMessage);
+       }
+
+       if (String(session.activeBackgroundJobId || "") === String(jobId)) {
+         delete session.activeBackgroundJobId;
+       }
+       saveChatSessions();
+
+       if (chatId !== currentChatId || workspaceMode !== "coding") return;
+
+       const info = backgroundJobWatchers.get(String(jobId));
+       const row = info?.row;
+       if (row?._elapsedTimer) clearInterval(row._elapsedTimer);
+       if (row?.isConnected) row.remove();
+
+       if (finalText) {
+         appendMessageRow("ChatTruX-AI", finalText, "trux-row", "trux-bubble", null, false, [], null);
+       }
+
+       if (proposal) {
+         const rows = getActiveChatContainer().querySelectorAll(".row.trux-row");
+         const lastRow = rows[rows.length - 1];
+         const host = lastRow?.querySelector(".trux-response-stack") || lastRow;
+         if (host) renderGithubProposalCard(host, proposal);
+       }
+     }
 
       isGenerating = false;
       activeAbortController = null;
