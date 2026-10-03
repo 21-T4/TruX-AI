@@ -1,8 +1,5 @@
 import { getGithubSession } from '../../github-session.js';
 
-const MAX_FILE_BYTES = 1024 * 1024;
-const MAX_EDIT_TEXT_CHARS = 500000;
-const MAX_EDITS = 16;
 
 function validRepo(value) {
   return /^[\w.-]+\/[\w.-]+$/.test(String(value || ''));
@@ -83,7 +80,7 @@ export async function onRequestPost({ request, env }) {
       return Response.json({ error: 'Explicit confirmation is required before writing to GitHub.' }, { status: 400 });
     }
 
-    if (!validRepo(repository) || !Array.isArray(edits) || edits.length < 1 || edits.length > MAX_EDITS) {
+    if (!validRepo(repository) || !Array.isArray(edits) || !edits.length) {
       return Response.json({ error: 'Invalid GitHub edit request.' }, { status: 400 });
     }
 
@@ -130,23 +127,25 @@ export async function onRequestPost({ request, env }) {
 
     const planned = [];
     const seenPaths = new Set();
+    const groupedEdits = new Map();
 
-    // No GitHub write happens inside this loop. Every target is read from the
-    // same branch head and every exact replacement must match exactly once.
+    // Validate every fragment against the same captured branch head. Repeated
+    // paths are valid; only overlapping fragments are rejected.
     for (const edit of edits) {
       const path = edit?.path;
       const oldText = typeof edit?.oldText === 'string' ? edit.oldText : '';
       const newText = typeof edit?.newText === 'string' ? edit.newText : '';
 
-      if (!validPath(path) || oldText.length < 1 || oldText.length > MAX_EDIT_TEXT_CHARS || newText.length > MAX_EDIT_TEXT_CHARS) {
+      if (!validPath(path) || oldText.length < 1) {
         return Response.json({ error: 'Invalid edit payload for ' + String(path || 'unknown') + '.' }, { status: 400 });
       }
 
-      if (seenPaths.has(path)) {
-        return Response.json({ error: `The proposal contains the file ${path} more than once.` }, { status: 400 });
-      }
+      if (!groupedEdits.has(path)) groupedEdits.set(path, []);
+      groupedEdits.get(path).push({ oldText, newText });
       seenPaths.add(path);
+    }
 
+    for (const [path, pathEdits] of groupedEdits.entries()) {
       const query = `?ref=${encodeURIComponent(targetBranch)}`;
       const filePath = path.split('/').map(encodeURIComponent).join('/');
       const fileResponse = await githubRequest(
@@ -162,27 +161,66 @@ export async function onRequestPost({ request, env }) {
       }
 
       const currentContent = base64ToUtf8(filePayload.content);
-      const occurrences = countExact(currentContent, oldText);
+      const placements = pathEdits.map(edit => {
+        const first = currentContent.indexOf(edit.oldText);
+        const second = first < 0 ? -1 : currentContent.indexOf(edit.oldText, first + edit.oldText.length);
+        if (first < 0 || second >= 0) return null;
+        return { start: first, end: first + edit.oldText.length, newText: edit.newText };
+      });
 
-      if (occurrences !== 1) {
+      if (placements.some(placement => !placement)) {
         return Response.json({
-          error: `The file ${path} changed since the proposal was prepared, so the exact edit could not be applied safely.`,
+          error: `The file ${path} changed since the proposal was prepared, so one or more exact edits could not be applied safely.`,
           conflict: true,
           path
         }, { status: 409 });
       }
 
-      const nextContent = currentContent.replace(oldText, newText);
-      const byteLength = new TextEncoder().encode(nextContent).byteLength;
-      if (byteLength > MAX_FILE_BYTES) {
-        return Response.json({ error: `The edited file ${path} is larger than 1 MB.` }, { status: 413 });
+      placements.sort((x, y) => x.start - y.start);
+      for (let i = 1; i < placements.length; i++) {
+        if (placements[i].start < placements[i - 1].end) {
+          return Response.json({
+            error: `Overlapping GitHub edits were requested for ${path}. Combine only the overlapping fragments.`,
+            conflict: true,
+            path
+          }, { status: 409 });
+        }
       }
+
+      let nextContent = '';
+      let cursor = 0;
+      for (const placement of placements) {
+        nextContent += currentContent.slice(cursor, placement.start);
+        nextContent += placement.newText;
+        cursor = placement.end;
+      }
+      nextContent += currentContent.slice(cursor);
 
       planned.push({ path, content: nextContent });
     }
 
-    // Build one new tree from the captured branch head. Nothing is visible on
-    // the branch until the final ref update succeeds.
+    // Store large edited files as Git blobs in parallel, then create one compact
+    // tree from blob SHAs. This is substantially more efficient for large changes.
+    const blobResults = await Promise.all(planned.map(async edit => {
+      const blobResponse = await githubRequest(
+        session,
+        `https://api.github.com/repos/${repository}/git/blobs`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: utf8ToBase64(edit.content),
+            encoding: 'base64'
+          })
+        }
+      );
+      const blobPayload = await blobResponse.json().catch(() => ({}));
+      if (!blobResponse.ok || !blobPayload?.sha) {
+        throw new Error(blobPayload?.message || `GitHub could not store the edited file ${edit.path}.`);
+      }
+      return { path: edit.path, sha: String(blobPayload.sha) };
+    }));
+
     const treeResponse = await githubRequest(
       session,
       `https://api.github.com/repos/${repository}/git/trees`,
@@ -191,11 +229,11 @@ export async function onRequestPost({ request, env }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           base_tree: headCommitPayload.tree.sha,
-          tree: planned.map(edit => ({
+          tree: blobResults.map(edit => ({
             path: edit.path,
             mode: '100644',
             type: 'blob',
-            content: edit.content
+            sha: edit.sha
           }))
         })
       }
