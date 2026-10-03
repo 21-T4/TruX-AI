@@ -388,6 +388,12 @@ function validGithubRepo(value) {
   return /^[\w.-]+\/[\w.-]+$/.test(String(value || ''));
 }
 
+function isGithubChangeRequest(value) {
+  const text = String(value || '').trim();
+  if (!text) return false;
+  return /\b(?:fix|repair|change|modify|update|refactor|add|remove|delete|implement|edit|rewrite|replace|rename|migrate|create|build|design|redesign|restyle|enhance|customize|patch|prepare)\b/i.test(text);
+}
+
 function validGithubPath(value) {
   return typeof value === 'string'
     && value.length > 0
@@ -401,7 +407,7 @@ function decodeGithubBase64(value) {
   return new TextDecoder().decode(bytes);
 }
 
-const GITHUB_REQUEST_TIMEOUT_MS = 10000;
+const GITHUB_REQUEST_TIMEOUT_MS = 15000;
 
 async function githubApi(session, url, options = {}) {
   const controller = new AbortController();
@@ -578,8 +584,9 @@ async function githubImportRepository(session, repository, branch) {
 }
 
 async function validateGithubProposal(session, repository, edits, branch) {
-  if (!Array.isArray(edits) || !edits.length || edits.length > 16) {
-    throw new Error('A GitHub proposal must contain between 1 and 16 requested edits.');
+  const MAX_REQUESTED_PROPOSAL_EDITS = 32;
+  if (!Array.isArray(edits) || !edits.length || edits.length > MAX_REQUESTED_PROPOSAL_EDITS) {
+    throw new Error('A GitHub proposal must contain between 1 and 32 requested edit fragments.');
   }
 
   /*
@@ -606,8 +613,9 @@ async function validateGithubProposal(session, repository, edits, branch) {
     grouped.get(path).push({ oldText, newText });
   }
 
-  if (grouped.size > 8) {
-    throw new Error('A GitHub proposal may target at most 8 unique files.');
+  const MAX_PROPOSAL_FILES = 16;
+  if (grouped.size > MAX_PROPOSAL_FILES) {
+    throw new Error('A GitHub proposal may target at most 16 unique files.');
   }
 
   const checked = await Promise.all(Array.from(grouped.entries()).map(async ([path, pathEdits]) => {
@@ -1577,8 +1585,13 @@ export async function onRequestPost(context) {
         send({ type: 'status', status: 'GitHub is selected but not connected. Reconnect GitHub to inspect the repository.' });
       }
 
+      const changeRequested = codingMode && isGithubChangeRequest(message);
+      const githubTools = getGithubToolDeclarations();
+      const activeGithubTools = changeRequested
+        ? githubTools
+        : githubTools.filter(tool => tool.name !== 'github_propose_changes');
       const modelTools = githubSession && codingMode && validGithubRepo(githubRepository)
-        ? [{ functionDeclarations: getGithubToolDeclarations() }]
+        ? [{ functionDeclarations: activeGithubTools }]
         : (researchMode ? [{ googleSearch: {} }] : []);
 
       let agentContents = contents.slice();
@@ -1587,13 +1600,13 @@ export async function onRequestPost(context) {
       let repositoryImported = false;
       let githubProposalPrepared = false;
       let githubInspectionCount = 0;
-      let proposalToolRequired = false;
 
       /* A coding request that asks for a repository change must not terminate
          on an intermediate text-only turn such as "the repo is imported, now
          I'll make the changes". Keep the agent loop alive until it produces
          the reviewable github_propose_changes tool result. */
-      const changeRequested = codingMode && /\b(?:fix(?:es|ed|ing)?|change(?:s|d)?|modify(?:ies|ied|ing|s)?|update(?:s|d|ing)?|refactor(?:s|ed|ing)?|add(?:s|ed|ing)?|remove(?:s|d|ing)?|delete(?:s|d|ing)?|implement(?:s|ed|ing)?|adjust(?:s|ed|ing)?|edit(?:s|ed|ing)?|improve(?:s|d|ing)?|repair(?:s|ed|ing)?|make|build|create|design|redesign|enhance|customize|restyle|darken|bug|broken|issue)\b/i.test(String(message || ''));
+      // Change intent is calculated once before tool exposure so read-only GitHub
+      // requests never receive or force the proposal tool.
 
       function extractUserProgress(value) {
         const clean = String(value || '')
@@ -1673,7 +1686,8 @@ export async function onRequestPost(context) {
       }
 
 
-      for (let agentRound = 0; agentRound < 7; agentRound++) {
+      const MAX_CODING_AGENT_ROUNDS = 12;
+      for (let agentRound = 0; agentRound < MAX_CODING_AGENT_ROUNDS; agentRound++) {
         if (!codingMode) {
           send({
             type: 'status',
@@ -1701,14 +1715,6 @@ export async function onRequestPost(context) {
           contents: agentContents,
           systemInstruction: thinkingInstruction,
           tools: modelTools,
-          toolConfig: proposalToolRequired
-            ? {
-                functionCallingConfig: {
-                  mode: 'ANY',
-                  allowedFunctionNames: ['github_propose_changes']
-                }
-              }
-            : undefined,
           accessToken,
         projectId,
         generationConfig: effectiveAdvancedThinking
@@ -1822,7 +1828,6 @@ export async function onRequestPost(context) {
               if (call?.name === 'github_propose_changes') {
                 // A failed proposal must release the forced-tool lock so the
                 // next round can inspect the current file again and retry.
-                proposalToolRequired = false;
                 proposalFailedThisRound = true;
               }
 
@@ -1843,17 +1848,8 @@ export async function onRequestPost(context) {
 
           agentContents.push({ role: 'user', parts: responseParts });
 
-          // Once at least one current file has been inspected for a requested
-          // change, force the next Gemini turn to use the proposal tool instead
-          // of spending another round on a natural-language status message.
-          if (
-            changeRequested &&
-            githubInspectionCount > 0 &&
-            !githubProposalPrepared &&
-            !proposalFailedThisRound
-          ) {
-            proposalToolRequired = true;
-          }
+          // The planner is never forced. A continuation turn lets Gemini choose
+          // the next inspection or proposal tool naturally.
 
           // Once the exact reviewable proposal exists, no extra Gemini turn is
           // needed. Continuing here only wastes tool calls and can hit the
@@ -1888,7 +1884,6 @@ export async function onRequestPost(context) {
           if (progressLine) send({ type: 'status', status: progressLine });
 
           if (githubInspectionCount > 0 && !githubProposalPrepared) {
-            proposalToolRequired = true;
           }
 
           continueCodingAgent();
@@ -1912,9 +1907,11 @@ export async function onRequestPost(context) {
         }
 
         const finalText = String(finalResult?.text || '').trim()
-          || (repositoryImported
+          || (repositoryImported && !changeRequested && githubInspectionCount === 0
             ? 'I finished importing your repository. Its file structure is loaded and ready for code-aware analysis.'
-            : '');
+            : (changeRequested && !githubProposalPrepared
+              ? 'I could not finish preparing a reviewable GitHub change proposal. The repository was inspected, but no changes were written.'
+              : ''));
 
         if (finalText) {
           send({ type: 'final', text: finalText });
