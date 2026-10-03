@@ -1,4 +1,5 @@
 import { getCloudRunKv } from '../../cloud-run-store.js';
+import { requireFirebaseUser } from '../../firebase-auth.js';
 
 
 function getKv(env) {
@@ -21,19 +22,26 @@ export async function onRequestPost({ request, env }) {
       }, { status: 503 });
     }
 
+    const verified = await requireFirebaseUser(request, env);
     const body = await request.json();
     if (body?.mode !== 'coding') {
       return Response.json({ error: 'Background jobs are currently available for TruX-Code only.' }, { status: 400 });
     }
 
-    const userId = body?.userId ? String(body.userId) : '';
-    if (!userId) return Response.json({ error: 'Sign in before starting a background coding job.' }, { status: 401 });
+    const requestedUserId = body?.userId ? String(body.userId) : '';
+    const verifiedUserId = String(verified.uid || '');
+    if (requestedUserId && requestedUserId !== verifiedUserId) {
+      return Response.json({ error: 'Authenticated account does not match the requested user.' }, { status: 403 });
+    }
+
+    const userId = verifiedUserId;
+    const userEmail = String(verified.email || '');
 
     const cookie = request.headers.get('Cookie') || '';
     const payload = {
       jobId: randomId(),
       jobSecret: randomId(),
-      body: { ...body, notifyOnComplete: true },
+      body: { ...body, userId, userEmail, notifyOnComplete: true },
       cookie,
       // Prefer the Cloud Run loopback origin for the background worker.
       origin: String(env.TRUX_BACKGROUND_ORIGIN || new URL(request.url).origin).replace(/\/$/, ''),
