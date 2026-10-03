@@ -2453,6 +2453,22 @@
     .thinking-particles i:nth-child(8){left:58%;top:48%;animation-delay:-3.55s;transform:scale(.45)}
     @keyframes thinkingPustule{0%,100%{opacity:0;transform:translate3d(-2px,5px,0) scale(.36)}17%{opacity:.28}44%{opacity:.9;transform:translate3d(7px,-4px,0) scale(.96)}68%{opacity:.5;transform:translate3d(-3px,-11px,0) scale(.7)}86%{opacity:.12;transform:translate3d(5px,-16px,0) scale(.5)}}
     .thinking-tool-trace{background:none!important;border:0!important;box-shadow:none!important;}
+    /* Tool trace is above the active thinking line. Each new tool call therefore
+       pushes the current thinking activity downward. */
+    .trux-response-stack{display:flex;flex-direction:column;align-items:flex-start}
+    .trux-response-stack > .thinking-tool-trace{order:1}
+    .trux-response-stack > .trux-bubble{order:2}
+    .trux-response-stack > .coding-worked-for{order:3}
+    .trux-response-stack > .github-proposal-card{order:4}
+    .trux-response-stack > .actions{order:5}
+    .generation-stopped{
+      display:inline-block;
+      margin-top:2px;
+      font:560 15px/1.35 var(--font-mono);
+      color:var(--txt-3);
+      letter-spacing:.01em;
+    }
+    .generation-stopped::before{content:"";display:inline-block;width:7px;height:7px;margin:0 8px 1px 0;border-radius:50%;background:var(--txt-3);opacity:.65}
 
     .badge i {
       background: var(--acc);
@@ -4407,6 +4423,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         activeStreamer = null,
         advancedThinkingEnabled = false,
         backgroundJobWatchers = new Map(),
+        generationStopRequested = false,
         truxLocationCache = null,
         currentProfileOption = null;
 
@@ -6739,6 +6756,19 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
             }
           }
 
+          if (currentState.status === "stopped") {
+            if (chatId === currentChatId && workspaceMode === "coding") {
+              markGenerationStopped(state.row, state.id, state.sid, state.tsid);
+              isGenerating = false;
+              activeAbortController = null;
+              generationStopRequested = false;
+              getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15-2-15 2z"/>';
+              getEl("actionBtn").classList.remove("stop");
+              handleInputChange();
+            }
+            return false;
+          }
+
           if (currentState.status === "error") {
             await commitBackgroundResult(
               chatId,
@@ -6957,6 +6987,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
          picture is what was asked for — see the image routing below. */
       
       enterChatWorkspace();
+      generationStopRequested = false;
       if(workspaceMode === "coding") getEl("truxCodeWorkspace")?.classList.add("code-workspace-dismissed");
       isGenerating = true; isScrolledUp = false;
       getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>'; getEl("actionBtn").classList.add("stop"); getEl("actionBtn").classList.remove("ready");
@@ -7422,14 +7453,88 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     }
     function closeMediaLibrary(){ getEl("mediaLibraryModal")?.classList.remove("open"); }
 
+    function markGenerationStopped(row, id, sid, tsid) {
+      if(row?._elapsedTimer) clearInterval(row._elapsedTimer);
+      hideToolStatus(tsid);
+
+      const bubble = getEl(id);
+      if(bubble){
+        const wasThinking = bubble.classList.contains("thinking");
+        bubble.querySelectorAll(".stream-caret").forEach(el => el.remove());
+
+        if(wasThinking){
+          bubble.classList.remove("thinking");
+          bubble.innerHTML = '<span class="generation-stopped">Generation stopped.</span>';
+        }else{
+          const stopLine = document.createElement("div");
+          stopLine.className = "generation-stopped";
+          stopLine.textContent = "Generation stopped.";
+          bubble.appendChild(stopLine);
+        }
+      }
+    }
+
+    async function requestBackgroundJobStop(jobId) {
+      const id = String(jobId || "");
+      if(!id) return;
+      try{
+        const token = auth?.currentUser ? await auth.currentUser.getIdToken() : "";
+        await fetch("/api/background/cancel",{
+          method:"POST",
+          credentials:"same-origin",
+          headers:{
+            "Content-Type":"application/json",
+            "Authorization":"Bearer "+token
+          },
+          body:JSON.stringify({jobId:id,userId:auth?.currentUser?.uid||""})
+        });
+      }catch{}
+    }
+
     function handleActionButton() {
       /* Block duplicate taps during async preparation. Once generation starts,
          the button remains the normal Stop control. */
       if(sendPromptInFlight && !isGenerating) return;
       if(isGenerating) {
-        activeAbortController?.abort();
+        generationStopRequested = true;
+
+        const codingJobId = workspaceMode === "coding"
+          ? String(chatSessions[currentChatId]?.activeBackgroundJobId || "")
+          : "";
+
+        if(codingJobId){
+          const info = backgroundJobWatchers.get(codingJobId);
+          if(info?.controller) info.controller.abort();
+          void requestBackgroundJobStop(codingJobId);
+
+          if(info?.row){
+            markGenerationStopped(info.row, info.id, info.sid, info.tsid);
+          }else{
+            const activeRow = getActiveChatContainer()?.querySelector(".row.trux-row:last-of-type");
+            const bubble = activeRow?.querySelector(".bubble");
+            if(activeRow && bubble){
+              markGenerationStopped(
+                activeRow,
+                bubble.id,
+                bubble.querySelector(".status-msg")?.id || "",
+                activeRow.querySelector(".thinking-tool-trace")?.id || ""
+              );
+            }
+          }
+
+          const session = chatSessions[currentChatId];
+          if(session){
+            delete session.activeBackgroundJobId;
+            delete session.backgroundStartedAt;
+            saveChatSessions();
+          }
+        }else{
+          activeAbortController?.abort();
+        }
+
         isGenerating = false;
-        getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
+        activeAbortController = null;
+        getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15-5-15 2-15 6z"/>';
         getEl("actionBtn").classList.remove("stop");
         handleInputChange();
         return;
