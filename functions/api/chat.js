@@ -867,6 +867,7 @@ async function validateGithubProposal(session, repository, edits, branch, reques
       path,
       oldText: edit.oldText,
       newText: edit.newText,
+      baseSha: current.sha || null,
       oldChars: edit.oldText.length,
       newChars: edit.newText.length
     })));
