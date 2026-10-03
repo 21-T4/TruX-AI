@@ -428,32 +428,39 @@ async function githubSearchCode(session, repository, query) {
 
   // Always scope model-generated searches to the active repository.
   const q = cleanQuery + ' repo:' + repository;
+  const searchCacheKey = repository + '|' + cleanQuery.toLowerCase();
+  const cachedSearch = githubSearchCache.get(searchCacheKey);
+  if (cachedSearch && Date.now() - cachedSearch.at < 60000) return cachedSearch.value;
+
   const response = await githubApi(
     session,
-    'https://api.github.com/search/code?q=' + encodeURIComponent(q) + '&per_page=6',
+    'https://api.github.com/search/code?q=' + encodeURIComponent(q) + '&per_page=12',
     { headers: { Accept: 'application/vnd.github.text-match+json, application/vnd.github+json' } }
   );
   const payload = await response.json();
 
   if (!response.ok) throw new Error(payload?.message || 'GitHub code search failed.');
 
-  return {
-    results: (payload.items || []).slice(0, 8).map(item => ({
+  const value = {
+    results: (payload.items || []).slice(0, 12).map(item => ({
       path: item.path,
       name: item.name,
       score: item.score,
       matches: Array.isArray(item.text_matches)
-        ? item.text_matches.slice(0, 3).map(m => String(m.fragment || '').slice(0, 800))
+        ? item.text_matches.slice(0, 3).map(m => String(m.fragment || '').slice(0, 1200))
         : []
     }))
   };
+
+  value.suggestedReads = value.results.slice(0, 8).map(item => item.path);
+  githubSearchCache.set(searchCacheKey, { at: Date.now(), value });
+  return value;
 }
 
 const githubFileReadCache = new Map();
-const GITHUB_DEFAULT_FILE_WINDOW = 240;
-const GITHUB_MAX_MODEL_READ_CHARS = 48000;
-const GITHUB_HEAD_LINES = 140;
-const GITHUB_TAIL_LINES = 80;
+const githubSearchCache = new Map();
+const GITHUB_DEFAULT_FILE_WINDOW = 800;
+const GITHUB_MAX_MODEL_READ_CHARS = 120000;
 
 async function githubReadFile(session, repository, path, branch, startLine, endLine, includeFullContent = false) {
   if (!validGithubPath(path)) throw new Error('Invalid repository path.');
@@ -493,17 +500,6 @@ async function githubReadFile(session, repository, path, branch, startLine, endL
     selected = fullContent;
     selectedStart = 1;
     selectedEnd = lines.length;
-  } else if (!requestedEnd && from === 1 && lines.length > GITHUB_DEFAULT_FILE_WINDOW) {
-    const headEnd = Math.min(GITHUB_HEAD_LINES, lines.length);
-    const tailStart = Math.max(headEnd + 1, lines.length - GITHUB_TAIL_LINES + 1);
-    selected =
-      lines.slice(0, headEnd).join('\n') +
-      '\n\n[... MIDDLE OF LARGE FILE OMITTED ...]\n\n' +
-      lines.slice(tailStart - 1).join('\n');
-    selectedStart = 1;
-    selectedEnd = lines.length;
-    truncated = true;
-    nextStartLine = headEnd + 1;
   } else {
     selectedEnd = requestedEnd
       ? Math.min(requestedEnd, lines.length)
@@ -514,8 +510,10 @@ async function githubReadFile(session, repository, path, branch, startLine, endL
     if (selected.length > GITHUB_MAX_MODEL_READ_CHARS) {
       selected = selected.slice(0, GITHUB_MAX_MODEL_READ_CHARS) +
         '\n\n[READ WINDOW CHARACTER CAP REACHED — request a narrower line range.]';
-      truncated = true;
-      nextStartLine = selectedEnd < lines.length ? selectedEnd + 1 : null;
+      const returnedLineCount = Math.max(1, selected.split('\n').length - 2);
+      selectedEnd = Math.min(lines.length, from + returnedLineCount - 1);
+      truncated = selectedEnd < lines.length;
+      nextStartLine = truncated ? selectedEnd + 1 : null;
     } else {
       truncated = selectedEnd < lines.length;
       nextStartLine = truncated ? selectedEnd + 1 : null;
@@ -706,7 +704,7 @@ function getGithubToolDeclarations() {
     },
     {
       name: 'github_read_file',
-      description: 'Read the current contents of a text file in the active connected GitHub repository. Large files return a compact head/tail sample by default; use focused start_line/end_line ranges for exact sections. Responses are character-bounded so large HTML/CSS/JS files cannot stall the agent. Use github_search_code first to locate relevant symbols/classes.',
+      description: 'Read the current contents of a text file in the active connected GitHub repository. A normal read returns up to 800 lines, with a larger character-safe window when needed. Use start_line/end_line for a specific section or continue from nextStartLine. After a search finds a relevant file, read that file instead of repeating near-duplicate searches; multiple file reads can be requested in the same model turn.',
       parameters: {
         type: 'object',
         properties: {
@@ -1489,7 +1487,7 @@ export async function onRequestPost(context) {
     const modeInstruction = researchMode
       ? `\n\n[DEEP RESEARCH MODE]: Use Google Search grounding for fresh, niche, or source-backed information. Synthesize multiple relevant sources and distinguish facts from inference. Use TruX-Code reasoning engine.`
       : codingMode
-        ? `\n\n[TRUX-CODE MODE]: Think deeply before answering, but never expose private chain-of-thought. Prioritize complete, maintainable code, careful debugging, tests, and concise implementation notes. Never claim you changed a repository. Before each GitHub tool call, first emit one brief, natural user-facing activity sentence describing the action you are about to take; do not emit internal reasoning. After each tool returns, continue with the next relevant activity sentence instead of canned progress text.\n\n[CONNECTED GITHUB WORKSPACE]: The active repository is ${String(githubRepository || 'none')}; branch ${String(githubBranch || 'default')}. When GitHub tools are available, inspect the repository with github_search_code and github_read_file before changing anything. For ANY request that asks to modify, fix, update, refactor, add, remove, or otherwise change repository files, you MUST call github_propose_changes after reading the current files. Do not stop at a conversational confirmation such as “I can make that change” or “ready to commit”. The proposal tool produces the exact reviewable patch and causes the UI to show the explicit confirmation button. Use github_propose_changes with exact oldText/newText replacements copied from the latest reads. There is no artificial size, file-count, character, or line-count ceiling: large repository changes are allowed and should be as comprehensive as the user's request requires. For broad redesign/rebuild/beautification requests, inspect all relevant UI, markup, style, state, and supporting-logic files and implement the actual requested transformation rather than making a tiny cosmetic tweak. Use multiple non-overlapping edits and multiple proposal calls when that is the cleanest way to cover a large change. A proposal is not ready merely because one small edit validates; keep inspecting and proposing until the requested scope is materially covered. github_propose_changes NEVER writes to GitHub; it creates a user-reviewable proposal. Never say that a change was applied until the user explicitly confirms it in the UI.`
+        ? `\n\n[TRUX-CODE MODE]: Think deeply before answering, but never expose private chain-of-thought. Prioritize complete, maintainable code, careful debugging, tests, and concise implementation notes. Never claim you changed a repository. Before each GitHub tool call, first emit one brief, natural user-facing activity sentence describing the action you are about to take; do not emit internal reasoning. After each tool returns, continue with the next relevant activity sentence instead of canned progress text.\n\n[CONNECTED GITHUB WORKSPACE]: The active repository is ${String(githubRepository || 'none')}; branch ${String(githubBranch || 'default')}. When GitHub tools are available, inspect the repository with github_search_code and github_read_file before changing anything. For ANY request that asks to modify, fix, update, refactor, add, remove, or otherwise change repository files, you MUST call github_propose_changes after reading the current files. Do not stop at a conversational confirmation such as “I can make that change” or “ready to commit”. The proposal tool produces the exact reviewable patch and causes the UI to show the explicit confirmation button. Use github_propose_changes with exact oldText/newText replacements copied from the latest reads. There is no artificial size, file-count, character, or line-count ceiling: large repository changes are allowed and should be as comprehensive as the user's request requires. For broad redesign/rebuild/beautification requests, inspect all relevant UI, markup, style, state, and supporting-logic files and implement the actual requested transformation rather than making a tiny cosmetic tweak. Use multiple non-overlapping edits and multiple proposal calls when that is the cleanest way to cover a large change. For repository inspection, prefer a small number of focused searches followed immediately by larger file reads; do not repeatedly search the same file using synonyms when a read can provide the needed context. A proposal is not ready merely because one small edit validates; keep inspecting and proposing until the requested scope is materially covered. github_propose_changes NEVER writes to GitHub; it creates a user-reviewable proposal. Never say that a change was applied until the user explicitly confirms it in the UI.`
         : '';
     const thinkingInstruction = effectiveAdvancedThinking
       ? `${combinedSystemInstruction}${modeInstruction}\n\n[REASONING MODE]: Take extra time to reason carefully, check assumptions and calculations, then return only the concise final answer. Do not expose private chain-of-thought.`
