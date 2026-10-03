@@ -451,17 +451,50 @@ function githubSearchTokens(query) {
 }
 
 async function githubSearchPathFallback(session, repository, branch, query) {
-  const endpointBranch = branch || 'HEAD';
+  let treeSha = null;
+
+  if (branch) {
+    const branchResponse = await githubApi(
+      session,
+      'https://api.github.com/repos/' + repository + '/branches/' + encodeURIComponent(branch),
+      { timeoutMs: 12000 }
+    ).catch(() => null);
+    const branchPayload = branchResponse ? await branchResponse.json().catch(() => null) : null;
+    treeSha = branchPayload?.commit?.commit?.tree?.sha || null;
+  } else {
+    const repoResponse = await githubApi(
+      session,
+      'https://api.github.com/repos/' + repository,
+      { timeoutMs: 12000 }
+    ).catch(() => null);
+    const repoPayload = repoResponse ? await repoResponse.json().catch(() => null) : null;
+    const defaultBranch = repoPayload?.default_branch || '';
+    if (defaultBranch) {
+      const branchResponse = await githubApi(
+        session,
+        'https://api.github.com/repos/' + repository + '/branches/' + encodeURIComponent(defaultBranch),
+        { timeoutMs: 12000 }
+      ).catch(() => null);
+      const branchPayload = branchResponse ? await branchResponse.json().catch(() => null) : null;
+      treeSha = branchPayload?.commit?.commit?.tree?.sha || null;
+    }
+  }
+
+  if (!treeSha) {
+    return {
+      results: [],
+      fallback: true,
+      reason: 'GitHub code search was unavailable and the repository tree could not be loaded.'
+    };
+  }
+
   const response = await githubApi(
     session,
-    'https://api.github.com/repos/' + repository + '/git/trees/' +
-      encodeURIComponent(endpointBranch) + '?recursive=1',
+    'https://api.github.com/repos/' + repository + '/git/trees/' + encodeURIComponent(treeSha) + '?recursive=1',
     { timeoutMs: 12000 }
   ).catch(() => null);
 
-  let payload = null;
-  if (response) payload = await response.json().catch(() => null);
-
+  const payload = response ? await response.json().catch(() => null) : null;
   const tree = Array.isArray(payload?.tree) ? payload.tree : [];
   const tokens = githubSearchTokens(query);
 
