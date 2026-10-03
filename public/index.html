@@ -7490,19 +7490,31 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
     async function requestBackgroundJobStop(jobId) {
       const id = String(jobId || "");
-      if(!id) return;
-      try{
-        const token = auth?.currentUser ? await auth.currentUser.getIdToken() : "";
-        await fetch("/api/background/cancel",{
+      if(!id) return false;
+
+      const sendCancel = async forceRefresh => {
+        const user = auth?.currentUser;
+        if(!user) return false;
+        const token = await user.getIdToken(!!forceRefresh);
+        const response = await fetch("/api/background/cancel",{
           method:"POST",
           credentials:"same-origin",
           headers:{
             "Content-Type":"application/json",
             "Authorization":"Bearer "+token
           },
-          body:JSON.stringify({jobId:id,userId:auth?.currentUser?.uid||""})
+          body:JSON.stringify({jobId:id,userId:user.uid||""})
         });
-      }catch{}
+        if(response.ok) return true;
+        if(response.status === 401 && !forceRefresh) return sendCancel(true);
+        return false;
+      };
+
+      try {
+        return await sendCancel(false);
+      } catch {
+        return false;
+      }
     }
 
     function handleActionButton() {
@@ -7517,41 +7529,41 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           : "";
 
         if(codingJobId){
+          if(generationStopRequested) return;
+
           const info = backgroundJobWatchers.get(codingJobId);
-          if(info?.controller) info.controller.abort();
-          void requestBackgroundJobStop(codingJobId);
+          const row = info?.row || getActiveChatContainer()?.querySelector(".row.trux-row:last-of-type");
+          const bubble = info?.id ? getEl(info.id) : row?.querySelector(".bubble");
+          const sid = info?.sid || bubble?.querySelector(".status-msg")?.id || "";
+          generationStopRequested = true;
 
-          if(info?.row){
-            markGenerationStopped(info.row, info.id, info.sid, info.tsid);
-          }else{
-            const activeRow = getActiveChatContainer()?.querySelector(".row.trux-row:last-of-type");
-            const bubble = activeRow?.querySelector(".bubble");
-            if(activeRow && bubble){
-              markGenerationStopped(
-                activeRow,
-                bubble.id,
-                bubble.querySelector(".status-msg")?.id || "",
-                activeRow.querySelector(".thinking-tool-trace")?.id || ""
-              );
-            }
-          }
+          if(sid) setThinkingStatus(sid, "Stopping generation…");
 
-          const session = chatSessions[currentChatId];
-          if(session){
-            delete session.activeBackgroundJobId;
-            delete session.backgroundStartedAt;
-            saveChatSessions();
-          }
+          /*
+           * Do not abort the browser watcher or delete the active job yet.
+           * The server owns the coding run; once /cancel succeeds, the watcher
+           * receives the terminal "stopped" state and performs the final UI reset.
+           */
+          void requestBackgroundJobStop(codingJobId).then(ok => {
+            if(ok) return;
+            generationStopRequested = false;
+            if(sid) setThinkingStatus(sid, "Stop request failed — the background run is still active.");
+          }).catch(() => {
+            generationStopRequested = false;
+            if(sid) setThinkingStatus(sid, "Stop request failed — the background run is still active.");
+          });
+
+          return;
         }else{
           activeAbortController?.abort();
-        }
 
-        isGenerating = false;
-        activeAbortController = null;
-        getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15-5-15 2-15 6z"/>';
-        getEl("actionBtn").classList.remove("stop");
-        handleInputChange();
-        return;
+          isGenerating = false;
+          activeAbortController = null;
+          getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15-5-15 2-15 6z"/>';
+          getEl("actionBtn").classList.remove("stop");
+          handleInputChange();
+          return;
+        }
       }
       sendPrompt();
     }
