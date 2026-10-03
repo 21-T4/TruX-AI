@@ -417,20 +417,80 @@ function decodeGithubBase64(value) {
   const binary = atob(String(value || '').replace(/\s/g, ''));
   const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
   return new TextDecoder().decode(bytes);
-}
-
-
 async function githubApi(session, url, options = {}) {
-  return await fetch(url, {
-    ...options,
-    headers: {
-      Authorization: 'Bearer ' + session.token,
-      Accept: 'application/vnd.github+json',
-      'User-Agent': 'TruX-Code',
-      ...(options.headers || {})
-    }
-  });
+  const timeoutMs = Number(options.timeoutMs || 20000);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const requestOptions = { ...options };
+    delete requestOptions.timeoutMs;
+    requestOptions.signal = controller.signal;
+
+    return await fetch(url, {
+      ...requestOptions,
+      headers: {
+        Authorization: 'Bearer ' + session.token,
+        Accept: 'application/vnd.github+json',
+        'User-Agent': 'TruX-Code',
+        ...(options.headers || {})
+      }
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
 }
+
+function githubSearchTokens(query) {
+  return String(query || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9_./-]+/g, ' ')
+    .split(/\s+/)
+    .filter(token => token.length >= 3)
+    .slice(0, 12);
+}
+
+async function githubSearchPathFallback(session, repository, branch, query) {
+  const endpointBranch = branch || 'HEAD';
+  const response = await githubApi(
+    session,
+    'https://api.github.com/repos/' + repository + '/git/trees/' +
+      encodeURIComponent(endpointBranch) + '?recursive=1',
+    { timeoutMs: 12000 }
+  ).catch(() => null);
+
+  let payload = null;
+  if (response) payload = await response.json().catch(() => null);
+
+  const tree = Array.isArray(payload?.tree) ? payload.tree : [];
+  const tokens = githubSearchTokens(query);
+
+  const scored = tree
+    .filter(item => item?.type === 'blob' && typeof item.path === 'string')
+    .map(item => {
+      const lower = item.path.toLowerCase();
+      let score = 0;
+      for (const token of tokens) {
+        if (lower.includes(token)) score += token.length >= 6 ? 3 : 1;
+      }
+      return { item, score };
+    })
+    .filter(x => x.score > 0)
+    .sort((a,b) => b.score - a.score || a.item.path.length - b.item.path.length)
+    .slice(0, 10);
+
+  return {
+    results: scored.map(({item,score}) => ({
+      path: item.path,
+      name: item.path.split('/').pop() || item.path,
+      score,
+      matches: []
+    })),
+    fallback: true,
+    reason: 'GitHub code search was unavailable; matched repository paths instead.'
+  };
+}
+
 async function githubSearchCode(session, repository, query) {
   const cleanQuery = String(query || '')
     .replace(/\brepo:[^\s]+\b/gi, '')
@@ -438,16 +498,19 @@ async function githubSearchCode(session, repository, query) {
     .slice(0, 320);
   if (!cleanQuery) return { results: [] };
 
-  // Always scope model-generated searches to the active repository.
   const q = cleanQuery + ' repo:' + repository;
   const response = await githubApi(
     session,
     'https://api.github.com/search/code?q=' + encodeURIComponent(q) + '&per_page=6',
-    { headers: { Accept: 'application/vnd.github.text-match+json, application/vnd.github+json' } }
+    { headers: { Accept: 'application/vnd.github.text-match+json, application/vnd.github+json' }, timeoutMs: 12000 }
   );
-  const payload = await response.json();
 
-  if (!response.ok) throw new Error(payload?.message || 'GitHub code search failed.');
+  let payload = {};
+  try { payload = await response.json(); } catch {}
+
+  if (!response.ok) {
+    return githubSearchPathFallback(session, repository, '', cleanQuery);
+  }
 
   return {
     results: (payload.items || []).slice(0, 8).map(item => ({
@@ -461,13 +524,7 @@ async function githubSearchCode(session, repository, query) {
   };
 }
 
-const githubFileReadCache = new Map();
-const GITHUB_DEFAULT_FILE_WINDOW = 240;
-const GITHUB_MAX_MODEL_READ_CHARS = 48000;
-const GITHUB_HEAD_LINES = 140;
-const GITHUB_TAIL_LINES = 80;
 
-async function githubReadFile(session, repository, path, branch, startLine, endLine, includeFullContent = false) {
   if (!validGithubPath(path)) throw new Error('Invalid repository path.');
 
   const normalizedBranch = String(branch || '');
