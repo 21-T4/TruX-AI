@@ -5311,7 +5311,6 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
        generationStopRequested = false;
       document.body.classList.remove("scrolled");
       stopToolStatusTyping();
-      activeStreamer?.cancel(); activeStreamer = null;
       getEl("chatContainer").innerHTML = ""; getEl("chatContainer").style.display = "none";
       getEl("codeChatContainer").innerHTML = ""; getEl("codeChatContainer").style.display = "none";
       getEl("truxCodeWorkspace")?.classList.remove("code-workspace-dismissed");
@@ -6668,6 +6667,9 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         appendMessageRow("ChatTruX-AI", finalText, "trux-row", "trux-bubble", null, false, [], null);
       }
 
+       if (proposal && !finalText) {
+         finalText = "I prepared the GitHub changes for your review. Nothing has been written yet.";
+       }
       if (proposal) {
         const rows = getActiveChatContainer().querySelectorAll(".row.trux-row");
         const lastRow = rows[rows.length - 1];
@@ -6816,16 +6818,15 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     async function runCodeBackgroundJob({ row, id, sid, tsid, prompt, voice, requestBody, chatId }) {
       const targetChatId = chatId || currentChatId;
       if (!targetChatId || !chatSessions[targetChatId]) throw new Error("The coding chat session is unavailable.");
-       if (generationStopRequested || !isGenerating) return false;
 
       const existingJob = String(chatSessions[targetChatId].activeBackgroundJobId || "");
       if (existingJob) {
         return watchBackgroundJob(targetChatId, existingJob, { row, id, sid, tsid });
       }
 
-       if (generationStopRequested || !isGenerating) return false;
 
        
+
        if (generationStopRequested || !isGenerating) return false;
 
        const start = await fetch("/api/background/start", {
