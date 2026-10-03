@@ -6826,11 +6826,14 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
        if (generationStopRequested || !isGenerating) return false;
 
        
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + (auth?.currentUser ? await auth.currentUser.getIdToken() : "") },
-        body: JSON.stringify({ ...requestBody, mode: "coding", backgroundJobId: "" })
-      });
+       if (generationStopRequested || !isGenerating) return false;
+
+       const start = await fetch("/api/background/start", {
+         method: "POST",
+         credentials: "same-origin",
+         headers: { "Content-Type": "application/json", "Authorization": "Bearer " + (auth?.currentUser ? await auth.currentUser.getIdToken() : "") },
+         body: JSON.stringify({ ...requestBody, mode: "coding", backgroundJobId: "" })
+       });
 
       const startData = await start.json().catch(() => ({}));
       if (!start.ok) {
