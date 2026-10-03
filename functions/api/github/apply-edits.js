@@ -153,18 +153,27 @@ export async function onRequestPost({ request, env }) {
       const path = edit?.path;
       const oldText = typeof edit?.oldText === 'string' ? edit.oldText : '';
       const newText = typeof edit?.newText === 'string' ? edit.newText : '';
+      const baseSha = typeof edit?.baseSha === 'string' ? edit.baseSha : '';
 
       if (!validPath(path) || oldText.length < 1) {
         return Response.json({ error: 'Invalid edit payload for ' + String(path || 'unknown') + '.' }, { status: 400 });
       }
 
       if (!groupedEdits.has(path)) groupedEdits.set(path, []);
-      groupedEdits.get(path).push({ oldText, newText });
+       groupedEdits.get(path).push({ oldText, newText, baseSha });
     }
 
     for (const [path, pathEdits] of groupedEdits.entries()) {
       const currentFile = await readGithubFile(session, repository, path, headSha);
       const currentContent = currentFile.content;
+       const baseShas = new Set(pathEdits.map(edit => String(edit?.baseSha || '')).filter(Boolean));
+       if (baseShas.size > 1 || (baseShas.size === 1 && !baseShas.has(String(currentFile.sha || '')))) {
+         return Response.json({
+           error: `The reviewed version of ${path} is no longer current. Re-read the file and prepare the proposal again before applying it.`,
+           conflict: true,
+           path
+         }, { status: 409 });
+       }
       const placements = pathEdits.map(edit => {
         const first = currentContent.indexOf(edit.oldText);
         const second = first < 0 ? -1 : currentContent.indexOf(edit.oldText, first + edit.oldText.length);
