@@ -493,7 +493,7 @@ async function githubReadFile(session, repository, path, branch, startLine, endL
     // Normal model reads remain bounded so large repositories cannot flood
     // the agent context. Proposal validation can opt into the complete file
     // because that content stays server-side and is never sent back to Gemini.
-    content: includeFullContent ? fullContent : selected.slice(0, 120000)
+    content: includeFullContent ? fullContent : selected
   };
   githubFileReadCache.set(cacheKey, { at: Date.now(), value });
   return value;
