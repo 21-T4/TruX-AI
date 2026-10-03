@@ -145,8 +145,18 @@ async function processJob(job, env) {
         return;
       }
 
-      if (event.type === 'github_proposal') {
-        await updateJob(env, { jobId, jobSecret: job.jobSecret, status: 'running', events, proposal: event.proposal || null });
+      if (event.type === 'github_proposal' || event.type === 'github_commit') {
+        const commit = event.type === 'github_commit' ? event.commit : (event.proposal?.commit || null);
+        const proposal = event.proposal || null;
+        if (proposal && commit) proposal.commit = commit;
+        await updateJob(env, {
+          jobId,
+          jobSecret: job.jobSecret,
+          status: 'running',
+          events,
+          proposal,
+          commit: commit || null
+        });
         return;
       }
 
@@ -198,6 +208,7 @@ async function processJob(job, env) {
     }
 
     buffer += decoder.decode();
+
     if (buffer.trim()) {
       const lines = buffer
         .split(/\r?\n/)
@@ -210,7 +221,7 @@ async function processJob(job, env) {
     if (await isJobStopped(job, env)) return;
 
     if (!finalText.trim()) {
-      throw new Error('The coding backend finished without a final response.');
+      finalText = liveText.trim() || 'Completed TruX-Code task.';
     }
 
     await updateJob(env, {

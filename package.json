@@ -6,7 +6,10 @@
     "node": ">=20"
   },
   "scripts": {
-    "start": "node cloud-run-server.js"
+    "dev": "node cloud-run-server.js",
+    "start": "node cloud-run-server.js",
+    "build": "node --check cloud-run-server.js",
+    "lint": "node --check cloud-run-server.js"
   },
   "dependencies": {
     "@google-cloud/storage": "^8.2.0",

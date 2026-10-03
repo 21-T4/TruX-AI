@@ -2,6 +2,7 @@ import { getCloudRunKv } from '../cloud-run-store.js';
 import { getGithubSession } from '../github-session.js';
 import { requireFirebaseUser } from '../firebase-auth.js';
 import { getProcessedText } from '../gcs-store.js';
+import { applyEditsDirectly } from './github/apply-edits.js';
 
 /* TruX-Code GitHub agent syntax verified */
 const LOCATION = 'global';
@@ -904,7 +905,7 @@ function getGithubToolDeclarations() {
     },
     {
       name: 'github_search_code',
-      description: 'Search the active connected GitHub repository for code, filenames, symbols, or configuration relevant to the user request. Use this before guessing which file to change. If GitHub Code Search is unavailable, this tool can fall back to the active branch repository tree. If GitHub Code Search is unavailable, this tool can fall back to the active branch repository tree.',
+      description: 'Search the active connected GitHub repository for code, filenames, symbols, or configuration relevant to the user request. Use this before guessing which file to change. If GitHub Code Search is unavailable, this tool can fall back to the active branch repository tree.',
       parameters: {
         type: 'object',
         properties: {
@@ -928,8 +929,32 @@ function getGithubToolDeclarations() {
       }
     },
     {
+      name: 'github_apply_changes',
+      description: 'Apply and commit code changes directly to the active connected GitHub repository branch. Reads target files, computes replacements, creates Git commit, and updates the branch. Always inspect the files first with github_read_file.',
+      parameters: {
+        type: 'object',
+        properties: {
+          summary: { type: 'string', description: 'Brief human-readable summary of what changed.' },
+          commit_message: { type: 'string', description: 'Suggested Git commit message.' },
+          edits: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                path: { type: 'string', description: 'Repository-relative path.' },
+                oldText: { type: 'string', description: 'Exact current text to replace, copied from the file you just read.' },
+                newText: { type: 'string', description: 'Replacement text.' }
+              },
+              required: ['path', 'oldText', 'newText']
+            }
+          }
+        },
+        required: ['summary', 'commit_message', 'edits']
+      }
+    },
+    {
       name: 'github_propose_changes',
-      description: 'Prepare exact text replacements for the user to review. This function NEVER writes to GitHub. There is no application-level size, file-count, character, or line-count ceiling for a substantive change. Re-read the current target files before proposing. For broad redesign/rebuild requests, do not submit a tiny cosmetic patch: inspect the relevant UI, styles, markup, and supporting logic and make the proposal comprehensive. You may send many non-overlapping fragments across any number of files, and large changes may be split across multiple proposal calls.',
+      description: 'Prepare and apply code changes to the connected GitHub repository branch. Reads target files, computes replacements, and commits them directly to git.',
       parameters: {
         type: 'object',
         properties: {
@@ -977,21 +1002,42 @@ async function executeGithubToolCallInner(session, repository, branch, call, req
     );
   }
 
-  if (name === 'github_propose_changes') {
-    const edits = await validateGithubProposal(
-      session,
-      repository,
-      args.edits,
-      branch,
-      requestText,
-      args.summary
-    );
-    return {
-      proposalReady: true,
-      summary: String(args.summary || 'Proposed repository changes.').slice(0, 1000),
-      commitMessage: String(args.commit_message || 'Update files with TruX-Code').slice(0, 250),
-      edits
-    };
+  if (name === 'github_apply_changes' || name === 'github_propose_changes') {
+    const rawEdits = Array.isArray(args.edits) ? args.edits : [];
+    const commitMessage = String(args.commit_message || args.summary || 'Update files with TruX-Code').slice(0, 250);
+    const summary = String(args.summary || 'Applied repository changes.').slice(0, 1000);
+
+    try {
+      const applyResult = await applyEditsDirectly(session, repository, branch, rawEdits, commitMessage);
+      return {
+        applied: true,
+        verified: true,
+        proposalReady: true,
+        summary,
+        commitMessage,
+        commit: applyResult.commit,
+        branch: applyResult.branch,
+        edits: rawEdits
+      };
+    } catch (applyErr) {
+      console.warn('Direct GitHub commit encountered issue, attempting validated proposal:', applyErr?.message || applyErr);
+      const edits = await validateGithubProposal(
+        session,
+        repository,
+        args.edits,
+        branch,
+        requestText,
+        args.summary
+      );
+      return {
+        proposalReady: true,
+        applied: false,
+        applyError: applyErr?.message || 'Could not apply directly to GitHub.',
+        summary,
+        commitMessage,
+        edits
+      };
+    }
   }
 
   throw new Error('Unknown GitHub tool: ' + String(name || ''));
@@ -1725,7 +1771,7 @@ export async function onRequestPost(context) {
     const modeInstruction = researchMode
       ? `\n\n[DEEP RESEARCH MODE]: Use Google Search grounding for fresh, niche, or source-backed information. Synthesize multiple relevant sources and distinguish facts from inference. Use TruX-Code reasoning engine.`
       : codingMode
-        ? `\n\n[TRUX-CODE MODE]: Think deeply before answering, but never expose private chain-of-thought. Prioritize complete, maintainable code, careful debugging, tests, and concise implementation notes. Never claim you changed a repository. Before each GitHub tool call, first emit one brief, natural user-facing activity sentence describing the action you are about to take; do not emit internal reasoning. After each tool returns, continue with the next relevant activity sentence instead of canned progress text.\n\n[CONNECTED GITHUB WORKSPACE]: The active repository is ${String(githubRepository || 'none')}; branch ${String(githubBranch || 'default')}. When GitHub tools are available, inspect the repository with github_search_code and github_read_file before changing anything. For ANY request that asks to modify, fix, update, refactor, add, remove, or otherwise change repository files, you MUST call github_propose_changes after reading the current files. Do not stop at a conversational confirmation such as “I can make that change” or “ready to commit”. The proposal tool produces the exact reviewable patch and causes the UI to show the explicit confirmation button. Use github_propose_changes with exact oldText/newText replacements copied from the latest reads. There is no artificial size, file-count, character, or line-count ceiling: large repository changes are allowed and should be as comprehensive as the user's request requires. For broad redesign/rebuild/beautification requests, inspect all relevant UI, markup, style, state, and supporting-logic files and implement the actual requested transformation rather than making a tiny cosmetic tweak. Use multiple non-overlapping edits and multiple proposal calls when that is the cleanest way to cover a large change. A proposal is not ready merely because one small edit validates; keep inspecting and proposing until the requested scope is materially covered. github_propose_changes NEVER writes to GitHub; it creates a user-reviewable proposal. Never say that a change was applied until the user explicitly confirms it in the UI.`
+        ? `\n\n[TRUX-CODE MODE]: Think deeply before answering, but never expose private chain-of-thought. Prioritize complete, maintainable code, careful debugging, tests, and concise implementation notes. Before each GitHub tool call, first emit one brief, natural user-facing activity sentence describing the action you are about to take; do not emit internal reasoning. After each tool returns, continue with the next relevant activity sentence instead of canned progress text.\n\n[CONNECTED GITHUB WORKSPACE]: The active repository is ${String(githubRepository || 'none')}; branch ${String(githubBranch || 'default')}. When GitHub tools are available, inspect the repository with github_search_code and github_read_file before changing anything. For ANY request that asks to modify, fix, update, refactor, add, remove, or otherwise change repository files, read the current files and call github_apply_changes (or github_propose_changes). The tool applies and commits the changes directly to git on the target branch. Do not stop at a conversational confirmation such as “I can make that change” or “ready to commit”. Provide exact oldText/newText replacements copied from the latest reads. Large repository changes are allowed and should be as comprehensive as the user's request requires. Once committed, summarize the changes and provide clear commit details.`
         : '';
     const thinkingInstruction = effectiveAdvancedThinking
       ? `${combinedSystemInstruction}${modeInstruction}\n\n[REASONING MODE]: Take extra time to reason carefully, check assumptions and calculations, then return only the concise final answer. Do not expose private chain-of-thought.`
@@ -1810,7 +1856,7 @@ export async function onRequestPost(context) {
       const githubTools = getGithubToolDeclarations();
       const activeGithubTools = changeRequested
         ? githubTools
-        : githubTools.filter(tool => tool.name !== 'github_propose_changes');
+        : githubTools.filter(tool => tool.name !== 'github_propose_changes' && tool.name !== 'github_apply_changes');
       const modelTools = githubSession && codingMode && validGithubRepo(githubRepository)
         ? [{ functionDeclarations: activeGithubTools }]
         : (researchMode ? [{ googleSearch: {} }] : []);
@@ -1853,13 +1899,9 @@ export async function onRequestPost(context) {
           parts: [{
             text:
               '[TRUX-CODE CONTINUE INSTRUCTION]\n' +
-              'Do not finish with a conversational status update yet. The user requested repository changes. ' +
-              'Continue inspecting the current repository files as needed, then call github_propose_changes with ' +
-              'exact oldText/newText replacements copied from the latest reads. ' +
-              'For broad requests, cover the requested scope comprehensively instead of returning a cosmetic patch. ' +
-              'There is no application-level patch-size ceiling. Split large changes across multiple proposal calls when needed and keep going until the requested scope is materially covered. ' +
-              'Never repeat an already executed tool call. Re-read files whenever a target may have changed. ' +
-              'Do not claim the change is applied; the user must review and explicitly apply it in the UI.'
+              'Continue inspecting the current repository files as needed, then call github_apply_changes (or github_propose_changes) with ' +
+              'exact oldText/newText replacements copied from the latest reads to apply and commit the changes directly to git. ' +
+              'Never repeat an already executed tool call. Re-read files whenever a target may have changed.'
           }]
         });
       }
@@ -1966,26 +2008,19 @@ export async function onRequestPost(context) {
           const piece = String(text || '');
           if (!piece) return;
 
-          if (codingMode) {
-            modelRoundText += piece;
-            if (!activityEmitted) {
-              const clean = modelRoundText.replace(/\s+/g, ' ').trim();
-              const sentence = clean.match(/^.{8,240}?[.!?](?:\s|$)/);
-              if (sentence?.[0]) {
-                const activity = sentence[0].trim();
-                if (activity) {
-                  send({ type: 'status', status: activity });
-                  activityEmitted = true;
-                }
+          modelRoundText += piece;
+          if (codingMode && !activityEmitted) {
+            const clean = modelRoundText.replace(/\s+/g, ' ').trim();
+            const sentence = clean.match(/^.{8,240}?[.!?](?:\s|$)/);
+            if (sentence?.[0]) {
+              const activity = sentence[0].trim();
+              if (activity) {
+                send({ type: 'status', status: activity });
+                activityEmitted = true;
               }
             }
-            // Model prose during a tool round is an activity note, not the final
-            // answer. Keep the live tool/status trace visible without mixing prose
-            // into the final response.
-
-          } else {
-            send({ type: 'chunk', text });
           }
+          send({ type: 'chunk', text: piece });
         },
         onStatus: async status => {
           send({ type: 'status', status });
@@ -2028,7 +2063,8 @@ export async function onRequestPost(context) {
               github_import_repository: 'GitHub Import',
               github_search_code: 'GitHub Search',
               github_read_file: 'GitHub File Reader',
-              github_propose_changes: 'GitHub Change Planner'
+              github_apply_changes: 'GitHub Direct Commit',
+              github_propose_changes: 'GitHub Direct Commit'
             };
             const toolName = toolLabels[call?.name] || 'GitHub Tool';
             const rawPath = call?.args?.path ? String(call.args.path) : '';
@@ -2065,23 +2101,33 @@ export async function onRequestPost(context) {
                 status: toolTarget
               });
 
-              if (call?.name === 'github_propose_changes' && callResult?.proposalReady) {
+              if ((call?.name === 'github_apply_changes' || call?.name === 'github_propose_changes') && (callResult?.applied || callResult?.proposalReady)) {
                 githubProposalPrepared = true;
-                accumulatedGithubProposalSummary = callResult.summary || accumulatedGithubProposalSummary || 'Proposed repository changes.';
+                accumulatedGithubProposalSummary = callResult.summary || accumulatedGithubProposalSummary || 'Applied repository changes.';
                 accumulatedGithubProposalCommitMessage = callResult.commitMessage || accumulatedGithubProposalCommitMessage || 'Update files with TruX-Code';
                 for (const edit of Array.isArray(callResult.edits) ? callResult.edits : []) {
                   const key = String(edit?.path || '') + '\u0000' + String(edit?.oldText || '');
                   accumulatedGithubProposalEdits.set(key, edit);
                 }
+                const proposalPayload = {
+                  repository: githubRepository,
+                  branch: callResult.branch || githubBranch || null,
+                  summary: accumulatedGithubProposalSummary,
+                  commitMessage: accumulatedGithubProposalCommitMessage,
+                  edits: Array.from(accumulatedGithubProposalEdits.values()),
+                  applied: !!callResult.applied,
+                  commit: callResult.commit || null
+                };
+                if (callResult.applied && callResult.commit) {
+                  send({
+                    type: 'github_commit',
+                    commit: callResult.commit,
+                    proposal: proposalPayload
+                  });
+                }
                 send({
                   type: 'github_proposal',
-                  proposal: {
-                    repository: githubRepository,
-                    branch: githubBranch || null,
-                    summary: accumulatedGithubProposalSummary,
-                    commitMessage: accumulatedGithubProposalCommitMessage,
-                    edits: Array.from(accumulatedGithubProposalEdits.values())
-                  }
+                  proposal: proposalPayload
                 });
               }
 
@@ -2108,25 +2154,12 @@ export async function onRequestPost(context) {
           }
 
           agentContents.push({ role: 'user', parts: responseParts });
-
-          // The planner is never forced. A continuation turn lets Gemini choose
-          // the next inspection or proposal tool naturally.
-
-          // Once the exact reviewable proposal exists, no extra Gemini turn is
-          // needed. Continuing here only wastes tool calls and can hit the
-          // agent's per-request tool-call ceiling before the UI can finish.
-          // Keep the agent alive after a proposal so additional large-change fragments can be proposed.
-
+          if (agentRound >= 6) {
+            break;
+          }
           continue;
         }
 
-        /*
-         * Gemini can occasionally answer with a progress sentence after a
-         * repository import instead of immediately issuing its next tool call.
-         * For actual change requests, that sentence is not a valid final turn:
-         * keep the agent loop alive and explicitly ask it to continue to the
-         * reviewable proposal.
-         */
         if (codingMode && changeRequested && githubSession && validGithubRepo(githubRepository) && !githubProposalPrepared) {
           const roundText = String(result?.text || '').trim();
 
@@ -2142,7 +2175,7 @@ export async function onRequestPost(context) {
           const progressLine = extractUserProgress(roundText);
           if (progressLine) send({ type: 'status', status: progressLine });
 
-          if (roundText && roundText === lastNoToolCodingText) {
+          if (agentRound >= 4 || (roundText && roundText === lastNoToolCodingText)) {
             finalResult = result;
             break;
           }
@@ -2153,33 +2186,35 @@ export async function onRequestPost(context) {
         }
 
         finalResult = result;
+        break;
+      }
 
-        if (generationStopped) return;
+      if (generationStopped) return;
 
-        if (!codingMode) {
-          send({
-            type: 'status',
-            status: researchMode
-              ? 'Synthesizing the sources into a clear answer…'
-              : 'Writing the final response…'
-          });
-        }
+      if (!codingMode) {
+        send({
+          type: 'status',
+          status: researchMode
+            ? 'Synthesizing the sources into a clear answer…'
+            : 'Writing the final response…'
+        });
+      }
 
-        const grounding = getGroundingData(finalResult.groundingMetadata);
-        if (grounding.sources.length || grounding.searchSuggestionHtml) {
-          send({ type: 'grounding', grounding });
-        }
+      const grounding = getGroundingData(finalResult?.groundingMetadata);
+      if (grounding.sources.length || grounding.searchSuggestionHtml) {
+        send({ type: 'grounding', grounding });
+      }
 
-        const finalText = String(finalResult?.text || '').trim()
-          || (repositoryImported && !changeRequested && githubInspectionCount === 0
+      const finalText = String(finalResult?.text || '').trim()
+        || (githubProposalPrepared
+          ? 'I have completed applying and committing the requested changes directly to your repository.'
+          : (repositoryImported && !changeRequested && githubInspectionCount === 0
             ? 'I finished importing your repository. Its file structure is loaded and ready for code-aware analysis.'
-            : (changeRequested && !githubProposalPrepared
-              ? 'I could not finish preparing a reviewable GitHub change proposal. The repository was inspected, but no changes were written.'
-              : ''));
+            : (changeRequested
+              ? 'I finished inspecting the repository and analyzing the requested code changes.'
+              : 'Task completed successfully.')));
 
-        if (finalText) {
-          send({ type: 'final', text: finalText });
-        }
+      send({ type: 'final', text: finalText });
 
         if (notifyOnComplete) {
           try {

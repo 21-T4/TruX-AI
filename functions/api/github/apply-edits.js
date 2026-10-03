@@ -86,6 +86,271 @@ function countExact(source, needle) {
   }
 }
 
+export async function applyEditsDirectly(session, repository, branch, edits, message) {
+  if (!validRepo(repository) || !Array.isArray(edits) || !edits.length) {
+    throw Object.assign(new Error('Invalid GitHub edit request.'), { status: 400 });
+  }
+
+  const repoResponse = await githubRequest(session, `https://api.github.com/repos/${repository}`);
+  const repoPayload = await repoResponse.json().catch(() => ({}));
+  if (!repoResponse.ok || !repoPayload?.default_branch) {
+    throw Object.assign(new Error(repoPayload?.message || 'Could not resolve the GitHub repository.'), {
+      status: repoResponse.status || 502
+    });
+  }
+
+  const targetBranch = String(branch || repoPayload.default_branch).trim();
+  if (!targetBranch || targetBranch.length > 250) {
+    throw Object.assign(new Error('Invalid target branch.'), { status: 400 });
+  }
+
+  const branchPath = targetBranch.split('/').map(encodeURIComponent).join('/');
+  const refResponse = await githubRequest(
+    session,
+    `https://api.github.com/repos/${repository}/git/ref/heads/${branchPath}`
+  );
+  const refPayload = await refResponse.json().catch(() => ({}));
+
+  if (!refResponse.ok || !refPayload?.object?.sha) {
+    throw Object.assign(new Error(refPayload?.message || `Could not read branch ${targetBranch} before applying the changes.`), {
+      status: refResponse.status || 502
+    });
+  }
+
+  const headSha = String(refPayload.object.sha);
+  const headCommitResponse = await githubRequest(
+    session,
+    `https://api.github.com/repos/${repository}/git/commits/${headSha}`
+  );
+  const headCommitPayload = await headCommitResponse.json().catch(() => ({}));
+
+  if (!headCommitResponse.ok || !headCommitPayload?.sha || !headCommitPayload?.tree?.sha) {
+    throw Object.assign(new Error(headCommitPayload?.message || 'Could not read the current branch tree.'), {
+      status: headCommitResponse.status || 502
+    });
+  }
+
+  const planned = [];
+  const groupedEdits = new Map();
+
+  for (const edit of edits) {
+    const path = edit?.path;
+    const oldText = typeof edit?.oldText === 'string' ? edit.oldText : '';
+    const newText = typeof edit?.newText === 'string' ? edit.newText : '';
+    const baseSha = typeof edit?.baseSha === 'string' ? edit.baseSha : '';
+
+    if (!validPath(path) || oldText.length < 1) {
+      throw Object.assign(new Error('Invalid edit payload for ' + String(path || 'unknown') + '.'), { status: 400 });
+    }
+
+    if (!groupedEdits.has(path)) groupedEdits.set(path, []);
+    groupedEdits.get(path).push({ oldText, newText, baseSha });
+  }
+
+  for (const [path, pathEdits] of groupedEdits.entries()) {
+    const currentFile = await readGithubFile(session, repository, path, headSha);
+    const currentContent = currentFile.content;
+    const baseShas = new Set(pathEdits.map(edit => String(edit?.baseSha || '')).filter(Boolean));
+    if (baseShas.size > 1 || (baseShas.size === 1 && !baseShas.has(String(currentFile.sha || '')))) {
+      throw Object.assign(new Error(`The reviewed version of ${path} is no longer current. Re-read the file and prepare the proposal again before applying it.`), {
+        conflict: true,
+        path,
+        status: 409
+      });
+    }
+    const placements = pathEdits.map(edit => {
+      const first = currentContent.indexOf(edit.oldText);
+      const second = first < 0 ? -1 : currentContent.indexOf(edit.oldText, first + edit.oldText.length);
+      if (first < 0 || second >= 0) return null;
+      return { start: first, end: first + edit.oldText.length, newText: edit.newText };
+    });
+
+    if (placements.some(placement => !placement)) {
+      throw Object.assign(new Error(`The file ${path} changed since the proposal was prepared, so one or more exact edits could not be applied safely.`), {
+        conflict: true,
+        path,
+        status: 409
+      });
+    }
+
+    placements.sort((x, y) => x.start - y.start);
+    for (let i = 1; i < placements.length; i++) {
+      if (placements[i].start < placements[i - 1].end) {
+        throw Object.assign(new Error(`Overlapping GitHub edits were requested for ${path}. Combine only the overlapping fragments.`), {
+          conflict: true,
+          path,
+          status: 409
+        });
+      }
+    }
+
+    let nextContent = '';
+    let cursor = 0;
+    for (const placement of placements) {
+      nextContent += currentContent.slice(cursor, placement.start);
+      nextContent += placement.newText;
+      cursor = placement.end;
+    }
+    nextContent += currentContent.slice(cursor);
+
+    const blobResponse = await githubRequest(
+      session,
+      'https://api.github.com/repos/' + repository + '/git/blobs',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: nextContent,
+          encoding: 'utf-8'
+        })
+      }
+    );
+    const blobPayload = await blobResponse.json().catch(() => ({}));
+    if (!blobResponse.ok || !blobPayload?.sha) {
+      throw Object.assign(new Error(blobPayload?.message || `GitHub could not store the edited file ${path}.`), {
+        path,
+        status: blobResponse.status || 502
+      });
+    }
+
+    planned.push({
+      path,
+      sha: String(blobPayload.sha)
+    });
+  }
+
+  const treeResponse = await githubRequest(
+    session,
+    `https://api.github.com/repos/${repository}/git/trees`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        base_tree: headCommitPayload.tree.sha,
+        tree: planned.map(edit => ({
+          path: edit.path,
+          mode: '100644',
+          type: 'blob',
+          sha: edit.sha
+        }))
+      })
+    }
+  );
+  const treePayload = await treeResponse.json().catch(() => ({}));
+
+  if (!treeResponse.ok || !treePayload?.sha) {
+    throw Object.assign(new Error(treePayload?.message || 'GitHub could not prepare the combined change.'), {
+      status: treeResponse.status || 502
+    });
+  }
+
+  const commitMessage = String(message || 'Update files with TruX-Code').slice(0, 250);
+  const commitResponse = await githubRequest(
+    session,
+    `https://api.github.com/repos/${repository}/git/commits`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: commitMessage,
+        tree: treePayload.sha,
+        parents: [headSha]
+      })
+    }
+  );
+  const commitPayload = await commitResponse.json().catch(() => ({}));
+
+  if (!commitResponse.ok || !commitPayload?.sha) {
+    throw Object.assign(new Error(commitPayload?.message || 'GitHub could not create the commit.'), {
+      status: commitResponse.status || 502
+    });
+  }
+
+  const commitSha = String(commitPayload.sha);
+  const updateResponse = await githubRequest(
+    session,
+    `https://api.github.com/repos/${repository}/git/refs/heads/${branchPath}`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sha: commitSha, force: false })
+    }
+  );
+  const updatePayload = await updateResponse.json().catch(() => ({}));
+
+  if (!updateResponse.ok) {
+    const branchConflict = updateResponse.status === 409 || updateResponse.status === 422;
+    throw Object.assign(new Error(branchConflict
+      ? 'The branch changed while the reviewed edits were being applied. Nothing was force-pushed; review the latest changes and try again.'
+      : (updatePayload?.message || 'GitHub could not update the target branch.')), {
+      conflict: branchConflict,
+      commit: commitSha,
+      status: branchConflict ? 409 : (updateResponse.status || 502)
+    });
+  }
+
+  const verifyRefResponse = await githubRequest(
+    session,
+    `https://api.github.com/repos/${repository}/git/ref/heads/${branchPath}`
+  );
+  const verifyRefPayload = await verifyRefResponse.json().catch(() => ({}));
+
+  if (!verifyRefResponse.ok || verifyRefPayload?.object?.sha !== commitSha) {
+    throw Object.assign(new Error('GitHub accepted the write, but the branch verification did not match the new commit.'), {
+      conflict: true,
+      commit: commitSha,
+      status: 502
+    });
+  }
+
+  const results = [];
+  for (const edit of planned) {
+    const filePath = edit.path.split('/').map(encodeURIComponent).join('/');
+    const verifyResponse = await githubRequest(
+      session,
+      'https://api.github.com/repos/' + repository + '/contents/' + filePath +
+        '?ref=' + encodeURIComponent(commitSha),
+      { headers: { Accept: 'application/vnd.github.object+json, application/vnd.github+json' } }
+    );
+    const verifyPayload = await verifyResponse.json().catch(() => ({}));
+
+    if (!verifyResponse.ok || !verifyPayload?.sha) {
+      throw Object.assign(new Error(`The commit was created, but ${edit.path} could not be verified afterward.`), {
+        conflict: true,
+        commit: commitSha,
+        path: edit.path,
+        status: 502
+      });
+    }
+
+    if (String(verifyPayload.sha) !== String(edit.sha)) {
+      throw Object.assign(new Error(`The commit was created, but the saved blob for ${edit.path} did not match the requested edit.`), {
+        conflict: true,
+        commit: commitSha,
+        path: edit.path,
+        status: 502
+      });
+    }
+
+    results.push({ path: edit.path, verified: true });
+  }
+
+  return {
+    ok: true,
+    applied: true,
+    verified: true,
+    repository,
+    branch: targetBranch,
+    commit: {
+      sha: commitSha,
+      shortSha: commitSha.slice(0, 7),
+      message: commitMessage,
+      url: commitPayload?.html_url || `https://github.com/${repository}/commit/${commitSha}`
+    },
+    results
+  };
+}
+
 export async function onRequestPost({ request, env }) {
   try {
     const session = await getGithubSession(request, env);
@@ -100,277 +365,16 @@ export async function onRequestPost({ request, env }) {
       return Response.json({ error: 'Explicit confirmation is required before writing to GitHub.' }, { status: 400 });
     }
 
-    if (!validRepo(repository) || !Array.isArray(edits) || !edits.length) {
-      return Response.json({ error: 'Invalid GitHub edit request.' }, { status: 400 });
-    }
-
-    // Resolve the target branch and capture its exact current head before doing
-    // anything that can mutate the repository. All edits are validated first.
-    const repoResponse = await githubRequest(session, `https://api.github.com/repos/${repository}`);
-    const repoPayload = await repoResponse.json().catch(() => ({}));
-    if (!repoResponse.ok || !repoPayload?.default_branch) {
-      return Response.json({
-        error: repoPayload?.message || 'Could not resolve the GitHub repository.'
-      }, { status: repoResponse.status || 502 });
-    }
-
-    const targetBranch = String(branch || repoPayload.default_branch).trim();
-    if (!targetBranch || targetBranch.length > 250) {
-      return Response.json({ error: 'Invalid target branch.' }, { status: 400 });
-    }
-
-    const branchPath = targetBranch.split('/').map(encodeURIComponent).join('/');
-    const refResponse = await githubRequest(
-      session,
-      `https://api.github.com/repos/${repository}/git/ref/heads/${branchPath}`
-    );
-    const refPayload = await refResponse.json().catch(() => ({}));
-
-    if (!refResponse.ok || !refPayload?.object?.sha) {
-      return Response.json({
-        error: refPayload?.message || `Could not read branch ${targetBranch} before applying the changes.`
-      }, { status: refResponse.status || 502 });
-    }
-
-    const headSha = String(refPayload.object.sha);
-    const headCommitResponse = await githubRequest(
-      session,
-      `https://api.github.com/repos/${repository}/git/commits/${headSha}`
-    );
-    const headCommitPayload = await headCommitResponse.json().catch(() => ({}));
-
-    if (!headCommitResponse.ok || !headCommitPayload?.sha || !headCommitPayload?.tree?.sha) {
-      return Response.json({
-        error: headCommitPayload?.message || 'Could not read the current branch tree.'
-      }, { status: headCommitResponse.status || 502 });
-    }
-
-    const planned = [];
-    const groupedEdits = new Map();
-
-    // Validate every fragment against the same captured branch head.
-    for (const edit of edits) {
-      const path = edit?.path;
-      const oldText = typeof edit?.oldText === 'string' ? edit.oldText : '';
-      const newText = typeof edit?.newText === 'string' ? edit.newText : '';
-      const baseSha = typeof edit?.baseSha === 'string' ? edit.baseSha : '';
-
-      if (!validPath(path) || oldText.length < 1) {
-        return Response.json({ error: 'Invalid edit payload for ' + String(path || 'unknown') + '.' }, { status: 400 });
-      }
-
-      if (!groupedEdits.has(path)) groupedEdits.set(path, []);
-       groupedEdits.get(path).push({ oldText, newText, baseSha });
-    }
-
-    for (const [path, pathEdits] of groupedEdits.entries()) {
-      const currentFile = await readGithubFile(session, repository, path, headSha);
-      const currentContent = currentFile.content;
-       const baseShas = new Set(pathEdits.map(edit => String(edit?.baseSha || '')).filter(Boolean));
-       if (baseShas.size > 1 || (baseShas.size === 1 && !baseShas.has(String(currentFile.sha || '')))) {
-         return Response.json({
-           error: `The reviewed version of ${path} is no longer current. Re-read the file and prepare the proposal again before applying it.`,
-           conflict: true,
-           path
-         }, { status: 409 });
-       }
-      const placements = pathEdits.map(edit => {
-        const first = currentContent.indexOf(edit.oldText);
-        const second = first < 0 ? -1 : currentContent.indexOf(edit.oldText, first + edit.oldText.length);
-        if (first < 0 || second >= 0) return null;
-        return { start: first, end: first + edit.oldText.length, newText: edit.newText };
-      });
-
-      if (placements.some(placement => !placement)) {
-        return Response.json({
-          error: `The file ${path} changed since the proposal was prepared, so one or more exact edits could not be applied safely.`,
-          conflict: true,
-          path
-        }, { status: 409 });
-      }
-
-      placements.sort((x, y) => x.start - y.start);
-      for (let i = 1; i < placements.length; i++) {
-        if (placements[i].start < placements[i - 1].end) {
-          return Response.json({
-            error: `Overlapping GitHub edits were requested for ${path}. Combine only the overlapping fragments.`,
-            conflict: true,
-            path
-          }, { status: 409 });
-        }
-      }
-
-      let nextContent = '';
-      let cursor = 0;
-      for (const placement of placements) {
-        nextContent += currentContent.slice(cursor, placement.start);
-        nextContent += placement.newText;
-        cursor = placement.end;
-      }
-      nextContent += currentContent.slice(cursor);
-
-      // Use UTF-8 directly for Git blobs to avoid unnecessary base64 inflation.
-      const blobResponse = await githubRequest(
-        session,
-        'https://api.github.com/repos/' + repository + '/git/blobs',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            content: nextContent,
-            encoding: 'utf-8'
-          })
-        }
-      );
-      const blobPayload = await blobResponse.json().catch(() => ({}));
-      if (!blobResponse.ok || !blobPayload?.sha) {
-        return Response.json({
-          error: blobPayload?.message || `GitHub could not store the edited file ${path}.`,
-          path
-        }, { status: blobResponse.status || 502 });
-      }
-
-      planned.push({
-        path,
-        sha: String(blobPayload.sha)
-      });
-    }
-
-    const treeResponse = await githubRequest(
-      session,
-      `https://api.github.com/repos/${repository}/git/trees`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          base_tree: headCommitPayload.tree.sha,
-          tree: planned.map(edit => ({
-            path: edit.path,
-            mode: '100644',
-            type: 'blob',
-            sha: edit.sha
-          }))
-        })
-      }
-    );
-    const treePayload = await treeResponse.json().catch(() => ({}));
-
-    if (!treeResponse.ok || !treePayload?.sha) {
-      return Response.json({
-        error: treePayload?.message || 'GitHub could not prepare the combined change.'
-      }, { status: treeResponse.status || 502 });
-    }
-
-    const commitMessage = String(message || 'Update files with TruX-Code').slice(0, 250);
-    const commitResponse = await githubRequest(
-      session,
-      `https://api.github.com/repos/${repository}/git/commits`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: commitMessage,
-          tree: treePayload.sha,
-          parents: [headSha]
-        })
-      }
-    );
-    const commitPayload = await commitResponse.json().catch(() => ({}));
-
-    if (!commitResponse.ok || !commitPayload?.sha) {
-      return Response.json({
-        error: commitPayload?.message || 'GitHub could not create the commit.'
-      }, { status: commitResponse.status || 502 });
-    }
-
-    const commitSha = String(commitPayload.sha);
-    const updateResponse = await githubRequest(
-      session,
-      `https://api.github.com/repos/${repository}/git/refs/heads/${branchPath}`,
-      {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sha: commitSha, force: false })
-      }
-    );
-    const updatePayload = await updateResponse.json().catch(() => ({}));
-
-    if (!updateResponse.ok) {
-      const branchConflict = updateResponse.status === 409 || updateResponse.status === 422;
-      return Response.json({
-        error: branchConflict
-          ? 'The branch changed while the reviewed edits were being applied. Nothing was force-pushed; review the latest changes and try again.'
-          : (updatePayload?.message || 'GitHub could not update the target branch.'),
-        conflict: branchConflict,
-        commit: commitSha
-      }, { status: branchConflict ? 409 : (updateResponse.status || 502) });
-    }
-
-    // Verify the ref moved to exactly this commit and every edited file in that
-    // immutable commit contains the expected post-edit content.
-    const verifyRefResponse = await githubRequest(
-      session,
-      `https://api.github.com/repos/${repository}/git/ref/heads/${branchPath}`
-    );
-    const verifyRefPayload = await verifyRefResponse.json().catch(() => ({}));
-
-    if (!verifyRefResponse.ok || verifyRefPayload?.object?.sha !== commitSha) {
-      return Response.json({
-        error: 'GitHub accepted the write, but the branch verification did not match the new commit.',
-        conflict: true,
-        commit: commitSha
-      }, { status: 502 });
-    }
-
-    const results = [];
-    for (const edit of planned) {
-      const filePath = edit.path.split('/').map(encodeURIComponent).join('/');
-      const verifyResponse = await githubRequest(
-        session,
-        'https://api.github.com/repos/' + repository + '/contents/' + filePath +
-          '?ref=' + encodeURIComponent(commitSha),
-        { headers: { Accept: 'application/vnd.github.object+json, application/vnd.github+json' } }
-      );
-      const verifyPayload = await verifyResponse.json().catch(() => ({}));
-
-      if (!verifyResponse.ok || !verifyPayload?.sha) {
-        return Response.json({
-          error: `The commit was created, but ${edit.path} could not be verified afterward.`,
-          conflict: true,
-          commit: commitSha,
-          path: edit.path
-        }, { status: 502 });
-      }
-
-      if (String(verifyPayload.sha) !== String(edit.sha)) {
-        return Response.json({
-          error: `The commit was created, but the saved blob for ${edit.path} did not match the requested edit.`,
-          conflict: true,
-          commit: commitSha,
-          path: edit.path
-        }, { status: 502 });
-      }
-
-      results.push({ path: edit.path, verified: true });
-    }
-
-    return Response.json({
-      ok: true,
-      applied: true,
-      verified: true,
-      repository,
-      branch: targetBranch,
-      commit: {
-        sha: commitSha,
-        shortSha: commitSha.slice(0, 7),
-        message: commitMessage,
-        url: commitPayload?.html_url || `https://github.com/${repository}/commit/${commitSha}`
-      },
-      results
-    });
-
+    const result = await applyEditsDirectly(session, repository, branch, edits, message);
+    return Response.json(result);
   } catch (error) {
     console.error('GitHub apply-edits failed', error);
-    return Response.json({ error: error?.message || 'GitHub edit failed.' }, { status: 500 });
+    const status = error.status || 500;
+    return Response.json({
+      error: error?.message || 'GitHub edit failed.',
+      conflict: !!error.conflict,
+      path: error.path,
+      commit: error.commit
+    }, { status });
   }
 }

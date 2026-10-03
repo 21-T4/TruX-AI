@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="description" content="ChatTruX-AI — a fast, secure intelligent workspace for deep thinking and focused work.">
+  <meta property="og:title" content="ChatTruX-AI - Intelligent Workspace">
+  <meta property="og:description" content="ChatTruX-AI — a fast, secure intelligent workspace for deep thinking and focused work.">
   <title>ChatTruX-AI - Intelligent Workspace</title>
   <base target="_top">
   <link rel="manifest" href="/manifest.json">
@@ -6643,47 +6645,53 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         m && m.role === "trux" && String(m.backgroundJobId || "") === String(jobId)
       );
 
-       if (proposal && !finalText) {
-         finalText = "I prepared the GitHub changes for your review. Nothing has been written yet.";
-       }
+      if (proposal && !finalText) {
+        finalText = proposal.commit
+          ? `I applied and committed the changes directly to ${proposal.repository || "GitHub"}.`
+          : "I prepared the GitHub changes for your review. Nothing has been written yet.";
+      }
 
-       if (!alreadySaved && finalText) {
-         const savedMessage = {
-           role: "trux",
-           text: finalText,
-           backgroundJobId: String(jobId)
-         };
-         if (proposal) savedMessage.githubProposal = proposal;
-         session.messages.push(savedMessage);
-       }
+      if (!alreadySaved && finalText) {
+        const savedMessage = {
+          role: "trux",
+          text: finalText,
+          backgroundJobId: String(jobId)
+        };
+        if (proposal) savedMessage.githubProposal = proposal;
+        if (proposal?.commit) savedMessage.githubCommit = proposal.commit;
+        session.messages.push(savedMessage);
+      }
 
-       if (String(session.activeBackgroundJobId || "") === String(jobId)) {
-         delete session.activeBackgroundJobId;
-       }
-       saveChatSessions();
+      if (String(session.activeBackgroundJobId || "") === String(jobId)) {
+        delete session.activeBackgroundJobId;
+      }
+      saveChatSessions();
 
-       if (chatId !== currentChatId || workspaceMode !== "coding") return;
+      if (chatId === currentChatId && workspaceMode === "coding") {
+        const info = backgroundJobWatchers.get(String(jobId));
+        const row = info?.row;
+        if (row?._elapsedTimer) clearInterval(row._elapsedTimer);
+        if (row?.isConnected) row.remove();
 
-       const info = backgroundJobWatchers.get(String(jobId));
-       const row = info?.row;
-       if (row?._elapsedTimer) clearInterval(row._elapsedTimer);
-       if (row?.isConnected) row.remove();
+        if (finalText) {
+          appendMessageRow("ChatTruX-AI", finalText, "trux-row", "trux-bubble", null, false, [], null);
+        }
 
-       if (finalText) {
-         appendMessageRow("ChatTruX-AI", finalText, "trux-row", "trux-bubble", null, false, [], null);
-       }
-
-       if (proposal) {
-         const rows = getActiveChatContainer().querySelectorAll(".row.trux-row");
-         const lastRow = rows[rows.length - 1];
-         const host = lastRow?.querySelector(".trux-response-stack") || lastRow;
-         if (host) renderGithubProposalCard(host, proposal);
-       }
-     }
+        if (proposal) {
+          if (proposal.commit) {
+            appendGithubCommitResponse(proposal, proposal.commit, chatId);
+          } else {
+            const rows = getActiveChatContainer().querySelectorAll(".row.trux-row");
+            const lastRow = rows[rows.length - 1];
+            const host = lastRow?.querySelector(".trux-response-stack") || lastRow;
+            if (host) renderGithubProposalCard(host, proposal);
+          }
+        }
+      }
 
       isGenerating = false;
       activeAbortController = null;
-      getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15-5z"/>';
+      getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15-2-15 2z"/>';
       getEl("actionBtn").classList.remove("stop");
       handleInputChange();
     }
@@ -6798,11 +6806,13 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           }
 
           if (currentState.status === "complete") {
+            const proposal = currentState.proposal || (currentState.commit ? { commit: currentState.commit } : null);
+            if (proposal && currentState.commit && !proposal.commit) proposal.commit = currentState.commit;
             await commitBackgroundResult(
               chatId,
               key,
               String(currentState.final || currentState.liveText || "").trim(),
-              currentState.proposal || null
+              proposal
             );
             return true;
           }
@@ -7211,6 +7221,13 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
               setThinkingStatus(sid, alive[heartbeatCount % alive.length]);
             }
           }
+          else if(j.type === "github_commit") {
+            const commit = j.commit;
+            const proposal = j.proposal || {};
+            proposal.commit = commit;
+            githubProposal = proposal;
+            appendGithubCommitResponse(proposal, commit, currentChatId);
+          }
           else if(j.type === "github_proposal") {
             githubProposal = j.proposal || null;
             const proposalSession = chatSessions[currentChatId];
@@ -7218,11 +7235,15 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
               proposalSession.pendingGithubProposal = githubProposal;
               saveChatSessions();
             }
-            let st = getEl(sid);
-            if (st) st.innerText = "GitHub changes ready for review…";
-            const bubble = getEl(id);
-            const host = bubble?.closest(".trux-response-stack") || bubble;
-            if (host && githubProposal) renderGithubProposalCard(host, githubProposal);
+            if (githubProposal?.commit) {
+              appendGithubCommitResponse(githubProposal, githubProposal.commit, currentChatId);
+            } else {
+              let st = getEl(sid);
+              if (st) st.innerText = "GitHub changes ready for review…";
+              const bubble = getEl(id);
+              const host = bubble?.closest(".trux-response-stack") || bubble;
+              if (host && githubProposal) renderGithubProposalCard(host, githubProposal);
+            }
           }
           else if(j.type === "grounding") { turnSources = (j.grounding && j.grounding.sources) || []; }
           else if(j.type === "usage" && j.kind === "pro") {
