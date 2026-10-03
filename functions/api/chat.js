@@ -1872,11 +1872,11 @@ export async function onRequestPost(context) {
           const progressLine = extractUserProgress(result?.text);
           if (progressLine) send({ type: 'status', status: progressLine });
 
-          if (githubInspectionCount > 0 && !githubProposalPrepared) {
+          finalResult = result;
+          if (result?.text) {
+            send({ type: 'chunk', text: String(result.text) });
           }
-
-          continueCodingAgent();
-          continue;
+          break;
         }
 
         finalResult = result;
