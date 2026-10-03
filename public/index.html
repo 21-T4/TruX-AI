@@ -7556,7 +7556,6 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           : "";
 
         if(codingJobId){
-          if(generationStopRequested) return;
 
           const info = backgroundJobWatchers.get(codingJobId);
           const row = info?.row || getActiveChatContainer()?.querySelector(".row.trux-row:last-of-type");
