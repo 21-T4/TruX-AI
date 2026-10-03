@@ -460,7 +460,10 @@ async function githubReadFile(session, repository, path, branch, startLine, endL
   const requestedEnd = Number.isInteger(endLine) && endLine >= from ? endLine : null;
   const cacheKey = repository + '|' + normalizedBranch + '|' + path + '|' + from + '|' + (requestedEnd || '') + '|' + (includeFullContent ? 'full' : 'window');
 
-  const cached = githubFileReadCache.get(cacheKey);
+  // Proposal validation must always see the current repository state.
+  // A short-lived cache is useful for ordinary browsing, but stale full-file
+  // content can cause false exact-match failures or hide a newly applied change.
+  const cached = !includeFullContent ? githubFileReadCache.get(cacheKey) : null;
   if (cached && Date.now() - cached.at < 60000) return cached.value;
 
   const refQuery = branch ? '?ref=' + encodeURIComponent(branch) : '';
@@ -561,7 +564,7 @@ async function githubImportRepository(session, repository, branch) {
   };
 }
 
-async function validateGithubProposal(session, repository, edits, branch) {
+async function validateGithubProposal(session, repository, edits, branch, requestText = '', summary = '') {
   if (!Array.isArray(edits) || !edits.length) {
     throw new Error('The GitHub proposal did not contain any edit fragments.');
   }
@@ -570,6 +573,12 @@ async function validateGithubProposal(session, repository, edits, branch) {
   // Validate exact fragments against each current file and keep them separate
   // so distant edits never inflate one giant replacement string.
   const grouped = new Map();
+
+  const requestScope = String(requestText || '').trim();
+  const proposalScope = String(summary || '').trim();
+  const broadChange = /\b(?:redesign|rebuild|revamp|overhaul|rework|restyle|modernize|transform|make\s+(?:it|the)\s+(?:beautiful|premium|3d|better)|entire\s+(?:ui|interface|app)|whole\s+(?:ui|interface|app)|across\s+(?:the|all)\s+(?:app|pages|screens|modes)|comprehensive|major\s+(?:ui|ux|design)|full\s+(?:redesign|revamp|rewrite))\b/i.test(
+    requestScope + ' ' + proposalScope
+  );
 
   for (const edit of edits) {
     const path = edit?.path;
@@ -615,7 +624,25 @@ async function validateGithubProposal(session, repository, edits, branch) {
     }));
   }));
 
-  return groups.flat();
+  const normalized = groups.flat();
+
+  if (broadChange) {
+    const totalNewChars = normalized.reduce((sum, edit) => sum + edit.newChars, 0);
+    const changedFiles = new Set(normalized.map(edit => edit.path)).size;
+    const substantive = totalNewChars >= 8000 || changedFiles >= 3;
+
+    if (!substantive) {
+      throw new Error(
+        'This request is broad, but the proposed patch is too small to plausibly implement it (' +
+        totalNewChars.toLocaleString() + ' replacement characters across ' +
+        changedFiles + ' file' + (changedFiles === 1 ? '' : 's') + '). ' +
+        'Inspect the relevant UI, styles, markup, and supporting logic more deeply, then prepare a comprehensive proposal. ' +
+        'Do not return a cosmetic tweak as the completed redesign.'
+      );
+    }
+  }
+
+  return normalized;
 }
 
 function getGithubToolDeclarations() {
@@ -655,7 +682,7 @@ function getGithubToolDeclarations() {
     },
     {
       name: 'github_propose_changes',
-      description: 'Prepare exact text replacements for the user to review. This function NEVER writes to GitHub. There is no application-level size or file-count limit. You may send many fragments and repeat a repository path for separate non-overlapping changes. Large changes may be split across multiple proposal calls.',
+      description: 'Prepare exact text replacements for the user to review. This function NEVER writes to GitHub. There is no application-level size, file-count, character, or line-count ceiling for a substantive change. Re-read the current target files before proposing. For broad redesign/rebuild requests, do not submit a tiny cosmetic patch: inspect the relevant UI, styles, markup, and supporting logic and make the proposal comprehensive. You may send many non-overlapping fragments across any number of files, and large changes may be split across multiple proposal calls.',
       parameters: {
         type: 'object',
         properties: {
@@ -680,10 +707,10 @@ function getGithubToolDeclarations() {
   ];
 }
 
-async function executeGithubToolCall(session, repository, branch, call) {
-  return await executeGithubToolCallInner(session, repository, branch, call);
+async function executeGithubToolCall(session, repository, branch, call, requestText = '') {
+  return await executeGithubToolCallInner(session, repository, branch, call, requestText);
 }
-async function executeGithubToolCallInner(session, repository, branch, call) {
+async function executeGithubToolCallInner(session, repository, branch, call, requestText = '') {
   const name = call?.name;
   const args = call?.args || {};
 
@@ -703,7 +730,14 @@ async function executeGithubToolCallInner(session, repository, branch, call) {
   }
 
   if (name === 'github_propose_changes') {
-    const edits = await validateGithubProposal(session, repository, args.edits, branch);
+    const edits = await validateGithubProposal(
+      session,
+      repository,
+      args.edits,
+      branch,
+      requestText,
+      args.summary
+    );
     return {
       proposalReady: true,
       summary: String(args.summary || 'Proposed repository changes.').slice(0, 1000),
@@ -1418,7 +1452,7 @@ export async function onRequestPost(context) {
     const modeInstruction = researchMode
       ? `\n\n[DEEP RESEARCH MODE]: Use Google Search grounding for fresh, niche, or source-backed information. Synthesize multiple relevant sources and distinguish facts from inference. Use TruX-Code reasoning engine.`
       : codingMode
-        ? `\n\n[TRUX-CODE MODE]: Think deeply before answering, but never expose private chain-of-thought. Prioritize complete, maintainable code, careful debugging, tests, and concise implementation notes. Never claim you changed a repository. Before each GitHub tool call, first emit one brief, natural user-facing activity sentence describing the action you are about to take; do not emit internal reasoning. After each tool returns, continue with the next relevant activity sentence instead of canned progress text.\n\n[CONNECTED GITHUB WORKSPACE]: The active repository is ${String(githubRepository || 'none')}; branch ${String(githubBranch || 'default')}. When GitHub tools are available, inspect the repository with github_search_code and github_read_file before changing anything. For ANY request that asks to modify, fix, update, refactor, add, remove, or otherwise change repository files, you MUST call github_propose_changes after reading the current files. Do not stop at a conversational confirmation such as “I can make that change” or “ready to commit”. The proposal tool produces the exact reviewable patch and causes the UI to show the explicit confirmation button. Use github_propose_changes with exact oldText/newText replacements. Each repository path must appear only once in the edits array; combine multiple changes for the same file into a single edit. github_propose_changes NEVER writes to GitHub; it creates a user-reviewable proposal. Never say that a change was applied until the user explicitly confirms it in the UI.`
+        ? `\n\n[TRUX-CODE MODE]: Think deeply before answering, but never expose private chain-of-thought. Prioritize complete, maintainable code, careful debugging, tests, and concise implementation notes. Never claim you changed a repository. Before each GitHub tool call, first emit one brief, natural user-facing activity sentence describing the action you are about to take; do not emit internal reasoning. After each tool returns, continue with the next relevant activity sentence instead of canned progress text.\n\n[CONNECTED GITHUB WORKSPACE]: The active repository is ${String(githubRepository || 'none')}; branch ${String(githubBranch || 'default')}. When GitHub tools are available, inspect the repository with github_search_code and github_read_file before changing anything. For ANY request that asks to modify, fix, update, refactor, add, remove, or otherwise change repository files, you MUST call github_propose_changes after reading the current files. Do not stop at a conversational confirmation such as “I can make that change” or “ready to commit”. The proposal tool produces the exact reviewable patch and causes the UI to show the explicit confirmation button. Use github_propose_changes with exact oldText/newText replacements copied from the latest reads. There is no artificial size, file-count, character, or line-count ceiling: large repository changes are allowed and should be as comprehensive as the user's request requires. For broad redesign/rebuild/beautification requests, inspect all relevant UI, markup, style, state, and supporting-logic files and implement the actual requested transformation rather than making a tiny cosmetic tweak. Use multiple non-overlapping edits and multiple proposal calls when that is the cleanest way to cover a large change. A proposal is not ready merely because one small edit validates; keep inspecting and proposing until the requested scope is materially covered. github_propose_changes NEVER writes to GitHub; it creates a user-reviewable proposal. Never say that a change was applied until the user explicitly confirms it in the UI.`
         : '';
     const thinkingInstruction = effectiveAdvancedThinking
       ? `${combinedSystemInstruction}${modeInstruction}\n\n[REASONING MODE]: Take extra time to reason carefully, check assumptions and calculations, then return only the concise final answer. Do not expose private chain-of-thought.`
@@ -1544,7 +1578,9 @@ export async function onRequestPost(context) {
               '[TRUX-CODE CONTINUE INSTRUCTION]\n' +
               'Do not finish with a conversational status update yet. The user requested repository changes. ' +
               'Continue inspecting the current repository files as needed, then call github_propose_changes with ' +
-              'exact oldText/newText replacements. The proposal must be prepared before you give a final answer. ' +
+              'exact oldText/newText replacements copied from the latest reads. ' +
+              'For broad requests, cover the requested scope comprehensively instead of returning a cosmetic patch. ' +
+              'There is no artificial patch-size ceiling. Keep going until a substantive proposal is prepared. ' +
               'Do not claim the change is applied; the user must review and explicitly apply it in the UI.'
           }]
         });
@@ -1701,7 +1737,7 @@ export async function onRequestPost(context) {
 
             try {
               const callResult = githubSession && codingMode && validGithubRepo(githubRepository)
-                ? await executeGithubToolCall(githubSession, githubRepository, githubBranch, call)
+                ? await executeGithubToolCall(githubSession, githubRepository, githubBranch, call, message)
                 : { error: 'GitHub workspace is not connected.' };
 
               if (call?.name === 'github_import_repository' && !callResult?.error) {
