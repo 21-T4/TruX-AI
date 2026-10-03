@@ -417,28 +417,18 @@ function decodeGithubBase64(value) {
   const binary = atob(String(value || '').replace(/\s/g, ''));
   const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
   return new TextDecoder().decode(bytes);
+}
+
 async function githubApi(session, url, options = {}) {
-  const timeoutMs = Number(options.timeoutMs || 20000);
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const requestOptions = { ...options };
-    delete requestOptions.timeoutMs;
-    requestOptions.signal = controller.signal;
-
-    return await fetch(url, {
-      ...requestOptions,
-      headers: {
-        Authorization: 'Bearer ' + session.token,
-        Accept: 'application/vnd.github+json',
-        'User-Agent': 'TruX-Code',
-        ...(options.headers || {})
-      }
-    });
-  } finally {
-    clearTimeout(timeout);
-  }
+  return fetch(url, {
+    ...options,
+    headers: {
+      Authorization: 'Bearer ' + session.token,
+      Accept: 'application/vnd.github+json',
+      'User-Agent': 'TruX-Code',
+      ...(options.headers || {})
+    }
+  });
 }
 
 function githubSearchTokens(query) {
@@ -446,34 +436,30 @@ function githubSearchTokens(query) {
     .toLowerCase()
     .replace(/[^a-z0-9_./-]+/g, ' ')
     .split(/\s+/)
-    .filter(token => token.length >= 3)
-    .slice(0, 12);
+    .filter(token => token.length >= 3);
 }
 
-async function githubSearchPathFallback(session, repository, branch, query) {
+async function githubSearchPathFallback(session, repository, branch, query, failureReason = '') {
   let treeSha = null;
 
   if (branch) {
     const branchResponse = await githubApi(
       session,
-      'https://api.github.com/repos/' + repository + '/branches/' + encodeURIComponent(branch),
-      { timeoutMs: 12000 }
+      'https://api.github.com/repos/' + repository + '/branches/' + encodeURIComponent(branch)
     ).catch(() => null);
     const branchPayload = branchResponse ? await branchResponse.json().catch(() => null) : null;
     treeSha = branchPayload?.commit?.commit?.tree?.sha || null;
   } else {
     const repoResponse = await githubApi(
       session,
-      'https://api.github.com/repos/' + repository,
-      { timeoutMs: 12000 }
+      'https://api.github.com/repos/' + repository
     ).catch(() => null);
     const repoPayload = repoResponse ? await repoResponse.json().catch(() => null) : null;
     const defaultBranch = repoPayload?.default_branch || '';
     if (defaultBranch) {
       const branchResponse = await githubApi(
         session,
-        'https://api.github.com/repos/' + repository + '/branches/' + encodeURIComponent(defaultBranch),
-        { timeoutMs: 12000 }
+        'https://api.github.com/repos/' + repository + '/branches/' + encodeURIComponent(defaultBranch)
       ).catch(() => null);
       const branchPayload = branchResponse ? await branchResponse.json().catch(() => null) : null;
       treeSha = branchPayload?.commit?.commit?.tree?.sha || null;
@@ -484,14 +470,14 @@ async function githubSearchPathFallback(session, repository, branch, query) {
     return {
       results: [],
       fallback: true,
-      reason: 'GitHub code search was unavailable and the repository tree could not be loaded.'
+      reason: 'GitHub code search was unavailable and the repository tree could not be loaded.' +
+        (failureReason ? ' ' + failureReason : '')
     };
   }
 
   const response = await githubApi(
     session,
-    'https://api.github.com/repos/' + repository + '/git/trees/' + encodeURIComponent(treeSha) + '?recursive=1',
-    { timeoutMs: 12000 }
+    'https://api.github.com/repos/' + repository + '/git/trees/' + encodeURIComponent(treeSha) + '?recursive=1'
   ).catch(() => null);
 
   const payload = response ? await response.json().catch(() => null) : null;
@@ -509,55 +495,80 @@ async function githubSearchPathFallback(session, repository, branch, query) {
       return { item, score };
     })
     .filter(x => x.score > 0)
-    .sort((a,b) => b.score - a.score || a.item.path.length - b.item.path.length)
-    .slice(0, 10);
+    .sort((a, b) => b.score - a.score || a.item.path.length - b.item.path.length)
+    .slice(0, 20);
 
   return {
-    results: scored.map(({item,score}) => ({
+    results: scored.map(({ item, score }) => ({
       path: item.path,
       name: item.path.split('/').pop() || item.path,
       score,
       matches: []
     })),
     fallback: true,
-    reason: 'GitHub code search was unavailable; matched repository paths instead.'
+    reason: 'GitHub code search was unavailable; matched repository paths instead.' +
+      (failureReason ? ' ' + failureReason : '')
   };
 }
 
-async function githubSearchCode(session, repository, query) {
+async function githubSearchCode(session, repository, branch, query) {
   const cleanQuery = String(query || '')
     .replace(/\brepo:[^\s]+\b/gi, '')
-    .trim()
-    .slice(0, 320);
+    .trim();
   if (!cleanQuery) return { results: [] };
 
   const q = cleanQuery + ' repo:' + repository;
-  const response = await githubApi(
-    session,
-    'https://api.github.com/search/code?q=' + encodeURIComponent(q) + '&per_page=6',
-    { headers: { Accept: 'application/vnd.github.text-match+json, application/vnd.github+json' }, timeoutMs: 12000 }
-  );
+  let response;
+
+  try {
+    response = await githubApi(
+      session,
+      'https://api.github.com/search/code?q=' + encodeURIComponent(q) + '&per_page=20',
+      { headers: { Accept: 'application/vnd.github.text-match+json, application/vnd.github+json' } }
+    );
+  } catch (searchError) {
+    return githubSearchPathFallback(
+      session,
+      repository,
+      branch,
+      cleanQuery,
+      String(searchError?.message || 'GitHub code search request failed.')
+    );
+  }
 
   let payload = {};
   try { payload = await response.json(); } catch {}
 
   if (!response.ok) {
-    return githubSearchPathFallback(session, repository, '', cleanQuery);
+    return githubSearchPathFallback(
+      session,
+      repository,
+      branch,
+      cleanQuery,
+      payload?.message || ('GitHub returned HTTP ' + response.status + '.')
+    );
   }
 
   return {
-    results: (payload.items || []).slice(0, 8).map(item => ({
-      path: item.path,
-      name: item.name,
-      score: item.score,
-      matches: Array.isArray(item.text_matches)
-        ? item.text_matches.slice(0, 3).map(m => String(m.fragment || '').slice(0, 800))
-        : []
-    }))
+    results: Array.isArray(payload.items)
+      ? payload.items.map(item => ({
+          path: item.path,
+          name: item.name,
+          score: item.score,
+          matches: Array.isArray(item.text_matches)
+            ? item.text_matches.map(m => String(m.fragment || '').slice(0, 800))
+            : []
+        }))
+      : []
   };
 }
 
+const githubFileReadCache = new Map();
+const GITHUB_DEFAULT_FILE_WINDOW = 240;
+const GITHUB_HEAD_LINES = 140;
+const GITHUB_TAIL_LINES = 80;
 
+async function githubReadFile(session, repository, path, branch, startLine, endLine, includeFullContent = false) {
   if (!validGithubPath(path)) throw new Error('Invalid repository path.');
 
   const normalizedBranch = String(branch || '');
@@ -565,9 +576,6 @@ async function githubSearchCode(session, repository, query) {
   const requestedEnd = Number.isInteger(endLine) && endLine >= from ? endLine : null;
   const cacheKey = repository + '|' + normalizedBranch + '|' + path + '|' + from + '|' + (requestedEnd || '') + '|' + (includeFullContent ? 'full' : 'window');
 
-  // Proposal validation must always see the current repository state.
-  // A short-lived cache is useful for ordinary browsing, but stale full-file
-  // content can cause false exact-match failures or hide a newly applied change.
   const cached = !includeFullContent ? githubFileReadCache.get(cacheKey) : null;
   if (cached && Date.now() - cached.at < 60000) return cached.value;
 
@@ -612,16 +620,8 @@ async function githubSearchCode(session, repository, query) {
       : Math.min(from + GITHUB_DEFAULT_FILE_WINDOW - 1, lines.length);
 
     selected = lines.slice(from - 1, selectedEnd).join('\n');
-
-    if (selected.length > GITHUB_MAX_MODEL_READ_CHARS) {
-      selected = selected.slice(0, GITHUB_MAX_MODEL_READ_CHARS) +
-        '\n\n[READ WINDOW CHARACTER CAP REACHED — request a narrower line range.]';
-      truncated = true;
-      nextStartLine = selectedEnd < lines.length ? selectedEnd + 1 : null;
-    } else {
-      truncated = selectedEnd < lines.length;
-      nextStartLine = truncated ? selectedEnd + 1 : null;
-    }
+    truncated = selectedEnd < lines.length;
+    nextStartLine = truncated ? selectedEnd + 1 : null;
   }
 
   const value = {
@@ -637,10 +637,10 @@ async function githubSearchCode(session, repository, query) {
     returnedChars: selected.length,
     content: includeFullContent ? fullContent : selected
   };
+
   githubFileReadCache.set(cacheKey, { at: Date.now(), value });
   return value;
 }
-
 async function githubImportRepository(session, repository, branch) {
   let treeSha = null;
 
@@ -690,15 +690,14 @@ async function githubImportRepository(session, repository, branch) {
       size: Number(item.size) || 0
     }));
 
-  const maxFiles = 500;
-  const selected = blobs.slice(0, maxFiles);
+  const selected = blobs;
 
   return {
     repository,
     branch: branch || null,
     totalFiles: blobs.length,
     returnedFiles: selected.length,
-    truncated: !!payload.truncated || blobs.length > maxFiles,
+    truncated: !!payload.truncated,
     files: selected
   };
 }
@@ -797,7 +796,7 @@ function getGithubToolDeclarations() {
     },
     {
       name: 'github_search_code',
-      description: 'Search the active connected GitHub repository for code, filenames, symbols, or configuration relevant to the user request. Use this before guessing which file to change.',
+      description: 'Search the active connected GitHub repository for code, filenames, symbols, or configuration relevant to the user request. Use this before guessing which file to change. If GitHub Code Search is unavailable, this tool can fall back to the active branch repository tree.',
       parameters: {
         type: 'object',
         properties: {
@@ -814,7 +813,8 @@ function getGithubToolDeclarations() {
         properties: {
           path: { type: 'string', description: 'Repository-relative file path.' },
           start_line: { type: 'integer', description: 'Optional 1-based starting line.' },
-          end_line: { type: 'integer', description: 'Optional 1-based ending line.' }
+          end_line: { type: 'integer', description: 'Optional 1-based ending line.' },
+          include_full_content: { type: 'boolean', description: 'Set true when the complete current file is required, including very large files.' }
         },
         required: ['path']
       }
@@ -855,7 +855,7 @@ async function executeGithubToolCallInner(session, repository, branch, call, req
 
   if (name === 'github_import_repository') return await githubImportRepository(session, repository, branch);
 
-  if (name === 'github_search_code') return await githubSearchCode(session, repository, args.query);
+  if (name === 'github_search_code') return await githubSearchCode(session, repository, branch, args.query);
 
   if (name === 'github_read_file') {
     return await githubReadFile(
@@ -864,7 +864,8 @@ async function executeGithubToolCallInner(session, repository, branch, call, req
       args.path,
       branch,
       Number.isInteger(args.start_line) ? args.start_line : null,
-      Number.isInteger(args.end_line) ? args.end_line : null
+      Number.isInteger(args.end_line) ? args.end_line : null,
+      args.include_full_content === true
     );
   }
 
@@ -1688,8 +1689,6 @@ export async function onRequestPost(context) {
       let githubProposalPrepared = false;
       let githubInspectionCount = 0;
       const accumulatedGithubProposalEdits = [];
-      let lastGithubToolSignature = '';
-      let repeatedGithubToolSignatureCount = 0;
       let accumulatedGithubProposalSummary = '';
       let accumulatedGithubProposalCommitMessage = '';
       let generationStopped = false;
@@ -1876,20 +1875,6 @@ export async function onRequestPost(context) {
               args: call?.args || {}
             }))
           );
-
-          if (toolSignature === lastGithubToolSignature) {
-            repeatedGithubToolSignatureCount += 1;
-          } else {
-            lastGithubToolSignature = toolSignature;
-            repeatedGithubToolSignatureCount = 1;
-          }
-
-          if (repeatedGithubToolSignatureCount >= 3) {
-            finalResult = {
-              text: 'I stopped a repeated GitHub action to prevent the response from looping.'
-            };
-            break;
-          }
 
           agentContents.push(result.functionCallContent);
           const responseParts = [];
