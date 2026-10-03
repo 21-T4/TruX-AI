@@ -1586,6 +1586,8 @@ export async function onRequestPost(context) {
       let githubProposalPrepared = false;
       let githubInspectionCount = 0;
       const accumulatedGithubProposalEdits = [];
+      let lastGithubToolSignature = '';
+      let repeatedGithubToolSignatureCount = 0;
       let accumulatedGithubProposalSummary = '';
       let accumulatedGithubProposalCommitMessage = '';
 
@@ -1754,6 +1756,27 @@ export async function onRequestPost(context) {
             : '';
           if (progressLine) send({ type: 'status', status: progressLine });
           if (!result.functionCallContent) throw new Error('GitHub tool call returned without model content.');
+
+          const toolSignature = JSON.stringify(
+            result.functionCalls.map(call => ({
+              name: call?.name || '',
+              args: call?.args || {}
+            }))
+          );
+
+          if (toolSignature === lastGithubToolSignature) {
+            repeatedGithubToolSignatureCount += 1;
+          } else {
+            lastGithubToolSignature = toolSignature;
+            repeatedGithubToolSignatureCount = 1;
+          }
+
+          if (repeatedGithubToolSignatureCount >= 3) {
+            finalResult = {
+              text: 'I stopped a repeated GitHub action to prevent the response from looping.'
+            };
+            break;
+          }
 
           agentContents.push(result.functionCallContent);
           const responseParts = [];
