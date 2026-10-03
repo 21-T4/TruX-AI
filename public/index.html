@@ -6293,12 +6293,11 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       activeAbortController = new AbortController();
       try {
         const imageToken = auth?.currentUser ? await auth.currentUser.getIdToken() : "";
+        const imageHeaders = { "Content-Type": "application/json" };
+        if (imageToken) imageHeaders.Authorization = "Bearer " + imageToken;
         let res = await fetch("/api/chat", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + imageToken
-          },
+          headers: imageHeaders,
           signal: activeAbortController.signal,
           body: JSON.stringify({ message: imagePrompt, tier: currentModel, mode: "image", generateImage: true, userId: auth?.currentUser?.uid || null, userEmail: auth?.currentUser?.email || "" })
         });
@@ -7094,8 +7093,10 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
         activeAbortController = new AbortController();
         try {
+          const chatHeaders = { "Content-Type": "application/json", "Accept": "text/event-stream" };
+          if (authToken) chatHeaders.Authorization = "Bearer " + authToken;
           let res = await fetch("/api/chat", {
-          method: "POST", headers: { "Content-Type": "application/json", "Accept": "text/event-stream", "Authorization": "Bearer " + authToken },
+          method: "POST", headers: chatHeaders,
           signal: activeAbortController.signal,
           body: JSON.stringify(requestBody)
         });
@@ -7319,13 +7320,14 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
       try {
         const videoToken = auth?.currentUser ? await auth.currentUser.getIdToken() : "";
+        const videoHeaders={
+          "Content-Type":"application/json",
+          "Accept":"text/event-stream"
+        };
+        if(videoToken) videoHeaders.Authorization="Bearer "+videoToken;
         const res=await fetch("/api/chat",{
           method:"POST",
-          headers:{
-            "Content-Type":"application/json",
-            "Accept":"text/event-stream",
-            "Authorization":"Bearer "+videoToken
-          },
+          headers:videoHeaders,
           signal:activeAbortController.signal,
           body:JSON.stringify({message:basePrompt,tier:currentModel,mode:"video",userId:auth?.currentUser?.uid||null,userEmail:auth?.currentUser?.email||"",notifyOnComplete:true})
         });
