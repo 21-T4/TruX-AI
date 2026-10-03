@@ -1,0 +1,43 @@
+name: Temporary TruX syntax check
+
+on:
+  push:
+    branches:
+      - debug/syntax-check-20261003
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check server and function JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check cloud-run-server.js
+          while IFS= read -r -d '' file; do
+            node --check "$file"
+          done < <(find functions -type f -name '*.js' -print0)
+      - name: Check inline scripts in public/index.html
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const cp = require('child_process');
+          const html = fs.readFileSync('public/index.html', 'utf8');
+          const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)];
+          if (!scripts.length) throw new Error('No inline scripts found');
+          for (let i = 0; i < scripts.length; i++) {
+            const file = `/tmp/trux-inline-${i}.js`;
+            fs.writeFileSync(file, scripts[i][1], 'utf8');
+            const result = cp.spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
+            if (result.status !== 0) {
+              console.error(`Inline script #${i} failed syntax check.`);
+              process.stderr.write(result.stderr || '');
+              process.stdout.write(result.stdout || '');
+              process.exit(result.status || 1);
+            }
+          }
+          console.log(`Checked ${scripts.length} inline scripts successfully.`);
+          NODE
