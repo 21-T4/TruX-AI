@@ -6338,10 +6338,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       files.className = "github-proposal-files";
 
       const proposalEdits = Array.isArray(proposal.edits) ? proposal.edits : [];
-      const duplicatePaths = proposalEdits
-        .map(edit => String(edit?.path || "").trim())
-        .filter(Boolean)
-        .filter((path, index, paths) => paths.indexOf(path) !== index);
+      const duplicatePaths = [];
 
       (proposalEdits).forEach(edit => {
         const file = document.createElement("div");
@@ -6396,7 +6393,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       if(duplicatePaths.length) {
         apply.disabled = true;
         cancel.disabled = true;
-        status.textContent = "This proposal is invalid because " + duplicatePaths.join(", ") + " appears more than once. TruX-Code must prepare one combined edit per file.";
+        status.textContent = "This proposal contains an invalid edit path.";
       }
 
       actions.append(apply, cancel);
