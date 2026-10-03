@@ -7168,12 +7168,8 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
             appendToolStatusLine(tsid, j.tool, j.status, phase);
             if(phase === "start") {
               toolInProgress = true;
-              const status = getEl(sid);
-              if(status) setThinkingStatus(sid, j.status || j.tool || "");
             } else {
               toolInProgress = false;
-              const status = getEl(sid);
-              if(status) setThinkingStatus(sid, "");
             }
           }
           else if(j.type === "heartbeat") {
