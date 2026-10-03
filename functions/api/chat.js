@@ -599,46 +599,57 @@ async function githubSearchCode(session, repository, branch, query) {
 
   const cacheKey = repository + '|' + String(branch || '') + '|' + cleanQuery.toLowerCase();
   const cached = githubSearchCache.get(cacheKey);
-  if (cached && Date.now() - cached.at < 30000) return cached.value;
-
-  const q = cleanQuery + ' repo:' + repository;
-  let response;
-  try {
-    response = await githubApi(
-      session,
-      'https://api.github.com/search/code?q=' + encodeURIComponent(q) + '&per_page=100',
-      { headers: { Accept: 'application/vnd.github.text-match+json, application/vnd.github+json' } }
-    );
-  } catch (searchError) {
-    const fallback = await githubSearchPathFallback(
-      session, repository, branch, cleanQuery,
-      String(searchError?.message || 'GitHub code search request failed.')
-    );
-    githubSearchCache.set(cacheKey, { at: Date.now(), value: fallback });
-    return fallback;
+  if (cached) {
+    if (cached.value) return cached.value;
+    return await cached.promise;
   }
 
-  let payload = {};
-  try { payload = await response.json(); } catch {}
+  const pending = (async () => {
+    const q = cleanQuery + ' repo:' + repository + (branch ? ' ref:' + branch : '');
+    try {
+      const response = await githubApi(
+        session,
+        'https://api.github.com/search/code?q=' + encodeURIComponent(q) + '&per_page=100',
+        { headers: { Accept: 'application/vnd.github.text-match+json, application/vnd.github+json' } }
+      );
 
-  const value = response.ok
-    ? {
-        results: Array.isArray(payload.items) ? payload.items.map(item => ({
-          path: item.path,
-          name: item.name,
-          score: item.score,
-          matches: Array.isArray(item.text_matches)
-            ? item.text_matches.map(m => String(m.fragment || '').slice(0, 800))
-            : []
-        })) : []
+      let payload = {};
+      try { payload = await response.json(); } catch {}
+
+      if (response.ok) {
+        return {
+          results: Array.isArray(payload.items) ? payload.items.map(item => ({
+            path: item.path,
+            name: item.name,
+            score: item.score,
+            matches: Array.isArray(item.text_matches)
+              ? item.text_matches.map(m => String(m.fragment || '').slice(0, 800))
+              : []
+          })) : []
+        };
       }
-    : await githubSearchPathFallback(
+
+      return await githubSearchPathFallback(
         session, repository, branch, cleanQuery,
         payload?.message || ('GitHub returned HTTP ' + response.status + '.')
       );
+    } catch (error) {
+      return await githubSearchPathFallback(
+        session, repository, branch, cleanQuery,
+        String(error?.message || 'GitHub code search request failed.')
+      );
+    }
+  })();
 
-  githubSearchCache.set(cacheKey, { at: Date.now(), value });
-  return value;
+  githubSearchCache.set(cacheKey, { promise: pending });
+  try {
+    const value = await pending;
+    githubSearchCache.set(cacheKey, { value, at: Date.now() });
+    return value;
+  } catch (error) {
+    githubSearchCache.delete(cacheKey);
+    throw error;
+  }
 }
 
 const githubFileReadCache = new Map();
