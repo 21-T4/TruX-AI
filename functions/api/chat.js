@@ -391,7 +391,7 @@ function validGithubRepo(value) {
 function isGithubChangeRequest(value) {
   const text = String(value || '').trim();
   if (!text) return false;
-  return /\b(?:fix|repair|change|modify|update|refactor|add|remove|delete|implement|edit|rewrite|replace|rename|migrate|create|build|design|redesign|restyle|enhance|customize|patch|prepare)\b/i.test(text);
+  return /\b(?:fix|repair|solve|correct|address|change|modify|update|adjust|refactor|add|remove|delete|implement|edit|rewrite|replace|rename|migrate|create|build|design|redesign|restyle|improve|enhance|customize|patch|prepare)\b/i.test(text);
 }
 
 function validGithubPath(value) {
