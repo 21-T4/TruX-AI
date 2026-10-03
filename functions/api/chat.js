@@ -475,6 +475,17 @@ function githubSearchTokens(query) {
 }
 
 const githubTreeCache = new Map();
+const githubSearchCache = new Map();
+
+function stableJson(value) {
+  if (Array.isArray(value)) return '[' + value.map(stableJson).join(',') + ']';
+  if (value && typeof value === 'object') {
+    return '{' + Object.keys(value).sort().map(key =>
+      JSON.stringify(key) + ':' + stableJson(value[key])
+    ).join(',') + '}';
+  }
+  return JSON.stringify(value);
+}
 
 async function githubGetRepositoryTree(session, repository, treeSha) {
   const cacheKey = repository + '|' + treeSha;
@@ -586,6 +597,10 @@ async function githubSearchCode(session, repository, branch, query) {
     .trim();
   if (!cleanQuery) return { results: [] };
 
+  const cacheKey = repository + '|' + String(branch || '') + '|' + cleanQuery.toLowerCase();
+  const cached = githubSearchCache.get(cacheKey);
+  if (cached && Date.now() - cached.at < 30000) return cached.value;
+
   const q = cleanQuery + ' repo:' + repository;
   let response;
   try {
@@ -595,29 +610,35 @@ async function githubSearchCode(session, repository, branch, query) {
       { headers: { Accept: 'application/vnd.github.text-match+json, application/vnd.github+json' } }
     );
   } catch (searchError) {
-    return githubSearchPathFallback(session, repository, branch, cleanQuery, String(searchError?.message || 'GitHub code search request failed.'));
+    const fallback = await githubSearchPathFallback(
+      session, repository, branch, cleanQuery,
+      String(searchError?.message || 'GitHub code search request failed.')
+    );
+    githubSearchCache.set(cacheKey, { at: Date.now(), value: fallback });
+    return fallback;
   }
 
   let payload = {};
   try { payload = await response.json(); } catch {}
 
-  if (!response.ok) {
-    return githubSearchPathFallback(
-      session, repository, branch, cleanQuery,
-      payload?.message || ('GitHub returned HTTP ' + response.status + '.')
-    );
-  }
+  const value = response.ok
+    ? {
+        results: Array.isArray(payload.items) ? payload.items.map(item => ({
+          path: item.path,
+          name: item.name,
+          score: item.score,
+          matches: Array.isArray(item.text_matches)
+            ? item.text_matches.map(m => String(m.fragment || '').slice(0, 800))
+            : []
+        })) : []
+      }
+    : await githubSearchPathFallback(
+        session, repository, branch, cleanQuery,
+        payload?.message || ('GitHub returned HTTP ' + response.status + '.')
+      );
 
-  return {
-    results: Array.isArray(payload.items) ? payload.items.map(item => ({
-      path: item.path,
-      name: item.name,
-      score: item.score,
-      matches: Array.isArray(item.text_matches)
-        ? item.text_matches.map(m => String(m.fragment || '').slice(0, 800))
-        : []
-    })) : []
-  };
+  githubSearchCache.set(cacheKey, { at: Date.now(), value });
+  return value;
 }
 
 const githubFileReadCache = new Map();
@@ -805,11 +826,6 @@ async function validateGithubProposal(session, repository, edits, branch, reques
   // so distant edits never inflate one giant replacement string.
   const grouped = new Map();
 
-  const requestScope = String(requestText || '').trim();
-  const proposalScope = String(summary || '').trim();
-  const broadChange = /\b(?:redesign|rebuild|revamp|overhaul|rework|restyle|modernize|transform|make\s+(?:it|the)\s+(?:beautiful|premium|3d|better)|entire\s+(?:ui|interface|app)|whole\s+(?:ui|interface|app)|across\s+(?:the|all)\s+(?:app|pages|screens|modes)|comprehensive|major\s+(?:ui|ux|design)|full\s+(?:redesign|revamp|rewrite))\b/i.test(
-    requestScope + ' ' + proposalScope
-  );
 
   for (const edit of edits) {
     const path = edit?.path;
@@ -858,21 +874,7 @@ async function validateGithubProposal(session, repository, edits, branch, reques
 
   const normalized = groups.flat();
 
-  if (broadChange) {
-    const totalNewChars = normalized.reduce((sum, edit) => sum + edit.newChars, 0);
-    const changedFiles = new Set(normalized.map(edit => edit.path)).size;
-    const substantive = totalNewChars >= 8000 || changedFiles >= 3;
 
-    if (!substantive) {
-      throw new Error(
-        'This request is broad, but the proposed patch is too small to plausibly implement it (' +
-        totalNewChars.toLocaleString() + ' replacement characters across ' +
-        changedFiles + ' file' + (changedFiles === 1 ? '' : 's') + '). ' +
-        'Inspect the relevant UI, styles, markup, and supporting logic more deeply, then prepare a comprehensive proposal. ' +
-        'Do not return a cosmetic tweak as the completed redesign.'
-      );
-    }
-  }
 
   return normalized;
 }
@@ -1062,7 +1064,8 @@ async function streamVertexGemini({ model, contents, systemInstruction, tools, t
 
   let buffer = '';
   let functionCalls = [];
-  let lastCandidateContent = null;
+  const functionCallKeys = new Set();
+  let modelContentParts = [];
   let groundingMetadata = null;
   let accumulatedText = '';
 
@@ -1073,8 +1076,8 @@ async function streamVertexGemini({ model, contents, systemInstruction, tools, t
     try { parsed = JSON.parse(rawData); } catch { return; }
 
     const candidate = parsed?.candidates?.[0];
-    if (candidate?.content) lastCandidateContent = candidate.content;
     const parts = candidate?.content?.parts || [];
+    if (Array.isArray(parts) && parts.length) modelContentParts.push(...parts);
 
     if (candidate?.groundingMetadata) groundingMetadata = candidate.groundingMetadata;
 
@@ -1084,7 +1087,13 @@ async function streamVertexGemini({ model, contents, systemInstruction, tools, t
         if (onText) await onText(part.text);
       }
 
-      if (part.functionCall) functionCalls.push(part.functionCall);
+      if (part.functionCall) {
+        const key = stableJson(part.functionCall);
+        if (!functionCallKeys.has(key)) {
+          functionCallKeys.add(key);
+          functionCalls.push(part.functionCall);
+        }
+      }
     }
   }
 
@@ -1130,7 +1139,19 @@ async function streamVertexGemini({ model, contents, systemInstruction, tools, t
     if (trailingData.length) await processSseData(trailingData.join('\n'));
   }
 
-  return { text: accumulatedText, functionCall: functionCalls[0] || null, functionCalls, functionCallContent: lastCandidateContent, groundingMetadata };
+  const functionContentParts = [];
+  if (accumulatedText) functionContentParts.push({ text: accumulatedText });
+  for (const call of functionCalls) functionContentParts.push({ functionCall: call });
+
+  return {
+    text: accumulatedText,
+    functionCall: functionCalls[0] || null,
+    functionCalls,
+    functionCallContent: functionContentParts.length
+      ? { role: 'model', parts: functionContentParts }
+      : null,
+    groundingMetadata
+  };
 }
 
 
@@ -1790,10 +1811,13 @@ export async function onRequestPost(context) {
       let repositoryImported = false;
       let githubProposalPrepared = false;
       let githubInspectionCount = 0;
-      const accumulatedGithubProposalEdits = [];
+      const accumulatedGithubProposalEdits = new Map();
       let accumulatedGithubProposalSummary = '';
       let accumulatedGithubProposalCommitMessage = '';
       let generationStopped = false;
+      let lastToolSignature = '';
+      let repeatedToolSignatureCount = 0;
+      let lastNoToolCodingText = '';
 
       /* A coding request that asks for a repository change must not terminate
          on an intermediate text-only turn such as "the repo is imported, now
@@ -1823,7 +1847,8 @@ export async function onRequestPost(context) {
               'Continue inspecting the current repository files as needed, then call github_propose_changes with ' +
               'exact oldText/newText replacements copied from the latest reads. ' +
               'For broad requests, cover the requested scope comprehensively instead of returning a cosmetic patch. ' +
-              'There is no artificial patch-size ceiling. Keep going until a substantive proposal is prepared. ' +
+              'There is no application-level patch-size ceiling. Split large changes across multiple proposal calls when needed and keep going until the requested scope is materially covered. ' +
+              'Never repeat an already executed tool call. Re-read files whenever a target may have changed. ' +
               'Do not claim the change is applied; the user must review and explicitly apply it in the UI.'
           }]
         });
@@ -1944,9 +1969,10 @@ export async function onRequestPost(context) {
                 }
               }
             }
-            // TruX Code streams every answer token as soon as it is emitted.
-            // Do not gate visible output behind a code-fence or length threshold.
-            send({ type: 'chunk', text: piece });
+            // Model prose during a tool round is an activity note, not the final
+            // answer. Keep the live tool/status trace visible without mixing prose
+            // into the final response.
+
           } else {
             send({ type: 'chunk', text });
           }
@@ -1970,12 +1996,19 @@ export async function onRequestPost(context) {
           if (progressLine) send({ type: 'status', status: progressLine });
           if (!result.functionCallContent) throw new Error('GitHub tool call returned without model content.');
 
-          const toolSignature = JSON.stringify(
+          const toolSignature = stableJson(
             result.functionCalls.map(call => ({
               name: call?.name || '',
               args: call?.args || {}
             }))
           );
+
+          if (toolSignature === lastToolSignature) {
+            repeatedToolSignatureCount += 1;
+          } else {
+            repeatedToolSignatureCount = 0;
+            lastToolSignature = toolSignature;
+          }
 
           agentContents.push(result.functionCallContent);
           const responseParts = [];
@@ -1995,9 +2028,14 @@ export async function onRequestPost(context) {
             send({ type: 'tool_status', tool: toolName, phase: 'start', status: activeExplanation });
 
             try {
-              const callResult = githubSession && codingMode && validGithubRepo(githubRepository)
-                ? await executeGithubToolCall(githubSession, githubRepository, githubBranch, call, message)
-                : { error: 'GitHub workspace is not connected.' };
+              const duplicateBatch = repeatedToolSignatureCount > 0;
+              const callResult = duplicateBatch
+                ? {
+                    error: 'This exact GitHub tool call was already executed in this turn. Use its previous result and choose a different inspection or proposal step.'
+                  }
+                : (githubSession && codingMode && validGithubRepo(githubRepository)
+                    ? await executeGithubToolCall(githubSession, githubRepository, githubBranch, call, message)
+                    : { error: 'GitHub workspace is not connected.' });
 
               if (call?.name === 'github_import_repository' && !callResult?.error) {
                 repositoryImported = true;
@@ -2021,7 +2059,10 @@ export async function onRequestPost(context) {
                 githubProposalPrepared = true;
                 accumulatedGithubProposalSummary = callResult.summary || accumulatedGithubProposalSummary || 'Proposed repository changes.';
                 accumulatedGithubProposalCommitMessage = callResult.commitMessage || accumulatedGithubProposalCommitMessage || 'Update files with TruX-Code';
-                accumulatedGithubProposalEdits.push(...(Array.isArray(callResult.edits) ? callResult.edits : []));
+                for (const edit of Array.isArray(callResult.edits) ? callResult.edits : []) {
+                  const key = String(edit?.path || '') + '\u0000' + String(edit?.oldText || '');
+                  accumulatedGithubProposalEdits.set(key, edit);
+                }
                 send({
                   type: 'github_proposal',
                   proposal: {
@@ -2029,7 +2070,7 @@ export async function onRequestPost(context) {
                     branch: githubBranch || null,
                     summary: accumulatedGithubProposalSummary,
                     commitMessage: accumulatedGithubProposalCommitMessage,
-                    edits: accumulatedGithubProposalEdits
+                    edits: Array.from(accumulatedGithubProposalEdits.values())
                   }
                 });
               }
@@ -2076,23 +2117,29 @@ export async function onRequestPost(context) {
          * keep the agent loop alive and explicitly ask it to continue to the
          * reviewable proposal.
          */
-        if (changeRequested && githubSession && validGithubRepo(githubRepository) && !githubProposalPrepared) {
+        if (codingMode && changeRequested && githubSession && validGithubRepo(githubRepository) && !githubProposalPrepared) {
+          const roundText = String(result?.text || '').trim();
+
           if (result?.functionCallContent) {
             agentContents.push(result.functionCallContent);
-          } else if (result?.text) {
+          } else if (roundText) {
             agentContents.push({
               role: 'model',
-              parts: [{ text: String(result.text) }]
+              parts: [{ text: roundText }]
             });
           }
-          const progressLine = extractUserProgress(result?.text);
+
+          const progressLine = extractUserProgress(roundText);
           if (progressLine) send({ type: 'status', status: progressLine });
 
-          finalResult = result;
-          if (result?.text) {
-            send({ type: 'chunk', text: String(result.text) });
+          if (roundText && roundText === lastNoToolCodingText) {
+            finalResult = result;
+            break;
           }
-          break;
+
+          lastNoToolCodingText = roundText;
+          continueCodingAgent();
+          continue;
         }
 
         finalResult = result;

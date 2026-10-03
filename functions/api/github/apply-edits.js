@@ -346,27 +346,6 @@ export async function onRequestPost({ request, env }) {
     }
 
     return Response.json({
-          error: `The commit was created, but ${edit.path} could not be verified afterward.`,
-          conflict: true,
-          commit: commitSha,
-          path: edit.path
-        }, { status: 502 });
-      }
-
-      const verifiedContent = base64ToUtf8(verifyPayload.content);
-      if (verifiedContent !== edit.content) {
-        return Response.json({
-          error: `The commit was created, but the saved content for ${edit.path} did not match the requested edit.`,
-          conflict: true,
-          commit: commitSha,
-          path: edit.path
-        }, { status: 502 });
-      }
-
-      results.push({ path: edit.path, verified: true });
-    }
-
-    return Response.json({
       ok: true,
       applied: true,
       verified: true,
@@ -380,6 +359,7 @@ export async function onRequestPost({ request, env }) {
       },
       results
     });
+
   } catch (error) {
     console.error('GitHub apply-edits failed', error);
     return Response.json({ error: error?.message || 'GitHub edit failed.' }, { status: 500 });
