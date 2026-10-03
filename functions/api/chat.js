@@ -254,6 +254,41 @@ async function isBackgroundJobCancelled(env, jobId) {
   }
 }
 
+async function resolveTrustedChatIdentity(request, env, backgroundJobId = '') {
+  const authorization = String(request?.headers?.get('authorization') || '').trim();
+
+  if (authorization) {
+    try {
+      const verified = await requireFirebaseUser(request, env);
+      return {
+        uid: String(verified?.uid || ''),
+        email: String(verified?.email || '')
+      };
+    } catch {
+      throw Object.assign(new Error('Invalid or expired authentication token.'), { status: 401 });
+    }
+  }
+
+  const jobId = String(backgroundJobId || '').trim();
+  const secret = String(request?.headers?.get('x-trux-background-secret') || '');
+  if (!jobId || !secret) return null;
+
+  try {
+    const job = await getCloudRunKv(env).get('trux_background_job_' + jobId, 'json');
+    if (!job || String(job.jobSecret || '') !== secret) return null;
+
+    const uid = String(job?.body?.userId || '').trim();
+    if (!uid) return null;
+
+    return {
+      uid,
+      email: String(job?.body?.userEmail || '')
+    };
+  } catch {
+    return null;
+  }
+}
+
 async function sendFcmNotification(userIdentifier, env, title, body, data = {}) {
   if (!userIdentifier) return;
   const kv = getPushKv(env);
@@ -439,6 +474,33 @@ function githubSearchTokens(query) {
     .filter(token => token.length >= 3);
 }
 
+const githubTreeCache = new Map();
+
+async function githubGetRepositoryTree(session, repository, treeSha) {
+  const cacheKey = repository + '|' + treeSha;
+  if (githubTreeCache.has(cacheKey)) return githubTreeCache.get(cacheKey);
+
+  const pending = (async () => {
+    const response = await githubApi(
+      session,
+      'https://api.github.com/repos/' + repository + '/git/trees/' + encodeURIComponent(treeSha) + '?recursive=1'
+    );
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload?.message || 'GitHub repository tree lookup failed.');
+    return payload;
+  })();
+
+  githubTreeCache.set(cacheKey, pending);
+  try {
+    const payload = await pending;
+    githubTreeCache.set(cacheKey, Promise.resolve(payload));
+    return payload;
+  } catch (error) {
+    githubTreeCache.delete(cacheKey);
+    throw error;
+  }
+}
+
 async function githubSearchPathFallback(session, repository, branch, query, failureReason = '') {
   let treeSha = null;
 
@@ -475,15 +537,21 @@ async function githubSearchPathFallback(session, repository, branch, query, fail
     };
   }
 
-  const response = await githubApi(
-    session,
-    'https://api.github.com/repos/' + repository + '/git/trees/' + encodeURIComponent(treeSha) + '?recursive=1'
-  ).catch(() => null);
+  let payload;
+  try {
+    payload = await githubGetRepositoryTree(session, repository, treeSha);
+  } catch (treeError) {
+    return {
+      results: [],
+      fallback: true,
+      reason: 'GitHub code search and repository tree lookup were unavailable.' +
+        (failureReason ? ' ' + failureReason : '') + ' ' +
+        String(treeError?.message || '')
+    };
+  }
 
-  const payload = response ? await response.json().catch(() => null) : null;
   const tree = Array.isArray(payload?.tree) ? payload.tree : [];
   const tokens = githubSearchTokens(query);
-
   const scored = tree
     .filter(item => item?.type === 'blob' && typeof item.path === 'string')
     .map(item => {
@@ -496,7 +564,7 @@ async function githubSearchPathFallback(session, repository, branch, query, fail
     })
     .filter(x => x.score > 0)
     .sort((a, b) => b.score - a.score || a.item.path.length - b.item.path.length)
-    .slice(0, 20);
+    .slice(0, 100);
 
   return {
     results: scored.map(({ item, score }) => ({
@@ -507,7 +575,8 @@ async function githubSearchPathFallback(session, repository, branch, query, fail
     })),
     fallback: true,
     reason: 'GitHub code search was unavailable; matched repository paths instead.' +
-      (failureReason ? ' ' + failureReason : '')
+      (failureReason ? ' ' + failureReason : '') +
+      (payload?.truncated ? ' The repository tree is truncated; continue with more focused searches or known paths.' : '')
   };
 }
 
@@ -519,21 +588,14 @@ async function githubSearchCode(session, repository, branch, query) {
 
   const q = cleanQuery + ' repo:' + repository;
   let response;
-
   try {
     response = await githubApi(
       session,
-      'https://api.github.com/search/code?q=' + encodeURIComponent(q) + '&per_page=20',
+      'https://api.github.com/search/code?q=' + encodeURIComponent(q) + '&per_page=100',
       { headers: { Accept: 'application/vnd.github.text-match+json, application/vnd.github+json' } }
     );
   } catch (searchError) {
-    return githubSearchPathFallback(
-      session,
-      repository,
-      branch,
-      cleanQuery,
-      String(searchError?.message || 'GitHub code search request failed.')
-    );
+    return githubSearchPathFallback(session, repository, branch, cleanQuery, String(searchError?.message || 'GitHub code search request failed.'));
   }
 
   let payload = {};
@@ -541,57 +603,86 @@ async function githubSearchCode(session, repository, branch, query) {
 
   if (!response.ok) {
     return githubSearchPathFallback(
-      session,
-      repository,
-      branch,
-      cleanQuery,
+      session, repository, branch, cleanQuery,
       payload?.message || ('GitHub returned HTTP ' + response.status + '.')
     );
   }
 
   return {
-    results: Array.isArray(payload.items)
-      ? payload.items.map(item => ({
-          path: item.path,
-          name: item.name,
-          score: item.score,
-          matches: Array.isArray(item.text_matches)
-            ? item.text_matches.map(m => String(m.fragment || '').slice(0, 800))
-            : []
-        }))
-      : []
+    results: Array.isArray(payload.items) ? payload.items.map(item => ({
+      path: item.path,
+      name: item.name,
+      score: item.score,
+      matches: Array.isArray(item.text_matches)
+        ? item.text_matches.map(m => String(m.fragment || '').slice(0, 800))
+        : []
+    })) : []
   };
 }
 
 const githubFileReadCache = new Map();
-const GITHUB_DEFAULT_FILE_WINDOW = 240;
-const GITHUB_HEAD_LINES = 140;
-const GITHUB_TAIL_LINES = 80;
 
-async function githubReadFile(session, repository, path, branch, startLine, endLine, includeFullContent = false) {
+async function githubGetFileContent(session, repository, path, branch) {
   if (!validGithubPath(path)) throw new Error('Invalid repository path.');
-
-  const normalizedBranch = String(branch || '');
-  const from = Number.isInteger(startLine) && startLine > 0 ? startLine : 1;
-  const requestedEnd = Number.isInteger(endLine) && endLine >= from ? endLine : null;
-  const cacheKey = repository + '|' + normalizedBranch + '|' + path + '|' + from + '|' + (requestedEnd || '') + '|' + (includeFullContent ? 'full' : 'window');
-
-  const cached = !includeFullContent ? githubFileReadCache.get(cacheKey) : null;
-  if (cached && Date.now() - cached.at < 60000) return cached.value;
 
   const refQuery = branch ? '?ref=' + encodeURIComponent(branch) : '';
   const response = await githubApi(
     session,
     'https://api.github.com/repos/' + repository + '/contents/' +
-      path.split('/').map(encodeURIComponent).join('/') + refQuery
+      path.split('/').map(encodeURIComponent).join('/') + refQuery,
+    { headers: { Accept: 'application/vnd.github.object+json, application/vnd.github+json' } }
   );
-  const payload = await response.json();
+  const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) throw new Error(payload?.message || 'GitHub file read failed.');
-  if (Array.isArray(payload) || !payload?.content) throw new Error('That path is not a text file.');
+  if (Array.isArray(payload) || payload?.type === 'dir' || payload?.type === 'submodule') {
+    throw new Error('That path is not a text file.');
+  }
 
-  const fullContent = decodeGithubBase64(payload.content);
+  let content = '';
+  if (typeof payload?.content === 'string' && payload.content.trim()) {
+    content = decodeGithubBase64(payload.content);
+  } else if (payload?.sha) {
+    const blobResponse = await githubApi(
+      session,
+      'https://api.github.com/repos/' + repository + '/git/blobs/' + encodeURIComponent(payload.sha),
+      { headers: { Accept: 'application/vnd.github+json' } }
+    );
+    const blobPayload = await blobResponse.json().catch(() => ({}));
+    if (!blobResponse.ok || typeof blobPayload?.content !== 'string') {
+      throw new Error(blobPayload?.message || 'GitHub could not read the file blob.');
+    }
+    content = decodeGithubBase64(blobPayload.content);
+  } else {
+    throw new Error('GitHub returned no readable file content.');
+  }
+
+  return {
+    content,
+    sha: String(payload?.sha || ''),
+    size: Number(payload?.size || content.length) || content.length,
+    displayUrl: payload?.html_url || ''
+  };
+}
+
+const GITHUB_DEFAULT_FILE_WINDOW = 240;
+const GITHUB_HEAD_LINES = 140;
+const GITHUB_TAIL_LINES = 80;
+
+async function githubReadFile(session, repository, path, branch, startLine, endLine, includeFullContent = false) {
+  const file = await githubGetFileContent(session, repository, path, branch);
+  const fullContent = file.content;
   const lines = fullContent.split('\n');
+
+  const normalizedBranch = String(branch || '');
+  const from = Number.isInteger(startLine) && startLine > 0 ? startLine : 1;
+  const requestedEnd = Number.isInteger(endLine) && endLine >= from ? endLine : null;
+  const cacheKey = repository + '|' + normalizedBranch + '|' + path + '|' + from + '|' + (requestedEnd || '') + '|' + (includeFullContent ? 'full' : 'window') + '|' + file.sha;
+
+  if (!includeFullContent) {
+    const cached = githubFileReadCache.get(cacheKey);
+    if (cached && Date.now() - cached.at < 60000) return cached.value;
+  }
 
   let selected = '';
   let selectedStart = from;
@@ -618,7 +709,6 @@ async function githubReadFile(session, repository, path, branch, startLine, endL
     selectedEnd = requestedEnd
       ? Math.min(requestedEnd, lines.length)
       : Math.min(from + GITHUB_DEFAULT_FILE_WINDOW - 1, lines.length);
-
     selected = lines.slice(from - 1, selectedEnd).join('\n');
     truncated = selectedEnd < lines.length;
     nextStartLine = truncated ? selectedEnd + 1 : null;
@@ -626,7 +716,7 @@ async function githubReadFile(session, repository, path, branch, startLine, endL
 
   const value = {
     path,
-    sha: payload.sha || null,
+    sha: file.sha || null,
     branch: branch || null,
     totalLines: lines.length,
     startLine: selectedStart,
@@ -635,12 +725,15 @@ async function githubReadFile(session, repository, path, branch, startLine, endL
     nextStartLine,
     totalChars: fullContent.length,
     returnedChars: selected.length,
-    content: includeFullContent ? fullContent : selected
+    size: file.size,
+    displayUrl: file.displayUrl,
+    content: selected
   };
 
   githubFileReadCache.set(cacheKey, { at: Date.now(), value });
   return value;
 }
+
 async function githubImportRepository(session, repository, branch) {
   let treeSha = null;
 
@@ -731,7 +824,8 @@ async function validateGithubProposal(session, repository, edits, branch, reques
     grouped.get(path).push({ oldText, newText });
   }
 
-  const groups = await Promise.all(Array.from(grouped.entries()).map(async ([path, pathEdits]) => {
+  const groups = [];
+  for (const [path, pathEdits] of grouped.entries()) {
     const current = await githubReadFile(session, repository, path, branch, 1, null, true);
     const source = current.content;
     const placements = pathEdits.map(edit => {
@@ -753,14 +847,14 @@ async function validateGithubProposal(session, repository, edits, branch, reques
       }
     }
 
-    return pathEdits.map(edit => ({
+    groups.push(pathEdits.map(edit => ({
       path,
       oldText: edit.oldText,
       newText: edit.newText,
       oldChars: edit.oldText.length,
       newChars: edit.newText.length
-    }));
-  }));
+    })));
+  }
 
   const normalized = groups.flat();
 
@@ -796,7 +890,7 @@ function getGithubToolDeclarations() {
     },
     {
       name: 'github_search_code',
-      description: 'Search the active connected GitHub repository for code, filenames, symbols, or configuration relevant to the user request. Use this before guessing which file to change. If GitHub Code Search is unavailable, this tool can fall back to the active branch repository tree.',
+      description: 'Search the active connected GitHub repository for code, filenames, symbols, or configuration relevant to the user request. Use this before guessing which file to change. If GitHub Code Search is unavailable, this tool can fall back to the active branch repository tree. If GitHub Code Search is unavailable, this tool can fall back to the active branch repository tree.',
       parameters: {
         type: 'object',
         properties: {
@@ -807,7 +901,7 @@ function getGithubToolDeclarations() {
     },
     {
       name: 'github_read_file',
-      description: 'Read the current contents of a text file in the active connected GitHub repository. Large files return a compact head/tail sample by default; use focused start_line/end_line ranges for exact sections. Responses are character-bounded so large HTML/CSS/JS files cannot stall the agent. Use github_search_code first to locate relevant symbols/classes.',
+      description: 'Read the current contents of a text file in the active connected GitHub repository. Large files return a compact head/tail sample by default; use focused start_line/end_line ranges for exact sections, or set include_full_content=true when the complete current file is needed. Files larger than 1 MB are read through the Git blob API.',
       parameters: {
         type: 'object',
         properties: {
@@ -1411,8 +1505,8 @@ export async function onRequestPost(context) {
       image,
       attachments = [],
       systemInstruction,
-      userId,
-      userEmail,
+      userId: effectiveUserId,
+      userEmail: effectiveUserEmail,
       developer,
       advancedThinking,
       location,
@@ -1429,10 +1523,18 @@ export async function onRequestPost(context) {
      * If userId exists, it is used for image limits.
      * Otherwise the request IP is used.
      */
-    const developerAccount = isDeveloperEmail(userEmail);
-    const userIdentifier = userId
-      ? String(userId)
-      : (request.headers.get('cf-connecting-ip') || 'anonymous');
+    const trustedIdentity = await resolveTrustedChatIdentity(request, env, backgroundJobId);
+    const trustedUserId = String(trustedIdentity?.uid || '');
+    const requestedUserId = String(userId || '').trim();
+
+    if (requestedUserId && trustedUserId && requestedUserId !== trustedUserId) {
+      return Response.json({ error: 'Authenticated account does not match the requested user.' }, { status: 403 });
+    }
+
+    const developerAccount = !!trustedIdentity && isDeveloperEmail(trustedIdentity.email);
+    const userIdentifier = trustedUserId || (request.headers.get('cf-connecting-ip') || 'anonymous');
+    const effectiveUserId = trustedUserId || null;
+    const effectiveUserEmail = String(trustedIdentity?.email || '');
 
     if (!message && !image && (!Array.isArray(attachments) || attachments.length === 0)) {
       return Response.json({ error: 'Message, image, or attachment required.' }, { status: 400 });
@@ -1598,7 +1700,7 @@ export async function onRequestPost(context) {
       ? `${combinedSystemInstruction}${modeInstruction}\n\n[REASONING MODE]: Take extra time to reason carefully, check assumptions and calculations, then return only the concise final answer. Do not expose private chain-of-thought.`
       : `${combinedSystemInstruction}${modeInstruction}`;
 
-    const storedAttachmentContext = await resolveStoredAttachments(request, env, attachments, userId, message);
+    const storedAttachmentContext = await resolveStoredAttachments(request, env, attachments, effectiveUserId, message);
     const effectiveAttachments = (Array.isArray(attachments) ? attachments : []).map(a => ({ ...a }));
     for (const stored of storedAttachmentContext.items) {
       const index = effectiveAttachments.findIndex(a => String(a?.objectKey || '') === String(stored.objectKey || ''));
@@ -1801,7 +1903,6 @@ export async function onRequestPost(context) {
 
         let modelRoundText = '';
         let activityEmitted = false;
-        let proposalFailedThisRound = false;
 
         if (codingMode) {
           send({
@@ -1940,12 +2041,6 @@ export async function onRequestPost(context) {
                 }
               });
             } catch (toolError) {
-              if (call?.name === 'github_propose_changes') {
-                // A failed proposal must release the forced-tool lock so the
-                // next round can inspect the current file again and retry.
-                proposalFailedThisRound = true;
-              }
-
               send({
                 type: 'tool_status',
                 tool: toolName,
