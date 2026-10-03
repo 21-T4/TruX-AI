@@ -62,10 +62,12 @@ async function processJob(job, env) {
     headers['X-Trux-Background-Job'] = jobId;
     headers['X-Trux-Background-Secret'] = String(job.jobSecret || '');
 
+    const chatController = new AbortController();
     const response = await fetch(origin + '/api/chat', {
       method: 'POST',
       headers,
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      signal: chatController.signal
     });
 
     if (!response.ok || !response.body) {
@@ -154,14 +156,23 @@ async function processJob(job, env) {
       }
     };
 
+    let pendingRead = reader.read();
     while (true) {
-      if (await isJobStopped(job, env)) {
-        try { await reader.cancel(); } catch {}
-        return;
+      const stopPulse = new Promise(resolve => setTimeout(() => resolve({ __stopPulse: true }), 750));
+      const readResult = await Promise.race([pendingRead, stopPulse]);
+
+      if (readResult?.__stopPulse) {
+        if (await isJobStopped(job, env)) {
+          try { chatController.abort(); } catch {}
+          try { await reader.cancel(); } catch {}
+          return;
+        }
+        continue;
       }
 
-      const { value, done } = await reader.read();
+      const { value, done } = readResult;
       if (done) break;
+      pendingRead = reader.read();
 
       buffer += decoder.decode(value, { stream: true });
       const frames = buffer.split(/\r?\n\r?\n/);
@@ -175,6 +186,7 @@ async function processJob(job, env) {
         if (lines.length) {
           await handleEvent(lines.map(line => line.slice(5).trimStart()).join('\n'));
           if (await isJobStopped(job, env)) {
+            try { chatController.abort(); } catch {}
             try { await reader.cancel(); } catch {}
             return;
           }
@@ -212,8 +224,9 @@ async function processJob(job, env) {
 
     events.push({
       id: events.length + 1,
+      type: 'status',
       tool: 'TruX-Code',
-      status: 'Background run stopped: ' + String(error?.message || 'Unknown error.')
+      status: 'Background run failed: ' + String(error?.message || 'Unknown error.')
     });
 
     try {
