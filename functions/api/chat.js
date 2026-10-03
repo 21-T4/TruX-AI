@@ -257,7 +257,7 @@ async function isBackgroundJobCancelled(env, jobId) {
 async function resolveTrustedChatIdentity(request, env, backgroundJobId = '') {
   const authorization = String(request?.headers?.get('authorization') || '').trim();
 
-  if (authorization) {
+  if (/^Bearer\s+\S+$/i.test(authorization)) {
     try {
       const verified = await requireFirebaseUser(request, env);
       return {
