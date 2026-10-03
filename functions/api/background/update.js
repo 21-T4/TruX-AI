@@ -21,6 +21,14 @@ export async function onRequestPost({ request, env }) {
       return Response.json({ error: 'Unauthorized.' }, { status: 401 });
     }
 
+    /*
+     * A stop is terminal. Worker updates can race the Stop request, so a
+     * later "running" or "complete" update must never resurrect a stopped job.
+     */
+    if (existing.status === 'stopped' && body?.status !== 'stopped') {
+      return Response.json({ ok: true, stopped: true });
+    }
+
     const next = {
       ...existing,
       status: body?.status || existing.status,
