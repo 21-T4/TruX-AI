@@ -12,16 +12,6 @@ function validPath(value) {
     && !value.split('/').includes('..');
 }
 
-function utf8ToBase64(value) {
-  const bytes = new TextEncoder().encode(String(value));
-  let binary = '';
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode(...bytes.subarray(i, Math.min(i + chunk, bytes.length)));
-  }
-  return btoa(binary);
-}
-
 function base64ToUtf8(value) {
   const normalized = String(value || '').replace(/\s/g, '');
   const binary = atob(normalized);
@@ -40,6 +30,48 @@ async function githubRequest(session, url, options = {}) {
       ...(options.headers || {})
     }
   });
+}
+
+async function readGithubFile(session, repository, path, ref) {
+  const response = await githubRequest(
+    session,
+    'https://api.github.com/repos/' + repository + '/contents/' +
+      path.split('/').map(encodeURIComponent).join('/') +
+      '?ref=' + encodeURIComponent(ref),
+    { headers: { Accept: 'application/vnd.github.object+json, application/vnd.github+json' } }
+  );
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(payload?.message || 'GitHub could not read ' + path + '.');
+  }
+  if (Array.isArray(payload) || payload?.type === 'dir' || payload?.type === 'submodule') {
+    throw new Error(path + ' is not a text file.');
+  }
+
+  let content = '';
+  if (typeof payload?.content === 'string' && payload.content.trim()) {
+    content = base64ToUtf8(payload.content);
+  } else if (payload?.sha) {
+    const blobResponse = await githubRequest(
+      session,
+      'https://api.github.com/repos/' + repository + '/git/blobs/' + encodeURIComponent(payload.sha),
+      { headers: { Accept: 'application/vnd.github+json' } }
+    );
+    const blobPayload = await blobResponse.json().catch(() => ({}));
+    if (!blobResponse.ok || typeof blobPayload?.content !== 'string') {
+      throw new Error(blobPayload?.message || 'GitHub could not read the blob for ' + path + '.');
+    }
+    content = base64ToUtf8(blobPayload.content);
+  } else {
+    throw new Error('GitHub returned no readable content for ' + path + '.');
+  }
+
+  return {
+    sha: String(payload?.sha || ''),
+    size: Number(payload?.size || content.length) || content.length,
+    content
+  };
 }
 function countExact(source, needle) {
   if (!needle) return 0;
@@ -114,11 +146,9 @@ export async function onRequestPost({ request, env }) {
     }
 
     const planned = [];
-    const seenPaths = new Set();
     const groupedEdits = new Map();
 
-    // Validate every fragment against the same captured branch head. Repeated
-    // paths are valid; only overlapping fragments are rejected.
+    // Validate every fragment against the same captured branch head.
     for (const edit of edits) {
       const path = edit?.path;
       const oldText = typeof edit?.oldText === 'string' ? edit.oldText : '';
@@ -134,21 +164,8 @@ export async function onRequestPost({ request, env }) {
     }
 
     for (const [path, pathEdits] of groupedEdits.entries()) {
-      const query = `?ref=${encodeURIComponent(targetBranch)}`;
-      const filePath = path.split('/').map(encodeURIComponent).join('/');
-      const fileResponse = await githubRequest(
-        session,
-        `https://api.github.com/repos/${repository}/contents/${filePath}${query}`
-      );
-      const filePayload = await fileResponse.json().catch(() => ({}));
-
-      if (!fileResponse.ok || !filePayload?.content || !filePayload?.sha) {
-        return Response.json({
-          error: `Could not read ${path} before applying the change: ${filePayload?.message || 'GitHub returned an error.'}`
-        }, { status: fileResponse.status || 502 });
-      }
-
-      const currentContent = base64ToUtf8(filePayload.content);
+      const currentFile = await readGithubFile(session, repository, path, headSha);
+      const currentContent = currentFile.content;
       const placements = pathEdits.map(edit => {
         const first = currentContent.indexOf(edit.oldText);
         const second = first < 0 ? -1 : currentContent.indexOf(edit.oldText, first + edit.oldText.length);
@@ -184,30 +201,32 @@ export async function onRequestPost({ request, env }) {
       }
       nextContent += currentContent.slice(cursor);
 
-      planned.push({ path, content: nextContent });
-    }
-
-    // Store large edited files as Git blobs in parallel, then create one compact
-    // tree from blob SHAs. This is substantially more efficient for large changes.
-    const blobResults = await Promise.all(planned.map(async edit => {
+      // Use UTF-8 directly for Git blobs to avoid unnecessary base64 inflation.
       const blobResponse = await githubRequest(
         session,
-        `https://api.github.com/repos/${repository}/git/blobs`,
+        'https://api.github.com/repos/' + repository + '/git/blobs',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            content: utf8ToBase64(edit.content),
-            encoding: 'base64'
+            content: nextContent,
+            encoding: 'utf-8'
           })
         }
       );
       const blobPayload = await blobResponse.json().catch(() => ({}));
       if (!blobResponse.ok || !blobPayload?.sha) {
-        throw new Error(blobPayload?.message || `GitHub could not store the edited file ${edit.path}.`);
+        return Response.json({
+          error: blobPayload?.message || `GitHub could not store the edited file ${path}.`,
+          path
+        }, { status: blobResponse.status || 502 });
       }
-      return { path: edit.path, sha: String(blobPayload.sha) };
-    }));
+
+      planned.push({
+        path,
+        sha: String(blobPayload.sha)
+      });
+    }
 
     const treeResponse = await githubRequest(
       session,
@@ -217,7 +236,7 @@ export async function onRequestPost({ request, env }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           base_tree: headCommitPayload.tree.sha,
-          tree: blobResults.map(edit => ({
+          tree: planned.map(edit => ({
             path: edit.path,
             mode: '100644',
             type: 'blob',
@@ -300,12 +319,34 @@ export async function onRequestPost({ request, env }) {
       const filePath = edit.path.split('/').map(encodeURIComponent).join('/');
       const verifyResponse = await githubRequest(
         session,
-        `https://api.github.com/repos/${repository}/contents/${filePath}?ref=${encodeURIComponent(commitSha)}`
+        'https://api.github.com/repos/' + repository + '/contents/' + filePath +
+          '?ref=' + encodeURIComponent(commitSha),
+        { headers: { Accept: 'application/vnd.github.object+json, application/vnd.github+json' } }
       );
       const verifyPayload = await verifyResponse.json().catch(() => ({}));
 
-      if (!verifyResponse.ok || !verifyPayload?.content) {
+      if (!verifyResponse.ok || !verifyPayload?.sha) {
         return Response.json({
+          error: `The commit was created, but ${edit.path} could not be verified afterward.`,
+          conflict: true,
+          commit: commitSha,
+          path: edit.path
+        }, { status: 502 });
+      }
+
+      if (String(verifyPayload.sha) !== String(edit.sha)) {
+        return Response.json({
+          error: `The commit was created, but the saved blob for ${edit.path} did not match the requested edit.`,
+          conflict: true,
+          commit: commitSha,
+          path: edit.path
+        }, { status: 502 });
+      }
+
+      results.push({ path: edit.path, verified: true });
+    }
+
+    return Response.json({
           error: `The commit was created, but ${edit.path} could not be verified afterward.`,
           conflict: true,
           commit: commitSha,
