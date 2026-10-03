@@ -2,7 +2,7 @@
 let cachedAccessToken = null;
 let cachedTokenExpiry = 0;
 const memory = new Map();
-let firestoreDisabled = false;
+let firestoreRetryAfter = 0;
 
 function base64UrlEncode(data) {
   const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : new Uint8Array(data);
@@ -158,7 +158,7 @@ function memoryPut(key, value, options = {}) {
 
 async function firestoreGet(env, key) {
   const projectId = await cloudProjectId(env);
-  if (!projectId || firestoreDisabled) return null;
+  if (!projectId || Date.now() < firestoreRetryAfter) return null;
   const token = await googleAccessToken(env);
   const id = await docId(key);
   const url = 'https://firestore.googleapis.com/v1/projects/' + encodeURIComponent(projectId) +
@@ -180,7 +180,7 @@ async function firestoreGet(env, key) {
 
 async function firestorePut(env, key, value, options = {}) {
   const projectId = await cloudProjectId(env);
-  if (!projectId || firestoreDisabled) return false;
+  if (!projectId || Date.now() < firestoreRetryAfter) return false;
   const token = await googleAccessToken(env);
   const id = await docId(key);
   const ttl = Number(options?.expirationTtl || 0);
@@ -205,7 +205,7 @@ async function firestorePut(env, key, value, options = {}) {
 
 async function firestoreDelete(env, key) {
   const projectId = await cloudProjectId(env);
-  if (!projectId || firestoreDisabled) return false;
+  if (!projectId || Date.now() < firestoreRetryAfter) return false;
   const token = await googleAccessToken(env);
   const id = await docId(key);
   const url = 'https://firestore.googleapis.com/v1/projects/' + encodeURIComponent(projectId) +
@@ -220,29 +220,37 @@ async function firestoreDelete(env, key) {
   return true;
 }
 
-function disableFirestore(error) {
-  if (!firestoreDisabled) {
-    firestoreDisabled = true;
-    console.warn('Cloud Run Firestore state storage unavailable; using per-instance memory fallback:', error?.message || error);
-  }
+function markFirestoreUnavailable(error) {
+  // Keep the in-memory copy as a short-lived fallback, but retry Firestore
+  // after a brief backoff instead of permanently switching the whole instance
+  // to isolated memory. Background jobs may span multiple Cloud Run instances.
+  firestoreRetryAfter = Date.now() + 5000;
+  console.warn(
+    'Cloud Run Firestore state temporarily unavailable; using memory fallback until retry:',
+    error?.message || error
+  );
 }
 
 export function getCloudRunKv(env) {
   return {
     async get(key, type) {
       const memoryValue = memoryGet(key);
-      if (firestoreDisabled) {
+
+      if (Date.now() < firestoreRetryAfter) {
         if (memoryValue == null) return null;
         return type === 'json' ? JSON.parse(memoryValue) : memoryValue;
       }
 
       try {
         const value = await firestoreGet(env, key);
-        if (value == null) return null;
+        if (value == null) {
+          memory.delete(key);
+          return null;
+        }
         memoryPut(key, value);
         return type === 'json' ? JSON.parse(value) : value;
       } catch (error) {
-        disableFirestore(error);
+        markFirestoreUnavailable(error);
         if (memoryValue == null) return null;
         return type === 'json' ? JSON.parse(memoryValue) : memoryValue;
       }
@@ -250,21 +258,23 @@ export function getCloudRunKv(env) {
 
     async put(key, value, options) {
       memoryPut(key, value, options);
-      if (firestoreDisabled) return;
+      if (Date.now() < firestoreRetryAfter) return;
+
       try {
         await firestorePut(env, key, value, options);
       } catch (error) {
-        disableFirestore(error);
+        markFirestoreUnavailable(error);
       }
     },
 
     async delete(key) {
       memory.delete(key);
-      if (firestoreDisabled) return;
+      if (Date.now() < firestoreRetryAfter) return;
+
       try {
         await firestoreDelete(env, key);
       } catch (error) {
-        disableFirestore(error);
+        markFirestoreUnavailable(error);
       }
     }
   };

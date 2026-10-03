@@ -14,7 +14,10 @@ async function isJobStopped(job, env) {
   const origin = String(job?.origin || env.TRUX_BACKGROUND_ORIGIN || env.TRUX_APP_ORIGIN || APP_ORIGIN_FALLBACK).replace(/\/$/, '');
   try {
     const response = await fetch(origin + '/api/background/status?jobId=' + encodeURIComponent(String(job?.jobId || '')), {
-      cache: 'no-store'
+      cache: 'no-store',
+      headers: {
+        'X-Trux-Background-Secret': String(job?.jobSecret || '')
+      }
     });
     if (!response.ok) return false;
     const state = await response.json();
