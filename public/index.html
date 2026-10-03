@@ -6292,8 +6292,13 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
       activeAbortController = new AbortController();
       try {
+        const imageToken = auth?.currentUser ? await auth.currentUser.getIdToken() : "";
         let res = await fetch("/api/chat", {
-          method: "POST", headers: { "Content-Type": "application/json" },
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + imageToken
+          },
           signal: activeAbortController.signal,
           body: JSON.stringify({ message: imagePrompt, tier: currentModel, mode: "image", generateImage: true, userId: auth?.currentUser?.uid || null, userEmail: auth?.currentUser?.email || "" })
         });
@@ -6695,10 +6700,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       state.promise = (async () => {
         let seenEventIds = new Set();
         let lastLiveText = "";
-        const startedAt = Number(chatSessions[chatId]?.backgroundStartedAt || Date.now());
-        const deadline = startedAt + 25 * 60 * 1000;
-
-        while (Date.now() < deadline) {
+        while (true) {
           let response;
           try {
             response = await fetch("/api/background/status?jobId=" + encodeURIComponent(key), {
@@ -6792,7 +6794,6 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           await new Promise(resolve => setTimeout(resolve, 850));
         }
 
-        await commitBackgroundResult(chatId, key, "The background coding request exceeded its maximum runtime.", null);
         return false;
       })().finally(() => {
         backgroundJobWatchers.delete(key);
@@ -7317,7 +7318,17 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       const timer=setInterval(()=>{ const el=getEl(sid); if(el) el.textContent="Generating video · "+formatCodexElapsed(Date.now()-row._startedAt); },1000);
 
       try {
-        const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json","Accept":"text/event-stream"},signal:activeAbortController.signal,body:JSON.stringify({message:basePrompt,tier:currentModel,mode:"video",userId:auth?.currentUser?.uid||null,userEmail:auth?.currentUser?.email||"",notifyOnComplete:true})});
+        const videoToken = auth?.currentUser ? await auth.currentUser.getIdToken() : "";
+        const res=await fetch("/api/chat",{
+          method:"POST",
+          headers:{
+            "Content-Type":"application/json",
+            "Accept":"text/event-stream",
+            "Authorization":"Bearer "+videoToken
+          },
+          signal:activeAbortController.signal,
+          body:JSON.stringify({message:basePrompt,tier:currentModel,mode:"video",userId:auth?.currentUser?.uid||null,userEmail:auth?.currentUser?.email||"",notifyOnComplete:true})
+        });
         if(!res.ok){ const p=await res.json().catch(()=>({})); throw Error(p.error||p.reply||"Video generation failed."); }
         if(!res.body) throw Error("Video streaming body unavailable.");
         const reader=res.body.getReader(), decoder=new TextDecoder();
