@@ -2191,6 +2191,14 @@ export async function onRequestPost(context) {
 
       if (generationStopped) return;
 
+      if (!finalResult) {
+        const fallbackText = String(lastModelResult?.text || '').trim()
+          || (repositoryImported
+            ? 'I finished inspecting the connected repository, but I could not prepare a reviewable change proposal in this turn.'
+            : 'I could not complete the GitHub-assisted response in this turn. Please retry the request.');
+        finalResult = { text: fallbackText };
+      }
+
       if (!codingMode) {
         send({
           type: 'status',
@@ -2247,22 +2255,6 @@ export async function onRequestPost(context) {
         }
 
         return;
-      }
-
-      // Never turn an exhausted agent loop into a generic 500. Return the
-      // latest useful model text when available, and clearly report that a
-      // reviewable proposal was not produced yet when it was not.
-      if (!finalResult) {
-        const fallbackText = String(lastModelResult?.text || '').trim()
-          || (repositoryImported
-            ? 'I finished inspecting the connected repository, but I could not prepare a reviewable change proposal in this turn.'
-            : 'I could not complete the GitHub-assisted response in this turn. Please retry the request.');
-        send({ type: 'final', text: fallbackText });
-      } else if (finalResult?.text) {
-        send({ type: 'final', text: String(finalResult.text) });
-      }
-
-      return;
     });
   } catch (error) {
     console.error('Vertex AI Error:', error);
