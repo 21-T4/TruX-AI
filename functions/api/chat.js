@@ -584,28 +584,21 @@ async function githubImportRepository(session, repository, branch) {
 }
 
 async function validateGithubProposal(session, repository, edits, branch) {
-  const MAX_REQUESTED_PROPOSAL_EDITS = 32;
-  if (!Array.isArray(edits) || !edits.length || edits.length > MAX_REQUESTED_PROPOSAL_EDITS) {
-    throw new Error('A GitHub proposal must contain between 1 and 32 requested edit fragments.');
+  if (!Array.isArray(edits) || !edits.length) {
+    throw new Error('The GitHub proposal did not contain any edit fragments.');
   }
 
-  /*
-   * The model can occasionally describe two independent changes for the same
-   * file as separate edits. That is harmless as long as the targets are
-   * distinct, so normalize them into one reviewable edit before returning the
-   * proposal. This keeps the UI/apply layer path-unique without forcing the
-   * model to perfectly serialize every same-file change in one call.
-   */
+  // No artificial file-count, fragment-count, or character-size ceiling.
+  // Validate exact fragments against each current file and keep them separate
+  // so distant edits never inflate one giant replacement string.
   const grouped = new Map();
-
-  const MAX_PROPOSAL_TEXT_CHARS = 500000;
 
   for (const edit of edits) {
     const path = edit?.path;
     const oldText = typeof edit?.oldText === 'string' ? edit.oldText : '';
     const newText = typeof edit?.newText === 'string' ? edit.newText : '';
 
-    if (!validGithubPath(path) || !oldText || oldText.length > MAX_PROPOSAL_TEXT_CHARS || newText.length > MAX_PROPOSAL_TEXT_CHARS) {
+    if (!validGithubPath(path) || !oldText) {
       throw new Error('Invalid GitHub edit for ' + String(path || 'unknown') + '.');
     }
 
@@ -613,73 +606,38 @@ async function validateGithubProposal(session, repository, edits, branch) {
     grouped.get(path).push({ oldText, newText });
   }
 
-  const MAX_PROPOSAL_FILES = 16;
-  if (grouped.size > MAX_PROPOSAL_FILES) {
-    throw new Error('A GitHub proposal may target at most 16 unique files.');
-  }
-
-  const checked = await Promise.all(Array.from(grouped.entries()).map(async ([path, pathEdits]) => {
+  const groups = await Promise.all(Array.from(grouped.entries()).map(async ([path, pathEdits]) => {
     const current = await githubReadFile(session, repository, path, branch, 1, null, true);
     const source = current.content;
-    const placements = [];
-
-    for (const edit of pathEdits) {
+    const placements = pathEdits.map(edit => {
       const first = source.indexOf(edit.oldText);
       const second = first < 0 ? -1 : source.indexOf(edit.oldText, first + edit.oldText.length);
-
       if (first < 0 || second >= 0) {
         throw new Error(
           'The exact edit target for ' + path + ' was not found exactly once. Read the current file again before proposing changes.'
         );
       }
-
-      placements.push({
-        start: first,
-        end: first + edit.oldText.length,
-        newText: edit.newText
-      });
-    }
-
-    placements.sort((a, b) => a.start - b.start);
+      return { start: first, end: first + edit.oldText.length };
+    }).sort((a, b) => a.start - b.start);
 
     for (let i = 1; i < placements.length; i++) {
       if (placements[i].start < placements[i - 1].end) {
         throw new Error(
-          'Multiple proposed edits for ' + path + ' overlap. Combine the overlapping changes into one edit and prepare the proposal again.'
+          'Multiple proposed edits for ' + path + ' overlap. Combine only the overlapping fragments.'
         );
       }
     }
 
-    const spanStart = placements[0].start;
-    const spanEnd = placements[placements.length - 1].end;
-    let cursor = spanStart;
-    let mergedNewText = '';
-
-    for (const placement of placements) {
-      mergedNewText += source.slice(cursor, placement.start);
-      mergedNewText += placement.newText;
-      cursor = placement.end;
-    }
-    mergedNewText += source.slice(cursor, spanEnd);
-
-    const mergedOldText = source.slice(spanStart, spanEnd);
-
-    if (mergedOldText.length > MAX_PROPOSAL_TEXT_CHARS || mergedNewText.length > MAX_PROPOSAL_TEXT_CHARS) {
-      throw new Error(
-        'The combined edit for ' + path + ' is too large. Keep the proposed changes closer together or split them into smaller, non-overlapping areas.'
-      );
-    }
-
-    return {
+    return pathEdits.map(edit => ({
       path,
-      oldText: mergedOldText,
-      newText: mergedNewText,
-      oldChars: mergedOldText.length,
-      newChars: mergedNewText.length
-    };
+      oldText: edit.oldText,
+      newText: edit.newText,
+      oldChars: edit.oldText.length,
+      newChars: edit.newText.length
+    }));
   }));
 
-  return checked;
+  return groups.flat();
 }
 
 function getGithubToolDeclarations() {
@@ -719,7 +677,7 @@ function getGithubToolDeclarations() {
     },
     {
       name: 'github_propose_changes',
-      description: 'Prepare exact text replacements for the user to review. This function NEVER writes to GitHub. Every oldText must match the current file exactly once, and each repository path must appear only once in edits; combine all changes for the same file into one edit. After this call the app will show an Apply Changes confirmation button.',
+      description: 'Prepare exact text replacements for the user to review. This function NEVER writes to GitHub. There is no application-level size or file-count limit. You may send many fragments and repeat a repository path for separate non-overlapping changes. Large changes may be split across multiple proposal calls.',
       parameters: {
         type: 'object',
         properties: {
@@ -1600,6 +1558,9 @@ export async function onRequestPost(context) {
       let repositoryImported = false;
       let githubProposalPrepared = false;
       let githubInspectionCount = 0;
+      const accumulatedGithubProposalEdits = [];
+      let accumulatedGithubProposalSummary = '';
+      let accumulatedGithubProposalCommitMessage = '';
 
       /* A coding request that asks for a repository change must not terminate
          on an intermediate text-only turn such as "the repo is imported, now
@@ -1686,8 +1647,9 @@ export async function onRequestPost(context) {
       }
 
 
-      const MAX_CODING_AGENT_ROUNDS = 12;
-      for (let agentRound = 0; agentRound < MAX_CODING_AGENT_ROUNDS; agentRound++) {
+      let agentRound = 0;
+      while (true) {
+        agentRound += 1;
         if (!codingMode) {
           send({
             type: 'status',
@@ -1806,14 +1768,17 @@ export async function onRequestPost(context) {
 
               if (call?.name === 'github_propose_changes' && callResult?.proposalReady) {
                 githubProposalPrepared = true;
+                accumulatedGithubProposalSummary = callResult.summary || accumulatedGithubProposalSummary || 'Proposed repository changes.';
+                accumulatedGithubProposalCommitMessage = callResult.commitMessage || accumulatedGithubProposalCommitMessage || 'Update files with TruX-Code';
+                accumulatedGithubProposalEdits.push(...(Array.isArray(callResult.edits) ? callResult.edits : []));
                 send({
                   type: 'github_proposal',
                   proposal: {
                     repository: githubRepository,
                     branch: githubBranch || null,
-                    summary: callResult.summary,
-                    commitMessage: callResult.commitMessage,
-                    edits: callResult.edits
+                    summary: accumulatedGithubProposalSummary,
+                    commitMessage: accumulatedGithubProposalCommitMessage,
+                    edits: accumulatedGithubProposalEdits
                   }
                 });
               }
@@ -1854,12 +1819,7 @@ export async function onRequestPost(context) {
           // Once the exact reviewable proposal exists, no extra Gemini turn is
           // needed. Continuing here only wastes tool calls and can hit the
           // agent's per-request tool-call ceiling before the UI can finish.
-          if (githubProposalPrepared) {
-            finalResult = {
-              text: 'I prepared the requested GitHub changes for your review. Use Apply Changes to write them to the connected repository.'
-            };
-            break;
-          }
+          // Keep the agent alive after a proposal so additional large-change fragments can be proposed.
 
           continue;
         }
