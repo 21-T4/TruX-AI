@@ -407,32 +407,18 @@ function decodeGithubBase64(value) {
   return new TextDecoder().decode(bytes);
 }
 
-const GITHUB_REQUEST_TIMEOUT_MS = 15000;
 
 async function githubApi(session, url, options = {}) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), GITHUB_REQUEST_TIMEOUT_MS);
-  try {
-    return await fetch(url, {
-      ...options,
-      signal: controller.signal,
-      headers: {
-        Authorization: 'Bearer ' + session.token,
-        Accept: 'application/vnd.github+json',
-        'User-Agent': 'TruX-Code',
-        ...(options.headers || {})
-      }
-    });
-  } catch (error) {
-    if (error?.name === 'AbortError') {
-      throw new Error('GitHub request timed out after 15 seconds. The agent will continue with the next step.');
+  return await fetch(url, {
+    ...options,
+    headers: {
+      Authorization: 'Bearer ' + session.token,
+      Accept: 'application/vnd.github+json',
+      'User-Agent': 'TruX-Code',
+      ...(options.headers || {})
     }
-    throw error;
-  } finally {
-    clearTimeout(timer);
-  }
+  });
 }
-
 async function githubSearchCode(session, repository, query) {
   const cleanQuery = String(query || '')
     .replace(/\brepo:[^\s]+\b/gi, '')
@@ -447,10 +433,7 @@ async function githubSearchCode(session, repository, query) {
     'https://api.github.com/search/code?q=' + encodeURIComponent(q) + '&per_page=6',
     { headers: { Accept: 'application/vnd.github.text-match+json, application/vnd.github+json' } }
   );
-  const payload = await Promise.race([
-    response.json(),
-    new Promise((_, reject) => setTimeout(() => reject(new Error('GitHub search response timed out.')), GITHUB_REQUEST_TIMEOUT_MS))
-  ]);
+  const payload = await response.json();
 
   if (!response.ok) throw new Error(payload?.message || 'GitHub code search failed.');
 
@@ -486,12 +469,7 @@ async function githubReadFile(session, repository, path, branch, startLine, endL
     'https://api.github.com/repos/' + repository + '/contents/' +
       path.split('/').map(encodeURIComponent).join('/') + refQuery
   );
-  const payload = await Promise.race([
-    response.json(),
-    new Promise((_, reject) => setTimeout(() => reject(new Error(
-      'GitHub file reader response timed out after 15 seconds.'
-    )), GITHUB_REQUEST_TIMEOUT_MS))
-  ]);
+  const payload = await response.json();
 
   if (!response.ok) throw new Error(payload?.message || 'GitHub file read failed.');
   if (Array.isArray(payload) || !payload?.content) throw new Error('That path is not a text file.');
@@ -703,30 +681,8 @@ function getGithubToolDeclarations() {
 }
 
 async function executeGithubToolCall(session, repository, branch, call) {
-  const name = call?.name;
-  const timeoutMs = name === 'github_import_repository' ? 45000
-    : name === 'github_propose_changes' ? 45000
-    : 20000;
-
-  let timer;
-  try {
-    return await Promise.race([
-      executeGithubToolCallInner(session, repository, branch, call),
-      new Promise((_, reject) => {
-        timer = setTimeout(() => reject(new Error(
-          name === 'github_import_repository'
-            ? 'GitHub repository import timed out after 45 seconds.'
-            : name === 'github_propose_changes'
-              ? 'GitHub change validation timed out after 45 seconds.'
-              : 'GitHub tool timed out after 20 seconds.'
-        )), timeoutMs);
-      })
-    ]);
-  } finally {
-    clearTimeout(timer);
-  }
+  return await executeGithubToolCallInner(session, repository, branch, call);
 }
-
 async function executeGithubToolCallInner(session, repository, branch, call) {
   const name = call?.name;
   const args = call?.args || {};
