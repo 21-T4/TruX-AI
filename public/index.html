@@ -6702,9 +6702,17 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         while (true) {
           let response;
           try {
+            const statusUser = auth?.currentUser;
+            const statusHeaders = {};
+            if (statusUser) {
+              try {
+                statusHeaders.Authorization = "Bearer " + await statusUser.getIdToken(false);
+              } catch {}
+            }
             response = await fetch("/api/background/status?jobId=" + encodeURIComponent(key), {
               cache: "no-store",
               credentials: "same-origin",
+              headers: statusHeaders,
               signal: controller.signal
             });
           } catch (error) {
