@@ -475,6 +475,17 @@ function githubSearchTokens(query) {
 }
 
 const githubTreeCache = new Map();
+const githubSearchCache = new Map();
+
+function stableJson(value) {
+  if (Array.isArray(value)) return '[' + value.map(stableJson).join(',') + ']';
+  if (value && typeof value === 'object') {
+    return '{' + Object.keys(value).sort().map(key =>
+      JSON.stringify(key) + ':' + stableJson(value[key])
+    ).join(',') + '}';
+  }
+  return JSON.stringify(value);
+}
 
 async function githubGetRepositoryTree(session, repository, treeSha) {
   const cacheKey = repository + '|' + treeSha;
@@ -586,6 +597,10 @@ async function githubSearchCode(session, repository, branch, query) {
     .trim();
   if (!cleanQuery) return { results: [] };
 
+  const cacheKey = repository + '|' + String(branch || '') + '|' + cleanQuery.toLowerCase();
+  const cached = githubSearchCache.get(cacheKey);
+  if (cached && Date.now() - cached.at < 30000) return cached.value;
+
   const q = cleanQuery + ' repo:' + repository;
   let response;
   try {
@@ -595,29 +610,35 @@ async function githubSearchCode(session, repository, branch, query) {
       { headers: { Accept: 'application/vnd.github.text-match+json, application/vnd.github+json' } }
     );
   } catch (searchError) {
-    return githubSearchPathFallback(session, repository, branch, cleanQuery, String(searchError?.message || 'GitHub code search request failed.'));
+    const fallback = await githubSearchPathFallback(
+      session, repository, branch, cleanQuery,
+      String(searchError?.message || 'GitHub code search request failed.')
+    );
+    githubSearchCache.set(cacheKey, { at: Date.now(), value: fallback });
+    return fallback;
   }
 
   let payload = {};
   try { payload = await response.json(); } catch {}
 
-  if (!response.ok) {
-    return githubSearchPathFallback(
-      session, repository, branch, cleanQuery,
-      payload?.message || ('GitHub returned HTTP ' + response.status + '.')
-    );
-  }
+  const value = response.ok
+    ? {
+        results: Array.isArray(payload.items) ? payload.items.map(item => ({
+          path: item.path,
+          name: item.name,
+          score: item.score,
+          matches: Array.isArray(item.text_matches)
+            ? item.text_matches.map(m => String(m.fragment || '').slice(0, 800))
+            : []
+        })) : []
+      }
+    : await githubSearchPathFallback(
+        session, repository, branch, cleanQuery,
+        payload?.message || ('GitHub returned HTTP ' + response.status + '.')
+      );
 
-  return {
-    results: Array.isArray(payload.items) ? payload.items.map(item => ({
-      path: item.path,
-      name: item.name,
-      score: item.score,
-      matches: Array.isArray(item.text_matches)
-        ? item.text_matches.map(m => String(m.fragment || '').slice(0, 800))
-        : []
-    })) : []
-  };
+  githubSearchCache.set(cacheKey, { at: Date.now(), value });
+  return value;
 }
 
 const githubFileReadCache = new Map();
@@ -805,11 +826,6 @@ async function validateGithubProposal(session, repository, edits, branch, reques
   // so distant edits never inflate one giant replacement string.
   const grouped = new Map();
 
-  const requestScope = String(requestText || '').trim();
-  const proposalScope = String(summary || '').trim();
-  const broadChange = /\b(?:redesign|rebuild|revamp|overhaul|rework|restyle|modernize|transform|make\s+(?:it|the)\s+(?:beautiful|premium|3d|better)|entire\s+(?:ui|interface|app)|whole\s+(?:ui|interface|app)|across\s+(?:the|all)\s+(?:app|pages|screens|modes)|comprehensive|major\s+(?:ui|ux|design)|full\s+(?:redesign|revamp|rewrite))\b/i.test(
-    requestScope + ' ' + proposalScope
-  );
 
   for (const edit of edits) {
     const path = edit?.path;
@@ -858,21 +874,7 @@ async function validateGithubProposal(session, repository, edits, branch, reques
 
   const normalized = groups.flat();
 
-  if (broadChange) {
-    const totalNewChars = normalized.reduce((sum, edit) => sum + edit.newChars, 0);
-    const changedFiles = new Set(normalized.map(edit => edit.path)).size;
-    const substantive = totalNewChars >= 8000 || changedFiles >= 3;
 
-    if (!substantive) {
-      throw new Error(
-        'This request is broad, but the proposed patch is too small to plausibly implement it (' +
-        totalNewChars.toLocaleString() + ' replacement characters across ' +
-        changedFiles + ' file' + (changedFiles === 1 ? '' : 's') + '). ' +
-        'Inspect the relevant UI, styles, markup, and supporting logic more deeply, then prepare a comprehensive proposal. ' +
-        'Do not return a cosmetic tweak as the completed redesign.'
-      );
-    }
-  }
 
   return normalized;
 }
@@ -1823,7 +1825,7 @@ export async function onRequestPost(context) {
               'Continue inspecting the current repository files as needed, then call github_propose_changes with ' +
               'exact oldText/newText replacements copied from the latest reads. ' +
               'For broad requests, cover the requested scope comprehensively instead of returning a cosmetic patch. ' +
-              'There is no artificial patch-size ceiling. Keep going until a substantive proposal is prepared. ' +
+              'There is no application-level patch-size ceiling. Keep going until the requested scope is materially covered; split large changes across multiple proposal calls rather than omitting files. ' +
               'Do not claim the change is applied; the user must review and explicitly apply it in the UI.'
           }]
         });
