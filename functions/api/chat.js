@@ -242,6 +242,18 @@ function getPushKv(env) {
   return getCloudRunKv(env);
 }
 
+async function isBackgroundJobCancelled(env, jobId) {
+  const id = String(jobId || '');
+  if (!id) return false;
+
+  try {
+    const job = await getCloudRunKv(env).get('trux_background_job_' + id, 'json');
+    return job?.status === 'stopped' || job?.cancelRequested === true;
+  } catch {
+    return false;
+  }
+}
+
 async function sendFcmNotification(userIdentifier, env, title, body, data = {}) {
   if (!userIdentifier) return;
   const kv = getPushKv(env);
@@ -1590,6 +1602,7 @@ export async function onRequestPost(context) {
       let repeatedGithubToolSignatureCount = 0;
       let accumulatedGithubProposalSummary = '';
       let accumulatedGithubProposalCommitMessage = '';
+      let generationStopped = false;
 
       /* A coding request that asks for a repository change must not terminate
          on an intermediate text-only turn such as "the repo is imported, now
@@ -1680,6 +1693,11 @@ export async function onRequestPost(context) {
 
       let agentRound = 0;
       while (true) {
+        if (await isBackgroundJobCancelled(env, backgroundJobId)) {
+          generationStopped = true;
+          break;
+        }
+
         agentRound += 1;
         if (!codingMode) {
           send({
@@ -1749,6 +1767,11 @@ export async function onRequestPost(context) {
         });
 
         lastModelResult = result;
+
+        if (await isBackgroundJobCancelled(env, backgroundJobId)) {
+          generationStopped = true;
+          break;
+        }
 
         if (result.functionCalls?.length) {
           const progressLine = codingMode
@@ -1903,6 +1926,8 @@ export async function onRequestPost(context) {
         }
 
         finalResult = result;
+
+        if (generationStopped) return;
 
         if (!codingMode) {
           send({
