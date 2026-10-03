@@ -450,7 +450,10 @@ async function githubSearchCode(session, repository, query) {
 }
 
 const githubFileReadCache = new Map();
-const GITHUB_DEFAULT_FILE_WINDOW = 600;
+const GITHUB_DEFAULT_FILE_WINDOW = 240;
+const GITHUB_MAX_MODEL_READ_CHARS = 48000;
+const GITHUB_HEAD_LINES = 140;
+const GITHUB_TAIL_LINES = 80;
 
 async function githubReadFile(session, repository, path, branch, startLine, endLine, includeFullContent = false) {
   if (!validGithubPath(path)) throw new Error('Invalid repository path.');
@@ -479,23 +482,57 @@ async function githubReadFile(session, repository, path, branch, startLine, endL
 
   const fullContent = decodeGithubBase64(payload.content);
   const lines = fullContent.split('\n');
-  const to = requestedEnd
-    ? Math.min(requestedEnd, lines.length)
-    : Math.min(from + GITHUB_DEFAULT_FILE_WINDOW - 1, lines.length);
-  const selected = lines.slice(from - 1, to).join('\n');
-  const truncated = to < lines.length;
+
+  let selected = '';
+  let selectedStart = from;
+  let selectedEnd = from - 1;
+  let truncated = false;
+  let nextStartLine = null;
+
+  if (includeFullContent) {
+    selected = fullContent;
+    selectedStart = 1;
+    selectedEnd = lines.length;
+  } else if (!requestedEnd && from === 1 && lines.length > GITHUB_DEFAULT_FILE_WINDOW) {
+    const headEnd = Math.min(GITHUB_HEAD_LINES, lines.length);
+    const tailStart = Math.max(headEnd + 1, lines.length - GITHUB_TAIL_LINES + 1);
+    selected =
+      lines.slice(0, headEnd).join('\n') +
+      '\n\n[... MIDDLE OF LARGE FILE OMITTED ...]\n\n' +
+      lines.slice(tailStart - 1).join('\n');
+    selectedStart = 1;
+    selectedEnd = lines.length;
+    truncated = true;
+    nextStartLine = headEnd + 1;
+  } else {
+    selectedEnd = requestedEnd
+      ? Math.min(requestedEnd, lines.length)
+      : Math.min(from + GITHUB_DEFAULT_FILE_WINDOW - 1, lines.length);
+
+    selected = lines.slice(from - 1, selectedEnd).join('\n');
+
+    if (selected.length > GITHUB_MAX_MODEL_READ_CHARS) {
+      selected = selected.slice(0, GITHUB_MAX_MODEL_READ_CHARS) +
+        '\n\n[READ WINDOW CHARACTER CAP REACHED — request a narrower line range.]';
+      truncated = true;
+      nextStartLine = selectedEnd < lines.length ? selectedEnd + 1 : null;
+    } else {
+      truncated = selectedEnd < lines.length;
+      nextStartLine = truncated ? selectedEnd + 1 : null;
+    }
+  }
 
   const value = {
     path,
     sha: payload.sha || null,
     branch: branch || null,
     totalLines: lines.length,
-    startLine: from,
-    endLine: to,
+    startLine: selectedStart,
+    endLine: selectedEnd,
     truncated,
-    // Normal model reads remain bounded so large repositories cannot flood
-    // the agent context. Proposal validation can opt into the complete file
-    // because that content stays server-side and is never sent back to Gemini.
+    nextStartLine,
+    totalChars: fullContent.length,
+    returnedChars: selected.length,
     content: includeFullContent ? fullContent : selected
   };
   githubFileReadCache.set(cacheKey, { at: Date.now(), value });
@@ -669,7 +706,7 @@ function getGithubToolDeclarations() {
     },
     {
       name: 'github_read_file',
-      description: 'Read the current contents of a text file in the active connected GitHub repository. For large files, request start_line/end_line; an unbounded read returns a bounded window so a huge file cannot stall the agent.',
+      description: 'Read the current contents of a text file in the active connected GitHub repository. Large files return a compact head/tail sample by default; use focused start_line/end_line ranges for exact sections. Responses are character-bounded so large HTML/CSS/JS files cannot stall the agent. Use github_search_code first to locate relevant symbols/classes.',
       parameters: {
         type: 'object',
         properties: {
