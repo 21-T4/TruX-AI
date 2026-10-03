@@ -10,9 +10,25 @@ async function updateJob(env, payload) {
   });
 }
 
+async function isJobStopped(job, env) {
+  const origin = String(job?.origin || env.TRUX_BACKGROUND_ORIGIN || env.TRUX_APP_ORIGIN || APP_ORIGIN_FALLBACK).replace(/\/$/, '');
+  try {
+    const response = await fetch(origin + '/api/background/status?jobId=' + encodeURIComponent(String(job?.jobId || '')), {
+      cache: 'no-store'
+    });
+    if (!response.ok) return false;
+    const state = await response.json();
+    return state?.status === 'stopped' || state?.cancelRequested === true;
+  } catch {
+    return false;
+  }
+}
+
 async function processJob(job, env) {
   const jobId = String(job?.jobId || '');
   if (!jobId) return;
+
+  if (await isJobStopped(job, env)) return;
 
   let events = [{
     id: 1,
@@ -137,6 +153,11 @@ async function processJob(job, env) {
     };
 
     while (true) {
+      if (await isJobStopped(job, env)) {
+        try { await reader.cancel(); } catch {}
+        return;
+      }
+
       const { value, done } = await reader.read();
       if (done) break;
 
@@ -151,6 +172,10 @@ async function processJob(job, env) {
 
         if (lines.length) {
           await handleEvent(lines.map(line => line.slice(5).trimStart()).join('\n'));
+          if (await isJobStopped(job, env)) {
+            try { await reader.cancel(); } catch {}
+            return;
+          }
         }
       }
     }
@@ -164,6 +189,8 @@ async function processJob(job, env) {
         await handleEvent(lines.map(line => line.slice(5).trimStart()).join('\n'));
       }
     }
+
+    if (await isJobStopped(job, env)) return;
 
     if (!finalText.trim()) {
       throw new Error('The coding backend finished without a final response.');
@@ -179,6 +206,8 @@ async function processJob(job, env) {
       error: null
     });
   } catch (error) {
+    if (await isJobStopped(job, env)) return;
+
     events.push({
       id: events.length + 1,
       tool: 'TruX-Code',
