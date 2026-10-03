@@ -36,12 +36,9 @@
   <style>
     /* ============================================================
        TruX-AI — design system
-       Near-monochrome on true black. One signature accent, used
-       sparingly (send, focus, brand mark, live caret). Assistant
-       answers are plain text on the page — never inside a card.
        ============================================================ */
     :root {
-      /* surfaces */
+      /* Base surface colors (dark mode defaults) */
       --bg:        #000000;
       --bg-1:      #060607;   /* sidebar */
       --bg-2:      #0c0c0f;   /* inputs, menus, cards */
@@ -81,6 +78,96 @@
       --font-body: 'Satoshi', 'Inter', system-ui, sans-serif;
       --font-disp: 'Cabinet Grotesk', 'Satoshi', system-ui, sans-serif;
       --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    }
+
+    [data-theme="light"] {
+      --bg:        #fcfcfc;
+      --bg-1:      #f4f4f5;
+      --bg-2:      #ebebec;
+      --bg-3:      #e2e2e4;
+      --bg-4:      #d4d4d8;
+      
+      --line:      rgba(0,0,0,0.06);
+      --line-2:    rgba(0,0,0,0.12);
+      --line-3:    rgba(0,0,0,0.20);
+      
+      --txt:       #18181b;
+      --txt-2:     #52525b;
+      --txt-3:     #71717a;
+      --txt-4:     #a1a1aa;
+      
+      --acc:       #3b82f6;
+      --acc-2:     #8b5cf6;
+      --acc-3:     #1d4ed8;
+      --acc-soft:  rgba(59,130,246,0.1);
+      --acc-line:  rgba(59,130,246,0.3);
+      --danger:    #ef4444;
+    }
+
+    /* Keep syntax highlighting colors fixed for now, but handle core elements */
+    [data-theme="light"] .logo { background: #fff; box-shadow: 0 0 18px -6px rgba(59,130,246,0.3); border-color: var(--line-3); }
+    [data-theme="light"] .brand b { color: var(--txt); }
+    [data-theme="light"] .new-chat { color: var(--txt); }
+    [data-theme="light"] .side-btn:hover { color: var(--txt); }
+    [data-theme="light"] .hist.active { color: var(--txt); }
+    [data-theme="light"] .profile-info b { color: var(--txt); }
+    [data-theme="light"] .model-info b { color: var(--txt); }
+    [data-theme="light"] .welcome-title { color: var(--txt); text-shadow: none; }
+    [data-theme="light"] .welcome-title > div:first-child { background: linear-gradient(180deg, #52525b, #a1a1aa); -webkit-background-clip: text; background-clip: text; }
+    [data-theme="light"] .chip { background: linear-gradient(180deg, rgba(255,255,255,0.8), rgba(255,255,255,0.4)); box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-bottom-color: var(--line-3); }
+    [data-theme="light"] .chip-title { color: var(--txt); }
+    [data-theme="light"] .hero::before { background: radial-gradient(ellipse at 50% 45%, rgba(59,130,246,0.1), rgba(139,92,246,0.05) 42%, rgba(0,0,0,0) 74%); }
+    [data-theme="light"] .topbar { background: rgba(252,252,252,0.8); }
+    [data-theme="light"] .model-dropdown-menu { background: rgba(244,244,245,0.95); box-shadow: 0 12px 32px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05); }
+
+    /* Theme Overrides for Personalization */
+    [data-theme="oled"] {
+      --bg: #000000; --bg-1: #000000; --bg-2: #050505; --bg-3: #0a0a0a; --bg-4: #111111;
+      --line: rgba(255,255,255,0.05); --line-2: rgba(255,255,255,0.08); --line-3: rgba(255,255,255,0.15);
+    }
+    
+    [data-theme="dracula"] {
+      --bg: #282a36; --bg-1: #21222c; --bg-2: #343746; --bg-3: #44475a; --bg-4: #6272a4;
+      --txt: #f8f8f2; --txt-2: #bfbfbf; --txt-3: #8be9fd; --txt-4: #6272a4;
+      --acc: #ff79c6; --acc-2: #bd93f9; --acc-3: #8be9fd;
+      --acc-soft: rgba(255,121,198,0.15); --acc-line: rgba(255,121,198,0.4);
+    }
+    
+    [data-theme="nord"] {
+      --bg: #2e3440; --bg-1: #242933; --bg-2: #3b4252; --bg-3: #434c5e; --bg-4: #4c566a;
+      --txt: #eceff4; --txt-2: #e5e9f0; --txt-3: #d8dee9; --txt-4: #4c566a;
+      --acc: #88c0d0; --acc-2: #81a1c1; --acc-3: #5e81ac;
+      --acc-soft: rgba(136,192,208,0.15); --acc-line: rgba(136,192,208,0.4);
+    }
+    
+    [data-theme="solarized"] {
+      --bg: #002b36; --bg-1: #00212b; --bg-2: #073642; --bg-3: #0a4554; --bg-4: #586e75;
+      --txt: #839496; --txt-2: #93a1a1; --txt-3: #eee8d5; --txt-4: #657b83;
+      --acc: #268bd2; --acc-2: #2aa198; --acc-3: #cb4b16;
+      --acc-soft: rgba(38,139,210,0.15); --acc-line: rgba(38,139,210,0.4);
+    }
+    
+    [data-theme="rose-pine"] {
+      --bg: #191724; --bg-1: #14121c; --bg-2: #1f1d2e; --bg-3: #26233a; --bg-4: #312f44;
+      --txt: #e0def4; --txt-2: #908caa; --txt-3: #6e6a86; --txt-4: #524f67;
+      --acc: #c4a7e7; --acc-2: #ebbcba; --acc-3: #31748f;
+      --acc-soft: rgba(196,167,231,0.15); --acc-line: rgba(196,167,231,0.4);
+    }
+    
+    [data-theme="monokai"] {
+      --bg: #272822; --bg-1: #1e1f1c; --bg-2: #383830; --bg-3: #49483e; --bg-4: #75715e;
+      --txt: #f8f8f2; --txt-2: #cfcfc2; --txt-3: #a59f85; --txt-4: #75715e;
+      --acc: #a6e22e; --acc-2: #f92672; --acc-3: #66d9ef;
+      --acc-soft: rgba(166,226,46,0.15); --acc-line: rgba(166,226,46,0.4);
+    }
+    
+    [data-theme="hacker"] {
+      --bg: #000000; --bg-1: #050505; --bg-2: #0d0d0d; --bg-3: #161616; --bg-4: #222222;
+      --txt: #00ff00; --txt-2: #00cc00; --txt-3: #009900; --txt-4: #004400;
+      --acc: #00ff00; --acc-2: #00cc00; --acc-3: #009900;
+      --acc-soft: rgba(0,255,0,0.1); --acc-line: rgba(0,255,0,0.4);
+      --line: rgba(0,255,0,0.1); --line-2: rgba(0,255,0,0.2); --line-3: rgba(0,255,0,0.4);
+      --font-body: var(--font-mono); --font-disp: var(--font-mono);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
