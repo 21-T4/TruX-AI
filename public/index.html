@@ -5306,6 +5306,9 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       document.body.removeAttribute("data-media-mode");
       workspaceMode="chat";
       activeAbortController?.abort();
+       activeStreamer?.cancel(); activeStreamer = null;
+       isGenerating = false;
+       generationStopRequested = false;
       document.body.classList.remove("scrolled");
       stopToolStatusTyping();
       activeStreamer?.cancel(); activeStreamer = null;
@@ -6813,6 +6816,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     async function runCodeBackgroundJob({ row, id, sid, tsid, prompt, voice, requestBody, chatId }) {
       const targetChatId = chatId || currentChatId;
       if (!targetChatId || !chatSessions[targetChatId]) throw new Error("The coding chat session is unavailable.");
+       if (generationStopRequested || !isGenerating) return false;
 
       const existingJob = String(chatSessions[targetChatId].activeBackgroundJobId || "");
       if (existingJob) {
@@ -6820,6 +6824,9 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       }
 
       const start = await fetch("/api/background/start", {
+       if (generationStopRequested || !isGenerating) return false;
+
+       
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json", "Authorization": "Bearer " + (auth?.currentUser ? await auth.currentUser.getIdToken() : "") },
@@ -6834,7 +6841,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       const jobId = String(startData.jobId || "");
       if (!jobId) throw new Error("Background coding did not return a job id.");
 
-      if(generationStopRequested){
+       if(generationStopRequested || !isGenerating){
         await requestBackgroundJobStop(jobId);
         return false;
       }
@@ -7199,6 +7206,11 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           }
           else if(j.type === "github_proposal") {
             githubProposal = j.proposal || null;
+            const proposalSession = chatSessions[currentChatId];
+            if (proposalSession && githubProposal) {
+              proposalSession.pendingGithubProposal = githubProposal;
+              saveChatSessions();
+            }
             let st = getEl(sid);
             if (st) st.innerText = "GitHub changes ready for review…";
             const bubble = getEl(id);
@@ -7255,6 +7267,13 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         let streamer = activeStreamer || ensureStreamer();
         finalizeResponse(id, aid, text, prompt, voice, streamer, turnSources);
         if(githubProposal) {
+          const session = chatSessions[currentChatId];
+          const lastMessage = session?.messages?.[session.messages.length - 1];
+          if (lastMessage?.role === "trux") {
+            lastMessage.githubProposal = githubProposal;
+            delete session.pendingGithubProposal;
+            saveChatSessions();
+          }
           const bubble = getEl(id);
           const host = bubble?.closest(".trux-response-stack") || bubble;
           if(host) renderGithubProposalCard(host, githubProposal);
@@ -7742,14 +7761,25 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     function loadChatSession(id) {
       if(!chatSessions[id]) return;
       activeAbortController?.abort();
+       activeStreamer?.cancel(); activeStreamer = null;
       currentChatId = id;
+       isGenerating = !!chatSessions[id].activeBackgroundJobId;
+       generationStopRequested = false;
       setWorkspaceMode(chatSessions[id].mode || "chat", {reload:false});
       const welcome = getEl("welcomeScreen");
       if(welcome) welcome.style.display = "none";
       getEl("chatContainer").innerHTML = "";
       getEl("codeChatContainer").innerHTML = "";
       const cC = enterChatWorkspace();
-      chatSessions[id].messages.forEach(m => appendMessageRow(m.role === "user" ? "You" : "ChatTruX-AI", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image, false, m.sources, m.video));
+       chatSessions[id].messages.forEach(m => {
+         appendMessageRow(m.role === "user" ? "You" : "ChatTruX-AI", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image, false, m.sources, m.video);
+         if (m.githubProposal) {
+           const rows = getActiveChatContainer()?.querySelectorAll(".row.trux-row") || [];
+           const lastRow = rows[rows.length - 1];
+           const host = lastRow?.querySelector(".trux-response-stack") || lastRow;
+           if (host) renderGithubProposalCard(host, m.githubProposal);
+         }
+       });
       if (workspaceMode === "coding" && chatSessions[id].activeBackgroundJobId) {
         watchBackgroundJob(id, String(chatSessions[id].activeBackgroundJobId));
       }
