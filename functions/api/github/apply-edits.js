@@ -160,7 +160,6 @@ export async function onRequestPost({ request, env }) {
 
       if (!groupedEdits.has(path)) groupedEdits.set(path, []);
       groupedEdits.get(path).push({ oldText, newText });
-      seenPaths.add(path);
     }
 
     for (const [path, pathEdits] of groupedEdits.entries()) {
