@@ -29,14 +29,22 @@ export async function onRequestPost({ request, env }) {
       return Response.json({ ok: true, stopped: true });
     }
 
+    const latest = await kv.get(key, 'json');
+    if (!latest) return Response.json({ error: 'Background job not found.' }, { status: 404 });
+
+    if (latest.status === 'stopped' && body?.status !== 'stopped') {
+      return Response.json({ ok: true, stopped: true });
+    }
+
     const next = {
-      ...existing,
-      status: body?.status || existing.status,
-      events: Array.isArray(body?.events) ? body.events.slice(-30) : (existing.events || []),
-      final: typeof body?.final === 'string' ? body.final : existing.final,
-      liveText: typeof body?.liveText === 'string' ? body.liveText : (existing.liveText || ''),
-      error: typeof body?.error === 'string' ? body.error : existing.error,
-      proposal: body?.proposal && typeof body.proposal === 'object' ? body.proposal : (existing.proposal || null)
+      ...latest,
+      status: body?.status || latest.status,
+      events: Array.isArray(body?.events) ? body.events.slice(-30) : (latest.events || []),
+      final: typeof body?.final === 'string' ? body.final : latest.final,
+      liveText: typeof body?.liveText === 'string' ? body.liveText : (latest.liveText || ''),
+      error: typeof body?.error === 'string' ? body.error : latest.error,
+      proposal: body?.proposal && typeof body.proposal === 'object' ? body.proposal : (latest.proposal || null),
+      updatedAt: Date.now()
     };
 
     await kv.put(key, JSON.stringify(next), { expirationTtl: 24 * 60 * 60 });
