@@ -6826,6 +6826,11 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       const jobId = String(startData.jobId || "");
       if (!jobId) throw new Error("Background coding did not return a job id.");
 
+      if(generationStopRequested){
+        await requestBackgroundJobStop(jobId);
+        return false;
+      }
+
       chatSessions[targetChatId].activeBackgroundJobId = jobId;
       chatSessions[targetChatId].backgroundStartedAt = Date.now();
       saveChatSessions();
