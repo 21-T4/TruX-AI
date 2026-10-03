@@ -326,6 +326,26 @@ export async function onRequestPost({ request, env }) {
 
       if (!verifyResponse.ok || !verifyPayload?.sha) {
         return Response.json({
+          error: `The commit was created, but ${edit.path} could not be verified afterward.`,
+          conflict: true,
+          commit: commitSha,
+          path: edit.path
+        }, { status: 502 });
+      }
+
+      if (String(verifyPayload.sha) !== String(edit.sha)) {
+        return Response.json({
+          error: `The commit was created, but the saved blob for ${edit.path} did not match the requested edit.`,
+          conflict: true,
+          commit: commitSha,
+          path: edit.path
+        }, { status: 502 });
+      }
+
+      results.push({ path: edit.path, verified: true });
+    }
+
+    return Response.json({
       ok: true,
       applied: true,
       verified: true,
@@ -339,6 +359,7 @@ export async function onRequestPost({ request, env }) {
       },
       results
     });
+
   } catch (error) {
     console.error('GitHub apply-edits failed', error);
     return Response.json({ error: error?.message || 'GitHub edit failed.' }, { status: 500 });
