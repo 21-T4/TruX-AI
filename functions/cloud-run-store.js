@@ -205,7 +205,7 @@ async function firestorePut(env, key, value, options = {}) {
 
 async function firestoreDelete(env, key) {
   const projectId = await cloudProjectId(env);
-  if (!projectId || firestoreDisabled) return false;
+  if (!projectId || Date.now() < firestoreRetryAfter) return false;
   const token = await googleAccessToken(env);
   const id = await docId(key);
   const url = 'https://firestore.googleapis.com/v1/projects/' + encodeURIComponent(projectId) +
@@ -235,14 +235,18 @@ export function getCloudRunKv(env) {
   return {
     async get(key, type) {
       const memoryValue = memoryGet(key);
-      if (firestoreDisabled) {
+
+      if (Date.now() < firestoreRetryAfter) {
         if (memoryValue == null) return null;
         return type === 'json' ? JSON.parse(memoryValue) : memoryValue;
       }
 
       try {
         const value = await firestoreGet(env, key);
-        if (value == null) return null;
+        if (value == null) {
+          memory.delete(key);
+          return null;
+        }
         memoryPut(key, value);
         return type === 'json' ? JSON.parse(value) : value;
       } catch (error) {
@@ -254,7 +258,8 @@ export function getCloudRunKv(env) {
 
     async put(key, value, options) {
       memoryPut(key, value, options);
-      if (firestoreDisabled) return;
+      if (Date.now() < firestoreRetryAfter) return;
+
       try {
         await firestorePut(env, key, value, options);
       } catch (error) {
@@ -264,7 +269,8 @@ export function getCloudRunKv(env) {
 
     async delete(key) {
       memory.delete(key);
-      if (firestoreDisabled) return;
+      if (Date.now() < firestoreRetryAfter) return;
+
       try {
         await firestoreDelete(env, key);
       } catch (error) {
