@@ -1048,7 +1048,7 @@ async function executeGithubToolCallInner(session, repository, branch, call, req
    STANDARD VERTEX REQUEST
    ========================================================= */
 
-async function fetchVertexGemini({ model, contents, systemInstruction, tools, accessToken, projectId, generationConfig }) {
+async function fetchVertexGemini({ model, contents, systemInstruction, tools, accessToken, projectId, generationConfig, signal }) {
   if (!accessToken) throw new Error('Google access token missing.');
 
   const url =
@@ -1068,7 +1068,8 @@ async function fetchVertexGemini({ model, contents, systemInstruction, tools, ac
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    ...(signal ? { signal } : {})
   });
 
   if (!response.ok) {
@@ -1084,7 +1085,7 @@ async function fetchVertexGemini({ model, contents, systemInstruction, tools, ac
    VERTEX STREAMING REQUEST
    ========================================================= */
 
-async function streamVertexGemini({ model, contents, systemInstruction, tools, toolConfig, accessToken, projectId, onText, onStatus, generationConfig }) {
+async function streamVertexGemini({ model, contents, systemInstruction, tools, toolConfig, accessToken, projectId, onText, onStatus, generationConfig, signal }) {
   const url =
     `https://aiplatform.googleapis.com/v1/` +
     `projects/${projectId}/locations/${LOCATION}/` +
@@ -1107,7 +1108,8 @@ async function streamVertexGemini({ model, contents, systemInstruction, tools, t
       'Authorization': `Bearer ${accessToken}`,
       'Accept': 'text/event-stream'
     },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    ...(signal ? { signal } : {})
   });
 
   if (!response.ok) {
@@ -1123,6 +1125,7 @@ async function streamVertexGemini({ model, contents, systemInstruction, tools, t
   let buffer = '';
   let functionCalls = [];
   const functionCallKeys = new Set();
+  const modelContentParts = [];
   let groundingMetadata = null;
   let accumulatedText = '';
 
@@ -1139,6 +1142,7 @@ async function streamVertexGemini({ model, contents, systemInstruction, tools, t
 
     for (const part of parts) {
       if (typeof part.text === 'string') {
+        modelContentParts.push(part);
         accumulatedText += part.text;
         if (onText) await onText(part.text);
       }
@@ -1148,6 +1152,11 @@ async function streamVertexGemini({ model, contents, systemInstruction, tools, t
         if (!functionCallKeys.has(key)) {
           functionCallKeys.add(key);
           functionCalls.push(part.functionCall);
+          /*
+           * Gemini 3 can attach thought_signature to the function-call part.
+           * Preserve the complete model part exactly for the next turn.
+           */
+          modelContentParts.push(part);
         }
       }
     }
@@ -1195,9 +1204,9 @@ async function streamVertexGemini({ model, contents, systemInstruction, tools, t
     if (trailingData.length) await processSseData(trailingData.join('\n'));
   }
 
-  const functionContentParts = [];
-  if (accumulatedText) functionContentParts.push({ text: accumulatedText });
-  for (const call of functionCalls) functionContentParts.push({ functionCall: call });
+  const functionContentParts = modelContentParts.length
+    ? modelContentParts
+    : functionCalls.map(call => ({ functionCall: call }));
 
   return {
     text: accumulatedText,
@@ -1359,7 +1368,7 @@ async function generateVideoWithVertex({ prompt, accessToken, projectId, env, on
    STREAM RESPONSE HELPER
    ========================================================= */
 
-function createSseResponse(startStreaming) {
+function createSseResponse(startStreaming, request = null) {
   const stream = new ReadableStream({
     async start(controller) {
       const encoder = new TextEncoder();
@@ -1382,13 +1391,16 @@ function createSseResponse(startStreaming) {
         send({ type: 'heartbeat', ts: Date.now(), count: heartbeatCount });
       }, 3000);
 
+      const signal = request?.signal || null;
       try {
-        await startStreaming({ send });
-        send({ type: 'done' });
+        await startStreaming({ send, signal });
+        if (!signal?.aborted) send({ type: 'done' });
         controller.close();
       } catch (error) {
-        send({ type: 'error', error: error?.message || 'Streaming error.' });
-        controller.close();
+        if (!signal?.aborted) {
+          send({ type: 'error', error: error?.message || 'Streaming error.' });
+        }
+        try { controller.close(); } catch {}
       } finally {
         clearInterval(heartbeat);
       }
@@ -1482,7 +1494,7 @@ function extractGeminiText(response) {
     .trim();
 }
 
-async function summarizeOlderHistory(olderMessages, accessToken, projectId) {
+async function summarizeOlderHistory(olderMessages, accessToken, projectId, signal) {
   if (!olderMessages.length) return '';
 
   const transcript = olderMessages
@@ -1511,6 +1523,7 @@ async function summarizeOlderHistory(olderMessages, accessToken, projectId) {
       'Do not answer the user request; summarize the conversation history.',
     accessToken,
     projectId,
+    signal,
     generationConfig: {
       maxOutputTokens: 700,
       temperature: 0.2
@@ -1520,7 +1533,7 @@ async function summarizeOlderHistory(olderMessages, accessToken, projectId) {
   return extractGeminiText(response);
 }
 
-async function buildConversationHistory(history, accessToken, projectId) {
+async function buildConversationHistory(history, accessToken, projectId, signal) {
   const normalized = normalizeHistoryMessages(history);
   if (!normalized.length) return [];
 
@@ -1529,7 +1542,7 @@ async function buildConversationHistory(history, accessToken, projectId) {
 
   let summary = '';
   if (older.length) {
-    summary = await summarizeOlderHistory(older, accessToken, projectId);
+    summary = await summarizeOlderHistory(older, accessToken, projectId, signal);
   }
 
   const result = [];
@@ -1826,7 +1839,7 @@ export async function onRequestPost(context) {
 
     const targetModel = getVertexModel(effectiveTier);
 
-    return createSseResponse(async ({ send }) => {
+    return createSseResponse(async ({ send, signal }) => {
       // Build the shared context here so both Chat and TruX-Code use the
       // exact same five-message + compressed-older-history policy.
       let formattedHistory = [];
@@ -1835,7 +1848,7 @@ export async function onRequestPost(context) {
       }
 
       if (!accessToken) accessToken = await createGoogleAccessToken(env);
-      formattedHistory = await buildConversationHistory(history, accessToken, projectId);
+      formattedHistory = await buildConversationHistory(history, accessToken, projectId, signal);
 
       const contents = [...formattedHistory, { role: 'user', parts: currentParts }];
       /* -------------------------------------------------
@@ -1994,8 +2007,9 @@ export async function onRequestPost(context) {
           systemInstruction: thinkingInstruction,
           tools: modelTools,
           accessToken,
-        projectId,
-        generationConfig: effectiveAdvancedThinking
+          projectId,
+          signal,
+          generationConfig: effectiveAdvancedThinking
           ? {
               thinkingConfig: {
                 // Gemini 3 uses levels; combining this with a numeric
@@ -2133,7 +2147,7 @@ export async function onRequestPost(context) {
 
               responseParts.push({
                 functionResponse: {
-                  ...(call?.id ? { id: String(call.id) } : {}),
+                  ...((call?.id ?? call?.call_id) ? { id: String(call.id ?? call.call_id) } : {}),
                   name: call.name,
                   response: { output: callResult }
                 }
