@@ -1960,6 +1960,7 @@ export async function onRequestPost(context) {
       let composioToolDeclarations = [];
       let enabledComposioPluginIds = [];
       let enabledComposioToolkitSlugs = [];
+      let composioPluginConfigError = null;
 
       if (explicitExternalAction && effectiveUserId && String(env.COMPOSIO_API_KEY || '').trim()) {
         try {
@@ -2007,11 +2008,22 @@ export async function onRequestPost(context) {
             composioToolMetadata = composioTools.metadata || new Map();
           }
         } catch (pluginError) {
+          composioPluginConfigError = pluginError;
           send({
             type: 'status',
             status: 'Plugin tools unavailable: ' + String(pluginError?.message || 'Composio request failed.')
           });
         }
+      }
+
+      if (explicitExternalAction && composioPluginConfigError?.composioProjectKeyPermission) {
+        const messageText = 'TruX found the connected plugin, but the Composio project API key cannot execute tools. Enable Tool execution write access for the COMPOSIO_API_KEY used by Cloud Run.';
+        send({
+          type: 'plugin_config_error',
+          message: messageText
+        });
+        send({ type: 'chunk', text: '\n\n' + messageText });
+        return;
       }
 
       const changeRequested = codingMode && explicitRepoRequest && isGithubChangeRequest(message);
@@ -2230,6 +2242,33 @@ export async function onRequestPost(context) {
                 callResult = await executeGithubToolCall(githubSession, githubRepository, githubBranch, call, message);
               } else {
                 callResult = { error: 'This external tool is not connected.' };
+              }
+
+              if (callResult?.configurationError) {
+                const messageText =
+                  String(callResult?.error || '').trim() ||
+                  'The plugin execution key is not permitted to run tools.';
+                send({
+                  type: 'tool_status',
+                  tool: toolName,
+                  phase: 'complete',
+                  status: toolTarget + ' · configuration error'
+                });
+                send({
+                  type: 'plugin_config_error',
+                  pluginName: String(composioLabel?.toolkitName || 'Plugin'),
+                  message: messageText
+                });
+                send({ type: 'chunk', text: '\n\n' + messageText });
+                responseParts.push({
+                  functionResponse: {
+                    ...(call?.id ? { id: String(call.id) } : {}),
+                    name: call?.name || 'plugin_tool',
+                    response: { output: callResult }
+                  }
+                });
+                generationStopped = true;
+                break;
               }
 
               if (callResult?.authRequired) {
