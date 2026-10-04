@@ -7819,6 +7819,22 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
               toolInProgress = false;
             }
           }
+          else if(j.type === "plugin_auth_required") {
+            setThinkingStatus(sid, j.message || ((j.pluginName || "Plugin") + " authorization is required."));
+            const actions = getEl(aid);
+            if (actions && j.redirectUrl) {
+              const existing = actions.querySelector("[data-plugin-reauth]");
+              if (!existing) {
+                const btn = document.createElement("button");
+                btn.className = "act";
+                btn.type = "button";
+                btn.setAttribute("data-plugin-reauth", "1");
+                btn.textContent = "Reconnect " + (j.pluginName || "plugin");
+                btn.onclick = function() { window.location.assign(j.redirectUrl); };
+                actions.appendChild(btn);
+              }
+            }
+          }
           else if(j.type === "heartbeat") {
             /* Cloud Run may keep the socket alive while Gemini's high-thinking
                pass produces no visible tokens. Keep TruX-Code visibly alive
