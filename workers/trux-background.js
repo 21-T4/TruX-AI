@@ -150,7 +150,8 @@ async function processJob(job, env) {
           type: 'tool_status',
           tool: String(event.tool || 'TruX-Code'),
           phase: String(event.phase || 'complete'),
-          status: String(event.status || '')
+          status: String(event.status || ''),
+          details: event.details && typeof event.details === 'object' ? event.details : null
         });
         events = events.slice(-30);
         await updateJob(env, { jobId, jobSecret: job.jobSecret, status: 'running', events });
@@ -245,7 +246,7 @@ async function processJob(job, env) {
     if (await isJobStopped(job, env)) return;
 
     if (!finalText.trim()) {
-      finalText = liveText.trim() || 'Completed TruX-Code task.';
+      throw new Error('The model completed the coding tool phase but did not return a final response.');
     }
 
     await updateJob(env, {
