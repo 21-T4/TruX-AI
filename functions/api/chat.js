@@ -2165,13 +2165,14 @@ export async function onRequestPost(context) {
           toolConfig: explicitExternalAction && composioToolDeclarations.length
             ? {
                 functionCallingConfig: {
-                  /* Force the requested external action on the first model
-                     round. After a tool result exists, let Gemini choose
-                     between another necessary tool call and a normal final
-                     answer. Keeping ANY for every round can trap the agent in
-                     tool-calling and leave the user with no final text. */
+                  /* Gemini only accepts allowedFunctionNames with ANY mode.
+                     Force the requested tool on round one; on later rounds
+                     let the model choose whether another tool call is needed
+                     or whether it should produce the final user-facing answer. */
                   mode: agentRound === 1 ? 'ANY' : 'AUTO',
-                  allowedFunctionNames: composioToolDeclarations.map(tool => tool.name)
+                  ...(agentRound === 1
+                    ? { allowedFunctionNames: composioToolDeclarations.map(tool => tool.name) }
+                    : {})
                 }
               }
             : undefined,
