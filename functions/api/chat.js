@@ -449,6 +449,28 @@ function isGithubChangeRequest(value) {
   return /\b(?:fix|repair|solve|correct|address|change|modify|update|adjust|refactor|add|remove|delete|implement|edit|rewrite|replace|rename|migrate|create|build|design|redesign|restyle|improve|enhance|customize|patch|prepare)\b/i.test(text);
 }
 
+function isExplicitRepoRequest(value) {
+  const text = String(value || '').trim();
+  if (!text) return false;
+  const target = /(?:github|repository|repo|codebase|pull request|branch|commit|push|public\/|src\/|package\.json)/i.test(text);
+  const action = /\b(?:check|inspect|scan|read|search|find|open|review|fix|repair|solve|correct|change|modify|update|refactor|add|remove|delete|implement|edit|rewrite|replace|rename|migrate|create|build|design|redesign|restyle|improve|patch|commit|push|work on)\b/i.test(text);
+  return target && action;
+}
+
+function isExplicitExternalActionRequest(value) {
+  const text = String(value || '').trim();
+  if (!text) return false;
+  const target = /(?:gmail|email|mail|google sheets|sheets|google docs|docs|calendar|drive|meet|excel|outlook|teams|onedrive|slack|notion|github|repository|repo|codebase|pull request|branch|commit|push)/i.test(text);
+  const action = /\b(?:send|email|mail|create|write|draft|read|search|find|get|check|inspect|open|update|edit|delete|remove|add|schedule|connect|disconnect|commit|push|upload|download|share|move|rename|use|run|work with|manage)\b/i.test(text);
+  return target && action;
+}
+
+function hasExplicitCodeWorkRequest(value) {
+  const text = String(value || '').trim();
+  if (!text) return false;
+  return /\b(?:code|coding|program|script|function|class|bug|debug|error|fix|refactor|implement|edit|modify|build|compile|test|tests|api|endpoint|javascript|typescript|python|java|html|css|react|node|sql|regex)\b/i.test(text);
+}
+
 function validGithubPath(value) {
   return typeof value === 'string'
     && value.length > 0
@@ -1639,6 +1661,9 @@ export async function onRequestPost(context) {
 
     const researchMode = mode === 'deep-research';
     const codingMode = mode === 'coding';
+    const explicitRepoRequest = isExplicitRepoRequest(message);
+    const explicitExternalAction = isExplicitExternalActionRequest(message);
+    const explicitCodeWork = hasExplicitCodeWorkRequest(message);
     // TruX-Code always uses the deep-reasoning Pro model, independently of the chat picker.
     const effectiveTier = (researchMode || codingMode) ? 'ultra' : (tier || 'base');
     const proTier = effectiveTier === 'pro' || effectiveTier === 'ultra' || researchMode || codingMode;
@@ -1787,17 +1812,20 @@ export async function onRequestPost(context) {
       ? `${BASE_PERSONA}${developerInstruction}${locationInstruction}\n\n[USER INSTRUCTIONS]:\n${systemInstruction}`
       : `${BASE_PERSONA}${developerInstruction}${locationInstruction}`;
 
-    const effectiveAdvancedThinking = !!advancedThinking || researchMode || effectiveTier === 'ultra';
+    const effectiveAdvancedThinking = !!advancedThinking || researchMode || (codingMode && explicitCodeWork) || (!codingMode && effectiveTier === 'ultra');
     const modeInstruction = researchMode
       ? `\n\n[DEEP RESEARCH MODE]: Use Google Search grounding for fresh, niche, or source-backed information. Synthesize multiple relevant sources and distinguish facts from inference. Use TruX-Code reasoning engine.`
-      : codingMode
-        ? `\n\n[TRUX-CODE MODE]: Think deeply before answering, but never expose private chain-of-thought. Prioritize complete, maintainable code, careful debugging, tests, and concise implementation notes. When a connected Composio plugin is relevant, use its function tool directly rather than pretending to have access. Before each external-tool call, emit one brief, natural user-facing activity sentence describing the action you are about to take; do not emit internal reasoning. After each tool returns, continue with the next relevant activity sentence instead of canned progress text.`
+      : (codingMode && explicitCodeWork)
+        ? `\n\n[TRUX-CODE MODE]: Think deeply before answering, but never expose private chain-of-thought. Prioritize complete, maintainable code, careful debugging, tests, and concise implementation notes. Only inspect repositories or use external tools when the user explicitly asks for that work. Before each external-tool call, emit one brief, natural user-facing activity sentence describing the action; do not emit internal reasoning.`
         : '';
-    const pluginInstruction = `\n\n[COMPOSIO PLUGINS]: Connected plugins, when enabled for this user, are available as function tools in Chat and TruX-Code. Use them for real external actions such as sending email, editing documents, updating spreadsheets, managing calendars, accessing storage, source control, and collaboration. If the user explicitly requests an external action and the corresponding connected plugin tool is available, call that tool rather than drafting, simulating, or asking for confirmation again. Never claim an external action succeeded unless the tool returned success. When the user has already clearly confirmed an external action, do not ask a second confirmation. If a needed plugin is not available as a tool, explain that the integration is not currently available.`;
+    const pluginInstruction = explicitExternalAction
+      ? `\n\n[COMPOSIO PLUGINS]: Connected plugins are available for this explicitly requested external action. Call the appropriate connected function tool rather than drafting or simulating the action. Never claim success unless the tool returned success. Because the user has already clearly requested the action, do not ask for a second confirmation unless the external service itself requires one. If no matching connected tool is available, state that the integration is unavailable.`
+      : '';
     const modeWithPlugins = modeInstruction + pluginInstruction;
     const thinkingInstruction = effectiveAdvancedThinking
       ? `${combinedSystemInstruction}${modeWithPlugins}\n\n[REASONING MODE]: Take extra time to reason carefully, check assumptions and calculations, then return only the concise final answer. Do not expose private chain-of-thought.`
       : `${combinedSystemInstruction}${modeWithPlugins}`;
+
     const storedAttachmentContext = await resolveStoredAttachments(request, env, attachments, effectiveUserId, message);
     const effectiveAttachments = (Array.isArray(attachments) ? attachments : []).map(a => ({ ...a }));
     for (const stored of storedAttachmentContext.items) {
@@ -1874,7 +1902,7 @@ export async function onRequestPost(context) {
       let enabledComposioPluginIds = [];
       let enabledComposioToolkitSlugs = [];
 
-      if (effectiveUserId && String(env.COMPOSIO_API_KEY || '').trim()) {
+      if (explicitExternalAction && effectiveUserId && String(env.COMPOSIO_API_KEY || '').trim()) {
         try {
           enabledComposioPluginIds = await getEnabledPluginIds(env, effectiveUserId);
           const resolved = await Promise.all(
@@ -1987,7 +2015,9 @@ export async function onRequestPost(context) {
         if (codingMode) {
           send({
             type: 'status',
-            status: agentRound === 0 ? 'Starting deep repository reasoning…' : 'Continuing repository analysis…'
+            status: explicitCodeWork
+              ? (agentRound === 1 ? 'Starting deep coding reasoning…' : 'Continuing the coding task…')
+              : (agentRound === 1 ? 'Thinking…' : 'Continuing…')
           });
         }
 
