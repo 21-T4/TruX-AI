@@ -86,11 +86,13 @@ async function processJob(job, env) {
      * 127.0.0.1 HTTP request, which could deadlock under low concurrency and
      * added another failure point to every long-running coding task.
      */
+    const chatController = new AbortController();
     const response = await chatRequest({
       request: new Request('http://trux-background.internal/api/chat', {
         method: 'POST',
         headers,
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        signal: chatController.signal
       }),
       env
     });
@@ -198,7 +200,7 @@ async function processJob(job, env) {
 
       if (readResult?.__stopPulse) {
         if (await isJobStopped(job, env)) {
-          try { chatController.abort(); } catch {}
+          chatController.abort();
           try { await reader.cancel(); } catch {}
           return;
         }
