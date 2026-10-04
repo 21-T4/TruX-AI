@@ -1712,10 +1712,12 @@ export async function onRequestPost(context) {
     const explicitCodeWork = hasExplicitCodeWorkRequest(message);
     // TruX-Code uses the deep-reasoning model only for an actual coding task.
     // A simple greeting in the coding workspace remains a normal lightweight turn.
+    const codingNeedsDeepWork =
+      codingMode && (explicitCodeWork || explicitRepoRequest || explicitExternalAction);
     const effectiveTier =
-      researchMode || (codingMode && explicitCodeWork)
+      researchMode || codingNeedsDeepWork
         ? 'ultra'
-        : (tier || 'base');
+        : (codingMode ? 'base' : (tier || 'base'));
     const proTier = effectiveTier === 'pro' || effectiveTier === 'ultra' || researchMode;
 
     const projectId = await resolveGoogleProjectId(env);
@@ -1870,7 +1872,9 @@ export async function onRequestPost(context) {
       ? `\n\n[DEEP RESEARCH MODE]: Use Google Search grounding for fresh, niche, or source-backed information. Synthesize multiple relevant sources and distinguish facts from inference. Use TruX-Code reasoning engine.`
       : (codingMode && explicitCodeWork)
         ? `\n\n[TRUX-CODE MODE]: Think deeply before answering, but never expose private chain-of-thought. Prioritize complete, maintainable code, careful debugging, tests, and concise implementation notes. Only inspect repositories or use external tools when the user explicitly asks for that work. Before each external-tool call, emit one brief, natural user-facing activity sentence describing the action; do not emit internal reasoning.`
-        : '';
+        : codingMode
+          ? `\n\n[TRUX-CODE LIGHT MODE]: This is a lightweight coding-workspace conversation. Answer directly without external tools, repository inspection, plugin calls, or deep reasoning unless the user explicitly requests coding work or an external action.`
+          : '';
     const pluginInstruction = explicitExternalAction
       ? `\n\n[COMPOSIO PLUGINS]: Connected plugins are available for this explicitly requested external action. Call the appropriate connected function tool rather than drafting or simulating the action. Never claim success unless the tool returned success. Because the user has already clearly requested the action, do not ask for a second confirmation unless the external service itself requires one. If no matching connected tool is available, state that the integration is unavailable.`
       : '';
