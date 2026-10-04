@@ -115,17 +115,43 @@ function authConfigCandidates(detail) {
 
 async function getManagedAuthConfig(env, toolkitSlug) {
   const query = new URLSearchParams({
-    toolkit: toolkitSlug,
+    toolkit_slug: toolkitSlug,
+    is_composio_managed: 'true',
     show_disabled: 'false',
-    limit: '200'
+    limit: '50'
   });
 
   const payload = await composioRequest(env, '/auth_configs?' + query.toString());
   const items = Array.isArray(payload?.items) ? payload.items : [];
-  return items.find(item =>
+  const managed = items.find(item =>
     item?.status === 'ENABLED' &&
-    (item?.isComposioManaged === true || item?.is_composio_managed === true)
-  ) || items.find(item => item?.status === 'ENABLED' && item?.id) || null;
+    (item?.isComposioManaged === true || item?.is_composio_managed === true) &&
+    item?.id
+  );
+  if (managed) return managed;
+
+  // Some managed OAuth toolkits may not have a project auth config yet.
+  // Create the default Composio-managed auth config once, then return it.
+  try {
+    const created = await composioRequest(env, '/auth_configs', {
+      method: 'POST',
+      body: JSON.stringify({
+        toolkit: { slug: toolkitSlug },
+        auth_config: {
+          type: 'use_composio_managed_auth',
+          credentials: {},
+          restrict_to_following_tools: []
+        }
+      })
+    });
+    const createdConfig = created?.auth_config || created?.authConfig || null;
+    if (createdConfig?.id) return createdConfig;
+  } catch (error) {
+    // A toolkit without managed OAuth/configuration stays unavailable.
+    if (error?.status !== 404 && error?.status !== 400) throw error;
+  }
+
+  return null;
 }
 
 export async function createPluginAuthLink(env, userId, toolkitSlug, callbackUrl) {
