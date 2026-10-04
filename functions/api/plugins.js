@@ -16,12 +16,11 @@ export async function onRequestGet({ request, env }) {
 
     const resolved = await resolveAllPluginToolkits(env);
     const accounts = await listConnectedAccounts(env, userId);
-    const connected = connectedToolkitSet(accounts);
     const enabled = await getEnabledPluginIds(env, userId);
 
     return Response.json({
       configured: !!String(env.COMPOSIO_API_KEY || '').trim(),
-      plugins: resolved.map(item => pluginDetailForResolved(item, connected, enabled)),
+      plugins: resolved.map(item => pluginDetailForResolved(item, accounts, enabled)),
       connectedCount: accounts.length,
       enabledCount: enabled.length
     });
