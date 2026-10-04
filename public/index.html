@@ -4321,10 +4321,10 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       </div>
         </div>
              <div class="home-mode-rail" aria-label="Start a workspace">
-         <button type="button" class="home-mode-item active" onclick="setWorkspaceMode('chat')"><span class="home-mode-icon">✦</span><span><b>Chat</b><small>Think, ask, explore</small></span></button>
-         <button type="button" class="home-mode-item" onclick="setWorkspaceMode('coding')"><span class="home-mode-icon">&lt;/&gt;</span><span><b>Code</b><small>Build and debug</small></span></button>
-         <button type="button" class="home-mode-item" onclick="setWorkspaceMode('deep-research')"><span class="home-mode-icon">◌</span><span><b>Research</b><small>Search and synthesize</small></span></button>
-         <button type="button" class="home-mode-item" onclick="setWorkspaceMode('image')"><span class="home-mode-icon">◈</span><span><b>Create</b><small>Turn ideas into visuals</small></span></button>
+         <button type="button" class="home-mode-item active" data-trux-mode="chat" onclick="setWorkspaceMode('chat')"><span class="home-mode-icon">✦</span><span><b>Chat</b><small>Think, ask, explore</small></span></button>
+         <button type="button" class="home-mode-item" data-trux-mode="coding" onclick="setWorkspaceMode('coding')"><span class="home-mode-icon">&lt;/&gt;</span><span><b>Code</b><small>Build and debug</small></span></button>
+         <button type="button" class="home-mode-item" data-trux-mode="deep-research" onclick="setWorkspaceMode('deep-research')"><span class="home-mode-icon">◌</span><span><b>Research</b><small>Search and synthesize</small></span></button>
+         <button type="button" class="home-mode-item" data-trux-mode="image" onclick="setWorkspaceMode('image')"><span class="home-mode-icon">◈</span><span><b>Create</b><small>Turn ideas into visuals</small></span></button>
        </div>
 
 </section>
@@ -7150,12 +7150,6 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         m && m.role === "trux" && String(m.backgroundJobId || "") === String(jobId)
       );
 
-      if (proposal && !finalText) {
-        finalText = proposal.commit
-          ? `I applied and committed the changes directly to ${proposal.repository || "GitHub"}.`
-          : "I prepared the GitHub changes for your review. Nothing has been written yet.";
-      }
-
       if (!alreadySaved && finalText) {
         const savedMessage = {
           role: "trux",
@@ -8916,4 +8910,71 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
   .coding-workspace .trux-code-plugin-pane,
   .coding-workspace .trux-code-feature-pane{display:none!important}
   .coding-workspace .trux-code-workspace{background:transparent;border:0;box-shadow:none}
+</style>
+
+<style id="trux-ui-refresh-20261004">
+  .trux-row>.label{display:none!important}
+  .trux-row .trux-response-stack{width:min(920px,100%)}
+  .trux-row .trux-bubble.thinking{border:0!important;background:transparent!important;box-shadow:none!important;border-radius:0!important;padding:0!important;min-height:0!important}
+  .trux-thinking-panel{width:100%;margin:0 0 9px}
+  .trux-thinking-bar{appearance:none;width:100%;display:flex;align-items:center;gap:11px;padding:6px 0;border:0;background:transparent;color:var(--txt-2);text-align:left;cursor:pointer;transition:opacity .18s ease,transform .18s ease}
+  .trux-thinking-bar:hover{opacity:.92;transform:translateY(-1px)}
+  .trux-thinking-orbit{position:relative;width:30px;height:30px;display:grid;place-items:center;flex:0 0 30px;border-radius:50%;isolation:isolate}
+  .trux-thinking-orbit:before,.trux-thinking-orbit:after{content:"";position:absolute;inset:1px;border:1px solid var(--acc-line);border-radius:50%}
+  .trux-thinking-orbit:after{inset:-3px;border-color:rgba(176,124,255,.22)}
+  .trux-thinking-orbit img{position:relative;z-index:2;width:20px;height:20px;border-radius:50%;object-fit:cover;filter:saturate(.7) brightness(1.08);box-shadow:0 0 18px rgba(109,131,255,.28);animation:truxThinkBreath 2s ease-in-out infinite}
+  .trux-thinking-orbit i{position:absolute;z-index:1;width:4px;height:4px;border-radius:50%;background:var(--acc);box-shadow:0 0 8px var(--acc-line);animation:truxThinkOrbit 2.2s linear infinite}
+  .trux-thinking-orbit i:nth-child(2){animation-delay:-.3s}.trux-thinking-orbit i:nth-child(3){animation-delay:-.8s}.trux-thinking-orbit i:nth-child(4){animation-delay:-1.35s}
+  @keyframes truxThinkOrbit{0%{transform:rotate(0) translateX(13px) rotate(0);opacity:.35}50%{opacity:1}100%{transform:rotate(360deg) translateX(13px) rotate(-360deg);opacity:.35}}
+  @keyframes truxThinkBreath{0%,100%{transform:scale(.92);opacity:.82}50%{transform:scale(1.06);opacity:1}}
+  .trux-thinking-copy{display:flex;align-items:baseline;gap:8px;min-width:0;flex:1}
+  .trux-thinking-kicker{flex:0 0 auto;color:var(--txt-4);font:650 8px/1 var(--font-mono);letter-spacing:.16em}
+  .trux-thinking-copy .status-msg{min-height:0!important;display:block!important;max-width:100%!important;padding:0!important;border:0!important;background:transparent!important;border-radius:0!important;box-shadow:none!important;overflow:visible!important;color:var(--txt-3)!important;font:600 12px/1.35 var(--font-body)!important;white-space:nowrap!important;text-overflow:ellipsis!important}
+  .thinking-status-line.status-change{animation:truxStatusPop .32s var(--ease-out)}
+  @keyframes truxStatusPop{0%{opacity:.2;transform:translateY(5px);filter:blur(2px)}100%{opacity:1;transform:none;filter:none}}
+  .trux-thinking-elapsed{flex:0 0 auto;color:var(--txt-4);font:600 9px/1 var(--font-mono);letter-spacing:.08em}
+  .trux-thinking-chevron{flex:0 0 auto;color:var(--txt-4);font-size:15px;line-height:1;transform:rotate(0);transition:transform .24s var(--ease-out),color .18s ease}
+  .trux-thinking-panel.expanded .trux-thinking-chevron{transform:rotate(180deg);color:var(--txt-2)}
+  .trux-thinking-details{margin:2px 0 9px 41px;padding:7px 0 2px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:7px;animation:truxDetailsIn .24s var(--ease-out)}
+  @keyframes truxDetailsIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+  .thinking-tool-item{padding:2px 0 5px 11px;position:relative}
+  .thinking-tool-item:before{content:"";position:absolute;left:-3px;top:10px;width:5px;height:5px;border-radius:50%;background:var(--txt-4)}
+  .thinking-tool-item.active:before{background:var(--acc);box-shadow:0 0 10px var(--acc);animation:truxToolPulse 1.25s ease-in-out infinite}
+  .thinking-tool-item.completed:before{background:#76d79d}.thinking-tool-item.failed:before{background:var(--danger)}
+  @keyframes truxToolPulse{0%,100%{transform:scale(.8);opacity:.55}50%{transform:scale(1.35);opacity:1}}
+  .thinking-tool-head{color:var(--txt-2);font:600 11px/1.45 var(--font-mono);word-break:break-word}
+  .thinking-tool-meta,.thinking-tool-result{color:var(--txt-4);font:500 10px/1.45 var(--font-mono);margin-top:2px;word-break:break-word;white-space:pre-wrap}
+  .trux-thinking-panel:not(.expanded) .trux-thinking-details{display:none!important}
+
+  .coding-workspace .trux-code-workspace{width:min(980px,100%);padding:8px 28px 4px;margin:0 auto;animation:truxCodeIn .42s var(--ease-out)}
+  @keyframes truxCodeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .coding-workspace .trux-code-shell{border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;overflow:visible!important}
+  .coding-workspace .trux-code-header{padding:6px 0 8px;min-height:52px;border:0;background:transparent}
+  .coding-workspace .trux-code-mark,.coding-workspace .trux-code-badge{display:none!important}
+  .coding-workspace .trux-code-title-row h1{font-size:20px}
+  .coding-workspace .trux-code-identity p{max-width:620px;color:var(--txt-4);font-size:10px}
+  .coding-workspace .trux-code-state{height:24px;border:0;background:transparent;padding:0;color:var(--txt-4)}
+  .coding-workspace .trux-code-commandbar{height:31px;padding:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:transparent}
+  .coding-workspace .trux-code-tabs{gap:18px;border:0;height:31px}.coding-workspace .trux-code-tabs>span{font-size:8px}
+  .coding-workspace .trux-code-integrations{min-height:44px;padding:0;border-bottom:1px solid var(--line);background:transparent;opacity:.82}
+  .coding-workspace .trux-code-stage{min-height:250px;background:transparent!important;border:0}.coding-workspace .trux-code-grid-overlay{opacity:.12}
+  .coding-workspace .trux-code-stage-center{width:min(790px,100%);margin:0;padding:54px 2px 32px;text-align:left}
+  .coding-workspace .trux-code-center-mark{width:48px;height:48px;margin:0 0 18px;border-radius:50%;border:1px solid var(--acc-line);background:transparent;box-shadow:0 16px 40px rgba(0,0,0,.18);position:relative;overflow:visible;display:grid!important;place-items:center}
+  .coding-workspace .trux-code-center-mark:after{content:"";position:absolute;inset:-7px;border:1px solid rgba(176,124,255,.18);border-radius:50%;animation:truxCenterOrbit 2.6s linear infinite}
+  .coding-workspace .trux-code-center-mark img{width:28px;height:28px;border-radius:50%;object-fit:cover;filter:saturate(.7) brightness(1.08);animation:truxThinkBreath 2s ease-in-out infinite}
+  @keyframes truxCenterOrbit{to{transform:rotate(360deg)}}
+  .coding-workspace .trux-code-center-kicker{font-size:8px;letter-spacing:.2em;color:var(--txt-4)}
+  .coding-workspace .trux-code-stage-center h2{margin:10px 0 9px;font-size:clamp(38px,6vw,62px);line-height:.96;letter-spacing:-.065em}
+  .coding-workspace .trux-code-stage-center p{max-width:650px;margin:0;color:var(--txt-3);font-size:12px;line-height:1.65}
+  .coding-workspace #truxCodePulseText.trux-code-pulse-change{animation:truxCodePulse .42s var(--ease-out)}
+  @keyframes truxCodePulse{from{opacity:.15;transform:translateY(6px);filter:blur(2px)}to{opacity:1;transform:none;filter:none}}
+  .coding-workspace .trux-code-center-meta{justify-content:flex-start;margin-top:21px;gap:16px}.coding-workspace .trux-code-center-meta span{font-size:8px;color:var(--txt-4)}
+  .coding-workspace .trux-code-stage-bottom{height:30px;padding:0;border:0;color:var(--txt-4)}.coding-workspace #codeChatContainer{max-width:920px;padding:12px 0 0;border:0;margin:0 auto}
+  .home-mode-rail{width:min(900px,100%);display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:27px auto 2px}
+  .home-mode-item{appearance:none;display:flex;align-items:center;gap:10px;min-width:0;padding:11px 12px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.012);color:var(--txt-2);text-align:left;cursor:pointer;transition:transform .25s var(--ease-out),border-color .25s ease,background .25s ease,box-shadow .25s ease}
+  .home-mode-item:hover{transform:translateY(-3px);border-color:var(--acc-line);background:var(--acc-soft);box-shadow:0 14px 34px rgba(0,0,0,.18)}
+  .home-mode-item.active{border-color:var(--acc-line);background:linear-gradient(135deg,var(--acc-soft),rgba(255,255,255,.01))}
+  .home-mode-icon{width:26px;height:26px;display:grid;place-items:center;flex:0 0 26px;border-radius:9px;border:1px solid var(--line);background:var(--bg-2);color:var(--txt-2);font:700 10px/1 var(--font-mono)}
+  .home-mode-item b{display:block;color:var(--txt);font-size:11px}.home-mode-item small{display:block;margin-top:2px;color:var(--txt-4);font-size:9px;white-space:nowrap}
+  @media(max-width:760px){.coding-workspace .trux-code-workspace{padding:6px 13px 3px}.coding-workspace .trux-code-stage-center{padding:42px 0 26px}.coding-workspace .trux-code-stage-center h2{font-size:42px}.coding-workspace .trux-code-integrations{display:none!important}.trux-thinking-details{margin-left:0;padding-left:10px}.trux-thinking-kicker{display:none}.trux-thinking-copy .status-msg{font-size:11px!important}.home-mode-rail{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:22px}.home-mode-item{padding:10px}.home-mode-item small{font-size:8px}}
 </style>
