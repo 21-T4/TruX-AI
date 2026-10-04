@@ -266,7 +266,9 @@ async function serveStatic(req, res) {
     res.setHeader("Content-Type", mimeType(filePath));
     /* The application shell must never be stored by an intermediate CDN,
        browser cache, or proxy. JS/CSS/image assets may remain cacheable. */
-    if (path.extname(filePath).toLowerCase() === ".html") {
+    const extension = path.extname(filePath).toLowerCase();
+    const basename = path.basename(filePath).toLowerCase();
+    if (extension === ".html" || basename === "sw.js") {
       res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
       res.setHeader("CDN-Cache-Control", "no-store");
       res.setHeader("Cloudflare-CDN-Cache-Control", "no-store");
