@@ -1864,13 +1864,9 @@ export async function onRequestPost(context) {
 
       if (!accessToken) accessToken = await createGoogleAccessToken(env);
 
-      const githubSession = codingMode && validGithubRepo(githubRepository)
-        ? await getGithubSession(request, env)
-        : null;
-
-      if (codingMode && validGithubRepo(githubRepository) && !githubSession?.token) {
-        send({ type: 'status', status: 'Legacy GitHub connection is not available for this workspace.' });
-      }
+      /* Legacy per-workspace GitHub repository access is intentionally disabled.
+         GitHub actions now enter the same Composio plugin path as every other integration. */
+      const githubSession = null;
 
       let composioToolMetadata = new Map();
       let composioToolDeclarations = [];
@@ -1913,17 +1909,8 @@ export async function onRequestPost(context) {
       }
 
       const changeRequested = codingMode && isGithubChangeRequest(message);
-      const githubTools = getGithubToolDeclarations();
-      const activeGithubTools = changeRequested
-        ? githubTools
-        : githubTools.filter(tool => tool.name !== 'github_propose_changes' && tool.name !== 'github_apply_changes');
-      const legacyGithubDeclarations = githubSession && codingMode && validGithubRepo(githubRepository)
-        ? activeGithubTools
-        : [];
-      const modelFunctionDeclarations = [
-        ...legacyGithubDeclarations,
-        ...composioToolDeclarations
-      ];
+      /* Only Composio tools are exposed to the live model. */
+      const modelFunctionDeclarations = [...composioToolDeclarations];
       const modelTools = [];
       if (modelFunctionDeclarations.length) modelTools.push({ functionDeclarations: modelFunctionDeclarations });
       if (researchMode) modelTools.push({ googleSearch: {} });
@@ -1973,59 +1960,6 @@ export async function onRequestPost(context) {
           }]
         });
       }
-
-      const explicitRepoImport = codingMode
-        && githubSession
-        && validGithubRepo(githubRepository)
-        && /(?:import|load|open|map)\b[\s\S]{0,120}\b(?:repo|repository|github)\b/i.test(String(message || ''));
-
-      if (explicitRepoImport) {
-        send({
-          type: 'tool_status',
-          tool: 'GitHub Import',
-          phase: 'start',
-          status: 'GitHub Import · repository workspace'
-        });
-
-        try {
-          const imported = await githubImportRepository(githubSession, githubRepository, githubBranch);
-          send({
-            type: 'tool_status',
-            tool: 'GitHub Import',
-            phase: 'start',
-            status: 'GitHub Import · repository structure'
-          });
-
-          repositoryImported = true;
-          agentContents.push({
-            role: 'user',
-            parts: [{
-              text: '[GITHUB REPOSITORY IMPORT RESULT]\n' + JSON.stringify(imported)
-            }]
-          });
-
-          send({
-            type: 'tool_status',
-            tool: 'GitHub Import',
-            phase: 'complete',
-            status: 'Completed GitHub Import · repository structure.'
-          });
-        } catch (importError) {
-          send({
-            type: 'tool_status',
-            tool: 'GitHub Import',
-            phase: 'complete',
-            status: 'GitHub Import failed: ' + String(importError?.message || 'unknown error')
-          });
-          agentContents.push({
-            role: 'user',
-            parts: [{
-              text: '[GITHUB REPOSITORY IMPORT ERROR]\n' + String(importError?.message || 'unknown error')
-            }]
-          });
-        }
-      }
-
 
       let agentRound = 0;
       while (true) {
@@ -2309,13 +2243,9 @@ export async function onRequestPost(context) {
       }
 
       const finalText = String(finalResult?.text || '').trim()
-        || (githubProposalPrepared
-          ? 'I have completed applying and committing the requested changes directly to your repository.'
-          : (repositoryImported && !changeRequested && githubInspectionCount === 0
-            ? 'I finished importing your repository. Its file structure is loaded and ready for code-aware analysis.'
-            : (changeRequested
-              ? 'I finished inspecting the repository and analyzing the requested code changes.'
-              : 'Task completed successfully.')));
+        || (researchMode
+          ? 'I completed the research pass but could not produce the final written response.'
+          : 'Task completed successfully.');
 
       if (signal?.aborted) return;
       send({ type: 'final', text: finalText });
