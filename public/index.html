@@ -7633,7 +7633,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           },
           body:JSON.stringify({jobId:id,userId:user.uid||""})
         });
-        if(response.ok) return true;
+        if(response.ok || response.status === 404) return true;
         if(response.status === 401 && !forceRefresh) return sendCancel(true);
         return false;
       };
@@ -7662,30 +7662,54 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           const row = info?.row || getActiveChatContainer()?.querySelector(".row.trux-row:last-of-type");
           const bubble = info?.id ? getEl(info.id) : row?.querySelector(".bubble");
           const sid = info?.sid || bubble?.querySelector(".status-msg")?.id || "";
-          generationStopRequested = true;
-
-          if(sid) setThinkingStatus(sid, "Stopping generation…");
 
           /*
-           * Do not abort the browser watcher or delete the active job yet.
-           * The server owns the coding run; once /cancel succeeds, the watcher
-           * receives the terminal "stopped" state and performs the final UI reset.
+           * Stop is a local UI action first. Never leave the whole app in a
+           * "Stopping…" state while the server cancellation request travels.
+           * The worker also checks the job state and aborts its live Vertex
+           * request, so the actual generation is still cancelled server-side.
            */
-          void requestBackgroundJobStop(codingJobId).then(ok => {
-            if(ok) return;
-            generationStopRequested = false;
-            if(sid) setThinkingStatus(sid, "Stop request failed — the background run is still active.");
-          }).catch(() => {
-            generationStopRequested = false;
-            if(sid) setThinkingStatus(sid, "Stop request failed — the background run is still active.");
-          });
+          try { info?.controller?.abort(); } catch {}
+          if (info?._streamer) {
+            try { info._streamer.cancel(); } catch {}
+            info._streamer = null;
+          }
 
+          const session = chatSessions[currentChatId];
+          if (session?.activeBackgroundJobId === codingJobId) {
+            delete session.activeBackgroundJobId;
+            delete session.backgroundStartedAt;
+            saveChatSessions();
+          }
+
+          markGenerationStopped(row, info?.id || "", sid, info?.tsid || "");
+          isGenerating = false;
+          activeAbortController = null;
+          generationStopRequested = true;
+          getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15-2-15 2z"/>';
+          getEl("actionBtn").classList.remove("stop");
+          handleInputChange();
+
+          void requestBackgroundJobStop(codingJobId).catch(() => {});
           return;
         }else{
           if (workspaceMode === "coding") {
+            /*
+             * A stop can race the short /background/start request before a job
+             * id exists. Mark the browser run stopped immediately; when the
+             * start request returns, runCodeBackgroundJob sees generationStopRequested
+             * and cancels the newly created job instead of leaving it orphaned.
+             */
             const activeRow = getActiveChatContainer()?.querySelector(".row.trux-row:last-of-type");
-            const statusEl = activeRow?.querySelector(".status-msg");
-            if (statusEl) setThinkingStatus(statusEl.id, "Stopping generation…");
+            const bubble = activeRow?.querySelector(".bubble");
+            const sid = bubble?.querySelector(".status-msg")?.id || "";
+            markGenerationStopped(activeRow, bubble?.id || "", sid, activeRow?.querySelector(".thinking-tool-trace")?.id || "");
+            isGenerating = false;
+            activeAbortController = null;
+            generationStopRequested = true;
+            getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l-15 2-15 2z"/>';
+            getEl("actionBtn").classList.remove("stop");
+            handleInputChange();
             return;
           }
 
