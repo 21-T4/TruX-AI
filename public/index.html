@@ -4893,7 +4893,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     }
     applyTruxAccent(store.getItem("trux_accent") || "blue", false);
     applyHomeLook(store.getItem("trux_home_look") || "midnight", false);
-    initFirebase();
+    void initFirebase().catch(() => {});
 
     function applyHomeLook(name, persist) {
       const raw = String(name || "").toLowerCase();
@@ -8597,36 +8597,8 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     document.body.classList.remove("chat-session-active"); document.body.classList.add("home-active"); loadSettings(); renderNotebooks(); renderSidebar(); updateAllUsageUI(); handleInputChange(); setWorkspaceMode(startupWorkspaceMode, {reload:false});
   </script>
 
-<script>
-(() => {
-  const KEY = "trux_boot_recovery_20261004";
-  let healthy = false;
-  const recover = () => {
-    if (healthy) return;
-    try {
-      if (sessionStorage.getItem(KEY) === "1") return;
-      sessionStorage.setItem(KEY, "1");
-    } catch {}
-    Promise.resolve()
-      .then(() => navigator.serviceWorker?.getRegistrations?.())
-      .then(regs => Promise.all((regs || []).map(r => r.unregister())))
-      .catch(() => {})
-      .then(() => window.caches?.keys?.())
-      .then(keys => Promise.all((keys || []).map(k => window.caches.delete(k))))
-      .catch(() => {})
-      .finally(() => {
-        try { location.replace(location.href); } catch { location.reload(); }
-      });
-  };
-  window.addEventListener("error", () => setTimeout(recover, 40), true);
-  window.addEventListener("unhandledrejection", () => setTimeout(recover, 40), true);
-  window.setTimeout(() => {
-    healthy = true;
-    try { sessionStorage.removeItem(KEY); } catch {}
-  }, 12000);
-})();
-</script>
-<script src="/trux-plugins.js?v=20261004b" defer></script>
+
+<script src="/trux-plugins.js?v=20261004c" defer></script>
 <style id="trux-code-safe-refresh">
   /* TruX-Code is a workspace surface, not a marketing card. */
   .coding-workspace .mobile-new{display:none!important}
