@@ -1,29 +1,29 @@
 const COMPOSIO_BASE_URL = 'https://backend.composio.dev/api/v3.1';
 
 export const PLUGIN_CATALOG = [
-  { id: 'gmail', name: 'Gmail', group: 'Google Workspace', slugs: ['gmail'], description: 'Email, search, threads, labels and mailbox actions.' },
-  { id: 'google-sheets', name: 'Google Sheets', group: 'Google Workspace', slugs: ['googlesheets'], description: 'Read, write and manage spreadsheets.' },
-  { id: 'google-docs', name: 'Google Docs', group: 'Google Workspace', slugs: ['googledocs'], description: 'Create, read and edit Google documents.' },
-  { id: 'google-calendar', name: 'Google Calendar', group: 'Google Workspace', slugs: ['googlecalendar'], description: 'Events, schedules, attendees and calendars.' },
-  { id: 'google-drive', name: 'Google Drive', group: 'Google Workspace', slugs: ['googledrive'], description: 'Files, folders, search and sharing.' },
-  { id: 'google-meet', name: 'Google Meet', group: 'Google Workspace', slugs: ['googlemeet'], description: 'Meetings, spaces and conference workflows.' },
-  { id: 'google-chat', name: 'Google Chat', group: 'Google Workspace', slugs: ['google_chat'], description: 'Spaces, messages and conversations.' },
-  { id: 'google-admin', name: 'Google Admin', group: 'Google Workspace', slugs: ['google_admin'], description: 'Workspace administration and directory operations.' },
+  { id: 'gmail', name: 'Gmail', group: 'Google Workspace', slugs: ['gmail'], logo: 'https://cdn.simpleicons.org/gmail',  description: 'Email, search, threads, labels and mailbox actions.' },
+  { id: 'google-sheets', name: 'Google Sheets', group: 'Google Workspace', slugs: ['googlesheets'], logo: 'https://cdn.simpleicons.org/googlesheets',  description: 'Read, write and manage spreadsheets.' },
+  { id: 'google-docs', name: 'Google Docs', group: 'Google Workspace', slugs: ['googledocs'], logo: 'https://cdn.simpleicons.org/googledocs',  description: 'Create, read and edit Google documents.' },
+  { id: 'google-calendar', name: 'Google Calendar', group: 'Google Workspace', slugs: ['googlecalendar'], logo: 'https://cdn.simpleicons.org/googlecalendar',  description: 'Events, schedules, attendees and calendars.' },
+  { id: 'google-drive', name: 'Google Drive', group: 'Google Workspace', slugs: ['googledrive'], logo: 'https://cdn.simpleicons.org/googledrive',  description: 'Files, folders, search and sharing.' },
+  { id: 'google-meet', name: 'Google Meet', group: 'Google Workspace', slugs: ['googlemeet'], logo: 'https://cdn.simpleicons.org/googlemeet',  description: 'Meetings, spaces and conference workflows.' },
+  { id: 'google-chat', name: 'Google Chat', group: 'Google Workspace', slugs: ['google_chat'], logo: 'https://cdn.simpleicons.org/googlechat',  description: 'Spaces, messages and conversations.' },
+  { id: 'google-admin', name: 'Google Admin', group: 'Google Workspace', slugs: ['google_admin'], logo: 'https://cdn.simpleicons.org/google',  description: 'Workspace administration and directory operations.' },
 
-  { id: 'microsoft-word', name: 'Microsoft Word', group: 'Microsoft 365', slugs: ['word', 'msword', 'microsoft_word'], description: 'Documents, content and Word workflows.' },
-  { id: 'microsoft-excel', name: 'Microsoft Excel', group: 'Microsoft 365', slugs: ['excel'], description: 'Workbooks, ranges, tables and formulas.' },
-  { id: 'microsoft-powerpoint', name: 'Microsoft PowerPoint', group: 'Microsoft 365', slugs: ['powerpoint', 'microsoft_powerpoint'], description: 'Presentations, slides and PowerPoint workflows.' },
-  { id: 'microsoft-outlook', name: 'Microsoft Outlook (Mail & Calendar)', group: 'Microsoft 365', slugs: ['outlook'], description: 'Email, contacts and calendar operations.' },
-  { id: 'microsoft-teams', name: 'Microsoft Teams', group: 'Microsoft 365', slugs: ['msft_teams'], description: 'Chats, teams, channels and collaboration.' },
-  { id: 'microsoft-onedrive', name: 'Microsoft OneDrive', group: 'Microsoft 365', slugs: ['one_drive'], description: 'Files and folders in OneDrive.' },
-  { id: 'microsoft-sharepoint', name: 'Microsoft SharePoint', group: 'Microsoft 365', slugs: ['share_point'], description: 'Sites, lists, libraries and collaboration.' },
-  { id: 'microsoft-onenote', name: 'Microsoft OneNote', group: 'Microsoft 365', slugs: ['onenote'], description: 'Notebooks, sections and notes.' },
+  { id: 'microsoft-word', name: 'Microsoft Word', group: 'Microsoft 365', slugs: ['word', 'msword', 'microsoft_word'], logo: 'https://cdn.simpleicons.org/microsoftword',  description: 'Documents, content and Word workflows.' },
+  { id: 'microsoft-excel', name: 'Microsoft Excel', group: 'Microsoft 365', slugs: ['excel'], logo: 'https://cdn.simpleicons.org/microsoftexcel',  description: 'Workbooks, ranges, tables and formulas.' },
+  { id: 'microsoft-powerpoint', name: 'Microsoft PowerPoint', group: 'Microsoft 365', slugs: ['powerpoint', 'microsoft_powerpoint'], logo: 'https://cdn.simpleicons.org/microsoftpowerpoint',  description: 'Presentations, slides and PowerPoint workflows.' },
+  { id: 'microsoft-outlook', name: 'Microsoft Outlook (Mail & Calendar)', group: 'Microsoft 365', slugs: ['outlook'], logo: 'https://cdn.simpleicons.org/microsoftoutlook',  description: 'Email, contacts and calendar operations.' },
+  { id: 'microsoft-teams', name: 'Microsoft Teams', group: 'Microsoft 365', slugs: ['msft_teams'], logo: 'https://cdn.simpleicons.org/microsoftteams',  description: 'Chats, teams, channels and collaboration.' },
+  { id: 'microsoft-onedrive', name: 'Microsoft OneDrive', group: 'Microsoft 365', slugs: ['one_drive'], logo: 'https://cdn.simpleicons.org/microsoftonedrive',  description: 'Files and folders in OneDrive.' },
+  { id: 'microsoft-sharepoint', name: 'Microsoft SharePoint', group: 'Microsoft 365', slugs: ['share_point'], logo: 'https://cdn.simpleicons.org/microsoftsharepoint',  description: 'Sites, lists, libraries and collaboration.' },
+  { id: 'microsoft-onenote', name: 'Microsoft OneNote', group: 'Microsoft 365', slugs: ['onenote'], logo: 'https://cdn.simpleicons.org/microsoftonenote',  description: 'Notebooks, sections and notes.' },
 
-  { id: 'supabase', name: 'Supabase', group: 'Developer & Cloud', slugs: ['supabase'], description: 'Database, projects and backend workflows.' },
-  { id: 'github', name: 'GitHub', group: 'Developer & Cloud', slugs: ['github'], description: 'Repositories, issues, pull requests and code workflows.' },
-  { id: 'gitlab', name: 'GitLab', group: 'Developer & Cloud', slugs: ['gitlab'], description: 'Projects, repositories, issues and CI workflows.' },
-  { id: 'aws', name: 'AWS / Amazon Web Services', group: 'Developer & Cloud', slugs: ['aws', 'amazon_web_services', 'aws_2'], description: 'AWS cloud workflows exposed by Composio.' },
-  { id: 'google-cloud', name: 'Google Cloud Console', group: 'Developer & Cloud', slugs: ['gcp', 'google_cloud', 'googlecloud'], description: 'Google Cloud project and platform workflows available through Composio.' }
+  { id: 'supabase', name: 'Supabase', group: 'Developer & Cloud', slugs: ['supabase'], logo: 'https://cdn.simpleicons.org/supabase',  description: 'Database, projects and backend workflows.' },
+  { id: 'github', name: 'GitHub', group: 'Developer & Cloud', slugs: ['github'], logo: 'https://cdn.simpleicons.org/github',  description: 'Repositories, issues, pull requests and code workflows.' },
+  { id: 'gitlab', name: 'GitLab', group: 'Developer & Cloud', slugs: ['gitlab'], logo: 'https://cdn.simpleicons.org/gitlab',  description: 'Projects, repositories, issues and CI workflows.' },
+  { id: 'aws', name: 'AWS / Amazon Web Services', group: 'Developer & Cloud', slugs: ['aws', 'amazon_web_services', 'aws_2'], logo: 'https://cdn.simpleicons.org/amazonaws',  description: 'AWS cloud workflows exposed by Composio.' },
+  { id: 'google-cloud', name: 'Google Cloud Console', group: 'Developer & Cloud', slugs: ['gcp', 'google_cloud', 'googlecloud'], logo: 'https://cdn.simpleicons.org/googlecloud',  description: 'Google Cloud project and platform workflows available through Composio.' }
 ];
 
 const toolkitCache = new Map();
@@ -177,7 +177,7 @@ export function pluginDetailForResolved(resolved, connectedSlugs, enabledIds) {
     name: plugin.name,
     group: plugin.group,
     description: meta.description || plugin.description,
-    logo: meta.logo || null,
+    logo: meta.logo || plugin.logo || null,
     appUrl: meta.app_url || meta.appUrl || null,
     slug: actualSlug,
     configured: !!detail,
