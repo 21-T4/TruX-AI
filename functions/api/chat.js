@@ -2026,6 +2026,27 @@ export async function onRequestPost(context) {
         return;
       }
 
+      // An explicit external action must never silently fall back to prose.
+      // If Composio produced no executable functions, stop with a truthful
+      // integration error instead of drafting/simulating the requested action.
+      if (
+        explicitExternalAction &&
+        effectiveUserId &&
+        String(env.COMPOSIO_API_KEY || '').trim() &&
+        !composioToolDeclarations.length
+      ) {
+        const messageText =
+          enabledComposioPluginIds.length
+            ? 'TruX could not load an executable action from the connected integration. Please reconnect that integration and try again.'
+            : 'TruX could not find an active connected integration for this request. Connect the requested app in Plugins, then try again.';
+        send({
+          type: 'plugin_action_unavailable',
+          message: messageText
+        });
+        send({ type: 'chunk', text: '\n\n' + messageText });
+        return;
+      }
+
       const changeRequested = codingMode && explicitRepoRequest && isGithubChangeRequest(message);
       /* Only Composio tools are exposed to the live model. */
       const modelFunctionDeclarations = [...composioToolDeclarations];
