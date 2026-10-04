@@ -223,7 +223,6 @@ async function handleApi(req, res, route, pathname) {
     res.off("close", onResponseClose);
   }
 }
-}
 
 async function serveStatic(req, res) {
   const pathname = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
