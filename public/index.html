@@ -6548,7 +6548,6 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       actions.append(apply, cancel);
       card.append(title, summary, files, actions, status);
       container.appendChild(card);
-      card.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
 
     function appendGithubCommitResponse(proposal, commit, chatId = currentChatId) {
