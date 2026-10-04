@@ -3660,6 +3660,63 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
   }
 </style>
 
+
+<style id="trux-composio-plugin-styles">
+  .trux-plugins-workspace{display:none;position:relative;width:100%;height:calc(100% - 2px);overflow:auto;background:var(--bg);padding:30px clamp(16px,4vw,42px) 46px}
+  body.plugins-page-active .trux-plugins-workspace{display:block!important}
+  body.plugins-page-active .welcome,body.plugins-page-active #chatContainer,body.plugins-page-active #codeChatContainer,body.plugins-page-active #truxCodeWorkspace,body.plugins-page-active #imageWorkspace,body.plugins-page-active #videoWorkspace,body.plugins-page-active .composer{display:none!important}
+  body.plugins-page-active .main{min-height:0;height:100%;background:var(--bg)}
+  .trux-plugins-page{width:min(1320px,100%);margin:0 auto}
+  .trux-plugins-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin:4px 0 24px}
+  .trux-plugins-kicker{display:flex;align-items:center;gap:8px;color:var(--txt-4);font:650 10px/1 var(--font-mono);letter-spacing:.18em}
+  .trux-plugins-kicker span{width:7px;height:7px;border-radius:50%;background:var(--acc);box-shadow:0 0 18px var(--acc)}
+  .trux-plugins-title-wrap h1{font-family:var(--font-disp);font-size:clamp(34px,5vw,60px);line-height:.95;letter-spacing:-.065em;margin-top:10px;color:var(--txt)}
+  .trux-plugins-title-wrap p{max-width:720px;margin-top:10px;color:var(--txt-3);font-size:14px;line-height:1.55}
+  .trux-plugins-head-actions{display:flex;align-items:center;gap:12px}
+  .trux-plugins-summary{font:600 11px/1 var(--font-mono);padding:9px 11px;border:1px solid var(--line);border-radius:999px;color:var(--txt-3);background:var(--bg-2)}
+  .trux-plugins-close{width:42px;height:42px;border:1px solid var(--line-2);border-radius:14px;background:var(--bg-2);color:var(--txt-2);font-size:26px;line-height:1}
+  .trux-plugins-toolbar{position:sticky;top:0;z-index:4;display:flex;align-items:center;gap:14px;padding:10px 0 18px;background:linear-gradient(var(--bg) 72%,transparent)}
+  .trux-plugin-search{flex:1;min-width:200px;height:44px;display:flex;align-items:center;gap:10px;padding:0 14px;border:1px solid var(--line);border-radius:13px;background:var(--bg-2);box-shadow:0 10px 30px rgba(0,0,0,.12)}
+  .trux-plugin-search svg{width:17px;height:17px;fill:none;stroke:var(--txt-4);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+  .trux-plugin-search:focus-within{border-color:var(--acc-line);box-shadow:0 0 0 4px var(--acc-soft),0 14px 34px rgba(0,0,0,.18)}
+  .trux-plugin-search input{width:100%;font-size:13px;color:var(--txt)}
+  .trux-plugin-filters{display:flex;gap:7px;overflow:auto}
+  .trux-plugin-filters button{height:40px;padding:0 12px;border-radius:11px;border:1px solid var(--line);background:var(--bg-2);color:var(--txt-3);font-size:12px;font-weight:650;white-space:nowrap}
+  .trux-plugin-filters button:hover,.trux-plugin-filters button.active{color:var(--txt);border-color:var(--acc-line);background:var(--acc-soft)}
+  .trux-plugin-notice{margin:0 0 16px;padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:var(--bg-2);color:var(--txt-3);font-size:12px}
+  .trux-plugin-notice.error{border-color:rgba(255,84,112,.35);color:#ff9aaa}
+  .trux-plugins-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .trux-plugin-card{position:relative;display:flex;flex-direction:column;min-height:184px;padding:17px;border:1px solid var(--line);border-radius:18px;background:var(--bg-2);overflow:hidden;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
+  .trux-plugin-card::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 84% 0%,var(--acc-soft),transparent 42%);opacity:.45;pointer-events:none}
+  .trux-plugin-card:hover{transform:translateY(-2px);border-color:var(--line-2);box-shadow:0 16px 40px rgba(0,0,0,.18)}
+  .trux-plugin-card-top{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .trux-plugin-brand{display:flex;align-items:center;gap:11px;min-width:0}
+  .trux-plugin-logo{width:42px;height:42px;display:grid;place-items:center;overflow:hidden;border-radius:12px;border:1px solid var(--line);background:var(--bg-3);flex:0 0 auto;font:700 12px/1 var(--font-mono);color:var(--txt)}
+  .trux-plugin-logo img{width:27px;height:27px;object-fit:contain;display:block}
+  .trux-plugin-logo.fallback{background:var(--acc-soft)}
+  .trux-plugin-name{min-width:0}.trux-plugin-name b{display:block;color:var(--txt);font-size:13px;line-height:1.25}.trux-plugin-name small{display:block;margin-top:3px;color:var(--txt-4);font:500 9px/1.2 var(--font-mono);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .trux-plugin-state{position:relative;font:650 9px/1 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;padding:7px 8px;border-radius:999px;border:1px solid var(--line);color:var(--txt-4);white-space:nowrap}
+  .trux-plugin-state.connected{color:#87e9a7;border-color:rgba(74,222,128,.22);background:rgba(74,222,128,.06)}
+  .trux-plugin-description{position:relative;margin:15px 0 18px;color:var(--txt-3);font-size:12px;line-height:1.55;min-height:38px}
+  .trux-plugin-card-actions{position:relative;display:flex;align-items:center;gap:8px;margin-top:auto}
+  .trux-plugin-primary{flex:1;height:38px;display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:11px;border:1px solid var(--acc-line);background:linear-gradient(135deg,var(--acc-soft),rgba(176,124,255,.08));color:var(--txt);font-size:12px;font-weight:700}
+  .trux-plugin-primary:disabled{opacity:.55;cursor:wait}.trux-plugin-primary svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .trux-plugin-remove{height:38px;padding:0 10px;border-radius:11px;border:1px solid var(--line);color:var(--txt-4);font-size:11px;background:var(--bg-3)}
+  .trux-plugin-remove:hover{color:var(--danger);border-color:rgba(255,84,112,.28)}
+  .trux-plugin-unavailable{height:38px;flex:1;border-radius:11px;border:1px solid var(--line);color:var(--txt-4);font-size:11px;background:var(--bg-3)}
+  .trux-plugin-loading{min-height:184px;border-radius:18px;border:1px solid var(--line);background:linear-gradient(100deg,var(--bg-2),var(--bg-3),var(--bg-2));background-size:220% 100%;animation:truxPluginShimmer 1.4s linear infinite}
+  @keyframes truxPluginShimmer{0%{background-position:200% 0}100%{background-position:-20% 0}}
+  .trux-code-hero{position:relative;overflow:hidden;align-items:stretch;padding:28px}.trux-code-hero::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 18% 0%,rgba(109,131,255,.12),transparent 38%),radial-gradient(circle at 86% 8%,rgba(176,124,255,.13),transparent 34%);pointer-events:none}
+  .trux-code-hero-copy,.trux-code-actions{position:relative;z-index:1}.trux-code-hero .code-copy{max-width:700px}.trux-code-trust{display:flex;flex-wrap:wrap;gap:7px;margin-top:16px}.trux-code-trust span{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 9px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.025);color:var(--txt-4);font:550 9px/1 var(--font-mono);letter-spacing:.06em;text-transform:uppercase}.trux-code-trust i{width:5px;height:5px;border-radius:50%;background:var(--acc);box-shadow:0 0 9px var(--acc)}
+  .trux-code-actions{flex-direction:column;align-items:stretch;justify-content:center;min-width:210px}.trux-code-plugin-status{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg-2);color:var(--txt-3);font:550 10px/1 var(--font-mono)}.trux-code-status-dot{width:7px;height:7px;border-radius:50%;background:var(--txt-4)}.trux-code-plugin-status.active{color:var(--txt-2);border-color:var(--acc-line)}.trux-code-plugin-status.active .trux-code-status-dot{background:#76e4a0;box-shadow:0 0 10px #76e4a0}.trux-plugin-manage-btn{justify-content:center;min-width:0}
+  .trux-code-orbit-grid{display:grid;grid-template-columns:repeat(6,1fr);height:9px;margin:10px 0 2px;gap:8px;opacity:.45}.trux-code-orbit-grid span{height:1px;background:linear-gradient(90deg,transparent,var(--acc-line),transparent)}
+  .trux-code-grid{position:relative;z-index:1}.trux-code-feature-pane,.trux-code-plugin-pane{min-height:252px}.trux-code-plugin-stack{display:flex;flex-direction:column;gap:8px;margin-top:4px}.trux-code-plugin-row{display:flex;align-items:center;gap:9px;padding:9px;border:1px solid var(--line);border-radius:11px;background:var(--bg-2)}.trux-code-plugin-row img{width:20px;height:20px;object-fit:contain}.trux-code-plugin-row small{margin-left:auto;color:var(--txt-4);font:500 9px/1 var(--font-mono)}.trux-code-mini-initials{width:20px;height:20px;display:grid;place-items:center;border-radius:6px;background:var(--acc-soft);color:var(--txt);font:700 7px/1 var(--font-mono)}
+  .trux-code-plugin-placeholder{display:flex;gap:10px;align-items:flex-start;padding:13px;border:1px dashed var(--line-2);border-radius:13px;background:rgba(255,255,255,.018)}.trux-code-placeholder-orb{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:var(--acc-soft);color:var(--txt-2);flex:0 0 auto}.trux-code-plugin-placeholder b{font-size:12px;color:var(--txt-2)}.trux-code-plugin-placeholder small{display:block;margin-top:4px;color:var(--txt-4);font-size:10px;line-height:1.4}.trux-code-plugin-link{display:inline-flex;align-items:center;gap:6px;margin-top:13px;color:var(--txt-3);font-size:11px;font-weight:650}.trux-code-plugin-link:hover{color:var(--txt)}
+  @media (max-width:1020px){.trux-plugins-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.trux-plugins-toolbar{align-items:stretch;flex-direction:column}.trux-code-hero{flex-direction:column;align-items:flex-start}.trux-code-actions{width:100%;flex-direction:row;flex-wrap:wrap;min-width:0}.trux-code-plugin-status{flex:1;min-width:190px}}
+  @media (max-width:680px){.trux-plugins-workspace{padding:20px 13px 36px}.trux-plugins-head{align-items:flex-start}.trux-plugins-summary{display:none}.trux-plugins-grid{grid-template-columns:1fr;gap:10px}.trux-plugins-title-wrap p{font-size:12px}.trux-code-hero{padding:22px 18px}.trux-code-actions{flex-direction:column}.trux-code-plugin-status{width:100%;min-width:0}.trux-code-grid{grid-template-columns:1fr}}
+  .sidebar-item-badge{margin-left:auto;min-width:18px;height:18px;padding:0 5px;display:inline-grid;place-items:center;border:1px solid var(--line);border-radius:999px;color:var(--txt-4);font:650 8px/1 var(--font-mono)}
+  #pluginsSidebarButton.active{background:var(--acc-soft);color:var(--txt)}
+</style>
 </head>
 <body class="home-active">
   <div class="bg" id="bg"><div class="bg-orb"></div></div>
@@ -3720,6 +3777,11 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           <button class="sidebar-item" type="button" onclick="openMediaLibrary('all')">
             <svg viewBox="0 0 24 24"><rect x="3.5" y="4" width="7" height="7" rx="2"/><rect x="13.5" y="4" width="7" height="7" rx="2"/><rect x="3.5" y="13" width="7" height="7" rx="2"/><rect x="13.5" y="13" width="7" height="7" rx="2"/></svg>
             <span>Library</span>
+          </button>
+          <button class="sidebar-item" id="pluginsSidebarButton" type="button" onclick="openPluginsPage();closeSidebar()" aria-label="Open plugins">
+            <svg viewBox="0 0 24 24"><path d="M9 4.5v3M15 4.5v3M9 16.5v3M15 16.5v-3M4.5 9h3M4.5 15h3M19.5 9h-3M19.5 15h-3"/><path d="M9 7.5h6a3 3 0 0 1 3 3v3a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3v-3a3 3 0 0 1 3-3Z"/></svg>
+            <span>Plugins</span>
+            <small class="sidebar-item-badge" id="sidebarPluginCount">0</small>
           </button>
         </nav>
 
@@ -3821,29 +3883,79 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       </section>
 
       <section class="trux-code-workspace" id="truxCodeWorkspace" aria-label="TruX-Code workspace">
-        <div class="code-hero">
-          <div>
+        <div class="code-hero trux-code-hero">
+          <div class="trux-code-hero-copy">
             <div class="code-kicker">Agentic coding workspace</div>
             <h1 class="code-title">TruX-<span>Code</span></h1>
-            <p class="code-copy">Inspect, debug, refactor and improve code from GitHub or uploaded codebases.</p>
+            <p class="code-copy">A focused engineering workspace for deep reasoning, debugging, refactoring and real-world execution through your connected plugins.</p>
+            <div class="trux-code-trust">
+              <span><i></i> Deep reasoning</span>
+              <span><i></i> Live tool access</span>
+              <span><i></i> Permission-aware actions</span>
+            </div>
           </div>
-          <div class="code-hero-actions">
-            <button class="code-connect" type="button" onclick="connectCodeRepository()"><span>⌘</span><span id="codeConnectLabel">Connect GitHub</span></button>
-            <button class="code-disconnect" type="button" id="codeDisconnectButton" onclick="disconnectCodeRepository()" hidden>Disconnect</button>
+          <div class="code-hero-actions trux-code-actions">
+            <div class="trux-code-plugin-status" id="codePluginStatus">
+              <span class="trux-code-status-dot"></span>
+              <span>No plugins enabled</span>
+            </div>
+            <button class="code-connect trux-plugin-manage-btn" type="button" onclick="openPluginsPage()"><span>✦</span><span>Manage Plugins</span></button>
             <button class="code-notify" type="button" id="codeNotifyButton" onclick="enableTruxNotifications()">Enable notifications</button>
           </div>
         </div>
-        <div class="code-grid">
-          <aside class="code-pane">
-            <div class="code-pane-head"><span>Repository</span><i class="code-dot"></i></div>
-            <div class="code-repo-empty" id="codeRepoStatus">No repository connected.<br>TruX-Code will always ask before writing a change.</div><select id="codeRepoSelect" class="code-repo-select" hidden onchange="selectCodeRepository(this.value)" aria-label="Repository"></select>
-          </aside>
-          <div class="code-pane">
-            <div class="code-pane-head"><span>How TruX-Code works</span><span>PRO · DEEP</span></div>
-            <div class="code-capability"><span>✦</span><div><b>Deep reasoning</b><small>Gemini Pro is used for implementation decisions and careful code review.</small></div></div>
-            <div class="code-capability"><span>⌕</span><div><b>Tool-aware research</b><small>It can ground technical questions with current web sources when useful.</small></div></div>
-            <div class="code-capability"><span>↗</span><div><b>Permissioned Git edits</b><small>Repository writes require a connected account and an explicit confirmation.</small></div></div>
+
+        <div class="trux-code-orbit-grid" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+
+        <div class="code-grid trux-code-grid">
+          <div class="code-pane trux-code-feature-pane">
+            <div class="code-pane-head"><span>Engineering flow</span><span>TRUX-CODE</span></div>
+            <div class="code-capability"><span>01</span><div><b>Understand</b><small>Reason over the request, context and attached code before acting.</small></div></div>
+            <div class="code-capability"><span>02</span><div><b>Inspect</b><small>Use the connected plugin tools available to the current task instead of guessing.</small></div></div>
+            <div class="code-capability"><span>03</span><div><b>Execute</b><small>Read results, continue the task and report what actually happened.</small></div></div>
           </div>
+
+          <div class="code-pane trux-code-plugin-pane">
+            <div class="code-pane-head"><span>Plugin access</span><span id="codePluginCountText">0 connected</span></div>
+            <div class="trux-code-plugin-stack" id="codePluginStack">
+              <div class="trux-code-plugin-placeholder">
+                <span class="trux-code-placeholder-orb">✦</span>
+                <div><b>Connect your workspace</b><small>Add Gmail, GitHub, Microsoft 365, Google Workspace, cloud and developer plugins from the Plugins page.</small></div>
+              </div>
+            </div>
+            <button class="trux-code-plugin-link" type="button" onclick="openPluginsPage()">Open Plugins <span>↗</span></button>
+          </div>
+        </div>
+      </section>
+
+      <section class="trux-plugins-workspace" id="pluginsWorkspace" aria-label="TruX Plugins">
+        <div class="trux-plugins-page">
+          <div class="trux-plugins-head">
+            <div class="trux-plugins-title-wrap">
+              <div class="trux-plugins-kicker"><span></span> TRUX CONNECT</div>
+              <h1>Plugins</h1>
+              <p>Connect the tools you already use and let TruX work with them in Chat and TruX-Code.</p>
+            </div>
+            <div class="trux-plugins-head-actions">
+              <div class="trux-plugins-summary" id="pluginsSummary">Loading…</div>
+              <button class="trux-plugins-close" type="button" onclick="closePluginsPage()" aria-label="Close Plugins">×</button>
+            </div>
+          </div>
+
+          <div class="trux-plugins-toolbar">
+            <label class="trux-plugin-search" aria-label="Search plugins">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>
+              <input id="pluginSearchInput" type="search" placeholder="Search plugins…" autocomplete="off" oninput="filterPlugins(this.value)">
+            </label>
+            <div class="trux-plugin-filters" id="pluginFilters" role="tablist" aria-label="Plugin categories">
+              <button type="button" class="active" data-plugin-group="All" onclick="setPluginGroup('All')">All</button>
+              <button type="button" data-plugin-group="Google Workspace" onclick="setPluginGroup('Google Workspace')">Google</button>
+              <button type="button" data-plugin-group="Microsoft 365" onclick="setPluginGroup('Microsoft 365')">Microsoft</button>
+              <button type="button" data-plugin-group="Developer & Cloud" onclick="setPluginGroup('Developer & Cloud')">Developer & Cloud</button>
+            </div>
+          </div>
+
+          <div class="trux-plugin-notice" id="pluginNotice" hidden></div>
+          <div class="trux-plugins-grid" id="pluginsGrid"></div>
         </div>
       </section>
 
@@ -3931,6 +4043,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
               <button type="button" onclick="openFileLibrary()" role="menuitem"><svg viewBox="0 0 24 24"><path d="M5 4.5h9l4 4V19.5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-14a1 1 0 0 1 1-1Z"/><path d="M13 4.5v4h4M7.5 13h9M7.5 16h7"/></svg>Files</button>
               <button type="button" onclick="openCamera()" role="menuitem"><svg viewBox="0 0 24 24"><path d="M4 7h3l1.4-2h7.2L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.5"/></svg>Camera</button>
               <button type="button" onclick="openPhotoLibrary()" role="menuitem"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="1.5"/><path d="m4 18 5-5 3 3 3-3 5 5"/></svg>Photos</button>
+              <button type="button" onclick="openPluginsPage();closeAttachmentMenu()" role="menuitem"><svg viewBox="0 0 24 24"><path d="M9 4.5v3M15 4.5v3M9 16.5v3M15 16.5v-3M4.5 9h3M4.5 15h3M19.5 9h-3M19.5 15h-3"/><path d="M9 7.5h6a3 3 0 0 1 3 3v3a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3v-3a3 3 0 0 1 3-3Z"/></svg>Plugins</button>
             </div>
 
             <button class="icon-btn" id="voiceBtn" onclick="toggleVoiceInput()" title="Voice input" aria-label="Voice input">
@@ -4737,6 +4850,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     }
 
     function setWorkspaceMode(mode, options) {
+      document.body.classList.remove("plugins-page-active");
       options = options || {};
       const nextMode = mode || "chat";
       const previousMode = workspaceMode;
@@ -5324,6 +5438,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     }
 
     function startNewChat() {
+      document.body.classList.remove("plugins-page-active");
       closeSidebar();
       closeAttachmentMenu();
       closeModelDropdown();
@@ -8256,5 +8371,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     currentChatId = null;
     document.body.classList.remove("chat-session-active"); document.body.classList.add("home-active"); loadSettings(); renderNotebooks(); renderSidebar(); updateAllUsageUI(); handleInputChange(); setWorkspaceMode(startupWorkspaceMode, {reload:false});
   </script>
+
+<script src="/trux-plugins.js" defer></script>
 </body>
 </html>
