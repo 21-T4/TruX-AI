@@ -2095,9 +2095,35 @@ export async function onRequestPost(context) {
               '[TRUX-CODE CONTINUE INSTRUCTION]\n' +
               'Continue inspecting the current repository files as needed, then call github_apply_changes (or github_propose_changes) with ' +
               'exact oldText/newText replacements copied from the latest reads to apply and commit the changes directly to git. ' +
-              'Never repeat an already executed tool call. Re-read files whenever a target may have changed.'
+              'Never repeat an already executed tool call. Re-read files whenever a target may have changed. ' +
+              'After the required tool work succeeds, stop calling tools and write the final user-facing answer.'
           }]
         });
+      }
+
+      function redactToolDetail(value, depth = 0) {
+        if (depth > 3) return '[…]';
+        if (value == null) return value;
+        if (typeof value === 'string') {
+          return value.length > 900 ? value.slice(0, 900) + '…' : value;
+        }
+        if (typeof value !== 'object') return value;
+        if (Array.isArray(value)) return value.slice(0, 12).map(item => redactToolDetail(item, depth + 1));
+        const out = {};
+        for (const [key, item] of Object.entries(value)) {
+          if (/token|secret|password|authorization|api[_-]?key|private[_-]?key|cookie/i.test(key)) continue;
+          out[key] = redactToolDetail(item, depth + 1);
+        }
+        return out;
+      }
+
+      function summarizeToolResult(value) {
+        if (value == null) return '';
+        const safe = redactToolDetail(value);
+        let rendered = '';
+        try { rendered = typeof safe === 'string' ? safe : JSON.stringify(safe); }
+        catch { rendered = String(safe); }
+        return rendered.length > 1800 ? rendered.slice(0, 1800) + '…' : rendered;
       }
 
       let agentRound = 0;
@@ -2139,7 +2165,12 @@ export async function onRequestPost(context) {
           toolConfig: explicitExternalAction && composioToolDeclarations.length
             ? {
                 functionCallingConfig: {
-                  mode: 'ANY',
+                  /* Force the requested external action on the first model
+                     round. After a tool result exists, let Gemini choose
+                     between another necessary tool call and a normal final
+                     answer. Keeping ANY for every round can trap the agent in
+                     tool-calling and leave the user with no final text. */
+                  mode: agentRound === 1 ? 'ANY' : 'AUTO',
                   allowedFunctionNames: composioToolDeclarations.map(tool => tool.name)
                 }
               }
@@ -2229,8 +2260,21 @@ export async function onRequestPost(context) {
             const rawPath = call?.args?.path ? String(call.args.path) : '';
             const toolTarget = rawPath ? toolName + ' · ' + rawPath : toolName;
             const activeExplanation = progressLine || toolTarget;
+            const toolCallDetails = {
+              id: String(call?.id ?? call?.call_id ?? ''),
+              action: String(call?.name || ''),
+              target: toolTarget,
+              args: redactToolDetail(call?.args || {})
+            };
 
-            send({ type: 'tool_status', tool: toolName, phase: 'start', status: activeExplanation });
+            send({ type: 'status', status: activeExplanation });
+            send({
+              type: 'tool_status',
+              tool: toolName,
+              phase: 'start',
+              status: activeExplanation,
+              details: toolCallDetails
+            });
 
             try {
               const duplicateBatch = repeatedToolSignatureCount > 0;
@@ -2273,7 +2317,12 @@ export async function onRequestPost(context) {
                   type: 'tool_status',
                   tool: toolName,
                   phase: 'complete',
-                  status: toolTarget + ' · configuration error'
+                  status: toolTarget + ' · configuration error',
+                  details: {
+                    ...toolCallDetails,
+                    ok: false,
+                    result: summarizeToolResult(callResult)
+                  }
                 });
                 send({
                   type: 'plugin_config_error',
@@ -2306,7 +2355,12 @@ export async function onRequestPost(context) {
                   type: 'tool_status',
                   tool: toolName,
                   phase: 'complete',
-                  status: toolTarget + ' · authorization required'
+                  status: toolTarget + ' · authorization required',
+                  details: {
+                    ...toolCallDetails,
+                    ok: false,
+                    result: summarizeToolResult(callResult)
+                  }
                 });
                 send({
                   type: 'plugin_auth_required',
@@ -2343,7 +2397,12 @@ export async function onRequestPost(context) {
                 type: 'tool_status',
                 tool: toolName,
                 phase: 'complete',
-                status: toolTarget
+                status: toolTarget,
+                details: {
+                  ...toolCallDetails,
+                  ok: !callResult?.error,
+                  result: summarizeToolResult(callResult)
+                }
               });
 
               if ((call?.name === 'github_apply_changes' || call?.name === 'github_propose_changes') && (callResult?.applied || callResult?.proposalReady)) {
@@ -2393,7 +2452,12 @@ export async function onRequestPost(context) {
                 type: 'tool_status',
                 tool: toolName,
                 phase: 'complete',
-                status: toolTarget + ' · failed: ' + String(toolError?.message || 'GitHub tool failed.')
+                status: toolTarget + ' · failed: ' + String(toolError?.message || 'External tool failed.'),
+                details: {
+                  ...toolCallDetails,
+                  ok: false,
+                  result: String(toolError?.message || 'External tool failed.')
+                }
               });
               responseParts.push({
                 functionResponse: {
@@ -2448,11 +2512,51 @@ export async function onRequestPost(context) {
       if (generationStopped) return;
 
       if (!finalResult) {
-        const fallbackText = String(lastModelResult?.text || '').trim()
-          || (repositoryImported
-            ? 'I finished inspecting the connected repository, but I could not prepare a reviewable change proposal in this turn.'
-            : 'I could not complete the GitHub-assisted response in this turn. Please retry the request.');
-        finalResult = { text: fallbackText };
+        finalResult = { text: String(lastModelResult?.text || '').trim() };
+      }
+
+      /*
+       * Tool execution and answer generation are two distinct phases. If Gemini
+       * completed the tool loop but returned an empty model message, make one
+       * dedicated synthesis request with tools disabled. This produces the
+       * model's actual final answer instead of inventing a canned success line.
+       */
+      let currentFinalText = String(finalResult?.text || '').trim();
+      if (!currentFinalText && !generationStopped && Array.isArray(agentContents) && agentContents.length) {
+        send({
+          type: 'status',
+          status: 'Turning the completed tool work into your answer…'
+        });
+        try {
+          const synthesisInstruction =
+            String(thinkingInstruction || '') + '\n\n' +
+            '[FINAL RESPONSE SYNTHESIS]: The external/tool work for the user request is now complete. ' +
+            'Use the conversation and tool results already present in the context. Return only the useful final answer the user should see. ' +
+            'Do not call or describe another tool unless the user explicitly needs the detail.';
+          const synthesized = await fetchVertexGemini({
+            model: targetModel,
+            contents: agentContents,
+            systemInstruction: synthesisInstruction,
+            tools: undefined,
+            accessToken,
+            projectId,
+            signal,
+            generationConfig: effectiveAdvancedThinking
+              ? { thinkingConfig: { thinkingLevel: 'HIGH' } }
+              : undefined
+          });
+          const synthesizedText =
+            synthesized?.candidates?.[0]?.content?.parts
+              ?.filter(part => typeof part?.text === 'string')
+              .map(part => part.text)
+              .join('') || '';
+          if (synthesizedText.trim()) finalResult = { ...synthesized, text: synthesizedText.trim() };
+        } catch (synthesisError) {
+          send({
+            type: 'status',
+            status: 'Final response generation failed'
+          });
+        }
       }
 
       if (!codingMode) {
@@ -2469,12 +2573,16 @@ export async function onRequestPost(context) {
         send({ type: 'grounding', grounding });
       }
 
-      const finalText = String(finalResult?.text || '').trim()
-        || (researchMode
-          ? 'I completed the research pass but could not produce the final written response.'
-          : 'Task completed successfully.');
+      const finalText = String(finalResult?.text || '').trim();
 
       if (signal?.aborted) return;
+      if (!finalText) {
+        send({
+          type: 'error',
+          error: 'The model completed the available tool work but did not return a final response.'
+        });
+        return;
+      }
       send({ type: 'final', text: finalText });
 
         if (notifyOnComplete) {
