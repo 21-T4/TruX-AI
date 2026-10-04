@@ -245,9 +245,8 @@ export function pluginDetailForResolved(resolved, connectedAccounts, enabledIds)
  * internal metadata, etc.). Never forward that metadata verbatim.
  */
 const GEMINI_SCHEMA_KEYS = new Set([
-  'type','format','title','description','nullable','enum','items',
-  'properties','required','minItems','maxItems','minProperties',
-  'maxProperties','minLength','maxLength','pattern','minimum','maximum'
+  'type','nullable','required','format','description','properties',
+  'items','enum','anyOf','$ref','$defs'
 ]);
 
 function sanitizeGeminiSchema(value, fallbackType = 'string') {
