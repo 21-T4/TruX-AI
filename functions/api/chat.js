@@ -1887,6 +1887,7 @@ export async function onRequestPost(context) {
       let lastToolSignature = '';
       let repeatedToolSignatureCount = 0;
       let lastNoToolCodingText = '';
+      let noToolCodingRounds = 0;
 
       /* A coding request that asks for a repository change must not terminate
          on an intermediate text-only turn such as "the repo is imported, now
@@ -2155,6 +2156,7 @@ export async function onRequestPost(context) {
               }
 
               responseParts.push({
+                functionResponse: {
                   ...((call?.id ?? call?.call_id) ? { id: String(call.id ?? call.call_id) } : {}),
                   name: call.name,
                   response: { output: callResult }
@@ -2197,7 +2199,13 @@ export async function onRequestPost(context) {
           const progressLine = extractUserProgress(roundText);
           if (progressLine) send({ type: 'status', status: progressLine });
 
-          if (roundText && roundText === lastNoToolCodingText) {
+          noToolCodingRounds += 1;
+
+          /* A tool-less coding round is allowed one explicit recovery turn,
+             but never an unbounded "thinking" loop. Large edits are still
+             unrestricted; this only protects against the model repeatedly
+             emitting prose instead of using its GitHub tools. */
+          if ((roundText && roundText === lastNoToolCodingText) || noToolCodingRounds >= 2) {
             finalResult = result;
             break;
           }
