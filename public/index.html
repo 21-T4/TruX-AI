@@ -3977,6 +3977,45 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
   
 </head>
 <body class="home-active">
+<style id="trux-boot-safety">
+  /* Keep the real app shell recoverable even when a third-party script or
+     startup handler fails. This is a safety net, not a normal display state. */
+  body.trux-boot-recovered .shell,
+  body.trux-boot-recovered .main,
+  body.trux-boot-recovered .topbar,
+  body.trux-boot-recovered .composer{display:flex!important;visibility:visible!important;opacity:1!important}
+  body.trux-boot-recovered .welcome{display:flex!important;visibility:visible!important;opacity:1!important}
+</style>
+<script>
+  /* Startup safety: one failed optional dependency must never leave a black
+     shell. The normal boot remains unchanged; this only runs before boot
+     finishes and forces the base Chat surface back into view. */
+  window.__truxBootFinished = false;
+  window.__truxRecoverBoot = function(reason){
+    try {
+      console.error("TruX startup recovery:", reason);
+      var b=document.body;
+      if(!b) return;
+      b.classList.add("trux-boot-recovered","home-active");
+      b.classList.remove("chat-session-active","coding-workspace","plugins-page-active");
+      b.removeAttribute("data-media-mode");
+      var welcome=document.getElementById("welcomeScreen");
+      if(welcome) welcome.style.display="flex";
+      var chat=document.getElementById("chatContainer");
+      var code=document.getElementById("codeChatContainer");
+      if(chat) chat.style.display="none";
+      if(code) code.style.display="none";
+    } catch(e) {
+      console.error("TruX startup recovery failed:",e);
+    }
+  };
+  window.addEventListener("error",function(e){
+    if(!window.__truxBootFinished) window.__truxRecoverBoot(e.error || e.message || "startup error");
+  });
+  window.addEventListener("unhandledrejection",function(e){
+    if(!window.__truxBootFinished) window.__truxRecoverBoot(e.reason || "startup promise rejected");
+  });
+</script>
   <div class="bg" id="bg"><div class="bg-orb"></div></div>
   <div class="colorful-bg"></div>
 
@@ -4122,7 +4161,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           <p>Create images directly from the chat bar.</p>
           <div class="media-gen-actions">
             <button type="button" class="media-gen-secondary" onclick="openMediaLibrary('image')">Open image library</button>
-            <button type="button" class="media-gen-primary" onclick="quickPrompt('Let’s create an image of ')")>Start creating</button>
+            <button type="button" class="media-gen-primary" onclick="quickPrompt('Let’s create an image of ')">Start creating</button>
           </div>
         </div>
       </section>
@@ -4135,7 +4174,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           <p>Create videos directly from the chat bar.</p>
           <div class="media-gen-actions">
             <button type="button" class="media-gen-secondary" onclick="openMediaLibrary('video')">Open video library</button>
-            <button type="button" class="media-gen-primary" onclick="quickPrompt('Let’s make a video of ')")>Start creating</button>
+            <button type="button" class="media-gen-primary" onclick="quickPrompt('Let’s make a video of ')">Start creating</button>
           </div>
         </div>
       </section>
@@ -8592,8 +8631,23 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       const validModes = new Set(["chat","coding","deep-research","image","video"]);
       if(pending && validModes.has(String(pending.mode))) startupWorkspaceMode = String(pending.mode);
     } catch(e) {}
-    currentChatId = null;
-    document.body.classList.remove("chat-session-active"); document.body.classList.add("home-active"); loadSettings(); renderNotebooks(); renderSidebar(); updateAllUsageUI(); handleInputChange(); setWorkspaceMode(startupWorkspaceMode, {reload:false});
+    try {
+      currentChatId = null;
+      document.body.classList.remove("chat-session-active","coding-workspace","plugins-page-active");
+      document.body.removeAttribute("data-media-mode");
+      document.body.classList.add("home-active");
+      loadSettings();
+      renderNotebooks();
+      renderSidebar();
+      updateAllUsageUI();
+      handleInputChange();
+      setWorkspaceMode(startupWorkspaceMode, {reload:false});
+    } catch (startupError) {
+      window.__truxRecoverBoot(startupError);
+    } finally {
+      window.__truxBootFinished = true;
+      document.body?.classList.remove("trux-boot-recovered");
+    }
   </script>
 
 
