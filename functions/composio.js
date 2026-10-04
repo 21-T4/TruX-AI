@@ -195,6 +195,43 @@ export function connectedToolkitSet(accounts) {
     : new Set();
 }
 
+function getConnectedAccountId(account) {
+  return String(
+    account?.id ||
+    account?.nanoid ||
+    account?.nano_id ||
+    account?.connected_account_id ||
+    ''
+  ).trim();
+}
+
+function isLikelyAuthFailure(error) {
+  const status = Number(error?.status) || 0;
+  if (status === 401 || status === 403) return true;
+  const text = String(
+    error?.message ||
+    error?.composio?.error?.message ||
+    error?.composio?.message ||
+    error?.composio?.error ||
+    ''
+  ).toLowerCase();
+  return /unauthori[sz]ed|forbidden|permission|scope|oauth|authentication|credential|token|invalid.?grant|reauthor|not connected|expired/.test(text);
+}
+
+async function createReconnectUrl(env, userId, toolkitSlug, callbackUrl) {
+  if (!callbackUrl) return null;
+  const plugin = PLUGIN_CATALOG.find(item =>
+    Array.isArray(item?.slugs) && item.slugs.includes(String(toolkitSlug))
+  );
+  if (!plugin) return null;
+  try {
+    const link = await createPluginAuthLink(env, userId, String(toolkitSlug), callbackUrl);
+    return link?.redirect_url || link?.redirectUrl || null;
+  } catch {
+    return null;
+  }
+}
+
 export function pluginDetailForResolved(resolved, connectedAccounts, enabledIds) {
   const connectedSlugs = new Set(
     (Array.isArray(connectedAccounts) ? connectedAccounts : [])
@@ -212,7 +249,9 @@ export function pluginDetailForResolved(resolved, connectedAccounts, enabledIds)
       : null)
     : null;
   const connected = !!actualSlug && !!matchingAccount;
-  const enabled = enabledIds.includes(plugin.id);
+  // Connected apps are immediately available to the agent. The explicit-user
+  // request gate in chat.js is what prevents unsolicited plugin calls.
+  const enabled = connected;
   return {
     id: plugin.id,
     name: plugin.name,
@@ -324,7 +363,7 @@ export async function getComposioGeminiTools(env, enabledToolkitSlugs, queryText
   const slugs = [...new Set((enabledToolkitSlugs || []).filter(Boolean).map(String))];
   if (!slugs.length) return { declarations: [], metadata: new Map() };
 
-  const params = new URLSearchParams({
+  const baseParams = new URLSearchParams({
     toolkit_slug: slugs.join(','),
     toolkit_versions: 'latest',
     include_deprecated: 'false',
@@ -332,20 +371,22 @@ export async function getComposioGeminiTools(env, enabledToolkitSlugs, queryText
   });
 
   const query = String(queryText || '').replace(/\s+/g, ' ').trim().slice(0, 600);
+  const params = new URLSearchParams(baseParams);
   if (query) params.set('query', query);
 
-  let payload;
+  let payload = null;
   try {
     payload = await composioRequest(env, '/tools?' + params.toString());
+
+    // Composio's query filter is a search filter, not a guarantee that the
+    // toolkit's tools will be returned. A valid zero-result search must fall
+    // back to the toolkit catalogue so the model can still select the action.
+    if (query && (!Array.isArray(payload?.items) || payload.items.length === 0)) {
+      payload = await composioRequest(env, '/tools?' + baseParams.toString());
+    }
   } catch (error) {
     if (!query) throw error;
-    const fallback = new URLSearchParams({
-      toolkit_slug: slugs.join(','),
-      toolkit_versions: 'latest',
-      include_deprecated: 'false',
-      limit: '100'
-    });
-    payload = await composioRequest(env, '/tools?' + fallback.toString());
+    payload = await composioRequest(env, '/tools?' + baseParams.toString());
   }
 
   const items = Array.isArray(payload?.items) ? payload.items : [];
@@ -377,25 +418,64 @@ export async function getComposioGeminiTools(env, enabledToolkitSlugs, queryText
   return { declarations, metadata };
 }
 
-export async function executeComposioTool(env, userId, toolSlug, args, metadata = null) {
+export async function executeComposioTool(env, userId, toolSlug, args, metadata = null, callbackUrl = '') {
+  const toolkitSlug = String(metadata?.toolkitSlug || '').trim();
+  const accounts = toolkitSlug
+    ? await listConnectedAccounts(env, userId)
+    : [];
+  const account = accounts.find(item =>
+    String(item?.toolkit?.slug || item?.toolkit_slug || '').trim() === toolkitSlug
+  );
+  const connectedAccountId = getConnectedAccountId(account);
+
+  if (!connectedAccountId) {
+    const reconnectUrl = await createReconnectUrl(env, userId, toolkitSlug, callbackUrl);
+    return {
+      success: false,
+      authRequired: true,
+      tool: toolSlug,
+      toolkit: toolkitSlug || null,
+      error: 'This app is not currently authorized. Reconnect it to grant TruX access.',
+      reconnectUrl
+    };
+  }
+
   const body = {
+    connected_account_id: connectedAccountId,
     user_id: userId,
     arguments: args && typeof args === 'object' ? args : {},
     version: 'latest'
   };
 
-  const result = await composioRequest(
-    env,
-    '/tools/execute/' + encodeURIComponent(toolSlug),
-    { method: 'POST', body: JSON.stringify(body) }
-  );
+  try {
+    const result = await composioRequest(
+      env,
+      '/tools/execute/' + encodeURIComponent(toolSlug),
+      { method: 'POST', body: JSON.stringify(body) }
+    );
 
-  return {
-    success: result?.successful !== false && result?.success !== false,
-    tool: toolSlug,
-    toolkit: metadata?.toolkitSlug || null,
-    result
-  };
+    return {
+      success: result?.successful !== false && result?.success !== false,
+      tool: toolSlug,
+      toolkit: toolkitSlug || null,
+      connectedAccountId,
+      result
+    };
+  } catch (error) {
+    if (isLikelyAuthFailure(error)) {
+      const reconnectUrl = await createReconnectUrl(env, userId, toolkitSlug, callbackUrl);
+      return {
+        success: false,
+        authRequired: true,
+        tool: toolSlug,
+        toolkit: toolkitSlug || null,
+        connectedAccountId,
+        error: String(error?.message || 'The connected account needs authorization again.'),
+        reconnectUrl
+      };
+    }
+    throw error;
+  }
 }
 
 export async function getEnabledPluginIds(env, userId) {
