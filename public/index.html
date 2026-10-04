@@ -3882,169 +3882,100 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 </style>
   <style id="trux-code-workspace-v2">
     .trux-code-shell{
-      width:100%;
-      position:relative;
-      border-top:1px solid var(--line);
-      border-bottom:1px solid var(--line);
-      background:
-        radial-gradient(ellipse 55% 90% at 50% -30%, rgba(109,131,255,.06), transparent 70%),
-        linear-gradient(180deg,rgba(255,255,255,.012),transparent 46%);
-    }
-    .trux-code-shell::before{
-      content:"";
-      position:absolute; inset:0; pointer-events:none;
-      opacity:.18;
-      background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
-      background-size:44px 44px;
-      mask-image:linear-gradient(180deg,#000,transparent 86%);
-      -webkit-mask-image:linear-gradient(180deg,#000,transparent 86%);
-    }
-    .trux-code-header,.trux-code-workspace-bar,.trux-code-integrations,.trux-code-empty{
-      position:relative; z-index:1;
+      position:relative;width:100%;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+      background:#0a0a0b;box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
     }
     .trux-code-header{
-      min-height:78px;
-      display:flex; align-items:center; justify-content:space-between; gap:18px;
-      padding:14px 2px 13px;
+      min-height:72px;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:12px 2px;
     }
     .trux-code-identity{display:flex;align-items:center;gap:12px;min-width:0}
     .trux-code-mark{
-      width:38px;height:38px;display:grid;place-items:center;flex:0 0 auto;
-      border:1px solid var(--line-2);border-radius:11px;
-      background:rgba(255,255,255,.025);color:var(--txt-2);
-      font:700 12px/1 var(--font-mono);
-      box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 12px 28px rgba(0,0,0,.26);
+      width:40px;height:40px;display:grid;place-items:center;flex:none;border:1px solid rgba(255,255,255,.11);
+      border-radius:10px;background:#101012;color:#b7b7bd;font:700 12px/1 var(--font-mono);
+      box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 12px 28px rgba(0,0,0,.32);
     }
-    .trux-code-title-row{display:flex;align-items:center;gap:9px;min-width:0}
-    .trux-code-title-row h1{
-      margin:0;color:var(--txt);font:750 clamp(19px,2.4vw,26px)/1 var(--font-disp);
-      letter-spacing:-.045em;
-    }
+    .trux-code-title-row{display:flex;align-items:center;gap:8px}
+    .trux-code-title-row h1{margin:0;color:#f2f2f4;font:750 23px/1 var(--font-disp);letter-spacing:-.04em}
     .trux-code-badge{
-      display:inline-flex;align-items:center;height:22px;padding:0 8px;
-      border:1px solid rgba(132,151,255,.3);border-radius:7px;
-      background:rgba(109,131,255,.08);color:#aebaff;
-      font:650 9px/1 var(--font-mono);letter-spacing:.1em;
+      display:inline-flex;align-items:center;height:21px;padding:0 8px;border-radius:7px;
+      border:1px solid rgba(132,151,255,.3);background:rgba(109,131,255,.07);color:#abb5dc;
+      font:650 8px/1 var(--font-mono);letter-spacing:.12em
     }
-    .trux-code-identity p{margin:5px 0 0;color:var(--txt-4);font-size:11px;line-height:1.35}
+    .trux-code-identity p{margin:4px 0 0;color:#71717a;font-size:11px;line-height:1.3}
     .trux-code-state{
-      display:inline-flex;align-items:center;gap:7px;flex:none;height:30px;padding:0 10px;
-      border:1px solid var(--line);border-radius:9px;background:rgba(255,255,255,.015);
-      color:var(--txt-4);font:600 9px/1 var(--font-mono);letter-spacing:.1em;
+      display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 10px;border:1px solid rgba(255,255,255,.08);
+      border-radius:8px;background:#101012;color:#77777f;font:650 8px/1 var(--font-mono);letter-spacing:.1em
     }
-    .trux-code-state-dot,.trux-code-integrations-dot{
-      width:6px;height:6px;border-radius:50%;background:#7ce3a0;
-      box-shadow:0 0 10px rgba(124,227,160,.56);
+    .trux-code-state-dot{width:5px;height:5px;border-radius:50%;background:#7ae1a0;box-shadow:0 0 8px rgba(122,225,160,.45)}
+    .trux-code-tabs{
+      height:36px;display:flex;align-items:center;gap:18px;border-top:1px solid rgba(255,255,255,.06);
+      border-bottom:1px solid rgba(255,255,255,.06);color:#5f6067;font:600 9px/1 var(--font-mono);
+      letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;overflow:auto
     }
-    .trux-code-workspace-bar{
-      min-height:36px;display:flex;align-items:center;justify-content:space-between;gap:16px;
-      border-top:1px solid var(--line);border-bottom:1px solid var(--line);
-      color:var(--txt-4);font:550 9px/1 var(--font-mono);letter-spacing:.09em;text-transform:uppercase;
-      overflow:auto;white-space:nowrap;
+    .trux-code-tabs>span:not(.trux-code-tab-spacer){height:100%;display:inline-flex;align-items:center;position:relative}
+    .trux-code-tabs>span.active{color:#a7a9b0}
+    .trux-code-tabs>span.active::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:#aebaff}
+    .trux-code-tab-spacer{flex:1}
+    .trux-code-shortcut{color:#46474d}
+    .trux-code-stage{
+      position:relative;min-height:335px;display:flex;flex-direction:column;justify-content:space-between;
+      overflow:hidden;background:linear-gradient(180deg,#0c0c0e,#09090a)
     }
-    .trux-code-workspace-path,.trux-code-capabilities{display:flex;align-items:center;gap:8px}
-    .trux-code-workspace-path b{color:var(--txt-2);font-weight:650}
-    .trux-code-path-dim{color:var(--txt-4)}
-    .trux-code-path-sep{color:var(--txt-4);opacity:.55}
-    .trux-code-capabilities{color:var(--txt-4)}
-    .trux-code-capabilities i{width:3px;height:3px;border-radius:50%;background:var(--txt-4);opacity:.65}
-    .trux-code-integrations{
-      min-height:48px;display:flex;align-items:center;gap:12px;
-      border-bottom:1px solid var(--line);
-      overflow:hidden;
+    .trux-code-grid-overlay{
+      position:absolute;inset:0;pointer-events:none;opacity:.22;
+      background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+      background-size:36px 36px;mask-image:radial-gradient(ellipse 70% 70% at 50% 45%,#000,transparent 100%);
+      -webkit-mask-image:radial-gradient(ellipse 70% 70% at 50% 45%,#000,transparent 100%)
     }
-    .trux-code-integrations-label{
-      display:flex;align-items:center;gap:7px;flex:none;
-      color:var(--txt-3);font:600 10px/1 var(--font-mono);letter-spacing:.07em;text-transform:uppercase;
+    .trux-code-stage-center{
+      position:relative;z-index:1;width:min(680px,100%);margin:auto;padding:42px 18px 28px;text-align:center
     }
-    .trux-code-integration-items{display:flex;align-items:center;gap:7px;min-width:0;overflow:auto;scrollbar-width:none}
-    .trux-code-integration-items::-webkit-scrollbar{display:none}
-    .trux-code-integration-app{
-      display:inline-flex;align-items:center;gap:6px;height:29px;padding:0 8px;
-      flex:none;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.015);
-      color:var(--txt-3);font-size:10px;font-weight:600;white-space:nowrap;
+    .trux-code-center-mark{
+      width:44px;height:44px;display:grid;place-items:center;margin:0 auto 15px;border:1px solid rgba(255,255,255,.1);
+      border-radius:12px;background:#111114;color:#989aa2;font:700 13px/1 var(--font-mono);
+      box-shadow:0 18px 44px rgba(0,0,0,.3)
     }
-    .trux-code-integration-app img{width:15px;height:15px;object-fit:contain;display:block}
-    .trux-code-mini-initials{
-      width:15px;height:15px;display:grid;place-items:center;border-radius:4px;
-      background:var(--acc-soft);color:var(--txt);font:700 6px/1 var(--font-mono);
+    .trux-code-center-kicker{color:#585960;font:650 9px/1 var(--font-mono);letter-spacing:.17em}
+    .trux-code-stage-center h2{margin:9px 0 7px;color:#e8e8eb;font:700 clamp(31px,5vw,48px)/.98 var(--font-disp);letter-spacing:-.065em}
+    .trux-code-stage-center p{max-width:600px;margin:0 auto;color:#777981;font-size:12px;line-height:1.65}
+    .trux-code-center-meta{display:flex;justify-content:center;flex-wrap:wrap;gap:15px;margin-top:18px;color:#55565d;font:550 9px/1 var(--font-mono)}
+    .trux-code-center-meta span{display:inline-flex;align-items:center;gap:6px}
+    .trux-code-center-meta i{width:4px;height:4px;border-radius:50%;background:#595a61}
+    .trux-code-stage-bottom{
+      position:relative;z-index:1;height:33px;display:flex;align-items:center;justify-content:space-between;
+      padding:0 4px;border-top:1px solid rgba(255,255,255,.055);color:#4b4c53;font:600 8px/1 var(--font-mono);letter-spacing:.12em
     }
-    .trux-code-integrations-empty{
-      color:var(--txt-4);font:500 10px/1 var(--font-mono);white-space:nowrap;
-    }
-    .trux-code-integration-add{
-      width:29px;height:29px;display:grid;place-items:center;flex:0 0 auto;margin-left:auto;
-      border:1px solid var(--line-2);border-radius:8px;background:rgba(255,255,255,.02);
-      color:var(--txt-3);
-      transition:background .18s var(--ease),border-color .18s var(--ease),color .18s var(--ease),transform .16s var(--ease);
-    }
-    .trux-code-integration-add:hover{
-      background:var(--acc-soft);border-color:var(--acc-line);color:var(--txt);transform:translateY(-1px);
-    }
-    .trux-code-integration-add:active{transform:scale(.95)}
-    .trux-code-integration-add svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
-    .trux-code-empty{
-      min-height:210px;display:flex;flex-direction:column;justify-content:center;
-      padding:34px 8px 38px;
-    }
-    .trux-code-empty-eyebrow{
-      color:var(--txt-4);font:650 9px/1 var(--font-mono);letter-spacing:.18em;
-    }
-    .trux-code-empty h2{
-      max-width:720px;margin:10px 0 8px;
-      color:var(--txt);font:700 clamp(27px,4.3vw,46px)/.98 var(--font-disp);
-      letter-spacing:-.065em;
-    }
-    .trux-code-empty p{
-      max-width:720px;margin:0;color:var(--txt-3);font-size:13px;line-height:1.6;
-    }
-    .trux-code-empty-meta{
-      display:flex;flex-wrap:wrap;gap:14px;margin-top:18px;
-      color:var(--txt-4);font:550 9px/1 var(--font-mono);letter-spacing:.05em;
-    }
-    .trux-code-empty-meta span{display:inline-flex;align-items:center;gap:6px}
-    .trux-code-empty-meta i{width:4px;height:4px;border-radius:50%;background:var(--txt-4)}
-    .coding-workspace #codeChatContainer{
-      position:relative;z-index:2;
-      border-top:0;
-      padding:8px 24px 16px;
-    }
-    .coding-workspace #codeChatContainer:empty{min-height:0;padding-top:0}
+    .trux-code-stage-bottom .status{display:inline-flex;align-items:center;gap:6px;color:#61626a;text-transform:uppercase}
+    .trux-code-stage-bottom .status i{width:4px;height:4px;border-radius:50%;background:#67686f}
     .coding-workspace.chat-session-active .trux-code-workspace{display:none!important}
+    .coding-workspace #codeChatContainer{max-width:900px;padding-top:12px}
     .coding-workspace .composer{
-      background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.84) 34%),var(--bg)!important;
-      border-top:0!important;
-    }
-    .coding-workspace #codeChatContainer{
-      max-width:900px;
-      padding-top:14px;
+      background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.86) 34%),var(--bg)!important;
+      border-top:0!important
     }
     .coding-worked-for{
-      display:block!important;
-      padding:0 0 5px 2px!important;
-      margin:0!important;
-      color:var(--txt-3)!important;
-      font:600 10px/1.3 var(--font-mono)!important;
-      letter-spacing:.08em!important;
-      text-transform:uppercase;
+      display:block!important;padding:0 0 6px 2px!important;margin:0!important;color:#777981!important;
+      font:600 10px/1.3 var(--font-mono)!important;letter-spacing:.08em!important;text-transform:uppercase
     }
     @media(max-width:700px){
-      .trux-code-header{min-height:70px;padding:12px 0}
+      .trux-code-header{min-height:66px;padding:10px 0}
       .trux-code-mark{width:34px;height:34px}
-      .trux-code-identity p{font-size:10px}
-      .trux-code-state{height:27px;padding:0 8px;font-size:8px}
-      .trux-code-workspace-bar{gap:14px}
-      .trux-code-capabilities{display:none}
-      .trux-code-integrations{gap:9px}
-      .trux-code-integrations-label{font-size:9px}
-      .trux-code-empty{min-height:175px;padding:28px 3px 32px}
-      .trux-code-empty h2{font-size:35px}
-      .trux-code-empty p{font-size:12px}
+      .trux-code-title-row h1{font-size:19px}
+      .trux-code-badge{height:19px;font-size:7px}
+      .trux-code-identity p{font-size:9px}
+      .trux-code-state{height:25px;padding:0 8px}
+      .trux-code-shortcut{display:none!important}
+      .trux-code-tabs{gap:14px}
+      .trux-code-stage{min-height:300px}
+      .trux-code-stage-center{padding:34px 15px 22px}
+      .trux-code-stage-center h2{font-size:36px}
+      .trux-code-stage-center p{font-size:11px}
       .coding-workspace #codeChatContainer{padding-left:13px;padding-right:13px}
     }
-    [data-theme="light"] .trux-code-shell::before{opacity:.08}
-    [data-theme="light"] .trux-code-state{background:rgba(0,0,0,.015)}
-  </style>
+    [data-theme="light"] .trux-code-shell{background:#fbfbfc}
+    [data-theme="light"] .trux-code-stage{background:linear-gradient(180deg,#fafafa,#f6f6f7)}
+    [data-theme="light"] .trux-code-mark,[data-theme="light"] .trux-code-state,[data-theme="light"] .trux-code-center-mark{background:#fff;color:#61636b;border-color:rgba(0,0,0,.1)}
+  
 </head>
 <body class="home-active">
   <div class="bg" id="bg"><div class="bg-orb"></div></div>
@@ -4220,45 +4151,40 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
                   <h1>TruX-Code</h1>
                   <span class="trux-code-badge">WORKSPACE</span>
                 </div>
-                <p>Engineering workspace · focused reasoning · direct implementation</p>
+                <p>Focused engineering workspace · context on demand · reviewable changes</p>
               </div>
             </div>
             <div class="trux-code-state"><span class="trux-code-state-dot"></span><span>READY</span></div>
           </header>
 
-          <div class="trux-code-workspace-line">
-            <span class="trux-code-line-active"></span>
-            <span>WORKSPACE</span><i></i><span>CODE</span>
-            <span class="trux-code-line-spacer"></span>
-            <span>READY FOR TASK</span>
+          <div class="trux-code-tabs">
+            <span class="active">Workspace</span>
+            <span>Task</span>
+            <span>Context</span>
+            <span>Changes</span>
+            <span class="trux-code-tab-spacer"></span>
+            <span class="trux-code-shortcut">⌘ / Ctrl + Enter to run</span>
           </div>
 
           <div class="trux-code-stage">
-            <aside class="trux-code-rail" aria-label="TruX-Code workflow">
-              <div class="trux-code-rail-head">WORKFLOW</div>
-              <div class="trux-code-rail-item active"><span>01</span><b>Request</b><small>Describe the work</small></div>
-              <div class="trux-code-rail-item"><span>02</span><b>Context</b><small>Used only when requested</small></div>
-              <div class="trux-code-rail-item"><span>03</span><b>Build</b><small>Implement and review</small></div>
-            </aside>
+            <div class="trux-code-grid-overlay" aria-hidden="true"></div>
 
-            <main class="trux-code-stage-main">
-              <div class="trux-code-stage-top">
-                <span class="trux-code-stage-kicker">TRUX-CODE ENGINE</span>
-                <span class="trux-code-stage-hint">No repository loaded</span>
-              </div>
-              <div class="trux-code-command">
-                <div class="trux-code-command-mark">&gt;_</div>
-                <div>
-                  <h2>Ready for your task.</h2>
-                  <p>Ask for code, debugging, refactoring, or a repository operation. TruX-Code will not inspect a repository or call integrations unless you explicitly ask it to.</p>
-                </div>
-              </div>
-              <div class="trux-code-surface-footer">
-                <span><i></i> Focused</span>
+            <div class="trux-code-stage-center">
+              <div class="trux-code-center-mark">&lt;/&gt;</div>
+              <div class="trux-code-center-kicker">TRUX-CODE ENGINE</div>
+              <h2>Ready when you are.</h2>
+              <p>Describe a coding task, debugging problem, refactor, or explicit repository change. TruX-Code keeps external context dormant until the task actually calls for it.</p>
+              <div class="trux-code-center-meta">
+                <span><i></i> Deep coding reasoning</span>
                 <span><i></i> Context on demand</span>
-                <span><i></i> Reviewable changes</span>
+                <span><i></i> Review-first changes</span>
               </div>
-            </main>
+            </div>
+
+            <div class="trux-code-stage-bottom">
+              <span>WORKSPACE STATUS</span>
+              <span class="status"><i></i> Idle</span>
+            </div>
           </div>
         </div>
       </section>
@@ -8643,7 +8569,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     document.body.classList.remove("chat-session-active"); document.body.classList.add("home-active"); loadSettings(); renderNotebooks(); renderSidebar(); updateAllUsageUI(); handleInputChange(); setWorkspaceMode(startupWorkspaceMode, {reload:false});
   </script>
 
-<script src="/trux-plugins.js?v=20261004" defer></script>
+<script src="/trux-plugins.js?v=20261004b" defer></script>
 </body>
 </html>
 
