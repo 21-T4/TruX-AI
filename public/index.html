@@ -4186,10 +4186,10 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         <div class="trux-code-mark" aria-hidden="true">&lt;/&gt;</div>
         <div class="trux-code-heading">
           <div class="trux-code-title-row">
-            <h1>TruX-Code</h1>
+            <h1>TruX Code</h1>
             <span class="trux-code-badge">WORKSPACE</span>
           </div>
-          <p>Engineering workspace · deep reasoning on demand · external context stays dormant</p>
+          <p>A focused coding space where the work stays visible while TruX traces, changes, and verifies it.</p>
         </div>
       </div>
       <div class="trux-code-state" id="truxCodeReadyState">
@@ -4228,14 +4228,14 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     <div class="trux-code-stage">
       <div class="trux-code-grid-overlay" aria-hidden="true"></div>
       <div class="trux-code-stage-center">
-        <div class="trux-code-center-mark">&lt;/&gt;</div>
-        <div class="trux-code-center-kicker">TRUX-CODE ENGINE</div>
-        <h2>Build with intent.</h2>
-        <p>Describe the implementation, bug, refactor, or repository task. TruX-Code only reaches into GitHub or connected integrations when your request explicitly calls for it.</p>
+        <div class="trux-code-center-mark" aria-hidden="true"><img src="icon-192.png" alt=""></div>
+        <div class="trux-code-center-kicker">READY TO BUILD</div>
+        <h2>Build with context.</h2>
+        <p id="truxCodePulseText">Ready to shape the next change.</p>
         <div class="trux-code-center-meta">
-          <span><i></i> Deep coding reasoning</span>
-          <span><i></i> Context on demand</span>
-          <span><i></i> Review-first changes</span>
+          <span><i></i> Deep reasoning</span>
+          <span><i></i> Live tool activity</span>
+          <span><i></i> Verified changes</span>
         </div>
       </div>
       <div class="trux-code-stage-bottom">
@@ -4320,7 +4320,14 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         </button>
       </div>
         </div>
-      </section>
+             <div class="home-mode-rail" aria-label="Start a workspace">
+         <button type="button" class="home-mode-item active" onclick="setWorkspaceMode('chat')"><span class="home-mode-icon">✦</span><span><b>Chat</b><small>Think, ask, explore</small></span></button>
+         <button type="button" class="home-mode-item" onclick="setWorkspaceMode('coding')"><span class="home-mode-icon">&lt;/&gt;</span><span><b>Code</b><small>Build and debug</small></span></button>
+         <button type="button" class="home-mode-item" onclick="setWorkspaceMode('deep-research')"><span class="home-mode-icon">◌</span><span><b>Research</b><small>Search and synthesize</small></span></button>
+         <button type="button" class="home-mode-item" onclick="setWorkspaceMode('image')"><span class="home-mode-icon">◈</span><span><b>Create</b><small>Turn ideas into visuals</small></span></button>
+       </div>
+
+</section>
 
       <div class="chat" id="chatContainer"></div>
       <div class="chat" id="codeChatContainer"></div>
@@ -6481,7 +6488,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         r.innerHTML = `<div class="label">You</div><div class="bubble user-bubble">${escapeHtml(textContent).replace(/\n/g, "<br>")}</div>`;
         if (messageMeta?.stopped) attachStoppedUserActions(r, Number(messageMeta.messageIndex), textContent);
       } else {
-        r.innerHTML = `<div class="label">${label === "ChatTruX-AI" ? BRAND_LABEL : escapeHtml(label)}</div><div class="bubble ${bc}"></div><div class="actions"></div>`;
+        r.innerHTML = `<div class="bubble ${bc}"></div><div class="actions"></div>`;
         let bubble = r.querySelector(".bubble");
         let actions = r.querySelector(".actions");
 
@@ -6999,62 +7006,63 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     }
 
     function stopToolStatusTyping() {}
-    function appendToolStatusLine(toolId, tool, detail, phase = "complete") {
-      if (workspaceMode !== "coding") return;
+    function appendToolStatusLine(toolId, tool, detail, phase = "complete", details = null) {
       const wrap = getEl(toolId);
       if (!wrap) return;
-
-      const toolName = String(tool || "TruX-Code");
+      const toolName = String(tool || "External tool");
       const text = String(detail || toolName || "Tool step");
+      const callId = String(details?.id || "");
+      const signature = callId || (toolName + "||" + JSON.stringify(details?.args || {}));
 
-      if (phase === "start") {
-        /* GitHub tool rows sit ABOVE the thinking bubble. Only a newly added
-           tool row may move the code transcript, and only when already at the
-           bottom. Normal Chat never reaches this function. */
-        const container = getActiveChatContainer();
-        const addingNewToolLine = !wrap.querySelector(".thinking-tool-line.active");
-        const shouldFollow = !!container && addingNewToolLine && isNearBottom(container, 140);
-
-        let line = wrap.querySelector(".thinking-tool-line.active");
-        if (!line) {
-          line = document.createElement("div");
-          line.className = "thinking-tool-line active";
-          wrap.appendChild(line);
+      let item = Array.from(wrap.querySelectorAll(".thinking-tool-item")).find(el => el.dataset.signature === signature);
+      if (!item && phase === "start") {
+        item = document.createElement("div");
+        item.className = "thinking-tool-item active";
+        item.dataset.signature = signature;
+        wrap.appendChild(item);
+      }
+      if (!item) {
+        item = wrap.querySelector(".thinking-tool-item.active:last-child") || wrap.lastElementChild;
+        if (!item) {
+          item = document.createElement("div");
+          item.className = "thinking-tool-item";
+          item.dataset.signature = signature;
+          wrap.appendChild(item);
         }
-
-        line.textContent = text;
-        wrap.dataset.activeTool = toolName;
-        wrap.dataset.activeDetail = text;
-        wrap.hidden = false;
-        wrap.style.display = "flex";
-
-        if (shouldFollow) {
-          requestAnimationFrame(() => {
-            if (workspaceMode === "coding" && container === getActiveChatContainer()) {
-              container.scrollTop = container.scrollHeight;
-            }
-          });
-        }
-        return;
       }
 
-      const active = wrap.querySelector(".thinking-tool-line.active");
-      if (active) {
-        active.classList.remove("active");
-        active.classList.add("completed");
-        active.textContent = text || String(wrap.dataset.activeDetail || toolName);
-      } else {
-        const line = document.createElement("div");
-        line.className = "thinking-tool-line completed";
-        line.textContent = text;
-        wrap.appendChild(line);
+      item.classList.toggle("active", phase === "start");
+      item.classList.toggle("completed", phase !== "start");
+      item.classList.toggle("failed", details?.ok === false || /failed|error|authorization required/i.test(text));
+
+      let head = item.querySelector(".thinking-tool-head");
+      if (!head) { head = document.createElement("div"); head.className = "thinking-tool-head"; item.appendChild(head); }
+      head.textContent = text;
+
+      let meta = item.querySelector(".thinking-tool-meta");
+      if (!meta) { meta = document.createElement("div"); meta.className = "thinking-tool-meta"; item.appendChild(meta); }
+      const args = details?.args && typeof details.args === "object" && Object.keys(details.args).length ? JSON.stringify(details.args) : "";
+      meta.textContent = args ? args.slice(0, 260) + (args.length > 260 ? "…" : "") : "";
+
+      if (phase !== "start") {
+        let result = item.querySelector(".thinking-tool-result");
+        if (!result) { result = document.createElement("div"); result.className = "thinking-tool-result"; item.appendChild(result); }
+        const resultText = String(details?.result || "").trim();
+        result.textContent = resultText ? "Result · " + resultText.slice(0, 420) + (resultText.length > 420 ? "…" : "") : (details?.ok === false ? "Tool failed" : "Completed");
       }
 
-      wrap.dataset.activeTool = "";
-      wrap.dataset.activeDetail = "";
       wrap.hidden = false;
       wrap.style.display = "flex";
+      wrap.closest(".trux-thinking-panel")?.classList.add("has-tools");
+
+      const container = getActiveChatContainer();
+      if (phase === "start" && container && isNearBottom(container, 140)) {
+        requestAnimationFrame(() => {
+          if (container === getActiveChatContainer()) container.scrollTop = container.scrollHeight;
+        });
+      }
     }
+
     function hideToolStatus(toolId) {
       stopToolStatusTyping();
       const wrap = getEl(toolId);
@@ -7106,22 +7114,21 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       const row = document.createElement("div");
       row.className = "row trux-row appear";
       row.dataset.backgroundJobId = jobId;
-      row.innerHTML =
-        '<div class="label">' + BRAND_LABEL + '</div>' +
-        '<div class="trux-response-stack">' +
-          '<div class="thinking-tool-trace" id="' + tsid + '" hidden></div>' +
-          '<div class="bubble trux-bubble thinking" id="' + id + '">' +
-            '<div class="thinking-container">' +
-              '<span class="thinking-elapsed" id="elapsed_' + id + '">00:00</span>' +
-              '<div class="thinking-main"><span class="thinking-particles" aria-hidden="true">' +
-                '<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>' +
-              '</span><span class="status-msg" id="' + sid + '" role="status" aria-live="polite">' +
-                '<span class="thinking-status-line latest">Continuing in background…</span>' +
-              '</span></div>' +
-            '</div>' +
-          '</div>' +
-          '<div class="actions"></div>' +
-        '</div>';
+       const thid = "bg_th_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+       row.innerHTML =
+         '<div class="trux-response-stack">' +
+           '<div class="trux-thinking-panel" id="' + thid + '">' +
+             '<button type="button" class="trux-thinking-bar" onclick="toggleThinkingDetails(\'' + thid + '\')" aria-expanded="false" aria-controls="' + tsid + '">' +
+               '<span class="trux-thinking-orbit" aria-hidden="true"><img src="icon-192.png" alt=""><i></i><i></i><i></i></span>' +
+               '<span class="trux-thinking-copy"><span class="trux-thinking-kicker">WORKING</span><span class="status-msg" id="' + sid + '" role="status" aria-live="polite"><span class="thinking-status-line latest">Tracing the task…</span></span></span>' +
+               '<span class="trux-thinking-elapsed" id="elapsed_' + id + '">00:00</span>' +
+               '<span class="trux-thinking-chevron" aria-hidden="true">⌄</span>' +
+             '</button>' +
+             '<div class="trux-thinking-details" id="' + tsid + '" hidden></div>' +
+           '</div>' +
+           '<div class="bubble trux-bubble thinking" id="' + id + '"></div>' +
+           '<div class="actions"></div>' +
+         '</div>';
 
       chatContainer.appendChild(row);
       chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -7320,7 +7327,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
                 if (eventId) seenEventIds.add(eventId);
 
                 if (event?.type === "tool_status") {
-                  appendToolStatusLine(state.tsid, event.tool || "TruX-Code", event.status || "", event.phase || "complete");
+                  appendToolStatusLine(state.tsid, event.tool || "TruX-Code", event.status || "", event.phase || "complete", event.details || null);
                 } else if (event?.type === "status") {
                   setThinkingStatus(state.sid, event.status || event.text || "");
                 }
@@ -7488,33 +7495,67 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       return compact + (words.length > 4 ? "…" : "");
     }
 
+    function toggleThinkingDetails(panelId) {
+      const panel = getEl(panelId);
+      if (!panel) return;
+      const details = panel.querySelector(".trux-thinking-details");
+      const button = panel.querySelector(".trux-thinking-bar");
+      if (!details || !button) return;
+      const expanded = !panel.classList.contains("expanded");
+      panel.classList.toggle("expanded", expanded);
+      details.hidden = !expanded;
+      button.setAttribute("aria-expanded", String(expanded));
+    }
+
     function setThinkingStatus(statusId, text) {
       const el = getEl(statusId);
       if (!el) return;
-
       const fullTitle = String(text == null ? "" : text).replace(/\s+/g, " ").trim();
       if (!fullTitle) return;
-
       const next = compactAiActivity(fullTitle);
       if (!next) return;
-
-      /* Keep exactly one live status line. Status changes must not make the
-         normal Chat thinking area grow vertically. */
       let line = el.querySelector(".thinking-status-line");
       if (!line) {
         line = document.createElement("span");
+        line.className = "thinking-status-line latest";
         el.appendChild(line);
       }
-
-      el.querySelectorAll(".thinking-status-line").forEach(node => {
-        if (node !== line) node.remove();
-      });
-
-      line.className = "thinking-status-line latest";
-      line.dataset.value = next;
+      const previous = String(line.textContent || "");
       line.title = fullTitle;
+      line.dataset.value = next;
+      if (previous !== next) {
+        line.classList.remove("status-change");
+        void line.offsetWidth;
+        line.classList.add("status-change");
+      }
       line.textContent = next;
+      el.closest(".trux-thinking-panel")?.classList.add("has-activity");
     }
+
+    const TRUX_CODE_IDLE_LINES = [
+      "Ready to shape the next change.",
+      "Bring the bug; trace the path.",
+      "Turn the idea into working code.",
+      "Make the change. Keep the context.",
+      "Ready when the next task is."
+    ];
+    let truxCodeIdleIndex = 0;
+    let truxCodeIdleTimer = null;
+    function startTruxCodeIdlePulse() {
+      const pulse = () => {
+        const el = getEl("truxCodePulseText");
+        if (!el || !document.body.classList.contains("coding-workspace") || document.body.classList.contains("chat-session-active")) return;
+        const next = TRUX_CODE_IDLE_LINES[truxCodeIdleIndex++ % TRUX_CODE_IDLE_LINES.length];
+        el.classList.remove("trux-code-pulse-change");
+        void el.offsetWidth;
+        el.textContent = next;
+        el.classList.add("trux-code-pulse-change");
+      };
+      if (truxCodeIdleTimer) clearInterval(truxCodeIdleTimer);
+      truxCodeIdleTimer = setInterval(pulse, 2600);
+      pulse();
+    }
+
     function formatThinkingClock(ms) {
       const total = Math.max(0, Math.floor(ms / 1000));
       const minutes = Math.floor(total / 60);
@@ -7663,7 +7704,20 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       const thinkingElapsedMarkup = workspaceMode === "coding"
         ? '<span class="thinking-elapsed" id="elapsed_' + id + '">00:00</span>'
         : "";
-      row.innerHTML = `<div class="label">${BRAND_LABEL}</div><div class="trux-response-stack"><div class="thinking-tool-trace" id="${tsid}" hidden></div><div class="bubble trux-bubble thinking" id="${id}"><div class="thinking-container">${thinkingElapsedMarkup}<div class="thinking-main"><span class="thinking-particles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="status-msg" id="${sid}" role="status" aria-live="polite"><span class="thinking-status-line latest">Thinking…</span></span></div></div></div><div class="actions" id="${aid}"></div>`;
+       const thid = "th_" + Date.now();
+       row.innerHTML = `<div class="trux-response-stack">
+         <div class="trux-thinking-panel" id="${thid}">
+           <button type="button" class="trux-thinking-bar" onclick="toggleThinkingDetails('${thid}')" aria-expanded="false" aria-controls="${tsid}">
+             <span class="trux-thinking-orbit" aria-hidden="true"><img src="icon-192.png" alt=""><i></i><i></i><i></i></span>
+             <span class="trux-thinking-copy"><span class="trux-thinking-kicker">WORKING</span><span class="status-msg" id="${sid}" role="status" aria-live="polite"><span class="thinking-status-line latest">Understanding the request…</span></span></span>
+             ${thinkingElapsedMarkup ? '<span class="trux-thinking-elapsed" id="elapsed_' + id + '">00:00</span>' : ''}
+             <span class="trux-thinking-chevron" aria-hidden="true">⌄</span>
+           </button>
+           <div class="trux-thinking-details" id="${tsid}" hidden></div>
+         </div>
+         <div class="bubble trux-bubble thinking" id="${id}"></div>
+         <div class="actions" id="${aid}"></div>
+       </div>`;
 
       chatContainer.appendChild(row);
       chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -7812,7 +7866,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           }
           else if(j.type === "tool_status") {
             const phase = j.phase || "complete";
-            appendToolStatusLine(tsid, j.tool, j.status, phase);
+            appendToolStatusLine(tsid, j.tool, j.status, phase, j.details || null);
             if(phase === "start") {
               toolInProgress = true;
             } else {
@@ -7842,19 +7896,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
             setThinkingStatus(sid, j.message || "The requested integration action is unavailable.");
           }
           else if(j.type === "heartbeat") {
-            /* Cloud Run may keep the socket alive while Gemini's high-thinking
-               pass produces no visible tokens. Keep TruX-Code visibly alive
-               without changing or lowering the model's reasoning level. */
-            if (workspaceMode === "coding") {
-              const heartbeatCount = Number(j.count || 0);
-              const alive = [
-                "Keeping the workspace ready",
-                "Processing the request",
-                "Preparing the response",
-                "Finishing the response"
-              ];
-              setThinkingStatus(sid, alive[heartbeatCount % alive.length]);
-            }
+            /* Keepalive only. The last real AI activity remains visible. */
           }
           else if(j.type === "github_commit") {
             const commit = j.commit;
@@ -7905,8 +7947,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           }
         }
         let text = (fin !== null ? fin : full).trim();
-        if(!text && githubProposal) text = "I prepared the GitHub changes for your review. Nothing has been written yet.";
-        if(!text) throw Error("No response received.");
+         if(!text) throw Error("The model completed the request without returning a final response.");
         sniffRoute();
 
         /* The model asked for a picture — hand this turn to the image model,
@@ -8664,6 +8705,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       updateAllUsageUI();
       handleInputChange();
       setWorkspaceMode(startupWorkspaceMode, {reload:false});
+      startTruxCodeIdlePulse();
     } catch (startupError) {
       window.__truxRecoverBoot(startupError);
     } finally {
