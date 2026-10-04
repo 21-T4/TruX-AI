@@ -471,6 +471,39 @@ function hasExplicitCodeWorkRequest(value) {
   return /\b(?:code|coding|program|script|function|class|bug|debug|error|fix|refactor|implement|edit|modify|build|compile|test|tests|api|endpoint|javascript|typescript|python|java|html|css|react|node|sql|regex)\b/i.test(text);
 }
 
+function selectRequestedPluginIds(enabledIds, message) {
+  const text = String(message || '').toLowerCase();
+  const ids = Array.isArray(enabledIds) ? enabledIds.map(String) : [];
+  const wantsRepo = /(?:github|repository|repo|codebase|pull request|branch|commit|push|source control)/i.test(text);
+  const wantsMail = /(?:gmail|email|mail|outlook)/i.test(text);
+  const wantsCalendar = /(?:calendar|meeting|schedule|appointment)/i.test(text);
+  const wantsSheets = /(?:google sheets|sheets|excel|spreadsheet|workbook)/i.test(text);
+  const wantsDocs = /(?:google docs|document|docs)/i.test(text);
+  const wantsDrive = /(?:google drive|drive|onedrive|file storage|cloud file)/i.test(text);
+  const wantsMeet = /(?:google meet|meet|video meeting|conference call)/i.test(text);
+  const wantsTeams = /(?:microsoft teams|teams|team chat)/i.test(text);
+  const wantsSlack = /(?:slack|channel|slack message)/i.test(text);
+  const wantsNotion = /(?:notion|database page|notion page)/i.test(text);
+
+  const matches = new Set();
+  for (const id of ids) {
+    if (wantsRepo && id === 'github') matches.add(id);
+    if (wantsMail && (id === 'gmail' || id === 'microsoft-outlook')) matches.add(id);
+    if (wantsCalendar && id === 'google-calendar') matches.add(id);
+    if (wantsSheets && (id === 'google-sheets' || id === 'microsoft-excel')) matches.add(id);
+    if (wantsDocs && id === 'google-docs') matches.add(id);
+    if (wantsDrive && (id === 'google-drive' || id === 'microsoft-onedrive')) matches.add(id);
+    if (wantsMeet && id === 'google-meet') matches.add(id);
+    if (wantsTeams && id === 'microsoft-teams') matches.add(id);
+    if (wantsSlack && id === 'slack') matches.add(id);
+    if (wantsNotion && id === 'notion') matches.add(id);
+  }
+
+  // For an explicit external action that names only a generic app family
+  // (for example "send an email"), prefer the corresponding family only.
+  return ids.filter(id => matches.has(id));
+}
+
 function validGithubPath(value) {
   return typeof value === 'string'
     && value.length > 0
@@ -1907,7 +1940,10 @@ export async function onRequestPost(context) {
 
       if (explicitExternalAction && effectiveUserId && String(env.COMPOSIO_API_KEY || '').trim()) {
         try {
-          enabledComposioPluginIds = await getEnabledPluginIds(env, effectiveUserId);
+          enabledComposioPluginIds = selectRequestedPluginIds(
+            await getEnabledPluginIds(env, effectiveUserId),
+            message
+          );
           const resolved = await Promise.all(
             enabledComposioPluginIds.map(async pluginId => {
               const plugin = getPluginById(pluginId);
