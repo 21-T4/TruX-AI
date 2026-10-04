@@ -50,7 +50,16 @@ async function composioRequest(env, pathname, init = {}) {
       payload?.error ||
       raw ||
       ('Composio request failed with HTTP ' + response.status);
-    throw Object.assign(new Error(String(message)), { status: response.status, composio: payload });
+    const error = Object.assign(new Error(String(message)), {
+      status: response.status,
+      composio: payload
+    });
+    // Composio can report a scoped-project-key denial as a generic 401
+    // "Invalid API key". Keep this distinct from a provider OAuth failure.
+    if (response.status === 401 && /invalid\s+api\s+key|project\s+api\s+key|api\s+key/i.test(String(message))) {
+      error.composioProjectKeyPermission = true;
+    }
+    throw error;
   }
 
   return payload;
@@ -206,6 +215,7 @@ function getConnectedAccountId(account) {
 }
 
 function isLikelyAuthFailure(error) {
+  if (error?.composioProjectKeyPermission) return false;
   const status = Number(error?.status) || 0;
   if (status === 401 || status === 403) return true;
   const text = String(
@@ -462,6 +472,16 @@ export async function executeComposioTool(env, userId, toolSlug, args, metadata 
       result
     };
   } catch (error) {
+    if (error?.composioProjectKeyPermission) {
+      return {
+        success: false,
+        configurationError: true,
+        tool: toolSlug,
+        toolkit: toolkitSlug || null,
+        connectedAccountId,
+        error: 'The Composio project API key cannot execute tools. Enable Tool execution write access for this key.'
+      };
+    }
     if (isLikelyAuthFailure(error)) {
       const reconnectUrl = await createReconnectUrl(env, userId, toolkitSlug, callbackUrl);
       return {
