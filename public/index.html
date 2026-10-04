@@ -7712,7 +7712,6 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       markPromptMessageStopped(row);
     }
 
-    async function requestBackgroundJobStop
     async function requestBackgroundJobStop(jobId, jobSecret = "") {
       const id = String(jobId || "");
       if(!id) return false;
@@ -8011,7 +8010,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       getEl("codeChatContainer").innerHTML = "";
       const cC = enterChatWorkspace();
        chatSessions[id].messages.forEach((m, index) => {
-         appendMessageRow(m.role === "user" ? "You" : "ChatTruX-AI", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image, false, m.sources, m.video, m.role === "user" ? "You" : "ChatTruX-AI");
+         appendMessageRow(m.role === "user" ? "You" : "ChatTruX-AI", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image, false, m.sources, m.video, { messageIndex: index, stopped: m.role === "user" && m.stopped === true });
          if (m.githubProposal) {
            const rows = getActiveChatContainer()?.querySelectorAll(".row.trux-row") || [];
            const lastRow = rows[rows.length - 1];
