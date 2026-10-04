@@ -1,4 +1,4 @@
-const CACHE_NAME = 'trux-ai-v11';
+const CACHE_NAME = 'trux-ai-v12';
 
 try {
   importScripts(
@@ -37,8 +37,6 @@ try {
 }
 
 const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png'
@@ -96,15 +94,14 @@ self.addEventListener('fetch', (event) => {
     url.pathname === '/' ||
     url.pathname.endsWith('.html');
 
-  /* HTML: BYPASS ALL HTTP/SW DOCUMENT CACHING.
-     The app shell must always come from the current Cloud Run deployment.
-     A stale blank shell is worse than losing offline HTML, so documents
-     are fetched with cache: no-store and are not written to the SW cache. */
+  /* HTML: ALWAYS FETCH THE CURRENT DEPLOYMENT.
+     Never serve a cached document. A stale blank shell must be impossible
+     after the worker updates. Offline document fallback is intentionally
+     omitted because a stale shell is worse than a network error. */
   if (isDocument) {
     event.respondWith(
       fetch(new Request(request, { cache: 'no-store' }))
         .then((response) => response)
-        .catch(() => caches.match(request).then((hit) => hit || caches.match('/index.html')))
     );
     return;
   }
