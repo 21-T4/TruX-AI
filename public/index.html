@@ -1184,6 +1184,7 @@
     .act svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     .act:hover { background: var(--bg-3); color: #fff; border-color: var(--line); }
     .act.done { color: #4ade80; }
+    .user-stopped-actions { justify-content: flex-end; margin-top: 8px; }
 
     /* ---------- generated images ---------- */
     .gen-image-wrap {
@@ -6013,7 +6014,90 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       if(actions) row.insertBefore(strip, actions); else row.appendChild(strip);
     }
 
-    function appendMessageRow(label, text, rc, bc, imageUrl, animate, sources, videoUrl) {
+    function findStoppedMessageIndex(userRow, fallbackText = "") {
+      const session = chatSessions[currentChatId];
+      if (!session?.messages) return -1;
+      const indexed = Number(userRow?.dataset?.messageIndex);
+      if (Number.isInteger(indexed) && indexed >= 0 && indexed < session.messages.length) {
+        const candidate = session.messages[indexed];
+        if (candidate?.role === "user") return indexed;
+      }
+      for (let i = session.messages.length - 1; i >= 0; i--) {
+        const m = session.messages[i];
+        if (m?.role === "user" && m?.stopped && String(m.text || "") === String(fallbackText || "")) return i;
+      }
+      return -1;
+    }
+
+    function removeStoppedPrompt(index, userRow) {
+      const session = chatSessions[currentChatId];
+      if (!session?.messages || index < 0 || index >= session.messages.length) return false;
+      if (session.messages[index]?.role !== "user") return false;
+      session.messages.splice(index, 1);
+      saveChatSessions();
+      userRow?.remove();
+      return true;
+    }
+
+    function attachStoppedUserActions(userRow, messageIndex, promptText) {
+      if (!userRow) return;
+      userRow.querySelector(".user-stopped-actions")?.remove();
+      const index = Number.isInteger(messageIndex) ? messageIndex : findStoppedMessageIndex(userRow, promptText);
+      const actions = document.createElement("div");
+      actions.className = "actions user-stopped-actions";
+
+      const editBtn = document.createElement("button");
+      editBtn.className = "act";
+      editBtn.title = "Edit stopped question";
+      editBtn.textContent = "Edit";
+      editBtn.onclick = () => {
+        if (isGenerating) return toast("Stop the current generation first.", "err");
+        const session = chatSessions[currentChatId];
+        const text = String(session?.messages?.[index]?.text ?? promptText ?? "");
+        if (!removeStoppedPrompt(index, userRow)) return;
+        const input = getEl("promptInput");
+        input.value = text;
+        input.focus();
+        handleInputChange();
+      };
+
+      const resendBtn = document.createElement("button");
+      resendBtn.className = "act";
+      resendBtn.title = "Resend stopped question";
+      resendBtn.innerHTML = ICON.redo + "Resend";
+      resendBtn.onclick = () => {
+        if (isGenerating) return toast("Stop the current generation first.", "err");
+        const session = chatSessions[currentChatId];
+        const text = String(session?.messages?.[index]?.text ?? promptText ?? "");
+        if (!removeStoppedPrompt(index, userRow)) return;
+        const input = getEl("promptInput");
+        input.value = text;
+        handleInputChange();
+        sendPrompt();
+      };
+
+      actions.append(editBtn, resendBtn);
+      userRow.appendChild(actions);
+    }
+
+    function markPromptMessageStopped(assistantRow) {
+      const session = chatSessions[currentChatId];
+      const container = getActiveChatContainer();
+      let userRow = assistantRow?.previousElementSibling;
+      if (!userRow?.classList.contains("user-row")) {
+        const userRows = Array.from(container?.querySelectorAll(".row.user-row") || []);
+        userRow = userRows[userRows.length - 1] || null;
+      }
+      if (!userRow || !session?.messages) return;
+      const index = findStoppedMessageIndex(userRow);
+      if (index < 0) return;
+      session.messages[index].stopped = true;
+      saveChatSessions();
+      userRow.dataset.messageIndex = String(index);
+      attachStoppedUserActions(userRow, index, String(session.messages[index].text || ""));
+    }
+
+    function appendMessageRow(label, text, rc, bc, imageUrl, animate, sources, videoUrl, messageMeta = null) {
       let chatContainer = getActiveChatContainer(), r = document.createElement("div");
       r.className = `row ${rc}` + (animate ? " appear" : "");
       let textContent = typeof text === "string" ? text : text?.text || "";
@@ -6021,7 +6105,10 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       if(rc.includes("user-row")) {
         // No stray newlines inside the bubble: it is white-space: pre-wrap,
         // so template indentation would render as blank lines.
+        r.dataset.chatId = currentChatId || "";
+        if (Number.isInteger(messageMeta?.messageIndex)) r.dataset.messageIndex = String(messageMeta.messageIndex);
         r.innerHTML = `<div class="label">You</div><div class="bubble user-bubble">${escapeHtml(textContent).replace(/\n/g, "<br>")}</div>`;
+        if (messageMeta?.stopped) attachStoppedUserActions(r, Number(messageMeta.messageIndex), textContent);
       } else {
         r.innerHTML = `<div class="label">${label === "ChatTruX-AI" ? BRAND_LABEL : escapeHtml(label)}</div><div class="bubble ${bc}"></div><div class="actions"></div>`;
         let bubble = r.querySelector(".bubble");
@@ -7124,6 +7211,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           processedKey: a.processedKey || null
         }))
       });
+       const sentMessageIndex = chatSessions[currentChatId].messages.length - 1;
       saveChatSessions();
 
       getEl("welcomeScreen").style.display = "none";
@@ -7621,8 +7709,10 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           bubble.appendChild(stopLine);
         }
       }
+      markPromptMessageStopped(row);
     }
 
+    async function requestBackgroundJobStop
     async function requestBackgroundJobStop(jobId, jobSecret = "") {
       const id = String(jobId || "");
       if(!id) return false;
@@ -7920,8 +8010,8 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       getEl("chatContainer").innerHTML = "";
       getEl("codeChatContainer").innerHTML = "";
       const cC = enterChatWorkspace();
-       chatSessions[id].messages.forEach(m => {
-         appendMessageRow(m.role === "user" ? "You" : "ChatTruX-AI", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image, false, m.sources, m.video);
+       chatSessions[id].messages.forEach((m, index) => {
+         appendMessageRow(m.role === "user" ? "You" : "ChatTruX-AI", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image, false, m.sources, m.video, m.role === "user" ? "You" : "ChatTruX-AI");
          if (m.githubProposal) {
            const rows = getActiveChatContainer()?.querySelectorAll(".row.trux-row") || [];
            const lastRow = rows[rows.length - 1];
