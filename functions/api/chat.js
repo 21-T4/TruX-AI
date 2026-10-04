@@ -2133,6 +2133,7 @@ export async function onRequestPost(context) {
 
               responseParts.push({
                 functionResponse: {
+                  ...(call?.id ? { id: String(call.id) } : {}),
                   name: call.name,
                   response: { output: callResult }
                 }
@@ -2146,6 +2147,7 @@ export async function onRequestPost(context) {
               });
               responseParts.push({
                 functionResponse: {
+                  ...(call?.id ? { id: String(call.id) } : {}),
                   name: call?.name || 'unknown',
                   response: { error: toolError?.message || 'GitHub tool failed.' }
                 }

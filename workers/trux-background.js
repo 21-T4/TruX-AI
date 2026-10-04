@@ -1,23 +1,40 @@
-const APP_ORIGIN_FALLBACK = 'https://chat.trux.website';
+import { onRequestPost as chatRequest } from '../functions/api/chat.js';
+import { onRequestGet as backgroundStatusRequest } from '../functions/api/background/status.js';
+import { onRequestPost as backgroundUpdateRequest } from '../functions/api/background/update.js';
 
-async function updateJob(env, payload) {
-  const origin = String(env.TRUX_BACKGROUND_ORIGIN || env.TRUX_APP_ORIGIN || APP_ORIGIN_FALLBACK).replace(/\/$/, '');
-
-  await fetch(origin + '/api/background/update', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+function backgroundRequest(path, init = {}) {
+  return new Request('http://trux-background.internal' + path, {
+    ...init,
+    headers: new Headers(init.headers || {})
   });
 }
 
+async function updateJob(env, payload) {
+  const response = await backgroundUpdateRequest({
+    request: backgroundRequest('/api/background/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }),
+    env
+  });
+  if (!response.ok && response.status !== 404) {
+    const detail = await response.text().catch(() => '');
+    throw new Error(detail || 'Background state update failed.');
+  }
+}
+
 async function isJobStopped(job, env) {
-  const origin = String(job?.origin || env.TRUX_BACKGROUND_ORIGIN || env.TRUX_APP_ORIGIN || APP_ORIGIN_FALLBACK).replace(/\/$/, '');
   try {
-    const response = await fetch(origin + '/api/background/status?jobId=' + encodeURIComponent(String(job?.jobId || '')), {
-      cache: 'no-store',
-      headers: {
-        'X-Trux-Background-Secret': String(job?.jobSecret || '')
-      }
+    const response = await backgroundStatusRequest({
+      request: backgroundRequest(
+        '/api/background/status?jobId=' + encodeURIComponent(String(job?.jobId || '')),
+        {
+          method: 'GET',
+          headers: { 'X-Trux-Background-Secret': String(job?.jobSecret || '') }
+        }
+      ),
+      env
     });
     if (!response.ok) return false;
     const state = await response.json();
@@ -48,7 +65,6 @@ async function processJob(job, env) {
       events
     });
 
-    const origin = String(job.origin || env.TRUX_BACKGROUND_ORIGIN || env.TRUX_APP_ORIGIN || APP_ORIGIN_FALLBACK).replace(/\/$/, '');
     const body = {
       ...(job.body || {}),
       mode: 'coding',
@@ -58,24 +74,30 @@ async function processJob(job, env) {
 
     const headers = {
       'Content-Type': 'application/json',
-      'Accept': 'text/event-stream'
+      'Accept': 'text/event-stream',
+      'X-TruX-Background-Job': jobId,
+      'X-TruX-Background-Secret': String(job.jobSecret || '')
     };
 
     if (job.cookie) headers.Cookie = String(job.cookie);
-    headers['X-Trux-Background-Job'] = jobId;
-    headers['X-Trux-Background-Secret'] = String(job.jobSecret || '');
 
-    const chatController = new AbortController();
-    const response = await fetch(origin + '/api/chat', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-      signal: chatController.signal
+    /*
+     * Invoke the chat handler directly. The old worker made a nested
+     * 127.0.0.1 HTTP request, which could deadlock under low concurrency and
+     * added another failure point to every long-running coding task.
+     */
+    const response = await chatRequest({
+      request: new Request('http://trux-background.internal/api/chat', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body)
+      }),
+      env
     });
 
     if (!response.ok || !response.body) {
-      const text = await response.text().catch(() => '');
-      throw new Error(text || 'The coding backend returned an error.');
+      const responseText = await response.text().catch(() => '');
+      throw new Error(responseText || 'The coding backend returned an error.');
     }
 
     const reader = response.body.getReader();
