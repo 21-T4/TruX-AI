@@ -222,6 +222,7 @@ export function pluginDetailForResolved(resolved, connectedAccounts, enabledIds)
     appUrl: meta.app_url || meta.appUrl || null,
     slug: actualSlug,
     configured: !!detail,
+    connectable: !!actualSlug,
     connected,
     connectedAccountId: matchingAccount?.id || matchingAccount?.nano_id || matchingAccount?.nanoid || matchingAccount?.connected_account_id || null,
     enabled,
