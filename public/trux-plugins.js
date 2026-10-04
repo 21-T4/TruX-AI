@@ -213,14 +213,17 @@
   window.refreshTruxCodeIntegrations=updateAccessUI;
 
   function boot(){
-    document.addEventListener('click', function(event){
+    if(!window.__truxPluginControlsBound){
+      document.addEventListener('click', function(event){
       var add=event.target && event.target.closest ? event.target.closest('[data-plugin-add]') : null;
       if(add){ event.preventDefault(); event.stopPropagation(); addOrConnectPlugin(add.getAttribute('data-plugin-add'), add); return; }
       var remove=event.target && event.target.closest ? event.target.closest('[data-plugin-remove]') : null;
       if(remove){ event.preventDefault(); event.stopPropagation(); toggle(remove.getAttribute('data-plugin-remove'), false); return; }
       var openBtn=event.target && event.target.closest ? event.target.closest('[data-open-plugins]') : null;
       if(openBtn){ event.preventDefault(); event.stopPropagation(); open(); return; }
-    }, true);
+      }, true);
+      window.__truxPluginControlsBound=true;
+    }
     var a=auth();
     if(a){
       a.onAuthStateChanged(function(){
