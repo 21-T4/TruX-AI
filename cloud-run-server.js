@@ -20,6 +20,7 @@ const routes = {
   "/api/background/start": "./functions/api/background/start.js",
   "/api/background/status": "./functions/api/background/status.js",
   "/api/background/update": "./functions/api/background/update.js",
+  "/api/background/cancel": "./functions/api/background/cancel.js",
   "/api/background/execute": "./functions/api/background/execute.js",
   "/api/github/apply-edits": "./functions/api/github/apply-edits.js",
   "/api/github/authorize": "./functions/api/github/authorize.js",
@@ -120,7 +121,7 @@ async function readBody(req) {
   return Buffer.concat(chunks);
 }
 
-function makeRequest(req, body) {
+function makeRequest(req, body, signal = null) {
   const host = req.headers["x-forwarded-host"] || req.headers.host || `localhost:${PORT}`;
   const forwardedProto = String(req.headers["x-forwarded-proto"] || "http")
     .split(",")[0]
@@ -135,7 +136,8 @@ function makeRequest(req, body) {
   const init = {
     method: req.method,
     headers,
-    body: req.method === "GET" || req.method === "HEAD" ? undefined : body
+    body: req.method === "GET" || req.method === "HEAD" ? undefined : body,
+    ...(signal ? { signal } : {})
   };
   if (body instanceof ReadableStream) init.duplex = "half";
   return new Request(`${forwardedProto}://${host}${req.url}`, init);
@@ -171,13 +173,28 @@ async function sendResponse(res, response) {
 }
 
 async function handleApi(req, res, route, pathname) {
+  const requestController = new AbortController();
+  const abortRequest = () => {
+    if (!requestController.signal.aborted) requestController.abort();
+  };
+  const onRequestClose = () => {
+    if (!req.complete) abortRequest();
+  };
+  const onResponseClose = () => {
+    if (!res.writableEnded) abortRequest();
+  };
+
+  req.on("aborted", abortRequest);
+  req.on("close", onRequestClose);
+  res.on("close", onResponseClose);
+
   try {
     const mod = await loadHandler(route);
     const streamingUpload = pathname === "/api/files/upload";
     const body = req.method === "GET" || req.method === "HEAD"
       ? undefined
       : (streamingUpload ? Readable.toWeb(req) : await readBody(req));
-    const request = makeRequest(req, body);
+    const request = makeRequest(req, body, requestController.signal);
     const context = contextFor(request, createRuntimeEnv(req));
     let response;
 
@@ -188,15 +205,24 @@ async function handleApi(req, res, route, pathname) {
 
     await sendResponse(res, response);
   } catch (error) {
+    if (requestController.signal.aborted) {
+      try { res.end(); } catch {}
+      return;
+    }
     console.error("API route failed:", error);
     res.statusCode = 500;
     res.setHeader("Content-Type", "application/json; charset=utf-8");
-    const detail = String(error?.message || error || "Unknown server error.");
+    const detail = String(error?.message || error || "Unknown error.");
     res.end(JSON.stringify({
       error: "Internal server error",
       detail
     }));
+  } finally {
+    req.off("aborted", abortRequest);
+    req.off("close", onRequestClose);
+    res.off("close", onResponseClose);
   }
+}
 }
 
 async function serveStatic(req, res) {
