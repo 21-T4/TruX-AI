@@ -1653,7 +1653,7 @@ export async function onRequestPost(context) {
       if(!developerAccount && effectiveTier !== "pro") {
         return createSseResponse(async ({send}) => {
           send({type:"error",error:"Video generation is available to Pro accounts and Owner access."});
-        });
+        }, request);
       }
       return createSseResponse(async ({send}) => {
         send({type:"status",status:"Starting video generation…"});
@@ -1670,7 +1670,7 @@ export async function onRequestPost(context) {
         } catch(error) {
           send({type:"error",error:(error && error.message) || "Video generation failed."});
         }
-      });
+      }, request);
     }
 
     /* =====================================================
@@ -2073,6 +2073,10 @@ export async function onRequestPost(context) {
           const responseParts = [];
 
           for (const call of result.functionCalls) {
+            if (signal?.aborted) {
+              generationStopped = true;
+              break;
+            }
             const toolLabels = {
               github_import_repository: 'GitHub Import',
               github_search_code: 'GitHub Search',
@@ -2145,8 +2149,12 @@ export async function onRequestPost(context) {
                 });
               }
 
+              if (signal?.aborted) {
+                generationStopped = true;
+                break;
+              }
+
               responseParts.push({
-                functionResponse: {
                   ...((call?.id ?? call?.call_id) ? { id: String(call.id ?? call.call_id) } : {}),
                   name: call.name,
                   response: { output: callResult }
@@ -2169,6 +2177,7 @@ export async function onRequestPost(context) {
             }
           }
 
+          if (generationStopped) break;
           agentContents.push({ role: 'user', parts: responseParts });
           continue;
         }
@@ -2235,6 +2244,7 @@ export async function onRequestPost(context) {
               ? 'I finished inspecting the repository and analyzing the requested code changes.'
               : 'Task completed successfully.')));
 
+      if (signal?.aborted) return;
       send({ type: 'final', text: finalText });
 
         if (notifyOnComplete) {
@@ -2268,7 +2278,7 @@ export async function onRequestPost(context) {
         }
 
         return;
-    });
+    }, request);
   } catch (error) {
     console.error('Vertex AI Error:', error);
 
