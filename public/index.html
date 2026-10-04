@@ -4931,7 +4931,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       if(isCoding) {
         codeHome?.classList.remove("code-workspace-dismissed");
         codeHome?.style.removeProperty("display");
-        loadCodeRepositories();
+        // Repository selection is no longer part of TruX-Code; external access is provided by Composio plugins.
       } else {
         codeHome?.classList.add("code-workspace-dismissed");
       }
