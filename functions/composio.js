@@ -172,6 +172,16 @@ export async function createPluginAuthLink(env, userId, toolkitSlug, callbackUrl
   });
 }
 
+export async function deleteConnectedAccount(env, connectedAccountId) {
+  const id = String(connectedAccountId || '').trim();
+  if (!id) throw Object.assign(new Error('Connected account ID is required.'), { status: 400 });
+  return await composioRequest(
+    env,
+    '/connected_accounts/' + encodeURIComponent(id),
+    { method: 'DELETE' }
+  );
+}
+
 export async function listConnectedAccounts(env, userId) {
   const query = new URLSearchParams();
   query.set('user_ids', userId);
@@ -184,20 +194,33 @@ export async function listConnectedAccounts(env, userId) {
 }
 
 export function connectedToolkitSet(accounts) {
-  return new Set(
-    accounts
+  return Array.isArray(accounts)
+    ? new Set(
+        accounts
+          .map(account => account?.toolkit?.slug || account?.toolkit_slug || '')
+          .filter(Boolean)
+          .map(String)
+      )
+    : new Set();
+}
+
+export function pluginDetailForResolved(resolved, connectedAccounts, enabledIds) {
+  const connectedSlugs = new Set(
+    (Array.isArray(connectedAccounts) ? connectedAccounts : [])
       .map(account => account?.toolkit?.slug || account?.toolkit_slug || '')
       .filter(Boolean)
       .map(String)
   );
-}
-
-export function pluginDetailForResolved(resolved, connectedSlugs, enabledIds) {
   const plugin = resolved.plugin;
   const detail = resolved.detail;
   const actualSlug = resolved.slug || '';
   const meta = detail?.meta || {};
-  const connected = !!actualSlug && connectedSlugs.has(actualSlug);
+  const matchingAccount = actualSlug
+    ? (Array.isArray(connectedAccounts)
+      ? connectedAccounts.find(account => String(account?.toolkit?.slug || account?.toolkit_slug || '') === actualSlug)
+      : null)
+    : null;
+  const connected = !!actualSlug && !!matchingAccount;
   const enabled = enabledIds.includes(plugin.id);
   return {
     id: plugin.id,
@@ -209,16 +232,80 @@ export function pluginDetailForResolved(resolved, connectedSlugs, enabledIds) {
     slug: actualSlug,
     configured: !!detail,
     connected,
+    connectedAccountId: matchingAccount?.id || matchingAccount?.nano_id || matchingAccount?.nanoid || matchingAccount?.connected_account_id || null,
     enabled,
     authAvailable: Array.isArray(detail?.auth_config_details) && detail.auth_config_details.length > 0,
     toolsCount: Number(meta.tools_count || meta.toolsCount || 0) || 0
   };
 }
 
+/*
+ * Gemini/Vertex function declarations accept a limited OpenAPI-like schema.
+ * Composio's input metadata is richer (examples, human_* fields, defaults,
+ * internal metadata, etc.). Never forward that metadata verbatim.
+ */
+const GEMINI_SCHEMA_KEYS = new Set([
+  'type','format','title','description','nullable','enum','items',
+  'properties','required','minItems','maxItems','minProperties',
+  'maxProperties','minLength','maxLength','pattern','minimum','maximum'
+]);
+
+function sanitizeGeminiSchema(value, fallbackType = 'string') {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return { type: fallbackType };
+  }
+
+  if (value.anyOf || value.oneOf || value.allOf) {
+    // Gemini accepts these composition fields on supported models, but every
+    // nested branch must still be sanitized.
+    const out = {};
+    for (const key of ['anyOf','oneOf','allOf']) {
+      if (Array.isArray(value[key])) out[key] = value[key].map(v => sanitizeGeminiSchema(v));
+    }
+    if (value.description) out.description = String(value.description);
+    if (value.nullable != null) out.nullable = !!value.nullable;
+    if (value.title) out.title = String(value.title);
+    return Object.keys(out).length ? out : { type: fallbackType };
+  }
+
+  const out = {};
+  for (const key of GEMINI_SCHEMA_KEYS) {
+    if (!(key in value)) continue;
+    const current = value[key];
+    if (key === 'properties' && current && typeof current === 'object' && !Array.isArray(current)) {
+      out.properties = Object.fromEntries(
+        Object.entries(current).map(([name, schema]) => [name, sanitizeGeminiSchema(schema)])
+      );
+    } else if (key === 'items') {
+      out.items = sanitizeGeminiSchema(current);
+    } else if (key === 'required' && Array.isArray(current)) {
+      out.required = current.map(String);
+    } else if (key === 'enum' && Array.isArray(current)) {
+      out.enum = current.map(v => String(v));
+    } else if (key === 'type') {
+      out.type = String(current);
+    } else if (key === 'nullable') {
+      out.nullable = !!current;
+    } else if (['description','format','title','pattern'].includes(key)) {
+      out[key] = String(current);
+    } else {
+      out[key] = current;
+    }
+  }
+
+  if (!out.type) {
+    if (out.properties) out.type = 'object';
+    else if (out.enum) out.type = 'string';
+    else out.type = fallbackType;
+  }
+
+  return out;
+}
+
 function schemaFromInputParameters(input) {
   if (input && typeof input === 'object' && !Array.isArray(input)) {
-    if (input.type === 'object' && input.properties) return input;
-    if (input.schema && typeof input.schema === 'object') return input.schema;
+    if (input.type === 'object' && input.properties) return sanitizeGeminiSchema(input, 'object');
+    if (input.schema && typeof input.schema === 'object') return sanitizeGeminiSchema(input.schema, 'object');
   }
 
   const properties = {};
@@ -227,7 +314,7 @@ function schemaFromInputParameters(input) {
   if (input && typeof input === 'object' && !Array.isArray(input)) {
     for (const [key, value] of Object.entries(input)) {
       if (!value || typeof value !== 'object') continue;
-      properties[key] = normalizeSchema(value);
+      properties[key] = sanitizeGeminiSchema(value);
       if (value.required === true) required.push(key);
     }
   }
@@ -240,12 +327,7 @@ function schemaFromInputParameters(input) {
 }
 
 function normalizeSchema(schema) {
-  if (!schema || typeof schema !== 'object') return { type: 'string' };
-  if (schema.anyOf || schema.oneOf || schema.allOf) return schema;
-  if (schema.type) return schema;
-  if (schema.properties) return { type: 'object', ...schema };
-  if (schema.enum) return { type: 'string', ...schema };
-  return { type: 'string', description: schema.description || '' };
+  return sanitizeGeminiSchema(schema);
 }
 
 export async function getComposioGeminiTools(env, enabledToolkitSlugs, queryText = '') {
