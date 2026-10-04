@@ -70,8 +70,8 @@
               ? '<img src="'+esc(p.logo || p.fallbackLogo)+'" alt="" loading="lazy">'
               : '<span class="trux-code-mini-initials">'+esc(initials(p.name))+'</span>';
             return '<span class="trux-code-integration-app" title="'+esc(p.name)+'">'+logo+'<b>'+esc(p.name)+'</b></span>';
-          }).join('')+'<button type="button" class="trux-code-integration-add" data-open-plugins="1" aria-label="Add integration" title="Add integration"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>'
-        : '<span class="trux-code-integrations-empty">No integrations connected</span><button type="button" class="trux-code-integration-add" data-open-plugins="1" aria-label="Add integration" title="Add integration"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>';
+          }).join('')
+        : '<span class="trux-code-integrations-empty">No integrations connected</span>';
     }
   }
   function setGroup(group){
@@ -86,7 +86,7 @@
     render();
   }
   function card(p){
-    var connected=!!p.connected, enabled=!!p.enabled && connected, unavailable=p.configured===false;
+    var connected=!!p.connected, unavailable=p.configured===false;
     var logo=p.logo || p.fallbackLogo
       ? '<img src="'+esc(p.logo || p.fallbackLogo)+'" alt="" loading="lazy">'
       : '<span class="trux-plugin-fallback-initials">'+esc(initials(p.name))+'</span>';
@@ -95,11 +95,11 @@
       : (unavailable ? '<span class="trux-plugin-state">Unavailable</span>' : '<span class="trux-plugin-state">Not connected</span>');
     var action;
     if(unavailable){
-      action='<button class="trux-plugin-unavailable" type="button" disabled>Unavailable</button>';
-    }else if(enabled){
-      action='<div class="trux-plugin-added-state"><span class="trux-plugin-check"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span><span>Added to TruX</span></div><button class="trux-plugin-remove" type="button" data-plugin-remove="'+esc(p.id)+'" aria-label="Remove '+esc(p.name)+'" title="Remove plugin">Remove</button>';
+      action='<button class="trux-plugin-connect" type="button" disabled>Unavailable</button>';
+    }else if(connected){
+      action='<button class="trux-plugin-connect danger" type="button" data-plugin-disconnect="'+esc(p.id)+'">Disconnect</button>';
     }else{
-      action='<button class="trux-plugin-add-button" type="button" data-plugin-add="'+esc(p.id)+'" aria-label="Add '+esc(p.name)+'" title="Add '+esc(p.name)+'"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>';
+      action='<button class="trux-plugin-connect" type="button" data-plugin-add="'+esc(p.id)+'">Connect</button>';
     }
     return '<article class="trux-plugin-card"><div class="trux-plugin-card-top"><div class="trux-plugin-brand"><div class="trux-plugin-logo">'+logo+'</div><div class="trux-plugin-name"><b>'+esc(p.name)+'</b><small>'+esc(p.group || 'Integration')+'</small></div></div>'+badge+'</div><p class="trux-plugin-description">'+esc(p.description || 'Connect this service to TruX.')+'</p><div class="trux-plugin-card-actions">'+action+'</div></article>';
   }
@@ -167,19 +167,27 @@
       if(button){button.disabled=false;button.textContent='Connect & Add';}
     }
   }
-  async function toggle(pluginId,enabled){
+  async function disconnect(pluginId,button){
     var a=auth(); if(!a || !a.currentUser){
       if(typeof window.openLoginWall==='function') return window.openLoginWall();
       return;
     }
+    var plugin=list().find(function(p){return p.id===pluginId;});
+    if(!plugin) return;
+    if(!confirm('Disconnect '+plugin.name+' from TruX?')) return;
+    if(button){button.disabled=true;button.textContent='Disconnecting…';}
+    notice('Disconnecting '+plugin.name+'…',false);
     try{
       var token=await a.currentUser.getIdToken();
-      var response=await fetch('/api/plugins/enable',{method:'POST',headers:headers(token),body:JSON.stringify({pluginId:pluginId,enabled:!!enabled})});
+      var response=await fetch('/api/plugins/disconnect',{method:'POST',headers:headers(token),body:JSON.stringify({pluginId:pluginId})});
       var data=await response.json().catch(function(){return {};});
-      if(!response.ok) throw new Error(data.error || 'Could not update plugin access.');
+      if(!response.ok) throw new Error(data.error || 'Could not disconnect the plugin.');
       await load({silent:true});
-      notice(enabled ? 'Plugin added to TruX tool access.' : 'Plugin removed from TruX tool access. Its Composio connection remains available.',false);
-    }catch(e){ notice(e && e.message ? e.message : 'Could not update plugin access.',true); }
+      notice('Disconnected '+plugin.name+'.',false);
+    }catch(e){
+      notice(e && e.message ? e.message : 'Could not disconnect the plugin.',true);
+      if(button){button.disabled=false;button.textContent='Disconnect';}
+    }
   }
   function open(){
     document.body.classList.add('plugins-page-active');
@@ -217,8 +225,8 @@
       document.addEventListener('click', function(event){
       var add=event.target && event.target.closest ? event.target.closest('[data-plugin-add]') : null;
       if(add){ event.preventDefault(); event.stopPropagation(); addOrConnectPlugin(add.getAttribute('data-plugin-add'), add); return; }
-      var remove=event.target && event.target.closest ? event.target.closest('[data-plugin-remove]') : null;
-      if(remove){ event.preventDefault(); event.stopPropagation(); toggle(remove.getAttribute('data-plugin-remove'), false); return; }
+      var disconnectBtn=event.target && event.target.closest ? event.target.closest('[data-plugin-disconnect]') : null;
+      if(disconnectBtn){ event.preventDefault(); event.stopPropagation(); disconnect(disconnectBtn.getAttribute('data-plugin-disconnect'), disconnectBtn); return; }
       var openBtn=event.target && event.target.closest ? event.target.closest('[data-open-plugins]') : null;
       if(openBtn){ event.preventDefault(); event.stopPropagation(); open(); return; }
       }, true);
