@@ -71,7 +71,12 @@ export async function onRequestPost({ request, env }) {
     );
 
     await queue.send(payload);
-    return Response.json({ ok: true, jobId: payload.jobId, background: true }, { status: 202 });
+    return Response.json({
+      ok: true,
+      jobId: payload.jobId,
+      jobSecret: payload.jobSecret,
+      background: true
+    }, { status: 202 });
   } catch (error) {
     return Response.json({
       error: error?.message || 'Background job could not be started.',
