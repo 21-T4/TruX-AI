@@ -7067,21 +7067,23 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       const next = compactAiActivity(fullTitle);
       if (!next) return;
 
-      const lines = Array.from(el.querySelectorAll(".thinking-status-line"));
-      if (lines.length && lines[lines.length - 1].dataset.value === next) return;
+      /* Keep exactly one live status line. Status changes must not make the
+         normal Chat thinking area grow vertically. */
+      let line = el.querySelector(".thinking-status-line");
+      if (!line) {
+        line = document.createElement("span");
+        el.appendChild(line);
+      }
 
-      lines.forEach(line => line.classList.remove("latest"));
-      const line = document.createElement("span");
+      el.querySelectorAll(".thinking-status-line").forEach(node => {
+        if (node !== line) node.remove();
+      });
+
       line.className = "thinking-status-line latest";
       line.dataset.value = next;
       line.title = fullTitle;
       line.textContent = next;
-      el.appendChild(line);
-
-      const all = el.querySelectorAll(".thinking-status-line");
-      while (all.length > 5) all[0].remove();
     }
-
     function formatThinkingClock(ms) {
       const total = Math.max(0, Math.floor(ms / 1000));
       const minutes = Math.floor(total / 60);
