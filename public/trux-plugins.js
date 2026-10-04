@@ -95,11 +95,11 @@
       : (unavailable ? '<span class="trux-plugin-state">Unavailable</span>' : '<span class="trux-plugin-state">Not connected</span>');
     var action;
     if(unavailable){
-      action='<button class="trux-plugin-connect" type="button" disabled>Unavailable</button>';
+      action='<button class="trux-plugin-connect" type="button" disabled aria-label="Connect '+esc(p.name)+'">Connect</button>';
     }else if(connected){
-      action='<button class="trux-plugin-connect danger" type="button" data-plugin-disconnect="'+esc(p.id)+'">Disconnect</button>';
+      action='<button class="trux-plugin-connect danger" type="button" data-plugin-disconnect="'+esc(p.id)+'" aria-label="Disconnect '+esc(p.name)+'">Disconnect</button>';
     }else{
-      action='<button class="trux-plugin-connect" type="button" data-plugin-add="'+esc(p.id)+'">Connect</button>';
+      action='<button class="trux-plugin-connect" type="button" data-plugin-add="'+esc(p.id)+'" aria-label="Connect '+esc(p.name)+'">Connect</button>';
     }
     return '<article class="trux-plugin-card"><div class="trux-plugin-card-top"><div class="trux-plugin-brand"><div class="trux-plugin-logo">'+logo+'</div><div class="trux-plugin-name"><b>'+esc(p.name)+'</b><small>'+esc(p.group || 'Integration')+'</small></div></div>'+badge+'</div><p class="trux-plugin-description">'+esc(p.description || 'Connect this service to TruX.')+'</p><div class="trux-plugin-card-actions">'+action+'</div></article>';
   }
@@ -153,7 +153,7 @@
     }
     var plugin=list().find(function(p){return p.id===pluginId;}) || FALLBACK.find(function(p){return p.id===pluginId;});
     if(!plugin) return;
-    if(button){button.disabled=true;button.textContent='Connecting…';}
+    if(button){button.disabled=true;button.textContent='Connecting…';button.setAttribute('aria-busy','true');}
     notice('Opening the secure Composio connection flow for '+plugin.name+'…',false);
     try{
       var token=await a.currentUser.getIdToken();
@@ -164,7 +164,7 @@
       location.assign(data.redirectUrl);
     }catch(e){
       notice(e && e.message ? e.message : 'Could not connect this plugin.',true);
-      if(button){button.disabled=false;button.textContent='Connect';}
+      if(button){button.disabled=false;button.textContent='Connect';button.removeAttribute('aria-busy');}
     }
   }
   async function disconnect(pluginId,button){
@@ -175,7 +175,7 @@
     var plugin=list().find(function(p){return p.id===pluginId;});
     if(!plugin) return;
     if(!confirm('Disconnect '+plugin.name+' from TruX?')) return;
-    if(button){button.disabled=true;button.textContent='Disconnecting…';}
+    if(button){button.disabled=true;button.textContent='Disconnecting…';button.setAttribute('aria-busy','true');}
     notice('Disconnecting '+plugin.name+'…',false);
     try{
       var token=await a.currentUser.getIdToken();
@@ -186,7 +186,7 @@
       notice('Disconnected '+plugin.name+'.',false);
     }catch(e){
       notice(e && e.message ? e.message : 'Could not disconnect the plugin.',true);
-      if(button){button.disabled=false;button.textContent='Disconnect';}
+      if(button){button.disabled=false;button.textContent='Disconnect';button.removeAttribute('aria-busy');}
     }
   }
   function open(){
