@@ -116,23 +116,16 @@ function authConfigCandidates(detail) {
 async function getManagedAuthConfig(env, toolkitSlug) {
   const query = new URLSearchParams({
     toolkit: toolkitSlug,
-    is_composio_managed: 'true',
     show_disabled: 'false',
     limit: '200'
   });
 
   const payload = await composioRequest(env, '/auth_configs?' + query.toString());
   const items = Array.isArray(payload?.items) ? payload.items : [];
-  const enabled = items.find(item =>
+  return items.find(item =>
     item?.status === 'ENABLED' &&
     (item?.isComposioManaged === true || item?.is_composio_managed === true)
-  );
-  if (enabled?.id) return enabled;
-
-  const fallback = items.find(item => item?.status === 'ENABLED' && item?.id);
-  if (fallback?.id) return fallback;
-
-  return null;
+  ) || items.find(item => item?.status === 'ENABLED' && item?.id) || null;
 }
 
 export async function createPluginAuthLink(env, userId, toolkitSlug, callbackUrl) {
