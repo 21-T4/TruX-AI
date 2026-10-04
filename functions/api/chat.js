@@ -2154,9 +2154,6 @@ export async function onRequestPost(context) {
           }
 
           agentContents.push({ role: 'user', parts: responseParts });
-          if (agentRound >= 6) {
-            break;
-          }
           continue;
         }
 
@@ -2175,7 +2172,7 @@ export async function onRequestPost(context) {
           const progressLine = extractUserProgress(roundText);
           if (progressLine) send({ type: 'status', status: progressLine });
 
-          if (agentRound >= 4 || (roundText && roundText === lastNoToolCodingText)) {
+          if (roundText && roundText === lastNoToolCodingText) {
             finalResult = result;
             break;
           }

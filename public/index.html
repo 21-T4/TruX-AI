@@ -807,8 +807,31 @@
       font-weight: 480;
       line-height: 1.74;
       letter-spacing: -0.008em;
-      overflow-wrap: break-word;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      overflow-wrap: anywhere;
       word-break: break-word;
+    }
+    .trux-response-stack,
+    .md-stream,
+    .md-block {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+    }
+    .trux-bubble p,
+    .trux-bubble li,
+    .trux-bubble blockquote,
+    .trux-bubble a {
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    .trux-bubble pre,
+    .trux-bubble .code-file {
+      max-width: 100%;
+      min-width: 0;
     }
     .trux-bubble > *:last-child { margin-bottom: 0 !important; }
     .trux-bubble.thinking { color: var(--txt-2); }
@@ -6138,6 +6161,12 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
       function tick() {
         if (stopped) return;
+        if (!bubble.isConnected) {
+          stopped = true;
+          if (rafId !== null) cancelAnimationFrame(rafId);
+          rafId = null;
+          return;
+        }
 
         const chatContainer = getActiveChatContainer();
         let stick = isNearBottom(chatContainer);
@@ -6749,6 +6778,11 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
             continue;
           }
 
+          if (state._streamer && (chatId !== currentChatId || workspaceMode !== "coding")) {
+            state._streamer.cancel();
+            state._streamer = null;
+          }
+
           if (chatId === currentChatId && workspaceMode === "coding") {
             const ensured = state.row ? { row: state.row, id: state.id, sid: state.sid, tsid: state.tsid } : ensureBackgroundRow(chatId);
             if (ensured) {
@@ -6783,6 +6817,12 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           }
 
           if (currentState.status === "stopped") {
+            if (state._streamer) {
+              state._streamer.cancel();
+              state._streamer = null;
+            }
+            try { state.controller.abort(); } catch {}
+
             if (chatId === currentChatId && workspaceMode === "coding") {
               markGenerationStopped(state.row, state.id, state.sid, state.tsid);
               isGenerating = false;
@@ -6796,6 +6836,12 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           }
 
           if (currentState.status === "error") {
+            if (state._streamer) {
+              state._streamer.cancel();
+              state._streamer = null;
+            }
+            try { state.controller.abort(); } catch {}
+
             await commitBackgroundResult(
               chatId,
               key,
@@ -6806,6 +6852,12 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           }
 
           if (currentState.status === "complete") {
+            if (state._streamer) {
+              state._streamer.cancel();
+              state._streamer = null;
+            }
+            try { state.controller.abort(); } catch {}
+
             const proposal = currentState.proposal || (currentState.commit ? { commit: currentState.commit } : null);
             if (proposal && currentState.commit && !proposal.commit) proposal.commit = currentState.commit;
             await commitBackgroundResult(
@@ -6822,6 +6874,11 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
         return false;
       })().finally(() => {
+        if (state._streamer) {
+          state._streamer.cancel();
+          state._streamer = null;
+        }
+        try { state.controller.abort(); } catch {}
         backgroundJobWatchers.delete(key);
       });
 
@@ -6841,7 +6898,16 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
        
 
-       if (generationStopRequested || !isGenerating) return false;
+       if (generationStopRequested || !isGenerating) {
+         markGenerationStopped(row, id, sid, tsid);
+         isGenerating = false;
+         activeAbortController = null;
+         generationStopRequested = false;
+         getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10 23 12 2 3 2 10l15 2-15 2z"/>';
+         getEl("actionBtn").classList.remove("stop");
+         handleInputChange();
+         return false;
+       }
 
        const start = await fetch("/api/background/start", {
          method: "POST",
@@ -6860,6 +6926,13 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
        if(generationStopRequested || !isGenerating){
         await requestBackgroundJobStop(jobId);
+        markGenerationStopped(row, id, sid, tsid);
+        isGenerating = false;
+        activeAbortController = null;
+        generationStopRequested = false;
+        getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10 23 12 2 3 2 10l15 2-15 2z"/>';
+        getEl("actionBtn").classList.remove("stop");
+        handleInputChange();
         return false;
       }
 
@@ -7609,11 +7682,17 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
           return;
         }else{
-          activeAbortController?.abort();
+          if (workspaceMode === "coding") {
+            const activeRow = getActiveChatContainer()?.querySelector(".row.trux-row:last-of-type");
+            const statusEl = activeRow?.querySelector(".status-msg");
+            if (statusEl) setThinkingStatus(statusEl.id, "Stopping generation…");
+            return;
+          }
 
+          activeAbortController?.abort();
           isGenerating = false;
           activeAbortController = null;
-          getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15-5-15 2-15 6z"/>';
+          getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10 23 12 2 3 2 10l15 2-15 2z"/>';
           getEl("actionBtn").classList.remove("stop");
           handleInputChange();
           return;
