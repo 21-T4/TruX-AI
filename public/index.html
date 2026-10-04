@@ -6735,6 +6735,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       const targetRow = options.row || null;
       const state = {
         controller,
+        jobSecret: String(options.jobSecret || chatSessions[chatId]?.backgroundJobSecret || ""),
         row: targetRow,
         id: options.id || "",
         sid: options.sid || "",
@@ -6750,7 +6751,10 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           try {
             const statusUser = auth?.currentUser;
             const statusHeaders = {};
-            if (statusUser) {
+            if (state.jobSecret) {
+              statusHeaders["X-Trux-Background-Secret"] = state.jobSecret;
+            }
+            if (statusUser && !state.jobSecret) {
               try {
                 statusHeaders.Authorization = "Bearer " + await statusUser.getIdToken(false);
               } catch {}
@@ -6892,7 +6896,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
       const existingJob = String(chatSessions[targetChatId].activeBackgroundJobId || "");
       if (existingJob) {
-        return watchBackgroundJob(targetChatId, existingJob, { row, id, sid, tsid });
+        return watchBackgroundJob(targetChatId, existingJob, { row, id, sid, tsid, jobSecret: chatSessions[targetChatId]?.backgroundJobSecret || "" });
       }
 
 
@@ -6922,10 +6926,12 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       }
 
       const jobId = String(startData.jobId || "");
+      const jobSecret = String(startData.jobSecret || "");
       if (!jobId) throw new Error("Background coding did not return a job id.");
+      if (!jobSecret) throw new Error("Background coding did not return a job control secret.");
 
        if(generationStopRequested || !isGenerating){
-        await requestBackgroundJobStop(jobId);
+        await requestBackgroundJobStop(jobId, jobSecret);
         markGenerationStopped(row, id, sid, tsid);
         isGenerating = false;
         activeAbortController = null;
@@ -6937,17 +6943,18 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       }
 
       chatSessions[targetChatId].activeBackgroundJobId = jobId;
+      chatSessions[targetChatId].backgroundJobSecret = jobSecret;
       chatSessions[targetChatId].backgroundStartedAt = Date.now();
       saveChatSessions();
 
-      return watchBackgroundJob(targetChatId, jobId, { row, id, sid, tsid });
+      return watchBackgroundJob(targetChatId, jobId, { row, id, sid, tsid, jobSecret });
     }
 
     function resumePersistedBackgroundJobs() {
       Object.keys(chatSessions).forEach(chatId => {
         const jobId = String(chatSessions[chatId]?.activeBackgroundJobId || "");
         if (!jobId) return;
-        watchBackgroundJob(chatId, jobId);
+        watchBackgroundJob(chatId, jobId, { jobSecret: chatSessions[chatId]?.backgroundJobSecret || "" });
       });
     }
 
@@ -7616,7 +7623,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       }
     }
 
-    async function requestBackgroundJobStop(jobId) {
+    async function requestBackgroundJobStop(jobId, jobSecret = "") {
       const id = String(jobId || "");
       if(!id) return false;
 
@@ -7631,7 +7638,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
             "Content-Type":"application/json",
             "Authorization":"Bearer "+token
           },
-          body:JSON.stringify({jobId:id,userId:user.uid||""})
+          body:JSON.stringify({jobId:id,userId:user.uid||"",jobSecret:String(jobSecret || "")})
         });
         if(response.ok || response.status === 404) return true;
         if(response.status === 401 && !forceRefresh) return sendCancel(true);
@@ -7676,8 +7683,10 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           }
 
           const session = chatSessions[currentChatId];
+          const jobSecret = String(info?.jobSecret || session?.backgroundJobSecret || "");
           if (session?.activeBackgroundJobId === codingJobId) {
             delete session.activeBackgroundJobId;
+            delete session.backgroundJobSecret;
             delete session.backgroundStartedAt;
             saveChatSessions();
           }
@@ -7690,7 +7699,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           getEl("actionBtn").classList.remove("stop");
           handleInputChange();
 
-          void requestBackgroundJobStop(codingJobId).catch(() => {});
+          void requestBackgroundJobStop(codingJobId, jobSecret).catch(() => {});
           return;
         }else{
           if (workspaceMode === "coding") {
