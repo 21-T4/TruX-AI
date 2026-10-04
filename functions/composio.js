@@ -75,7 +75,7 @@ export async function resolvePluginToolkit(env, plugin) {
     toolkitCache.set(cacheKey, pending);
     try {
       const detail = await pending;
-      if (detail && hasManagedAuth(detail)) {
+      if (detail) {
         toolkitCache.set(cacheKey, Promise.resolve(detail));
         return { slug, detail };
       }
@@ -97,15 +97,6 @@ export async function resolveAllPluginToolkits(env) {
       return { plugin, slug: '', detail: null, error: String(error?.message || error) };
     }
   }));
-}
-
-function hasManagedAuth(detail) {
-  const schemes = detail?.composio_managed_auth_schemes || detail?.composioManagedAuthSchemes || [];
-  if (Array.isArray(schemes) && schemes.length) return true;
-  return authConfigCandidates(detail).some(item =>
-    item?.is_composio_managed === true ||
-    item?.isComposioManaged === true
-  );
 }
 
 function authConfigCandidates(detail) {
