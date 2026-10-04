@@ -86,7 +86,7 @@
     render();
   }
   function card(p){
-    var connected=!!p.connected, unavailable=p.configured===false;
+    var connected=!!p.connected, unavailable=p.connectable===false;
     var logo=p.logo || p.fallbackLogo
       ? '<img src="'+esc(p.logo || p.fallbackLogo)+'" alt="" loading="lazy">'
       : '<span class="trux-plugin-fallback-initials">'+esc(initials(p.name))+'</span>';
@@ -123,7 +123,7 @@
     try{
       var a=auth(), u=a && a.currentUser;
       if(!u){
-        state.plugins=FALLBACK.map(function(p){return Object.assign({},p,{configured:null,connected:false,enabled:false});});
+        state.plugins=FALLBACK.map(function(p){return Object.assign({},p,{configured:null,connectable:true,connected:false,enabled:false});});
         notice('Sign in to connect plugins and give TruX permission to use them.',false);
         return;
       }
@@ -164,7 +164,7 @@
       location.assign(data.redirectUrl);
     }catch(e){
       notice(e && e.message ? e.message : 'Could not connect this plugin.',true);
-      if(button){button.disabled=false;button.textContent='Connect & Add';}
+      if(button){button.disabled=false;button.textContent='Connect';}
     }
   }
   async function disconnect(pluginId,button){
@@ -207,14 +207,15 @@
     if(params.get('trux_plugins')!=='1') return;
     try{history.replaceState({},document.title,location.pathname+location.hash);}catch(e){}
     open();
+    load({silent:true});
   }
 
   window.filterPlugins=filter;
   window.setPluginGroup=setGroup;
   window.loadPlugins=load;
   window.connectTruxPlugin=connect;
+  window.disconnectTruxPlugin=disconnect;
   window.addOrConnectPlugin=addOrConnectPlugin;
-  window.togglePluginAccess=toggle;
   window.openPluginsPage=open;
   window.closePluginsPage=close;
   window.handlePluginCallback=callback;
