@@ -465,6 +465,16 @@ function isExplicitExternalActionRequest(value) {
   return target && action;
 }
 
+function isConfirmedExternalFollowup(value, history) {
+  const text = String(value || '').trim();
+  if (!/^(?:yes|yeah|yep|ye|sure|ok|okay|go ahead|do it|send it|please do|proceed)$/i.test(text)) return false;
+  const recent = Array.isArray(history) ? history.slice(-6) : [];
+  return recent.some(item =>
+    item?.role === 'assistant' &&
+    /(?:send|email|mail|create|update|schedule|connect|disconnect|github|repository|plugin|integration)/i.test(String(item?.text || ''))
+  );
+}
+
 function hasExplicitCodeWorkRequest(value) {
   const text = String(value || '').trim();
   if (!text) return false;
@@ -1695,7 +1705,10 @@ export async function onRequestPost(context) {
     const researchMode = mode === 'deep-research';
     const codingMode = mode === 'coding';
     const explicitRepoRequest = isExplicitRepoRequest(message);
-    const explicitExternalAction = isExplicitExternalActionRequest(message);
+    const explicitExternalAction =
+      isExplicitExternalActionRequest(message) ||
+      explicitRepoRequest ||
+      isConfirmedExternalFollowup(message, history);
     const explicitCodeWork = hasExplicitCodeWorkRequest(message);
     // TruX-Code always uses the deep-reasoning Pro model, independently of the chat picker.
     const effectiveTier = (researchMode || codingMode) ? 'ultra' : (tier || 'base');
