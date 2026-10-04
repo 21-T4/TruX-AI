@@ -39,7 +39,7 @@ export async function onRequestPost({ request, env }) {
     const next = {
       ...latest,
       status: body?.status || latest.status,
-      events: Array.isArray(body?.events) ? body.events.slice(-30) : (latest.events || []),
+      events: Array.isArray(body?.events) ? body.events.slice(-120) : (latest.events || []),
       final: typeof body?.final === 'string' ? body.final : latest.final,
       liveText: typeof body?.liveText === 'string' ? body.liveText : (latest.liveText || ''),
       error: typeof body?.error === 'string' ? body.error : latest.error,
