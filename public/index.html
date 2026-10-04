@@ -4142,52 +4142,71 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       </section>
 
             <section class="trux-code-workspace" id="truxCodeWorkspace" aria-label="TruX-Code workspace">
-        <div class="trux-code-shell">
-          <header class="trux-code-header">
-            <div class="trux-code-identity">
-              <div class="trux-code-mark" aria-hidden="true">&lt;/&gt;</div>
-              <div>
-                <div class="trux-code-title-row">
-                  <h1>TruX-Code</h1>
-                  <span class="trux-code-badge">WORKSPACE</span>
-                </div>
-                <p>Focused engineering workspace · context on demand · reviewable changes</p>
-              </div>
-            </div>
-            <div class="trux-code-state"><span class="trux-code-state-dot"></span><span>READY</span></div>
-          </header>
-
-          <div class="trux-code-tabs">
-            <span class="active">Workspace</span>
-            <span>Task</span>
-            <span>Context</span>
-            <span>Changes</span>
-            <span class="trux-code-tab-spacer"></span>
-            <span class="trux-code-shortcut">⌘ / Ctrl + Enter to run</span>
+  <div class="trux-code-shell">
+    <header class="trux-code-header">
+      <div class="trux-code-identity">
+        <div class="trux-code-mark" aria-hidden="true">&lt;/&gt;</div>
+        <div class="trux-code-heading">
+          <div class="trux-code-title-row">
+            <h1>TruX-Code</h1>
+            <span class="trux-code-badge">WORKSPACE</span>
           </div>
-
-          <div class="trux-code-stage">
-            <div class="trux-code-grid-overlay" aria-hidden="true"></div>
-
-            <div class="trux-code-stage-center">
-              <div class="trux-code-center-mark">&lt;/&gt;</div>
-              <div class="trux-code-center-kicker">TRUX-CODE ENGINE</div>
-              <h2>Ready when you are.</h2>
-              <p>Describe a coding task, debugging problem, refactor, or explicit repository change. TruX-Code keeps external context dormant until the task actually calls for it.</p>
-              <div class="trux-code-center-meta">
-                <span><i></i> Deep coding reasoning</span>
-                <span><i></i> Context on demand</span>
-                <span><i></i> Review-first changes</span>
-              </div>
-            </div>
-
-            <div class="trux-code-stage-bottom">
-              <span>WORKSPACE STATUS</span>
-              <span class="status"><i></i> Idle</span>
-            </div>
-          </div>
+          <p>Engineering workspace · deep reasoning on demand · external context stays dormant</p>
         </div>
-      </section>
+      </div>
+      <div class="trux-code-state" id="truxCodeReadyState">
+        <span class="trux-code-state-dot"></span><span>READY</span>
+      </div>
+    </header>
+
+    <div class="trux-code-commandbar">
+      <div class="trux-code-command-tabs">
+        <span class="active">Workspace</span>
+        <span>Task</span>
+        <span>Context</span>
+        <span>Changes</span>
+      </div>
+      <span class="trux-code-shortcut">CTRL / ⌘ + ENTER</span>
+    </div>
+
+    <div class="trux-code-integrations">
+      <div class="trux-code-integrations-label">
+        <span class="trux-code-integrations-led"></span>
+        <span>INTEGRATIONS</span>
+      </div>
+      <div class="trux-code-integration-items" id="truxCodeIntegrationItems">
+        <span class="trux-code-integrations-empty">No integrations connected</span>
+      </div>
+      <span class="trux-code-plugin-status" id="codePluginStatus">
+        <span class="trux-code-status-dot"></span>
+        <span>No plugins enabled</span>
+      </span>
+      <span id="codePluginCountText" class="trux-sr-only">0 connected</span>
+      <button type="button" class="trux-code-manage" data-open-plugins aria-label="Manage TruX integrations">
+        Manage
+      </button>
+    </div>
+
+    <div class="trux-code-stage">
+      <div class="trux-code-grid-overlay" aria-hidden="true"></div>
+      <div class="trux-code-stage-center">
+        <div class="trux-code-center-mark">&lt;/&gt;</div>
+        <div class="trux-code-center-kicker">TRUX-CODE ENGINE</div>
+        <h2>Build with intent.</h2>
+        <p>Describe the implementation, bug, refactor, or repository task. TruX-Code only reaches into GitHub or connected integrations when your request explicitly calls for it.</p>
+        <div class="trux-code-center-meta">
+          <span><i></i> Deep coding reasoning</span>
+          <span><i></i> Context on demand</span>
+          <span><i></i> Review-first changes</span>
+        </div>
+      </div>
+      <div class="trux-code-stage-bottom">
+        <span>WORKSPACE STATUS</span>
+        <span class="status"><i></i> Idle</span>
+      </div>
+    </div>
+  </div>
+</section>
 
       <section class="trux-plugins-workspace" id="pluginsWorkspace" aria-label="TruX Plugins">
         <div class="trux-plugins-page">
@@ -7123,7 +7142,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
         if (finalText) {
           appendMessageRow("ChatTruX-AI", finalText, "trux-row", "trux-bubble", null, false, [], null);
-          if (durationMs > 0) {
+          if (durationMs >= 0) {
             const rows = getActiveChatContainer().querySelectorAll(".row.trux-row");
             const responseRow = rows[rows.length - 1];
             const stack = responseRow?.querySelector(".trux-response-stack");
@@ -7620,7 +7639,9 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
       const requestBody = {
         message: prompt,
-        tier: (workspaceMode === "deep-research" || workspaceMode === "coding") ? "ultra" : currentModel,
+        tier: workspaceMode === "deep-research"
+          ? "ultra"
+          : (workspaceMode === "coding" ? (codingNeedsWorkspaceTools ? "ultra" : "base") : currentModel),
         mode: workspaceMode,
         advancedThinking: advancedThinkingEnabled || workspaceMode === "deep-research",
         history: (chatSessions[currentChatId]?.messages || []).slice(0, -1).map(m => ({ role: m.role, text: m.text || "" })),
@@ -7636,10 +7657,17 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         notifyOnComplete: true
       };
 
+      /*
+       * Keep lightweight TruX-Code turns on the normal streaming path.
+       * Background execution is reserved for real coding/tool work so a
+       * greeting never enters a long-running workspace job.
+       */
+      const codingNeedsWorkspaceTools = /\\b(?:github|repo|repository|codebase|pull request|branch|commit|push|plugin|integration|gmail|google sheets|google docs|calendar|drive|slack|notion|outlook|teams|excel|onedrive|fix|debug|refactor|implement|edit|modify|rewrite|replace|build|test|compile|api|endpoint|javascript|typescript|python|java|html|css|react|node|sql)\\b/i.test(String(prompt || ''));
+
       /* TruX-Code is server-owned from the beginning. The browser only
          watches the job state, so mode switches, refreshes, and app closure
          cannot create a second generation or kill the actual coding run. */
-      if (workspaceMode === "coding") {
+      if (workspaceMode === "coding" && codingNeedsWorkspaceTools) {
         const targetChatId = currentChatId;
         void runCodeBackgroundJob({
           row, id, sid, tsid, prompt, voice, requestBody, chatId: targetChatId
@@ -7760,10 +7788,10 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
             if (workspaceMode === "coding") {
               const heartbeatCount = Number(j.count || 0);
               const alive = [
-                "Reasoning through approach",
-                "Checking implementation details",
-                "Tracing repository dependencies",
-                "Reviewing edge cases"
+                "Keeping the workspace ready",
+                "Processing the request",
+                "Preparing the response",
+                "Finishing the response"
               ];
               setThinkingStatus(sid, alive[heartbeatCount % alive.length]);
             }
@@ -8390,7 +8418,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       const cC = enterChatWorkspace();
        chatSessions[id].messages.forEach((m, index) => {
          appendMessageRow(m.role === "user" ? "You" : "ChatTruX-AI", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image, false, m.sources, m.video, { messageIndex: index, stopped: m.role === "user" && m.stopped === true });
-         if (workspaceMode === "coding" && m.role === "trux" && Number(m.durationMs) > 0) {
+         if (workspaceMode === "coding" && m.role === "trux" && Number.isFinite(Number(m.durationMs))) {
            const rows = getActiveChatContainer()?.querySelectorAll(".row.trux-row") || [];
            const restoredRow = rows[rows.length - 1];
            const restoredStack = restoredRow?.querySelector(".trux-response-stack");
@@ -8570,6 +8598,195 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
   </script>
 
 <script src="/trux-plugins.js?v=20261004b" defer></script>
+<style id="trux-code-safe-refresh">
+  /* TruX-Code is a workspace surface, not a marketing card. */
+  .coding-workspace .mobile-new{display:none!important}
+  .coding-workspace .topbar-left{width:auto;min-width:44px}
+  .coding-workspace .trux-mode-switch{transform:translateX(-2px)}
+  .trux-sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+
+  .coding-workspace .trux-code-workspace{
+    width:min(1240px,100%);
+    padding:18px 24px 8px;
+    margin:0 auto;
+  }
+  .coding-workspace .trux-code-shell{
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:22px;
+    background:
+      linear-gradient(180deg,rgba(255,255,255,.018),transparent 28%),
+      #0b0b0c;
+    box-shadow:0 28px 90px rgba(0,0,0,.34);
+  }
+  .coding-workspace .trux-code-header{
+    min-height:84px;
+    padding:18px 20px;
+  }
+  .coding-workspace .trux-code-heading p{
+    color:#696a71;
+    font-size:10px;
+  }
+  .coding-workspace .trux-code-commandbar{
+    height:38px;
+    padding:0 20px;
+    background:#0d0d0f;
+    border-top:1px solid rgba(255,255,255,.045);
+    border-bottom:1px solid rgba(255,255,255,.065);
+  }
+  .coding-workspace .trux-code-command-tabs{gap:22px}
+  .coding-workspace .trux-code-command-tabs span{
+    color:#57585f;
+    font-size:8px;
+  }
+  .coding-workspace .trux-code-command-tabs span.active{color:#9b9ca3}
+  .coding-workspace .trux-code-shortcut{color:#484950;font-size:8px}
+
+  .coding-workspace .trux-code-integrations{
+    min-height:58px;
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr) auto auto;
+    align-items:center;
+    gap:12px;
+    padding:0 20px;
+    border-bottom:1px solid rgba(255,255,255,.06);
+    background:rgba(255,255,255,.008);
+  }
+  .coding-workspace .trux-code-integrations-label{
+    display:flex;align-items:center;gap:8px;
+    color:#5e5f66;font:650 8px/1 var(--font-mono);
+    letter-spacing:.16em;
+  }
+  .coding-workspace .trux-code-integrations-led{
+    width:6px;height:6px;border-radius:50%;
+    background:#78e3a0;box-shadow:0 0 10px rgba(120,227,160,.28);
+  }
+  .coding-workspace .trux-code-integration-items{
+    min-width:0;display:flex;align-items:center;gap:7px;overflow:hidden;
+  }
+  .coding-workspace .trux-code-integrations-empty{
+    color:#47484f;font:500 9px/1 var(--font-mono);
+  }
+  .coding-workspace .trux-code-integration-app{
+    display:inline-flex;align-items:center;gap:6px;
+    min-width:0;padding:6px 8px;border:1px solid rgba(255,255,255,.06);
+    border-radius:9px;background:rgba(255,255,255,.018);color:#8a8b92;
+    font:600 8px/1 var(--font-mono);white-space:nowrap;
+  }
+  .coding-workspace .trux-code-integration-app img{width:15px;height:15px;object-fit:contain}
+  .coding-workspace .trux-code-plugin-status{
+    display:inline-flex!important;align-items:center;gap:7px;
+    min-height:28px;padding:0 9px;
+    border:1px solid rgba(255,255,255,.06);border-radius:8px;
+    background:#101012;color:#55565d;font:650 8px/1 var(--font-mono);
+    white-space:nowrap;
+  }
+  .coding-workspace .trux-code-plugin-status.active{
+    color:#8f9097;border-color:rgba(134,149,255,.24);
+    background:rgba(113,129,255,.035)
+  }
+  .coding-workspace .trux-code-status-dot{
+    width:5px;height:5px;border-radius:50%;background:#55565d;
+  }
+  .coding-workspace .trux-code-plugin-status.active .trux-code-status-dot{
+    background:#77dfa0;box-shadow:0 0 8px rgba(119,223,160,.34)
+  }
+  .coding-workspace .trux-code-manage{
+    height:30px;padding:0 11px;border:1px solid rgba(255,255,255,.085);
+    border-radius:9px;background:#111113;color:#8e8f96;
+    font:650 8px/1 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;
+    transition:background .18s,border-color .18s,color .18s,transform .18s;
+  }
+  .coding-workspace .trux-code-manage:hover{
+    transform:translateY(-1px);background:#17171a;border-color:rgba(134,149,255,.3);color:#d2d3d7;
+  }
+
+  .coding-workspace .trux-code-stage{
+    min-height:calc(100dvh - 360px);
+    height:auto;
+    border:0;
+    border-radius:0;
+    background:
+      radial-gradient(ellipse 46% 76% at 50% 34%,rgba(112,130,255,.055),transparent 72%),
+      #0a0a0b;
+  }
+  .coding-workspace .trux-code-grid-overlay{
+    opacity:.28;
+    background-size:36px 36px;
+  }
+  .coding-workspace .trux-code-stage-center{
+    max-width:760px;
+    padding:72px 24px 44px;
+  }
+  .coding-workspace .trux-code-center-mark{
+    width:46px;height:46px;margin-bottom:17px;
+    border-radius:13px;border-color:rgba(255,255,255,.1);
+    background:#101012;color:#9a9ba2;
+    box-shadow:0 16px 34px rgba(0,0,0,.34);
+  }
+  .coding-workspace .trux-code-center-kicker{
+    color:#55565d;font-size:8px;letter-spacing:.2em;
+  }
+  .coding-workspace .trux-code-stage-center h2{
+    margin:11px 0 10px;
+    color:#e6e6e8;
+    font:750 clamp(38px,5vw,58px)/.96 var(--font-disp);
+    letter-spacing:-.065em;
+  }
+  .coding-workspace .trux-code-stage-center p{
+    max-width:660px;color:#6d6e76;font-size:12px;line-height:1.7;
+  }
+  .coding-workspace .trux-code-center-meta{
+    gap:9px;margin-top:22px;
+  }
+  .coding-workspace .trux-code-center-meta span{
+    height:27px;padding:0 10px;border-radius:9px;
+    border:1px solid rgba(255,255,255,.055);
+    background:rgba(255,255,255,.012);
+    color:#57585f;font-size:8px;
+  }
+  .coding-workspace .trux-code-stage-bottom{
+    height:36px;padding:0 16px;
+    border-top:1px solid rgba(255,255,255,.045);
+    color:#414249;font-size:7px;
+  }
+
+  .coding-workspace .coding-worked-for{
+    display:block!important;
+    margin:2px 0 8px!important;
+    color:#777981!important;
+    font:600 9px/1.2 var(--font-mono)!important;
+    letter-spacing:.10em!important;
+    text-transform:uppercase!important;
+  }
+
+  .trux-plugins-grid .trux-plugin-connect{
+    display:inline-flex!important;
+    visibility:visible!important;
+    opacity:1!important;
+  }
+  .trux-plugins-grid .trux-plugin-connect:disabled{
+    display:inline-flex!important;
+    opacity:.6!important;
+  }
+
+  @media(max-width:700px){
+    .coding-workspace .trux-code-workspace{padding:10px 12px 5px}
+    .coding-workspace .trux-code-shell{border-radius:17px}
+    .coding-workspace .trux-code-header{padding:15px 14px;min-height:73px}
+    .coding-workspace .trux-code-integrations{
+      grid-template-columns:auto minmax(0,1fr) auto;
+      gap:8px;padding:0 14px;
+    }
+    .coding-workspace .trux-code-plugin-status{display:none!important}
+    .coding-workspace .trux-code-manage{padding:0 9px}
+    .coding-workspace .trux-code-stage{min-height:calc(100dvh - 326px)}
+    .coding-workspace .trux-code-stage-center{padding:55px 18px 40px}
+    .coding-workspace .trux-code-stage-center h2{font-size:40px}
+    .coding-workspace .trux-code-stage-center p{font-size:11px}
+  }
+</style>
+
 </body>
 </html>
 
