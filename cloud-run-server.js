@@ -264,6 +264,15 @@ async function serveStatic(req, res) {
     if (!stat.isFile()) throw new Error("not a file");
     res.statusCode = 200;
     res.setHeader("Content-Type", mimeType(filePath));
+    /* The application shell must never be stored by an intermediate CDN,
+       browser cache, or proxy. JS/CSS/image assets may remain cacheable. */
+    if (path.extname(filePath).toLowerCase() === ".html") {
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+      res.setHeader("CDN-Cache-Control", "no-store");
+      res.setHeader("Cloudflare-CDN-Cache-Control", "no-store");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+    }
     if (req.method === "HEAD") return res.end();
     fs.createReadStream(filePath).pipe(res);
   } catch {
