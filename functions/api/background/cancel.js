@@ -12,9 +12,14 @@ function pushEvent(events, event) {
 
 export async function onRequestPost({ request, env }) {
   try {
-    const verified = await requireFirebaseUser(request, env);
     const body = await request.json();
     const jobId = String(body?.jobId || '');
+    const requestedJobSecret = String(body?.jobSecret || '');
+
+    let verified = null;
+    if (!requestedJobSecret) {
+      verified = await requireFirebaseUser(request, env);
+    }
 
     if (!/^[a-zA-Z0-9_-]{20,100}$/.test(jobId)) {
       return Response.json({ error: 'Invalid background job id.' }, { status: 400 });
@@ -27,7 +32,13 @@ export async function onRequestPost({ request, env }) {
     if (!existing) return Response.json({ error: 'Background job not found.' }, { status: 404 });
 
     const ownerId = String(existing?.body?.userId || '');
-    if (!ownerId || ownerId !== String(verified.uid)) {
+    const secretMatches = !!requestedJobSecret && requestedJobSecret === String(existing?.jobSecret || '');
+    const firebaseMatches = !!verified && !!ownerId && ownerId === String(verified.uid);
+
+    if (!secretMatches && !firebaseMatches) {
+      if (!requestedJobSecret && !verified) {
+        return Response.json({ error: 'Authentication required to stop this background job.' }, { status: 401 });
+      }
       return Response.json({ error: 'You are not authorized to stop this background job.' }, { status: 403 });
     }
 
