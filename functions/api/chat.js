@@ -3,6 +3,13 @@ import { getGithubSession } from '../github-session.js';
 import { requireFirebaseUser } from '../firebase-auth.js';
 import { getProcessedText } from '../gcs-store.js';
 import { applyEditsDirectly } from './github/apply-edits.js';
+import {
+  getEnabledPluginIds,
+  getComposioGeminiTools,
+  executeComposioTool,
+  getPluginById,
+  resolvePluginToolkit
+} from '../composio.js';
 
 /* TruX-Code GitHub agent syntax verified */
 const LOCATION = 'global';
@@ -1782,9 +1789,9 @@ export async function onRequestPost(context) {
 
     const effectiveAdvancedThinking = !!advancedThinking || researchMode || effectiveTier === 'ultra';
     const modeInstruction = researchMode
-      ? `\n\n[DEEP RESEARCH MODE]: Use Google Search grounding for fresh, niche, or source-backed information. Synthesize multiple relevant sources and distinguish facts from inference. Use TruX-Code reasoning engine.`
+      ? `\n\n[DEEP RESEARCH MODE]: Use Google Search grounding for fresh, niche, or source-backed information. Synthesize multiple relevant sources and distinguish facts from inference. Use TruX-Code reasoning engine.\`
       : codingMode
-        ? `\n\n[TRUX-CODE MODE]: Think deeply before answering, but never expose private chain-of-thought. Prioritize complete, maintainable code, careful debugging, tests, and concise implementation notes. Before each GitHub tool call, first emit one brief, natural user-facing activity sentence describing the action you are about to take; do not emit internal reasoning. After each tool returns, continue with the next relevant activity sentence instead of canned progress text.\n\n[CONNECTED GITHUB WORKSPACE]: The active repository is ${String(githubRepository || 'none')}; branch ${String(githubBranch || 'default')}. When GitHub tools are available, inspect the repository with github_search_code and github_read_file before changing anything. For ANY request that asks to modify, fix, update, refactor, add, remove, or otherwise change repository files, read the current files and call github_apply_changes (or github_propose_changes). The tool applies and commits the changes directly to git on the target branch. Do not stop at a conversational confirmation such as “I can make that change” or “ready to commit”. Provide exact oldText/newText replacements copied from the latest reads. Large repository changes are allowed and should be as comprehensive as the user's request requires. Once committed, summarize the changes and provide clear commit details.`
+        ? `\n\n[TRUX-CODE MODE]: Think deeply before answering, but never expose private chain-of-thought. Prioritize complete, maintainable code, careful debugging, tests, and concise implementation notes. When a connected Composio plugin is relevant, use its function tool directly rather than pretending to have access. Before each external-tool call, emit one brief, natural user-facing activity sentence describing the action you are about to take; do not emit internal reasoning. After each tool returns, continue with the next relevant activity sentence instead of canned progress text.\n\n[COMPOSIO PLUGINS]: Connected plugins, when enabled for this user, are available as function tools at runtime in both Chat and TruX-Code. Use them for real external actions such as mail, documents, spreadsheets, calendars, storage, source control, cloud services, and collaboration. Never claim an external action succeeded unless the corresponding tool returned success. If a needed plugin is not available as a tool, tell the user to open Plugins and connect it.\`
         : '';
     const thinkingInstruction = effectiveAdvancedThinking
       ? `${combinedSystemInstruction}${modeInstruction}\n\n[REASONING MODE]: Take extra time to reason carefully, check assumptions and calculations, then return only the concise final answer. Do not expose private chain-of-thought.`
@@ -1862,7 +1869,47 @@ export async function onRequestPost(context) {
         : null;
 
       if (codingMode && validGithubRepo(githubRepository) && !githubSession?.token) {
-        send({ type: 'status', status: 'GitHub is selected but not connected. Reconnect GitHub to inspect the repository.' });
+        send({ type: 'status', status: 'Legacy GitHub connection is not available for this workspace.' });
+      }
+
+      let composioToolMetadata = new Map();
+      let composioToolDeclarations = [];
+      let enabledComposioPluginIds = [];
+      let enabledComposioToolkitSlugs = [];
+
+      if (effectiveUserId && String(env.COMPOSIO_API_KEY || '').trim()) {
+        try {
+          enabledComposioPluginIds = await getEnabledPluginIds(env, effectiveUserId);
+          const resolved = await Promise.all(
+            enabledComposioPluginIds.map(async pluginId => {
+              const plugin = getPluginById(pluginId);
+              if (!plugin) return null;
+              try {
+                const toolkit = await resolvePluginToolkit(env, plugin);
+                return toolkit?.slug ? toolkit.slug : null;
+              } catch {
+                return null;
+              }
+            })
+          );
+          enabledComposioToolkitSlugs = [...new Set(resolved.filter(Boolean))];
+
+          if (enabledComposioToolkitSlugs.length) {
+            send({
+              type: 'status',
+              status: 'Loading ' + enabledComposioToolkitSlugs.length + ' connected plugin' +
+                (enabledComposioToolkitSlugs.length === 1 ? '' : 's') + '…'
+            });
+            const composioTools = await getComposioGeminiTools(env, enabledComposioToolkitSlugs, message);
+            composioToolDeclarations = composioTools.declarations || [];
+            composioToolMetadata = composioTools.metadata || new Map();
+          }
+        } catch (pluginError) {
+          send({
+            type: 'status',
+            status: 'Plugin tools unavailable: ' + String(pluginError?.message || 'Composio request failed.')
+          });
+        }
       }
 
       const changeRequested = codingMode && isGithubChangeRequest(message);
@@ -1870,9 +1917,16 @@ export async function onRequestPost(context) {
       const activeGithubTools = changeRequested
         ? githubTools
         : githubTools.filter(tool => tool.name !== 'github_propose_changes' && tool.name !== 'github_apply_changes');
-      const modelTools = githubSession && codingMode && validGithubRepo(githubRepository)
-        ? [{ functionDeclarations: activeGithubTools }]
-        : (researchMode ? [{ googleSearch: {} }] : []);
+      const legacyGithubDeclarations = githubSession && codingMode && validGithubRepo(githubRepository)
+        ? activeGithubTools
+        : [];
+      const modelFunctionDeclarations = [
+        ...legacyGithubDeclarations,
+        ...composioToolDeclarations
+      ];
+      const modelTools = [];
+      if (modelFunctionDeclarations.length) modelTools.push({ functionDeclarations: modelFunctionDeclarations });
+      if (researchMode) modelTools.push({ googleSearch: {} });
 
       let agentContents = contents.slice();
       let finalResult = null;
@@ -2085,7 +2139,10 @@ export async function onRequestPost(context) {
               github_apply_changes: 'GitHub Direct Commit',
               github_propose_changes: 'GitHub Direct Commit'
             };
-            const toolName = toolLabels[call?.name] || 'GitHub Tool';
+            const composioLabel = composioToolMetadata.get(call?.name);
+            const toolName = composioLabel
+              ? String(composioLabel.toolkitName || composioLabel.toolkitSlug || 'Plugin') + ' · ' + String(composioLabel.name || call?.name)
+              : (toolLabels[call?.name] || 'External Tool');
             const rawPath = call?.args?.path ? String(call.args.path) : '';
             const toolTarget = rawPath ? toolName + ' · ' + rawPath : toolName;
             const activeExplanation = progressLine || toolTarget;
@@ -2094,13 +2151,21 @@ export async function onRequestPost(context) {
 
             try {
               const duplicateBatch = repeatedToolSignatureCount > 0;
-              const callResult = duplicateBatch
-                ? {
-                    error: 'This exact GitHub tool call was already executed in this turn. Use its previous result and choose a different inspection or proposal step.'
-                  }
-                : (githubSession && codingMode && validGithubRepo(githubRepository)
-                    ? await executeGithubToolCall(githubSession, githubRepository, githubBranch, call, message)
-                    : { error: 'GitHub workspace is not connected.' });
+              const isComposioCall = !!composioLabel;
+              let callResult;
+              if (duplicateBatch) {
+                callResult = {
+                  error: 'This exact external tool call was already executed in this turn. Use its previous result and choose a different tool step.'
+                };
+              } else if (isComposioCall) {
+                callResult = effectiveUserId
+                  ? await executeComposioTool(env, effectiveUserId, call.name, call.args || {}, composioLabel)
+                  : { error: 'A signed-in account is required for plugin actions.' };
+              } else if (githubSession && codingMode && validGithubRepo(githubRepository)) {
+                callResult = await executeGithubToolCall(githubSession, githubRepository, githubBranch, call, message);
+              } else {
+                callResult = { error: 'This external tool is not connected.' };
+              }
 
               if (call?.name === 'github_import_repository' && !callResult?.error) {
                 repositoryImported = true;
