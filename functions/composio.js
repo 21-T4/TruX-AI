@@ -6,14 +6,16 @@ export const PLUGIN_CATALOG = [
   { id: 'google-docs', name: 'Google Docs', group: 'Google Workspace', slugs: ['googledocs'], logo: 'https://cdn.simpleicons.org/googledocs', description: 'Create, read and edit Google documents.' },
   { id: 'google-calendar', name: 'Google Calendar', group: 'Google Workspace', slugs: ['googlecalendar'], logo: 'https://cdn.simpleicons.org/googlecalendar', description: 'Create, search and manage calendar events.' },
   { id: 'google-drive', name: 'Google Drive', group: 'Google Workspace', slugs: ['googledrive'], logo: 'https://cdn.simpleicons.org/googledrive', description: 'Search, read and manage Drive files and folders.' },
+  { id: 'google-meet', name: 'Google Meet', group: 'Google Workspace', slugs: ['googlemeet'], logo: 'https://cdn.simpleicons.org/googlemeet', description: 'Create meetings and work with conference details, transcripts and recordings.' },
 
-  { id: 'slack', name: 'Slack', group: 'Work & Collaboration', slugs: ['slack'], logo: 'https://cdn.simpleicons.org/slack', description: 'Channels, messages, threads and team collaboration.' },
-  { id: 'notion', name: 'Notion', group: 'Work & Collaboration', slugs: ['notion'], logo: 'https://cdn.simpleicons.org/notion', description: 'Pages, databases, notes and workspace content.' },
-  { id: 'microsoft-teams', name: 'Microsoft Teams', group: 'Work & Collaboration', slugs: ['microsoft_teams'], logo: 'https://cdn.simpleicons.org/microsoftteams', description: 'Teams, chats, channels and collaboration.' },
-  { id: 'microsoft-outlook', name: 'Microsoft Outlook', group: 'Work & Collaboration', slugs: ['outlook'], logo: 'https://cdn.simpleicons.org/microsoftoutlook', description: 'Email, calendar and contact workflows.' },
+  { id: 'microsoft-excel', name: 'Microsoft Excel', group: 'Microsoft 365', slugs: ['excel'], logo: 'https://cdn.simpleicons.org/microsoftexcel', description: 'Work with workbooks, worksheets, ranges, tables and charts.' },
+  { id: 'microsoft-teams', name: 'Microsoft Teams', group: 'Microsoft 365', slugs: ['microsoft_teams'], logo: 'https://cdn.simpleicons.org/microsoftteams', description: 'Teams, chats, channels and collaboration.' },
+  { id: 'microsoft-outlook', name: 'Microsoft Outlook', group: 'Microsoft 365', slugs: ['outlook'], logo: 'https://cdn.simpleicons.org/microsoftoutlook', description: 'Email, calendar and contact workflows.' },
+  { id: 'microsoft-onedrive', name: 'Microsoft OneDrive', group: 'Microsoft 365', slugs: ['one_drive'], logo: 'https://cdn.simpleicons.org/microsoftonedrive', description: 'Search, read, upload and manage cloud files.' },
 
   { id: 'github', name: 'GitHub', group: 'Developer', slugs: ['github'], logo: 'https://cdn.simpleicons.org/github', description: 'Repositories, issues, pull requests and code workflows.' },
-  { id: 'supabase', name: 'Supabase', group: 'Developer', slugs: ['supabase'], logo: 'https://cdn.simpleicons.org/supabase', description: 'Projects, database workflows and backend operations.' }
+  { id: 'slack', name: 'Slack', group: 'Work & Collaboration', slugs: ['slack'], logo: 'https://cdn.simpleicons.org/slack', description: 'Channels, messages, threads and team collaboration.' },
+  { id: 'notion', name: 'Notion', group: 'Work & Collaboration', slugs: ['notion'], logo: 'https://cdn.simpleicons.org/notion', description: 'Pages, databases, notes and workspace content.' }
 ];
 
 const toolkitCache = new Map();
@@ -73,7 +75,7 @@ export async function resolvePluginToolkit(env, plugin) {
     toolkitCache.set(cacheKey, pending);
     try {
       const detail = await pending;
-      if (detail) {
+      if (detail && hasManagedAuth(detail)) {
         toolkitCache.set(cacheKey, Promise.resolve(detail));
         return { slug, detail };
       }
@@ -95,6 +97,15 @@ export async function resolveAllPluginToolkits(env) {
       return { plugin, slug: '', detail: null, error: String(error?.message || error) };
     }
   }));
+}
+
+function hasManagedAuth(detail) {
+  const schemes = detail?.composio_managed_auth_schemes || detail?.composioManagedAuthSchemes || [];
+  if (Array.isArray(schemes) && schemes.length) return true;
+  return authConfigCandidates(detail).some(item =>
+    item?.is_composio_managed === true ||
+    item?.isComposioManaged === true
+  );
 }
 
 function authConfigCandidates(detail) {
