@@ -1,7 +1,7 @@
 import { getCloudRunKv } from '../../cloud-run-store.js';
 
 function getKv(env) {
-  return getCloudRunKv(env);
+  return getCloudRunKv(env, { strict: true });
 }
 
 export async function onRequestPost({ request, env }) {

@@ -2,7 +2,7 @@ import { getCloudRunKv } from '../../cloud-run-store.js';
 import { requireFirebaseUser } from '../../firebase-auth.js';
 
 function getKv(env) {
-  return getCloudRunKv(env);
+  return getCloudRunKv(env, { strict: true });
 }
 
 function pushEvent(events, event) {

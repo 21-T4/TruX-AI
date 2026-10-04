@@ -231,12 +231,18 @@ function markFirestoreUnavailable(error) {
   );
 }
 
-export function getCloudRunKv(env) {
+export function getCloudRunKv(env, options = {}) {
+  const strict = !!options?.strict;
+
   return {
     async get(key, type) {
       const memoryValue = memoryGet(key);
 
-      if (Date.now() < firestoreRetryAfter) {
+      if (strict && Date.now() < firestoreRetryAfter) {
+        throw new Error('Cloud Run state storage is temporarily unavailable.');
+      }
+
+      if (!strict && Date.now() < firestoreRetryAfter) {
         if (memoryValue == null) return null;
         return type === 'json' ? JSON.parse(memoryValue) : memoryValue;
       }
@@ -251,6 +257,7 @@ export function getCloudRunKv(env) {
         return type === 'json' ? JSON.parse(value) : value;
       } catch (error) {
         markFirestoreUnavailable(error);
+        if (strict) throw error;
         if (memoryValue == null) return null;
         return type === 'json' ? JSON.parse(memoryValue) : memoryValue;
       }
@@ -258,23 +265,31 @@ export function getCloudRunKv(env) {
 
     async put(key, value, options) {
       memoryPut(key, value, options);
-      if (Date.now() < firestoreRetryAfter) return;
+      if (Date.now() < firestoreRetryAfter) {
+        if (strict) throw new Error('Cloud Run state storage is temporarily unavailable.');
+        return;
+      }
 
       try {
         await firestorePut(env, key, value, options);
       } catch (error) {
         markFirestoreUnavailable(error);
+        if (strict) throw error;
       }
     },
 
     async delete(key) {
       memory.delete(key);
-      if (Date.now() < firestoreRetryAfter) return;
+      if (Date.now() < firestoreRetryAfter) {
+        if (strict) throw new Error('Cloud Run state storage is temporarily unavailable.');
+        return;
+      }
 
       try {
         await firestoreDelete(env, key);
       } catch (error) {
         markFirestoreUnavailable(error);
+        if (strict) throw error;
       }
     }
   };

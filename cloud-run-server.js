@@ -92,17 +92,38 @@ function createRuntimeEnv(req) {
             "X-TruX-Background-Secret": String(payload?.jobSecret || "")
           }
         }, res => {
-          res.on("data", () => {});
-          res.on("end", () => {});
+          let settled = false;
+          const settleResolve = () => {
+            if (settled) return;
+            settled = true;
+            resolve();
+          };
+          const settleReject = error => {
+            if (settled) return;
+            settled = true;
+            reject(error);
+          };
+
+          // /api/background/execute sends a tiny acknowledgement chunk
+          // immediately, then keeps this HTTP request open for the real job.
+          res.once("data", () => {
+            if (res.statusCode >= 400) {
+              settleReject(new Error("Background worker rejected the job (HTTP " + res.statusCode + ")."));
+            } else {
+              settleResolve();
+            }
+          });
+          res.once("end", () => {
+            if (res.statusCode >= 400) {
+              settleReject(new Error("Background worker rejected the job (HTTP " + res.statusCode + ")."));
+            } else {
+              settleResolve();
+            }
+          });
+          res.on("error", settleReject);
         });
 
         req.on("error", reject);
-
-        /*
-         * The payload is fully handed to the network as soon as the request
-         * finishes writing. Do not wait for the worker's 20-minute response.
-         */
-        req.on("finish", resolve);
         req.end(body);
       });
     }

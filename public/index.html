@@ -6844,6 +6844,20 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       state.promise = (async () => {
         let seenEventIds = new Set();
         let lastLiveText = "";
+        let statusFailureCount = 0;
+
+        const failBackgroundWatch = async message => {
+          if (chatId === currentChatId && workspaceMode === "coding") {
+            const bubble = getEl(state.id);
+            if (bubble) {
+              bubble.classList.remove("thinking");
+              bubble.innerHTML = '<span class="generation-error">' + escapeHtml(message) + '</span>';
+            }
+          }
+          await commitBackgroundResult(chatId, key, "Error: " + message, null);
+          return false;
+        };
+
         while (true) {
           let response;
           try {
@@ -6865,20 +6879,36 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
             });
           } catch (error) {
             if (error?.name === "AbortError") return false;
+            statusFailureCount += 1;
+            if (statusFailureCount >= 8) {
+              return failBackgroundWatch("The TruX-Code background worker could not be reached.");
+            }
             await new Promise(resolve => setTimeout(resolve, 1500));
             continue;
           }
 
           if (response.status === 404) {
+            statusFailureCount += 1;
+            if (statusFailureCount >= 8) {
+              return failBackgroundWatch("The TruX-Code background job could not be found.");
+            }
             await new Promise(resolve => setTimeout(resolve, 1000));
             continue;
           }
 
           const currentState = await response.json().catch(() => ({}));
           if (!response.ok) {
+            statusFailureCount += 1;
+            if (statusFailureCount >= 8) {
+              return failBackgroundWatch(
+                String(currentState?.error || "The TruX-Code background state service is unavailable.")
+              );
+            }
             await new Promise(resolve => setTimeout(resolve, 1500));
             continue;
           }
+
+          statusFailureCount = 0;
 
           if (state._streamer && (chatId !== currentChatId || workspaceMode !== "coding")) {
             state._streamer.cancel();
