@@ -2,27 +2,17 @@
   'use strict';
 
   const FALLBACK = [
-    {id:'gmail',name:'Gmail',group:'Google Workspace',logo:'https://cdn.simpleicons.org/gmail',description:'Email, search, threads, labels and mailbox actions.'},
-    {id:'google-sheets',name:'Google Sheets',group:'Google Workspace',logo:'https://cdn.simpleicons.org/googlesheets',description:'Read, write and manage spreadsheets.'},
+    {id:'gmail',name:'Gmail',group:'Google Workspace',logo:'https://cdn.simpleicons.org/gmail',description:'Email, search, labels, threads and mailbox actions.'},
+    {id:'google-sheets',name:'Google Sheets',group:'Google Workspace',logo:'https://cdn.simpleicons.org/googlesheets',description:'Read and update spreadsheets, ranges and tables.'},
     {id:'google-docs',name:'Google Docs',group:'Google Workspace',logo:'https://cdn.simpleicons.org/googledocs',description:'Create, read and edit Google documents.'},
-    {id:'google-calendar',name:'Google Calendar',group:'Google Workspace',logo:'https://cdn.simpleicons.org/googlecalendar',description:'Events, schedules, attendees and calendars.'},
-    {id:'google-drive',name:'Google Drive',group:'Google Workspace',logo:'https://cdn.simpleicons.org/googledrive',description:'Files, folders, search and sharing.'},
-    {id:'google-meet',name:'Google Meet',group:'Google Workspace',logo:'https://cdn.simpleicons.org/googlemeet',description:'Meetings, spaces and conference workflows.'},
-    {id:'google-chat',name:'Google Chat',group:'Google Workspace',logo:'https://cdn.simpleicons.org/googlechat',description:'Spaces, messages and conversations.'},
-    {id:'google-admin',name:'Google Admin',group:'Google Workspace',logo:'https://cdn.simpleicons.org/google',description:'Workspace administration and directory operations.'},
-    {id:'microsoft-word',name:'Microsoft Word',group:'Microsoft 365',logo:'https://cdn.simpleicons.org/microsoftword',description:'Documents, content and Word workflows.'},
-    {id:'microsoft-excel',name:'Microsoft Excel',group:'Microsoft 365',logo:'https://cdn.simpleicons.org/microsoftexcel',description:'Workbooks, ranges, tables and formulas.'},
-    {id:'microsoft-powerpoint',name:'Microsoft PowerPoint',group:'Microsoft 365',logo:'https://cdn.simpleicons.org/microsoftpowerpoint',description:'Presentations, slides and PowerPoint workflows.'},
-    {id:'microsoft-outlook',name:'Microsoft Outlook (Mail & Calendar)',group:'Microsoft 365',logo:'https://cdn.simpleicons.org/microsoftoutlook',description:'Email, contacts and calendar operations.'},
-    {id:'microsoft-teams',name:'Microsoft Teams',group:'Microsoft 365',logo:'https://cdn.simpleicons.org/microsoftteams',description:'Chats, teams, channels and collaboration.'},
-    {id:'microsoft-onedrive',name:'Microsoft OneDrive',group:'Microsoft 365',logo:'https://cdn.simpleicons.org/microsoftonedrive',description:'Files and folders in OneDrive.'},
-    {id:'microsoft-sharepoint',name:'Microsoft SharePoint',group:'Microsoft 365',logo:'https://cdn.simpleicons.org/microsoftsharepoint',description:'Sites, lists, libraries and collaboration.'},
-    {id:'microsoft-onenote',name:'Microsoft OneNote',group:'Microsoft 365',logo:'https://cdn.simpleicons.org/microsoftonenote',description:'Notebooks, sections and notes.'},
-    {id:'supabase',name:'Supabase',group:'Developer & Cloud',logo:'https://cdn.simpleicons.org/supabase',description:'Database, projects and backend workflows.'},
-    {id:'github',name:'GitHub',group:'Developer & Cloud',logo:'https://cdn.simpleicons.org/github',description:'Repositories, issues, pull requests and code workflows.'},
-    {id:'gitlab',name:'GitLab',group:'Developer & Cloud',logo:'https://cdn.simpleicons.org/gitlab',description:'Projects, repositories, issues and CI workflows.'},
-    {id:'aws',name:'AWS / Amazon Web Services',group:'Developer & Cloud',logo:'https://cdn.simpleicons.org/amazonaws',description:'AWS cloud workflows exposed by Composio.'},
-    {id:'google-cloud',name:'Google Cloud Console',group:'Developer & Cloud',logo:'https://cdn.simpleicons.org/googlecloud',description:'Google Cloud project and platform workflows available through Composio.'}
+    {id:'google-calendar',name:'Google Calendar',group:'Google Workspace',logo:'https://cdn.simpleicons.org/googlecalendar',description:'Create, search and manage calendar events.'},
+    {id:'google-drive',name:'Google Drive',group:'Google Workspace',logo:'https://cdn.simpleicons.org/googledrive',description:'Search, read and manage Drive files and folders.'},
+    {id:'slack',name:'Slack',group:'Work & Collaboration',logo:'https://cdn.simpleicons.org/slack',description:'Channels, messages, threads and team collaboration.'},
+    {id:'notion',name:'Notion',group:'Work & Collaboration',logo:'https://cdn.simpleicons.org/notion',description:'Pages, databases, notes and workspace content.'},
+    {id:'microsoft-teams',name:'Microsoft Teams',group:'Work & Collaboration',logo:'https://cdn.simpleicons.org/microsoftteams',description:'Teams, chats, channels and collaboration.'},
+    {id:'microsoft-outlook',name:'Microsoft Outlook',group:'Work & Collaboration',logo:'https://cdn.simpleicons.org/microsoftoutlook',description:'Email, calendar and contact workflows.'},
+    {id:'github',name:'GitHub',group:'Developer',logo:'https://cdn.simpleicons.org/github',description:'Repositories, issues, pull requests and code workflows.'},
+    {id:'supabase',name:'Supabase',group:'Developer',logo:'https://cdn.simpleicons.org/supabase',description:'Projects, database workflows and backend operations.'}
   ];
 
   let state = {plugins:[],group:'All',query:'',loading:false};
@@ -103,13 +93,11 @@
       : (unavailable ? '<span class="trux-plugin-state">Unavailable</span>' : '<span class="trux-plugin-state">Not connected</span>');
     var action;
     if(unavailable){
-      action='<button class="trux-plugin-unavailable" type="button" disabled>Not available in Composio</button>';
+      action='<button class="trux-plugin-unavailable" type="button" disabled>Unavailable</button>';
     }else if(enabled){
-      action='<button class="trux-plugin-primary trux-plugin-added" type="button" disabled><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg><span>Added</span></button><button class="trux-plugin-remove" type="button" onclick="togglePluginAccess('+JSON.stringify(p.id)+',false)">Remove</button>';
-    }else if(connected){
-      action='<button class="trux-plugin-primary trux-plugin-add" type="button" onclick="togglePluginAccess('+JSON.stringify(p.id)+',true)" aria-label="Add '+esc(p.name)+' to TruX" title="Add '+esc(p.name)+' to TruX"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>Add</span></button>';
+      action='<div class="trux-plugin-added-state"><span class="trux-plugin-check"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span><span>Added to TruX</span></div><button class="trux-plugin-remove" type="button" onclick="togglePluginAccess('+JSON.stringify(p.id)+',false)" aria-label="Remove '+esc(p.name)+'" title="Remove plugin">Remove</button>';
     }else{
-      action='<button class="trux-plugin-primary trux-plugin-add" type="button" onclick="connectTruxPlugin('+JSON.stringify(p.id)+',this)" aria-label="Connect '+esc(p.name)+'" title="Connect '+esc(p.name)+'"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>Connect</span></button>';
+      action='<button class="trux-plugin-add-button" type="button" onclick="addOrConnectPlugin('+JSON.stringify(p.id)+',this)" aria-label="Add '+esc(p.name)+'" title="Add '+esc(p.name)+'"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>';
     }
     return '<article class="trux-plugin-card"><div class="trux-plugin-card-top"><div class="trux-plugin-brand"><div class="trux-plugin-logo">'+logo+'</div><div class="trux-plugin-name"><b>'+esc(p.name)+'</b><small>'+esc(p.group || 'Integration')+'</small></div></div>'+badge+'</div><p class="trux-plugin-description">'+esc(p.description || 'Connect this service to TruX.')+'</p><div class="trux-plugin-card-actions">'+action+'</div></article>';
   }
@@ -150,6 +138,12 @@
       state.loading=false; render();
     }
   }
+  async function addOrConnectPlugin(pluginId,button){
+    var existing=list().find(function(p){return p.id===pluginId;});
+    if(existing && existing.connected) return toggle(pluginId,true);
+    return connect(pluginId,button);
+  }
+
   async function connect(pluginId,button){
     var a=auth(); if(!a || !a.currentUser){
       if(typeof window.openLoginWall==='function') return window.openLoginWall();
@@ -209,6 +203,7 @@
   window.setPluginGroup=setGroup;
   window.loadPlugins=load;
   window.connectTruxPlugin=connect;
+  window.addOrConnectPlugin=addOrConnectPlugin;
   window.togglePluginAccess=toggle;
   window.openPluginsPage=open;
   window.closePluginsPage=close;
