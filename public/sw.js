@@ -1,4 +1,4 @@
-const CACHE_NAME = 'trux-ai-v10';
+const CACHE_NAME = 'trux-ai-v11';
 
 try {
   importScripts(
@@ -96,21 +96,14 @@ self.addEventListener('fetch', (event) => {
     url.pathname === '/' ||
     url.pathname.endsWith('.html');
 
-  /* HTML: NETWORK FIRST.
-     This used to be cache-first, which meant a freshly deployed UI only
-     appeared on the *second* visit after an update. Now the newest markup
-     wins whenever the network is available, and the cache is only a
-     fallback for offline use. */
+  /* HTML: BYPASS ALL HTTP/SW DOCUMENT CACHING.
+     The app shell must always come from the current Cloud Run deployment.
+     A stale blank shell is worse than losing offline HTML, so documents
+     are fetched with cache: no-store and are not written to the SW cache. */
   if (isDocument) {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-          }
-          return response;
-        })
+      fetch(new Request(request, { cache: 'no-store' }))
+        .then((response) => response)
         .catch(() => caches.match(request).then((hit) => hit || caches.match('/index.html')))
     );
     return;
