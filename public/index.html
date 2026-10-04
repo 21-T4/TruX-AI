@@ -6739,6 +6739,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       row.innerHTML =
         '<div class="label">' + BRAND_LABEL + '</div>' +
         '<div class="trux-response-stack">' +
+          '<div class="thinking-tool-trace" id="' + tsid + '" hidden></div>' +
           '<div class="bubble trux-bubble thinking" id="' + id + '">' +
             '<div class="thinking-container">' +
               '<span class="thinking-elapsed" id="elapsed_' + id + '">00:00</span>' +
@@ -6749,7 +6750,6 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
               '</span></div>' +
             '</div>' +
           '</div>' +
-          '<div class="thinking-tool-trace" id="' + tsid + '" hidden></div>' +
           '<div class="actions"></div>' +
         '</div>';
 
