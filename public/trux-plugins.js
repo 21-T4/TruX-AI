@@ -2,27 +2,27 @@
   'use strict';
 
   const FALLBACK = [
-    {id:'gmail',name:'Gmail',group:'Google Workspace',description:'Email, search, threads, labels and mailbox actions.'},
-    {id:'google-sheets',name:'Google Sheets',group:'Google Workspace',description:'Read, write and manage spreadsheets.'},
-    {id:'google-docs',name:'Google Docs',group:'Google Workspace',description:'Create, read and edit Google documents.'},
-    {id:'google-calendar',name:'Google Calendar',group:'Google Workspace',description:'Events, schedules, attendees and calendars.'},
-    {id:'google-drive',name:'Google Drive',group:'Google Workspace',description:'Files, folders, search and sharing.'},
-    {id:'google-meet',name:'Google Meet',group:'Google Workspace',description:'Meetings, spaces and conference workflows.'},
-    {id:'google-chat',name:'Google Chat',group:'Google Workspace',description:'Spaces, messages and conversations.'},
-    {id:'google-admin',name:'Google Admin',group:'Google Workspace',description:'Workspace administration and directory operations.'},
-    {id:'microsoft-word',name:'Microsoft Word',group:'Microsoft 365',description:'Documents, content and Word workflows.'},
-    {id:'microsoft-excel',name:'Microsoft Excel',group:'Microsoft 365',description:'Workbooks, ranges, tables and formulas.'},
-    {id:'microsoft-powerpoint',name:'Microsoft PowerPoint',group:'Microsoft 365',description:'Presentations, slides and PowerPoint workflows.'},
-    {id:'microsoft-outlook',name:'Microsoft Outlook (Mail & Calendar)',group:'Microsoft 365',description:'Email, contacts and calendar operations.'},
-    {id:'microsoft-teams',name:'Microsoft Teams',group:'Microsoft 365',description:'Chats, teams, channels and collaboration.'},
-    {id:'microsoft-onedrive',name:'Microsoft OneDrive',group:'Microsoft 365',description:'Files and folders in OneDrive.'},
-    {id:'microsoft-sharepoint',name:'Microsoft SharePoint',group:'Microsoft 365',description:'Sites, lists, libraries and collaboration.'},
-    {id:'microsoft-onenote',name:'Microsoft OneNote',group:'Microsoft 365',description:'Notebooks, sections and notes.'},
-    {id:'supabase',name:'Supabase',group:'Developer & Cloud',description:'Database, projects and backend workflows.'},
-    {id:'github',name:'GitHub',group:'Developer & Cloud',description:'Repositories, issues, pull requests and code workflows.'},
-    {id:'gitlab',name:'GitLab',group:'Developer & Cloud',description:'Projects, repositories, issues and CI workflows.'},
-    {id:'aws',name:'AWS / Amazon Web Services',group:'Developer & Cloud',description:'AWS cloud workflows exposed by Composio.'},
-    {id:'google-cloud',name:'Google Cloud Console',group:'Developer & Cloud',description:'Google Cloud project and platform workflows available through Composio.'}
+    {id:'gmail',name:'Gmail',group:'Google Workspace',logo:'https://cdn.simpleicons.org/gmail',description:'Email, search, threads, labels and mailbox actions.'},
+    {id:'google-sheets',name:'Google Sheets',group:'Google Workspace',logo:'https://cdn.simpleicons.org/googlesheets',description:'Read, write and manage spreadsheets.'},
+    {id:'google-docs',name:'Google Docs',group:'Google Workspace',logo:'https://cdn.simpleicons.org/googledocs',description:'Create, read and edit Google documents.'},
+    {id:'google-calendar',name:'Google Calendar',group:'Google Workspace',logo:'https://cdn.simpleicons.org/googlecalendar',description:'Events, schedules, attendees and calendars.'},
+    {id:'google-drive',name:'Google Drive',group:'Google Workspace',logo:'https://cdn.simpleicons.org/googledrive',description:'Files, folders, search and sharing.'},
+    {id:'google-meet',name:'Google Meet',group:'Google Workspace',logo:'https://cdn.simpleicons.org/googlemeet',description:'Meetings, spaces and conference workflows.'},
+    {id:'google-chat',name:'Google Chat',group:'Google Workspace',logo:'https://cdn.simpleicons.org/googlechat',description:'Spaces, messages and conversations.'},
+    {id:'google-admin',name:'Google Admin',group:'Google Workspace',logo:'https://cdn.simpleicons.org/google',description:'Workspace administration and directory operations.'},
+    {id:'microsoft-word',name:'Microsoft Word',group:'Microsoft 365',logo:'https://cdn.simpleicons.org/microsoftword',description:'Documents, content and Word workflows.'},
+    {id:'microsoft-excel',name:'Microsoft Excel',group:'Microsoft 365',logo:'https://cdn.simpleicons.org/microsoftexcel',description:'Workbooks, ranges, tables and formulas.'},
+    {id:'microsoft-powerpoint',name:'Microsoft PowerPoint',group:'Microsoft 365',logo:'https://cdn.simpleicons.org/microsoftpowerpoint',description:'Presentations, slides and PowerPoint workflows.'},
+    {id:'microsoft-outlook',name:'Microsoft Outlook (Mail & Calendar)',group:'Microsoft 365',logo:'https://cdn.simpleicons.org/microsoftoutlook',description:'Email, contacts and calendar operations.'},
+    {id:'microsoft-teams',name:'Microsoft Teams',group:'Microsoft 365',logo:'https://cdn.simpleicons.org/microsoftteams',description:'Chats, teams, channels and collaboration.'},
+    {id:'microsoft-onedrive',name:'Microsoft OneDrive',group:'Microsoft 365',logo:'https://cdn.simpleicons.org/microsoftonedrive',description:'Files and folders in OneDrive.'},
+    {id:'microsoft-sharepoint',name:'Microsoft SharePoint',group:'Microsoft 365',logo:'https://cdn.simpleicons.org/microsoftsharepoint',description:'Sites, lists, libraries and collaboration.'},
+    {id:'microsoft-onenote',name:'Microsoft OneNote',group:'Microsoft 365',logo:'https://cdn.simpleicons.org/microsoftonenote',description:'Notebooks, sections and notes.'},
+    {id:'supabase',name:'Supabase',group:'Developer & Cloud',logo:'https://cdn.simpleicons.org/supabase',description:'Database, projects and backend workflows.'},
+    {id:'github',name:'GitHub',group:'Developer & Cloud',logo:'https://cdn.simpleicons.org/github',description:'Repositories, issues, pull requests and code workflows.'},
+    {id:'gitlab',name:'GitLab',group:'Developer & Cloud',logo:'https://cdn.simpleicons.org/gitlab',description:'Projects, repositories, issues and CI workflows.'},
+    {id:'aws',name:'AWS / Amazon Web Services',group:'Developer & Cloud',logo:'https://cdn.simpleicons.org/amazonaws',description:'AWS cloud workflows exposed by Composio.'},
+    {id:'google-cloud',name:'Google Cloud Console',group:'Developer & Cloud',logo:'https://cdn.simpleicons.org/googlecloud',description:'Google Cloud project and platform workflows available through Composio.'}
   ];
 
   let state = {plugins:[],group:'All',query:'',loading:false};
@@ -74,7 +74,7 @@
       var activeList=all.filter(function(p){return !!p.enabled && !!p.connected;}).slice(0,5);
       if(activeList.length){
         stack.innerHTML=activeList.map(function(p){
-          var logo=p.logo ? '<img src="'+esc(p.logo)+'" alt="" loading="lazy">' : '<span class="trux-code-mini-initials">'+esc(initials(p.name))+'</span>';
+          var logo=p.logo || p.fallbackLogo ? '<img src="'+esc(p.logo || p.fallbackLogo)+'" alt="" loading="lazy">' : '<span class="trux-code-mini-initials">'+esc(initials(p.name))+'</span>';
           return '<div class="trux-code-plugin-row">'+logo+'<b>'+esc(p.name)+'</b><small>CONNECTED</small></div>';
         }).join('');
       }else{
