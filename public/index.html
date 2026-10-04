@@ -7042,13 +7042,13 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       let meta = item.querySelector(".thinking-tool-meta");
       if (!meta) { meta = document.createElement("div"); meta.className = "thinking-tool-meta"; item.appendChild(meta); }
       const args = details?.args && typeof details.args === "object" && Object.keys(details.args).length ? JSON.stringify(details.args) : "";
-      meta.textContent = args ? args.slice(0, 260) + (args.length > 260 ? "…" : "") : "";
+      meta.textContent = args ? args.slice(0, 900) + (args.length > 900 ? "…" : "") : "";
 
       if (phase !== "start") {
         let result = item.querySelector(".thinking-tool-result");
         if (!result) { result = document.createElement("div"); result.className = "thinking-tool-result"; item.appendChild(result); }
         const resultText = String(details?.result || "").trim();
-        result.textContent = resultText ? "Result · " + resultText.slice(0, 420) + (resultText.length > 420 ? "…" : "") : (details?.ok === false ? "Tool failed" : "Completed");
+        result.textContent = resultText ? "Result · " + resultText.slice(0, 720) + (resultText.length > 720 ? "…" : "") : (details?.ok === false ? "Tool failed" : "Completed");
       }
 
       wrap.hidden = false;
@@ -8914,6 +8914,8 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
 <style id="trux-ui-refresh-20261004">
   .trux-row>.label{display:none!important}
+  .welcome{flex-direction:column}
+  .home-mode-rail{align-self:center}
   .trux-row .trux-response-stack{width:min(920px,100%)}
   .trux-row .trux-bubble.thinking{border:0!important;background:transparent!important;box-shadow:none!important;border-radius:0!important;padding:0!important;min-height:0!important}
   .trux-thinking-panel{width:100%;margin:0 0 9px}
@@ -8955,7 +8957,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
   .coding-workspace .trux-code-identity p{max-width:620px;color:var(--txt-4);font-size:10px}
   .coding-workspace .trux-code-state{height:24px;border:0;background:transparent;padding:0;color:var(--txt-4)}
   .coding-workspace .trux-code-commandbar{height:31px;padding:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:transparent}
-  .coding-workspace .trux-code-tabs{gap:18px;border:0;height:31px}.coding-workspace .trux-code-tabs>span{font-size:8px}
+  .coding-workspace .trux-code-command-tabs{gap:18px;border:0;height:31px}.coding-workspace .trux-code-command-tabs>span{font-size:8px}
   .coding-workspace .trux-code-integrations{min-height:44px;padding:0;border-bottom:1px solid var(--line);background:transparent;opacity:.82}
   .coding-workspace .trux-code-stage{min-height:250px;background:transparent!important;border:0}.coding-workspace .trux-code-grid-overlay{opacity:.12}
   .coding-workspace .trux-code-stage-center{width:min(790px,100%);margin:0;padding:54px 2px 32px;text-align:left}
