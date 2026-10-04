@@ -6630,33 +6630,46 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
     function stopToolStatusTyping() {}
     function appendToolStatusLine(toolId, tool, detail, phase = "complete") {
-      if(workspaceMode !== "coding") return;
+      if (workspaceMode !== "coding") return;
       const wrap = getEl(toolId);
-      if(!wrap) return;
+      if (!wrap) return;
 
       const toolName = String(tool || "TruX-Code");
       const text = String(detail || toolName || "Tool step");
 
-      if(phase === "start") {
-        /* Keep the active tool visible below the elapsed timer. */
+      if (phase === "start") {
+        /* GitHub tool rows sit ABOVE the thinking bubble. Only a newly added
+           tool row may move the code transcript, and only when already at the
+           bottom. Normal Chat never reaches this function. */
+        const container = getActiveChatContainer();
+        const addingNewToolLine = !wrap.querySelector(".thinking-tool-line.active");
+        const shouldFollow = !!container && addingNewToolLine && isNearBottom(container, 140);
+
         let line = wrap.querySelector(".thinking-tool-line.active");
-        if(!line) {
+        if (!line) {
           line = document.createElement("div");
           line.className = "thinking-tool-line active";
           wrap.appendChild(line);
         }
+
         line.textContent = text;
         wrap.dataset.activeTool = toolName;
         wrap.dataset.activeDetail = text;
         wrap.hidden = false;
         wrap.style.display = "flex";
-        wrap.scrollIntoView({ block: "nearest", behavior: "smooth" });
+
+        if (shouldFollow) {
+          requestAnimationFrame(() => {
+            if (workspaceMode === "coding" && container === getActiveChatContainer()) {
+              container.scrollTop = container.scrollHeight;
+            }
+          });
+        }
         return;
       }
 
-      /* Complete the visible active row instead of hiding the trace. */
       const active = wrap.querySelector(".thinking-tool-line.active");
-      if(active) {
+      if (active) {
         active.classList.remove("active");
         active.classList.add("completed");
         active.textContent = text || String(wrap.dataset.activeDetail || toolName);
@@ -6671,7 +6684,6 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       wrap.dataset.activeDetail = "";
       wrap.hidden = false;
       wrap.style.display = "flex";
-      wrap.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
     function hideToolStatus(toolId) {
       stopToolStatusTyping();
