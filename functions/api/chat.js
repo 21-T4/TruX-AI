@@ -1940,7 +1940,7 @@ export async function onRequestPost(context) {
         }
       }
 
-      const changeRequested = codingMode && isGithubChangeRequest(message);
+      const changeRequested = codingMode && explicitRepoRequest && isGithubChangeRequest(message);
       /* Only Composio tools are exposed to the live model. */
       const modelFunctionDeclarations = [...composioToolDeclarations];
       const modelTools = [];
