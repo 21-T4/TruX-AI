@@ -278,10 +278,33 @@ async function serveStatic(req, res) {
     if (req.method === "HEAD") return res.end();
     fs.createReadStream(filePath).pipe(res);
   } catch {
+    /* Missing assets must stay 404s. Returning index.html for a missing
+       JS/CSS/image request masks deployment errors and can break the browser
+       with an "Unexpected token <" script failure. */
+    const extension = path.extname(filePath).toLowerCase();
+    const acceptsHtml = String(req.headers.accept || "").includes("text/html");
+    const isNavigation = req.method === "GET" && acceptsHtml && !extension;
+    if (!isNavigation) {
+      res.statusCode = 404;
+      res.setHeader("Content-Type", "text/plain; charset=utf-8");
+      return res.end("Not Found");
+    }
     const indexPath = path.join(PUBLIC_DIR, "index.html");
-    res.statusCode = 200;
-    res.setHeader("Content-Type", "text/html; charset=utf-8");
-    fs.createReadStream(indexPath).pipe(res);
+    try {
+      await fs.promises.access(indexPath, fs.constants.R_OK);
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+      res.setHeader("CDN-Cache-Control", "no-store");
+      res.setHeader("Cloudflare-CDN-Cache-Control", "no-store");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+      return fs.createReadStream(indexPath).pipe(res);
+    } catch {
+      res.statusCode = 500;
+      res.setHeader("Content-Type", "text/plain; charset=utf-8");
+      return res.end("Application shell unavailable");
+    }
   }
 }
 
