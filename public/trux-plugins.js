@@ -74,7 +74,7 @@
       var activeList=all.filter(function(p){return !!p.enabled && !!p.connected;}).slice(0,5);
       if(activeList.length){
         stack.innerHTML=activeList.map(function(p){
-          var logo=p.logo ? '<img src="'+esc(p.logo)+'" alt="" loading="lazy" onerror="this.style.display=\\'none\\'">' : '<span class="trux-code-mini-initials">'+esc(initials(p.name))+'</span>';
+          var logo=p.logo ? '<img src="'+esc(p.logo)+'" alt="" loading="lazy">' : '<span class="trux-code-mini-initials">'+esc(initials(p.name))+'</span>';
           return '<div class="trux-code-plugin-row">'+logo+'<b>'+esc(p.name)+'</b><small>CONNECTED</small></div>';
         }).join('');
       }else{
@@ -96,7 +96,7 @@
   function card(p){
     var connected=!!p.connected, enabled=!!p.enabled && connected, unavailable=p.configured===false;
     var logo=p.logo
-      ? '<img src="'+esc(p.logo)+'" alt="" loading="lazy" onerror="this.style.display=\\'none\\';this.parentElement.classList.add(\\'fallback\\');this.parentElement.textContent=\\''+esc(initials(p.name))+'\\'">'
+      ? '<img src="'+esc(p.logo)+'" alt="" loading="lazy">'
       : esc(initials(p.name));
     var badge=connected
       ? '<span class="trux-plugin-state connected">Connected</span>'
@@ -105,7 +105,7 @@
     if(unavailable){
       action='<button class="trux-plugin-unavailable" type="button" disabled>Not available in Composio</button>';
     }else if(enabled){
-      action='<button class="trux-plugin-primary" type="button" onclick="togglePluginAccess('+JSON.stringify(p.id)+',false)"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg>Added to TruX</button><button class="trux-plugin-remove" type="button" onclick="togglePluginAccess('+JSON.stringify(p.id)+',false)">Remove</button>';
+      action='<button class="trux-plugin-primary" type="button" disabled><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg>Added to TruX</button><button class="trux-plugin-remove" type="button" onclick="togglePluginAccess('+JSON.stringify(p.id)+',false)">Remove</button>';
     }else if(connected){
       action='<button class="trux-plugin-primary" type="button" onclick="togglePluginAccess('+JSON.stringify(p.id)+',true)"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add to TruX</button>';
     }else{
