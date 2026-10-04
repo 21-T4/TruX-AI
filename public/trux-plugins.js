@@ -7,12 +7,14 @@
     {id:'google-docs',name:'Google Docs',group:'Google Workspace',logo:'https://cdn.simpleicons.org/googledocs',description:'Create, read and edit Google documents.'},
     {id:'google-calendar',name:'Google Calendar',group:'Google Workspace',logo:'https://cdn.simpleicons.org/googlecalendar',description:'Create, search and manage calendar events.'},
     {id:'google-drive',name:'Google Drive',group:'Google Workspace',logo:'https://cdn.simpleicons.org/googledrive',description:'Search, read and manage Drive files and folders.'},
-    {id:'slack',name:'Slack',group:'Work & Collaboration',logo:'https://cdn.simpleicons.org/slack',description:'Channels, messages, threads and team collaboration.'},
-    {id:'notion',name:'Notion',group:'Work & Collaboration',logo:'https://cdn.simpleicons.org/notion',description:'Pages, databases, notes and workspace content.'},
-    {id:'microsoft-teams',name:'Microsoft Teams',group:'Work & Collaboration',logo:'https://cdn.simpleicons.org/microsoftteams',description:'Teams, chats, channels and collaboration.'},
-    {id:'microsoft-outlook',name:'Microsoft Outlook',group:'Work & Collaboration',logo:'https://cdn.simpleicons.org/microsoftoutlook',description:'Email, calendar and contact workflows.'},
+    {id:'google-meet',name:'Google Meet',group:'Google Workspace',logo:'https://cdn.simpleicons.org/googlemeet',description:'Create meetings and work with conference details, transcripts and recordings.'},
+    {id:'microsoft-excel',name:'Microsoft Excel',group:'Microsoft 365',logo:'https://cdn.simpleicons.org/microsoftexcel',description:'Work with workbooks, worksheets, ranges, tables and charts.'},
+    {id:'microsoft-teams',name:'Microsoft Teams',group:'Microsoft 365',logo:'https://cdn.simpleicons.org/microsoftteams',description:'Teams, chats, channels and collaboration.'},
+    {id:'microsoft-outlook',name:'Microsoft Outlook',group:'Microsoft 365',logo:'https://cdn.simpleicons.org/microsoftoutlook',description:'Email, calendar and contact workflows.'},
+    {id:'microsoft-onedrive',name:'Microsoft OneDrive',group:'Microsoft 365',logo:'https://cdn.simpleicons.org/microsoftonedrive',description:'Search, read, upload and manage cloud files.'},
     {id:'github',name:'GitHub',group:'Developer',logo:'https://cdn.simpleicons.org/github',description:'Repositories, issues, pull requests and code workflows.'},
-    {id:'supabase',name:'Supabase',group:'Developer',logo:'https://cdn.simpleicons.org/supabase',description:'Projects, database workflows and backend operations.'}
+    {id:'slack',name:'Slack',group:'Work & Collaboration',logo:'https://cdn.simpleicons.org/slack',description:'Channels, messages, threads and team collaboration.'},
+    {id:'notion',name:'Notion',group:'Work & Collaboration',logo:'https://cdn.simpleicons.org/notion',description:'Pages, databases, notes and workspace content.'}
   ];
 
   let state = {plugins:[],group:'All',query:'',loading:false};
@@ -59,17 +61,17 @@
     if(status) status.classList.toggle('active',active>0);
     var countText=el('codePluginCountText'); if(countText) countText.textContent=active+' connected';
 
-    var stack=el('codePluginStack');
-    if(stack){
-      var activeList=all.filter(function(p){return !!p.enabled && !!p.connected;}).slice(0,5);
-      if(activeList.length){
-        stack.innerHTML=activeList.map(function(p){
-          var logo=p.logo || p.fallbackLogo ? '<img src="'+esc(p.logo || p.fallbackLogo)+'" alt="" loading="lazy">' : '<span class="trux-code-mini-initials">'+esc(initials(p.name))+'</span>';
-          return '<div class="trux-code-plugin-row">'+logo+'<b>'+esc(p.name)+'</b><small>CONNECTED</small></div>';
-        }).join('');
-      }else{
-        stack.innerHTML='<div class="trux-code-plugin-placeholder"><span class="trux-code-placeholder-orb">✦</span><div><b>Connect your workspace</b><small>Add apps from Plugins and TruX-Code will receive their live Composio tools automatically.</small></div></div>';
-      }
+    var integrationItems=el('truxCodeIntegrationItems');
+    if(integrationItems){
+      var activeList=all.filter(function(p){return !!p.enabled && !!p.connected;}).slice(0,6);
+      integrationItems.innerHTML=activeList.length
+        ? activeList.map(function(p){
+            var logo=p.logo || p.fallbackLogo
+              ? '<img src="'+esc(p.logo || p.fallbackLogo)+'" alt="" loading="lazy">'
+              : '<span class="trux-code-mini-initials">'+esc(initials(p.name))+'</span>';
+            return '<span class="trux-code-integration-app" title="'+esc(p.name)+'">'+logo+'<b>'+esc(p.name)+'</b></span>';
+          }).join('')+'<button type="button" class="trux-code-integration-add" data-open-plugins="1" aria-label="Add integration" title="Add integration"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>'
+        : '<span class="trux-code-integrations-empty">No integrations connected</span><button type="button" class="trux-code-integration-add" data-open-plugins="1" aria-label="Add integration" title="Add integration"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>';
     }
   }
   function setGroup(group){
@@ -95,9 +97,9 @@
     if(unavailable){
       action='<button class="trux-plugin-unavailable" type="button" disabled>Unavailable</button>';
     }else if(enabled){
-      action='<div class="trux-plugin-added-state"><span class="trux-plugin-check"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span><span>Added to TruX</span></div><button class="trux-plugin-remove" type="button" onclick="togglePluginAccess('+JSON.stringify(p.id)+',false)" aria-label="Remove '+esc(p.name)+'" title="Remove plugin">Remove</button>';
+      action='<div class="trux-plugin-added-state"><span class="trux-plugin-check"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span><span>Added to TruX</span></div><button class="trux-plugin-remove" type="button" data-plugin-remove="'+esc(p.id)+'" aria-label="Remove '+esc(p.name)+'" title="Remove plugin">Remove</button>';
     }else{
-      action='<button class="trux-plugin-add-button" type="button" onclick="addOrConnectPlugin('+JSON.stringify(p.id)+',this)" aria-label="Add '+esc(p.name)+'" title="Add '+esc(p.name)+'"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>';
+      action='<button class="trux-plugin-add-button" type="button" data-plugin-add="'+esc(p.id)+'" aria-label="Add '+esc(p.name)+'" title="Add '+esc(p.name)+'"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>';
     }
     return '<article class="trux-plugin-card"><div class="trux-plugin-card-top"><div class="trux-plugin-brand"><div class="trux-plugin-logo">'+logo+'</div><div class="trux-plugin-name"><b>'+esc(p.name)+'</b><small>'+esc(p.group || 'Integration')+'</small></div></div>'+badge+'</div><p class="trux-plugin-description">'+esc(p.description || 'Connect this service to TruX.')+'</p><div class="trux-plugin-card-actions">'+action+'</div></article>';
   }
@@ -208,8 +210,17 @@
   window.openPluginsPage=open;
   window.closePluginsPage=close;
   window.handlePluginCallback=callback;
+  window.refreshTruxCodeIntegrations=updateAccessUI;
 
   function boot(){
+    document.addEventListener('click', function(event){
+      var add=event.target && event.target.closest ? event.target.closest('[data-plugin-add]') : null;
+      if(add){ event.preventDefault(); event.stopPropagation(); addOrConnectPlugin(add.getAttribute('data-plugin-add'), add); return; }
+      var remove=event.target && event.target.closest ? event.target.closest('[data-plugin-remove]') : null;
+      if(remove){ event.preventDefault(); event.stopPropagation(); toggle(remove.getAttribute('data-plugin-remove'), false); return; }
+      var openBtn=event.target && event.target.closest ? event.target.closest('[data-open-plugins]') : null;
+      if(openBtn){ event.preventDefault(); event.stopPropagation(); open(); return; }
+    }, true);
     var a=auth();
     if(a){
       a.onAuthStateChanged(function(){
