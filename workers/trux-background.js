@@ -132,13 +132,16 @@ async function processJob(job, env) {
         const piece = String(event.text || '');
         if (piece) {
           if (event.type === 'chunk') liveText += piece;
-          events.push({
-            id: ++seq,
-            type: event.type === 'chunk' ? 'text' : 'status',
-            text: piece,
-            status: event.type === 'progress' ? piece : undefined
-          });
-          events = events.slice(-30);
+          if (event.type === 'progress') {
+            events.push({
+              id: ++seq,
+              type: 'status',
+              tool: 'TruX-Code',
+              text: piece,
+              status: piece
+            });
+            events = events.slice(-120);
+          }
           await publishLiveState(false);
         }
         return;
@@ -153,7 +156,7 @@ async function processJob(job, env) {
           status: String(event.status || ''),
           details: event.details && typeof event.details === 'object' ? event.details : null
         });
-        events = events.slice(-30);
+        events = events.slice(-120);
         await updateJob(env, { jobId, jobSecret: job.jobSecret, status: 'running', events });
         return;
       }
@@ -165,7 +168,7 @@ async function processJob(job, env) {
           tool: 'TruX-Code',
           status: String(event.status || '')
         });
-        events = events.slice(-30);
+        events = events.slice(-120);
         await updateJob(env, { jobId, jobSecret: job.jobSecret, status: 'running', events });
         return;
       }
@@ -273,7 +276,7 @@ async function processJob(job, env) {
         jobId,
         jobSecret: job.jobSecret,
         status: 'error',
-        events: events.slice(-30),
+        events: events.slice(-120),
         final: null,
         liveText,
         error: String(error?.message || 'Background coding request failed.')
