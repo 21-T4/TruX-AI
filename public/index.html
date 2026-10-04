@@ -7629,19 +7629,29 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
       const sendCancel = async forceRefresh => {
         const user = auth?.currentUser;
-        if(!user) return false;
-        const token = await user.getIdToken(!!forceRefresh);
+        const secret = String(jobSecret || "");
+        if(!user && !secret) return false;
+
+        const headers = { "Content-Type":"application/json" };
+        let userId = "";
+        if(user){
+          try {
+            const token = await user.getIdToken(!!forceRefresh);
+            if(token) headers.Authorization = "Bearer " + token;
+            userId = String(user.uid || "");
+          } catch {
+            if(!secret) return false;
+          }
+        }
+
         const response = await fetch("/api/background/cancel",{
           method:"POST",
           credentials:"same-origin",
-          headers:{
-            "Content-Type":"application/json",
-            "Authorization":"Bearer "+token
-          },
-          body:JSON.stringify({jobId:id,userId:user.uid||"",jobSecret:String(jobSecret || "")})
+          headers,
+          body:JSON.stringify({jobId:id,userId,jobSecret:secret})
         });
         if(response.ok || response.status === 404) return true;
-        if(response.status === 401 && !forceRefresh) return sendCancel(true);
+        if(response.status === 401 && !forceRefresh && user) return sendCancel(true);
         return false;
       };
 
