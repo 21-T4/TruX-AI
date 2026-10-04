@@ -246,53 +246,52 @@ function sanitizeGeminiSchema(value, fallbackType = 'string') {
     return { type: fallbackType };
   }
 
-  if (value.anyOf || value.oneOf || value.allOf) {
-    // Gemini accepts these composition fields on supported models, but every
-    // nested branch must still be sanitized.
-    const out = {};
-    for (const key of ['anyOf','oneOf','allOf']) {
-      if (Array.isArray(value[key])) out[key] = value[key].map(v => sanitizeGeminiSchema(v));
-    }
-    if (value.description) out.description = String(value.description);
-    if (value.nullable != null) out.nullable = !!value.nullable;
-    if (value.title) out.title = String(value.title);
-    return Object.keys(out).length ? out : { type: fallbackType };
+  // Gemini function declarations accept a restricted OpenAPI-style schema.
+  // Never pass Composio's richer metadata (examples, human_* labels, defaults,
+  // internal UI fields, JSON-Schema refs, etc.) to Vertex unchanged.
+  if (Array.isArray(value.anyOf) && value.anyOf.length) {
+    return {
+      anyOf: value.anyOf.map(v => sanitizeGeminiSchema(v)),
+      ...(value.description ? { description: String(value.description) } : {})
+    };
   }
 
   const out = {};
-  for (const key of GEMINI_SCHEMA_KEYS) {
-    if (!(key in value)) continue;
-    const current = value[key];
-    if (key === 'properties' && current && typeof current === 'object' && !Array.isArray(current)) {
-      out.properties = Object.fromEntries(
-        Object.entries(current).map(([name, schema]) => [name, sanitizeGeminiSchema(schema)])
-      );
-    } else if (key === 'items') {
-      out.items = sanitizeGeminiSchema(current);
-    } else if (key === 'required' && Array.isArray(current)) {
-      out.required = current.map(String);
-    } else if (key === 'enum' && Array.isArray(current)) {
-      out.enum = current.map(v => String(v));
-    } else if (key === 'type') {
-      out.type = String(current);
-    } else if (key === 'nullable') {
-      out.nullable = !!current;
-    } else if (['description','format','title','pattern'].includes(key)) {
-      out[key] = String(current);
-    } else {
-      out[key] = current;
-    }
+
+  if (value.type) out.type = String(value.type);
+  if (value.nullable != null) out.nullable = !!value.nullable;
+  if (value.description) out.description = String(value.description);
+  if (value.format) out.format = String(value.format);
+
+  if (Array.isArray(value.enum)) out.enum = value.enum.map(v => String(v));
+
+  if (value.items && typeof value.items === 'object') {
+    out.items = sanitizeGeminiSchema(value.items);
+  }
+
+  if (value.properties && typeof value.properties === 'object' && !Array.isArray(value.properties)) {
+    out.properties = Object.fromEntries(
+      Object.entries(value.properties).map(([name, schema]) => [
+        name,
+        sanitizeGeminiSchema(schema)
+      ])
+    );
+    out.type = 'object';
+  }
+
+  if (Array.isArray(value.required)) {
+    out.required = value.required.map(String);
   }
 
   if (!out.type) {
     if (out.properties) out.type = 'object';
     else if (out.enum) out.type = 'string';
+    else if (out.items) out.type = 'array';
     else out.type = fallbackType;
   }
 
   return out;
 }
-
 function schemaFromInputParameters(input) {
   if (input && typeof input === 'object' && !Array.isArray(input)) {
     if (input.type === 'object' && input.properties) return sanitizeGeminiSchema(input, 'object');
