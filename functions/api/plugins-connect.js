@@ -2,9 +2,7 @@ import { requireFirebaseUser } from '../firebase-auth.js';
 import {
   getPluginById,
   resolvePluginToolkit,
-  createPluginAuthLink,
-  getEnabledPluginIds,
-  setEnabledPluginIds
+  createPluginAuthLink
 } from '../composio.js';
 
 export async function onRequestPost({ request, env }) {
@@ -27,10 +25,6 @@ export async function onRequestPost({ request, env }) {
       origin + '/?trux_plugins=1&plugin=' + encodeURIComponent(plugin.id) + '&composio_callback=1';
 
     const link = await createPluginAuthLink(env, userId, resolved.slug, callbackUrl);
-    const enabled = await getEnabledPluginIds(env, userId);
-    if (!enabled.includes(plugin.id)) enabled.push(plugin.id);
-    await setEnabledPluginIds(env, userId, enabled);
-
     return Response.json({
       ok: true,
       pluginId: plugin.id,
