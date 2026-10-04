@@ -1710,9 +1710,13 @@ export async function onRequestPost(context) {
       explicitRepoRequest ||
       isConfirmedExternalFollowup(message, history);
     const explicitCodeWork = hasExplicitCodeWorkRequest(message);
-    // TruX-Code always uses the deep-reasoning Pro model, independently of the chat picker.
-    const effectiveTier = (researchMode || codingMode) ? 'ultra' : (tier || 'base');
-    const proTier = effectiveTier === 'pro' || effectiveTier === 'ultra' || researchMode || codingMode;
+    // TruX-Code uses the deep-reasoning model only for an actual coding task.
+    // A simple greeting in the coding workspace remains a normal lightweight turn.
+    const effectiveTier =
+      researchMode || (codingMode && explicitCodeWork)
+        ? 'ultra'
+        : (tier || 'base');
+    const proTier = effectiveTier === 'pro' || effectiveTier === 'ultra' || researchMode;
 
     const projectId = await resolveGoogleProjectId(env);
     env.GCP_PROJECT_ID = projectId;
