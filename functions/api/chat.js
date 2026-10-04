@@ -1812,7 +1812,10 @@ export async function onRequestPost(context) {
       ? `${BASE_PERSONA}${developerInstruction}${locationInstruction}\n\n[USER INSTRUCTIONS]:\n${systemInstruction}`
       : `${BASE_PERSONA}${developerInstruction}${locationInstruction}`;
 
-    const effectiveAdvancedThinking = !!advancedThinking || researchMode || (codingMode && explicitCodeWork) || (!codingMode && effectiveTier === 'ultra');
+    const effectiveAdvancedThinking =
+      researchMode ||
+      (codingMode && explicitCodeWork) ||
+      (!codingMode && !!advancedThinking);
     const modeInstruction = researchMode
       ? `\n\n[DEEP RESEARCH MODE]: Use Google Search grounding for fresh, niche, or source-backed information. Synthesize multiple relevant sources and distinguish facts from inference. Use TruX-Code reasoning engine.`
       : (codingMode && explicitCodeWork)
