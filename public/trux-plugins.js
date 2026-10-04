@@ -95,9 +95,9 @@
   }
   function card(p){
     var connected=!!p.connected, enabled=!!p.enabled && connected, unavailable=p.configured===false;
-    var logo=p.logo
-      ? '<img src="'+esc(p.logo)+'" alt="" loading="lazy">'
-      : esc(initials(p.name));
+    var logo=p.logo || p.fallbackLogo
+      ? '<img src="'+esc(p.logo || p.fallbackLogo)+'" alt="" loading="lazy">'
+      : '<span class="trux-plugin-fallback-initials">'+esc(initials(p.name))+'</span>';
     var badge=connected
       ? '<span class="trux-plugin-state connected">Connected</span>'
       : (unavailable ? '<span class="trux-plugin-state">Unavailable</span>' : '<span class="trux-plugin-state">Not connected</span>');
@@ -105,11 +105,11 @@
     if(unavailable){
       action='<button class="trux-plugin-unavailable" type="button" disabled>Not available in Composio</button>';
     }else if(enabled){
-      action='<button class="trux-plugin-primary" type="button" disabled><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg>Added to TruX</button><button class="trux-plugin-remove" type="button" onclick="togglePluginAccess('+JSON.stringify(p.id)+',false)">Remove</button>';
+      action='<button class="trux-plugin-primary trux-plugin-added" type="button" disabled><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg><span>Added</span></button><button class="trux-plugin-remove" type="button" onclick="togglePluginAccess('+JSON.stringify(p.id)+',false)">Remove</button>';
     }else if(connected){
-      action='<button class="trux-plugin-primary" type="button" onclick="togglePluginAccess('+JSON.stringify(p.id)+',true)"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add to TruX</button>';
+      action='<button class="trux-plugin-primary trux-plugin-add" type="button" onclick="togglePluginAccess('+JSON.stringify(p.id)+',true)" aria-label="Add '+esc(p.name)+' to TruX" title="Add '+esc(p.name)+' to TruX"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>Add</span></button>';
     }else{
-      action='<button class="trux-plugin-primary" type="button" onclick="connectTruxPlugin('+JSON.stringify(p.id)+',this)"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Connect &amp; Add</button>';
+      action='<button class="trux-plugin-primary trux-plugin-add" type="button" onclick="connectTruxPlugin('+JSON.stringify(p.id)+',this)" aria-label="Connect '+esc(p.name)+'" title="Connect '+esc(p.name)+'"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>Connect</span></button>';
     }
     return '<article class="trux-plugin-card"><div class="trux-plugin-card-top"><div class="trux-plugin-brand"><div class="trux-plugin-logo">'+logo+'</div><div class="trux-plugin-name"><b>'+esc(p.name)+'</b><small>'+esc(p.group || 'Integration')+'</small></div></div>'+badge+'</div><p class="trux-plugin-description">'+esc(p.description || 'Connect this service to TruX.')+'</p><div class="trux-plugin-card-actions">'+action+'</div></article>';
   }
