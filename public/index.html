@@ -3880,6 +3880,153 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
   .sidebar-item-badge{margin-left:auto;min-width:18px;height:18px;padding:0 5px;display:inline-grid;place-items:center;border:1px solid var(--line);border-radius:999px;color:var(--txt-4);font:650 8px/1 var(--font-mono)}
   #pluginsSidebarButton.active{background:var(--acc-soft);color:var(--txt)}
 </style>
+  <style id="trux-code-workspace-v2">
+    .trux-code-shell{
+      width:100%;
+      position:relative;
+      border-top:1px solid var(--line);
+      border-bottom:1px solid var(--line);
+      background:
+        radial-gradient(ellipse 55% 90% at 50% -30%, rgba(109,131,255,.06), transparent 70%),
+        linear-gradient(180deg,rgba(255,255,255,.012),transparent 46%);
+    }
+    .trux-code-shell::before{
+      content:"";
+      position:absolute; inset:0; pointer-events:none;
+      opacity:.18;
+      background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+      background-size:44px 44px;
+      mask-image:linear-gradient(180deg,#000,transparent 86%);
+      -webkit-mask-image:linear-gradient(180deg,#000,transparent 86%);
+    }
+    .trux-code-header,.trux-code-workspace-bar,.trux-code-integrations,.trux-code-empty{
+      position:relative; z-index:1;
+    }
+    .trux-code-header{
+      min-height:78px;
+      display:flex; align-items:center; justify-content:space-between; gap:18px;
+      padding:14px 2px 13px;
+    }
+    .trux-code-identity{display:flex;align-items:center;gap:12px;min-width:0}
+    .trux-code-mark{
+      width:38px;height:38px;display:grid;place-items:center;flex:0 0 auto;
+      border:1px solid var(--line-2);border-radius:11px;
+      background:rgba(255,255,255,.025);color:var(--txt-2);
+      font:700 12px/1 var(--font-mono);
+      box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 12px 28px rgba(0,0,0,.26);
+    }
+    .trux-code-title-row{display:flex;align-items:center;gap:9px;min-width:0}
+    .trux-code-title-row h1{
+      margin:0;color:var(--txt);font:750 clamp(19px,2.4vw,26px)/1 var(--font-disp);
+      letter-spacing:-.045em;
+    }
+    .trux-code-badge{
+      display:inline-flex;align-items:center;height:22px;padding:0 8px;
+      border:1px solid rgba(132,151,255,.3);border-radius:7px;
+      background:rgba(109,131,255,.08);color:#aebaff;
+      font:650 9px/1 var(--font-mono);letter-spacing:.1em;
+    }
+    .trux-code-identity p{margin:5px 0 0;color:var(--txt-4);font-size:11px;line-height:1.35}
+    .trux-code-state{
+      display:inline-flex;align-items:center;gap:7px;flex:none;height:30px;padding:0 10px;
+      border:1px solid var(--line);border-radius:9px;background:rgba(255,255,255,.015);
+      color:var(--txt-4);font:600 9px/1 var(--font-mono);letter-spacing:.1em;
+    }
+    .trux-code-state-dot,.trux-code-integrations-dot{
+      width:6px;height:6px;border-radius:50%;background:#7ce3a0;
+      box-shadow:0 0 10px rgba(124,227,160,.56);
+    }
+    .trux-code-workspace-bar{
+      min-height:36px;display:flex;align-items:center;justify-content:space-between;gap:16px;
+      border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+      color:var(--txt-4);font:550 9px/1 var(--font-mono);letter-spacing:.09em;text-transform:uppercase;
+      overflow:auto;white-space:nowrap;
+    }
+    .trux-code-workspace-path,.trux-code-capabilities{display:flex;align-items:center;gap:8px}
+    .trux-code-workspace-path b{color:var(--txt-2);font-weight:650}
+    .trux-code-path-dim{color:var(--txt-4)}
+    .trux-code-path-sep{color:var(--txt-4);opacity:.55}
+    .trux-code-capabilities{color:var(--txt-4)}
+    .trux-code-capabilities i{width:3px;height:3px;border-radius:50%;background:var(--txt-4);opacity:.65}
+    .trux-code-integrations{
+      min-height:48px;display:flex;align-items:center;gap:12px;
+      border-bottom:1px solid var(--line);
+      overflow:hidden;
+    }
+    .trux-code-integrations-label{
+      display:flex;align-items:center;gap:7px;flex:none;
+      color:var(--txt-3);font:600 10px/1 var(--font-mono);letter-spacing:.07em;text-transform:uppercase;
+    }
+    .trux-code-integration-items{display:flex;align-items:center;gap:7px;min-width:0;overflow:auto;scrollbar-width:none}
+    .trux-code-integration-items::-webkit-scrollbar{display:none}
+    .trux-code-integration-app{
+      display:inline-flex;align-items:center;gap:6px;height:29px;padding:0 8px;
+      flex:none;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.015);
+      color:var(--txt-3);font-size:10px;font-weight:600;white-space:nowrap;
+    }
+    .trux-code-integration-app img{width:15px;height:15px;object-fit:contain;display:block}
+    .trux-code-mini-initials{
+      width:15px;height:15px;display:grid;place-items:center;border-radius:4px;
+      background:var(--acc-soft);color:var(--txt);font:700 6px/1 var(--font-mono);
+    }
+    .trux-code-integrations-empty{
+      color:var(--txt-4);font:500 10px/1 var(--font-mono);white-space:nowrap;
+    }
+    .trux-code-integration-add{
+      width:29px;height:29px;display:grid;place-items:center;flex:0 0 auto;margin-left:auto;
+      border:1px solid var(--line-2);border-radius:8px;background:rgba(255,255,255,.02);
+      color:var(--txt-3);
+      transition:background .18s var(--ease),border-color .18s var(--ease),color .18s var(--ease),transform .16s var(--ease);
+    }
+    .trux-code-integration-add:hover{
+      background:var(--acc-soft);border-color:var(--acc-line);color:var(--txt);transform:translateY(-1px);
+    }
+    .trux-code-integration-add:active{transform:scale(.95)}
+    .trux-code-integration-add svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+    .trux-code-empty{
+      min-height:210px;display:flex;flex-direction:column;justify-content:center;
+      padding:34px 8px 38px;
+    }
+    .trux-code-empty-eyebrow{
+      color:var(--txt-4);font:650 9px/1 var(--font-mono);letter-spacing:.18em;
+    }
+    .trux-code-empty h2{
+      max-width:720px;margin:10px 0 8px;
+      color:var(--txt);font:700 clamp(27px,4.3vw,46px)/.98 var(--font-disp);
+      letter-spacing:-.065em;
+    }
+    .trux-code-empty p{
+      max-width:720px;margin:0;color:var(--txt-3);font-size:13px;line-height:1.6;
+    }
+    .trux-code-empty-meta{
+      display:flex;flex-wrap:wrap;gap:14px;margin-top:18px;
+      color:var(--txt-4);font:550 9px/1 var(--font-mono);letter-spacing:.05em;
+    }
+    .trux-code-empty-meta span{display:inline-flex;align-items:center;gap:6px}
+    .trux-code-empty-meta i{width:4px;height:4px;border-radius:50%;background:var(--txt-4)}
+    .coding-workspace #codeChatContainer{
+      position:relative;z-index:2;
+      border-top:0;
+      padding:8px 24px 16px;
+    }
+    .coding-workspace #codeChatContainer:empty{min-height:0;padding-top:0}
+    @media(max-width:700px){
+      .trux-code-header{min-height:70px;padding:12px 0}
+      .trux-code-mark{width:34px;height:34px}
+      .trux-code-identity p{font-size:10px}
+      .trux-code-state{height:27px;padding:0 8px;font-size:8px}
+      .trux-code-workspace-bar{gap:14px}
+      .trux-code-capabilities{display:none}
+      .trux-code-integrations{gap:9px}
+      .trux-code-integrations-label{font-size:9px}
+      .trux-code-empty{min-height:175px;padding:28px 3px 32px}
+      .trux-code-empty h2{font-size:35px}
+      .trux-code-empty p{font-size:12px}
+      .coding-workspace #codeChatContainer{padding-left:13px;padding-right:13px}
+    }
+    [data-theme="light"] .trux-code-shell::before{opacity:.08}
+    [data-theme="light"] .trux-code-state{background:rgba(0,0,0,.015)}
+  </style>
 </head>
 <body class="home-active">
   <div class="bg" id="bg"><div class="bg-orb"></div></div>
@@ -4045,37 +4192,64 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         </div>
       </section>
 
-      <section class="trux-code-workspace" id="truxCodeWorkspace" aria-label="TruX-Code workspace">
-        <div class="trux-code-screen">
-          <div class="trux-code-screen-head">
-            <div class="trux-code-badge"><span></span> TRUX-CODE</div>
-            <div class="trux-code-live"><i></i> LIVE WORKSPACE</div>
-          </div>
-
-          <div class="trux-code-intro">
-            <div class="trux-code-kicker">DEEP ENGINEERING MODE</div>
-            <h1>Build with intent.</h1>
-            <p>Reason through complex tasks, inspect context, use connected tools and turn the result into clean implementation.</p>
-          </div>
-
-          <div class="trux-code-terminal">
-            <div class="trux-code-terminal-top">
-              <div class="trux-code-window-dots"><i></i><i></i><i></i></div>
-              <span>workspace</span>
-              <b>READY</b>
+            <section class="trux-code-workspace" id="truxCodeWorkspace" aria-label="TruX-Code workspace">
+        <div class="trux-code-shell">
+          <header class="trux-code-header">
+            <div class="trux-code-identity">
+              <div class="trux-code-mark" aria-hidden="true">&lt;/&gt;</div>
+              <div>
+                <div class="trux-code-title-row">
+                  <h1>TruX-Code</h1>
+                  <span class="trux-code-badge">WORKSPACE</span>
+                </div>
+                <p>Deep engineering workspace · large-context reasoning · live tools</p>
+              </div>
             </div>
-            <div class="trux-code-terminal-body">
-              <div class="trux-code-prompt-line"><span class="accent">trux@code</span><span>:</span><span class="muted">~/workspace</span><span>$</span><strong> describe what you want to build…</strong></div>
-              <div class="trux-code-terminal-note">Your connected integrations are available to the agent when the task needs them.</div>
+            <div class="trux-code-state">
+              <span class="trux-code-state-dot"></span>
+              <span>READY</span>
+            </div>
+          </header>
+
+          <div class="trux-code-workspace-bar" role="status" aria-label="TruX-Code workspace status">
+            <div class="trux-code-workspace-path">
+              <span class="trux-code-path-dim">TRUX</span>
+              <span class="trux-code-path-sep">/</span>
+              <b>CODE</b>
+              <span class="trux-code-path-sep">/</span>
+              <span>WORKSPACE</span>
+            </div>
+            <div class="trux-code-capabilities">
+              <span>150K CONTEXT</span>
+              <i></i>
+              <span>LIVE TOOLS</span>
+              <i></i>
+              <span>LONG RUNNING</span>
             </div>
           </div>
 
-          <div class="trux-code-capability-line">
-            <span><i></i> Deep reasoning</span>
-            <em></em>
-            <span><i></i> Live tool access</span>
-            <em></em>
-            <span><i></i> Large-context workflow</span>
+          <div class="trux-code-integrations">
+            <div class="trux-code-integrations-label">
+              <span class="trux-code-integrations-dot"></span>
+              <span>Integrations</span>
+            </div>
+            <div class="trux-code-integration-items" id="truxCodeIntegrationItems">
+              <span class="trux-code-integrations-empty">No integrations connected</span>
+            </div>
+            <button type="button" class="trux-code-integration-add" data-open-plugins="1" onclick="openPluginsPage()" aria-label="Add integration" title="Add integration">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          </div>
+
+          <div class="trux-code-empty">
+            <div class="trux-code-empty-eyebrow">ENGINEERING WORKSPACE</div>
+            <h2>Build, inspect, and change with intent.</h2>
+            <p>Describe the work. TruX-Code can reason through the task, inspect connected context, use live integrations, and return a reviewable implementation.</p>
+            <div class="trux-code-empty-meta">
+              <span><i></i> Repository-aware</span>
+              <span><i></i> Tool-connected</span>
+              <span><i></i> Review-first</span>
+            </div>
           </div>
         </div>
       </section>
@@ -4102,7 +4276,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
             <div class="trux-plugin-filters" id="pluginFilters" role="tablist" aria-label="Plugin categories">
               <button type="button" class="active" data-plugin-group="All" onclick="setPluginGroup('All')">All</button>
               <button type="button" data-plugin-group="Google Workspace" onclick="setPluginGroup('Google Workspace')">Google</button>
-              <button type="button" data-plugin-group="Microsoft 365" onclick="setPluginGroup('Microsoft 365')">Microsoft</button>
+              <button type="button" data-plugin-group="Microsoft 365" onclick="setPluginGroup('Microsoft 365')">Microsoft 365</button>
               <button type="button" data-plugin-group="Work & Collaboration" onclick="setPluginGroup('Work & Collaboration')">Work</button>
               <button type="button" data-plugin-group="Developer" onclick="setPluginGroup('Developer')">Developer</button>
             </div>
@@ -8460,7 +8634,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     document.body.classList.remove("chat-session-active"); document.body.classList.add("home-active"); loadSettings(); renderNotebooks(); renderSidebar(); updateAllUsageUI(); handleInputChange(); setWorkspaceMode(startupWorkspaceMode, {reload:false});
   </script>
 
-<script src="/trux-plugins.js" defer></script>
+<script src="/trux-plugins.js?v=20261004" defer></script>
 </body>
 </html>
 
