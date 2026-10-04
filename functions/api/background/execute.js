@@ -6,7 +6,7 @@ function pushEvent(events, event) {
     (max, item) => Math.max(max, Number(item?.id) || 0),
     0
   ) + 1;
-  return [...(Array.isArray(events) ? events : []), { id: nextId, ...event }].slice(-30);
+  return [...(Array.isArray(events) ? events : []), { id: nextId, ...event }].slice(-120);
 }
 
 async function persistWorkerFailure(body, env, error) {
