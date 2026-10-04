@@ -97,16 +97,14 @@ export async function resolvePluginToolkit(env, plugin) {
 }
 
 export async function resolveAllPluginToolkits(env) {
-  const results = [];
-  for (const plugin of PLUGIN_CATALOG) {
+  return await Promise.all(PLUGIN_CATALOG.map(async plugin => {
     try {
       const resolved = await resolvePluginToolkit(env, plugin);
-      results.push({ plugin, ...resolved });
+      return { plugin, ...resolved };
     } catch (error) {
-      results.push({ plugin, slug: '', detail: null, error: String(error?.message || error) });
+      return { plugin, slug: '', detail: null, error: String(error?.message || error) };
     }
-  }
-  return results;
+  }));
 }
 
 function authConfigCandidates(detail) {
