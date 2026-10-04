@@ -7835,6 +7835,9 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
               }
             }
           }
+          else if(j.type === "plugin_config_error") {
+            setThinkingStatus(sid, j.message || "Plugin execution is not configured correctly.");
+          }
           else if(j.type === "heartbeat") {
             /* Cloud Run may keep the socket alive while Gemini's high-thinking
                pass produces no visible tokens. Keep TruX-Code visibly alive
