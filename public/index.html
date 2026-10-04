@@ -4651,7 +4651,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       }
     }, 2800);
 
-    addEventListener("load", () => { try { if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js?v=20261004-3").catch(() => {}); } catch (e) {} });
+    addEventListener("load", () => { try { if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js?v=20261004-5", { updateViaCache: "none" }).catch(() => {}); } catch (e) {} });
     let deferredPrompt = null;
     addEventListener("beforeinstallprompt", e => {
       e.preventDefault(); deferredPrompt = e;
