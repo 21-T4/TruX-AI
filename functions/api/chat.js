@@ -5,6 +5,8 @@ import { getProcessedText } from '../gcs-store.js';
 import { applyEditsDirectly } from './github/apply-edits.js';
 import {
   getEnabledPluginIds,
+  listConnectedAccounts,
+  PLUGIN_CATALOG,
   getComposioGeminiTools,
   executeComposioTool,
   getPluginById,
@@ -1876,7 +1878,7 @@ export async function onRequestPost(context) {
           ? `\n\n[TRUX-CODE LIGHT MODE]: This is a lightweight coding-workspace conversation. Answer directly without external tools, repository inspection, plugin calls, or deep reasoning unless the user explicitly requests coding work or an external action.`
           : '';
     const pluginInstruction = explicitExternalAction
-      ? `\n\n[COMPOSIO PLUGINS]: Connected plugins are available for this explicitly requested external action. Call the appropriate connected function tool rather than drafting or simulating the action. Never claim success unless the tool returned success. Because the user has already clearly requested the action, do not ask for a second confirmation unless the external service itself requires one. If no matching connected tool is available, state that the integration is unavailable.`
+      ? `\n\n[COMPOSIO PLUGINS]: The user has explicitly requested an external action. You MUST use the matching connected plugin function instead of only drafting, explaining, or simulating the action. Never claim success unless the tool actually succeeds. "Draft" means create/save the draft in the external service; "send" means actually send it. If required input is missing, ask only for that missing input. Do not ask for a second confirmation unless the external service itself requires one. If no matching connected tool is available, state that the integration is unavailable.`
       : '';
     const modeWithPlugins = modeInstruction + pluginInstruction;
     const thinkingInstruction = effectiveAdvancedThinking
@@ -1961,8 +1963,23 @@ export async function onRequestPost(context) {
 
       if (explicitExternalAction && effectiveUserId && String(env.COMPOSIO_API_KEY || '').trim()) {
         try {
+          const connectedAccounts = await listConnectedAccounts(env, effectiveUserId);
+          const activeToolkitSlugs = new Set(
+            (Array.isArray(connectedAccounts) ? connectedAccounts : [])
+              .map(account => account?.toolkit?.slug || account?.toolkit_slug || '')
+              .filter(Boolean)
+              .map(String)
+          );
+          const connectedPluginIds = PLUGIN_CATALOG
+            .filter(plugin => plugin.slugs.some(slug => activeToolkitSlugs.has(String(slug))))
+            .map(plugin => plugin.id);
+
+          // Do not depend on the legacy "enabled" KV flag. A successfully
+          // connected account is enough; explicitExternalAction is the gate
+          // that prevents unsolicited plugin usage.
+          const legacyEnabled = await getEnabledPluginIds(env, effectiveUserId);
           enabledComposioPluginIds = selectRequestedPluginIds(
-            await getEnabledPluginIds(env, effectiveUserId),
+            [...new Set([...connectedPluginIds, ...legacyEnabled])],
             message
           );
           const resolved = await Promise.all(
@@ -2086,6 +2103,14 @@ export async function onRequestPost(context) {
           contents: agentContents,
           systemInstruction: thinkingInstruction,
           tools: modelTools,
+          toolConfig: explicitExternalAction && composioToolDeclarations.length
+            ? {
+                functionCallingConfig: {
+                  mode: 'ANY',
+                  allowedFunctionNames: composioToolDeclarations.map(tool => tool.name)
+                }
+              }
+            : undefined,
           accessToken,
           projectId,
           signal,
@@ -2184,12 +2209,63 @@ export async function onRequestPost(context) {
                 };
               } else if (isComposioCall) {
                 callResult = effectiveUserId
-                  ? await executeComposioTool(env, effectiveUserId, call.name, call.args || {}, composioLabel)
+                  ? await executeComposioTool(
+                      env,
+                      effectiveUserId,
+                      call.name,
+                      call.args || {},
+                      composioLabel,
+                      new URL(request.url).origin +
+                        '/?trux_plugins=1&plugin=' +
+                        encodeURIComponent(
+                          PLUGIN_CATALOG.find(p =>
+                            Array.isArray(p?.slugs) &&
+                            p.slugs.includes(String(composioLabel?.toolkitSlug || ''))
+                          )?.id || ''
+                        ) +
+                        '&composio_callback=1'
+                    )
                   : { error: 'A signed-in account is required for plugin actions.' };
               } else if (githubSession && codingMode && validGithubRepo(githubRepository)) {
                 callResult = await executeGithubToolCall(githubSession, githubRepository, githubBranch, call, message);
               } else {
                 callResult = { error: 'This external tool is not connected.' };
+              }
+
+              if (callResult?.authRequired) {
+                const plugin = PLUGIN_CATALOG.find(p =>
+                  Array.isArray(p?.slugs) &&
+                  p.slugs.includes(String(callResult?.toolkit || composioLabel?.toolkitSlug || ''))
+                );
+                const pluginName = plugin?.name || String(composioLabel?.toolkitName || 'Plugin');
+                const messageText =
+                  String(callResult?.error || '').trim() ||
+                  (pluginName + ' needs authorization before TruX can use it.');
+
+                send({
+                  type: 'tool_status',
+                  tool: toolName,
+                  phase: 'complete',
+                  status: toolTarget + ' · authorization required'
+                });
+                send({
+                  type: 'plugin_auth_required',
+                  pluginId: plugin?.id || '',
+                  pluginName,
+                  toolkitSlug: String(callResult?.toolkit || composioLabel?.toolkitSlug || ''),
+                  redirectUrl: callResult?.reconnectUrl || null,
+                  message: messageText
+                });
+                send({ type: 'chunk', text: '\n\n' + messageText });
+                responseParts.push({
+                  functionResponse: {
+                    ...(call?.id ? { id: String(call.id) } : {}),
+                    name: call?.name || 'plugin_tool',
+                    response: { output: callResult }
+                  }
+                });
+                generationStopped = true;
+                break;
               }
 
               if (call?.name === 'github_import_repository' && !callResult?.error) {
