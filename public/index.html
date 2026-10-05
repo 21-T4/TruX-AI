@@ -7719,7 +7719,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       }
 
       // Decide whether this coding turn needs the deep model/tool-capable tier.
-      const codingNeedsWorkspaceTools = /\\b(?:github|repo|repository|codebase|pull request|branch|commit|push|plugin|integration|gmail|google sheets|google docs|calendar|drive|slack|notion|outlook|teams|excel|onedrive|fix|debug|refactor|implement|edit|modify|rewrite|replace|build|test|compile|api|endpoint|javascript|typescript|python|java|html|css|react|node|sql)\\b/i.test(String(prompt || ''));
+      const codingNeedsWorkspaceTools = /\b(?:github|repo|repository|codebase|pull request|branch|commit|push|plugin|integration|gmail|google sheets|google docs|calendar|drive|slack|notion|outlook|teams|excel|onedrive|fix|debug|refactor|implement|edit|modify|rewrite|replace|build|test|compile|api|endpoint|javascript|typescript|python|java|html|css|react|node|sql)\b/i.test(String(prompt || ''));
 
       const requestBody = {
         message: prompt,
