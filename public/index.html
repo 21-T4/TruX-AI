@@ -107,7 +107,6 @@
     }
 
     /* Keep syntax highlighting colors fixed for now, but handle core elements */
-    [data-theme="light"] .logo { background: #fff; box-shadow: 0 0 18px -6px rgba(59,130,246,0.3); border-color: var(--line-3); }
     [data-theme="light"] .brand b { color: var(--txt); }
     [data-theme="light"] .new-chat { color: var(--txt); }
     [data-theme="light"] .side-btn:hover { color: var(--txt); }
@@ -281,23 +280,6 @@
       display: flex; align-items: center; gap: 10px;
       padding: 4px 6px 2px;
     }
-    .logo {
-      width: 42px; height: 42px; flex: 0 0 42px;
-      border-radius: 12px;
-      display: grid; place-items: center;
-      background: #000;
-      border: 1px solid var(--line-2);
-      overflow: hidden;
-      position: relative;
-      box-shadow: 0 0 18px -6px rgba(109,131,255,0.55);
-    }
-    .logo img { width: 100%; height: 100%; display: block; object-fit: cover; }
-    .brand b {
-      font-family: var(--font-disp);
-      display: block; font-size: 17.5px; font-weight: 750; letter-spacing: -0.018em; color: #fff;
-    }
-    .brand small { display: block; font-size: 12px; color: var(--txt-3); letter-spacing: 0.01em; margin-top: 1px; }
-
     .side-actions { display: flex; gap: 8px; padding: 0 2px; }
     .new-chat {
       flex: 1;
@@ -452,6 +434,8 @@
     body.scrolled .topbar { border-bottom-color: var(--line); }
     .topbar-left  { display: flex; align-items: center; gap: 8px; }
     .topbar-right { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+    .top-profile-avatar{width:30px;height:30px;display:grid;place-items:center;border-radius:50%;border:1px solid var(--line-2);color:var(--txt-3);background:var(--bg-2)}
+    .top-profile-avatar svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 
     .top-btn {
       width: 37px; height: 37px;
@@ -774,15 +758,6 @@
     }
     .user-row .label { display: none; }
     .trux-row .label { display: flex; align-items: center; gap: 9px; }
-    .label-logo {
-      width: 24px; height: 24px; flex: 0 0 24px;
-      border-radius: 8px;
-      background: #000;
-      border: 1px solid var(--line-2);
-      object-fit: cover;
-      box-shadow: 0 0 12px -4px rgba(109,131,255,0.7);
-    }
-
     /* user message — the only bubble in the transcript */
     .user-bubble {
       max-width: min(84%, 560px);
@@ -1037,101 +1012,114 @@
       animation: pulseDot 1.4s var(--ease) infinite;
     }
 
-    /* ---------- thinking / status ---------- */
-    .thinking-container {
-      display: inline-flex; align-items: center; gap: 9px;
-      background: none !important; border: 0 !important; box-shadow: none !important;
-      padding: 1px 0;
+    /* ---------- AI activity / thinking ---------- */
+    .trux-thinking-panel{
+      position:relative;width:min(100%,820px);margin:7px 0 10px;display:flex;
+      flex-direction:column;align-items:stretch;color:var(--txt);contain:layout paint
     }
-    .thinking-sparkle { display: none; }
-    @keyframes rotateSparkle { to { transform: rotate(360deg); } }
-    @keyframes metallicShine { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-    .status-msg {
-      position: relative;
-      font-size: 16px; font-weight: 550;
-      letter-spacing: -0.005em;
-      background: linear-gradient(100deg, var(--txt-4) 20%, #ffffff 42%, var(--txt-4) 64%);
-      background-size: 200% 100%;
-      -webkit-background-clip: text; background-clip: text; color: transparent;
-      animation: metallicShine 2.1s linear infinite;
+    .trux-thinking-bar{
+      position:relative;z-index:1;display:grid;
+      grid-template-columns:minmax(0,1fr) auto auto;align-items:center;
+      min-height:46px;gap:12px;width:100%;padding:9px 10px 9px 13px;
+      border:1px solid rgba(255,255,255,.075);border-radius:14px;
+      background:linear-gradient(180deg,rgba(30,30,30,.98),rgba(17,17,17,.98));
+      box-shadow:0 12px 34px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.055),inset 0 -1px 0 rgba(0,0,0,.46);
+      overflow:hidden;isolation:isolate
     }
-    .thinking-container {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 6px;
+    .trux-thinking-bar::before{
+      content:"";position:absolute;inset:-55% -35%;pointer-events:none;z-index:0;
+      background:linear-gradient(106deg,transparent 27%,rgba(255,255,255,.025) 36%,rgba(237,232,223,.18) 48%,rgba(255,255,255,.03) 57%,transparent 69%);
+      background-size:220% 100%;transform:translate3d(-62%,0,0);
+      animation:truxThinkingBarSweep 6.6s cubic-bezier(.22,.61,.36,1) infinite;
+      will-change:transform
     }
-    .thinking-tool-trace {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 4px;
-      width: min(100%, 660px);
-      margin: 0 0 5px;
-      padding: 0;
+    .trux-thinking-bar::after{
+      content:"";position:absolute;left:14px;right:14px;bottom:0;height:1px;pointer-events:none;z-index:0;
+      background:linear-gradient(90deg,transparent,rgba(235,231,224,.30),transparent);
+      background-size:220% 100%;animation:truxThinkingLuster 4.8s linear infinite
     }
-    .thinking-tool-line {
-      display: block;
-      color: var(--txt-3);
-      font-size: 13.5px;
-      line-height: 1.45;
-      font-weight: 500;
-      letter-spacing: -0.003em;
-      padding: 0;
-      border: 0;
-      border-radius: 0;
-      background: none;
-      box-shadow: none;
+    .trux-thinking-copy,.trux-thinking-elapsed,.trux-thinking-toggle{position:relative;z-index:2}
+    .trux-thinking-copy{min-width:0;display:flex;align-items:baseline;gap:9px;overflow:hidden}
+    .trux-thinking-kicker{
+      flex:0 0 auto;color:var(--txt-4);font:650 10px/1 var(--font-mono);
+      letter-spacing:.16em;text-transform:uppercase;white-space:nowrap
     }
-    .thinking-tool-line.completed::before {
-      content: "✓ ";
-      color: var(--txt-4);
-      font-family: var(--font-mono);
-    }
-    .thinking-tool-line.active {
-      color: var(--txt-2);
-    }
-    .thinking-tool-line.active::before {
-      content: "› ";
-      color: var(--acc);
-      font-family: var(--font-mono);
-    }
-
-    /* TruX-Code activity + tool trace: each new update gets its own line. */
     .status-msg{
-      display:flex !important;
-      flex-direction:column !important;
-      align-items:flex-start !important;
-      justify-content:flex-start !important;
-      gap:4px !important;
-      width:100%;
-      min-height:0 !important;
-      max-width:min(100%,720px);
-      padding:0 !important;
-      border:0 !important;
-      background:none !important;
-      border-radius:0 !important;
-      overflow:visible !important;
-      white-space:normal !important;
-    }
-    .thinking-status-line{
-      display:block;
-      min-height:1.25em;
-      color:var(--txt-3);
-      font-size:14px;
-      line-height:1.35;
-      font-weight:500;
-      white-space:normal;
-      overflow-wrap:anywhere;
+      min-width:0;display:block;margin:0;padding:0;border:0;background:none;
+      color:var(--txt-2);font:560 15px/1.42 var(--font-body);letter-spacing:-.008em;
+      white-space:normal;overflow:visible;text-overflow:clip;box-shadow:none
     }
     .thinking-status-line.latest{
-      color:var(--txt-2);
-      background:linear-gradient(100deg,var(--txt-4) 20%,#fff 42%,var(--txt-4) 64%);
-      background-size:200% 100%;
-      -webkit-background-clip:text;
-      background-clip:text;
-      color:transparent;
-      animation:metallicShine 2.1s linear infinite;
+      display:inline-block;max-width:100%;color:transparent;
+      background:linear-gradient(108deg,#66635e 2%,#9d9890 28%,#eeeae2 48%,#87827b 67%,#595651 87%);
+      background-size:280% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+      animation:truxThinkingFloat 4.6s cubic-bezier(.22,.61,.36,1) infinite,truxThinkingShine 5.1s linear infinite;
+      will-change:transform,background-position,opacity
+    }
+    .trux-thinking-elapsed{
+      flex:0 0 auto;min-width:104px;text-align:right;color:var(--txt-3);
+      font:600 11px/1 var(--font-mono);font-variant-numeric:tabular-nums;
+      letter-spacing:.04em;white-space:nowrap
+    }
+    .trux-thinking-toggle{
+      flex:0 0 auto;width:28px;height:28px;display:grid;place-items:center;padding:0;
+      border:1px solid rgba(255,255,255,.08);border-radius:9px;background:rgba(255,255,255,.025);
+      color:var(--txt-3);cursor:pointer;
+      transition:background .22s var(--ease),color .22s var(--ease),border-color .22s var(--ease),transform .22s var(--ease)
+    }
+    .trux-thinking-toggle:hover{color:var(--txt-2);border-color:rgba(255,255,255,.13);background:rgba(255,255,255,.05)}
+    .trux-thinking-toggle:active{transform:scale(.95)}
+    .trux-thinking-toggle svg{
+      width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;
+      stroke-linecap:round;stroke-linejoin:round;transition:transform .3s var(--ease-out)
+    }
+    .trux-thinking-panel.expanded .trux-thinking-toggle svg{transform:rotate(180deg)}
+    .trux-thinking-details{
+      display:flex;flex-direction:column;gap:3px;max-height:310px;margin-top:7px;
+      padding:9px 12px 10px 14px;overflow:auto;border-left:1px solid rgba(255,255,255,.07);
+      scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.14) transparent
+    }
+    .trux-thinking-details[hidden]{display:none!important}
+    .thinking-status-step,.thinking-tool-item{
+      position:relative;display:block;padding:2px 0 2px 12px;color:var(--txt-4);
+      font:500 12.5px/1.5 var(--font-body);letter-spacing:-.002em;
+      white-space:normal;overflow-wrap:anywhere
+    }
+    .thinking-status-step::before,.thinking-tool-item::before{
+      content:"";position:absolute;left:0;top:.78em;width:4px;height:4px;border-radius:50%;
+      background:var(--txt-4);opacity:.72
+    }
+    .thinking-tool-item.active{color:var(--txt-3)}
+    .thinking-tool-item.completed{color:var(--txt-4)}
+    .thinking-tool-item.failed{color:#858078}
+    .thinking-tool-head{display:block;color:inherit}
+    .thinking-tool-meta,.thinking-tool-result{
+      display:block;margin-top:1px;color:#4f4d49;font:480 11px/1.4 var(--font-mono);overflow-wrap:anywhere
+    }
+    .thinking-tool-result{color:var(--txt-4)}
+    .thinking-container{display:block;width:100%;padding:0;background:none!important;border:0!important;box-shadow:none!important}
+    @keyframes truxThinkingBarSweep{
+      0%,16%{transform:translate3d(-62%,0,0)}
+      56%,72%{transform:translate3d(62%,0,0)}
+      100%{transform:translate3d(72%,0,0)}
+    }
+    @keyframes truxThinkingLuster{
+      0%{background-position:140% 0;opacity:.1}
+      44%{opacity:.72}
+      100%{background-position:-40% 0;opacity:.1}
+    }
+    @keyframes truxThinkingFloat{
+      0%,100%{transform:translate3d(0,0,0);opacity:.78}
+      23%{transform:translate3d(.3px,-.6px,0);opacity:.9}
+      49%{transform:translate3d(-.35px,-1.55px,0);opacity:1}
+      76%{transform:translate3d(.25px,-.4px,0);opacity:.88}
+    }
+    @keyframes truxThinkingShine{
+      0%{background-position:225% 0}
+      100%{background-position:-45% 0}
+    }
+    @media (prefers-reduced-motion:reduce){
+      .trux-thinking-bar::before,.trux-thinking-bar::after,.thinking-status-line.latest{animation:none!important}
     }
 
     /* ---------- streaming ---------- */
@@ -2351,12 +2339,6 @@
     .topbar { background: rgba(23,23,23,0.86); }
     .model-dropdown-menu { background: rgba(31,31,31,0.97); }
 
-    .logo, .label-logo {
-      background: #1f1f1f;
-      border-color: var(--line-2);
-      box-shadow: 0 0 18px -10px rgba(213,185,106,0.5);
-    }
-
     .user-bubble {
       background: var(--bg-3);
       border-color: var(--line);
@@ -2447,74 +2429,6 @@
     .hint { color: var(--txt-4); }
     .thinking-tool-line { color: var(--txt-3); font-size: 14.5px; }
 
-    /* Floating AI activity treatment — text-first, metallic, no container. */
-    .thinking-container{position:relative;gap:7px;width:fit-content;max-width:min(94vw,760px);isolation:isolate}
-    .thinking-elapsed{position:relative;z-index:3;display:inline-flex;align-items:center;min-height:18px;padding:1px 2px;font:600 11px/1 var(--font-mono);font-variant-numeric:tabular-nums;letter-spacing:.11em;color:transparent;background:linear-gradient(105deg,#5f5c57 8%,#918d86 31%,#d6d1c8 49%,#77736d 68%,#4f4c48 90%);background-size:240% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;opacity:.78;animation:thinkingTimerFloat 4.8s ease-in-out infinite,timerLuster 4.2s linear infinite;will-change:transform,background-position,opacity}
-    .thinking-main{position:relative;min-height:28px;display:inline-flex!important;width:fit-content!important;max-width:100%;align-items:center;gap:10px;overflow:visible;transform:translateZ(0);will-change:transform}
-    .thinking-main::before{content:"";position:absolute;left:-28px;right:-28px;bottom:0;height:18px;z-index:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,rgba(210,205,196,.10),rgba(125,120,113,.045) 36%,transparent 72%);filter:blur(8px);opacity:.72;animation:thinkingAura 4.6s ease-in-out infinite}
-    .thinking-main::after{content:"";position:absolute;left:-18px;right:-18px;bottom:-1px;height:1px;z-index:0;pointer-events:none;background:linear-gradient(90deg,transparent 0%,rgba(255,252,246,0) 17%,rgba(236,231,223,.44) 46%,rgba(132,127,120,.16) 63%,transparent 100%);background-size:220% 100%;filter:blur(.25px);opacity:.62;animation:thinkingLusterLine 3.1s linear infinite}
-    .status-msg{position:relative;z-index:2;min-height:0;display:inline-block;max-width:min(760px,92vw);padding:2px 4px;border:0;border-radius:0;background:linear-gradient(105deg,#6b6761 7%,#9b968e 27%,#efebe3 47%,#8a857e 61%,#5e5a55 78%,#b2ada5 94%);background-size:280% 100%;-webkit-background-clip:text;background-clip:text;color:transparent!important;-webkit-text-fill-color:transparent;box-shadow:none!important;font-size:16px;line-height:1.35;font-weight:560;letter-spacing:-.006em;white-space:nowrap;overflow:visible;text-overflow:clip;animation:thinkingFloat 4.8s ease-in-out infinite,thinkingMetalFlow 3.4s linear infinite;transition:opacity .18s var(--ease),filter .18s var(--ease),transform .24s var(--ease-out);will-change:transform,opacity,filter,background-position;text-shadow:0 0 18px rgba(216,211,202,.055)}
-    .status-msg.activity-out{opacity:.06;filter:blur(3px);transform:translate3d(0,3px,0)}
-    .status-msg.activity-in{animation:activityReveal .42s var(--ease-out) both,thinkingFloat 4.8s ease-in-out .42s infinite,thinkingMetalFlow 3.4s linear infinite}
-    @keyframes thinkingFloat{0%,100%{transform:translate3d(0,0,0)}28%{transform:translate3d(.7px,-1.6px,0)}56%{transform:translate3d(-.5px,-2.2px,0)}80%{transform:translate3d(.35px,-.7px,0)}}
-    @keyframes activityReveal{from{opacity:0;filter:blur(4px);transform:translate3d(0,5px,0)}to{opacity:1;filter:none;transform:translate3d(0,0,0)}}
-    @keyframes thinkingMetalFlow{0%{background-position:220% 0}100%{background-position:-40% 0}}
-    @keyframes timerLuster{0%{background-position:220% 0}100%{background-position:-20% 0}}
-    @keyframes thinkingTimerFloat{0%,100%{transform:translateY(0);opacity:.72}50%{transform:translateY(-1px);opacity:.9}}
-    @keyframes thinkingAura{0%,100%{transform:translateX(-3px) scaleX(.92);opacity:.42}50%{transform:translateX(4px) scaleX(1.02);opacity:.82}}
-    @keyframes thinkingLusterLine{0%{background-position:140% 0;opacity:.18}45%{opacity:.66}100%{background-position:-40% 0;opacity:.18}}
-    .thinking-particles{position:absolute;inset:-22px -42px;z-index:1;pointer-events:none;overflow:visible}
-    .thinking-particles i{position:absolute;display:block;width:4px;height:4px;border-radius:999px;background:radial-gradient(circle at 34% 28%,#f4efe6 0 17%,#aaa59d 40%,rgba(90,86,80,.18) 73%,transparent 78%);box-shadow:0 0 7px rgba(232,227,218,.18),0 0 18px rgba(181,175,165,.10);opacity:0;filter:blur(.1px);animation:thinkingPustule 3.6s cubic-bezier(.22,.61,.36,1) infinite}
-    .thinking-particles i:nth-child(1){left:4%;top:73%;animation-delay:-2.5s}
-    .thinking-particles i:nth-child(2){left:16%;top:24%;animation-delay:-1.1s;transform:scale(.82)}
-    .thinking-particles i:nth-child(3){left:32%;top:84%;animation-delay:-3.2s;transform:scale(.62)}
-    .thinking-particles i:nth-child(4){left:49%;top:10%;animation-delay:-1.7s;transform:scale(.9)}
-    .thinking-particles i:nth-child(5){left:67%;top:80%;animation-delay:-2.9s;transform:scale(.72)}
-    .thinking-particles i:nth-child(6){left:79%;top:16%;animation-delay:-.45s;transform:scale(.6)}
-    .thinking-particles i:nth-child(7){left:91%;top:62%;animation-delay:-2s;transform:scale(.78)}
-    .thinking-particles i:nth-child(8){left:58%;top:48%;animation-delay:-3.55s;transform:scale(.45)}
-    @keyframes thinkingPustule{0%,100%{opacity:0;transform:translate3d(-2px,5px,0) scale(.36)}17%{opacity:.28}44%{opacity:.9;transform:translate3d(7px,-4px,0) scale(.96)}68%{opacity:.5;transform:translate3d(-3px,-11px,0) scale(.7)}86%{opacity:.12;transform:translate3d(5px,-16px,0) scale(.5)}}
-    /* HARD FIX: the thinking bar uses the 192px app icon asset. Keep it a tiny inline mark so it can never render as a stray full-size logo. */
-    .trux-thinking-logo{
-      position:relative;
-      z-index:3;
-      width:22px!important;
-      height:22px!important;
-      min-width:22px!important;
-      min-height:22px!important;
-      max-width:22px!important;
-      max-height:22px!important;
-      flex:0 0 22px!important;
-      display:inline-flex!important;
-      align-items:center!important;
-      justify-content:center!important;
-      overflow:hidden!important;
-      padding:0!important;
-      margin:0!important;
-      background:transparent!important;
-      border:0!important;
-      box-shadow:none!important;
-      line-height:0!important;
-    }
-    .trux-thinking-logo img{
-      display:block!important;
-      width:22px!important;
-      height:22px!important;
-      max-width:22px!important;
-      max-height:22px!important;
-      min-width:22px!important;
-      min-height:22px!important;
-      flex:0 0 22px!important;
-      object-fit:contain!important;
-      object-position:center!important;
-      margin:0!important;
-      padding:0!important;
-      border:0!important;
-      background:transparent!important;
-    }
-    .trux-thinking-bar{
-      overflow:visible;
-    }
     .thinking-tool-trace{background:none!important;border:0!important;box-shadow:none!important;}
     /* Tool trace is above the active thinking line. Each new tool call therefore
        pushes the current thinking activity downward. */
@@ -3342,9 +3256,6 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     <aside class="sidebar" id="sidebarNode" aria-label="TruX navigation">
       <div class="sidebar-header">
         <div class="brand">
-          <div class="logo" aria-label="ChatTruX-AI" role="img">
-            <img src="icon-192.png" alt="" width="38" height="38" draggable="false">
-          </div>
           <div><b>ChatTruX-AI</b><small>Intelligent workspace</small></div>
         </div>
         <button class="sidebar-close" type="button" onclick="closeSidebar()" title="Close sidebar" aria-label="Close sidebar">
@@ -3440,7 +3351,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
         <div class="topbar-right">
           <button type="button" class="top-profile-btn" id="topProfileBtn" onclick="handleAuthAction()" title="Profile" aria-label="Open profile">
-            <img id="topProfileAvatar" src="icon-192.png" alt="">
+            <span class="top-profile-avatar" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.5 20c.6-3.4 2.8-5.2 6.5-5.2s5.9 1.8 6.5 5.2"></path></svg></span>
           </button>
         </div>
       </div>
@@ -3729,7 +3640,6 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     <div class="settings-page">
       <aside class="settings-sidebar">
         <div class="settings-brand">
-          <img src="icon-192.png" alt="">
           <div><b>TruX settings</b><small>Personal workspace</small></div>
         </div>
         <nav class="settings-nav" aria-label="Settings sections">
@@ -5578,9 +5488,8 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       };
     })();
 
-    /* Assistant rows are labelled with the real TruX mark, mixed case. */
-    const BRAND_MARK = '<img class="label-logo" src="icon-192.png" alt="" width="22" height="22">';
-    const BRAND_LABEL = BRAND_MARK + 'ChatTruX-AI';
+    /* Assistant rows are text-only; app icons remain PWA/metadata assets. */
+    const BRAND_LABEL = 'ChatTruX-AI';
 
     /* Grounding URIs come back as Vertex redirect links, so the readable domain
        lives in the title. Prefer a real hostname when the URI has one. */
@@ -6296,8 +6205,6 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         result.textContent = resultText ? "Result · " + resultText.slice(0, 720) + (resultText.length > 720 ? "…" : "") : (details?.ok === false ? "Tool failed" : "Completed");
       }
 
-      wrap.hidden = false;
-      wrap.style.display = "flex";
       wrap.closest(".trux-thinking-panel")?.classList.add("has-tools");
 
       const container = getActiveChatContainer();
@@ -6312,7 +6219,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       stopToolStatusTyping();
       const wrap = getEl(toolId);
       if(!wrap) return;
-      wrap.querySelectorAll(".thinking-tool-line.active").forEach(line => line.remove());
+      wrap.querySelectorAll(".thinking-tool-item.active").forEach(item => item.classList.remove("active"));
       if(!wrap.children.length) {
         wrap.hidden = true;
         wrap.style.display = "none";
@@ -6363,12 +6270,11 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
        row.innerHTML =
          '<div class="trux-response-stack">' +
            '<div class="trux-thinking-panel" id="' + thid + '">' +
-             '<button type="button" class="trux-thinking-bar" onclick="toggleThinkingDetails(\'' + thid + '\')" aria-expanded="false" aria-controls="' + tsid + '">' +
-               '<span class="trux-thinking-logo" aria-hidden="true"><img src="icon-192.png" alt=""></span>' +
-               '<span class="trux-thinking-copy"><span class="trux-thinking-kicker">WORKING</span><span class="status-msg" id="' + sid + '" role="status" aria-live="polite"><span class="thinking-status-line latest">Tracing the task…</span></span></span>' +
-               '<span class="trux-thinking-elapsed" id="elapsed_' + id + '">00:00</span>' +
-               '<span class="trux-thinking-chevron" aria-hidden="true">⌄</span>' +
-             '</button>' +
+             '<div class="trux-thinking-bar">' +
+               '<div class="trux-thinking-copy"><span class="trux-thinking-kicker">AI ACTIVITY</span><span class="status-msg" id="' + sid + '" role="status" aria-live="polite"><span class="thinking-status-line latest">Tracing the task…</span></span></div>' +
+               '<span class="trux-thinking-elapsed" id="elapsed_' + id + '">Working for 00:00</span>' +
+               '<button type="button" class="trux-thinking-toggle" onclick="toggleThinkingDetails(\'' + thid + '\')" aria-expanded="false" aria-label="Expand AI activity" title="Expand AI activity"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>' +
+             '</div>' +
              '<div class="trux-thinking-details" id="' + tsid + '" hidden></div>' +
            '</div>' +
            '<div class="bubble trux-bubble thinking" id="' + id + '"></div>' +
@@ -6722,28 +6628,38 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       });
     }
 
-    function compactAiActivity(text) {
-      const raw = String(text == null ? "" : text)
+    function normalizeAiActivity(text) {
+      return String(text == null ? "" : text)
         .replace(/[\u0000-\u001F]/g," ")
         .replace(/\s+/g," ")
-        .replace(/[.!?…]+$/g,"")
-        .trim();
-      if (!raw) return "";
-      const words = raw.split(" ").filter(Boolean);
-      const compact = words.slice(0,4).join(" ");
-      return compact + (words.length > 4 ? "…" : "");
+        .trim()
+        .slice(0,240);
+    }
+
+    function appendThinkingHistory(panel, text) {
+      const details = panel?.querySelector?.(".trux-thinking-details");
+      if (!details || !text) return;
+      if (details.lastElementChild?.dataset?.activity === text) return;
+      const item = document.createElement("div");
+      item.className = "thinking-status-step";
+      item.dataset.activity = text;
+      item.textContent = text;
+      details.appendChild(item);
     }
 
     function toggleThinkingDetails(panelId) {
       const panel = getEl(panelId);
       if (!panel) return;
       const details = panel.querySelector(".trux-thinking-details");
-      const button = panel.querySelector(".trux-thinking-bar");
-      if (!details || !button) return;
+      const toggle = panel.querySelector(".trux-thinking-toggle");
+      if (!details || !toggle) return;
       const expanded = !panel.classList.contains("expanded");
       panel.classList.toggle("expanded", expanded);
       details.hidden = !expanded;
-      button.setAttribute("aria-expanded", String(expanded));
+      toggle.setAttribute("aria-expanded", String(expanded));
+      toggle.setAttribute("aria-label", expanded ? "Minimize AI activity" : "Expand AI activity");
+      toggle.title = expanded ? "Minimize AI activity" : "Expand AI activity";
+      if (expanded) requestAnimationFrame(() => { details.scrollTop = details.scrollHeight; });
     }
 
     function dismissThinkingPanel(row) {
@@ -6767,18 +6683,14 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       const session = chatSessions[currentChatId];
       const userRow = getAssistantTurnUserRow(responseRow);
       if (!userRow || !session?.messages) return toast("The original prompt is unavailable.", "err");
-
       const index = findStoppedMessageIndex(userRow, userRow.querySelector(".user-bubble")?.textContent || "");
       if (index < 0) return toast("The original prompt is unavailable.", "err");
-
       const promptText = String(session.messages[index]?.text || "");
       session.messages.splice(index, 1);
       if (session.messages[index]?.role === "trux") session.messages.splice(index, 1);
       saveChatSessions();
-
       responseRow.remove();
       userRow.remove();
-
       const input = getEl("promptInput");
       input.value = promptText;
       input.focus();
@@ -6788,7 +6700,6 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     function appendAssistantActions(actions, text, responseRow) {
       if (!actions) return;
       actions.innerHTML = "";
-
       if (String(text || "").trim()) {
         const copyBtn = document.createElement("button");
         copyBtn.className = "act";
@@ -6797,7 +6708,6 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         copyBtn.onclick = () => copyTextMessage(String(text), copyBtn);
         actions.appendChild(copyBtn);
       }
-
       const editBtn = document.createElement("button");
       editBtn.className = "act";
       editBtn.title = "Edit prompt";
@@ -6809,9 +6719,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     function setThinkingStatus(statusId, text) {
       const el = getEl(statusId);
       if (!el) return;
-      const fullTitle = String(text == null ? "" : text).replace(/\s+/g, " ").trim();
-      if (!fullTitle) return;
-      const next = compactAiActivity(fullTitle);
+      const next = normalizeAiActivity(text);
       if (!next) return;
       let line = el.querySelector(".thinking-status-line");
       if (!line) {
@@ -6819,16 +6727,20 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         line.className = "thinking-status-line latest";
         el.appendChild(line);
       }
-      const previous = String(line.textContent || "");
-      line.title = fullTitle;
-      line.dataset.value = next;
-      if (previous !== next) {
-        line.classList.remove("status-change");
-        void line.offsetWidth;
-        line.classList.add("status-change");
-      }
+      const previous = String(line.textContent || "").trim();
+      if (previous === next) return;
+      const panel = el.closest(".trux-thinking-panel");
+      if (previous) appendThinkingHistory(panel, previous);
       line.textContent = next;
-      el.closest(".trux-thinking-panel")?.classList.add("has-activity");
+      line.title = next;
+      if (panel) {
+        panel.classList.add("has-activity");
+        appendThinkingHistory(panel, next);
+        const details = panel.querySelector(".trux-thinking-details");
+        if (details && panel.classList.contains("expanded")) {
+          requestAnimationFrame(() => { details.scrollTop = details.scrollHeight; });
+        }
+      }
     }
 
     const TRUX_CODE_IDLE_LINES = [
@@ -6997,36 +6909,28 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
       let id = "b_" + Date.now(), aid = "a_" + Date.now(), sid = "s_" + Date.now(), row = document.createElement("div");
       row.className = "row trux-row appear";
-
-      /* Codex-style: completed tool calls live inside the same unboxed thinking
-         area as the active model status, then the entire trace is replaced by
-         the final answer. */
-      let tsid = "ts_" + Date.now();
-      const thinkingElapsedMarkup = workspaceMode === "coding"
-        ? '<span class="thinking-elapsed" id="elapsed_' + id + '">00:00</span>'
-        : "";
-       const thid = "th_" + Date.now();
-       row.innerHTML = `<div class="trux-response-stack">
-         <div class="trux-thinking-panel" id="${thid}">
-           <button type="button" class="trux-thinking-bar" onclick="toggleThinkingDetails('${thid}')" aria-expanded="false" aria-controls="${tsid}">
-             <span class="trux-thinking-logo" aria-hidden="true"><img src="icon-192.png" alt=""></span>
-             <span class="trux-thinking-copy"><span class="trux-thinking-kicker">WORKING</span><span class="status-msg" id="${sid}" role="status" aria-live="polite"><span class="thinking-status-line latest">Understanding the request…</span></span></span>
-             ${thinkingElapsedMarkup ? '<span class="trux-thinking-elapsed" id="elapsed_' + id + '">00:00</span>' : ''}
-             <span class="trux-thinking-chevron" aria-hidden="true">⌄</span>
-           </button>
-           <div class="trux-thinking-details" id="${tsid}" hidden></div>
-         </div>
-         <div class="bubble trux-bubble thinking" id="${id}"></div>
-         <div class="actions" id="${aid}"></div>
-       </div>`;
+      const tsid = "ts_" + Date.now();
+      const thid = "th_" + Date.now();
+      row.innerHTML = `<div class="trux-response-stack">
+        <div class="trux-thinking-panel" id="${thid}">
+          <div class="trux-thinking-bar">
+            <div class="trux-thinking-copy"><span class="trux-thinking-kicker">AI ACTIVITY</span><span class="status-msg" id="${sid}" role="status" aria-live="polite"><span class="thinking-status-line latest">Understanding the request…</span></span></div>
+            <span class="trux-thinking-elapsed" id="elapsed_${id}">Working for 00:00</span>
+            <button type="button" class="trux-thinking-toggle" onclick="toggleThinkingDetails('${thid}')" aria-expanded="false" aria-label="Expand AI activity" title="Expand AI activity"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>
+          </div>
+          <div class="trux-thinking-details" id="${tsid}" hidden></div>
+        </div>
+        <div class="bubble trux-bubble thinking" id="${id}"></div>
+        <div class="actions" id="${aid}"></div>
+      </div>`;
 
       chatContainer.appendChild(row);
       chatContainer.scrollTop = chatContainer.scrollHeight;
       row._startedAt = Date.now();
-      if (workspaceMode === "coding") {
+      {
         const elapsedEl = getEl("elapsed_" + id);
         row._elapsedTimer = setInterval(() => {
-          if(elapsedEl) elapsedEl.innerText = formatThinkingClock(Date.now() - row._startedAt);
+          if(elapsedEl) elapsedEl.innerText = "Working for " + formatThinkingClock(Date.now() - row._startedAt);
         }, 1000);
       }
 
@@ -7267,12 +7171,8 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
             activeStreamer = null;
 
             const b = getEl(id);
-            if (b) {
-              b.classList.add("thinking");
-              b.innerHTML = '<div class="thinking-container"><div class="thinking-main"><span class="thinking-particles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="status-msg" id="' + sid + '" role="status" aria-live="polite"><span class="thinking-status-line latest">Waiting for network…</span></span></div></div>';
-            }
+            if (b) b.classList.add("thinking");
 
-            setThinkingStatus(sid, "Connection lost — waiting for internet connection…");
             await waitForInternet(sid);
             if (!isGenerating) return;
             setThinkingStatus(sid, "Connection restored — continuing…");
