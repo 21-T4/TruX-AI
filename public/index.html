@@ -5499,6 +5499,12 @@ body.home-active #modelPickerBtn .model-picker-icon svg{width:17px!important;hei
       advancedThinkingLevel = ["low","medium","extended"].includes(store.getItem("trux_thinking_level")) ? store.getItem("trux_thinking_level") : "medium";
       advancedThinkingEnabled = advancedThinkingLevel === "extended";
     } catch (_) {}
+    try {
+      if(!isTruxDeveloper(auth?.currentUser) && currentModel === "ultra") {
+        currentModel = "base";
+        store.setItem("trux_model","base");
+      }
+    } catch (_) {}
 
     function toggleModelDropdown(e) {
       e?.stopPropagation();
@@ -5791,7 +5797,6 @@ body.home-active #modelPickerBtn .model-picker-icon svg{width:17px!important;hei
           } catch(e) {}
 
           workspaceMode = nextMode;
-      document.body.dataset.workspaceMode = workspaceMode;
           currentChatId = null;
           document.body.removeAttribute("data-media-mode");
           document.body.classList.remove("coding-workspace", "chat-session-active", "home-active");
@@ -6405,18 +6410,6 @@ body.home-active #modelPickerBtn .model-picker-icon svg{width:17px!important;hei
       menu.classList.add("open");
       button.classList.add("open");
       button.setAttribute("aria-expanded", "true");
-    }
-      e?.preventDefault();
-      e?.stopPropagation();
-      let menu = getEl("attachmentMenu"), button = getEl("attachBtn");
-      if (!menu || !button) return;
-      if (menu.classList.contains("open")) return closeAttachmentMenu();
-
-      closeModelDropdown();
-      menu.classList.add("open");
-      button.classList.add("open");
-      button.setAttribute("aria-expanded", "true");
-      requestAnimationFrame(positionAttachmentMenu);
     }
 
     function closeAttachmentMenu() {
