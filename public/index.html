@@ -4382,9 +4382,8 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         </div>
 
         <div class="trux-mode-switch" id="truxModeSwitch" aria-label="Workspace mode">
-          <button type="button" class="trux-mode-btn active" data-trux-mode="chat" onclick="setWorkspaceMode('chat')">Chat</button>
+          <button type="button" class="trux-mode-btn active" data-trux-mode="chat" onclick="setWorkspaceMode('chat')">TruX Chat</button>
           <button type="button" class="trux-mode-btn" data-trux-mode="coding" onclick="setWorkspaceMode('coding')">TruX-Code</button>
-          <button type="button" class="trux-mode-btn" data-trux-mode="deep-research" onclick="setWorkspaceMode('deep-research')">Deep Research</button>
         </div>
 
         <div class="topbar-right">
@@ -9212,6 +9211,11 @@ body.home-active #toolBtn{display:none!important}
   $("toolBtn")?.remove();document.querySelectorAll("#thinkingBtn,#notifyBtn,.settings-btn").forEach(el=>el.remove());
 })();
 </script>
+<style id="trux-mode-two-way-fix-20261005">
+.trux-mode-switch{grid-template-columns:repeat(2,minmax(0,1fr))!important;width:min(300px,100%)!important}
+.trux-mode-btn{min-width:120px!important}
+@media(max-width:760px){.trux-mode-switch{width:min(250px,calc(100vw - 120px))!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}.trux-mode-btn{min-width:0!important}}
+</style>
 </body>
 </html>
 
