@@ -1890,10 +1890,6 @@
     /* ============================================================
        TRUX UI UPGRADE — additive layer; existing design remains intact
        ============================================================ */
-    .trux-mode-switch{justify-self:center;display:flex;align-items:center;gap:4px;padding:4px;border:1px solid var(--line);border-radius:13px;background:rgba(12,12,15,.78);backdrop-filter:blur(18px);box-shadow:0 12px 30px rgba(0,0,0,.2)}
-    .trux-mode-btn{height:30px;padding:0 10px;border-radius:9px;color:var(--txt-3);font-size:12px;font-weight:650;border:1px solid transparent;white-space:nowrap}
-    .trux-mode-btn:hover{color:#fff;background:rgba(255,255,255,.045)}
-    .trux-mode-btn.active{color:#fff;background:linear-gradient(135deg,rgba(109,131,255,.18),rgba(176,124,255,.10));border-color:var(--acc-line)}
     .trux-plus-menu{min-width:min(360px,calc(100vw - 24px));max-width:min(390px,calc(100vw - 24px));padding:8px}
     #attachmentMenu{z-index:99999;pointer-events:none}
     #attachmentMenu.open{pointer-events:auto}
@@ -3303,12 +3299,6 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     pointer-events:none;
     background:linear-gradient(180deg,rgba(255,255,255,.08),transparent 42%);
     opacity:.45;
-  }
-  .trux-mode-btn.active{
-    transform:translateZ(7px);
-    box-shadow:
-      0 8px 16px -12px rgba(109,131,255,.8),
-      0 1px 0 rgba(255,255,255,.18) inset;
   }
 
   /* Default Chat: make the good home screen spatial rather than flat. */
@@ -6420,48 +6410,18 @@ body.home-active #modelPickerBtn .model-picker-icon svg{width:17px!important;hei
        the composer's overflow clipped it away, and it sat below other UI in
        the stacking order — so it was invisible and/or unclickable.
        ===================================================================== */
-    function positionAttachmentMenu() {
-      let menu = getEl("attachmentMenu"), btn = getEl("attachBtn");
-      if (!menu || !btn) return;
-
-      let b = btn.getBoundingClientRect();
-      const margin = 8;
-      const gap = 10;
-
-      // Keep the popup fully inside the viewport and let it scroll internally
-      // instead of becoming clipped by the composer or a small phone viewport.
-      menu.style.maxHeight = Math.max(220, window.innerHeight - margin * 2) + "px";
-
-      // offsetWidth/Height are stable while the menu is in its open layout.
-      let w = Math.min(menu.offsetWidth || 360, window.innerWidth - margin * 2);
-      let h = Math.min(menu.offsetHeight || 0, window.innerHeight - margin * 2);
-
-      let left = Math.max(
-        margin,
-        Math.min(b.left, window.innerWidth - w - margin)
-      );
-      let top = b.top - h - gap;
-
-      // Not enough room above? Drop it below the button instead.
-      if (top < margin) {
-        top = Math.min(
-          b.bottom + gap,
-          window.innerHeight - h - margin
-        );
-        menu.style.transformOrigin = "top left";
-      } else {
-        menu.style.transformOrigin = "bottom left";
-      }
-
-      // Final clamp protects against any fractional viewport/layout edge case.
-      top = Math.max(margin, Math.min(top, window.innerHeight - h - margin));
-      left = Math.max(margin, Math.min(left, window.innerWidth - w - margin));
-
-      menu.style.left = Math.round(left) + "px";
-      menu.style.top = Math.round(top) + "px";
-    }
-
     function toggleAttachmentMenu(e) {
+      e?.preventDefault();
+      e?.stopPropagation();
+      const menu = getEl("attachmentMenu"), button = getEl("attachBtn");
+      if (!menu || !button) return;
+      if (menu.classList.contains("open")) return closeAttachmentMenu();
+
+      closeModelDropdown();
+      menu.classList.add("open");
+      button.classList.add("open");
+      button.setAttribute("aria-expanded", "true");
+    }
       e?.preventDefault();
       e?.stopPropagation();
       let menu = getEl("attachmentMenu"), button = getEl("attachBtn");
@@ -6481,9 +6441,6 @@ body.home-active #modelPickerBtn .model-picker-icon svg{width:17px!important;hei
       getEl("attachBtn")?.setAttribute("aria-expanded", "false");
     }
 
-    addEventListener("resize", () => {
-      if (getEl("attachmentMenu")?.classList.contains("open")) positionAttachmentMenu();
-    });
     addEventListener("scroll", e => {
       if (e.target === chatContainer || e.target === document) closeAttachmentMenu();
     }, true);
