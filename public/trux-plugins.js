@@ -51,7 +51,7 @@
   }
   function updateAccessUI(){
     var all=list(), connected=all.filter(function(p){return !!p.connected;}).length;
-    var active=all.filter(function(p){return !!p.enabled && !!p.connected;}).length;
+    var active=connected;
 
     var side=el('sidebarPluginCount'); if(side) side.textContent=String(active);
     var summary=el('pluginsSummary'); if(summary) summary.textContent=active+' active · '+connected+' connected';
@@ -63,7 +63,7 @@
 
     var integrationItems=el('truxCodeIntegrationItems');
     if(integrationItems){
-      var activeList=all.filter(function(p){return !!p.enabled && !!p.connected;}).slice(0,6);
+      var activeList=all.filter(function(p){return !!p.connected;}).slice(0,6);
       integrationItems.innerHTML=activeList.length
         ? activeList.map(function(p){
             var logo=p.logo || p.fallbackLogo
@@ -219,7 +219,7 @@
   window.openPluginsPage=open;
   window.closePluginsPage=close;
   window.handlePluginCallback=callback;
-  window.refreshTruxCodeIntegrations=updateAccessUI;
+  window.refreshTruxCodeIntegrations=function(){ return load({silent:true}); };
 
   function boot(){
     if(!window.__truxPluginControlsBound){
@@ -235,10 +235,24 @@
     }
     var a=auth();
     if(a){
+      // Hydrate plugin state as soon as Firebase is ready so TruX-Code does
+      // not depend on opening/clicking the Plugins page first.
       a.onAuthStateChanged(function(){
         updateAccessUI();
+        load({silent:true});
         if(paramsHasPlugins()) callback();
       });
+      load({silent:true});
+      // Keep Code's integration indicator fresh after connections change in
+      // another tab/window or after returning from the Composio flow.
+      if(!window.__truxPluginRefreshTimer){
+        window.__truxPluginRefreshTimer=setInterval(function(){
+          if(document.body.classList.contains('coding-workspace') || document.body.classList.contains('plugins-page-active')){
+            load({silent:true});
+          }
+        },12000);
+      }
+      window.addEventListener('focus',function(){ load({silent:true}); },{passive:true});
       if(paramsHasPlugins()) callback();
     }else{
       setTimeout(boot,500);
