@@ -6288,7 +6288,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
          '<div class="trux-response-stack">' +
            '<div class="trux-thinking-panel" id="' + thid + '">' +
              '<div class="trux-thinking-bar">' +
-               '<div class="trux-thinking-copy"><span class="trux-thinking-kicker">AI ACTIVITY</span><span class="status-msg" id="' + sid + '" role="status" aria-live="polite"><span class="thinking-status-line compact">Tracing the task…</span><span class="thinking-status-line full"></span></span></div>' +
+               '<div class="trux-thinking-copy"><span class="trux-thinking-kicker">AI ACTIVITY</span><span class="status-msg" id="' + sid + '" role="status" aria-live="polite"><span class="thinking-status-line compact">Tracing the task…</span><span class="thinking-status-line full">Tracing the task…</span></span></div>' +
                '<span class="trux-thinking-elapsed" id="elapsed_' + id + '">Working for 00:00</span>' +
                '<button type="button" class="trux-thinking-toggle" onclick="toggleThinkingDetails(\'' + thid + '\')" aria-expanded="false" aria-label="Expand AI activity" title="Expand AI activity"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>' +
              '</div>' +
@@ -6941,7 +6941,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       row.innerHTML = `<div class="trux-response-stack">
         <div class="trux-thinking-panel" id="${thid}">
           <div class="trux-thinking-bar">
-            <div class="trux-thinking-copy"><span class="trux-thinking-kicker">AI ACTIVITY</span><span class="status-msg" id="${sid}" role="status" aria-live="polite"><span class="thinking-status-line compact">Understanding the request…</span><span class="thinking-status-line full"></span></span></div>
+            <div class="trux-thinking-copy"><span class="trux-thinking-kicker">AI ACTIVITY</span><span class="status-msg" id="${sid}" role="status" aria-live="polite"><span class="thinking-status-line compact">Understanding the request…</span><span class="thinking-status-line full">Understanding the request…</span></span></div>
             <span class="trux-thinking-elapsed" id="elapsed_${id}">Working for 00:00</span>
             <button type="button" class="trux-thinking-toggle" onclick="toggleThinkingDetails('${thid}')" aria-expanded="false" aria-label="Expand AI activity" title="Expand AI activity"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>
           </div>
@@ -8164,6 +8164,10 @@ body.home-active .animated-sub{
 .sidebar-brand-copy{min-width:0!important;display:flex!important;flex-direction:column!important;justify-content:center!important;gap:2px!important;overflow:hidden!important}
 .sidebar-brand-copy b{display:block!important;max-width:100%!important;font-size:16px!important;line-height:1.05!important;font-weight:700!important;letter-spacing:-.025em!important;color:#e8e8e8!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
 .sidebar-brand-copy small{display:block!important;font-size:9px!important;line-height:1.15!important;letter-spacing:.13em!important;text-transform:uppercase!important;color:#686868!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+
+/* Smaller plugin cards: logos stay visually secondary to the plugin name. */
+.trux-plugin-logo{width:42px!important;height:42px!important;border-radius:12px!important}
+.trux-plugin-logo img{width:23px!important;height:23px!important;max-width:23px!important;max-height:23px!important}
 
 /* Model picker — stable button text and vertically stacked descriptions. */
 #modelPickerBtn{max-width:188px!important;min-width:112px!important;overflow:hidden!important}
