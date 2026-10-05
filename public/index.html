@@ -4942,13 +4942,7 @@ body.home-active #modelPickerBtn .model-picker-icon svg{width:17px!important;hei
                 <button type="button" class="trux-plus-item" data-trux-menu-mode="deep-research" onclick="setWorkspaceMode('deep-research');closeAttachmentMenu()"><span>◌</span><span><b>Deep Research</b><small>TruX-Code reasoning engine + web</small></span></button>
                 <button type="button" class="trux-plus-item" data-trux-menu-mode="image" onclick="setWorkspaceMode('image');closeAttachmentMenu()"><span>◈</span><span><b>Create image</b><small>Gemini image generation</small></span></button>
               </div>
-              <div class="trux-plus-sep"></div>
-              <div class="trux-plus-title">Model</div>
-              <div class="trux-plus-grid">
-                <button type="button" class="trux-plus-item active" data-model="base" onclick="selectModel('base',event);closeAttachmentMenu()"><span>ϟ</span><span><b>Core 4.0</b><small>Unlimited core access</small></span></button>
-                <button type="button" class="trux-plus-item" data-model="pro" onclick="selectModel('pro',event);closeAttachmentMenu()"><span>✦</span><span><b>Pro 5.0</b><small>1,000,000 tokens/month</small></span></button>
-                <button type="button" class="trux-plus-item trux-owner-only" data-model="ultra" onclick="selectModel('ultra',event);closeAttachmentMenu()"><span>∞</span><span><b>TruX-Ultra 6.5</b><small>TruX-Code reasoning engine · owner</small></span></button>
-              </div>
+              
               <div class="trux-plus-sep"></div>
               <button type="button" onclick="openFileLibrary()" role="menuitem"><svg viewBox="0 0 24 24"><path d="M5 4.5h9l4 4V19.5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-14a1 1 0 0 1 1-1Z"/><path d="M13 4.5v4h4M7.5 13h9M7.5 16h7"/></svg>Files</button>
               <button type="button" onclick="openCamera()" role="menuitem"><svg viewBox="0 0 24 24"><path d="M4 7h3l1.4-2h7.2L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.5"/></svg>Camera</button>
@@ -4956,6 +4950,55 @@ body.home-active #modelPickerBtn .model-picker-icon svg{width:17px!important;hei
               <button type="button" onclick="openPluginsPage();closeAttachmentMenu()" role="menuitem"><svg viewBox="0 0 24 24"><path d="M9 4.5v3M15 4.5v3M9 16.5v3M15 16.5v-3M4.5 9h3M4.5 15h3M19.5 9h-3M19.5 15h-3"/><path d="M9 7.5h6a3 3 0 0 1 3 3v3a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3v-3a3 3 0 0 1 3-3Z"/></svg>Plugins</button>
             </div>
 
+            <div class="model-picker-container" id="modelPickerContainer">
+              <button type="button" id="modelPickerBtn" class="model-picker-btn" onclick="toggleModelDropdown(event)" aria-haspopup="menu" aria-expanded="false" aria-label="Choose model">
+                <span class="model-picker-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                    <path d="M4 7h16M7 12h10M4 17h16"/>
+                    <circle cx="8" cy="7" r="1.7" fill="currentColor" stroke="none"/>
+                    <circle cx="15" cy="12" r="1.7" fill="currentColor" stroke="none"/>
+                    <circle cx="11" cy="17" r="1.7" fill="currentColor" stroke="none"/>
+                  </svg>
+                </span>
+                <span id="modelPickerLabel">Core 4.0</span>
+                <svg class="model-picker-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
+              </button>
+              <div class="model-dropdown-menu" id="modelDropdown" role="menu" aria-label="Choose model">
+                <button type="button" class="model-item active" data-model="base" onclick="selectModel('base',event);closeModelDropdown()">
+                  <span class="model-icon">ϟ</span>
+                  <span class="model-info"><b>Core 4.0</b><small>Unlimited core access</small></span>
+                  <span class="model-check">✓</span>
+                </button>
+                <button type="button" class="model-item" data-model="pro" onclick="selectModel('pro',event);closeModelDropdown()">
+                  <span class="model-icon">✦</span>
+                  <span class="model-info"><b>Pro 5.0</b><small>1,000,000 tokens/month</small></span>
+                  <span class="model-check"></span>
+                </button>
+                <button type="button" class="model-item trux-owner-only" data-model="ultra" onclick="selectModel('ultra',event);closeModelDropdown()">
+                  <span class="model-icon">∞</span>
+                  <span class="model-info"><b>TruX-Ultra 6.5</b><small>TruX-Code reasoning engine · owner</small></span>
+                  <span class="model-check"></span>
+                </button>
+                <div class="thinking-choice-wrap">
+                  <div class="thinking-choice-title">Thinking</div>
+                  <button type="button" class="thinking-choice" data-thinking-level="low" onclick="setThinkingLevel('low',event)">
+                    <span><b>Low</b><small>Fastest responses</small></span><span class="thinking-check"></span>
+                  </button>
+                  <button type="button" class="thinking-choice active" data-thinking-level="medium" onclick="setThinkingLevel('medium',event)">
+                    <span><b>Medium</b><small>Balanced reasoning</small></span><span class="thinking-check">✓</span>
+                  </button>
+                  <button type="button" class="thinking-choice" data-thinking-level="extended" onclick="setThinkingLevel('extended',event)">
+                    <span><b>Extended</b><small>Deepest reasoning</small></span><span class="thinking-check"></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="icon-btn incognito-btn" id="incognitoBtn" onclick="launchIncognitoChat()" title="New incognito chat" aria-label="Start new incognito chat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 10.5h16"/><path d="m6 10.5 1.5-4h9l1.5 4"/>
+                <circle cx="8" cy="14.5" r="2.3"/><circle cx="16" cy="14.5" r="2.3"/><path d="M10.3 14.5h3.4"/>
+              </svg>
+            </button>
             <button class="icon-btn" id="voiceBtn" onclick="toggleVoiceInput()" title="Voice input" aria-label="Voice input">
               <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8"/></svg>
             </button>
@@ -5477,6 +5520,11 @@ body.home-active #modelPickerBtn .model-picker-icon svg{width:17px!important;hei
         generationStopRequested = false,
         truxLocationCache = null,
         currentProfileOption = null;
+    try {
+      currentModel = ["base","pro","ultra"].includes(store.getItem("trux_model")) ? store.getItem("trux_model") : "base";
+      advancedThinkingLevel = ["low","medium","extended"].includes(store.getItem("trux_thinking_level")) ? store.getItem("trux_thinking_level") : "medium";
+      advancedThinkingEnabled = advancedThinkingLevel === "extended";
+    } catch (_) {}
 
     function toggleModelDropdown(e) {
       e?.stopPropagation();
@@ -5499,12 +5547,29 @@ body.home-active #modelPickerBtn .model-picker-icon svg{width:17px!important;hei
       const owner = isTruxDeveloper(auth?.currentUser);
       if(m === "ultra" && !owner) return toast("TruX-Ultra 6.5 is owner-only.", "err");
       if(m === "pro" && !owner && getProUsageData().tokensUsed >= 1000000) return toast("TruX Pro monthly limit reached.", "err");
+      if(!["base","pro","ultra"].includes(m)) m = "base";
       currentModel = m;
+      try { store.setItem("trux_model", currentModel); } catch (_) {}
       const labels = { base:"Core 4.0", pro:"Pro 5.0", ultra:"TruX-Ultra 6.5" };
       const modelEl = getEl("profileModelText");
       if(modelEl) modelEl.innerText = labels[m] || "Core 4.0";
+      const pickerLabel = getEl("modelPickerLabel");
+      if(pickerLabel) pickerLabel.textContent = labels[m] || "Core 4.0";
       document.querySelectorAll("[data-model]").forEach(x => x.classList.toggle("active", x.dataset.model === m));
       updateAllUsageUI();
+    }
+
+    function setThinkingLevel(level, e) {
+      e?.stopPropagation();
+      const next = ["low","medium","extended"].includes(level) ? level : "medium";
+      advancedThinkingLevel = next;
+      advancedThinkingEnabled = next === "extended";
+      try { store.setItem("trux_thinking_level", next); } catch (_) {}
+      document.querySelectorAll("[data-thinking-level]").forEach(x => {
+        x.classList.toggle("active", x.dataset.thinkingLevel === next);
+        const check = x.querySelector(".thinking-check");
+        if(check) check.textContent = x.dataset.thinkingLevel === next ? "✓" : "";
+      });
     }
 
     function getActiveChatContainer() {
@@ -5703,7 +5768,7 @@ body.home-active #modelPickerBtn .model-picker-icon svg{width:17px!important;hei
       const nextMode = mode || "chat";
       const previousMode = workspaceMode;
       const modeChanged = nextMode !== previousMode || !!document.body.dataset.mediaMode;
-      const hardRefresh = options.reload !== false;
+      const hardRefresh = options.reload === true;
 
       closeAttachmentMenu(); closeModelDropdown();
 
@@ -10007,230 +10072,375 @@ body.home-active .compose{width:min(740px,calc(100% - 0px))!important;max-width:
 }
 </style>
 
-<script id="trux-ui-final-clean-script-20261005">
-(function(){
-  const $ = id => document.getElementById(id);
-  const safeStore = (key,value) => {
-    try {
-      const st = (typeof store !== "undefined" && store) ? store : localStorage;
-      st.setItem(key,value);
-    } catch (_) {}
-  };
 
-  /* Logo is intentionally disabled until the ribbon asset is isolated correctly.
-     Remove every stale instance; never create a replacement from the full app icon. */
-  document.querySelectorAll("#truxHomeLogo").forEach(el => el.remove());
 
-  /* Keep only the two top workspace modes. */
-  const sw = $("truxModeSwitch");
-  if(sw){
-    [...sw.querySelectorAll(".trux-mode-btn")].forEach((b,i)=>{
-      if(i===0){ b.textContent="Chat"; b.dataset.truxMode="chat"; b.style.display=""; }
-      else if(i===1){ b.textContent="TruX-Code"; b.dataset.truxMode="coding"; b.style.display=""; }
-      else b.remove();
-    });
-  }
+<style id="trux-ui-single-source-20261005">
+/* One UI shell for every workspace. Mode changes swap content/state only. */
+html, body {
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+  background:#151515!important;
+}
+.shell {
+  position:relative!important;
+  display:block!important;
+  width:100vw!important;
+  height:100dvh!important;
+  min-width:0!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+}
+.main {
+  position:relative!important;
+  display:flex!important;
+  flex-direction:column!important;
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+  background:#151515!important;
+  background-image:none!important;
+}
+.topbar {
+  position:relative!important;
+  z-index:100!important;
+  display:grid!important;
+  grid-template-columns:minmax(44px,1fr) auto minmax(44px,1fr)!important;
+  align-items:center!important;
+  flex:0 0 60px!important;
+  width:100%!important;
+  height:60px!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:0 14px!important;
+  background:#151515!important;
+  background-image:none!important;
+  border:0!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+.topbar-left { justify-self:start!important; display:flex!important; align-items:center!important; gap:7px!important; }
+.topbar-right { justify-self:end!important; display:flex!important; align-items:center!important; }
+.top-btn.mobile-new { display:none!important; }
+.trux-mode-switch {
+  justify-self:center!important;
+  align-self:center!important;
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:3px!important;
+  width:250px!important;
+  max-width:calc(100vw - 112px)!important;
+  min-width:172px!important;
+  height:40px!important;
+  padding:3px!important;
+  border-radius:12px!important;
+  background:#1b1b1b!important;
+  border:1px solid rgba(255,255,255,.07)!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+.trux-mode-btn {
+  width:100%!important;
+  height:32px!important;
+  min-width:0!important;
+  padding:0 8px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border-radius:9px!important;
+  border:1px solid transparent!important;
+  background:transparent!important;
+  color:#858585!important;
+  font-size:13px!important;
+  font-weight:650!important;
+  transform:none!important;
+  box-shadow:none!important;
+  white-space:nowrap!important;
+}
+.trux-mode-btn:hover { background:#242424!important; color:#cfcfcf!important; }
+.trux-mode-btn.active {
+  background:#292929!important;
+  border-color:rgba(255,255,255,.08)!important;
+  color:#ededed!important;
+  box-shadow:none!important;
+}
 
-  /* Build the model selector once. The old selector is removed by id. */
-  const oldPicker = $("modelPickerContainer");
-  if(oldPicker) oldPicker.remove();
+/* All workspaces share the same composer geometry. */
+.composer {
+  position:relative!important;
+  z-index:200!important;
+  flex:0 0 auto!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:8px 18px calc(18px + var(--safe-b))!important;
+  background:#151515!important;
+  background-image:none!important;
+  border:0!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+}
+.compose {
+  width:min(740px,100%)!important;
+  max-width:740px!important;
+  min-width:0!important;
+  margin:0 auto!important;
+}
+.bar {
+  position:relative!important;
+  display:grid!important;
+  grid-template-columns:42px minmax(0,1fr) 42px 42px 50px!important;
+  grid-template-rows:1fr 42px!important;
+  align-items:center!important;
+  gap:0 7px!important;
+  width:100%!important;
+  min-width:0!important;
+  min-height:116px!important;
+  margin:0!important;
+  padding:12px!important;
+  border-radius:30px!important;
+  background:#1d1d1d!important;
+  background-image:none!important;
+  border:1px solid rgba(255,255,255,.08)!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+}
+.bar.multiline {
+  grid-template-columns:42px minmax(0,1fr) 42px 42px 50px!important;
+  grid-template-rows:1fr 42px!important;
+}
+.bar:focus-within {
+  background:#1d1d1d!important;
+  border-color:rgba(255,255,255,.12)!important;
+  box-shadow:none!important;
+}
+.bar > #attachBtn,
+.bar > #modelPickerContainer,
+.bar > #incognitoBtn,
+.bar > #voiceBtn,
+.bar > #promptInput,
+.bar > #actionBtn {
+  position:relative!important;
+  min-width:0!important;
+  margin:0!important;
+}
+.bar > #attachBtn { grid-column:1!important; grid-row:2!important; width:42px!important; height:42px!important; justify-self:center!important; align-self:center!important; }
+.bar > #modelPickerContainer { grid-column:2!important; grid-row:2!important; width:100%!important; display:flex!important; align-items:center!important; justify-content:flex-start!important; }
+.bar > #incognitoBtn { grid-column:3!important; grid-row:2!important; width:42px!important; height:42px!important; justify-self:center!important; align-self:center!important; }
+.bar > #voiceBtn { grid-column:4!important; grid-row:2!important; width:42px!important; height:42px!important; justify-self:center!important; align-self:center!important; }
+.bar > #promptInput {
+  grid-column:1 / -1!important;
+  grid-row:1!important;
+  width:100%!important;
+  height:60px!important;
+  min-height:0!important;
+  padding:4px 12px!important;
+  align-self:stretch!important;
+  background:transparent!important;
+  border:0!important;
+  resize:none!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+  color:#d8d8d8!important;
+  line-height:1.3!important;
+}
+#promptInput::placeholder { color:#7a7a7a!important; opacity:1!important; }
+.bar > #actionBtn {
+  grid-column:5!important;
+  grid-row:2!important;
+  width:48px!important;
+  height:48px!important;
+  justify-self:end!important;
+  align-self:center!important;
+  padding:0!important;
+  border-radius:50%!important;
+  background:#ededed!important;
+  color:#171717!important;
+  box-shadow:none!important;
+  transform:none!important;
+}
 
-  const attach = $("attachBtn");
-  if(attach){
-    const picker = document.createElement("div");
-    picker.id = "modelPickerContainer";
-    picker.className = "model-picker-container";
-    picker.innerHTML =
-      '<button type="button" id="modelPickerBtn" class="model-picker-btn" aria-haspopup="menu" aria-expanded="false">'+
-        '<span class="model-picker-icon">'+
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">'+
-            '<path d="M4 7h16M7 12h10M4 17h16"/>'+
-            '<circle cx="8" cy="7" r="1.7" fill="currentColor" stroke="none"/>'+
-            '<circle cx="15" cy="12" r="1.7" fill="currentColor" stroke="none"/>'+
-            '<circle cx="11" cy="17" r="1.7" fill="currentColor" stroke="none"/>'+
-          '</svg>'+
-        '</span><span id="modelPickerLabel">Model</span>'+
-      '</button>'+
-      '<div id="modelDropdown" class="model-dropdown-menu" role="menu"></div>';
-    attach.insertAdjacentElement("afterend",picker);
-  }
+/* Exactly one model picker, located in the composer. */
+#modelPickerContainer {
+  position:relative!important;
+  min-width:0!important;
+}
+#modelPickerBtn {
+  width:auto!important;
+  min-width:116px!important;
+  max-width:100%!important;
+  height:42px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:8px!important;
+  padding:0 13px!important;
+  border-radius:999px!important;
+  background:#242424!important;
+  border:1px solid rgba(255,255,255,.06)!important;
+  color:#d7d7d7!important;
+  box-shadow:none!important;
+  transform:none!important;
+  white-space:nowrap!important;
+}
+#modelPickerBtn:hover,
+#modelPickerBtn[aria-expanded="true"] { background:#292929!important; color:#fff!important; }
+#modelPickerBtn .model-picker-icon { display:grid!important; place-items:center!important; flex:0 0 17px!important; }
+#modelPickerBtn .model-picker-icon svg { width:17px!important; height:17px!important; }
+#modelPickerBtn .model-picker-chevron { width:14px!important; height:14px!important; fill:none!important; stroke:currentColor!important; stroke-width:1.8!important; stroke-linecap:round!important; stroke-linejoin:round!important; opacity:.7!important; }
+#modelDropdown {
+  display:none!important;
+  position:absolute!important;
+  left:0!important;
+  bottom:50px!important;
+  top:auto!important;
+  z-index:100100!important;
+  width:min(360px,calc(100vw - 24px))!important;
+  max-width:calc(100vw - 24px)!important;
+  max-height:min(62dvh,520px)!important;
+  overflow:auto!important;
+  padding:8px!important;
+  border-radius:18px!important;
+  background:#1a1a1a!important;
+  border:1px solid rgba(255,255,255,.10)!important;
+  box-shadow:0 18px 48px rgba(0,0,0,.42)!important;
+  backdrop-filter:none!important;
+}
+#modelDropdown.open { display:block!important; }
+#modelDropdown .model-item {
+  width:100%!important;
+  min-height:56px!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:10px!important;
+  padding:9px 10px!important;
+  border-radius:12px!important;
+  color:#d5d5d5!important;
+  background:transparent!important;
+  border:1px solid transparent!important;
+  text-align:left!important;
+}
+#modelDropdown .model-item:hover,
+#modelDropdown .model-item.active { background:#252525!important; border-color:rgba(255,255,255,.07)!important; color:#fff!important; }
+#modelDropdown .model-icon { width:32px!important; height:32px!important; flex:0 0 32px!important; display:grid!important; place-items:center!important; border-radius:9px!important; background:#222!important; color:#d7d7d7!important; }
+#modelDropdown .model-info { min-width:0!important; flex:1!important; }
+#modelDropdown .model-info b { display:block!important; font-size:13px!important; }
+#modelDropdown .model-info small { display:block!important; margin-top:3px!important; color:#707070!important; font-size:10px!important; }
+#modelDropdown .model-check { width:18px!important; text-align:center!important; color:#ddd!important; }
+#modelDropdown .thinking-choice-wrap { margin-top:7px!important; padding:10px 8px 8px!important; border-top:1px solid rgba(255,255,255,.08)!important; }
+#modelDropdown .thinking-choice-title { padding:2px 3px 8px!important; color:#777!important; font:500 9px/1 var(--font-mono)!important; letter-spacing:.14em!important; text-transform:uppercase!important; }
+#modelDropdown .thinking-choice {
+  width:100%!important; min-height:40px!important; padding:8px 9px!important;
+  display:flex!important; align-items:center!important; justify-content:space-between!important;
+  border-radius:10px!important; color:#aaa!important; background:transparent!important; border:1px solid transparent!important; text-align:left!important;
+}
+#modelDropdown .thinking-choice:hover,
+#modelDropdown .thinking-choice.active { background:#292929!important; color:#fff!important; }
+#modelDropdown .thinking-check { color:#ddd!important; }
 
-  const d = $("modelDropdown"), mb = $("modelPickerBtn"), ml = $("modelPickerLabel");
-  if(d && mb){
-    d.innerHTML =
-      '<button type="button" class="model-item" data-trux-model="base">'+
-        '<span class="model-icon">ϟ</span><span class="model-info"><b>Core 4.0</b><small>Unlimited core access</small></span><span class="model-check"></span>'+
-      '</button>'+
-      '<button type="button" class="model-item" data-trux-model="pro">'+
-        '<span class="model-icon">✦</span><span class="model-info"><b>Pro 5.0</b><small>1,000,000 tokens/month</small></span><span class="model-check"></span>'+
-      '</button>'+
-      '<button type="button" class="model-item trux-owner-only" data-trux-model="ultra">'+
-        '<span class="model-icon">∞</span><span class="model-info"><b>TruX-Ultra 6.5</b><small>TruX-Code reasoning engine · owner</small></span><span class="model-check"></span>'+
-      '</button>'+
-      '<div class="thinking-choice-wrap">'+
-        '<div class="thinking-choice-title">Thinking</div>'+
-        '<button type="button" class="thinking-choice" data-thinking-level="low"><span><b>Low</b><small>Fastest responses</small></span><span class="thinking-check"></span></button>'+
-        '<button type="button" class="thinking-choice" data-thinking-level="medium"><span><b>Medium</b><small>Balanced reasoning</small></span><span class="thinking-check"></span></button>'+
-        '<button type="button" class="thinking-choice" data-thinking-level="extended"><span><b>Extended</b><small>Deepest reasoning</small></span><span class="thinking-check"></span></button>'+
-      '</div>';
+.icon-btn, .send-btn, .top-btn {
+  transform:none!important;
+  box-shadow:none!important;
+}
+.incognito-btn { display:grid!important; place-items:center!important; }
+.incognito-btn svg { width:18px!important; height:18px!important; fill:none!important; stroke:currentColor!important; stroke-width:1.8!important; stroke-linecap:round!important; stroke-linejoin:round!important; }
 
-    const refresh = () => {
-      let model = "base";
-      try { if(typeof currentModel !== "undefined" && currentModel) model = currentModel; } catch (_) {}
-      if(ml) ml.textContent =
-        model==="pro" ? "Pro 5.0" :
-        model==="ultra" ? "TruX-Ultra 6.5" : "Model";
+/* One fixed full-height sheet for the plus control. */
+#attachmentMenu {
+  display:block!important;
+  position:fixed!important;
+  left:0!important; right:0!important; bottom:0!important; top:auto!important;
+  width:100vw!important;
+  max-width:none!important;
+  min-width:0!important;
+  height:min(60dvh,560px)!important;
+  max-height:calc(100dvh - 38px)!important;
+  padding:15px 18px calc(20px + var(--safe-b))!important;
+  border-radius:26px 26px 0 0!important;
+  background:#1a1a1a!important;
+  background-image:none!important;
+  border:1px solid rgba(255,255,255,.08)!important;
+  border-bottom:0!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+  transform:translateY(100%)!important;
+  z-index:100000!important;
+  transition:transform .28s cubic-bezier(.16,1,.3,1),opacity .18s ease,visibility .18s ease!important;
+}
+#attachmentMenu.open { opacity:1!important; visibility:visible!important; pointer-events:auto!important; transform:translateY(0)!important; }
+#attachmentMenu .trux-plus-handle { width:54px!important; height:5px!important; margin:0 auto 18px!important; border-radius:999px!important; background:#666!important; }
+#attachmentMenu .trux-plus-grid { display:grid!important; grid-template-columns:1fr 1fr!important; gap:9px!important; }
+#attachmentMenu .trux-plus-item { min-height:82px!important; padding:12px!important; display:flex!important; align-items:center!important; gap:11px!important; border-radius:16px!important; background:#202020!important; border:1px solid rgba(255,255,255,.07)!important; color:#dcdcdc!important; box-shadow:none!important; transform:none!important; text-align:left!important; }
+#attachmentMenu .trux-plus-item:hover { background:#242424!important; color:#fff!important; }
+#attachmentMenu .trux-plus-item.active { background:#292929!important; color:#fff!important; border-color:rgba(255,255,255,.08)!important; }
+#attachmentMenu .trux-plus-title { color:#777!important; }
+#attachmentMenu .trux-plus-sep { background:rgba(255,255,255,.08)!important; }
 
-      d.querySelectorAll("[data-trux-model]").forEach(b=>{
-        const on=b.dataset.truxModel===model;
-        b.classList.toggle("active",on);
-        const check=b.querySelector(".model-check");
-        if(check) check.textContent=on?"✓":"";
-      });
+#truxHomeLogo,
+#truxHomeLogo img,
+#truxHomeLogo::before,
+#truxHomeLogo::after {
+  display:none!important;
+  visibility:hidden!important;
+  width:0!important;
+  height:0!important;
+  content:none!important;
+  background:none!important;
+  border:0!important;
+  box-shadow:none!important;
+  pointer-events:none!important;
+}
 
-      let level="medium";
-      try { if(typeof advancedThinkingLevel !== "undefined" && advancedThinkingLevel) level=advancedThinkingLevel; } catch (_) {}
-      d.querySelectorAll("[data-thinking-level]").forEach(b=>{
-        const on=b.dataset.thinkingLevel===level;
-        b.classList.toggle("active",on);
-        const check=b.querySelector(".thinking-check");
-        if(check) check.textContent=on?"✓":"";
-      });
-    };
+/* State-specific content ownership: never let another workspace paint through. */
+body:not(.coding-workspace) #truxCodeWorkspace { display:none!important; }
+body.coding-workspace #truxCodeWorkspace { display:block!important; }
+body.coding-workspace #chatContainer { display:none!important; }
+body:not(.coding-workspace) #codeChatContainer { display:none!important; }
+body.chat-session-active #welcomeScreen { display:none!important; }
+body.home-active #welcomeScreen { display:flex!important; }
+body[data-media-mode="image"] #imageWorkspace { display:block!important; }
+body[data-media-mode="video"] #videoWorkspace { display:block!important; }
+body:not([data-media-mode="image"]) #imageWorkspace { display:none!important; }
+body:not([data-media-mode="video"]) #videoWorkspace { display:none!important; }
 
-    d.querySelectorAll("[data-trux-model]").forEach(b=>{
-      b.addEventListener("click",ev=>{
-        ev.preventDefault(); ev.stopPropagation();
-        try { if(typeof selectModel==="function") selectModel(b.dataset.truxModel,ev); } catch (_) {}
-        refresh();
-        closeModelDropdown();
-      });
-    });
+/* No home-only offsets for the top switch; it stays centered after every mode change. */
+.trux-mode-switch,
+.topbar-left,
+.topbar-right { transform:none!important; }
+body.coding-workspace .trux-mode-switch,
+body.chat-session-active .trux-mode-switch { transform:none!important; }
 
-    d.querySelectorAll("[data-thinking-level]").forEach(b=>{
-      b.addEventListener("click",ev=>{
-        ev.preventDefault(); ev.stopPropagation();
-        try {
-          advancedThinkingLevel=b.dataset.thinkingLevel;
-          advancedThinkingEnabled=(advancedThinkingLevel==="extended");
-        } catch (_) {}
-        safeStore("trux_thinking_level",b.dataset.thinkingLevel);
-        refresh();
-      });
-    });
-
-    window.closeModelDropdown = () => {
-      d.classList.remove("open");
-      mb.setAttribute("aria-expanded","false");
-    };
-    window.toggleModelDropdown = ev => {
-      if(ev){ ev.preventDefault(); ev.stopPropagation(); }
-      closeAttachmentMenu();
-      const open=!d.classList.contains("open");
-      d.classList.toggle("open",open);
-      mb.setAttribute("aria-expanded",String(open));
-      refresh();
-    };
-    mb.addEventListener("click",window.toggleModelDropdown);
-
-    try {
-      if(typeof advancedThinkingLevel==="undefined" || !advancedThinkingLevel){
-        advancedThinkingLevel=localStorage.getItem("trux_thinking_level")||"medium";
-        advancedThinkingEnabled=(advancedThinkingLevel==="extended");
-      }
-    } catch (_) {}
-    refresh();
-
-    window.setInterval(refresh,1200);
-  }
-
-  /* Restore a single incognito control after the model selector. */
-  $("incognitoBtn")?.remove();
-  const picker = $("modelPickerContainer");
-  if(picker){
-    const inc=document.createElement("button");
-    inc.type="button";
-    inc.id="incognitoBtn";
-    inc.className="icon-btn incognito-btn";
-    inc.title="New incognito chat";
-    inc.setAttribute("aria-label","Start new incognito chat");
-    inc.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5h16"/><path d="m6 10.5 1.5-4h9l1.5 4"/><circle cx="8" cy="14.5" r="2.3"/><circle cx="16" cy="14.5" r="2.3"/><path d="M10.3 14.5h3.4"/></svg>';
-    inc.addEventListener("click",()=>{ try { if(typeof launchIncognitoChat==="function") launchIncognitoChat(); } catch (_) {} });
-    picker.insertAdjacentElement("afterend",inc);
-  }
-
-  /* No thinking / notification / settings / old tool buttons in the top bar. */
-  document.querySelectorAll("#thinkingBtn,#notifyBtn,.settings-btn,#toolBtn").forEach(el=>el?.remove());
-
-  /* Keep the existing plus trigger, but make its existing menu a real bottom sheet.
-     Rebuild only its contents so no old model list competes with the standalone picker. */
-  const menu=$("attachmentMenu");
-  if(menu){
-    menu.innerHTML =
-      '<div class="trux-plus-handle"></div>'+
-      '<div class="trux-plus-head"><b>Choose what you want to use</b><span>Switch modes or add something to this chat.</span></div>'+
-      '<div class="trux-plus-grid">'+
-        '<button type="button" class="trux-plus-item" onclick="setWorkspaceMode(\'chat\');closeAttachmentMenu()"><span class="trux-mode-glyph">✦</span><span><b>Chat</b><small>General answers</small></span></button>'+
-        '<button type="button" class="trux-plus-item" onclick="setWorkspaceMode(\'coding\');closeAttachmentMenu()"><span class="trux-mode-glyph">&lt;/&gt;</span><span><b>TruX-Code</b><small>Build, debug, refactor</small></span></button>'+
-        '<button type="button" class="trux-plus-item" onclick="setWorkspaceMode(\'deep-research\');closeAttachmentMenu()"><span class="trux-mode-glyph">◌</span><span><b>Deep Research</b><small>Explore and analyse</small></span></button>'+
-        '<button type="button" class="trux-plus-item" onclick="setWorkspaceMode(\'image\');closeAttachmentMenu()"><span class="trux-mode-glyph">◈</span><span><b>Create image</b><small>Generate visuals</small></span></button>'+
-      '</div>'+
-      '<div class="trux-plus-sep"></div>'+
-      '<div class="trux-plus-actions">'+
-        '<button type="button" onclick="openPhotoLibrary()"><span>Photo</span></button>'+
-        '<button type="button" onclick="openCamera()"><span>Camera</span></button>'+
-        '<button type="button" onclick="openFileLibrary()"><span>File</span></button>'+
-        '<button type="button" onclick="setWorkspaceMode(\'video\');closeAttachmentMenu()"><span>Video</span></button>'+
-        '<button type="button" onclick="openPluginsPage();closeAttachmentMenu()"><span>Plugins</span></button>'+
-      '</div>';
-  }
-
-  /* Override the old attachment handler cleanly. */
-  const a=$("attachBtn");
-  if(a){
-    const clean=a.cloneNode(true);
-    clean.removeAttribute("onclick");
-    a.replaceWith(clean);
-    const btn=$("attachBtn");
-    btn.addEventListener("click",ev=>{
-      ev.preventDefault(); ev.stopPropagation();
-      closeModelDropdown();
-      const m=$("attachmentMenu");
-      if(!m) return;
-      const open=!m.classList.contains("open");
-      m.classList.toggle("open",open);
-      btn.classList.toggle("open",open);
-      btn.setAttribute("aria-expanded",String(open));
-    });
-  }
-
-  window.closeAttachmentMenu=()=>{
-    $("attachmentMenu")?.classList.remove("open");
-    const b=$("attachBtn");
-    if(b){ b.classList.remove("open"); b.setAttribute("aria-expanded","false"); }
-  };
-  window.toggleAttachmentMenu=ev=>{
-    ev?.preventDefault(); ev?.stopPropagation();
-    $("attachBtn")?.click();
-  };
-
-  document.addEventListener("click",ev=>{
-    const mp=$("modelPickerContainer"), md=$("modelDropdown");
-    const am=$("attachmentMenu"), ab=$("attachBtn");
-    if(md && mp && !mp.contains(ev.target)) closeModelDropdown();
-    if(am && ab && am.classList.contains("open") && !am.contains(ev.target) && !ab.contains(ev.target)) closeAttachmentMenu();
-  },true);
-
-  /* Sync the top mode switch with the actual workspace state. */
-  const syncMode=()=>{
-    let mode="chat";
-    try { if(typeof workspaceMode!=="undefined" && workspaceMode) mode=workspaceMode; } catch (_) {}
-    sw?.querySelectorAll(".trux-mode-btn").forEach(b=>b.classList.toggle("active",b.dataset.truxMode===mode));
-  };
-  syncMode();
-  window.setInterval(syncMode,700);
-})();
-</script>
+@media(max-width:700px) {
+  .topbar { flex-basis:58px!important; height:58px!important; padding:0 10px!important; }
+  .trux-mode-switch { width:min(190px,calc(100vw - 108px))!important; min-width:170px!important; height:38px!important; }
+  .trux-mode-btn { height:30px!important; font-size:11.5px!important; padding:0 6px!important; }
+  .composer { padding:8px 14px calc(14px + var(--safe-b))!important; }
+  .compose { width:100%!important; max-width:740px!important; }
+  .bar { grid-template-columns:40px minmax(0,1fr) 40px 40px 48px!important; grid-template-rows:1fr 42px!important; min-height:116px!important; gap:0 6px!important; padding:11px!important; border-radius:28px!important; }
+  .bar.multiline { grid-template-columns:40px minmax(0,1fr) 40px 40px 48px!important; grid-template-rows:1fr 42px!important; }
+  .bar > #attachBtn, .bar > #incognitoBtn, .bar > #voiceBtn { width:40px!important; height:40px!important; }
+  .bar > #actionBtn { width:46px!important; height:46px!important; }
+  .bar > #promptInput { height:60px!important; font-size:20px!important; padding:4px 10px!important; }
+  #modelPickerBtn { min-width:102px!important; height:40px!important; padding:0 10px!important; }
+  #modelDropdown { left:50%!important; transform:translateX(-50%)!important; max-width:calc(100vw - 20px)!important; }
+}
+</style>
 
 </body>
 </html>
