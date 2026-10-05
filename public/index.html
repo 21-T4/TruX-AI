@@ -3910,19 +3910,6 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       lastTouchEnd = now;
     }, { passive: false });
 
-    const cyclePhrases = ["ideas", "coding", "research", "writing", "images", "anything"];
-    let cycleIndex = 0;
-    setInterval(() => {
-      let el = getEl("cyclingText");
-      if(el) {
-        cycleIndex = (cycleIndex + 1) % cyclePhrases.length;
-        el.style.animation = 'none';
-        void el.offsetWidth;
-        el.textContent = cyclePhrases[cycleIndex];
-        el.style.animation = 'textCycleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards';
-      }
-    }, 2800);
-
     addEventListener("load", () => { try { if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js?v=20261004-5", { updateViaCache: "none" }).catch(() => {}); } catch (e) {} });
     let deferredPrompt = null;
     addEventListener("beforeinstallprompt", e => {
