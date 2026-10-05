@@ -3975,6 +3975,254 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     [data-theme="light"] .trux-code-stage{background:linear-gradient(180deg,#fafafa,#f6f6f7)}
     [data-theme="light"] .trux-code-mark,[data-theme="light"] .trux-code-state,[data-theme="light"] .trux-code-center-mark{background:#fff;color:#61636b;border-color:rgba(0,0,0,.1)}
   
+
+<style id="trux-visual-refresh-20261005">
+  /* HOME: compact launchers instead of oversized cards. */
+  body.home-active .hero>.badge{display:none!important}
+  body.home-active .chips-head{
+    margin-top:18px!important;
+    margin-bottom:8px!important;
+    color:var(--txt-4)!important;
+    font:600 10px/1 var(--font-mono)!important;
+    letter-spacing:.14em!important;
+    text-transform:uppercase!important;
+  }
+  body.home-active .chips{
+    display:grid!important;
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    gap:7px!important;
+    width:min(640px,100%)!important;
+    max-width:640px!important;
+    margin:0 auto!important;
+    perspective:none!important;
+  }
+  body.home-active .chip{
+    min-height:44px!important;
+    height:44px!important;
+    padding:7px 10px!important;
+    display:flex!important;
+    flex-direction:row!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    gap:8px!important;
+    border-radius:10px!important;
+    border:1px solid rgba(255,255,255,.07)!important;
+    background:#141414!important;
+    box-shadow:none!important;
+    transform:none!important;
+  }
+  body.home-active .chip::before{display:none!important}
+  body.home-active .chip:hover{
+    transform:translateY(-1px)!important;
+    background:#1a1a1a!important;
+    border-color:rgba(255,255,255,.12)!important;
+    box-shadow:none!important;
+  }
+  body.home-active .chip-ico{
+    width:24px!important;height:24px!important;flex:0 0 24px!important;
+    display:grid!important;place-items:center!important;
+    border-radius:7px!important;
+    background:#1c1c1c!important;
+    border:1px solid rgba(255,255,255,.06)!important;
+    color:var(--txt-2)!important;
+    transform:none!important;
+  }
+  body.home-active .chip-ico svg{width:14px!important;height:14px!important}
+  body.home-active .chip-txt{display:block!important;min-width:0!important;transform:none!important}
+  body.home-active .chip-txt b{font-size:11px!important;font-weight:600!important;color:var(--txt-2)!important}
+  body.home-active .chip-txt i,.chip-go{display:none!important}
+  @media(max-width:650px){
+    body.home-active .chips{grid-template-columns:repeat(2,minmax(0,1fr))!important;max-width:330px!important}
+  }
+
+  /* TRUX CODE: flat #151515 studio, separated only by nearby graphite shades. */
+  body.coding-workspace{--code-bg:#151515;--code-1:#161616;--code-2:#181818;--code-3:#1b1b1b;--code-line:#232323}
+  body.coding-workspace .bg{display:none!important}
+  body.coding-workspace .main,
+  body.coding-workspace .trux-code-workspace,
+  body.coding-workspace .trux-code-shell{background:#151515!important}
+  body.coding-workspace .trux-code-workspace{
+    width:100%!important;max-width:none!important;
+    min-height:calc(100dvh - 54px)!important;
+    margin:0!important;
+    padding:0 26px 106px!important;
+    animation:none!important;
+    overflow:hidden!important;
+  }
+  body.coding-workspace .trux-code-shell{width:min(1240px,100%);margin:0 auto;padding:18px 0 0}
+  body.coding-workspace .trux-code-header{
+    min-height:58px!important;
+    padding:0 2px 14px!important;
+    display:flex!important;align-items:center!important;justify-content:space-between!important;
+    gap:18px!important;
+    border:0!important;border-bottom:1px solid var(--code-line)!important;
+    border-radius:0!important;
+    background:#151515!important;
+    box-shadow:none!important;
+  }
+  body.coding-workspace .trux-code-identity{display:flex!important;align-items:center!important;gap:12px!important}
+  body.coding-workspace .trux-code-mark{
+    width:30px!important;height:30px!important;display:grid!important;place-items:center!important;
+    border-radius:8px!important;background:#191919!important;border:1px solid #262626!important;
+    color:#b8b8b8!important;font:600 12px/1 var(--font-mono)!important;
+  }
+  body.coding-workspace .trux-code-heading{min-width:0!important}
+  body.coding-workspace .trux-code-title-row{display:flex!important;align-items:center!important;gap:8px!important}
+  body.coding-workspace .trux-code-title-row h1{font-size:18px!important;letter-spacing:-.03em!important;font-weight:700!important}
+  body.coding-workspace .trux-code-badge{
+    padding:3px 7px!important;border:1px solid #292929!important;border-radius:6px!important;
+    background:#1a1a1a!important;color:#777!important;font:600 8px/1 var(--font-mono)!important;letter-spacing:.14em!important;
+  }
+  body.coding-workspace .trux-code-heading p{margin-top:3px!important;color:#6f6f6f!important;font-size:11px!important}
+  body.coding-workspace .trux-code-state{
+    display:flex!important;align-items:center!important;gap:7px!important;
+    color:#777!important;font:600 9px/1 var(--font-mono)!important;letter-spacing:.12em!important
+  }
+  body.coding-workspace .trux-code-state-dot,
+  body.coding-workspace .trux-code-status-dot{
+    width:5px!important;height:5px!important;border-radius:50%!important;background:#858585!important;box-shadow:none!important
+  }
+
+  body.coding-workspace .trux-code-strip{
+    min-height:42px!important;
+    display:flex!important;align-items:center!important;justify-content:space-between!important;
+    gap:12px!important;padding:9px 0!important;
+    border-bottom:1px solid var(--code-line)!important;
+    background:#151515!important;
+  }
+  body.coding-workspace .trux-code-strip-left,
+  body.coding-workspace .trux-code-strip-right{display:flex!important;align-items:center!important;gap:10px!important;min-width:0!important}
+  body.coding-workspace .trux-code-strip-label{
+    color:#555!important;font:600 8px/1 var(--font-mono)!important;letter-spacing:.14em!important;
+  }
+  body.coding-workspace .trux-code-integrations-label,
+  body.coding-workspace .trux-code-shortcut{display:none!important}
+  body.coding-workspace .trux-code-integration-items{display:flex!important;align-items:center!important;gap:6px!important;min-width:0!important}
+  body.coding-workspace .trux-code-integrations-empty{
+    color:#666!important;font-size:10px!important;background:transparent!important;border:0!important;padding:0!important
+  }
+  body.coding-workspace .trux-code-plugin-status{
+    display:flex!important;align-items:center!important;gap:6px!important;
+    color:#696969!important;font-size:10px!important
+  }
+  body.coding-workspace .trux-code-manage{
+    height:28px!important;padding:0 9px!important;border-radius:7px!important;
+    border:1px solid #292929!important;background:#181818!important;color:#9b9b9b!important;
+    font:600 10px/1 var(--font-body)!important;box-shadow:none!important;
+  }
+  body.coding-workspace .trux-code-manage:hover{background:#1d1d1d!important;color:#c8c8c8!important;border-color:#333!important}
+
+  body.coding-workspace .trux-code-stage{
+    position:relative!important;
+    min-height:calc(100dvh - 190px)!important;
+    margin-top:0!important;
+    display:flex!important;align-items:center!important;justify-content:center!important;
+    background:#151515!important;border:0!important;border-radius:0!important;
+    box-shadow:none!important;overflow:hidden!important;
+  }
+  body.coding-workspace .trux-code-stage::before{
+    content:"";position:absolute;inset:22px 0 0;
+    border:1px solid #1e1e1e;border-radius:14px!important;pointer-events:none;
+  }
+  body.coding-workspace .trux-code-stage-center{
+    position:relative!important;z-index:1;
+    width:min(520px,100%);padding:32px 24px!important;text-align:center!important;
+    background:#171717!important;border:1px solid #222!important;border-radius:14px!important;
+    box-shadow:0 18px 45px rgba(0,0,0,.18)!important;
+  }
+  body.coding-workspace .trux-code-center-mark{
+    width:46px!important;height:46px!important;margin:0 auto 14px!important;
+    display:grid!important;place-items:center!important;
+    border-radius:11px!important;background:#1b1b1b!important;border:1px solid #272727!important;
+    box-shadow:none!important;
+  }
+  body.coding-workspace .trux-code-center-mark img{width:28px!important;height:28px!important;object-fit:contain!important}
+  body.coding-workspace .trux-code-center-kicker{
+    color:#5d5d5d!important;font:600 8px/1 var(--font-mono)!important;letter-spacing:.18em!important
+  }
+  body.coding-workspace .trux-code-stage-center h2{
+    margin:10px 0 6px!important;color:#ededed!important;font-size:27px!important;letter-spacing:-.045em!important
+  }
+  body.coding-workspace .trux-code-stage-center p{
+    max-width:430px!important;margin:0 auto!important;color:#777!important;font-size:12px!important;line-height:1.55!important
+  }
+  body.coding-workspace .trux-code-center-meta{
+    margin-top:20px!important;display:flex!important;flex-wrap:wrap!important;justify-content:center!important;gap:6px!important
+  }
+  body.coding-workspace .trux-code-center-meta span{
+    padding:6px 8px!important;border:1px solid #252525!important;border-radius:7px!important;
+    background:#151515!important;color:#777!important;font-size:9px!important;
+  }
+  body.coding-workspace .trux-code-stage-line,
+  body.coding-workspace .trux-code-stage-bottom,
+  body.coding-workspace .trux-code-grid-overlay{display:none!important}
+  body.coding-workspace .code-hero,
+  body.coding-workspace .code-grid,
+  body.coding-workspace .code-pane{display:none!important}
+  body.coding-workspace .composer{background:#151515!important;box-shadow:none!important;border-color:#272727!important}
+  body.coding-workspace .composer .bar{background:#181818!important;border-color:#292929!important;box-shadow:none!important}
+  body.coding-workspace .composer .bar:focus-within{background:#1a1a1a!important}
+  body.coding-workspace #codeChatContainer{background:#151515!important;border:0!important}
+
+  /* THINKING BAR: one logo, rhythmic motion, no orbiting dots/rings/circles. */
+  .trux-thinking-orbit,
+  .trux-thinking-orbit::before,
+  .trux-thinking-orbit::after,
+  .trux-thinking-orbit i,
+  .trux-thinking-copy .status-msg .thinking-status-line.latest::after{
+    display:none!important;
+  }
+  .trux-thinking-logo{
+    width:28px!important;height:28px!important;flex:0 0 28px!important;
+    display:grid!important;place-items:center!important;
+    border-radius:7px!important;
+    overflow:visible!important;
+    background:transparent!important;
+  }
+  .trux-thinking-logo img{
+    width:22px!important;height:22px!important;
+    object-fit:contain!important;border-radius:7px!important;
+    background:transparent!important;box-shadow:none!important;filter:none!important;
+    transform-origin:50% 50%!important;
+    animation:truxThinkGeminiRhythm 1.8s cubic-bezier(.34,1.2,.64,1) infinite!important;
+    will-change:transform,filter,opacity!important;
+  }
+  .trux-thinking-copy .status-msg .thinking-status-line.latest{
+    display:inline-block!important;
+    color:#9b9b9b!important;
+    background:none!important;
+    -webkit-text-fill-color:currentColor!important;
+    background-clip:border-box!important;
+    animation:truxThinkTextRhythm 1.8s ease-in-out infinite!important;
+    will-change:transform,opacity,letter-spacing!important;
+  }
+  @keyframes truxThinkGeminiRhythm{
+    0%{transform:translate3d(0,2px,0) rotate(0deg) scale(.88);opacity:.62}
+    12%{transform:translate3d(1px,-2px,0) rotate(25deg) scale(.98);opacity:.88}
+    25%{transform:translate3d(2px,-4px,0) rotate(90deg) scale(1.04);opacity:1}
+    38%{transform:translate3d(1px,-1px,0) rotate(155deg) scale(.98);opacity:.92}
+    50%{transform:translate3d(0,2px,0) rotate(210deg) scale(.90);opacity:.72}
+    62%{transform:translate3d(-1px,-2px,0) rotate(245deg) scale(.98);opacity:.92}
+    75%{transform:translate3d(-2px,-4px,0) rotate(300deg) scale(1.04);opacity:1}
+    88%{transform:translate3d(-1px,-1px,0) rotate(340deg) scale(.98);opacity:.9}
+    100%{transform:translate3d(0,2px,0) rotate(360deg) scale(.88);opacity:.62}
+  }
+  @keyframes truxThinkTextRhythm{
+    0%,100%{transform:translateY(1px);opacity:.55;letter-spacing:-.005em}
+    25%{transform:translateY(-1px);opacity:.92;letter-spacing:.002em}
+    50%{transform:translateY(0);opacity:.72;letter-spacing:-.001em}
+    75%{transform:translateY(-1px);opacity:1;letter-spacing:.002em}
+  }
+  @media(max-width:700px){
+    body.coding-workspace .trux-code-workspace{padding-left:14px!important;padding-right:14px!important}
+    body.coding-workspace .trux-code-stage{min-height:calc(100dvh - 184px)!important}
+    body.coding-workspace .trux-code-stage-center{padding:25px 17px!important}
+    body.coding-workspace .trux-code-stage-center h2{font-size:24px!important}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .trux-thinking-logo img,.trux-thinking-copy .status-msg .thinking-status-line.latest{animation-duration:.001ms!important;animation-iteration-count:1!important}
+  }
+</style>
 </head>
 <body class="home-active">
 <style id="trux-boot-safety">
@@ -4187,9 +4435,9 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         <div class="trux-code-heading">
           <div class="trux-code-title-row">
             <h1>TruX Code</h1>
-            <span class="trux-code-badge">WORKSPACE</span>
+            <span class="trux-code-badge">CODE</span>
           </div>
-          <p>A focused coding space where the work stays visible while TruX traces, changes, and verifies it.</p>
+          <p>Build, edit and verify directly in your coding workspace.</p>
         </div>
       </div>
       <div class="trux-code-state" id="truxCodeReadyState">
@@ -4197,51 +4445,36 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       </div>
     </header>
 
-    <div class="trux-code-commandbar">
-      <div class="trux-code-command-tabs">
-        <span class="active">Workspace</span>
-        <span>Task</span>
-        <span>Context</span>
-        <span>Changes</span>
+    <div class="trux-code-strip">
+      <div class="trux-code-strip-left">
+        <span class="trux-code-strip-label">CONNECTED</span>
+        <div class="trux-code-integration-items" id="truxCodeIntegrationItems">
+          <span class="trux-code-integrations-empty">No integrations connected</span>
+        </div>
       </div>
-      <span class="trux-code-shortcut">CTRL / ⌘ + ENTER</span>
-    </div>
-
-    <div class="trux-code-integrations">
-      <div class="trux-code-integrations-label">
-        <span class="trux-code-integrations-led"></span>
-        <span>INTEGRATIONS</span>
+      <div class="trux-code-strip-right">
+        <span class="trux-code-plugin-status" id="codePluginStatus">
+          <span class="trux-code-status-dot"></span>
+          <span>No plugins enabled</span>
+        </span>
+        <span id="codePluginCountText" class="trux-sr-only">0 connected</span>
+        <button type="button" class="trux-code-manage" data-open-plugins aria-label="Manage TruX integrations">Plugins</button>
       </div>
-      <div class="trux-code-integration-items" id="truxCodeIntegrationItems">
-        <span class="trux-code-integrations-empty">No integrations connected</span>
-      </div>
-      <span class="trux-code-plugin-status" id="codePluginStatus">
-        <span class="trux-code-status-dot"></span>
-        <span>No plugins enabled</span>
-      </span>
-      <span id="codePluginCountText" class="trux-sr-only">0 connected</span>
-      <button type="button" class="trux-code-manage" data-open-plugins aria-label="Manage TruX integrations">
-        Manage
-      </button>
     </div>
 
     <div class="trux-code-stage">
-      <div class="trux-code-grid-overlay" aria-hidden="true"></div>
       <div class="trux-code-stage-center">
         <div class="trux-code-center-mark" aria-hidden="true"><img src="icon-192.png" alt=""></div>
-        <div class="trux-code-center-kicker">READY TO BUILD</div>
-        <h2>Build with context.</h2>
-        <p id="truxCodePulseText">Ready to shape the next change.</p>
+        <div class="trux-code-center-kicker">TRUX CODE</div>
+        <h2>Ready to build.</h2>
+        <p id="truxCodePulseText">Bring a task. I’ll trace the context and make the change.</p>
         <div class="trux-code-center-meta">
-          <span><i></i> Deep reasoning</span>
-          <span><i></i> Live tool activity</span>
-          <span><i></i> Verified changes</span>
+          <span>Deep reasoning</span>
+          <span>Live tool activity</span>
+          <span>Verified changes</span>
         </div>
       </div>
-      <div class="trux-code-stage-bottom">
-        <span>WORKSPACE STATUS</span>
-        <span class="status"><i></i> Idle</span>
-      </div>
+      <div class="trux-code-stage-line"></div>
     </div>
   </div>
 </section>
@@ -4281,7 +4514,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
       <section class="welcome" id="welcomeScreen">
         <div class="hero">
-          <div class="badge" style="margin-bottom:26px"><i></i>TruX Workspace · Online</div>
+          
 
           <h1 class="welcome-title">
             <div>Welcome,</div>
@@ -4295,28 +4528,24 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
             </span>
           </div>
 
-      <div class="chips-head">Start with</div>
+      <div class="chips-head">Quick actions</div>
 
       <div class="chips">
         <button type="button" class="chip" onclick="quickPrompt('Write a clean JavaScript function for...')">
           <span class="chip-ico"><svg viewBox="0 0 24 24"><path d="m9 8-4 4 4 4M15 8l4 4-4 4"/></svg></span>
-          <span class="chip-txt"><b>Coding &amp; logic</b><i>Write, refactor and explain code</i></span>
-          <span class="chip-go"><svg viewBox="0 0 24 24"><path d="M5 12h13m0 0-5-5m5 5-5 5"/></svg></span>
+          <span class="chip-txt"><b>Code</b></span>
         </button>
         <button type="button" class="chip" onclick="quickPrompt('Analyze the following text...')">
           <span class="chip-ico"><svg viewBox="0 0 24 24"><path d="M4 19h16M7 16V9M12 16V5M17 16v-4"/></svg></span>
-          <span class="chip-txt"><b>Data analysis</b><i>Find patterns, build tables, compare</i></span>
-          <span class="chip-go"><svg viewBox="0 0 24 24"><path d="M5 12h13m0 0-5-5m5 5-5 5"/></svg></span>
+          <span class="chip-txt"><b>Analyze</b></span>
         </button>
         <button type="button" class="chip" onclick="quickPrompt('Draft a concise professional email about...')">
           <span class="chip-ico"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 13l8-5.5"/><rect x="3.5" y="5" width="17" height="14" rx="2.5"/></svg></span>
-          <span class="chip-txt"><b>Technical writing</b><i>Docs, emails and clear summaries</i></span>
-          <span class="chip-go"><svg viewBox="0 0 24 24"><path d="M5 12h13m0 0-5-5m5 5-5 5"/></svg></span>
+          <span class="chip-txt"><b>Write</b></span>
         </button>
         <button type="button" class="chip" onclick="quickPrompt('Generate an image of...')">
           <span class="chip-ico"><svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="m4.5 18 5-5 3 3 2.5-2.5 4.5 4.5"/></svg></span>
-          <span class="chip-txt"><b>Image generation</b><i>Diagrams, concepts and visuals</i></span>
-          <span class="chip-go"><svg viewBox="0 0 24 24"><path d="M5 12h13m0 0-5-5m5 5-5 5"/></svg></span>
+          <span class="chip-txt"><b>Image</b></span>
         </button>
       </div>
         </div>
@@ -7114,7 +7343,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
          '<div class="trux-response-stack">' +
            '<div class="trux-thinking-panel" id="' + thid + '">' +
              '<button type="button" class="trux-thinking-bar" onclick="toggleThinkingDetails(\'' + thid + '\')" aria-expanded="false" aria-controls="' + tsid + '">' +
-               '<span class="trux-thinking-orbit" aria-hidden="true"><img src="icon-192.png" alt=""><i></i><i></i><i></i></span>' +
+               '<span class="trux-thinking-logo" aria-hidden="true"><img src="icon-192.png" alt=""></span>' +
                '<span class="trux-thinking-copy"><span class="trux-thinking-kicker">WORKING</span><span class="status-msg" id="' + sid + '" role="status" aria-live="polite"><span class="thinking-status-line latest">Tracing the task…</span></span></span>' +
                '<span class="trux-thinking-elapsed" id="elapsed_' + id + '">00:00</span>' +
                '<span class="trux-thinking-chevron" aria-hidden="true">⌄</span>' +
@@ -7697,7 +7926,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
        row.innerHTML = `<div class="trux-response-stack">
          <div class="trux-thinking-panel" id="${thid}">
            <button type="button" class="trux-thinking-bar" onclick="toggleThinkingDetails('${thid}')" aria-expanded="false" aria-controls="${tsid}">
-             <span class="trux-thinking-orbit" aria-hidden="true"><img src="icon-192.png" alt=""><i></i><i></i><i></i></span>
+             <span class="trux-thinking-logo" aria-hidden="true"><img src="icon-192.png" alt=""></span>
              <span class="trux-thinking-copy"><span class="trux-thinking-kicker">WORKING</span><span class="status-msg" id="${sid}" role="status" aria-live="polite"><span class="thinking-status-line latest">Understanding the request…</span></span></span>
              ${thinkingElapsedMarkup ? '<span class="trux-thinking-elapsed" id="elapsed_' + id + '">00:00</span>' : ''}
              <span class="trux-thinking-chevron" aria-hidden="true">⌄</span>
