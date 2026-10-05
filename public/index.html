@@ -2474,6 +2474,47 @@
     .thinking-particles i:nth-child(7){left:91%;top:62%;animation-delay:-2s;transform:scale(.78)}
     .thinking-particles i:nth-child(8){left:58%;top:48%;animation-delay:-3.55s;transform:scale(.45)}
     @keyframes thinkingPustule{0%,100%{opacity:0;transform:translate3d(-2px,5px,0) scale(.36)}17%{opacity:.28}44%{opacity:.9;transform:translate3d(7px,-4px,0) scale(.96)}68%{opacity:.5;transform:translate3d(-3px,-11px,0) scale(.7)}86%{opacity:.12;transform:translate3d(5px,-16px,0) scale(.5)}}
+    /* HARD FIX: the thinking bar uses the 192px app icon asset. Keep it a tiny inline mark so it can never render as a stray full-size logo. */
+    .trux-thinking-logo{
+      position:relative;
+      z-index:3;
+      width:22px!important;
+      height:22px!important;
+      min-width:22px!important;
+      min-height:22px!important;
+      max-width:22px!important;
+      max-height:22px!important;
+      flex:0 0 22px!important;
+      display:inline-flex!important;
+      align-items:center!important;
+      justify-content:center!important;
+      overflow:hidden!important;
+      padding:0!important;
+      margin:0!important;
+      background:transparent!important;
+      border:0!important;
+      box-shadow:none!important;
+      line-height:0!important;
+    }
+    .trux-thinking-logo img{
+      display:block!important;
+      width:22px!important;
+      height:22px!important;
+      max-width:22px!important;
+      max-height:22px!important;
+      min-width:22px!important;
+      min-height:22px!important;
+      flex:0 0 22px!important;
+      object-fit:contain!important;
+      object-position:center!important;
+      margin:0!important;
+      padding:0!important;
+      border:0!important;
+      background:transparent!important;
+    }
+    .trux-thinking-bar{
+      overflow:visible;
+    }
     .thinking-tool-trace{background:none!important;border:0!important;box-shadow:none!important;}
     /* Tool trace is above the active thinking line. Each new tool call therefore
        pushes the current thinking activity downward. */
