@@ -1485,8 +1485,12 @@ function createSseResponse(startStreaming, request = null) {
     status: 200,
     headers: {
       'Content-Type': 'text/event-stream; charset=utf-8',
-      'Cache-Control': 'no-cache, no-store, must-revalidate, no-transform',
+      'Cache-Control': 'no-store, private, max-age=0, must-revalidate, no-transform',
+      'CDN-Cache-Control': 'no-store',
+      'Surrogate-Control': 'no-store',
       'Pragma': 'no-cache',
+      'Expires': '0',
+      'Vary': '*',
       'X-Accel-Buffering': 'no',
       'Access-Control-Allow-Origin': '*'
     }
