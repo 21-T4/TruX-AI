@@ -9526,3 +9526,451 @@ body.coding-workspace #promptInput::placeholder{color:#777!important}
 @keyframes truxHomeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media(max-width:700px){body.home-active .topbar{padding:0 10px!important}body.home-active .trux-mode-btn{padding:0 11px!important;font-size:12px!important}body.home-active .welcome-title{font-size:clamp(40px,12vw,60px)!important}body.home-active .animated-sub{font-size:15px!important}body.home-active .bar{min-height:124px!important;border-radius:27px!important}body.home-active #promptInput{font-size:21px!important;height:66px!important}}
 </style>
+
+<style id="trux-home-ui-final-20261005">
+/* Flat, clean home surface. No 3D bevels or lifted controls. */
+body, html { background:#151515!important; }
+body.home-active,
+body.home-active .main,
+body.home-active .welcome,
+body.home-active .composer { background:#151515!important; }
+body.home-active .bg,
+body.home-active .welcome-title,
+body.home-active .animated-sub,
+body.home-active .hero>.badge,
+body.home-active .chips,
+body.home-active .chips-head,
+body.home-active .home-mode-rail { display:none!important; }
+body.home-active .hero{
+  position:relative!important;
+  width:100%!important;
+  min-height:100%!important;
+  max-width:760px!important;
+  padding:0!important;
+  margin:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  background:#151515!important;
+  perspective:none!important;
+  transform:none!important;
+}
+body.home-active .hero::before{display:none!important}
+body.home-active .bar{
+  min-height:116px!important;
+  display:grid!important;
+  grid-template-columns:42px minmax(0,1fr) 42px 42px 50px!important;
+  grid-template-rows:1fr 42px!important;
+  gap:0 7px!important;
+  padding:12px!important;
+  border-radius:30px!important;
+  background:#1d1d1d!important;
+  border:1px solid rgba(255,255,255,.075)!important;
+  box-shadow:none!important;
+  transform:none!important;
+}
+body.home-active .bar:focus-within{
+  background:#1d1d1d!important;
+  border-color:rgba(255,255,255,.12)!important;
+  box-shadow:none!important;
+}
+body.home-active #promptInput{
+  grid-column:1/-1!important;
+  grid-row:1!important;
+  width:100%!important;
+  min-width:0!important;
+  height:60px!important;
+  padding:4px 12px!important;
+  color:#d6d6d6!important;
+  font-size:22px!important;
+  line-height:1.3!important;
+  background:transparent!important;
+}
+body.home-active #promptInput::placeholder{color:#777!important;opacity:1!important}
+body.home-active #attachBtn{grid-column:1!important;grid-row:2!important}
+body.home-active #modelPickerContainer{grid-column:2!important;grid-row:2!important;justify-self:start!important}
+body.home-active #toolBtn{grid-column:3!important;grid-row:2!important}
+body.home-active #voiceBtn{grid-column:4!important;grid-row:2!important}
+body.home-active #actionBtn{
+  grid-column:5!important;grid-row:2!important;
+  width:48px!important;height:48px!important;
+  justify-self:end!important;
+  border-radius:50%!important;
+  background:#ededed!important;color:#171717!important;
+  box-shadow:none!important;
+}
+body.home-active .icon-btn,
+body.home-active .model-picker-btn{
+  box-shadow:none!important;
+  transform:none!important;
+}
+body.home-active .icon-btn:hover,
+body.home-active .model-picker-btn:hover{
+  transform:none!important;
+  box-shadow:none!important;
+}
+body.home-active .model-picker-container{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  min-width:0!important;
+  position:relative!important;
+}
+body.home-active .model-picker-btn{
+  height:42px!important;
+  min-width:116px!important;
+  padding:0 14px!important;
+  gap:8px!important;
+  border-radius:999px!important;
+  background:#242424!important;
+  border:1px solid rgba(255,255,255,.045)!important;
+  color:#d7d7d7!important;
+  font-size:17px!important;
+  font-weight:520!important;
+}
+body.home-active .model-picker-btn .chevron{display:none!important}
+body.home-active .model-picker-icon{color:#c8c8c8!important}
+body.home-active #toolBtn{color:#d7d7d7!important}
+body.home-active .hint{display:none!important}
+
+/* The home logo is the exact emblem silhouette taken from the supplied UI reference,
+   with a restrained silver pulse instead of colored/glossy 3D lighting. */
+.trux-home-logo{
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  width:92px!important;
+  height:92px!important;
+  transform:translate(-50%,-50%)!important;
+  display:grid!important;
+  place-items:center!important;
+  pointer-events:none!important;
+  z-index:4!important;
+}
+.trux-home-logo::before,
+.trux-home-logo::after{
+  content:""!important;
+  position:absolute!important;
+  left:50%!important;top:50%!important;
+  width:62px!important;height:62px!important;
+  border:1px solid rgba(220,220,220,.22)!important;
+  border-radius:50%!important;
+  transform:translate(-50%,-50%) scale(.55)!important;
+  opacity:0!important;
+  animation:truxHomePulse 3.2s cubic-bezier(.2,.75,.3,1) infinite!important;
+}
+.trux-home-logo::after{
+  width:78px!important;height:78px!important;
+  border-color:rgba(190,190,190,.12)!important;
+  animation-delay:1.05s!important;
+}
+.trux-home-logo img{
+  width:66px!important;height:72px!important;
+  object-fit:contain!important;
+  opacity:.44!important;
+  filter:grayscale(1) brightness(1.18) contrast(1.1) drop-shadow(0 0 4px rgba(255,255,255,.12))!important;
+  transform-origin:50% 78%!important;
+  animation:truxHomeLogoRhythm 3.2s cubic-bezier(.22,.86,.22,1) infinite!important;
+}
+@keyframes truxHomeLogoRhythm{
+  0%,16%{transform:translateY(1px) scale(.92) rotate(0deg);opacity:.30;filter:grayscale(1) brightness(.95) contrast(1.08) drop-shadow(0 0 2px rgba(255,255,255,.08))}
+  20%{transform:translateY(-3px) scale(1.03) rotate(4deg);opacity:.92;filter:grayscale(1) brightness(1.35) contrast(1.12) drop-shadow(0 0 13px rgba(255,255,255,.32))}
+  27%{transform:translateY(0) scale(1) rotate(0deg);opacity:.62;filter:grayscale(1) brightness(1.22) contrast(1.1) drop-shadow(0 0 8px rgba(255,255,255,.18))}
+  38%,55%{transform:translateY(1px) scale(.93) rotate(0deg);opacity:.28}
+  62%{transform:translateY(-2px) scale(1.03) rotate(-3deg);opacity:.86;filter:grayscale(1) brightness(1.30) contrast(1.12) drop-shadow(0 0 11px rgba(255,255,255,.26))}
+  69%{transform:translateY(0) scale(1) rotate(0deg);opacity:.54}
+  76%,100%{transform:translateY(1px) scale(.92) rotate(0deg);opacity:.30}
+}
+@keyframes truxHomePulse{
+  0%,16%{transform:translate(-50%,-50%) scale(.55);opacity:0}
+  21%{transform:translate(-50%,-50%) scale(.82);opacity:.72}
+  30%{transform:translate(-50%,-50%) scale(1.12);opacity:.12}
+  39%,100%{transform:translate(-50%,-50%) scale(1.24);opacity:0}
+}
+
+/* Flat controls throughout the app: undo the earlier 3D depth layer. */
+.brand .logo,.side-btn,.new-chat,.top-btn,.topbar-tool-btn.icon-only,
+.model-picker-btn,.trux-mode-btn,.icon-btn,.send-btn{
+  box-shadow:none!important;
+  transform:none!important;
+}
+.brand .logo:hover,.side-btn:hover,.new-chat:hover,.top-btn:hover,
+.topbar-tool-btn.icon-only:hover,.model-picker-btn:hover,.trux-mode-btn:hover,
+.icon-btn:hover,.send-btn:hover{
+  transform:none!important;
+  box-shadow:none!important;
+}
+.bar{box-shadow:none!important}
+</style>
+
+<script id="trux-home-ui-final-20261005">
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const bar = document.querySelector(".bar");
+  const attach = $("attachBtn");
+  const menu = $("attachmentMenu");
+  if(!bar || !attach || !menu) return;
+
+  /* Center emblem: use the actual emblem silhouette from the supplied reference. */
+  if(!$("truxHomeLogo")){
+    const logo = document.createElement("div");
+    logo.id = "truxHomeLogo";
+    logo.className = "trux-home-logo";
+    logo.innerHTML = '<img alt="" src="data:image/png;base64,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">';
+    const hero = document.querySelector("#welcomeScreen .hero");
+    if(hero) hero.appendChild(logo);
+  }
+
+  /* Match the requested composer text exactly. */
+  const prompt = $("promptInput");
+  if(prompt) prompt.placeholder = "Ask anything...";
+
+  /* Move model selection from + into a dedicated Model button in the composer. */
+  if(!$("modelPickerContainer")){
+    const wrap = document.createElement("div");
+    wrap.id = "modelPickerContainer";
+    wrap.className = "model-picker-container";
+    wrap.innerHTML = [
+      '<button type="button" class="model-picker-btn" id="modelPickerBtn" aria-haspopup="menu" aria-expanded="false" title="Choose model">',
+        '<span class="model-picker-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M7 12h10M4 17h16"/><circle cx="8" cy="7" r="1.7" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="11" cy="17" r="1.7" fill="currentColor" stroke="none"/></svg></span>',
+        '<span id="modelPickerLabel">Model</span>',
+      '</button>',
+      '<div class="model-dropdown-menu" id="modelDropdown" role="menu">',
+        '<button type="button" class="model-item" data-trux-model="base" role="menuitem"><span class="model-icon"><b>Core 4.0</b><small>Unlimited core access</small></span><span>✓</span></button>',
+        '<button type="button" class="model-item" data-trux-model="pro" role="menuitem"><span class="model-icon"><b>Pro 5.0</b><small>1,000,000 tokens/month</small></span><span>✓</span></button>',
+        '<button type="button" class="model-item trux-owner-only" data-trux-model="ultra" role="menuitem"><span class="model-icon"><b>TruX-Ultra 6.5</b><small>TruX-Code reasoning engine · owner</small></span><span>✓</span></button>',
+      '</div>'
+    ].join("");
+    attach.insertAdjacentElement("afterend", wrap);
+  }
+
+  /* Add the reference-style secondary tools button. */
+  if(!$("toolBtn")){
+    const tool = document.createElement("button");
+    tool.type = "button";
+    tool.className = "icon-btn";
+    tool.id = "toolBtn";
+    tool.title = "Extended thinking";
+    tool.setAttribute("aria-label","Extended thinking");
+    tool.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="12" r="3"/><path d="M9 12h6M6 9V7M18 9V7M6 17v2M18 17v2"/></svg>';
+    tool.onclick = function(){ if(typeof toggleAdvancedThinking === "function") toggleAdvancedThinking(); this.classList.toggle("open", !!window.advancedThinkingEnabled); };
+    const voice = $("voiceBtn");
+    voice ? voice.insertAdjacentElement("beforebegin", tool) : bar.appendChild(tool);
+  }
+
+  const modelContainer = $("modelPickerContainer");
+  const modelBtn = $("modelPickerBtn");
+  const modelDropdown = $("modelDropdown");
+  const modelLabel = $("modelPickerLabel");
+
+  function modelLabelFor(m){
+    return ({base:"Core 4.0",pro:"Pro 5.0",ultra:"TruX-Ultra 6.5"})[m] || "Core 4.0";
+  }
+  function refreshModelUI(){
+    if(modelLabel && typeof currentModel !== "undefined") modelLabel.textContent = modelLabelFor(currentModel).replace(/^Core 4\.0$/,"Model");
+    document.querySelectorAll("[data-trux-model]").forEach(function(btn){
+      const active = typeof currentModel !== "undefined" && btn.dataset.truxModel === currentModel;
+      btn.classList.toggle("active",active);
+      const check = btn.lastElementChild; if(check) check.textContent = active ? "✓" : "";
+    });
+  }
+  if(modelBtn && modelDropdown){
+    modelBtn.addEventListener("click",function(e){
+      e.stopPropagation();
+      closeAttachmentMenu();
+      const open = modelDropdown.classList.toggle("open");
+      modelContainer.classList.toggle("open",open);
+      modelBtn.setAttribute("aria-expanded",open?"true":"false");
+    });
+    document.addEventListener("click",function(e){
+      if(!modelContainer.contains(e.target)){
+        modelDropdown.classList.remove("open");
+        modelContainer.classList.remove("open");
+        modelBtn.setAttribute("aria-expanded","false");
+      }
+    });
+    modelDropdown.querySelectorAll("[data-trux-model]").forEach(function(btn){
+      btn.addEventListener("click",function(e){
+        e.stopPropagation();
+        const m=this.dataset.truxModel;
+        try{ selectModel(m,e); }catch(_){}
+        refreshModelUI();
+        modelDropdown.classList.remove("open");
+        modelContainer.classList.remove("open");
+        modelBtn.setAttribute("aria-expanded","false");
+      });
+    });
+    refreshModelUI();
+  }
+
+  /* Replace the old small popup contents with the requested bottom-sheet layout. */
+  menu.innerHTML = [
+    '<div class="trux-plus-handle" aria-hidden="true"></div>',
+    '<div class="trux-plus-head"><b>Choose what you want to use</b><span>Switch modes or add something to this chat.</span></div>',
+    '<div class="trux-plus-grid trux-plus-modes">',
+      '<button type="button" class="trux-plus-item" onclick="setWorkspaceMode(\'chat\');closeAttachmentMenu()"><span class="trux-mode-glyph">✦</span><span><b>Chat</b><small>General answers</small></span></button>',
+      '<button type="button" class="trux-plus-item" onclick="setWorkspaceMode(\'coding\');closeAttachmentMenu()"><span class="trux-mode-glyph">&lt;/&gt;</span><span><b>Coding</b><small>Build, debug, refactor</small></span></button>',
+      '<button type="button" class="trux-plus-item" onclick="setWorkspaceMode(\'deep-research\');closeAttachmentMenu()"><span class="trux-mode-glyph">◌</span><span><b>Deep Research</b><small>Explore, analyse, discover</small></span></button>',
+      '<button type="button" class="trux-plus-item" onclick="setWorkspaceMode(\'image\');closeAttachmentMenu()"><span class="trux-mode-glyph">◈</span><span><b>Create image</b><small>Generate visuals</small></span></button>',
+    '</div>',
+    '<div class="trux-plus-sep"></div>',
+    '<div class="trux-plus-actions">',
+      '<button type="button" onclick="openPhotoLibrary()"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="1.5"/><path d="m4 18 5-5 3 3 3-3 5 5"/></svg><span><b>Photo</b><small>Choose from your photos</small></span></button>',
+      '<button type="button" onclick="openCamera()"><svg viewBox="0 0 24 24"><path d="M4 7h3l1.4-2h7.2L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.5"/></svg><span><b>Camera</b><small>Take a new photo</small></span></button>',
+      '<button type="button" onclick="openFileLibrary()"><svg viewBox="0 0 24 24"><path d="M5 4.5h9l4 4V19.5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-14a1 1 0 0 1 1-1Z"/><path d="M13 4.5v4h4M7.5 13h9M7.5 16h7"/></svg><span><b>File</b><small>Documents, PDFs and code</small></span></button>',
+      '<button type="button" onclick="setWorkspaceMode(\'video\');closeAttachmentMenu()"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="15" height="14" rx="2"/><path d="m18 10 3-2v8l-3-2"/></svg><span><b>Video</b><small>Generate video (Pro)</small></span></button>',
+      '<button type="button" onclick="openPluginsPage();closeAttachmentMenu()"><svg viewBox="0 0 24 24"><path d="M9 4.5v3M15 4.5v3M9 16.5v3M15 16.5v-3M4.5 9h3M4.5 15h3M19.5 9h-3M19.5 15h-3"/><path d="M9 7.5h6a3 3 0 0 1 3 3v3a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3v-3a3 3 0 0 1 3-3Z"/></svg><span><b>Plugins</b><small>Connect workspace tools</small></span></button>',
+    '</div>'
+  ].join("");
+
+  const backdropId = "truxPlusBackdrop";
+  function ensureBackdrop(){
+    let bd=$(backdropId);
+    if(!bd){
+      bd=document.createElement("div");
+      bd.id=backdropId;
+      bd.innerHTML='<button type="button" aria-label="Close add menu"></button>';
+      bd.firstElementChild.onclick=function(){ closeAttachmentMenu(); };
+      document.body.appendChild(bd);
+    }
+    return bd;
+  }
+  function syncBackdrop(){
+    const bd=ensureBackdrop();
+    bd.classList.toggle("open",menu.classList.contains("open"));
+  }
+  const oldToggle = window.toggleAttachmentMenu;
+  const oldClose = window.closeAttachmentMenu;
+  window.toggleAttachmentMenu = function(e){
+    if(typeof oldToggle==="function") oldToggle(e);
+    syncBackdrop();
+  };
+  window.closeAttachmentMenu = function(){
+    if(typeof oldClose==="function") oldClose();
+    else { menu.classList.remove("open"); attach.classList.remove("open"); }
+    const bd=$(backdropId); if(bd) bd.classList.remove("open");
+  };
+
+  /* Ensure model UI never comes back inside the + drawer, even if another
+     renderer repopulates its contents later. */
+  new MutationObserver(function(){
+    if(menu.querySelector('[data-model], .trux-plus-title:nth-of-type(2)')) {
+      menu.querySelectorAll("[data-model], .trux-plus-title").forEach(function(el){
+        if(/model/i.test(el.textContent||"")) el.remove();
+      });
+    }
+  }).observe(menu,{childList:true,subtree:true});
+
+  /* Keep the home state stable when switching sessions. */
+  const refresh = function(){
+    const home=document.body.classList.contains("home-active");
+    if(home) {
+      const p=$("promptInput"); if(p) p.placeholder="Ask anything...";
+      refreshModelUI();
+    }
+  };
+  refresh();
+})();
+</script>
+
+<style id="trux-plus-bottom-sheet-20261005">
+#truxPlusBackdrop{
+  position:fixed!important;inset:0!important;z-index:99990!important;
+  background:rgba(0,0,0,.48)!important;
+  opacity:0!important;visibility:hidden!important;
+  transition:opacity .22s ease,visibility .22s ease!important;
+  pointer-events:none!important;
+}
+#truxPlusBackdrop.open{
+  opacity:1!important;visibility:visible!important;pointer-events:auto!important;
+}
+#truxPlusBackdrop>button{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;background:transparent!important;border:0!important}
+
+#attachmentMenu{
+  position:fixed!important;
+  left:0!important;right:0!important;bottom:0!important;top:auto!important;
+  width:100vw!important;max-width:none!important;min-width:0!important;
+  height:min(61dvh,560px)!important;
+  max-height:calc(100dvh - 42px)!important;
+  padding:16px 18px calc(20px + var(--safe-b))!important;
+  border-radius:28px 28px 0 0!important;
+  background:#1a1a1a!important;
+  border:1px solid rgba(255,255,255,.08)!important;
+  border-bottom:0!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+  display:block!important;
+  opacity:0!important;visibility:hidden!important;
+  transform:translateY(100%)!important;
+  transform-origin:bottom center!important;
+  overflow:auto!important;
+  z-index:99999!important;
+  transition:transform .34s cubic-bezier(.16,1,.3,1),opacity .22s ease,visibility .22s ease!important;
+}
+#attachmentMenu.open{
+  opacity:1!important;visibility:visible!important;
+  transform:translateY(0)!important;
+}
+#attachmentMenu .trux-plus-handle{
+  width:54px;height:5px;border-radius:999px;
+  margin:0 auto 18px;background:#676767;
+}
+#attachmentMenu .trux-plus-head{
+  display:flex;flex-direction:column;gap:5px;
+  padding:0 6px 18px;color:#eee;
+}
+#attachmentMenu .trux-plus-head b{font-size:18px;font-weight:620}
+#attachmentMenu .trux-plus-head span{font-size:12.5px;color:#777}
+#attachmentMenu .trux-plus-grid{
+  display:grid!important;grid-template-columns:1fr 1fr!important;gap:10px!important;
+}
+#attachmentMenu .trux-plus-item{
+  min-height:92px!important;
+  padding:14px!important;
+  display:flex!important;align-items:center!important;gap:12px!important;
+  border-radius:18px!important;
+  background:#202020!important;
+  border:1px solid rgba(255,255,255,.07)!important;
+  color:#dcdcdc!important;
+  box-shadow:none!important;
+}
+#attachmentMenu .trux-plus-item:hover,
+#attachmentMenu .trux-plus-item:focus-visible{
+  background:#242424!important;border-color:rgba(255,255,255,.11)!important;
+  color:#fff!important;transform:none!important;
+}
+#attachmentMenu .trux-mode-glyph{
+  width:38px;height:38px;display:grid;place-items:center;flex:0 0 38px;
+  border-radius:12px;background:#191919;border:1px solid rgba(255,255,255,.06);
+  color:#e4e4e4;font-size:20px;font-weight:520;
+}
+#attachmentMenu .trux-plus-item b{display:block;font-size:14.5px;font-weight:600}
+#attachmentMenu .trux-plus-item small{display:block;margin-top:4px;color:#7d7d7d;font-size:10.5px;line-height:1.25}
+#attachmentMenu .trux-plus-sep{
+  height:1px!important;margin:18px 4px!important;background:rgba(255,255,255,.08)!important;
+}
+#attachmentMenu .trux-plus-actions{
+  display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;
+}
+#attachmentMenu .trux-plus-actions button{
+  min-height:66px;display:flex;align-items:center;gap:12px;
+  padding:11px 10px;border-radius:14px;
+  color:#d4d4d4;background:transparent;border:1px solid transparent;
+  text-align:left;
+}
+#attachmentMenu .trux-plus-actions button:hover{
+  background:#202020;border-color:rgba(255,255,255,.06);
+}
+#attachmentMenu .trux-plus-actions svg{
+  width:22px;height:22px;flex:0 0 22px;fill:none;stroke:currentColor;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+#attachmentMenu .trux-plus-actions button b{font-size:13.5px;font-weight:560}
+#attachmentMenu .trux-plus-actions button small{display:block;margin-top:3px;color:#707070;font-size:10px}
+@media(max-width:520px){
+  #attachmentMenu{height:min(64dvh,560px)!important;padding-left:15px!important;padding-right:15px!important}
+  #attachmentMenu .trux-plus-grid{gap:8px!important}
+  #attachmentMenu .trux-plus-item{min-height:86px!important;padding:12px!important;border-radius:16px!important}
+  #attachmentMenu .trux-plus-actions{grid-template-columns:1fr!important}
+}
+</style>
