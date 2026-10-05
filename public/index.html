@@ -3252,7 +3252,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
   }
 
   .sidebar-item,.side-btn,.new-chat,.top-btn,.topbar-tool-btn.icon-only,
-  .model-picker-btn,.trux-mode-btn,.settings-nav button,.settings-card,
+  .model-picker-btn,.settings-nav button,.settings-card,
   .profile-option-row,.mbtn,.close{
     transition:
       transform .22s var(--ease-out),
@@ -3266,7 +3266,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     .brand .logo:hover{transform:translateZ(7px) rotateX(2deg) rotateY(-2deg);box-shadow:0 18px 36px -20px var(--depth-cast),0 0 24px -9px rgba(109,131,255,.6),0 1px 0 rgba(255,255,255,.15) inset;}
     .side-btn:hover,.new-chat:hover,.sidebar-item:hover,.profile:hover,
     .top-btn:hover,.topbar-tool-btn.icon-only:hover,.model-picker-btn:hover,
-    .trux-mode-btn:hover,.settings-nav button:hover,.settings-card:hover,
+    .settings-nav button:hover,.settings-card:hover,
     .profile-option-row:hover,.mbtn:hover,.close:hover{
       transform:translateY(-2px) translateZ(7px);
       box-shadow:
@@ -3278,28 +3278,12 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
   .side-btn:active,.new-chat:active,.sidebar-item:active,
   .top-btn:active,.topbar-tool-btn.icon-only:active,.model-picker-btn:active,
-  .trux-mode-btn:active,.mbtn:active,.close:active{
+  .mbtn:active,.close:active{
     transform:translateY(1px) translateZ(2px) scale(.985);
     box-shadow:0 5px 12px -9px var(--depth-cast);
   }
 
-  /* Top mode switch: make it feel like a physical segmented control. */
-  .trux-mode-switch{
-    transform-style:preserve-3d;
-    box-shadow:
-      0 1px 0 rgba(255,255,255,.09) inset,
-      0 16px 36px -24px var(--depth-cast),
-      0 0 0 1px rgba(0,0,0,.2);
-  }
-  .trux-mode-btn{position:relative;overflow:hidden;}
-  .trux-mode-btn::after{
-    content:"";
-    position:absolute;inset:1px;
-    border-radius:inherit;
-    pointer-events:none;
-    background:linear-gradient(180deg,rgba(255,255,255,.08),transparent 42%);
-    opacity:.45;
-  }
+  /* Mode switch remains flat; visual ownership is in the final shell style. */
 
   /* Default Chat: make the good home screen spatial rather than flat. */
   .welcome{perspective:1200px;}
