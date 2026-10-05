@@ -7819,6 +7819,45 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
 
 <script src="/trux-plugins.js?v=20261004c" defer></script>
+<script>
+/* FINAL HOME SANITIZER
+   The Home surface must never display legacy welcome artwork. This guard also
+   catches stale/dynamically inserted legacy nodes without touching Chat,
+   TruX-Code, Image, Video, or the sidebar. */
+(function(){
+  function cleanHome(){
+    if(!document.body || !document.body.classList.contains('home-active')) return;
+    var root=document.querySelector('.main') || document.body;
+    root.querySelectorAll('.welcome, .hero, .welcome-title, .animated-sub').forEach(function(node){
+      if(node.id === 'welcomeScreen') return;
+      node.style.setProperty('display','none','important');
+      node.style.setProperty('visibility','hidden','important');
+    });
+    root.querySelectorAll('img').forEach(function(img){
+      if(!img.isConnected) return;
+      var r=img.getBoundingClientRect();
+      var area=r.width*r.height;
+      if(r.width>140 || r.height>140 || area>19600){
+        img.style.setProperty('display','none','important');
+        img.style.setProperty('visibility','hidden','important');
+      }
+    });
+    var walker=document.createTreeWalker(root,NodeFilter.SHOW_ELEMENT);
+    while(walker.nextNode()){
+      var el=walker.currentNode;
+      if(el.id==='welcomeScreen' || el.closest('#welcomeScreen') || el.closest('.topbar') || el.closest('.composer')) continue;
+      var t=(el.textContent||'').trim().toLowerCase();
+      if(t==='work on or chat about! 😊' || t==='work on or chat about!'){
+        el.style.setProperty('display','none','important');
+        el.style.setProperty('visibility','hidden','important');
+      }
+    }
+  }
+  document.addEventListener('DOMContentLoaded',cleanHome);
+  new MutationObserver(cleanHome).observe(document.documentElement,{subtree:true,childList:true});
+  window.addEventListener('resize',cleanHome,{passive:true});
+})();
+</script>
 /* Keep TruX-Code on the same quiet #151515 surface; no colored or glossy panel tint. */
 body.coding-workspace,
 body.coding-workspace .main,
