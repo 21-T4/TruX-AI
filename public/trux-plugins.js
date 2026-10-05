@@ -142,7 +142,7 @@
   }
   async function addOrConnectPlugin(pluginId,button){
     var existing=list().find(function(p){return p.id===pluginId;});
-    if(existing && existing.connected) return toggle(pluginId,true);
+    if(existing && existing.connected) return disconnect(pluginId,button);
     return connect(pluginId,button);
   }
 
