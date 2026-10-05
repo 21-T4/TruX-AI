@@ -7803,95 +7803,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     addEventListener("keydown", e => { if(e.key === "Escape") { closeMediaLibrary(); closeProfileModal(); closeSettingsModal(); closeSandboxModal(); closePinnedModal(); closeLoginWall(); getEl("contextMenu").style.display = "none"; closeSidebar(); closeModelDropdown(); closeAttachmentMenu(); } });
 
 
-    /* ============================================================
-       SETTINGS / PROFILE PAGE CONTROLLER
-       One real page at a time. The navigation is event-delegated so
-       touch/click behavior does not depend on fragile inline handlers.
-       ============================================================ */
-    function showSettingsPage(name){
-      const allowed=new Set(["general","appearance","voice","personalization","notifications","usage","data","developer"]);
-      const next=allowed.has(name) ? name : "general";
-      document.querySelectorAll("[data-settings-content]").forEach(function(section){
-        section.classList.toggle("active", section.getAttribute("data-settings-content")===next);
-      });
-      document.querySelectorAll("[data-settings-page]").forEach(function(btn){
-        btn.classList.toggle("active", btn.getAttribute("data-settings-page")===next);
-      });
-      const select=getEl("settingsMobileSelect");
-      if(select) select.value=next;
-      const scroller=document.querySelector(".settings-main-scroll");
-      if(scroller) scroller.scrollTop=0;
-      return next;
-    }
-
-    function switchSettingsSection(name){
-      showSettingsPage(name);
-    }
-
-    function openSettingsModal(section){
-      const modal=getEl("settingsModal");
-      if(!modal) return;
-      modal.classList.add("active");
-      modal.style.removeProperty("display");
-      loadSettings();
-      updateAllUsageUI();
-      updateLocationSettingUI();
-      updateNotificationSettingsUI();
-      showSettingsPage(section || "general");
-    }
-
-    function closeSettingsModal(){
-      const modal=getEl("settingsModal");
-      if(!modal) return;
-      modal.classList.remove("active");
-      modal.style.removeProperty("display");
-    }
-
-    function openProfileOption(key){
-      const allowed=new Set(["account","usage","personalization","notifications","memory","avatar","appearance","settings","help","developer"]);
-      const next=allowed.has(key) ? key : "help";
-      currentProfileOption=next;
-      const home=getEl("profileOptionList");
-      const label=document.querySelector(".profile-options-label");
-      const detail=getEl("profileDetailView");
-      const data=profileDetailData(next);
-      if(home) home.style.display="none";
-      if(label) label.style.display="none";
-      if(detail){
-        detail.hidden=false;
-        getEl("profileDetailTitle").textContent=data.title;
-        getEl("profileDetailSubtitle").textContent=data.subtitle;
-        getEl("profileDetailBody").innerHTML=data.html;
-      }
-      if(next==="notifications"){
-        const t=getEl("profileNotificationsToggle");
-        if(t) t.checked=("Notification" in window && Notification.permission==="granted");
-        const st=getEl("profileNotificationStatus");
-        if(st) st.textContent=("Notification" in window) ? "Permission: "+Notification.permission : "Notifications are not supported.";
-      }
-      if(next==="appearance") applyHomeLook(document.body.dataset.homeLook||"midnight",false);
-      getEl("profileModal")?.classList.add("profile-detail-open");
-      return next;
-    }
-
-    function closeProfileOption(){
-      currentProfileOption=null;
-      const home=getEl("profileOptionList");
-      const label=document.querySelector(".profile-options-label");
-      const detail=getEl("profileDetailView");
-      if(home) home.style.display="";
-      if(label) label.style.display="";
-      if(detail){ detail.hidden=true; detail.removeAttribute("hidden"); detail.hidden=true; }
-      getEl("profileModal")?.classList.remove("profile-detail-open");
-    }
-
-    function closeProfileModal(){
-      closeProfileOption();
-      const modal=getEl("profileModal");
-      if(modal){ modal.classList.remove("active"); modal.style.removeProperty("display"); }
-    }
-
-    /* Remove the last dependency on inline navigation handlers. */
+    /* SETTINGS / PROFILE EVENT DELEGATION */
     const settingsModalNode=getEl("settingsModal");
     if(settingsModalNode){
       settingsModalNode.addEventListener("click",function(event){
@@ -7900,7 +7812,6 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           event.preventDefault();
           event.stopPropagation();
           showSettingsPage(nav.getAttribute("data-settings-page"));
-          return;
         }
       },true);
     }
@@ -7913,11 +7824,9 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           event.preventDefault();
           event.stopPropagation();
           openProfileOption(route.getAttribute("data-profile-page"));
-          return;
         }
       },true);
     }
-
 
     let startupWorkspaceMode = "chat";
     try {
