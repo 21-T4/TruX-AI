@@ -4431,6 +4431,9 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       // Thinking is controlled inside the model picker; no separate top thinking button exists.
       syncModelPickerUI();
       renderSidebar();
+      if(isCoding && typeof window.refreshTruxCodeIntegrations === "function"){
+        window.refreshTruxCodeIntegrations();
+      }
     }
     function toggleAdvancedThinking() {
       advancedThinkingEnabled = !advancedThinkingEnabled;
@@ -8058,6 +8061,27 @@ body.chat-session-active #welcomeScreen{display:none!important}
   color:#aaa!important;background:transparent!important;border:1px solid transparent!important;text-align:left!important
 }
 #modelDropdown .thinking-choice:hover,#modelDropdown .thinking-choice.active{background:#292929!important;color:#fff!important}
+
+/* TruX-Code integration logos: compact, never allowed to expand from image intrinsic size. */
+.trux-code-v2-integrations{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  flex-wrap:wrap!important;gap:7px!important;min-height:24px!important;
+}
+.trux-code-integration-app{
+  display:inline-flex!important;align-items:center!important;gap:6px!important;
+  max-width:150px!important;height:28px!important;padding:0 8px!important;
+  border:1px solid rgba(255,255,255,.065)!important;border-radius:9px!important;
+  background:#1b1b1b!important;color:#686868!important;font-size:10px!important;
+  overflow:hidden!important;
+}
+.trux-code-integration-app img{
+  width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;
+  max-width:16px!important;max-height:16px!important;object-fit:contain!important;display:block!important;flex:0 0 16px!important;
+}
+.trux-code-integration-app b{
+  min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
+  font-size:10px!important;font-weight:600!important;
+}
 
 #attachmentMenu{
   display:block!important;position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;
