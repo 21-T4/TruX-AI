@@ -5572,6 +5572,22 @@ body.home-active #modelPickerBtn .model-picker-icon svg{width:17px!important;hei
       });
     }
 
+    function syncModelPickerUI() {
+      const labels = { base:"Core 4.0", pro:"Pro 5.0", ultra:"TruX-Ultra 6.5" };
+      const pickerLabel = getEl("modelPickerLabel");
+      if(pickerLabel) pickerLabel.textContent = labels[currentModel] || "Core 4.0";
+      document.querySelectorAll("[data-model]").forEach(x => {
+        x.classList.toggle("active", x.dataset.model === currentModel);
+        const check = x.querySelector(".model-check");
+        if(check) check.textContent = x.dataset.model === currentModel ? "✓" : "";
+      });
+      document.querySelectorAll("[data-thinking-level]").forEach(x => {
+        x.classList.toggle("active", x.dataset.thinkingLevel === advancedThinkingLevel);
+        const check = x.querySelector(".thinking-check");
+        if(check) check.textContent = x.dataset.thinkingLevel === advancedThinkingLevel ? "✓" : "";
+      });
+    }
+
     function getActiveChatContainer() {
       return getEl(workspaceMode === "coding" ? "codeChatContainer" : "chatContainer");
     }
@@ -5820,6 +5836,7 @@ body.home-active #modelPickerBtn .model-picker-icon svg{width:17px!important;hei
       }
 
       workspaceMode = nextMode;
+      document.body.dataset.workspaceMode = workspaceMode;
       if(currentChatId && chatSessions[currentChatId]) chatSessions[currentChatId].mode = workspaceMode;
 
       const isCoding = workspaceMode === "coding";
@@ -5875,6 +5892,7 @@ body.home-active #modelPickerBtn .model-picker-icon svg{width:17px!important;hei
 
       const think = getEl("thinkingBtn");
       if(think) think.classList.toggle("active", advancedThinkingEnabled || workspaceMode === "deep-research" || isCoding);
+      syncModelPickerUI();
       renderSidebar();
     }
     function toggleAdvancedThinking() {
