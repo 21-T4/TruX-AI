@@ -4390,7 +4390,10 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           <button type="button" class="top-profile-btn" id="topProfileBtn" onclick="handleAuthAction()" title="Profile" aria-label="Open profile">
             <img id="topProfileAvatar" src="icon-192.png" alt="">
           </button>
-        </div> id="imageWorkspace" aria-label="Image generation workspace">
+        </div>
+      </div>
+
+      <section class="media-gen-workspace" id="imageWorkspace" aria-label="Image generation workspace">
         <div class="media-gen-orbit media-gen-orbit-a"></div><div class="media-gen-orbit media-gen-orbit-b"></div>
         <div class="media-gen-inner">
           <div class="media-gen-kicker"><span>◈</span> IMAGE STUDIO</div>
@@ -10080,5 +10083,137 @@ body.home-active .hint{display:none!important}
   #attachmentMenu .trux-plus-grid{gap:8px!important}
   #attachmentMenu .trux-plus-item{min-height:86px!important;padding:12px!important;border-radius:16px!important}
   #attachmentMenu .trux-plus-actions{grid-template-columns:1fr!important}
+}
+</style>
+
+
+<style id="trux-layout-flat-fix-20261005">
+/* Final layout repair:
+   1) restore the missing topbar close + image workspace opening tag
+   2) keep the default dark surface as one flat #151515 field
+   3) remove ambient gradients/tints/backdrop filters that were bleeding into the UI
+   4) prevent home horizontal/vertical overflow on mobile
+*/
+html, body {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  background: #151515 !important;
+  background-image: none !important;
+  overflow: hidden !important;
+}
+
+body.home-active {
+  background: #151515 !important;
+  background-image: none !important;
+}
+
+body.home-active .shell,
+body.home-active .main,
+body.home-active .topbar,
+body.home-active .welcome,
+body.home-active .hero,
+body.home-active .composer,
+body.home-active .compose {
+  background: #151515 !important;
+  background-image: none !important;
+}
+
+body.home-active .bg,
+body.home-active .colorful-bg,
+body.home-active .hero::before,
+body.home-active .hero::after,
+body.home-active .media-gen-orbit,
+body.home-active .media-gen-workspace::before,
+body.home-active .media-gen-workspace::after {
+  display: none !important;
+}
+
+body.home-active .topbar {
+  width: 100% !important;
+  min-width: 0 !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  background: #151515 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+body.home-active .topbar-left,
+body.home-active .topbar-right {
+  min-width: 0 !important;
+}
+
+body.home-active .trux-mode-switch {
+  min-width: 0 !important;
+  max-width: min(360px, calc(100vw - 116px)) !important;
+  background: #151515 !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+body.home-active .trux-mode-btn {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+body.home-active .trux-mode-btn.active {
+  background: #242424 !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+body.home-active .welcome {
+  width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+body.home-active .hero {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+}
+
+body.home-active .composer {
+  width: 100% !important;
+  min-width: 0 !important;
+  overflow: visible !important;
+}
+
+body.home-active .compose,
+body.home-active .bar {
+  min-width: 0 !important;
+  max-width: 700px !important;
+}
+
+body.home-active .bar {
+  background: #1d1d1d !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+body.home-active #modelPickerContainer,
+body.home-active .model-dropdown-menu {
+  background-image: none !important;
+}
+
+@media (max-width: 700px) {
+  body.home-active .topbar {
+    padding: 0 10px !important;
+    gap: 6px !important;
+  }
+
+  body.home-active .trux-mode-switch {
+    width: min(260px, calc(100vw - 108px)) !important;
+  }
+
+  body.home-active .trux-mode-btn {
+    font-size: 11px !important;
+    padding: 0 6px !important;
+  }
 }
 </style>
