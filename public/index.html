@@ -1012,117 +1012,114 @@
       animation: pulseDot 1.4s var(--ease) infinite;
     }
 
-    /* ---------- AI activity / thinking ---------- */
+    /* ---------- AI activity / thinking : floating text ---------- */
     .trux-thinking-panel{
-      position:relative;width:min(100%,820px);margin:7px 0 10px;display:flex;
-      flex-direction:column;align-items:stretch;color:var(--txt);contain:layout paint
+      position:relative;width:min(100%,820px);margin:5px 0 8px;
+      display:flex;flex-direction:column;align-items:flex-start;color:var(--txt);
+      contain:layout paint;pointer-events:none;
+      transition:opacity .24s var(--ease),transform .28s var(--ease-out);
     }
+    .trux-thinking-panel.thinking-dismissed{opacity:0;transform:translateY(-4px)}
     .trux-thinking-bar{
-      position:relative;z-index:1;display:grid;
-      grid-template-columns:minmax(0,1fr) auto auto;align-items:center;
-      min-height:46px;gap:12px;width:100%;padding:9px 10px 9px 13px;
-      border:1px solid rgba(255,255,255,.075);border-radius:14px;
-      background:linear-gradient(180deg,rgba(30,30,30,.98),rgba(17,17,17,.98));
-      box-shadow:0 12px 34px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.055),inset 0 -1px 0 rgba(0,0,0,.46);
-      overflow:hidden;isolation:isolate
+      position:relative;z-index:1;display:flex;align-items:center;width:100%;
+      min-height:30px;gap:12px;padding:2px 0;overflow:visible;
     }
-    .trux-thinking-bar::before{
-      content:"";position:absolute;inset:-55% -35%;pointer-events:none;z-index:0;
-      background:linear-gradient(106deg,transparent 27%,rgba(255,255,255,.025) 36%,rgba(237,232,223,.18) 48%,rgba(255,255,255,.03) 57%,transparent 69%);
-      background-size:220% 100%;transform:translate3d(-62%,0,0);
-      animation:truxThinkingBarSweep 6.6s cubic-bezier(.22,.61,.36,1) infinite;
-      will-change:transform
+    .trux-thinking-copy{
+      position:relative;min-width:0;display:flex;align-items:center;gap:0;
+      overflow:visible;flex:1 1 auto;
     }
-    .trux-thinking-bar::after{
-      content:"";position:absolute;left:14px;right:14px;bottom:0;height:1px;pointer-events:none;z-index:0;
-      background:linear-gradient(90deg,transparent,rgba(235,231,224,.30),transparent);
-      background-size:220% 100%;animation:truxThinkingLuster 4.8s linear infinite
-    }
-    .trux-thinking-copy,.trux-thinking-elapsed,.trux-thinking-toggle{position:relative;z-index:2}
-    .trux-thinking-copy{min-width:0;display:flex;align-items:baseline;gap:9px;overflow:hidden}
-    .trux-thinking-kicker{
-      flex:0 0 auto;color:var(--txt-4);font:650 10px/1 var(--font-mono);
-      letter-spacing:.16em;text-transform:uppercase;white-space:nowrap
-    }
+    .trux-thinking-kicker{display:none!important}
     .status-msg{
       min-width:0;display:block;margin:0;padding:0;border:0;background:none;
-      color:var(--txt-2);font:560 15px/1.42 var(--font-body);letter-spacing:-.008em;
-      white-space:normal;overflow:visible;text-overflow:clip;box-shadow:none
+      color:#84807a;font:560 14px/1.35 var(--font-body);letter-spacing:-.012em;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:none;
     }
-    .thinking-status-line.latest{
-      display:inline-block;max-width:100%;color:transparent;
-      background:linear-gradient(108deg,#66635e 2%,#9d9890 28%,#eeeae2 48%,#87827b 67%,#595651 87%);
-      background-size:280% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
-      animation:truxThinkingFloat 4.6s cubic-bezier(.22,.61,.36,1) infinite,truxThinkingShine 5.1s linear infinite;
-      will-change:transform,background-position,opacity
+    .thinking-status-line{
+      display:none;max-width:100%;will-change:transform,opacity,background-position;
+    }
+    .thinking-status-line.compact{
+      display:inline-block;color:transparent;
+      background:linear-gradient(110deg,#605d58 0%,#858079 24%,#e7e2da 49%,#8e8a82 72%,#5b5853 100%);
+      background-size:250% 100%;-webkit-background-clip:text;background-clip:text;
+      -webkit-text-fill-color:transparent;
+      animation:truxThinkingFloat 4.8s cubic-bezier(.22,.61,.36,1) infinite,
+                 truxThinkingShine 5.8s linear infinite;
+    }
+    .thinking-status-line.full{display:none;color:transparent;
+      background:linear-gradient(110deg,#66635e 0%,#a19b94 24%,#f0ece5 49%,#8c8780 73%,#5d5954 100%);
+      background-size:250% 100%;-webkit-background-clip:text;background-clip:text;
+      -webkit-text-fill-color:transparent;
+      animation:truxThinkingFloat 4.8s cubic-bezier(.22,.61,.36,1) infinite,
+                 truxThinkingShine 5.8s linear infinite;
+    }
+    .trux-thinking-panel.expanded .thinking-status-line.compact{display:none}
+    .trux-thinking-panel.expanded .thinking-status-line.full{
+      display:inline-block;white-space:normal;overflow-wrap:anywhere;
     }
     .trux-thinking-elapsed{
-      flex:0 0 auto;min-width:104px;text-align:right;color:var(--txt-3);
-      font:600 11px/1 var(--font-mono);font-variant-numeric:tabular-nums;
-      letter-spacing:.04em;white-space:nowrap
+      position:relative;flex:0 0 auto;color:#5e5b56;
+      font:600 10px/1 var(--font-mono);font-variant-numeric:tabular-nums;
+      letter-spacing:.055em;white-space:nowrap;
     }
     .trux-thinking-toggle{
-      flex:0 0 auto;width:28px;height:28px;display:grid;place-items:center;padding:0;
-      border:1px solid rgba(255,255,255,.08);border-radius:9px;background:rgba(255,255,255,.025);
-      color:var(--txt-3);cursor:pointer;
-      transition:background .22s var(--ease),color .22s var(--ease),border-color .22s var(--ease),transform .22s var(--ease)
+      pointer-events:auto;position:relative;flex:0 0 auto;width:22px;height:22px;
+      display:grid;place-items:center;padding:0;border:0;border-radius:50%;
+      background:transparent;color:#65615c;cursor:pointer;opacity:.82;
+      transition:color .2s var(--ease),transform .2s var(--ease),opacity .2s var(--ease);
     }
-    .trux-thinking-toggle:hover{color:var(--txt-2);border-color:rgba(255,255,255,.13);background:rgba(255,255,255,.05)}
-    .trux-thinking-toggle:active{transform:scale(.95)}
-    .trux-thinking-toggle svg{
-      width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;
-      stroke-linecap:round;stroke-linejoin:round;transition:transform .3s var(--ease-out)
-    }
+    .trux-thinking-toggle:hover{color:#aaa59d;opacity:1}
+    .trux-thinking-toggle:active{transform:scale(.9)}
+    .trux-thinking-toggle svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.65;
+      stroke-linecap:round;stroke-linejoin:round;transition:transform .35s var(--ease-out)}
     .trux-thinking-panel.expanded .trux-thinking-toggle svg{transform:rotate(180deg)}
     .trux-thinking-details{
-      display:flex;flex-direction:column;gap:3px;max-height:310px;margin-top:7px;
-      padding:9px 12px 10px 14px;overflow:auto;border-left:1px solid rgba(255,255,255,.07);
-      scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.14) transparent
+      width:min(760px,100%);display:flex;flex-direction:column;gap:4px;max-height:300px;
+      margin:2px 0 0 2px;padding:4px 0 5px 14px;overflow:auto;
+      border-left:1px solid rgba(255,255,255,.055);pointer-events:auto;
+      scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.11) transparent;
     }
     .trux-thinking-details[hidden]{display:none!important}
     .thinking-status-step,.thinking-tool-item{
-      position:relative;display:block;padding:2px 0 2px 12px;color:var(--txt-4);
-      font:500 12.5px/1.5 var(--font-body);letter-spacing:-.002em;
-      white-space:normal;overflow-wrap:anywhere
+      position:relative;display:block;padding:1px 0 1px 11px;color:#65615c;
+      font:500 11.5px/1.5 var(--font-body);letter-spacing:0;
+      white-space:normal;overflow-wrap:anywhere;
     }
     .thinking-status-step::before,.thinking-tool-item::before{
-      content:"";position:absolute;left:0;top:.78em;width:4px;height:4px;border-radius:50%;
-      background:var(--txt-4);opacity:.72
+      content:"";position:absolute;left:0;top:.8em;width:3px;height:3px;border-radius:50%;
+      background:#5f5b56;opacity:.8;
     }
-    .thinking-tool-item.active{color:var(--txt-3)}
-    .thinking-tool-item.completed{color:var(--txt-4)}
-    .thinking-tool-item.failed{color:#858078}
+    .thinking-tool-item.active{color:#77736e}
+    .thinking-tool-item.completed{color:#5b5752}
+    .thinking-tool-item.failed{color:#817b73}
     .thinking-tool-head{display:block;color:inherit}
     .thinking-tool-meta,.thinking-tool-result{
-      display:block;margin-top:1px;color:#4f4d49;font:480 11px/1.4 var(--font-mono);overflow-wrap:anywhere
+      display:block;margin-top:1px;color:#4e4b47;font:480 10px/1.4 var(--font-mono);overflow-wrap:anywhere;
     }
-    .thinking-tool-result{color:var(--txt-4)}
+    .thinking-tool-result{color:#595550}
     .thinking-container{display:block;width:100%;padding:0;background:none!important;border:0!important;box-shadow:none!important}
-    @keyframes truxThinkingBarSweep{
-      0%,16%{transform:translate3d(-62%,0,0)}
-      56%,72%{transform:translate3d(62%,0,0)}
-      100%{transform:translate3d(72%,0,0)}
-    }
-    @keyframes truxThinkingLuster{
-      0%{background-position:140% 0;opacity:.1}
-      44%{opacity:.72}
-      100%{background-position:-40% 0;opacity:.1}
-    }
     @keyframes truxThinkingFloat{
-      0%,100%{transform:translate3d(0,0,0);opacity:.78}
-      23%{transform:translate3d(.3px,-.6px,0);opacity:.9}
-      49%{transform:translate3d(-.35px,-1.55px,0);opacity:1}
-      76%{transform:translate3d(.25px,-.4px,0);opacity:.88}
+      0%,100%{transform:translate3d(0,0,0);opacity:.72}
+      24%{transform:translate3d(.15px,-.55px,0);opacity:.88}
+      49%{transform:translate3d(-.25px,-1.35px,0);opacity:1}
+      76%{transform:translate3d(.18px,-.38px,0);opacity:.84}
     }
     @keyframes truxThinkingShine{
       0%{background-position:225% 0}
       100%{background-position:-45% 0}
     }
+    @media (max-width:700px){
+      .trux-thinking-bar{gap:8px;min-height:28px}
+      .status-msg{font-size:13px}
+      .trux-thinking-elapsed{font-size:9px}
+      .trux-thinking-toggle{width:20px;height:20px}
+      .thinking-status-line.full{line-height:1.45}
+    }
     @media (prefers-reduced-motion:reduce){
-      .trux-thinking-bar::before,.trux-thinking-bar::after,.thinking-status-line.latest{animation:none!important}
+      .thinking-status-line.compact,.thinking-status-line.full{animation:none!important}
     }
 
     /* ---------- streaming ---------- */
+    
     .md-stream { display: block; }
     .md-block { display: block; }
     .md-block.settled { animation: none; }
@@ -3256,7 +3253,13 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     <aside class="sidebar" id="sidebarNode" aria-label="TruX navigation">
       <div class="sidebar-header">
         <div class="brand">
-          <div><b>ChatTruX-AI</b><small>Intelligent workspace</small></div>
+          <span class="sidebar-brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 120 120" fill="none">
+              <path d="M25 27 C42 30 61 42 94 91" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>
+              <path d="M95 27 C78 30 59 42 26 91" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <div class="sidebar-brand-copy"><b>ChatTruX-AI</b><small>Intelligent workspace</small></div>
         </div>
         <button class="sidebar-close" type="button" onclick="closeSidebar()" title="Close sidebar" aria-label="Close sidebar">
           <svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>
@@ -4053,17 +4056,43 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       }
     } catch (_) {}
 
+    function positionModelDropdown() {
+      const dropdown = getEl("modelDropdown"), button = getEl("modelPickerBtn");
+      if(!dropdown || !button || !dropdown.classList.contains("open")) return;
+      const r = button.getBoundingClientRect();
+      const width = Math.min(390, Math.max(260, window.innerWidth - 20));
+      const left = Math.min(Math.max(10, r.left), Math.max(10, window.innerWidth - width - 10));
+      const maxH = Math.min(540, Math.max(260, window.innerHeight - 24));
+      dropdown.style.position = "fixed";
+      dropdown.style.width = width + "px";
+      dropdown.style.maxWidth = "calc(100vw - 20px)";
+      dropdown.style.maxHeight = maxH + "px";
+      dropdown.style.left = left + "px";
+      dropdown.style.right = "auto";
+      dropdown.style.top = "auto";
+      dropdown.style.bottom = Math.max(12, window.innerHeight - r.top + 8) + "px";
+      dropdown.style.transform = "none";
+    }
+
     function toggleModelDropdown(e) {
       e?.stopPropagation();
       const dropdown = getEl("modelDropdown"), button = getEl("modelPickerBtn");
       if(!dropdown || !button) return;
       closeAttachmentMenu();
-      let open = dropdown.classList.toggle("open");
+      const open = dropdown.classList.toggle("open");
       button.closest(".model-picker-container")?.classList.toggle("open", open);
       button.setAttribute("aria-expanded", open ? "true" : "false");
+      if(open) requestAnimationFrame(positionModelDropdown);
     }
     function closeModelDropdown() {
-      getEl("modelDropdown")?.classList.remove("open");
+      const dropdown = getEl("modelDropdown");
+      dropdown?.classList.remove("open");
+      if(dropdown){
+        dropdown.style.removeProperty("top"); dropdown.style.removeProperty("bottom");
+        dropdown.style.removeProperty("left"); dropdown.style.removeProperty("right");
+        dropdown.style.removeProperty("width"); dropdown.style.removeProperty("max-height");
+        dropdown.style.removeProperty("transform");
+      }
       const button = getEl("modelPickerBtn");
       button?.closest(".model-picker-container")?.classList.remove("open");
       button?.setAttribute("aria-expanded", "false");
@@ -4332,23 +4361,8 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
          * Existing chat-history navigation passes {reload:false} so opening
          * an old chat still works without forcing a full page refresh.
          */
-        if(hardRefresh) {
-          try {
-            sessionStorage.setItem("trux_mode_refresh", JSON.stringify({
-              mode: nextMode,
-              newChat: true,
-              at: Date.now()
-            }));
-          } catch(e) {}
-
-          workspaceMode = nextMode;
-          currentChatId = null;
-          document.body.removeAttribute("data-media-mode");
-          document.body.classList.remove("coding-workspace", "chat-session-active", "home-active");
-          location.reload();
-          return;
-        }
-
+        // Chat, TruX-Code, and media workspaces are switched in-place.
+        // Reloading here caused the initial Chat DOM to flash before Code mounted.
         // Soft reset for internal navigation such as opening saved history.
         const chatView = getEl("chatContainer");
         const codeView = getEl("codeChatContainer");
@@ -6271,7 +6285,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
          '<div class="trux-response-stack">' +
            '<div class="trux-thinking-panel" id="' + thid + '">' +
              '<div class="trux-thinking-bar">' +
-               '<div class="trux-thinking-copy"><span class="trux-thinking-kicker">AI ACTIVITY</span><span class="status-msg" id="' + sid + '" role="status" aria-live="polite"><span class="thinking-status-line latest">Tracing the task…</span></span></div>' +
+               '<div class="trux-thinking-copy"><span class="trux-thinking-kicker">AI ACTIVITY</span><span class="status-msg" id="' + sid + '" role="status" aria-live="polite"><span class="thinking-status-line compact">Tracing the task…</span><span class="thinking-status-line full"></span></span></div>' +
                '<span class="trux-thinking-elapsed" id="elapsed_' + id + '">Working for 00:00</span>' +
                '<button type="button" class="trux-thinking-toggle" onclick="toggleThinkingDetails(\'' + thid + '\')" aria-expanded="false" aria-label="Expand AI activity" title="Expand AI activity"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>' +
              '</div>' +
@@ -6633,7 +6647,15 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         .replace(/[\u0000-\u001F]/g," ")
         .replace(/\s+/g," ")
         .trim()
-        .slice(0,240);
+        .slice(0,300);
+    }
+
+    function compactAiActivity(text) {
+      const clean = normalizeAiActivity(text);
+      if (!clean) return "";
+      const words = clean.split(/\s+/).filter(Boolean);
+      if (words.length <= 4) return clean;
+      return words.slice(0,4).join(" ").replace(/[,:;.!?…]+$/,"") + "…";
     }
 
     function appendThinkingHistory(panel, text) {
@@ -6657,8 +6679,8 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       panel.classList.toggle("expanded", expanded);
       details.hidden = !expanded;
       toggle.setAttribute("aria-expanded", String(expanded));
-      toggle.setAttribute("aria-label", expanded ? "Minimize AI activity" : "Expand AI activity");
-      toggle.title = expanded ? "Minimize AI activity" : "Expand AI activity";
+      toggle.setAttribute("aria-label", expanded ? "Minimize AI activity" : "Show exact AI activity");
+      toggle.title = expanded ? "Minimize AI activity" : "Show exact AI activity";
       if (expanded) requestAnimationFrame(() => { details.scrollTop = details.scrollHeight; });
     }
 
@@ -6721,18 +6743,20 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       if (!el) return;
       const next = normalizeAiActivity(text);
       if (!next) return;
-      let line = el.querySelector(".thinking-status-line");
-      if (!line) {
-        line = document.createElement("span");
-        line.className = "thinking-status-line latest";
-        el.appendChild(line);
-      }
-      const previous = String(line.textContent || "").trim();
+      const compact = compactAiActivity(next);
+      const compactLine = el.querySelector(".thinking-status-line.compact");
+      const fullLine = el.querySelector(".thinking-status-line.full");
+      const currentLine = fullLine || compactLine;
+      const previous = String(fullLine?.textContent || currentLine?.textContent || "").trim();
       if (previous === next) return;
       const panel = el.closest(".trux-thinking-panel");
       if (previous) appendThinkingHistory(panel, previous);
-      line.textContent = next;
-      line.title = next;
+      if (compactLine) compactLine.textContent = compact;
+      if (fullLine) { fullLine.textContent = next; fullLine.title = next; }
+      else {
+        currentLine.textContent = compact;
+        currentLine.title = next;
+      }
       if (panel) {
         panel.classList.add("has-activity");
         appendThinkingHistory(panel, next);
@@ -6914,7 +6938,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       row.innerHTML = `<div class="trux-response-stack">
         <div class="trux-thinking-panel" id="${thid}">
           <div class="trux-thinking-bar">
-            <div class="trux-thinking-copy"><span class="trux-thinking-kicker">AI ACTIVITY</span><span class="status-msg" id="${sid}" role="status" aria-live="polite"><span class="thinking-status-line latest">Understanding the request…</span></span></div>
+            <div class="trux-thinking-copy"><span class="trux-thinking-kicker">AI ACTIVITY</span><span class="status-msg" id="${sid}" role="status" aria-live="polite"><span class="thinking-status-line compact">Understanding the request…</span><span class="thinking-status-line full"></span></span></div>
             <span class="trux-thinking-elapsed" id="elapsed_${id}">Working for 00:00</span>
             <button type="button" class="trux-thinking-toggle" onclick="toggleThinkingDetails('${thid}')" aria-expanded="false" aria-label="Expand AI activity" title="Expand AI activity"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>
           </div>
@@ -7731,13 +7755,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       },true);
     }
 
-    let startupWorkspaceMode = "chat";
-    try {
-      const pending = JSON.parse(sessionStorage.getItem("trux_mode_refresh") || "null");
-      sessionStorage.removeItem("trux_mode_refresh");
-      const validModes = new Set(["chat","coding","deep-research","image","video"]);
-      if(pending && validModes.has(String(pending.mode))) startupWorkspaceMode = String(pending.mode);
-    } catch(e) {}
+    const startupWorkspaceMode = "chat";
     try {
       currentChatId = null;
       document.body.classList.remove("chat-session-active","coding-workspace","plugins-page-active");
@@ -8103,5 +8121,90 @@ body.home-active .animated-sub{
   pointer-events:none!important;
 }
 </style>
+
+<style id="trux-final-ui-20261005">
+/* Floating AI activity — deliberately no container/box. */
+.trux-thinking-panel{background:transparent!important;border:0!important;box-shadow:none!important}
+.trux-thinking-bar{background:transparent!important;border:0!important;box-shadow:none!important}
+.trux-thinking-bar::before,.trux-thinking-bar::after{display:none!important}
+.trux-thinking-copy{overflow:visible!important}
+.trux-thinking-elapsed{background:transparent!important}
+.trux-thinking-details{background:transparent!important;box-shadow:none!important}
+.trux-thinking-details::-webkit-scrollbar{width:5px}
+
+/* Sidebar brand — compact mark, stacked copy, no collision. */
+.sidebar-header{min-width:0!important;gap:14px!important;padding:2px 0 18px!important}
+.sidebar .brand{display:flex!important;align-items:center!important;gap:11px!important;min-width:0!important;padding:0!important}
+.sidebar-brand-mark{width:34px!important;height:34px!important;display:grid!important;place-items:center!important;flex:0 0 34px!important;color:#9a9893!important}
+.sidebar-brand-mark svg{width:100%!important;height:100%!important;display:block!important}
+.sidebar-brand-copy{min-width:0!important;display:flex!important;flex-direction:column!important;justify-content:center!important;gap:2px!important;overflow:hidden!important}
+.sidebar-brand-copy b{display:block!important;max-width:100%!important;font-size:16px!important;line-height:1.05!important;font-weight:700!important;letter-spacing:-.025em!important;color:#e8e8e8!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.sidebar-brand-copy small{display:block!important;font-size:9px!important;line-height:1.15!important;letter-spacing:.13em!important;text-transform:uppercase!important;color:#686868!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+
+/* Model picker — stable button text and vertically stacked descriptions. */
+#modelPickerBtn{max-width:188px!important;min-width:112px!important;overflow:hidden!important}
+#modelPickerLabel{min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+#modelDropdown.model-dropdown-menu,
+#modelDropdown{
+  position:fixed!important;z-index:100000!important;
+  width:min(390px,calc(100vw - 20px))!important;
+  max-width:calc(100vw - 20px)!important;
+  max-height:min(540px,calc(100dvh - 24px))!important;
+  overflow:auto!important;overscroll-behavior:contain!important;
+  padding:8px!important;border-radius:18px!important;
+  background:#1a1a1a!important;background-image:none!important;
+  border:1px solid rgba(255,255,255,.1)!important;
+  box-shadow:0 22px 58px rgba(0,0,0,.48)!important;
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+  transform:none!important;
+}
+#modelDropdown.open{visibility:visible!important;opacity:1!important}
+#modelDropdown .model-item{
+  display:grid!important;grid-template-columns:30px minmax(0,1fr) auto!important;
+  align-items:start!important;column-gap:10px!important;
+  width:100%!important;min-height:64px!important;padding:10px!important;
+  text-align:left!important;overflow:hidden!important;
+}
+#modelDropdown .model-icon{width:30px!important;height:30px!important;align-self:start!important;margin-top:1px!important}
+#modelDropdown .model-info{
+  min-width:0!important;display:flex!important;flex-direction:column!important;
+  align-items:flex-start!important;justify-content:flex-start!important;
+  gap:3px!important;overflow:hidden!important;padding:1px 0!important;
+}
+#modelDropdown .model-info b{
+  display:block!important;width:100%!important;font-size:14px!important;line-height:1.2!important;
+  white-space:normal!important;overflow:visible!important;text-overflow:clip!important;
+}
+#modelDropdown .model-info small{
+  display:block!important;width:100%!important;margin:0!important;
+  font-size:11px!important;line-height:1.35!important;color:#777!important;
+  white-space:normal!important;overflow:visible!important;text-overflow:clip!important;
+}
+#modelDropdown .model-check{align-self:start!important;min-width:18px!important;margin-top:3px!important;text-align:center!important;color:#bdbdbd!important}
+#modelDropdown .thinking-choice-wrap{margin-top:7px!important}
+#modelDropdown .thinking-choice{display:flex!important;align-items:center!important;justify-content:space-between!important}
+@media(max-width:700px){
+  #modelPickerBtn{max-width:152px!important;min-width:104px!important}
+  #modelDropdown,#modelDropdown.model-dropdown-menu{width:min(360px,calc(100vw - 20px))!important}
+}
+
+/* Hard workspace separation: Chat and TruX-Code never coexist visually. */
+body.home-active #chatContainer,
+body.home-active #codeChatContainer,
+body.home-active #truxCodeWorkspace{display:none!important}
+body:not(.coding-workspace) #codeChatContainer{display:none!important;visibility:hidden!important;pointer-events:none!important}
+body:not(.coding-workspace) #truxCodeWorkspace{display:none!important;visibility:hidden!important;pointer-events:none!important}
+body.coding-workspace #chatContainer,
+body.coding-workspace #welcomeScreen{display:none!important;visibility:hidden!important;pointer-events:none!important}
+body.coding-workspace #codeChatContainer{display:block!important;visibility:visible!important;pointer-events:auto!important}
+body.coding-workspace #truxCodeWorkspace{display:flex!important;visibility:visible!important;pointer-events:auto!important}
+body.chat-session-active:not(.coding-workspace) #chatContainer{display:block!important;visibility:visible!important;pointer-events:auto!important}
+body.chat-session-active:not(.coding-workspace) #codeChatContainer{display:none!important}
+
+/* Never allow the initial DOM to paint a coding surface before boot routing. */
+body:not(.coding-workspace) .coding-only,
+body:not(.coding-workspace) .trux-code-legacy{display:none!important}
+</style>
+
 </body>
 </html>
