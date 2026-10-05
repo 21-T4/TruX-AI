@@ -9521,6 +9521,108 @@ body.coding-workspace .trux-code-center-mark{
 }
 
 
+
+<style id="trux-ui-final-geometry-20261005">
+/* Final geometry repair: keep the app surface full-width and the top chrome at the top. */
+html,body,#app,.shell{
+  width:100%!important;
+  min-width:0!important;
+  max-width:none!important;
+}
+body{
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+}
+.shell{
+  position:relative!important;
+  display:flex!important;
+  width:100vw!important;
+  height:100dvh!important;
+}
+.main{
+  position:relative!important;
+  flex:1 1 auto!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:none!important;
+  height:100%!important;
+  margin:0!important;
+  padding:0!important;
+}
+.topbar{
+  position:relative!important;
+  top:auto!important;
+  left:auto!important;
+  right:auto!important;
+  transform:none!important;
+  flex:0 0 60px!important;
+  width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+}
+body.home-active .topbar{
+  display:grid!important;
+  flex:0 0 60px!important;
+  height:60px!important;
+  width:100%!important;
+  transform:none!important;
+}
+/* The old mobile-new button is the stray + visible beside the hamburger. */
+.top-btn.mobile-new{
+  display:none!important;
+}
+body.home-active .topbar .mobile-new{
+  display:none!important;
+}
+/* Home-only workspaces must never occupy the home layout. */
+body.home-active #imageWorkspace,
+body.home-active #videoWorkspace,
+body.home-active .media-gen-workspace{
+  display:none!important;
+}
+/* Do not render the unresolved logo experiment. */
+#truxHomeLogo,
+#truxHomeLogo::before,
+#truxHomeLogo::after{
+  display:none!important;
+  content:none!important;
+  width:0!important;
+  height:0!important;
+  background:none!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+/* The hero is only a positioning surface now. */
+body.home-active .welcome{
+  position:relative!important;
+  flex:1 1 auto!important;
+  width:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-width:none!important;
+  overflow:hidden!important;
+  padding:0!important;
+  margin:0!important;
+  display:flex!important;
+}
+body.home-active .hero{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  min-height:0!important;
+  height:100%!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+}
+body.home-active .composer{
+  flex:0 0 auto!important;
+  width:100%!important;
+  min-width:0!important;
+}
+</style>
+
 <script id="trux-ui-final-clean-script-20261005">
 (function(){
   const $ = id => document.getElementById(id);
