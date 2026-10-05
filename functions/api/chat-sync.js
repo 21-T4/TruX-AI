@@ -11,6 +11,16 @@ export async function onRequestPost({ request, env }) {
   }
 
   const body = await request.json();
+  if (body?.incognito === true) {
+    return new Response(JSON.stringify({ ok: true, skipped: true }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store, private, max-age=0'
+      }
+    });
+  }
+
   const chats = body?.chats;
   if (!chats || typeof chats !== 'object' || Array.isArray(chats)) {
     return Response.json({ error: 'Chat data is invalid.' }, { status: 400 });
@@ -24,5 +34,11 @@ export async function onRequestPost({ request, env }) {
     chats
   });
 
-  return Response.json({ ok: true, savedAt: new Date().toISOString(), bytes });
+  return new Response(JSON.stringify({ ok: true, savedAt: new Date().toISOString(), bytes }), {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store, private, max-age=0'
+    }
+  });
 }
