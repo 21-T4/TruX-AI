@@ -4382,7 +4382,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         </div>
 
         <div class="trux-mode-switch" id="truxModeSwitch" aria-label="Workspace mode">
-          <button type="button" class="trux-mode-btn active" data-trux-mode="chat" onclick="setWorkspaceMode('chat')">TruX Chat</button>
+          <button type="button" class="trux-mode-btn active" data-trux-mode="chat" onclick="setWorkspaceMode('chat')">Chat</button>
           <button type="button" class="trux-mode-btn" data-trux-mode="coding" onclick="setWorkspaceMode('coding')">TruX-Code</button>
         </div>
 
@@ -9099,126 +9099,6 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     .coding-workspace .trux-code-stage-center p{font-size:11px}
   }
 </style>
-<style id="trux-ui-repair-20261005">
-.topbar{grid-template-columns:auto minmax(0,1fr) auto!important}
-.topbar-left{justify-self:start!important}.topbar-right{justify-self:end!important;display:flex!important;align-items:center!important}
-.top-profile-btn{width:38px!important;height:38px!important;padding:2px!important;border-radius:50%!important;display:grid!important;place-items:center!important;overflow:hidden!important;background:#202020!important;border:1px solid rgba(255,255,255,.12)!important;box-shadow:none!important;transform:none!important}
-.top-profile-btn:hover{background:#262626!important;border-color:rgba(255,255,255,.2)!important;transform:none!important}
-.top-profile-btn img{width:100%!important;height:100%!important;border-radius:50%!important;object-fit:cover!important;display:block!important;filter:grayscale(1) contrast(1.15) brightness(1.18)!important}
-.trux-mode-switch{width:min(360px,100%)!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;align-items:center!important;gap:4px!important;padding:4px!important;border-radius:14px!important;background:#191919!important;border:1px solid rgba(255,255,255,.09)!important;box-shadow:none!important;transform:none!important}
-.trux-mode-btn{width:100%!important;min-width:0!important;height:32px!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:0 8px!important;border-radius:10px!important;color:#838383!important;background:transparent!important;border:1px solid transparent!important;font-size:12px!important;font-weight:600!important}
-.trux-mode-btn.active{background:#292929!important;color:#f0f0f0!important;border-color:rgba(255,255,255,.08)!important}
-#truxHomeLogo{width:104px!important;height:104px!important;display:grid!important;place-items:center!important;pointer-events:none!important;z-index:4!important}
-#truxHomeLogo img{width:74px!important;height:74px!important;object-fit:contain!important;display:block!important;filter:grayscale(1) brightness(1.65) contrast(1.25) drop-shadow(0 0 7px rgba(255,255,255,.12))!important;opacity:.86!important;animation:truxOfficialLogoMetal 3.8s ease-in-out infinite!important}
-#truxHomeLogo::before,#truxHomeLogo::after{border-radius:50%!important;background:none!important;border:1px solid rgba(255,255,255,.13)!important}
-#truxHomeLogo::after{border-color:rgba(255,255,255,.07)!important}
-@keyframes truxOfficialLogoMetal{0%,18%,100%{filter:grayscale(1) brightness(1.32) contrast(1.2) drop-shadow(0 0 3px rgba(255,255,255,.08));transform:translateY(1px) scale(.94)}28%{filter:grayscale(1) brightness(1.85) contrast(1.28) drop-shadow(0 0 13px rgba(255,255,255,.3));transform:translateY(-2px) scale(1.02)}40%{filter:grayscale(1) brightness(1.52) contrast(1.22) drop-shadow(0 0 7px rgba(255,255,255,.16));transform:translateY(0) scale(1)}58%{filter:grayscale(1) brightness(1.36) contrast(1.2) drop-shadow(0 0 3px rgba(255,255,255,.08));transform:translateY(1px) scale(.95)}70%{filter:grayscale(1) brightness(1.9) contrast(1.3) drop-shadow(0 0 14px rgba(255,255,255,.32));transform:translateY(-2px) scale(1.02)}82%{filter:grayscale(1) brightness(1.48) contrast(1.2) drop-shadow(0 0 6px rgba(255,255,255,.14));transform:translateY(0) scale(1)}}
-body.chat-session-active .composer,body.coding-workspace.chat-session-active .composer{padding:6px 24px calc(16px + var(--safe-b))!important;transform:none!important;background:linear-gradient(180deg,rgba(23,23,23,0) 0%,var(--bg) 42%)!important}
-body.chat-session-active .bar,body.coding-workspace.chat-session-active .bar{min-height:0!important;display:grid!important;grid-template-columns:42px minmax(0,1fr) 42px 42px!important;grid-template-rows:none!important;align-items:center!important;gap:6px!important;padding:8px 10px!important;border-radius:999px!important;background:#212121!important;border:1px solid rgba(255,255,255,.10)!important;box-shadow:none!important}
-body.chat-session-active .bar.multiline,body.coding-workspace.chat-session-active .bar.multiline{border-radius:999px!important;align-items:center!important}
-body.chat-session-active #promptInput,body.coding-workspace.chat-session-active #promptInput{grid-column:2!important;grid-row:1!important;width:100%!important;min-width:0!important;height:auto!important;min-height:26px!important;max-height:92px!important;padding:3px 6px!important;background:transparent!important;font-size:16px!important;line-height:1.4!important}
-body.chat-session-active #attachBtn,body.coding-workspace.chat-session-active #attachBtn{grid-column:1!important;grid-row:1!important}
-body.chat-session-active #voiceBtn,body.coding-workspace.chat-session-active #voiceBtn{grid-column:3!important;grid-row:1!important}
-body.chat-session-active #actionBtn,body.coding-workspace.chat-session-active #actionBtn{grid-column:4!important;grid-row:1!important;width:40px!important;height:40px!important;border-radius:50%!important}
-body.chat-session-active #modelPickerContainer,body.coding-workspace.chat-session-active #modelPickerContainer,body.chat-session-active #incognitoBtn,body.coding-workspace.chat-session-active #incognitoBtn,body.chat-session-active #toolBtn,body.coding-workspace.chat-session-active #toolBtn{display:none!important}
-body.home-active .bar{grid-template-columns:42px minmax(0,1fr) 42px 42px 50px!important}
-body.home-active #modelPickerContainer{grid-column:2!important}
-body.home-active #incognitoBtn{grid-column:3!important}
-body.home-active #voiceBtn{grid-column:4!important}
-body.home-active #toolBtn{display:none!important}
-#modelDropdown{width:min(360px,calc(100vw - 24px))!important;padding:8px!important;background:#1a1a1a!important;border:1px solid rgba(255,255,255,.10)!important;border-radius:20px!important;box-shadow:0 22px 60px rgba(0,0,0,.55)!important}
-#modelDropdown .model-item{min-height:58px!important;padding:10px 11px!important;border-radius:13px!important;background:transparent!important;border:1px solid transparent!important}
-#modelDropdown .model-item:hover,#modelDropdown .model-item.active{background:#252525!important;border-color:rgba(255,255,255,.07)!important}
-#modelDropdown .model-icon{width:32px!important;height:32px!important;border-radius:9px!important;background:#222!important;border-color:rgba(255,255,255,.07)!important;display:grid!important;place-items:center!important;color:#d7d7d7!important;font-size:15px!important}
-#modelDropdown .model-info{min-width:0!important;flex:1!important}#modelDropdown .model-info b{font-size:13.5px!important}
-#modelDropdown .thinking-choice-wrap{margin-top:7px!important;padding:10px 8px 8px!important;border-top:1px solid rgba(255,255,255,.08)!important}
-#modelDropdown .thinking-choice-title{padding:2px 3px 8px!important;color:#777!important;font:500 9px/1 var(--font-mono)!important;letter-spacing:.14em!important;text-transform:uppercase!important}
-#modelDropdown .thinking-choice{width:100%!important;min-height:42px!important;padding:8px 9px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;border-radius:10px!important;color:#a4a4a4!important;background:transparent!important;border:1px solid transparent!important;text-align:left!important}
-#modelDropdown .thinking-choice:hover{background:#222!important;color:#eee!important}#modelDropdown .thinking-choice.active{background:#292929!important;color:#fff!important;border-color:rgba(255,255,255,.08)!important}
-#modelDropdown .thinking-choice small{display:block!important;margin-top:2px!important;color:#666!important;font-size:10px!important}
-#modelDropdown .thinking-check{opacity:0!important}#modelDropdown .thinking-choice.active .thinking-check{opacity:1!important}
-#incognitoBtn{position:relative!important;color:#bcbcbc!important}#incognitoBtn.active{color:#fff!important;background:#292929!important;border-color:rgba(255,255,255,.10)!important}
-#incognitoBtn::after{content:"";position:absolute;right:5px;top:5px;width:5px;height:5px;border-radius:50%;background:#8b8b8b;opacity:.65;pointer-events:none}
-@media(max-width:760px){.trux-mode-switch{grid-template-columns:repeat(2,minmax(0,1fr))!important;width:min(260px,calc(100vw - 110px))!important}.trux-mode-btn:last-child{display:none!important}.top-profile-btn{width:36px!important;height:36px!important}}
-</style>
-<script id="trux-ui-repair-script-20261005">
-(function(){
-  const $=id=>document.getElementById(id);
-  const menu=$("attachmentMenu"),attach=$("attachBtn"),bar=document.querySelector(".bar");
-  if(!menu||!attach||!bar)return;
-  const homeLogo=$("truxHomeLogo"), homeLogoImg=homeLogo?.querySelector("img");
-  if(homeLogoImg)homeLogoImg.src="icon-192.png";
-  function syncTopProfile(){
-    const img=$("topProfileAvatar"), source=$("userAvatar")?.src;
-    if(img)img.src=source&&!/ui-avatars\.com/.test(source)?source:"icon-192.png";
-  }
-  syncTopProfile();
-  const avatar=$("userAvatar");
-  if(avatar)new MutationObserver(syncTopProfile).observe(avatar,{attributes:true,attributeFilter:["src"]});
-
-  const modelDropdown=$("modelDropdown"),modelBtn=$("modelPickerBtn"),modelContainer=$("modelPickerContainer"),modelLabel=$("modelPickerLabel");
-  function modelName(m){return({base:"Core 4.0",pro:"Pro 5.0",ultra:"TruX-Ultra 6.5"})[m]||"Core 4.0"}
-  function refreshThinkingUI(){
-    const level=advancedThinkingLevel||"medium";
-    modelDropdown?.querySelectorAll("[data-thinking-level]").forEach(b=>b.classList.toggle("active",b.dataset.thinkingLevel===level));
-  }
-  function refreshModelUI(){
-    if(modelLabel&&typeof currentModel!=="undefined")modelLabel.textContent=currentModel==="base"?"Model":modelName(currentModel);
-    modelDropdown?.querySelectorAll("[data-trux-model]").forEach(b=>{
-      const active=typeof currentModel!=="undefined"&&b.dataset.truxModel===currentModel;b.classList.toggle("active",active);
-      const check=b.querySelector(".model-check");if(check)check.textContent=active?"✓":"";
-    });
-    refreshThinkingUI();
-  }
-  if(modelDropdown&&modelBtn&&modelContainer){
-    modelDropdown.innerHTML=[
-      '<button type="button" class="model-item" data-trux-model="base" role="menuitem"><span class="model-icon">ϟ</span><span class="model-info"><b>Core 4.0</b><small>Unlimited core access</small></span><span class="model-check">✓</span></button>',
-      '<button type="button" class="model-item" data-trux-model="pro" role="menuitem"><span class="model-icon">✦</span><span class="model-info"><b>Pro 5.0</b><small>1,000,000 tokens/month</small></span><span class="model-check">✓</span></button>',
-      '<button type="button" class="model-item trux-owner-only" data-trux-model="ultra" role="menuitem"><span class="model-icon">∞</span><span class="model-info"><b>TruX-Ultra 6.5</b><small>TruX-Code reasoning engine · owner</small></span><span class="model-check">✓</span></button>',
-      '<div class="thinking-choice-wrap"><div class="thinking-choice-title">Thinking</div>',
-      '<button type="button" class="thinking-choice" data-thinking-level="low"><span><b>Low</b><small>Fastest responses</small></span><span class="thinking-check">✓</span></button>',
-      '<button type="button" class="thinking-choice" data-thinking-level="medium"><span><b>Medium</b><small>Balanced reasoning</small></span><span class="thinking-check">✓</span></button>',
-      '<button type="button" class="thinking-choice" data-thinking-level="extended"><span><b>Extended</b><small>Deepest reasoning</small></span><span class="thinking-check">✓</span></button>',
-      '</div>'
-    ].join("");
-    modelDropdown.querySelectorAll("[data-trux-model]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();try{selectModel(b.dataset.truxModel,e)}catch(_){}refreshModelUI();closeModelDropdown()}));
-    modelDropdown.querySelectorAll("[data-thinking-level]").forEach(b=>b.addEventListener("click",e=>{
-      e.stopPropagation();advancedThinkingLevel=b.dataset.thinkingLevel;advancedThinkingEnabled=advancedThinkingLevel==="extended";
-      store.setItem("trux_thinking_level",advancedThinkingLevel);refreshThinkingUI();
-    }));
-  }
-  advancedThinkingLevel=store.getItem("trux_thinking_level")||"medium";advancedThinkingEnabled=advancedThinkingLevel==="extended";refreshModelUI();
-
-  if(!$("incognitoBtn")){
-    const b=document.createElement("button");b.type="button";b.className="icon-btn incognito-btn";b.id="incognitoBtn";b.title="New incognito chat";b.setAttribute("aria-label","Start new incognito chat");
-    b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5h16"/><path d="m6 10.5 1.5-4h9l1.5 4"/><circle cx="8" cy="14.5" r="2.3"/><circle cx="16" cy="14.5" r="2.3"/><path d="M10.3 14.5h3.4"/></svg>';
-    b.onclick=()=>launchIncognitoChat();modelContainer?.insertAdjacentElement("afterend",b);
-  }
-
-  window.launchIncognitoChat=function(){
-    try{activeAbortController?.abort()}catch(_){}
-    try{activeStreamer?.cancel()}catch(_){}
-    if(currentChatId&&chatSessions[currentChatId]?.incognito)delete chatSessions[currentChatId];
-    incognitoMode=true;workspaceMode="chat";currentChatId="incognito_"+Date.now();
-    chatSessions[currentChatId]={title:"Incognito chat",mode:"chat",messages:[],incognito:true};
-    document.body.classList.remove("plugins-page-active","coding-workspace","home-active");document.body.removeAttribute("data-media-mode");document.body.classList.add("chat-session-active");
-    $("truxCodeWorkspace")?.classList.add("code-workspace-dismissed");$("welcomeScreen")?.style.setProperty("display","none");
-    $("chatContainer").innerHTML="";$("chatContainer").style.display="block";$("codeChatContainer").innerHTML="";$("codeChatContainer").style.display="none";
-    $("promptInput").value="";closeAttachmentMenu();closeModelDropdown();handleInputChange();renderSidebar();
-    setTimeout(()=>$("promptInput")?.focus(),0);
-  };
-  const originalStartNewChat=window.startNewChat;
-  window.startNewChat=function(){if(currentChatId&&chatSessions[currentChatId]?.incognito)delete chatSessions[currentChatId];incognitoMode=false;return originalStartNewChat.apply(this,arguments)};
-  const originalSync=window.syncChatsToCloud;
-  window.syncChatsToCloud=async function(immediate=false){if(incognitoMode||(currentChatId&&chatSessions[currentChatId]?.incognito))return;return originalSync(immediate)};
-  $("toolBtn")?.remove();document.querySelectorAll("#thinkingBtn,#notifyBtn,.settings-btn").forEach(el=>el.remove());
-})();
-</script>
-<style id="trux-mode-two-way-fix-20261005">
-.trux-mode-switch{grid-template-columns:repeat(2,minmax(0,1fr))!important;width:min(300px,100%)!important}
-.trux-mode-btn{min-width:120px!important}
-@media(max-width:760px){.trux-mode-switch{width:min(250px,calc(100vw - 120px))!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}.trux-mode-btn{min-width:0!important}}
-</style>
 </body>
 </html>
 
@@ -9651,569 +9531,139 @@ body.coding-workspace #promptInput::placeholder{color:#777!important}
 @media(max-width:700px){body.home-active .topbar{padding:0 10px!important}body.home-active .trux-mode-btn{padding:0 11px!important;font-size:12px!important}body.home-active .welcome-title{font-size:clamp(40px,12vw,60px)!important}body.home-active .animated-sub{font-size:15px!important}body.home-active .bar{min-height:124px!important;border-radius:27px!important}body.home-active #promptInput{font-size:21px!important;height:66px!important}}
 </style>
 
-<style id="trux-home-ui-final-20261005">
-/* Flat, clean home surface. No 3D bevels or lifted controls. */
-body, html { background:#151515!important; }
-body.home-active,
-body.home-active .main,
-body.home-active .welcome,
-body.home-active .composer { background:#151515!important; }
-body.home-active .bg,
-body.home-active .welcome-title,
-body.home-active .animated-sub,
-body.home-active .hero>.badge,
-body.home-active .chips,
-body.home-active .chips-head,
-body.home-active .home-mode-rail { display:none!important; }
-body.home-active .hero{
-  position:relative!important;
-  width:100%!important;
-  min-height:100%!important;
-  max-width:760px!important;
-  padding:0!important;
-  margin:0!important;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  background:#151515!important;
-  perspective:none!important;
-  transform:none!important;
-}
-body.home-active .hero::before{display:none!important}
-body.home-active .bar{
-  min-height:116px!important;
-  display:grid!important;
-  grid-template-columns:42px minmax(0,1fr) 42px 42px 50px!important;
-  grid-template-rows:1fr 42px!important;
-  gap:0 7px!important;
-  padding:12px!important;
-  border-radius:30px!important;
-  background:#1d1d1d!important;
-  border:1px solid rgba(255,255,255,.075)!important;
-  box-shadow:none!important;
-  transform:none!important;
-}
-body.home-active .bar:focus-within{
-  background:#1d1d1d!important;
-  border-color:rgba(255,255,255,.12)!important;
-  box-shadow:none!important;
-}
-body.home-active #promptInput{
-  grid-column:1/-1!important;
-  grid-row:1!important;
-  width:100%!important;
-  min-width:0!important;
-  height:60px!important;
-  padding:4px 12px!important;
-  color:#d6d6d6!important;
-  font-size:22px!important;
-  line-height:1.3!important;
-  background:transparent!important;
-}
-body.home-active #promptInput::placeholder{color:#777!important;opacity:1!important}
-body.home-active #attachBtn{grid-column:1!important;grid-row:2!important}
-body.home-active #modelPickerContainer{grid-column:2!important;grid-row:2!important;justify-self:start!important}
-body.home-active #toolBtn{grid-column:3!important;grid-row:2!important}
+
+<style id="trux-home-coherent-20261005">
+html,body{background:#151515!important}
+body.home-active{--bg:#151515;--bg-1:#151515;--bg-2:#1b1b1b;--bg-3:#202020;--bg-4:#272727;--txt:#ededed;--txt-2:#b7b7b7;--txt-3:#858585;--txt-4:#555;--line:rgba(255,255,255,.075);--line-2:rgba(255,255,255,.12);--line-3:rgba(255,255,255,.18);--acc:#6d83ff;--acc-2:#b07cff;--acc-3:#2f3ac0;--acc-soft:rgba(109,131,255,.14);--acc-line:rgba(120,140,255,.42);background:#151515!important;background-image:none!important}
+body.home-active .shell,body.home-active .main,body.home-active .topbar,body.home-active .welcome,body.home-active .hero,body.home-active .composer{background:#151515!important;background-image:none!important}
+body.home-active .bg,body.home-active .colorful-bg,body.home-active .hero:before,body.home-active .hero:after,body.home-active .welcome-title,body.home-active .animated-sub,body.home-active .chips,body.home-active .chips-head,body.home-active .home-mode-rail,body.home-active .hero>.badge{display:none!important}
+body.home-active .welcome{overflow:hidden!important;padding:0 18px 8px!important}
+body.home-active .hero{width:100%!important;max-width:760px!important;min-height:100%!important;margin:0 auto!important;padding:0!important;display:flex!important;align-items:center!important;justify-content:center!important;animation:none!important}
+body.home-active .topbar{height:60px!important;width:100%!important;min-width:0!important;display:grid!important;grid-template-columns:auto minmax(0,1fr) auto!important;align-items:center!important;padding:0 14px!important;gap:8px!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important}
+body.home-active .topbar-left,body.home-active .topbar-right{min-width:0!important;display:flex!important;align-items:center!important}
+body.home-active .topbar-left{justify-self:start!important}body.home-active .topbar-right{justify-self:end!important}
+body.home-active .trux-mode-switch{justify-self:center!important;width:250px!important;max-width:calc(100vw - 112px)!important;min-width:172px!important;height:40px!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;align-items:center!important;gap:3px!important;padding:3px!important;border-radius:12px!important;background:#1b1b1b!important;border:1px solid rgba(255,255,255,.07)!important;box-shadow:none!important;backdrop-filter:none!important}
+body.home-active .trux-mode-btn,body.home-active .trux-mode-btn:last-child{display:flex!important;width:100%!important;min-width:0!important;height:32px!important;align-items:center!important;justify-content:center!important;padding:0 10px!important;border-radius:9px!important;background:transparent!important;border:1px solid transparent!important;color:#8a8a8a!important;font-size:12.5px!important;font-weight:650!important}
+body.home-active .trux-mode-btn.active{color:#efefef!important;background:#292929!important;border-color:rgba(255,255,255,.08)!important}
+#truxHomeLogo{position:absolute!important;left:50%!important;top:50%!important;width:100px!important;height:100px!important;transform:translate(-50%,-50%)!important;display:grid!important;place-items:center!important;pointer-events:none!important;z-index:2!important;background:transparent!important;border:0!important;box-shadow:none!important}
+#truxHomeLogo:before,#truxHomeLogo:after{display:none!important;content:none!important;border:0!important;background:none!important}
+#truxHomeLogo img{width:78px!important;height:78px!important;object-fit:contain!important;display:block!important;border:0!important;background:transparent!important;box-shadow:none!important;mix-blend-mode:screen!important;filter:grayscale(1) brightness(1.45) contrast(1.45) drop-shadow(0 0 5px rgba(220,220,220,.12))!important;opacity:.86!important;transform:none!important;animation:none!important}
+body.home-active .composer{width:100%!important;min-width:0!important;overflow:visible!important;padding:10px 18px calc(24px + var(--safe-b))!important}
+body.home-active .compose{width:min(740px,100%)!important;max-width:740px!important;min-width:0!important}
+body.home-active .bar{min-height:116px!important;display:grid!important;grid-template-columns:42px minmax(0,1fr) 42px 42px 50px!important;grid-template-rows:1fr 42px!important;align-items:center!important;gap:0 7px!important;padding:12px!important;border-radius:30px!important;background:#1d1d1d!important;background-image:none!important;border:1px solid rgba(255,255,255,.08)!important;box-shadow:none!important}
+body.home-active .bar:focus-within{background:#1d1d1d!important;box-shadow:none!important}
+body.home-active #promptInput{grid-column:1/-1!important;grid-row:1!important;width:100%!important;min-width:0!important;height:60px!important;padding:4px 12px!important;background:transparent!important;color:#d7d7d7!important;font-size:21px!important;line-height:1.3!important}
+body.home-active #attachBtn{grid-column:1!important;grid-row:2!important;z-index:100020!important}
+body.home-active #modelPickerContainer{grid-column:2!important;grid-row:2!important}
+body.home-active #incognitoBtn{grid-column:3!important;grid-row:2!important}
 body.home-active #voiceBtn{grid-column:4!important;grid-row:2!important}
-body.home-active #actionBtn{
-  grid-column:5!important;grid-row:2!important;
-  width:48px!important;height:48px!important;
-  justify-self:end!important;
-  border-radius:50%!important;
-  background:#ededed!important;color:#171717!important;
-  box-shadow:none!important;
+body.home-active #toolBtn{display:none!important}
+body.home-active #actionBtn{grid-column:5!important;grid-row:2!important;width:48px!important;height:48px!important;justify-self:end!important;border-radius:50%!important;background:#ededed!important;color:#171717!important;box-shadow:none!important}
+#modelPickerContainer{position:relative!important;min-width:0!important;display:flex!important;align-items:center!important}
+#modelPickerBtn{height:42px!important;min-width:116px!important;max-width:100%!important;padding:0 13px!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;border-radius:999px!important;background:#242424!important;color:#d7d7d7!important;border:1px solid rgba(255,255,255,.06)!important;box-shadow:none!important;white-space:nowrap!important}
+#modelPickerBtn:hover,#modelPickerBtn[aria-expanded=true]{background:#292929!important;color:#fff!important}
+#modelPickerBtn .model-picker-icon svg{width:17px!important;height:17px!important}
+#modelDropdown{display:none;position:absolute!important;left:0!important;bottom:50px!important;top:auto!important;z-index:100100!important;width:min(360px,calc(100vw - 24px))!important;max-width:calc(100vw - 24px)!important;max-height:min(62dvh,520px)!important;overflow:auto!important;padding:8px!important;border-radius:18px!important;background:#1a1a1a!important;border:1px solid rgba(255,255,255,.1)!important;box-shadow:0 22px 60px rgba(0,0,0,.5)!important}
+#modelDropdown.open{display:block!important}
+#modelDropdown .model-item{width:100%!important;min-height:58px!important;display:flex!important;align-items:center!important;gap:10px!important;padding:10px 11px!important;border-radius:12px!important;color:#d5d5d5!important;background:transparent!important;border:1px solid transparent!important;text-align:left!important}
+#modelDropdown .model-item:hover,#modelDropdown .model-item.active{background:#252525!important;border-color:rgba(255,255,255,.07)!important;color:#fff!important}
+#modelDropdown .model-icon{width:32px!important;height:32px!important;flex:0 0 32px!important;display:grid!important;place-items:center!important;border-radius:9px!important;background:#222!important;color:#d7d7d7!important}
+#modelDropdown .model-info{min-width:0!important;flex:1!important}#modelDropdown .model-info b{display:block!important;font-size:13.5px!important}#modelDropdown .model-info small{display:block!important;margin-top:3px!important;color:#666!important;font-size:10px!important}
+#modelDropdown .model-check{width:18px!important;text-align:center!important}
+#modelDropdown .thinking-choice-wrap{margin-top:7px!important;padding:10px 8px 8px!important;border-top:1px solid rgba(255,255,255,.08)!important}
+#modelDropdown .thinking-choice-title{padding:2px 3px 8px!important;color:#777!important;font:500 9px/1 var(--font-mono)!important;letter-spacing:.14em!important;text-transform:uppercase!important}
+#modelDropdown .thinking-choice{width:100%!important;min-height:42px!important;padding:8px 9px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;border-radius:10px!important;color:#a4a4a4!important;background:transparent!important;border:1px solid transparent!important;text-align:left!important}
+#modelDropdown .thinking-choice:hover,#modelDropdown .thinking-choice.active{background:#292929!important;color:#fff!important}
+#attachmentMenu{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;width:100vw!important;max-width:none!important;min-width:0!important;height:min(60dvh,560px)!important;max-height:calc(100dvh - 38px)!important;padding:15px 18px calc(20px + var(--safe-b))!important;border-radius:26px 26px 0 0!important;background:#1a1a1a!important;border:1px solid rgba(255,255,255,.08)!important;border-bottom:0!important;box-shadow:none!important;backdrop-filter:none!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important;transform:translateY(100%)!important;z-index:100000!important;transition:transform .28s cubic-bezier(.16,1,.3,1),opacity .18s ease,visibility .18s ease!important}
+#attachmentMenu.open{opacity:1!important;visibility:visible!important;pointer-events:auto!important;transform:translateY(0)!important}
+#attachmentMenu .trux-plus-handle{width:54px!important;height:5px!important;margin:0 auto 18px!important;border-radius:999px!important;background:#686868!important}
+#attachmentMenu .trux-plus-head{padding:0 6px 16px!important}#attachmentMenu .trux-plus-head b{color:#ececec!important;font-size:18px!important}#attachmentMenu .trux-plus-head span{color:#777!important;font-size:12px!important}
+#attachmentMenu .trux-plus-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:9px!important}
+#attachmentMenu .trux-plus-item{min-height:84px!important;padding:12px!important;display:flex!important;align-items:center!important;gap:11px!important;border-radius:16px!important;background:#202020!important;border:1px solid rgba(255,255,255,.07)!important;color:#dcdcdc!important;box-shadow:none!important;transform:none!important;text-align:left!important}
+#attachmentMenu .trux-plus-item:hover{background:#242424!important;color:#fff!important}
+#attachmentMenu .trux-mode-glyph{width:36px!important;height:36px!important;flex:0 0 36px!important;display:grid!important;place-items:center!important;border-radius:11px!important;background:#191919!important;border:1px solid rgba(255,255,255,.06)!important;color:#e4e4e4!important}
+#attachmentMenu .trux-plus-item b{display:block!important;font-size:14px!important}#attachmentMenu .trux-plus-item small{display:block!important;margin-top:3px!important;color:#7d7d7d!important;font-size:10px!important}
+#attachmentMenu .trux-plus-sep{height:1px!important;margin:16px 4px!important;background:rgba(255,255,255,.08)!important}
+#attachmentMenu .trux-plus-actions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:2px 10px!important}
+#attachmentMenu .trux-plus-actions button{min-height:60px!important;display:flex!important;align-items:center!important;gap:11px!important;padding:10px!important;border-radius:12px!important;color:#d4d4d4!important;background:transparent!important;border:1px solid transparent!important;text-align:left!important}
+#attachmentMenu .trux-plus-actions button:hover{background:#202020!important}
+#attachmentMenu .trux-plus-actions svg{width:21px!important;height:21px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.7!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+body.chat-session-active .composer,body.coding-workspace.chat-session-active .composer{padding:7px 18px calc(17px + var(--safe-b))!important;background:#151515!important;background-image:none!important}
+body.chat-session-active .bar,body.coding-workspace.chat-session-active .bar{min-height:64px!important;padding:9px 11px!important;border-radius:28px!important;background:#1d1d1d!important;box-shadow:none!important}
+body.chat-session-active #promptInput,body.coding-workspace.chat-session-active #promptInput{min-height:42px!important;max-height:112px!important;padding:7px 7px!important;line-height:1.45!important}
+@media(max-width:700px){
+body.home-active .topbar{padding:0 10px!important}
+body.home-active .trux-mode-switch{width:min(190px,calc(100vw - 108px))!important;min-width:170px!important}
+body.home-active .trux-mode-btn{font-size:11.5px!important;padding:0 6px!important}
+body.home-active .bar{min-height:124px!important;border-radius:27px!important}
+body.home-active #promptInput{height:66px!important;font-size:20px!important}
+#attachmentMenu{padding-left:14px!important;padding-right:14px!important}
+#attachmentMenu .trux-plus-grid{gap:8px!important}
+#attachmentMenu .trux-plus-item{min-height:78px!important;padding:10px!important}
+#attachmentMenu .trux-plus-actions{grid-template-columns:1fr!important}
+#modelDropdown{left:50%!important;transform:translateX(-50%)!important}
 }
-body.home-active .icon-btn,
-body.home-active .model-picker-btn{
-  box-shadow:none!important;
-  transform:none!important;
-}
-body.home-active .icon-btn:hover,
-body.home-active .model-picker-btn:hover{
-  transform:none!important;
-  box-shadow:none!important;
-}
-body.home-active .model-picker-container{
-  display:flex!important;
-  align-items:center!important;
-  justify-content:flex-start!important;
-  min-width:0!important;
-  position:relative!important;
-}
-body.home-active .model-picker-btn{
-  height:42px!important;
-  min-width:116px!important;
-  padding:0 14px!important;
-  gap:8px!important;
-  border-radius:999px!important;
-  background:#242424!important;
-  border:1px solid rgba(255,255,255,.045)!important;
-  color:#d7d7d7!important;
-  font-size:17px!important;
-  font-weight:520!important;
-}
-body.home-active .model-picker-btn .chevron{display:none!important}
-body.home-active .model-picker-icon{color:#c8c8c8!important}
-body.home-active #toolBtn{color:#d7d7d7!important}
-body.home-active .hint{display:none!important}
-
-/* The home logo is the exact emblem silhouette taken from the supplied UI reference,
-   with a restrained silver pulse instead of colored/glossy 3D lighting. */
-.trux-home-logo{
-  position:absolute!important;
-  left:50%!important;
-  top:50%!important;
-  width:92px!important;
-  height:92px!important;
-  transform:translate(-50%,-50%)!important;
-  display:grid!important;
-  place-items:center!important;
-  pointer-events:none!important;
-  z-index:4!important;
-}
-.trux-home-logo::before,
-.trux-home-logo::after{
-  content:""!important;
-  position:absolute!important;
-  left:50%!important;top:50%!important;
-  width:62px!important;height:62px!important;
-  border:1px solid rgba(220,220,220,.22)!important;
-  border-radius:50%!important;
-  transform:translate(-50%,-50%) scale(.55)!important;
-  opacity:0!important;
-  animation:truxHomePulse 3.2s cubic-bezier(.2,.75,.3,1) infinite!important;
-}
-.trux-home-logo::after{
-  width:78px!important;height:78px!important;
-  border-color:rgba(190,190,190,.12)!important;
-  animation-delay:1.05s!important;
-}
-.trux-home-logo img{
-  width:66px!important;height:72px!important;
-  object-fit:contain!important;
-  opacity:.44!important;
-  filter:grayscale(1) brightness(1.18) contrast(1.1) drop-shadow(0 0 4px rgba(255,255,255,.12))!important;
-  transform-origin:50% 78%!important;
-  animation:truxHomeLogoRhythm 3.2s cubic-bezier(.22,.86,.22,1) infinite!important;
-}
-@keyframes truxHomeLogoRhythm{
-  0%,16%{transform:translateY(1px) scale(.92) rotate(0deg);opacity:.30;filter:grayscale(1) brightness(.95) contrast(1.08) drop-shadow(0 0 2px rgba(255,255,255,.08))}
-  20%{transform:translateY(-3px) scale(1.03) rotate(4deg);opacity:.92;filter:grayscale(1) brightness(1.35) contrast(1.12) drop-shadow(0 0 13px rgba(255,255,255,.32))}
-  27%{transform:translateY(0) scale(1) rotate(0deg);opacity:.62;filter:grayscale(1) brightness(1.22) contrast(1.1) drop-shadow(0 0 8px rgba(255,255,255,.18))}
-  38%,55%{transform:translateY(1px) scale(.93) rotate(0deg);opacity:.28}
-  62%{transform:translateY(-2px) scale(1.03) rotate(-3deg);opacity:.86;filter:grayscale(1) brightness(1.30) contrast(1.12) drop-shadow(0 0 11px rgba(255,255,255,.26))}
-  69%{transform:translateY(0) scale(1) rotate(0deg);opacity:.54}
-  76%,100%{transform:translateY(1px) scale(.92) rotate(0deg);opacity:.30}
-}
-@keyframes truxHomePulse{
-  0%,16%{transform:translate(-50%,-50%) scale(.55);opacity:0}
-  21%{transform:translate(-50%,-50%) scale(.82);opacity:.72}
-  30%{transform:translate(-50%,-50%) scale(1.12);opacity:.12}
-  39%,100%{transform:translate(-50%,-50%) scale(1.24);opacity:0}
-}
-
-/* Flat controls throughout the app: undo the earlier 3D depth layer. */
-.brand .logo,.side-btn,.new-chat,.top-btn,.topbar-tool-btn.icon-only,
-.model-picker-btn,.trux-mode-btn,.icon-btn,.send-btn{
-  box-shadow:none!important;
-  transform:none!important;
-}
-.brand .logo:hover,.side-btn:hover,.new-chat:hover,.top-btn:hover,
-.topbar-tool-btn.icon-only:hover,.model-picker-btn:hover,.trux-mode-btn:hover,
-.icon-btn:hover,.send-btn:hover{
-  transform:none!important;
-  box-shadow:none!important;
-}
-.bar{box-shadow:none!important}
 </style>
-
-<script id="trux-home-ui-final-20261005">
+<script id="trux-home-coherent-script-20261005">
 (function(){
-  const $ = (id) => document.getElementById(id);
-  const bar = document.querySelector(".bar");
-  const attach = $("attachBtn");
-  const menu = $("attachmentMenu");
-  if(!bar || !attach || !menu) return;
+ const $=id=>document.getElementById(id);
+ $("truxPlusBackdrop")?.remove();
 
-  /* Center emblem: use the actual emblem silhouette from the supplied reference. */
-  if(!$("truxHomeLogo")){
-    const logo = document.createElement("div");
-    logo.id = "truxHomeLogo";
-    logo.className = "trux-home-logo";
-    logo.innerHTML = '<img alt="" src="icon-192.png">';
-    const hero = document.querySelector("#welcomeScreen .hero");
-    if(hero) hero.appendChild(logo);
-  }
+ const hero=document.querySelector("#welcomeScreen .hero");
+ if(hero){
+   document.querySelectorAll("#truxHomeLogo").forEach((n,i)=>{if(i>0)n.remove()});
+   let e=$("truxHomeLogo");
+   if(!e){e=document.createElement("div");e.id="truxHomeLogo";hero.insertBefore(e,hero.firstChild)}
+   e.innerHTML='<img src="icon-192.png" alt="">';
+ }
 
-  /* Match the requested composer text exactly. */
-  const prompt = $("promptInput");
-  if(prompt) prompt.placeholder = "Ask anything...";
+ const sw=$("truxModeSwitch");
+ if(sw){
+   const bs=[...sw.querySelectorAll(".trux-mode-btn")];
+   bs.forEach((b,i)=>{if(i===0){b.textContent="Chat";b.dataset.truxMode="chat";b.style.display=""}else if(i===1){b.textContent="TruX-Code";b.dataset.truxMode="coding";b.style.display=""}else b.remove()});
+   [...sw.querySelectorAll(".trux-mode-btn")].forEach(b=>{b.onclick=()=>setWorkspaceMode(b.dataset.truxMode)});
+ }
 
-  /* Move model selection from + into a dedicated Model button in the composer. */
-  if(!$("modelPickerContainer")){
-    const wrap = document.createElement("div");
-    wrap.id = "modelPickerContainer";
-    wrap.className = "model-picker-container";
-    wrap.innerHTML = [
-      '<button type="button" class="model-picker-btn" id="modelPickerBtn" aria-haspopup="menu" aria-expanded="false" title="Choose model">',
-        '<span class="model-picker-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M7 12h10M4 17h16"/><circle cx="8" cy="7" r="1.7" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="11" cy="17" r="1.7" fill="currentColor" stroke="none"/></svg></span>',
-        '<span id="modelPickerLabel">Model</span>',
-      '</button>',
-      '<div class="model-dropdown-menu" id="modelDropdown" role="menu">',
-        '<button type="button" class="model-item" data-trux-model="base" role="menuitem"><span class="model-icon"><b>Core 4.0</b><small>Unlimited core access</small></span><span>✓</span></button>',
-        '<button type="button" class="model-item" data-trux-model="pro" role="menuitem"><span class="model-icon"><b>Pro 5.0</b><small>1,000,000 tokens/month</small></span><span>✓</span></button>',
-        '<button type="button" class="model-item trux-owner-only" data-trux-model="ultra" role="menuitem"><span class="model-icon"><b>TruX-Ultra 6.5</b><small>TruX-Code reasoning engine · owner</small></span><span>✓</span></button>',
-      '</div>'
-    ].join("");
-    attach.insertAdjacentElement("afterend", wrap);
-  }
+ let a=$("attachBtn");
+ if(a){
+   const n=a.cloneNode(true);n.removeAttribute("onclick");a.replaceWith(n);a=n;
+   a.addEventListener("click",ev=>{ev.preventDefault();ev.stopPropagation();const m=$("attachmentMenu");if(!m)return;closeModelDropdown();m.classList.contains("open")?closeAttachmentMenu():(m.classList.add("open"),a.classList.add("open"),a.setAttribute("aria-expanded","true"))});
+ }
+ window.toggleAttachmentMenu=ev=>{ev?.preventDefault();ev?.stopPropagation();$("attachBtn")?.click()};
+ window.closeAttachmentMenu=()=>{$("attachmentMenu")?.classList.remove("open");const b=$("attachBtn");if(b){b.classList.remove("open");b.setAttribute("aria-expanded","false")}};
 
-  /* Thinking controls live inside the model picker. */
-  const modelContainer = $("modelPickerContainer");
-  const modelBtn = $("modelPickerBtn");
-  const modelDropdown = $("modelDropdown");
-  const modelLabel = $("modelPickerLabel");
+ const oldPicker=$("modelPickerContainer");if(oldPicker)oldPicker.remove();
+ const p=document.createElement("div");p.id="modelPickerContainer";p.className="model-picker-container";
+ p.innerHTML='<button type="button" id="modelPickerBtn" class="model-picker-btn" aria-haspopup="menu" aria-expanded="false"><span class="model-picker-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M7 12h10M4 17h16"/><circle cx="8" cy="7" r="1.7" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="11" cy="17" r="1.7" fill="currentColor" stroke="none"/></svg></span><span id="modelPickerLabel">Model</span></button><div id="modelDropdown" class="model-dropdown-menu" role="menu"></div>';
+ $("attachBtn")?.insertAdjacentElement("afterend",p);
 
-  function modelLabelFor(m){
-    return ({base:"Core 4.0",pro:"Pro 5.0",ultra:"TruX-Ultra 6.5"})[m] || "Core 4.0";
-  }
-  function refreshModelUI(){
-    if(modelLabel && typeof currentModel !== "undefined") modelLabel.textContent = modelLabelFor(currentModel).replace(/^Core 4\.0$/,"Model");
-    document.querySelectorAll("[data-trux-model]").forEach(function(btn){
-      const active = typeof currentModel !== "undefined" && btn.dataset.truxModel === currentModel;
-      btn.classList.toggle("active",active);
-      const check = btn.lastElementChild; if(check) check.textContent = active ? "✓" : "";
-    });
-  }
-  if(modelBtn && modelDropdown){
-    modelBtn.addEventListener("click",function(e){
-      e.stopPropagation();
-      closeAttachmentMenu();
-      const open = modelDropdown.classList.toggle("open");
-      modelContainer.classList.toggle("open",open);
-      modelBtn.setAttribute("aria-expanded",open?"true":"false");
-    });
-    document.addEventListener("click",function(e){
-      if(!modelContainer.contains(e.target)){
-        modelDropdown.classList.remove("open");
-        modelContainer.classList.remove("open");
-        modelBtn.setAttribute("aria-expanded","false");
-      }
-    });
-    modelDropdown.querySelectorAll("[data-trux-model]").forEach(function(btn){
-      btn.addEventListener("click",function(e){
-        e.stopPropagation();
-        const m=this.dataset.truxModel;
-        try{ selectModel(m,e); }catch(_){}
-        refreshModelUI();
-        modelDropdown.classList.remove("open");
-        modelContainer.classList.remove("open");
-        modelBtn.setAttribute("aria-expanded","false");
-      });
-    });
-    refreshModelUI();
-  }
+ const d=$("modelDropdown"),mb=$("modelPickerBtn"),ml=$("modelPickerLabel");
+ d.innerHTML='<button type="button" class="model-item" data-trux-model="base"><span class="model-icon">ϟ</span><span class="model-info"><b>Core 4.0</b><small>Unlimited core access</small></span><span class="model-check">✓</span></button><button type="button" class="model-item" data-trux-model="pro"><span class="model-icon">✦</span><span class="model-info"><b>Pro 5.0</b><small>1,000,000 tokens/month</small></span><span class="model-check">✓</span></button><button type="button" class="model-item trux-owner-only" data-trux-model="ultra"><span class="model-icon">∞</span><span class="model-info"><b>TruX-Ultra 6.5</b><small>TruX-Code reasoning engine · owner</small></span><span class="model-check">✓</span></button><div class="thinking-choice-wrap"><div class="thinking-choice-title">Thinking</div><button type="button" class="thinking-choice" data-thinking-level="low"><span><b>Low</b><small>Fastest responses</small></span><span class="thinking-check">✓</span></button><button type="button" class="thinking-choice" data-thinking-level="medium"><span><b>Medium</b><small>Balanced reasoning</small></span><span class="thinking-check">✓</span></button><button type="button" class="thinking-choice" data-thinking-level="extended"><span><b>Extended</b><small>Deepest reasoning</small></span><span class="thinking-check">✓</span></button></div>';
 
-  /* Replace the old small popup contents with the requested bottom-sheet layout. */
-  menu.innerHTML = [
-    '<div class="trux-plus-handle" aria-hidden="true"></div>',
-    '<div class="trux-plus-head"><b>Choose what you want to use</b><span>Switch modes or add something to this chat.</span></div>',
-    '<div class="trux-plus-grid trux-plus-modes">',
-      '<button type="button" class="trux-plus-item" onclick="setWorkspaceMode(\'chat\');closeAttachmentMenu()"><span class="trux-mode-glyph">✦</span><span><b>Chat</b><small>General answers</small></span></button>',
-      '<button type="button" class="trux-plus-item" onclick="setWorkspaceMode(\'coding\');closeAttachmentMenu()"><span class="trux-mode-glyph">&lt;/&gt;</span><span><b>Coding</b><small>Build, debug, refactor</small></span></button>',
-      '<button type="button" class="trux-plus-item" onclick="setWorkspaceMode(\'deep-research\');closeAttachmentMenu()"><span class="trux-mode-glyph">◌</span><span><b>Deep Research</b><small>Explore, analyse, discover</small></span></button>',
-      '<button type="button" class="trux-plus-item" onclick="setWorkspaceMode(\'image\');closeAttachmentMenu()"><span class="trux-mode-glyph">◈</span><span><b>Create image</b><small>Generate visuals</small></span></button>',
-    '</div>',
-    '<div class="trux-plus-sep"></div>',
-    '<div class="trux-plus-actions">',
-      '<button type="button" onclick="openPhotoLibrary()"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="1.5"/><path d="m4 18 5-5 3 3 3-3 5 5"/></svg><span><b>Photo</b><small>Choose from your photos</small></span></button>',
-      '<button type="button" onclick="openCamera()"><svg viewBox="0 0 24 24"><path d="M4 7h3l1.4-2h7.2L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.5"/></svg><span><b>Camera</b><small>Take a new photo</small></span></button>',
-      '<button type="button" onclick="openFileLibrary()"><svg viewBox="0 0 24 24"><path d="M5 4.5h9l4 4V19.5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-14a1 1 0 0 1 1-1Z"/><path d="M13 4.5v4h4M7.5 13h9M7.5 16h7"/></svg><span><b>File</b><small>Documents, PDFs and code</small></span></button>',
-      '<button type="button" onclick="setWorkspaceMode(\'video\');closeAttachmentMenu()"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="15" height="14" rx="2"/><path d="m18 10 3-2v8l-3-2"/></svg><span><b>Video</b><small>Generate video (Pro)</small></span></button>',
-      '<button type="button" onclick="openPluginsPage();closeAttachmentMenu()"><svg viewBox="0 0 24 24"><path d="M9 4.5v3M15 4.5v3M9 16.5v3M15 16.5v-3M4.5 9h3M4.5 15h3M19.5 9h-3M19.5 15h-3"/><path d="M9 7.5h6a3 3 0 0 1 3 3v3a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3v-3a3 3 0 0 1 3-3Z"/></svg><span><b>Plugins</b><small>Connect workspace tools</small></span></button>',
-    '</div>'
-  ].join("");
+ const refresh=()=>{
+   const m=typeof currentModel!=="undefined"?currentModel:"base";
+   if(ml)ml.textContent=m==="base"?"Model":({pro:"Pro 5.0",ultra:"TruX-Ultra 6.5"})[m]||"Model";
+   d.querySelectorAll("[data-trux-model]").forEach(b=>{const on=b.dataset.truxModel===m;b.classList.toggle("active",on);b.querySelector(".model-check").textContent=on?"✓":""});
+   const lvl=typeof advancedThinkingLevel!=="undefined"&&advancedThinkingLevel||"medium";
+   d.querySelectorAll("[data-thinking-level]").forEach(b=>{const on=b.dataset.thinkingLevel===lvl;b.classList.toggle("active",on);b.querySelector(".thinking-check").textContent=on?"✓":""});
+ };
+ d.querySelectorAll("[data-trux-model]").forEach(b=>b.addEventListener("click",ev=>{ev.stopPropagation();try{selectModel(b.dataset.truxModel,ev)}catch(_){}refresh();closeModelDropdown()}));
+ d.querySelectorAll("[data-thinking-level]").forEach(b=>b.addEventListener("click",ev=>{ev.stopPropagation();advancedThinkingLevel=b.dataset.thinkingLevel;advancedThinkingEnabled=advancedThinkingLevel==="extended";try{store.setItem("trux_thinking_level",advancedThinkingLevel)}catch(_){}refresh()}));
+ window.toggleModelDropdown=ev=>{ev?.preventDefault();ev?.stopPropagation();closeAttachmentMenu();const open=!d.classList.contains("open");d.classList.toggle("open",open);mb.setAttribute("aria-expanded",String(open));refresh()};
+ window.closeModelDropdown=()=>{d.classList.remove("open");mb.setAttribute("aria-expanded","false")};
+ mb.addEventListener("click",window.toggleModelDropdown);
+ if(typeof advancedThinkingLevel==="undefined"||!advancedThinkingLevel){try{advancedThinkingLevel=store.getItem("trux_thinking_level")||"medium"}catch(_){advancedThinkingLevel="medium"}advancedThinkingEnabled=advancedThinkingLevel==="extended"}
+ refresh();
 
-  const backdropId = "truxPlusBackdrop";
-  function ensureBackdrop(){
-    let bd=$(backdropId);
-    if(!bd){
-      bd=document.createElement("div");
-      bd.id=backdropId;
-      bd.innerHTML='<button type="button" aria-label="Close add menu"></button>';
-      bd.firstElementChild.onclick=function(){ closeAttachmentMenu(); };
-      document.body.appendChild(bd);
-    }
-    return bd;
-  }
-  function syncBackdrop(){
-    const bd=ensureBackdrop();
-    bd.classList.toggle("open",menu.classList.contains("open"));
-  }
-  const oldToggle = window.toggleAttachmentMenu;
-  const oldClose = window.closeAttachmentMenu;
-  window.toggleAttachmentMenu = function(e){
-    if(typeof oldToggle==="function") oldToggle(e);
-    syncBackdrop();
-  };
-  window.closeAttachmentMenu = function(){
-    if(typeof oldClose==="function") oldClose();
-    else { menu.classList.remove("open"); attach.classList.remove("open"); }
-    const bd=$(backdropId); if(bd) bd.classList.remove("open");
-  };
+ $("incognitoBtn")?.remove();
+ const inc=document.createElement("button");inc.type="button";inc.id="incognitoBtn";inc.className="icon-btn incognito-btn";inc.title="New incognito chat";inc.setAttribute("aria-label","Start new incognito chat");inc.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5h16"/><path d="m6 10.5 1.5-4h9l1.5 4"/><circle cx="8" cy="14.5" r="2.3"/><circle cx="16" cy="14.5" r="2.3"/><path d="M10.3 14.5h3.4"/></svg>';inc.onclick=()=>typeof launchIncognitoChat==="function"&&launchIncognitoChat();p.insertAdjacentElement("afterend",inc);
 
-  /* Ensure model UI never comes back inside the + drawer, even if another
-     renderer repopulates its contents later. */
-  new MutationObserver(function(){
-    if(menu.querySelector('[data-model], .trux-plus-title:nth-of-type(2)')) {
-      menu.querySelectorAll("[data-model], .trux-plus-title").forEach(function(el){
-        if(/model/i.test(el.textContent||"")) el.remove();
-      });
-    }
-  }).observe(menu,{childList:true,subtree:true});
+ document.querySelectorAll("#thinkingBtn,#notifyBtn,.settings-btn,#toolBtn").forEach(el=>{if(el)el.remove()});
 
-  /* Keep the home state stable when switching sessions. */
-  const refresh = function(){
-    const home=document.body.classList.contains("home-active");
-    if(home) {
-      const p=$("promptInput"); if(p) p.placeholder="Ask anything...";
-      refreshModelUI();
-    }
-  };
-  refresh();
+ const menu=$("attachmentMenu");
+ if(menu)menu.innerHTML='<div class="trux-plus-handle"></div><div class="trux-plus-head"><b>Choose what you want to use</b><span>Switch modes or add something to this chat.</span></div><div class="trux-plus-grid"><button type="button" class="trux-plus-item" onclick="setWorkspaceMode(\'chat\');closeAttachmentMenu()"><span class="trux-mode-glyph">✦</span><span><b>Chat</b><small>General answers</small></span></button><button type="button" class="trux-plus-item" onclick="setWorkspaceMode(\'coding\');closeAttachmentMenu()"><span class="trux-mode-glyph">&lt;/&gt;</span><span><b>TruX-Code</b><small>Build, debug, refactor</small></span></button><button type="button" class="trux-plus-item" onclick="setWorkspaceMode(\'deep-research\');closeAttachmentMenu()"><span class="trux-mode-glyph">◌</span><span><b>Deep Research</b><small>Explore and analyse</small></span></button><button type="button" class="trux-plus-item" onclick="setWorkspaceMode(\'image\');closeAttachmentMenu()"><span class="trux-mode-glyph">◈</span><span><b>Create image</b><small>Generate visuals</small></span></button></div><div class="trux-plus-sep"></div><div class="trux-plus-actions"><button type="button" onclick="openPhotoLibrary()"><span>Photo</span></button><button type="button" onclick="openCamera()"><span>Camera</span></button><button type="button" onclick="openFileLibrary()"><span>File</span></button><button type="button" onclick="setWorkspaceMode(\'video\');closeAttachmentMenu()"><span>Video</span></button><button type="button" onclick="openPluginsPage();closeAttachmentMenu()"><span>Plugins</span></button></div>';
+
+ document.addEventListener("click",e=>{const d=$("modelDropdown"),p=$("modelPickerContainer"),m=$("attachmentMenu"),a=$("attachBtn");if(d&&p&&!p.contains(e.target))closeModelDropdown();if(m&&a&&m.classList.contains("open")&&!m.contains(e.target)&&!a.contains(e.target))closeAttachmentMenu()},true);
+ const sync=()=>{const mode=typeof workspaceMode!=="undefined"?workspaceMode:"chat";document.querySelectorAll("#truxModeSwitch .trux-mode-btn").forEach(b=>b.classList.toggle("active",b.dataset.truxMode===mode))};sync();
 })();
 </script>
-
-<style id="trux-plus-bottom-sheet-20261005">
-#truxPlusBackdrop{
-  position:fixed!important;inset:0!important;z-index:99990!important;
-  background:rgba(0,0,0,.48)!important;
-  opacity:0!important;visibility:hidden!important;
-  transition:opacity .22s ease,visibility .22s ease!important;
-  pointer-events:none!important;
-}
-#truxPlusBackdrop.open{
-  opacity:1!important;visibility:visible!important;pointer-events:auto!important;
-}
-#truxPlusBackdrop>button{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;background:transparent!important;border:0!important}
-
-#attachmentMenu{
-  position:fixed!important;
-  left:0!important;right:0!important;bottom:0!important;top:auto!important;
-  width:100vw!important;max-width:none!important;min-width:0!important;
-  height:min(61dvh,560px)!important;
-  max-height:calc(100dvh - 42px)!important;
-  padding:16px 18px calc(20px + var(--safe-b))!important;
-  border-radius:28px 28px 0 0!important;
-  background:#1a1a1a!important;
-  border:1px solid rgba(255,255,255,.08)!important;
-  border-bottom:0!important;
-  box-shadow:none!important;
-  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
-  display:block!important;
-  opacity:0!important;visibility:hidden!important;
-  transform:translateY(100%)!important;
-  transform-origin:bottom center!important;
-  overflow:auto!important;
-  z-index:99999!important;
-  transition:transform .34s cubic-bezier(.16,1,.3,1),opacity .22s ease,visibility .22s ease!important;
-}
-#attachmentMenu.open{
-  opacity:1!important;visibility:visible!important;
-  transform:translateY(0)!important;
-}
-#attachmentMenu .trux-plus-handle{
-  width:54px;height:5px;border-radius:999px;
-  margin:0 auto 18px;background:#676767;
-}
-#attachmentMenu .trux-plus-head{
-  display:flex;flex-direction:column;gap:5px;
-  padding:0 6px 18px;color:#eee;
-}
-#attachmentMenu .trux-plus-head b{font-size:18px;font-weight:620}
-#attachmentMenu .trux-plus-head span{font-size:12.5px;color:#777}
-#attachmentMenu .trux-plus-grid{
-  display:grid!important;grid-template-columns:1fr 1fr!important;gap:10px!important;
-}
-#attachmentMenu .trux-plus-item{
-  min-height:92px!important;
-  padding:14px!important;
-  display:flex!important;align-items:center!important;gap:12px!important;
-  border-radius:18px!important;
-  background:#202020!important;
-  border:1px solid rgba(255,255,255,.07)!important;
-  color:#dcdcdc!important;
-  box-shadow:none!important;
-}
-#attachmentMenu .trux-plus-item:hover,
-#attachmentMenu .trux-plus-item:focus-visible{
-  background:#242424!important;border-color:rgba(255,255,255,.11)!important;
-  color:#fff!important;transform:none!important;
-}
-#attachmentMenu .trux-mode-glyph{
-  width:38px;height:38px;display:grid;place-items:center;flex:0 0 38px;
-  border-radius:12px;background:#191919;border:1px solid rgba(255,255,255,.06);
-  color:#e4e4e4;font-size:20px;font-weight:520;
-}
-#attachmentMenu .trux-plus-item b{display:block;font-size:14.5px;font-weight:600}
-#attachmentMenu .trux-plus-item small{display:block;margin-top:4px;color:#7d7d7d;font-size:10.5px;line-height:1.25}
-#attachmentMenu .trux-plus-sep{
-  height:1px!important;margin:18px 4px!important;background:rgba(255,255,255,.08)!important;
-}
-#attachmentMenu .trux-plus-actions{
-  display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;
-}
-#attachmentMenu .trux-plus-actions button{
-  min-height:66px;display:flex;align-items:center;gap:12px;
-  padding:11px 10px;border-radius:14px;
-  color:#d4d4d4;background:transparent;border:1px solid transparent;
-  text-align:left;
-}
-#attachmentMenu .trux-plus-actions button:hover{
-  background:#202020;border-color:rgba(255,255,255,.06);
-}
-#attachmentMenu .trux-plus-actions svg{
-  width:22px;height:22px;flex:0 0 22px;fill:none;stroke:currentColor;stroke-width:1.7;
-  stroke-linecap:round;stroke-linejoin:round;
-}
-#attachmentMenu .trux-plus-actions button b{font-size:13.5px;font-weight:560}
-#attachmentMenu .trux-plus-actions button small{display:block;margin-top:3px;color:#707070;font-size:10px}
-@media(max-width:520px){
-  #attachmentMenu{height:min(64dvh,560px)!important;padding-left:15px!important;padding-right:15px!important}
-  #attachmentMenu .trux-plus-grid{gap:8px!important}
-  #attachmentMenu .trux-plus-item{min-height:86px!important;padding:12px!important;border-radius:16px!important}
-  #attachmentMenu .trux-plus-actions{grid-template-columns:1fr!important}
-}
-</style>
-
-
-<style id="trux-layout-flat-fix-20261005">
-/* Final layout repair:
-   1) restore the missing topbar close + image workspace opening tag
-   2) keep the default dark surface as one flat #151515 field
-   3) remove ambient gradients/tints/backdrop filters that were bleeding into the UI
-   4) prevent home horizontal/vertical overflow on mobile
-*/
-html, body {
-  width: 100%;
-  min-width: 0;
-  height: 100%;
-  background: #151515 !important;
-  background-image: none !important;
-  overflow: hidden !important;
-}
-
-body.home-active {
-  background: #151515 !important;
-  background-image: none !important;
-}
-
-body.home-active .shell,
-body.home-active .main,
-body.home-active .topbar,
-body.home-active .welcome,
-body.home-active .hero,
-body.home-active .composer,
-body.home-active .compose {
-  background: #151515 !important;
-  background-image: none !important;
-}
-
-body.home-active .bg,
-body.home-active .colorful-bg,
-body.home-active .hero::before,
-body.home-active .hero::after,
-body.home-active .media-gen-orbit,
-body.home-active .media-gen-workspace::before,
-body.home-active .media-gen-workspace::after {
-  display: none !important;
-}
-
-body.home-active .topbar {
-  width: 100% !important;
-  min-width: 0 !important;
-  grid-template-columns: auto minmax(0, 1fr) auto !important;
-  background: #151515 !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  box-shadow: none !important;
-}
-
-body.home-active .topbar-left,
-body.home-active .topbar-right {
-  min-width: 0 !important;
-}
-
-body.home-active .trux-mode-switch {
-  min-width: 0 !important;
-  max-width: min(360px, calc(100vw - 116px)) !important;
-  background: #151515 !important;
-  background-image: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  box-shadow: none !important;
-}
-
-body.home-active .trux-mode-btn {
-  background: transparent !important;
-  background-image: none !important;
-  box-shadow: none !important;
-}
-
-body.home-active .trux-mode-btn.active {
-  background: #242424 !important;
-  background-image: none !important;
-  box-shadow: none !important;
-}
-
-body.home-active .welcome {
-  width: 100% !important;
-  min-width: 0 !important;
-  overflow: hidden !important;
-}
-
-body.home-active .hero {
-  width: 100% !important;
-  max-width: none !important;
-  min-width: 0 !important;
-}
-
-body.home-active .composer {
-  width: 100% !important;
-  min-width: 0 !important;
-  overflow: visible !important;
-}
-
-body.home-active .compose,
-body.home-active .bar {
-  min-width: 0 !important;
-  max-width: 700px !important;
-}
-
-body.home-active .bar {
-  background: #1d1d1d !important;
-  background-image: none !important;
-  box-shadow: none !important;
-}
-
-body.home-active #modelPickerContainer,
-body.home-active .model-dropdown-menu {
-  background-image: none !important;
-}
-
-@media (max-width: 700px) {
-  body.home-active .topbar {
-    padding: 0 10px !important;
-    gap: 6px !important;
-  }
-
-  body.home-active .trux-mode-switch {
-    width: min(260px, calc(100vw - 108px)) !important;
-  }
-
-  body.home-active .trux-mode-btn {
-    font-size: 11px !important;
-    padding: 0 6px !important;
-  }
-}
-</style>
