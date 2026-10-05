@@ -3500,25 +3500,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         </div>
       </section>
 
-      <section id="welcomeScreen" class="trux-home-v2" aria-label="TruX home">
-  <div class="trux-home-mark" aria-hidden="true">
-    <svg viewBox="0 0 120 120" role="img">
-      <defs>
-        <linearGradient id="truxMetalHome" x1="8%" y1="8%" x2="92%" y2="92%">
-          <stop offset="0" stop-color="#626262"/>
-          <stop offset="35%" stop-color="#a8a8a8"/>
-          <stop offset="52%" stop-color="#e0e0e0"/>
-          <stop offset="68%" stop-color="#8c8c8c"/>
-          <stop offset="100%" stop-color="#555"/>
-        </linearGradient>
-      </defs>
-      <path d="M25 27 C42 30 61 42 94 91" fill="none" stroke="url(#truxMetalHome)" stroke-width="10" stroke-linecap="round"/>
-      <path d="M95 27 C78 30 59 42 26 91" fill="none" stroke="url(#truxMetalHome)" stroke-width="10" stroke-linecap="round"/>
-      <path d="M31 30 C49 38 69 55 89 83" fill="none" stroke="rgba(255,255,255,.34)" stroke-width="1.5" stroke-linecap="round"/>
-      <path d="M89 30 C71 38 51 55 31 83" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1.5" stroke-linecap="round"/>
-    </svg>
-  </div>
-</section>
+      <section id="welcomeScreen" class="trux-home-v2" aria-label="TruX home"></section>
 
       <div class="chat" id="chatContainer"></div>
       <div class="chat" id="codeChatContainer"></div>
@@ -8115,6 +8097,31 @@ body.chat-session-active #welcomeScreen{display:none!important}
   .trux-code-v2-meta{gap:10px;font-size:10px}
 }
   .home-ui-fixed-note{color:#727272;font-size:12px;line-height:1.4}
+
+/* FINAL HOME LOGO KILL-SWITCH — keep Home as a clean #151515 surface.
+   No legacy/full-color/oversized logo or legacy welcome art may render here. */
+#welcomeScreen,
+body.home-active #welcomeScreen{
+  background:#151515!important;
+  background-image:none!important;
+}
+#welcomeScreen > *,
+#welcomeScreen .trux-home-mark,
+#welcomeScreen .trux-home-v2-mark,
+body.home-active .welcome,
+body.home-active .hero,
+body.home-active .welcome-title,
+body.home-active .animated-sub{
+  display:none!important;
+  visibility:hidden!important;
+  opacity:0!important;
+  width:0!important;
+  height:0!important;
+  max-width:0!important;
+  max-height:0!important;
+  overflow:hidden!important;
+  pointer-events:none!important;
+}
 </style>
 </body>
 </html>
