@@ -6551,6 +6551,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       return {
         speak:  w('<path d="M11 5 6.5 9H4v6h2.5L11 19V5Z"/><path d="M15.5 9.2a4 4 0 0 1 0 5.6M18 6.5a7.5 7.5 0 0 1 0 11"/>'),
         copy:   w('<rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M15 6.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h.5"/>'),
+        edit:   w('<path d="m4.5 16.8-.9 3.6 3.6-.9L18.7 8a2.2 2.2 0 0 0-3.1-3.1L4.5 16.8Z"/><path d="m14.5 6.5 3 3"/>'),
         pin:    w('<path d="M7 4.5h10v15l-5-3.8-5 3.8v-15Z"/>'),
         redo:   w('<path d="M20 11a8 8 0 1 0-2.6 5.9"/><path d="M20 4.5V11h-6"/>'),
         down:   w('<path d="M12 4v11m0 0-4-4m4 4 4-4M5 19h14"/>'),
@@ -6919,6 +6920,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     function finalizeResponse(id, aid, text, prompt, voice, streamer, sources) {
       let b = getEl(id);
       const responseRow = b?.closest(".row");
+      dismissThinkingPanel(responseRow);
       const codingTurn = workspaceMode === "coding";
       const durationMs = responseRow?._startedAt
         ? Math.max(0, Date.now() - responseRow._startedAt)
@@ -6964,9 +6966,10 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         a.innerHTML = "";
         let readBtn = document.createElement("button"); readBtn.className = "act"; readBtn.title = "Read aloud"; readBtn.innerHTML = ICON.speak + "Read"; readBtn.onclick = () => speakText(text);
         let copyBtn = document.createElement("button"); copyBtn.className = "act"; copyBtn.title = "Copy answer"; copyBtn.innerHTML = ICON.copy + "Copy"; copyBtn.onclick = () => copyTextMessage(text, copyBtn);
+        let editBtn = document.createElement("button"); editBtn.className = "act"; editBtn.title = "Edit prompt"; editBtn.innerHTML = ICON.edit + "Edit"; editBtn.onclick = () => editPromptFromAssistantRow(responseRow);
         let pinBtn = document.createElement("button"); pinBtn.className = "act"; pinBtn.title = "Pin to insights"; pinBtn.innerHTML = ICON.pin + "Pin"; pinBtn.onclick = () => pinInsight(text);
         let regenBtn = document.createElement("button"); regenBtn.className = "act"; regenBtn.title = "Regenerate this answer"; regenBtn.innerHTML = ICON.redo + "Retry"; regenBtn.onclick = () => regenerateLast();
-        a.append(readBtn, copyBtn, pinBtn, regenBtn);
+        a.append(readBtn, copyBtn, editBtn, pinBtn, regenBtn);
       }
 
       isGenerating = false; activeAbortController = null; getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>'; getEl("actionBtn").classList.remove("stop"); handleInputChange();
@@ -7725,6 +7728,66 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       button.setAttribute("aria-expanded", String(expanded));
     }
 
+    function dismissThinkingPanel(row) {
+      const panel = row?.querySelector?.(".trux-thinking-panel");
+      if (!panel) return;
+      panel.classList.add("thinking-dismissed");
+      panel.setAttribute("aria-hidden", "true");
+      setTimeout(() => panel.remove(), 140);
+    }
+
+    function getAssistantTurnUserRow(responseRow) {
+      if (!responseRow) return null;
+      let userRow = responseRow.previousElementSibling;
+      if (userRow?.classList.contains("user-row")) return userRow;
+      const rows = getActiveChatContainer()?.querySelectorAll(".row.user-row") || [];
+      return rows[rows.length - 1] || null;
+    }
+
+    function editPromptFromAssistantRow(responseRow) {
+      if (isGenerating) return toast("Stop the current generation first.", "err");
+      const session = chatSessions[currentChatId];
+      const userRow = getAssistantTurnUserRow(responseRow);
+      if (!userRow || !session?.messages) return toast("The original prompt is unavailable.", "err");
+
+      const index = findStoppedMessageIndex(userRow, userRow.querySelector(".user-bubble")?.textContent || "");
+      if (index < 0) return toast("The original prompt is unavailable.", "err");
+
+      const promptText = String(session.messages[index]?.text || "");
+      session.messages.splice(index, 1);
+      if (session.messages[index]?.role === "trux") session.messages.splice(index, 1);
+      saveChatSessions();
+
+      responseRow.remove();
+      userRow.remove();
+
+      const input = getEl("promptInput");
+      input.value = promptText;
+      input.focus();
+      handleInputChange();
+    }
+
+    function appendAssistantActions(actions, text, responseRow) {
+      if (!actions) return;
+      actions.innerHTML = "";
+
+      if (String(text || "").trim()) {
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "act";
+        copyBtn.title = "Copy answer";
+        copyBtn.innerHTML = ICON.copy + "Copy";
+        copyBtn.onclick = () => copyTextMessage(String(text), copyBtn);
+        actions.appendChild(copyBtn);
+      }
+
+      const editBtn = document.createElement("button");
+      editBtn.className = "act";
+      editBtn.title = "Edit prompt";
+      editBtn.innerHTML = ICON.edit + "Edit";
+      editBtn.onclick = () => editPromptFromAssistantRow(responseRow);
+      actions.appendChild(editBtn);
+    }
+
     function setThinkingStatus(statusId, text) {
       const el = getEl(statusId);
       if (!el) return;
@@ -8027,6 +8090,8 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           if (activeStreamer) return activeStreamer;
           let bubble = getEl(id);
           if (!bubble) return null;
+          const responseRow = bubble.closest(".row");
+          dismissThinkingPanel(responseRow);
           bubble.classList.remove("thinking");
           activeStreamer = createStreamRenderer(bubble);
           return activeStreamer;
@@ -8390,8 +8455,15 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     function markGenerationStopped(row, id, sid, tsid) {
       if(row?._elapsedTimer) clearInterval(row._elapsedTimer);
       hideToolStatus(tsid);
+      dismissThinkingPanel(row);
 
       const bubble = getEl(id);
+      const responseText = bubble
+        ? String(bubble.innerText || "")
+            .replace(/Generation stopped\.?$/i, "")
+            .trim()
+        : "";
+
       if(bubble){
         const wasThinking = bubble.classList.contains("thinking");
         bubble.querySelectorAll(".stream-caret").forEach(el => el.remove());
@@ -8406,6 +8478,9 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           bubble.appendChild(stopLine);
         }
       }
+
+      const actions = row?.querySelector?.(".actions");
+      appendAssistantActions(actions, responseText, row);
       markPromptMessageStopped(row);
     }
 
@@ -9296,6 +9371,136 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     .trux-thinking-orbit i,
     .trux-thinking-copy .status-msg .thinking-status-line.latest,
     .trux-thinking-copy .status-msg .thinking-status-line.latest::after{
+      animation-duration:.001ms!important;
+      animation-iteration-count:1!important;
+    }
+  }
+</style>
+
+<style id="trux-thinking-animation-20261005-fix">
+  .trux-thinking-panel{
+    transition:opacity .16s ease,transform .16s ease,max-height .16s ease,margin .16s ease;
+    max-height:180px;
+  }
+  .trux-thinking-panel.thinking-dismissed{
+    opacity:0!important;
+    transform:translateY(-4px)!important;
+    max-height:0!important;
+    overflow:hidden!important;
+    margin-bottom:0!important;
+    pointer-events:none!important;
+  }
+
+  .trux-thinking-logo{
+    position:relative!important;
+    width:30px!important;
+    height:30px!important;
+    flex:0 0 30px!important;
+    display:grid!important;
+    place-items:center!important;
+    border-radius:50%!important;
+    overflow:visible!important;
+    isolation:isolate!important;
+    background:transparent!important;
+  }
+  .trux-thinking-logo::before,
+  .trux-thinking-logo::after{
+    content:""!important;
+    position:absolute!important;
+    left:50%!important;
+    top:50%!important;
+    border-radius:50%!important;
+    pointer-events:none!important;
+    transform:translate(-50%,-50%) scale(.55)!important;
+    opacity:0!important;
+  }
+  .trux-thinking-logo::before{
+    width:27px!important;
+    height:27px!important;
+    border:1px solid var(--acc-line)!important;
+    box-shadow:0 0 14px rgba(109,131,255,.26)!important;
+    animation:truxRhythmCircle 3.05s cubic-bezier(.22,.76,.28,1) infinite!important;
+  }
+  .trux-thinking-logo::after{
+    width:39px!important;
+    height:39px!important;
+    border:1px solid rgba(176,124,255,.20)!important;
+    box-shadow:0 0 22px rgba(176,124,255,.14)!important;
+    animation:truxRhythmCircleOuter 3.05s cubic-bezier(.22,.76,.28,1) infinite!important;
+  }
+  .trux-thinking-logo img{
+    position:relative!important;
+    z-index:3!important;
+    width:22px!important;
+    height:22px!important;
+    object-fit:contain!important;
+    border-radius:50%!important;
+    background:transparent!important;
+    box-shadow:0 0 16px rgba(109,131,255,.24)!important;
+    filter:saturate(.84) brightness(1.06)!important;
+    transform-origin:50% 78%!important;
+    animation:truxRhythmLogo 3.05s cubic-bezier(.22,.86,.22,1) infinite!important;
+    will-change:transform,opacity,filter!important;
+  }
+
+  @keyframes truxRhythmLogo{
+    0%,100%{transform:translate3d(0,1px,0) rotate(0deg) scale(.92);opacity:.74}
+    7%{transform:translate3d(0,-5px,0) rotate(28deg) scale(1.05);opacity:1}
+    13%{transform:translate3d(1px,-1px,0) rotate(64deg) scale(1);opacity:.98}
+    20%{transform:translate3d(0,1px,0) rotate(95deg) scale(.95);opacity:.82}
+    33%{transform:translate3d(0,1px,0) rotate(95deg) scale(.95);opacity:.72}
+    40%{transform:translate3d(0,-3px,0) rotate(125deg) scale(1.02);opacity:.98}
+    47%{transform:translate3d(0,0,0) rotate(160deg) scale(.97);opacity:.88}
+    58%,100%{transform:translate3d(0,1px,0) rotate(160deg) scale(.93);opacity:.65}
+  }
+
+  @keyframes truxRhythmCircle{
+    0%,18%{transform:translate(-50%,-50%) scale(.55);opacity:0}
+    7%{transform:translate(-50%,-50%) scale(.82);opacity:.72}
+    14%{transform:translate(-50%,-50%) scale(1.06);opacity:.32}
+    19%,100%{transform:translate(-50%,-50%) scale(1.22);opacity:0}
+  }
+
+  @keyframes truxRhythmCircleOuter{
+    0%,35%{transform:translate(-50%,-50%) scale(.58);opacity:0}
+    41%{transform:translate(-50%,-50%) scale(.82);opacity:.52}
+    49%{transform:translate(-50%,-50%) scale(1.08);opacity:.18}
+    56%,100%{transform:translate(-50%,-50%) scale(1.22);opacity:0}
+  }
+
+  .trux-thinking-copy .status-msg .thinking-status-line.latest{
+    display:inline-block!important;
+    max-width:100%!important;
+    color:#a5a5aa!important;
+    background:linear-gradient(105deg,#6f7076 0%,#a7a8ad 17%,#efeff2 34%,#8b8c92 51%,#c6c7cb 68%,#717278 84%)!important;
+    background-size:260% 100%!important;
+    background-clip:text!important;
+    -webkit-background-clip:text!important;
+    -webkit-text-fill-color:transparent!important;
+    animation:truxRhythmText 3.05s ease-in-out infinite!important;
+    will-change:transform,opacity,background-position,letter-spacing!important;
+  }
+  .trux-thinking-copy .status-msg .thinking-status-line.latest::after{
+    content:""!important;
+    display:inline-block!important;
+    width:0!important;
+  }
+
+  @keyframes truxRhythmText{
+    0%,100%{transform:translateX(0);opacity:.72;background-position:180% 0;letter-spacing:0}
+    8%{transform:translateX(1px);opacity:1;background-position:52% 0;letter-spacing:.005em}
+    16%{transform:translateX(2px);opacity:.94;background-position:-28% 0;letter-spacing:.002em}
+    25%{transform:translateX(0);opacity:.76;background-position:-28% 0;letter-spacing:0}
+    39%{transform:translateX(0);opacity:.70;background-position:180% 0;letter-spacing:0}
+    47%{transform:translateX(1px);opacity:.96;background-position:42% 0;letter-spacing:.004em}
+    55%,100%{transform:translateX(0);opacity:.74;background-position:-25% 0;letter-spacing:0}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    .trux-thinking-logo::before,
+    .trux-thinking-logo::after,
+    .trux-thinking-logo img,
+    .trux-thinking-copy .status-msg .thinking-status-line.latest{
       animation-duration:.001ms!important;
       animation-iteration-count:1!important;
     }
