@@ -299,21 +299,38 @@ function sanitizeGeminiSchema(value, fallbackType = 'string') {
   // Never pass Composio's richer metadata (examples, human_* labels, defaults,
   // internal UI fields, JSON-Schema refs, etc.) to Vertex unchanged.
   if (Array.isArray(value.anyOf) && value.anyOf.length) {
-    // Vertex/Gemini requires anyOf/any_of to be the only field on that
-    // schema node. Do not combine it with description, type, nullable, etc.
     return {
-      anyOf: value.anyOf.map(v => sanitizeGeminiSchema(v))
+      anyOf: value.anyOf
+        .filter(v => v && typeof v === 'object')
+        .map(v => sanitizeGeminiSchema(v))
+        .filter(v => v && typeof v === 'object')
     };
   }
 
   const out = {};
 
-  if (value.type) out.type = String(value.type);
+  // Composio/JSON-Schema may encode a union as type: ["string","null"].
+  // Vertex's OpenAPI-style Schema expects a single type plus nullable.
+  if (Array.isArray(value.type)) {
+    const types = value.type.map(v => String(v || '').trim().toLowerCase()).filter(Boolean);
+    const nonNullType = types.find(v => v !== 'null');
+    if (nonNullType) out.type = nonNullType;
+    if (types.includes('null')) out.nullable = true;
+  } else if (value.type) {
+    out.type = String(value.type).trim().toLowerCase();
+  }
+
   if (value.nullable != null) out.nullable = !!value.nullable;
   if (value.description) out.description = String(value.description);
   if (value.format) out.format = String(value.format);
 
-  if (Array.isArray(value.enum)) out.enum = value.enum.map(v => String(v));
+  // Preserve enum scalar types. Converting numbers/booleans to strings can
+  // make an otherwise valid function schema incompatible with Vertex.
+  if (Array.isArray(value.enum)) {
+    out.enum = value.enum
+      .filter(v => v == null || ['string','number','boolean'].includes(typeof v))
+      .slice(0, 256);
+  }
 
   if (value.items && typeof value.items === 'object') {
     out.items = sanitizeGeminiSchema(value.items);
