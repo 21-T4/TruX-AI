@@ -3312,23 +3312,11 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
             <section id="truxCodeWorkspace" class="trux-code-v2" aria-label="TruX-Code workspace">
   <div class="trux-code-v2-inner">
     <div class="trux-code-v2-mark" aria-hidden="true">
-      <svg viewBox="0 0 120 120">
-        <defs>
-          <linearGradient id="truxMetalCode" x1="8%" y1="8%" x2="92%" y2="92%">
-            <stop offset="0" stop-color="#666"/>
-            <stop offset="38%" stop-color="#a9a9a9"/>
-            <stop offset="53%" stop-color="#ededed"/>
-            <stop offset="70%" stop-color="#8b8b8b"/>
-            <stop offset="100%" stop-color="#4f4f4f"/>
-          </linearGradient>
-        </defs>
-        <path d="M25 27 C42 30 61 42 94 91" fill="none" stroke="url(#truxMetalCode)" stroke-width="10" stroke-linecap="round"/>
-        <path d="M95 27 C78 30 59 42 26 91" fill="none" stroke="url(#truxMetalCode)" stroke-width="10" stroke-linecap="round"/>
-      </svg>
+      <img src="/icon-grey.png" alt="" class="trux-code-logo" decoding="async">
     </div>
     <div class="trux-code-v2-kicker">TRUX CODE</div>
-    <h1>Ready to build.</h1>
-    <p id="truxCodePulseText">Bring a task. I’ll trace the context and make the change.</p>
+    <h1>Let's start Coding</h1>
+    <p id="truxCodePulseText">Ready when you are.</p>
     <div class="trux-code-v2-meta">
       <span>Deep reasoning</span>
       <span>Live tools</span>
@@ -4256,7 +4244,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       const nextMode = mode || "chat";
       const previousMode = workspaceMode;
       const modeChanged = nextMode !== previousMode || !!document.body.dataset.mediaMode;
-      const hardRefresh = options.reload === true;
+      const preserveSession = options.preserveSession === true;
 
       closeAttachmentMenu(); closeModelDropdown();
 
@@ -4265,35 +4253,32 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         stopToolStatusTyping();
         activeStreamer?.cancel(); activeStreamer = null;
         isGenerating = false;
+        generationStopRequested = false;
+        if(typeof clearHomeGreetingTimers === "function") clearHomeGreetingTimers();
         document.body.classList.remove("scrolled");
         getEl("scrollDownBtn")?.classList.remove("visible");
         pastedTextBlocks = []; fileAttachments = []; renderFileChips();
 
-        /*
-         * Mode changes are a real workspace navigation event.
-         * The old implementation only swapped DOM containers, which could
-         * leave popup/focus/scroll state from Chat behind in Images, Video or
-         * TruX-Code. Persist the destination for one reload, then start with
-         * a completely fresh workspace.
-         *
-         * Existing chat-history navigation passes {reload:false} so opening
-         * an old chat still works without forcing a full page refresh.
-         */
-        // Chat, TruX-Code, and media workspaces are switched in-place.
-        // Reloading here caused the initial Chat DOM to flash before Code mounted.
-        // Soft reset for internal navigation such as opening saved history.
+        // Switching between Chat and TruX-Code is a workspace boundary.
+        // It always starts a fresh session. Only history navigation opts into
+        // preserving the existing session.
+        if(!preserveSession) {
+          currentChatId = null;
+          incognitoMode = false;
+        }
+
         const chatView = getEl("chatContainer");
         const codeView = getEl("codeChatContainer");
         if(chatView) { chatView.style.display = "none"; chatView.innerHTML = ""; }
         if(codeView) { codeView.style.display = "none"; codeView.innerHTML = ""; }
         getEl("truxCodeWorkspace")?.classList.add("code-workspace-dismissed");
-        getEl("welcomeScreen")?.style.setProperty("display", "none");
+        getEl("welcomeScreen")?.style.setProperty("display", "none", "important");
         void document.body.offsetHeight;
       }
 
       workspaceMode = nextMode;
       document.body.dataset.workspaceMode = workspaceMode;
-      if(currentChatId && chatSessions[currentChatId]) chatSessions[currentChatId].mode = workspaceMode;
+      if(currentChatId && chatSessions[currentChatId] && preserveSession) chatSessions[currentChatId].mode = workspaceMode;
 
       const isCoding = workspaceMode === "coding";
       const isMedia = workspaceMode === "image" || workspaceMode === "video";
@@ -7711,7 +7696,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       currentChatId = id;
        isGenerating = !!chatSessions[id].activeBackgroundJobId;
        generationStopRequested = false;
-      setWorkspaceMode(chatSessions[id].mode || "chat", {reload:false});
+      setWorkspaceMode(chatSessions[id].mode || "chat", {reload:false,preserveSession:true});
       const welcome = getEl("welcomeScreen");
       if(welcome) welcome.style.display = "none";
       getEl("chatContainer").innerHTML = "";
@@ -7807,8 +7792,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       renderSidebar();
       updateAllUsageUI();
       handleInputChange();
-      setWorkspaceMode(startupWorkspaceMode, {reload:false});
-      startHomeGreetingPulse();
+      setWorkspaceMode(startupWorkspaceMode, {reload:false,preserveSession:false});
       startTruxCodeIdlePulse();
     } catch (startupError) {
       window.__truxRecoverBoot(startupError);
@@ -8475,5 +8459,107 @@ body:not(.coding-workspace) .trux-code-legacy{display:none!important}
   display:block!important;border:0!important;box-shadow:none!important;background:transparent!important;
 }
 </style>
+<style id="trux-final-ui-20261006b">
+/* Chat has no landing/home artwork. */
+#welcomeScreen{display:none!important;visibility:hidden!important;pointer-events:none!important}
+
+/* Hard visual separation: never show the opposite workspace container. */
+body:not(.coding-workspace) #truxCodeWorkspace,
+body:not(.coding-workspace) #codeChatContainer{
+  display:none!important;visibility:hidden!important;pointer-events:none!important;
+}
+body.coding-workspace #chatContainer,
+body.coding-workspace #welcomeScreen{
+  display:none!important;visibility:hidden!important;pointer-events:none!important;
+}
+
+/* TruX-Code landing: real icon-grey asset + exact title. */
+.trux-code-v2-mark{
+  position:relative!important;width:104px!important;height:104px!important;
+  margin:0 0 22px!important;display:grid!important;place-items:center!important;
+  background:transparent!important;border:0!important;box-shadow:none!important;
+}
+.trux-code-logo{
+  width:104px!important;height:104px!important;display:block!important;
+  object-fit:contain!important;background:transparent!important;border:0!important;
+  border-radius:0!important;box-shadow:none!important;animation:none!important;filter:none!important;
+}
+.trux-code-v2-mark::after{
+  content:""!important;position:absolute!important;inset:-11px!important;border-radius:50%!important;
+  border:1px solid transparent!important;border-top-color:rgba(255,255,255,.72)!important;
+  border-right-color:rgba(255,255,255,.18)!important;opacity:0!important;
+  pointer-events:none!important;transform:rotate(-35deg)!important;
+  animation:truxCodeRingEveryFive 5s cubic-bezier(.22,.61,.36,1) infinite!important;
+}
+@keyframes truxCodeRingEveryFive{
+  0%,7%{opacity:0;transform:rotate(-35deg)}
+  10%{opacity:.72;transform:rotate(15deg)}
+  28%{opacity:.38;transform:rotate(190deg)}
+  40%{opacity:.10;transform:rotate(325deg)}
+  43%,100%{opacity:0;transform:rotate(325deg)}
+}
+.trux-code-v2-kicker,.trux-code-v2-meta{display:none!important}
+.trux-code-v2 h1{font-size:clamp(30px,5vw,44px)!important;letter-spacing:-.04em!important}
+.trux-code-v2 p{margin-top:8px!important;color:#777!important}
+
+/* Model dropdown: remove the mobile 50% positioning conflict and clamp to viewport. */
+#modelDropdown{
+  left:auto!important;right:auto!important;transform:none!important;
+  width:min(360px,calc(100vw - 20px))!important;
+  max-width:calc(100vw - 20px)!important;
+  box-sizing:border-box!important;overflow-x:hidden!important;
+}
+#modelDropdown .model-item{
+  box-sizing:border-box!important;width:100%!important;min-width:0!important;
+  grid-template-columns:30px minmax(0,1fr) 20px!important;align-items:start!important;
+}
+#modelDropdown .model-info{min-width:0!important;overflow:hidden!important}
+#modelDropdown .model-info b,#modelDropdown .model-info small{
+  min-width:0!important;overflow-wrap:anywhere!important;
+}
+#modelDropdown .thinking-choice{
+  box-sizing:border-box!important;width:100%!important;min-width:0!important;
+  display:grid!important;grid-template-columns:minmax(0,1fr) 20px!important;
+  gap:8px!important;align-items:center!important;
+}
+#modelDropdown .thinking-choice > span:first-child{
+  min-width:0!important;display:flex!important;flex-direction:column!important;
+  gap:2px!important;overflow:hidden!important;
+}
+#modelDropdown .thinking-choice b{display:block!important;line-height:1.2!important}
+#modelDropdown .thinking-choice small{
+  display:block!important;color:#777!important;line-height:1.25!important;
+  overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
+}
+#modelDropdown .thinking-check{
+  display:block!important;width:20px!important;text-align:center!important;
+}
+</style>
+<script>
+/* Position the model menu from the actual button; important inline values beat all legacy/mobile CSS. */
+(function(){
+  window.positionModelDropdown = function(){
+    const dropdown=document.getElementById("modelDropdown");
+    const button=document.getElementById("modelPickerBtn");
+    if(!dropdown || !button || !dropdown.classList.contains("open")) return;
+    const r=button.getBoundingClientRect();
+    const width=Math.min(360,Math.max(260,window.innerWidth-20));
+    const left=Math.min(Math.max(10,r.left),Math.max(10,window.innerWidth-width-10));
+    const maxH=Math.min(540,Math.max(260,window.innerHeight-24));
+    dropdown.style.setProperty("position","fixed","important");
+    dropdown.style.setProperty("width",width+"px","important");
+    dropdown.style.setProperty("max-width","calc(100vw - 20px)","important");
+    dropdown.style.setProperty("max-height",maxH+"px","important");
+    dropdown.style.setProperty("left",left+"px","important");
+    dropdown.style.setProperty("right","auto","important");
+    dropdown.style.setProperty("top","auto","important");
+    dropdown.style.setProperty("bottom",Math.max(12,window.innerHeight-r.top+8)+"px","important");
+    dropdown.style.setProperty("transform","none","important");
+  };
+  window.addEventListener("resize",function(){
+    if(document.getElementById("modelDropdown")?.classList.contains("open")) window.positionModelDropdown();
+  },{passive:true});
+})();
+</script>
 </body>
 </html>
