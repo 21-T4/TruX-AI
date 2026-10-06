@@ -3174,10 +3174,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       <div class="sidebar-header">
         <div class="brand">
           <span class="sidebar-brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 120 120" fill="none">
-              <path d="M25 27 C42 30 61 42 94 91" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>
-              <path d="M95 27 C78 30 59 42 26 91" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>
-            </svg>
+            <img src="/icon-512.png" alt="" decoding="async">
           </span>
           <div class="sidebar-brand-copy"><b>ChatTruX-AI</b><small>Intelligent workspace</small></div>
         </div>
@@ -5144,6 +5141,99 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         `</div>`;
     }
 
+    /* ============================================================
+       ROBUST LATEX PROTECTION
+       Keep LaTeX expressions intact while Markdown is converted.
+       This avoids losing multiline/long equations when paragraphs are
+       split or <br> tags are inserted before KaTeX runs.
+       ============================================================ */
+    function protectTruxMathSegments(source, segments) {
+      const s = String(source);
+      let out = "";
+      let i = 0;
+
+      function isBoundaryChar(ch) {
+        return !ch || /[\\s\\n,.;:!?()\\[\\]{}]/.test(ch);
+      }
+
+      function add(raw) {
+        const token = "\\uE000TRUXMATH" + segments.length + "\\uE001";
+        segments.push(String(raw));
+        return token;
+      }
+
+      while (i < s.length) {
+        // Display math: $$ ... $$
+        if (s.startsWith("$$", i)) {
+          const end = s.indexOf("$$", i + 2);
+          if (end !== -1) {
+            const raw = s.slice(i, end + 2);
+            out += add(raw);
+            i = end + 2;
+            continue;
+          }
+        }
+
+        // Display math: \[ ... \]
+        if (s.startsWith("\\[", i)) {
+          const end = s.indexOf("\\]", i + 2);
+          if (end !== -1) {
+            const raw = s.slice(i, end + 2);
+            out += add(raw);
+            i = end + 2;
+            continue;
+          }
+        }
+
+        // Inline math: \( ... \)
+        if (s.startsWith("\\(", i)) {
+          const end = s.indexOf("\\)", i + 2);
+          if (end !== -1) {
+            const raw = s.slice(i, end + 2);
+            out += add(raw);
+            i = end + 2;
+            continue;
+          }
+        }
+
+        // Single-dollar inline math. Avoid treating obvious currency such as
+        // "$20" or "$5.99" as TeX.
+        if (s[i] === "$" && s[i + 1] !== "$") {
+          let end = i + 1;
+          while (end < s.length) {
+            if (s[end] === "$" && s[end - 1] !== "\\") break;
+            if (s[end] === "\n") { end = -1; break; }
+            end++;
+          }
+          if (end > i + 1 && end < s.length) {
+            const body = s.slice(i + 1, end);
+            const before = i > 0 ? s[i - 1] : "";
+            const after = end + 1 < s.length ? s[end + 1] : "";
+            const looksLikeCurrency = /^\s*\d(?:[\d,.]*)(?:\s*[A-Za-z])?$/.test(body);
+            if (!looksLikeCurrency && (isBoundaryChar(before) || before === "") &&
+                (isBoundaryChar(after) || after === "")) {
+              out += add(s.slice(i, end + 1));
+              i = end + 1;
+              continue;
+            }
+          }
+        }
+
+        out += s[i];
+        i++;
+      }
+      return out;
+    }
+
+    function restoreTruxMathSegments(html, segments) {
+      let out = String(html);
+      segments.forEach((raw, index) => {
+        const token = "\\uE000TRUXMATH" + index + "\\uE001";
+        out = out.split(token).join(escapeHtml(raw));
+      });
+      return out;
+    }
+
     /* Inline markdown, applied to text that is ALREADY html-escaped. */
 
     /* ============================================================
@@ -5299,6 +5389,8 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
       let src = String(t).replace(/\r\n/g, "\n");
       let cards = [];
+      const mathSegments = [];
+      src = protectTruxMathSegments(src, mathSegments);
 
       src = src.replace(/```([\w+#.-]*)[ \t]*\n?([\s\S]*?)```/g, (m, lang, code) => {
         cards.push(buildCodeCard(lang, code, false));
@@ -5412,7 +5504,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       }
 
       flushAll();
-      return out.join("");
+      return restoreTruxMathSegments(out.join(""), mathSegments);
     }
 
     function speakText(t) {
@@ -8272,6 +8364,7 @@ body.incognito-mode .topbar{grid-template-columns:minmax(46px,1fr) auto minmax(4
 .sidebar .brand{display:flex!important;align-items:center!important;gap:11px!important;min-width:0!important;padding:0!important}
 .sidebar-brand-mark{width:34px!important;height:34px!important;display:grid!important;place-items:center!important;flex:0 0 34px!important;color:#9a9893!important}
 .sidebar-brand-mark svg{width:100%!important;height:100%!important;display:block!important}
+.sidebar-brand-mark img{width:100%!important;height:100%!important;display:block!important;object-fit:contain!important;background:transparent!important;border:0!important;box-shadow:none!important;}
 .sidebar-brand-copy{min-width:0!important;display:flex!important;flex-direction:column!important;justify-content:center!important;gap:2px!important;overflow:hidden!important}
 .sidebar-brand-copy b{display:block!important;max-width:100%!important;font-size:16px!important;line-height:1.05!important;font-weight:700!important;letter-spacing:-.025em!important;color:#e8e8e8!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
 .sidebar-brand-copy small{display:block!important;font-size:9px!important;line-height:1.15!important;letter-spacing:.13em!important;text-transform:uppercase!important;color:#686868!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
@@ -8665,5 +8758,20 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
   display:block!important;
 }
 </style>
+<style id="trux-math-safe-20261006">
+.katex-display{max-width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;padding:2px 0!important;scrollbar-width:thin!important}
+.katex{max-width:100%!important}
+</style>
+<script>
+(function(){
+  const oldSchedule=window.scheduleTruxMath;
+  window.scheduleTruxMath=function(root){
+    if(typeof oldSchedule==="function") oldSchedule(root);
+    else if(root) requestAnimationFrame(()=>requestAnimationFrame(()=>window.renderTruxMath?.(root)));
+    // Streaming/final DOM can settle one frame later on long answers.
+    if(root) setTimeout(()=>window.renderTruxMath?.(root),140);
+  };
+})();
+</script>
 </body>
 </html>
