@@ -3155,7 +3155,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     <div class="login-wall-bg"><span></span><span></span><span></span></div>
     <button class="login-wall-close" onclick="closeLoginWall()" title="Close">×</button>
     <div class="login-box">
-      <div class="login-orb">X</div>
+      <div class="login-orb"><img src="/icon-grey.png" alt="TruX"></div>
       <div class="mtitle">Welcome to ChatTruX-AI</div>
       <div class="msub">Sign in to unlock your intelligent workspace — conversations, image generation, and memory, all in one place.</div>
       <button class="login-btn-google" onclick="handleGoogleLogin()">
@@ -3380,11 +3380,10 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       </section>
 
       <section id="welcomeScreen" class="trux-home-v2" aria-label="TruX home">
-        <div class="trux-home-greeting" aria-live="polite">
-          <div class="trux-home-hello">Hello</div>
-          <div class="trux-home-name">I am TruX-AI</div>
-          <div class="trux-home-activity" id="truxHomeActivity">Ready when you are.</div>
+        <div class="trux-home-sequence" aria-live="polite">
+          <div class="trux-home-sequence-text" id="truxHomeSequenceText">Hello</div>
         </div>
+        <img id="truxHomeLogo" class="trux-home-logo" src="/icon-grey.png" alt="TruX" decoding="async" fetchpriority="high" hidden>
       </section>
 
       <div class="chat" id="chatContainer"></div>
@@ -6752,28 +6751,54 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       }
     }
 
-    const TRUX_HOME_ACTIVITY_LINES = [
-      "Thinking clearly.",
-      "Connecting the context.",
-      "Ready to explore.",
-      "Making ideas useful.",
-      "Built for curious minds."
-    ];
-    let truxHomeActivityIndex = 0;
-    let truxHomeActivityTimer = null;
+    let truxHomeGreetingTimers = [];
+    function clearHomeGreetingTimers() {
+      truxHomeGreetingTimers.forEach(id => clearTimeout(id));
+      truxHomeGreetingTimers = [];
+    }
     function startHomeGreetingPulse() {
-      const pulse = () => {
-        const el = getEl("truxHomeActivity");
-        if (!el || !document.body.classList.contains("home-active") || document.body.classList.contains("incognito-mode")) return;
-        const next = TRUX_HOME_ACTIVITY_LINES[truxHomeActivityIndex++ % TRUX_HOME_ACTIVITY_LINES.length];
-        el.classList.remove("trux-home-activity-change");
-        void el.offsetWidth;
-        el.textContent = next;
-        el.classList.add("trux-home-activity-change");
+      clearHomeGreetingTimers();
+      const text = getEl("truxHomeSequenceText");
+      const logo = getEl("truxHomeLogo");
+      if (!text || !logo) return;
+
+      text.hidden = false;
+      text.textContent = "Hello";
+      text.classList.remove("is-visible","is-replacing");
+      logo.hidden = true;
+
+      requestAnimationFrame(() => {
+        if (document.body.classList.contains("home-active")) text.classList.add("is-visible");
+      });
+
+      const schedule = (fn, ms) => {
+        const timer = setTimeout(fn, ms);
+        truxHomeGreetingTimers.push(timer);
+        return timer;
       };
-      if (truxHomeActivityTimer) clearInterval(truxHomeActivityTimer);
-      truxHomeActivityTimer = setInterval(pulse, 2500);
-      pulse();
+
+      schedule(() => {
+        if (!document.body.classList.contains("home-active")) return;
+        text.classList.add("is-replacing");
+        schedule(() => {
+          if (!document.body.classList.contains("home-active")) return;
+          text.textContent = "I am TruX";
+          text.classList.remove("is-replacing");
+          text.classList.add("is-visible");
+        }, 220);
+      }, 2000);
+
+      schedule(() => {
+        if (!document.body.classList.contains("home-active")) return;
+        text.classList.remove("is-visible");
+        text.classList.add("is-replacing");
+        schedule(() => {
+          if (!document.body.classList.contains("home-active")) return;
+          text.hidden = true;
+          logo.hidden = false;
+          text.classList.remove("is-replacing");
+        }, 220);
+      }, 4000);
     }
 
     const TRUX_CODE_IDLE_LINES = [
@@ -6941,19 +6966,19 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       promptInput.value = ""; let img = selectedImageBase64; removeImage(); pastedTextBlocks = []; fileAttachments = []; renderFileChips(); handleInputChange();
 
       const codingTurn = workspaceMode === "coding";
-      let id = "b_" + Date.now(), aid = "a_" + Date.now(), sid = codingTurn ? "s_" + Date.now() : "", row = document.createElement("div");
+      let id = "b_" + Date.now(), aid = "a_" + Date.now(), sid = "s_" + Date.now(), row = document.createElement("div");
       row.className = "row trux-row appear";
-      const tsid = codingTurn ? "ts_" + Date.now() : "";
-      const thid = codingTurn ? "th_" + Date.now() : "";
-      const thinkingMarkup = codingTurn ? `
-        <div class="trux-thinking-panel" id="${thid}">
+      const tsid = "ts_" + Date.now();
+      const thid = "th_" + Date.now();
+      const thinkingMarkup = `
+        <div class="trux-thinking-panel" id="${thid}" data-thinking-visible="true">
           <div class="trux-thinking-bar">
-            <div class="trux-thinking-copy"><span class="trux-thinking-kicker">AI ACTIVITY</span><span class="status-msg" id="${sid}" role="status" aria-live="polite"><span class="thinking-status-line compact">Understanding the request…</span><span class="thinking-status-line full">Understanding the request…</span></span></div>
-            <span class="trux-thinking-elapsed" id="elapsed_${id}">Working for 00:00</span>
-            <button type="button" class="trux-thinking-toggle" onclick="toggleThinkingDetails('${thid}')" aria-expanded="false" aria-label="Expand AI activity" title="Expand AI activity"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>
+            <div class="trux-thinking-copy"><span class="status-msg" id="${sid}" role="status" aria-live="polite"><span class="thinking-status-line compact">Understanding the request…</span><span class="thinking-status-line full">Understanding the request…</span></span></div>
+            <span class="trux-thinking-elapsed ${codingTurn ? "" : "chat-thinking-elapsed"}" id="elapsed_${id}">${codingTurn ? "Working for 00:00" : ""}</span>
+            ${codingTurn ? `<button type="button" class="trux-thinking-toggle" onclick="toggleThinkingDetails('${thid}')" aria-expanded="false" aria-label="Expand AI activity" title="Expand AI activity"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>` : ""}
           </div>
           <div class="trux-thinking-details" id="${tsid}" hidden></div>
-        </div>` : "";
+        </div>`;
       row.innerHTML = `<div class="trux-response-stack">
         ${thinkingMarkup}
         <div class="bubble trux-bubble ${codingTurn ? "thinking" : ""}" id="${id}"></div>
@@ -7927,7 +7952,7 @@ body{
 #imageWorkspace,#videoWorkspace,#truxCodeWorkspace,#welcomeScreen,#chatContainer,#codeChatContainer{
   min-width:0!important;box-sizing:border-box!important;
 }
-body:not(.coding-workspace):not([data-media-mode="image"]):not([data-media-mode="video"]):not(.plugins-page-active) #welcomeScreen{
+body.home-active:not(.coding-workspace):not([data-media-mode="image"]):not([data-media-mode="video"]):not(.plugins-page-active) #welcomeScreen{
   display:flex!important;
 }
 body:not(.home-active) #welcomeScreen{display:none!important}
@@ -8305,5 +8330,150 @@ body:not(.coding-workspace) .coding-only,
 body:not(.coding-workspace) .trux-code-legacy{display:none!important}
 </style>
 
+<style id="trux-final-ui-20261006">
+/* Exact TruX startup sequence: Hello 2s -> I am TruX 2s -> icon-grey. */
+.trux-home-v2{
+  background:#151515!important;
+  background-image:none!important;
+  isolation:isolate!important;
+}
+.trux-home-v2::before{display:none!important}
+.trux-home-sequence{
+  position:absolute!important;
+  inset:0!important;
+  display:grid!important;
+  place-items:center!important;
+  pointer-events:none!important;
+  z-index:2!important;
+}
+.trux-home-sequence-text{
+  margin:0!important;
+  padding:0!important;
+  color:#9a9a9a!important;
+  font-family:var(--font-disp)!important;
+  font-size:clamp(28px,5vw,44px)!important;
+  font-weight:600!important;
+  line-height:1!important;
+  letter-spacing:-.045em!important;
+  text-align:center!important;
+  white-space:nowrap!important;
+  opacity:0!important;
+  transform:translateY(4px)!important;
+  transition:opacity .22s ease,transform .22s ease!important;
+}
+.trux-home-sequence-text.is-visible{opacity:1!important;transform:none!important}
+.trux-home-sequence-text.is-replacing{opacity:0!important;transform:translateY(-3px)!important}
+.trux-home-logo{
+  position:absolute!important;
+  inset:0!important;
+  width:min(108px,18vw)!important;
+  height:min(108px,18vw)!important;
+  max-width:108px!important;
+  max-height:108px!important;
+  margin:auto!important;
+  display:block!important;
+  object-fit:contain!important;
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  filter:none!important;
+  animation:none!important;
+  transform:none!important;
+  opacity:1!important;
+}
+.trux-home-logo[hidden]{display:none!important}
+
+/* Thinking is floating text only. Remove all legacy pill/card treatment. */
+.trux-thinking-panel,
+.trux-thinking-bar,
+.trux-thinking-copy,
+.trux-thinking-details,
+.trux-thinking-elapsed,
+.trux-thinking-panel .thinking-container{
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+.trux-thinking-panel{
+  width:100%!important;
+  margin:2px 0 7px!important;
+  padding:0!important;
+}
+.trux-thinking-bar{
+  min-height:22px!important;
+  width:100%!important;
+  gap:9px!important;
+  padding:0!important;
+}
+.trux-thinking-copy{
+  flex:1 1 auto!important;
+  min-width:0!important;
+  padding:0!important;
+  margin:0!important;
+}
+.status-msg{
+  min-height:0!important;
+  display:block!important;
+  width:auto!important;
+  max-width:100%!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:transparent!important;
+  font:560 13px/1.35 var(--font-body)!important;
+  letter-spacing:-.012em!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  white-space:nowrap!important;
+  box-shadow:none!important;
+}
+.thinking-status-line{margin:0!important;padding:0!important}
+.chat-thinking-elapsed{display:none!important}
+.trux-thinking-elapsed{flex:0 0 auto!important;min-width:0!important;padding:0!important;margin:0!important;font-size:9px!important}
+.trux-thinking-details{
+  width:min(760px,100%)!important;
+  margin:3px 0 0!important;
+  padding:3px 0 4px 13px!important;
+}
+.trux-thinking-toggle{
+  width:20px!important;height:20px!important;margin:0!important;padding:0!important;
+  border:0!important;background:transparent!important;box-shadow:none!important;
+}
+.trux-thinking-panel.thinking-dismissed{display:none!important}
+
+/* Restore the small blue decorative lines flanking the selected model name. */
+#modelPickerBtn{
+  position:relative!important;
+  justify-content:center!important;
+  padding-left:34px!important;
+  padding-right:34px!important;
+}
+#modelPickerBtn::before,#modelPickerBtn::after{
+  content:""!important;
+  position:absolute!important;
+  top:50%!important;
+  width:13px!important;
+  height:1px!important;
+  margin:0!important;
+  background:#6d83ff!important;
+  opacity:.9!important;
+  transform:translateY(-50%)!important;
+  pointer-events:none!important;
+}
+#modelPickerBtn::before{left:11px!important}
+#modelPickerBtn::after{right:11px!important}
+
+/* Do not render a text X as the sign-in emblem; use the real repository logo. */
+.login-orb::after{display:none!important;content:none!important}
+.login-orb{overflow:hidden!important;padding:0!important}
+.login-orb img{
+  width:44px!important;height:44px!important;object-fit:contain!important;
+  display:block!important;border:0!important;box-shadow:none!important;background:transparent!important;
+}
+</style>
 </body>
 </html>
