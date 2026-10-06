@@ -3271,6 +3271,10 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           <button type="button" class="trux-mode-btn active" data-trux-mode="chat" onclick="setWorkspaceMode('chat')">Chat</button>
           <button type="button" class="trux-mode-btn" data-trux-mode="coding" onclick="setWorkspaceMode('coding')">TruX-Code</button>
         </div>
+        <div class="trux-incognito-top" id="truxIncognitoTop" aria-label="Incognito chat">
+          <span class="trux-incognito-dot"></span>
+          <span>Incognito</span>
+        </div>
 
         <div class="topbar-right">
           <button type="button" class="top-profile-btn" id="topProfileBtn" onclick="handleAuthAction()" title="Profile" aria-label="Open profile">
@@ -3375,7 +3379,13 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         </div>
       </section>
 
-      <section id="welcomeScreen" class="trux-home-v2" aria-label="TruX home"></section>
+      <section id="welcomeScreen" class="trux-home-v2" aria-label="TruX home">
+        <div class="trux-home-greeting" aria-live="polite">
+          <div class="trux-home-hello">Hello</div>
+          <div class="trux-home-name">I am TruX-AI</div>
+          <div class="trux-home-activity" id="truxHomeActivity">Ready when you are.</div>
+        </div>
+      </section>
 
       <div class="chat" id="chatContainer"></div>
       <div class="chat" id="codeChatContainer"></div>
@@ -4778,8 +4788,8 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       cloudChatSyncTimer = setTimeout(run, 1400);
     }
     function saveChatSessions() {
+      if(incognitoMode || (currentChatId && chatSessions[currentChatId]?.incognito)) return;
       queueSidebarSync();
-      if(currentChatId && chatSessions[currentChatId]?.incognito) return;
       try {
         store.setItem("trux_chats", JSON.stringify(chatSessions));
         syncChatsToCloud();
@@ -4822,10 +4832,72 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       }
     }
 
+    function launchIncognitoChat() {
+      /* Incognito is a memory-only Chat workspace.
+         It intentionally never enters localStorage/cloud sync and is removed on exit. */
+      if (isGenerating) {
+        try { activeAbortController?.abort(); } catch {}
+        try { activeStreamer?.cancel(); } catch {}
+      }
+
+      incognitoMode = true;
+      workspaceMode = "chat";
+      currentChatId = "incognito_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+
+      // Keep this turn completely outside persistent chat state.
+      chatSessions[currentChatId] = {
+        title: "Incognito",
+        mode: "chat",
+        incognito: true,
+        messages: []
+      };
+
+      activeAbortController = null;
+      activeStreamer = null;
+      isGenerating = false;
+      generationStopRequested = false;
+      pastedTextBlocks = [];
+      fileAttachments = [];
+      selectedImageBase64 = null;
+
+      closeSidebar();
+      closeAttachmentMenu();
+      closeModelDropdown();
+      stopToolStatusTyping();
+
+      document.body.classList.remove("plugins-page-active","coding-workspace","home-active");
+      document.body.classList.add("chat-session-active","incognito-mode");
+      document.body.dataset.workspaceMode = "chat";
+      document.body.removeAttribute("data-media-mode");
+
+      const chat = getEl("chatContainer");
+      const code = getEl("codeChatContainer");
+      if (chat) { chat.innerHTML = ""; chat.style.display = "block"; }
+      if (code) { code.innerHTML = ""; code.style.display = "none"; }
+      getEl("truxCodeWorkspace")?.classList.add("code-workspace-dismissed");
+      getEl("welcomeScreen")?.style.setProperty("display","none","important");
+
+      const input = getEl("promptInput");
+      if (input) {
+        input.value = "";
+        input.placeholder = "Ask privately…";
+      }
+
+      const incognitoNotice = document.createElement("div");
+      incognitoNotice.className = "incognito-session-banner";
+      incognitoNotice.innerHTML = "<span class=\"incognito-session-dot\"></span><span><b>Incognito</b><small>This chat stays in memory only and is not saved to history.</small></span>";
+      chat.appendChild(incognitoNotice);
+      chat.scrollTop = chat.scrollHeight;
+
+      renderFileChips();
+      handleInputChange();
+      renderSidebar();
+    }
+
     function startNewChat() {
       if(currentChatId && chatSessions[currentChatId]?.incognito) delete chatSessions[currentChatId];
       incognitoMode = false;
-      document.body.classList.remove("plugins-page-active");
+      document.body.classList.remove("plugins-page-active","incognito-mode");
       closeSidebar();
       closeAttachmentMenu();
       closeModelDropdown();
@@ -4843,6 +4915,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       getEl("codeChatContainer").innerHTML = ""; getEl("codeChatContainer").style.display = "none";
       getEl("truxCodeWorkspace")?.classList.remove("code-workspace-dismissed");
       getEl("welcomeScreen").style.display = "flex"; currentChatId = null; renderSidebar();
+      startHomeGreetingPulse();
       pastedTextBlocks = []; fileAttachments = []; renderFileChips();
       isScrolledUp = false; getEl("scrollDownBtn").classList.remove("visible");
       document.body.classList.remove("scrolled");
@@ -6679,6 +6752,30 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       }
     }
 
+    const TRUX_HOME_ACTIVITY_LINES = [
+      "Thinking clearly.",
+      "Connecting the context.",
+      "Ready to explore.",
+      "Making ideas useful.",
+      "Built for curious minds."
+    ];
+    let truxHomeActivityIndex = 0;
+    let truxHomeActivityTimer = null;
+    function startHomeGreetingPulse() {
+      const pulse = () => {
+        const el = getEl("truxHomeActivity");
+        if (!el || !document.body.classList.contains("home-active") || document.body.classList.contains("incognito-mode")) return;
+        const next = TRUX_HOME_ACTIVITY_LINES[truxHomeActivityIndex++ % TRUX_HOME_ACTIVITY_LINES.length];
+        el.classList.remove("trux-home-activity-change");
+        void el.offsetWidth;
+        el.textContent = next;
+        el.classList.add("trux-home-activity-change");
+      };
+      if (truxHomeActivityTimer) clearInterval(truxHomeActivityTimer);
+      truxHomeActivityTimer = setInterval(pulse, 2500);
+      pulse();
+    }
+
     const TRUX_CODE_IDLE_LINES = [
       "Ready to shape the next change.",
       "Bring the bug; trace the path.",
@@ -6912,7 +7009,9 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           const chatHeaders = { "Content-Type": "application/json", "Accept": "text/event-stream" };
           if (authToken) chatHeaders.Authorization = "Bearer " + authToken;
           let res = await fetch("/api/chat", {
-          method: "POST", headers: chatHeaders,
+          method: "POST",
+          cache: incognitoMode ? "no-store" : "default",
+          headers: chatHeaders,
           signal: activeAbortController.signal,
           body: JSON.stringify(requestBody)
         });
@@ -7684,6 +7783,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       updateAllUsageUI();
       handleInputChange();
       setWorkspaceMode(startupWorkspaceMode, {reload:false});
+      startHomeGreetingPulse();
       startTruxCodeIdlePulse();
     } catch (startupError) {
       window.__truxRecoverBoot(startupError);
@@ -8041,7 +8141,6 @@ body.home-active #welcomeScreen{
   background:#151515!important;
   background-image:none!important;
 }
-#welcomeScreen > *,
 #welcomeScreen .trux-home-mark,
 #welcomeScreen .trux-home-v2-mark,
 body.home-active .welcome,
@@ -8061,6 +8160,70 @@ body.home-active .animated-sub{
 </style>
 
 <style id="trux-final-ui-20261005">
+/* Home greeting — centered, quiet grey, no logo/artwork. */
+.trux-home-greeting{
+  position:relative;z-index:2;width:min(760px,calc(100% - 32px));
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+}
+.trux-home-hello,.trux-home-name,.trux-home-activity{
+  color:#999!important;font-weight:600;letter-spacing:-.035em;
+}
+.trux-home-hello{
+  font-size:clamp(28px,5vw,44px);line-height:1.05;
+  animation:truxHomeGreetingIn .8s cubic-bezier(.22,.61,.36,1) both;
+}
+.trux-home-name{
+  margin-top:8px;font-size:clamp(22px,4vw,34px);line-height:1.1;
+  color:#b0b0b0!important;
+  animation:truxHomeGreetingIn .8s .72s cubic-bezier(.22,.61,.36,1) both;
+}
+.trux-home-activity{
+  margin-top:15px;min-height:1.4em;
+  font-size:clamp(12px,1.8vw,15px);line-height:1.4;color:#747474!important;
+  letter-spacing:.01em;font-weight:500;
+  opacity:0;animation:truxHomeActivityIn .8s 1.48s cubic-bezier(.22,.61,.36,1) forwards;
+}
+@keyframes truxHomeGreetingIn{
+  from{opacity:0;transform:translateY(12px);filter:blur(4px)}
+  to{opacity:1;transform:translateY(0);filter:blur(0)}
+}
+@keyframes truxHomeActivityIn{
+  from{opacity:0;transform:translateY(9px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.trux-home-activity.trux-home-activity-change{
+  animation:truxHomeActivityChange .55s cubic-bezier(.22,.61,.36,1) both;
+}
+@keyframes truxHomeActivityChange{
+  0%{opacity:.1;transform:translateY(6px);filter:blur(2px)}
+  100%{opacity:1;transform:translateY(0);filter:blur(0)}
+}
+
+/* Incognito — same app shell/layout, but visibly isolated and never listed in history. */
+.trux-incognito-top{
+  display:none;align-items:center;justify-content:center;gap:7px;
+  width:max-content;height:36px;padding:0 13px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.08);background:#1d1d1d;color:#a2a2a2;
+  font-size:12px;font-weight:650;letter-spacing:.01em;
+}
+.trux-incognito-dot{
+  width:6px;height:6px;border-radius:50%;background:#8b8b8b;display:block;
+  box-shadow:0 0 8px rgba(255,255,255,.13);
+}
+body.incognito-mode #truxModeSwitch{display:none!important}
+body.incognito-mode #truxIncognitoTop{display:flex!important}
+body.incognito-mode .topbar{grid-template-columns:minmax(46px,1fr) auto minmax(46px,1fr)!important}
+.incognito-session-banner{
+  position:relative;display:flex;align-items:center;gap:9px;
+  width:fit-content;max-width:min(100%,740px);margin:12px auto 2px;padding:9px 12px;
+  color:#8a8a8a;font-size:11px;line-height:1.25;
+}
+.incognito-session-dot{width:6px;height:6px;border-radius:50%;background:#8b8b8b;flex:0 0 6px}
+.incognito-session-banner span:last-child{display:flex;flex-direction:column;gap:2px}
+.incognito-session-banner b{color:#b8b8b8;font-size:11px;font-weight:700}
+.incognito-session-banner small{color:#626262;font-size:10px}
+
+
 /* Floating AI activity — deliberately no container/box. */
 .trux-thinking-panel{background:transparent!important;border:0!important;box-shadow:none!important}
 .trux-thinking-bar{background:transparent!important;border:0!important;box-shadow:none!important}
