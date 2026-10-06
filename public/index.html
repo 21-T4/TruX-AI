@@ -119,7 +119,6 @@
     [data-theme="light"] .chip-title { color: var(--txt); }
     [data-theme="light"] .hero::before { background: radial-gradient(ellipse at 50% 45%, rgba(59,130,246,0.1), rgba(139,92,246,0.05) 42%, rgba(0,0,0,0) 74%); }
     [data-theme="light"] .topbar { background: rgba(252,252,252,0.8); }
-    [data-theme="light"] .model-dropdown-menu { background: rgba(244,244,245,0.95); box-shadow: 0 12px 32px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05); }
 
     /* Theme Overrides for Personalization */
     [data-theme="oled"] {
@@ -466,85 +465,7 @@
       border-color: var(--acc-line);
     }
 
-    /* model picker */
-    .model-picker-container { position: relative; justify-self: center; }
-    .model-picker-btn {
-      height: 37px;
-      display: flex; align-items: center; gap: 7px;
-      padding: 0 10px 0 11px;
-      border-radius: 11px;
-      background: transparent;
-      border: 1px solid transparent;
-      color: var(--txt);
-      font-size: 14px; font-weight: 600;
-      letter-spacing: -0.01em;
-      transition: background 0.18s var(--ease), border-color 0.18s var(--ease);
-    }
-    .model-picker-btn:hover { background: var(--bg-3); border-color: var(--line); }
-    .model-picker-btn:active { transform: scale(0.985); }
-    .model-picker-icon { display: inline-flex; line-height: 0; color: var(--acc); }
-    .model-picker-icon svg { width: 14px; height: 14px; }
-    .model-icon svg { width: 15px; height: 15px; }
-    .model-picker-btn .chevron {
-      stroke: var(--txt-3); width: 13px; height: 13px;
-      transition: transform 0.26s var(--ease-out), stroke 0.2s var(--ease);
-    }
-    .model-picker-container.open .model-picker-btn { background: var(--bg-3); border-color: var(--line-2); }
-    .model-picker-container.open .model-picker-btn .chevron { transform: rotate(180deg); stroke: var(--txt); }
-
-    .model-dropdown-menu {
-      position: absolute; top: calc(100% + 8px); left: 50%;
-      width: min(320px, calc(100vw - 32px));
-      transform: translateX(-50%) translateY(-6px) scale(0.97);
-      transform-origin: top center;
-      background: rgba(12,12,15,0.96);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid var(--line-2);
-      border-radius: var(--r-lg);
-      padding: 6px;
-      box-shadow: 0 24px 60px rgba(0,0,0,0.72), 0 0 0 0.5px rgba(255,255,255,0.04);
-      opacity: 0; visibility: hidden;
-      z-index: 3000;
-      transition: opacity 0.2s var(--ease), transform 0.26s var(--ease-out), visibility 0.2s;
-    }
-    .model-dropdown-menu.open { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0) scale(1); }
-
-    .model-item {
-      display: flex; align-items: center; justify-content: space-between; gap: 10px;
-      padding: 10px 11px;
-      border-radius: 13px;
-      cursor: pointer;
-      transition: background 0.16s var(--ease);
-    }
-    .model-item:hover { background: var(--bg-3); }
-    .model-item.active { background: var(--bg-3); }
-    .model-item-head { display: flex; align-items: center; gap: 11px; min-width: 0; }
-    .model-icon {
-      width: 30px; height: 30px; flex: 0 0 30px;
-      display: grid; place-items: center;
-      border-radius: 9px;
-      background: var(--bg-4);
-      border: 1px solid var(--line);
-      font-size: 14px;
-    }
-    .model-info { min-width: 0; }
-    .model-info b { display: block; font-size: 14px; font-weight: 650; color: #fff; }
-    .model-info small { display: block; font-size: 11.5px; color: var(--txt-3); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .model-badge {
-      flex: 0 0 auto;
-      font-family: var(--font-mono);
-      font-size: 9px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase;
-      padding: 4px 7px;
-      border-radius: 6px;
-      color: var(--txt-3);
-      background: var(--bg-4);
-      border: 1px solid var(--line);
-    }
-    .model-badge.pro { color: var(--acc); background: var(--acc-soft); border-color: var(--acc-line); }
-    .model-badge.img { color: var(--acc-2); background: rgba(176,124,255,0.12); border-color: rgba(176,124,255,0.34); }
-
-    .home-badge-row { display: none; }
+    .home-badge-row { display: none; }    .home-badge-row { display: none; }
     .badge {
       display: inline-flex; align-items: center; gap: 7px;
       padding: 5px 11px 5px 9px;
@@ -1855,7 +1776,6 @@
       .chips { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
       .chip { min-height: 104px; padding: 14px 13px; }
       .welcome-title { font-size: clamp(34px, 11.5vw, 44px); }
-      .model-picker-btn { padding: 0 8px 0 9px; font-size: 13.5px; }
       .bar { padding: 8px 9px; border-radius: 999px; }
       .bar.multiline { border-radius: 22px; }
       .icon-btn, .send-btn { width: 34px; height: 34px; }
@@ -1907,8 +1827,7 @@
       --settings-rail: 238px;
     }
 
-    a, button, input, textarea, select, .profile, .chip, .side-btn, .top-btn,
-    .model-picker-btn, .settings-nav button, .settings-card, .mrow, .mbtn,
+    a, button, input, textarea, select, .profile, .chip, .side-btn, .top-btn, .settings-nav button, .settings-card, .mrow, .mbtn,
     .act, .file-chip, .preview, .attach-menu, .bar {
       transition-timing-function: var(--ease);
     }
@@ -2334,7 +2253,6 @@
 
     .sidebar { background: var(--bg-1); border-right-color: var(--line); }
     .topbar { background: rgba(23,23,23,0.86); }
-    .model-dropdown-menu { background: rgba(31,31,31,0.97); }
 
     .user-bubble {
       background: var(--bg-3);
@@ -3187,7 +3105,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
   #pluginsSidebarButton.active{background:var(--acc-soft);color:var(--txt)}
 </style>
   </head>
-<body class="home-active">
+<body class="home-active" data-workspace-mode="chat">
 <style id="trux-boot-safety">
   /* Keep the real app shell recoverable even when a third-party script or
      startup handler fails. This is a safety net, not a normal display state. */
@@ -3202,6 +3120,8 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
      shell. The normal boot remains unchanged; this only runs before boot
      finishes and forces the base Chat surface back into view. */
   window.__truxBootFinished = false;
+  // The first painted workspace is always Chat; Code requires explicit navigation.
+  document.documentElement.removeAttribute("data-trux-initial-code");
   window.__truxRecoverBoot = function(reason){
     try {
       console.error("TruX startup recovery:", reason);
@@ -3496,18 +3416,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
             </div>
 
             <div class="model-picker-container" id="modelPickerContainer">
-              <button type="button" id="modelPickerBtn" class="model-picker-btn" onclick="toggleModelDropdown(event)" aria-haspopup="menu" aria-expanded="false" aria-label="Choose model">
-                <span class="model-picker-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-                    <path d="M4 7h16M7 12h10M4 17h16"/>
-                    <circle cx="8" cy="7" r="1.7" fill="currentColor" stroke="none"/>
-                    <circle cx="15" cy="12" r="1.7" fill="currentColor" stroke="none"/>
-                    <circle cx="11" cy="17" r="1.7" fill="currentColor" stroke="none"/>
-                  </svg>
-                </span>
-                <span id="modelPickerLabel">Core 4.0</span>
-                <svg class="model-picker-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
-              </button>
+              <button type="button" id="modelPickerBtn" class="model-picker-btn" onclick="toggleModelDropdown(event)" aria-haspopup="menu" aria-expanded="false" aria-label="Choose model"><span id="modelPickerLabel">Core 4.0</span></button>
               <div class="model-dropdown-menu" id="modelDropdown" role="menu" aria-label="Choose model">
                 <button type="button" class="model-item active" data-model="base" onclick="selectModel('base',event);closeModelDropdown()">
                   <span class="model-icon">ϟ</span>
@@ -4384,7 +4293,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       else document.body.removeAttribute("data-media-mode");
 
       document.body.classList.toggle("coding-workspace", isCoding);
-      document.body.classList.toggle("chat-session-active", !!currentChatId && !isMedia);
+      document.body.classList.toggle("chat-session-active", !!currentChatId && !isMedia && !isCoding);
       document.body.classList.toggle("home-active", !isCoding && !isMedia && !currentChatId);
 
       const welcome = getEl("welcomeScreen");
@@ -6906,7 +6815,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       closeModelDropdown();
       closeAttachmentMenu();
       generationStopRequested = false;
-      if(workspaceMode === "coding") getEl("truxCodeWorkspace")?.classList.add("code-workspace-dismissed");
+      /* Dedicated TruX-Code transcript replaces its own landing surface for the active turn. */
       isGenerating = true; isScrolledUp = false;
       getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>'; getEl("actionBtn").classList.add("stop"); getEl("actionBtn").classList.remove("ready");
       let voice = wasInputByVoice; wasInputByVoice = false;
@@ -6934,11 +6843,12 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       appendMessageRow("You", basePrompt + attachmentLabel + (selectedImageBase64 ? "\n[Image Attached]" : ""), "user-row", "user-bubble", null, true);
       promptInput.value = ""; let img = selectedImageBase64; removeImage(); pastedTextBlocks = []; fileAttachments = []; renderFileChips(); handleInputChange();
 
-      let id = "b_" + Date.now(), aid = "a_" + Date.now(), sid = "s_" + Date.now(), row = document.createElement("div");
+      const codingTurn = workspaceMode === "coding";
+      let id = "b_" + Date.now(), aid = "a_" + Date.now(), sid = codingTurn ? "s_" + Date.now() : "", row = document.createElement("div");
       row.className = "row trux-row appear";
-      const tsid = "ts_" + Date.now();
-      const thid = "th_" + Date.now();
-      row.innerHTML = `<div class="trux-response-stack">
+      const tsid = codingTurn ? "ts_" + Date.now() : "";
+      const thid = codingTurn ? "th_" + Date.now() : "";
+      const thinkingMarkup = codingTurn ? `
         <div class="trux-thinking-panel" id="${thid}">
           <div class="trux-thinking-bar">
             <div class="trux-thinking-copy"><span class="trux-thinking-kicker">AI ACTIVITY</span><span class="status-msg" id="${sid}" role="status" aria-live="polite"><span class="thinking-status-line compact">Understanding the request…</span><span class="thinking-status-line full">Understanding the request…</span></span></div>
@@ -6946,15 +6856,17 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
             <button type="button" class="trux-thinking-toggle" onclick="toggleThinkingDetails('${thid}')" aria-expanded="false" aria-label="Expand AI activity" title="Expand AI activity"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>
           </div>
           <div class="trux-thinking-details" id="${tsid}" hidden></div>
-        </div>
-        <div class="bubble trux-bubble thinking" id="${id}"></div>
+        </div>` : "";
+      row.innerHTML = `<div class="trux-response-stack">
+        ${thinkingMarkup}
+        <div class="bubble trux-bubble ${codingTurn ? "thinking" : ""}" id="${id}"></div>
         <div class="actions" id="${aid}"></div>
       </div>`;
 
       chatContainer.appendChild(row);
       chatContainer.scrollTop = chatContainer.scrollHeight;
-      row._startedAt = Date.now();
-      {
+      row._startedAt = codingTurn ? Date.now() : 0;
+      if (codingTurn) {
         const elapsedEl = getEl("elapsed_" + id);
         row._elapsedTimer = setInterval(() => {
           if(elapsedEl) elapsedEl.innerText = "Working for " + formatThinkingClock(Date.now() - row._startedAt);
@@ -7645,8 +7557,10 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       });
     }
     function enterChatWorkspace() {
+      const codingSession = workspaceMode === "coding";
       document.body.classList.remove("home-active");
-      document.body.classList.add("chat-session-active");
+      document.body.classList.toggle("chat-session-active", !codingSession);
+      document.body.classList.toggle("coding-workspace", codingSession);
       document.body.removeAttribute("data-media-mode");
 
       const welcome = getEl("welcomeScreen");
@@ -8169,51 +8083,45 @@ body.home-active .animated-sub{
 .trux-plugin-logo{width:42px!important;height:42px!important;border-radius:12px!important}
 .trux-plugin-logo img{width:23px!important;height:23px!important;max-width:23px!important;max-height:23px!important}
 
-/* Model picker — stable button text and vertically stacked descriptions. */
-#modelPickerBtn{max-width:188px!important;min-width:112px!important;overflow:hidden!important}
-#modelPickerLabel{min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
-#modelDropdown.model-dropdown-menu,
+/* Model picker — single source of truth. The button itself is the model name. */
+.model-picker-container{
+  position:relative!important;min-width:0!important;overflow:visible!important;
+  justify-self:start!important;width:100%!important;
+}
+#modelPickerBtn{
+  width:auto!important;min-width:112px!important;max-width:100%!important;height:40px!important;
+  display:inline-flex!important;align-items:center!important;justify-content:flex-start!important;gap:0!important;
+  margin:0!important;padding:0 13px!important;border-radius:999px!important;
+  background:#242424!important;border:1px solid rgba(255,255,255,.06)!important;color:#d7d7d7!important;
+  font-size:13px!important;font-weight:650!important;line-height:1!important;white-space:nowrap!important;
+  overflow:hidden!important;vertical-align:middle!important;transform:none!important;box-shadow:none!important;
+}
+#modelPickerBtn:hover,#modelPickerBtn[aria-expanded="true"]{background:#292929!important;color:#fff!important;border-color:rgba(255,255,255,.09)!important}
+#modelPickerLabel{display:block!important;min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
 #modelDropdown{
-  position:fixed!important;z-index:100000!important;
-  width:min(390px,calc(100vw - 20px))!important;
-  max-width:calc(100vw - 20px)!important;
-  max-height:min(540px,calc(100dvh - 24px))!important;
-  overflow:auto!important;overscroll-behavior:contain!important;
-  padding:8px!important;border-radius:18px!important;
-  background:#1a1a1a!important;background-image:none!important;
-  border:1px solid rgba(255,255,255,.1)!important;
-  box-shadow:0 22px 58px rgba(0,0,0,.48)!important;
-  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
-  transform:none!important;
+  display:none!important;position:fixed!important;z-index:100000!important;width:min(360px,calc(100vw - 20px))!important;
+  max-width:calc(100vw - 20px)!important;max-height:min(540px,calc(100dvh - 24px))!important;overflow:auto!important;
+  overscroll-behavior:contain!important;padding:8px!important;border-radius:18px!important;background:#1a1a1a!important;
+  background-image:none!important;border:1px solid rgba(255,255,255,.10)!important;box-shadow:0 22px 58px rgba(0,0,0,.48)!important;
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;transform:none!important;
 }
-#modelDropdown.open{visibility:visible!important;opacity:1!important}
+#modelDropdown.open{display:block!important;visibility:visible!important;opacity:1!important}
 #modelDropdown .model-item{
-  display:grid!important;grid-template-columns:30px minmax(0,1fr) auto!important;
-  align-items:start!important;column-gap:10px!important;
-  width:100%!important;min-height:64px!important;padding:10px!important;
-  text-align:left!important;overflow:hidden!important;
+  width:100%!important;min-height:62px!important;display:grid!important;grid-template-columns:30px minmax(0,1fr) auto!important;
+  align-items:start!important;gap:10px!important;padding:10px!important;border-radius:12px!important;color:#d5d5d5!important;
+  background:transparent!important;border:1px solid transparent!important;text-align:left!important;overflow:hidden!important;
 }
-#modelDropdown .model-icon{width:30px!important;height:30px!important;align-self:start!important;margin-top:1px!important}
-#modelDropdown .model-info{
-  min-width:0!important;display:flex!important;flex-direction:column!important;
-  align-items:flex-start!important;justify-content:flex-start!important;
-  gap:3px!important;overflow:hidden!important;padding:1px 0!important;
-}
-#modelDropdown .model-info b{
-  display:block!important;width:100%!important;font-size:14px!important;line-height:1.2!important;
-  white-space:normal!important;overflow:visible!important;text-overflow:clip!important;
-}
-#modelDropdown .model-info small{
-  display:block!important;width:100%!important;margin:0!important;
-  font-size:11px!important;line-height:1.35!important;color:#777!important;
-  white-space:normal!important;overflow:visible!important;text-overflow:clip!important;
-}
-#modelDropdown .model-check{align-self:start!important;min-width:18px!important;margin-top:3px!important;text-align:center!important;color:#bdbdbd!important}
+#modelDropdown .model-item:hover,#modelDropdown .model-item.active{background:#252525!important;border-color:rgba(255,255,255,.07)!important;color:#fff!important}
+#modelDropdown .model-icon{width:30px!important;height:30px!important;margin-top:1px!important}
+#modelDropdown .model-info{min-width:0!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:3px!important;overflow:hidden!important;padding:1px 0!important}
+#modelDropdown .model-info b{display:block!important;width:100%!important;font-size:14px!important;line-height:1.2!important;white-space:normal!important}
+#modelDropdown .model-info small{display:block!important;width:100%!important;margin:0!important;font-size:11px!important;line-height:1.35!important;color:#777!important;white-space:normal!important}
+#modelDropdown .model-check{min-width:18px!important;margin-top:3px!important;text-align:center!important;color:#bdbdbd!important}
 #modelDropdown .thinking-choice-wrap{margin-top:7px!important}
 #modelDropdown .thinking-choice{display:flex!important;align-items:center!important;justify-content:space-between!important}
 @media(max-width:700px){
-  #modelPickerBtn{max-width:152px!important;min-width:104px!important}
-  #modelDropdown,#modelDropdown.model-dropdown-menu{width:min(360px,calc(100vw - 20px))!important}
+  #modelPickerBtn{min-width:104px!important;height:40px!important;max-width:152px!important;padding:0 10px!important}
+  #modelDropdown{width:min(360px,calc(100vw - 20px))!important}
 }
 
 /* Hard workspace separation: Chat and TruX-Code never coexist visually. */
