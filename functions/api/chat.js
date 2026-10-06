@@ -1172,7 +1172,14 @@ async function streamVertexGemini({ model, contents, systemInstruction, tools, t
   }
 
   if (tools?.length) payload.tools = tools;
-  if (toolConfig && tools?.length) payload.toolConfig = toolConfig;
+
+  // Gemini 3.1 Pro can use the supplied function declarations directly in
+  // AUTO mode. Avoid sending an additional FunctionCallingConfig for this
+  // preview model; the documented request only requires the tools array, and
+  // this removes a fragile source of INVALID_ARGUMENT errors.
+  if (toolConfig && tools?.length && model !== 'gemini-3.1-pro-preview') {
+    payload.toolConfig = toolConfig;
+  }
 
   // Gemini 3.1 Pro already defaults to HIGH thinking. Sending an explicit
   // thinkingConfig is unnecessary and makes this preview endpoint more
