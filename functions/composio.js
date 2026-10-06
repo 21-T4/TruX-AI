@@ -299,9 +299,10 @@ function sanitizeGeminiSchema(value, fallbackType = 'string') {
   // Never pass Composio's richer metadata (examples, human_* labels, defaults,
   // internal UI fields, JSON-Schema refs, etc.) to Vertex unchanged.
   if (Array.isArray(value.anyOf) && value.anyOf.length) {
+    // Vertex/Gemini requires anyOf/any_of to be the only field on that
+    // schema node. Do not combine it with description, type, nullable, etc.
     return {
-      anyOf: value.anyOf.map(v => sanitizeGeminiSchema(v)),
-      ...(value.description ? { description: String(value.description) } : {})
+      anyOf: value.anyOf.map(v => sanitizeGeminiSchema(v))
     };
   }
 
