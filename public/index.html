@@ -5294,6 +5294,32 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
      * fence that hasn't been closed yet. We render that as a live
      * "writing file…" card instead of leaking backticks into the chat.
      */
+    /* Protect TeX before Markdown formatting. Multiline equations must remain
+       in a single text node so KaTeX can parse them after <br> insertion. */
+    function protectTruxMath(src) {
+      const math = [];
+      const put = raw => {
+        const key = "\\u0000M" + math.length + "\\u0000";
+        math.push(String(raw));
+        return key;
+      };
+      let out = String(src);
+      out = out.replace(/\\\\\\[([\\s\\S]*?)\\\\\\]/g, m => put(m));
+      out = out.replace(/\\\\\\(([\\s\\S]*?)\\\\\\)/g, m => put(m));
+      out = out.replace(/\\$\\$([\\s\\S]*?)\\$\\$/g, m => put(m));
+      out = out.replace(/(^|[^\\$\\w])\\$([^\\$\\n]*?\\S)\\$(?!\\d)/g,
+        (m, prefix, body) => prefix + put("$" + body + "$"));
+      return { text: out, math };
+    }
+
+    function restoreTruxMath(html, math) {
+      let out = String(html);
+      math.forEach((raw, i) => {
+        const key = "\\u0000M" + i + "\\u0000";
+        out = out.split(key).join(escapeHtml(raw));
+      });
+      return out;
+    }
     function renderFormattedText(t, allowOpenFence) {
       if (t === null || t === undefined || t === "") return "";
 
@@ -5316,6 +5342,10 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         src = src.slice(0, openFence) + `\n\n\u0000F${cards.length - 1}\u0000\n`;
       }
 
+      // Protect LaTeX after code fences are extracted, but before Markdown
+      // substitutions and line-break conversion can split the expression.
+      const protectedMath = protectTruxMath(src);
+      src = protectedMath.text;
       let lines = src.split("\n");
       let out = [];
       let para = [];
@@ -5412,7 +5442,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       }
 
       flushAll();
-      return out.join("");
+      return restoreTruxMath(out.join(""), protectedMath.math);
     }
 
     function speakText(t) {
@@ -8649,6 +8679,10 @@ body.home-active #welcomeScreen .trux-home-logo[hidden]{
 body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
   display:block!important;
 }
+</style>
+<style id="trux-math-final-20261006">
+.katex-display{max-width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;padding:2px 0!important;scrollbar-width:thin!important}
+.katex{max-width:100%!important}
 </style>
 </body>
 </html>
