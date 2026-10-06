@@ -347,7 +347,11 @@ function sanitizeGeminiSchema(value, fallbackType = 'string') {
   }
 
   if (Array.isArray(value.required)) {
-    out.required = value.required.map(String);
+    const required = value.required.map(String);
+    out.required = out.properties
+      ? required.filter(name => Object.prototype.hasOwnProperty.call(out.properties, name))
+      : required;
+    if (!out.required.length) delete out.required;
   }
 
   if (!out.type) {
