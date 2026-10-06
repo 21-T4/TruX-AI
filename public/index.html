@@ -5153,7 +5153,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       let i = 0;
 
       function isBoundaryChar(ch) {
-        return !ch || /[\\s\\n,.;:!?()\\[\\]{}]/.test(ch);
+        return !ch || " \t\n,.;:!?()[]{}".includes(ch);
       }
 
       function add(raw) {
@@ -5389,8 +5389,6 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
       let src = String(t).replace(/\r\n/g, "\n");
       let cards = [];
-      const mathSegments = [];
-      src = protectTruxMathSegments(src, mathSegments);
 
       src = src.replace(/```([\w+#.-]*)[ \t]*\n?([\s\S]*?)```/g, (m, lang, code) => {
         cards.push(buildCodeCard(lang, code, false));
@@ -5407,6 +5405,10 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         cards.push(buildCodeCard(lang, code, !!allowOpenFence));
         src = src.slice(0, openFence) + `\n\n\u0000F${cards.length - 1}\u0000\n`;
       }
+
+      // Only the non-code Markdown stream is protected.
+      const mathSegments = [];
+      src = protectTruxMathSegments(src, mathSegments);
 
       let lines = src.split("\n");
       let out = [];
@@ -8773,5 +8775,10 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
   };
 })();
 </script>
+<style id="trux-math-final-20261006e">
+.katex-display{max-width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;padding:2px 0!important;scrollbar-width:thin!important}
+.katex{max-width:100%!important}
+.trux-bubble .katex-display{margin:12px 0!important}
+</style>
 </body>
 </html>
