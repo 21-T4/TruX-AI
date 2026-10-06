@@ -8693,6 +8693,26 @@ body.coding-workspace #truxCodeWorkspace.code-workspace-dismissed{
 })();
 </script>
 <style id="trux-final-ui-20261006c">
+/* Keep the provided logo exactly as authored.
+   Its #151515 image background already matches the workspace surface.
+   No blending, glow, ring, or extra visual layer is applied. */
+.trux-home-logo,
+.trux-code-logo{
+  mix-blend-mode:normal!important;
+  filter:none!important;
+  box-shadow:none!important;
+  background:transparent!important;
+}
+.trux-code-v2-mark::before,
+.trux-code-v2-mark::after{
+  content:none!important;
+  display:none!important;
+  animation:none!important;
+  background:none!important;
+  border:0!important;
+  box-shadow:none!important;
+  filter:none!important;
+}
 /* Chat intro is the only Chat home surface; it is not a second legacy UI. */
 .trux-home-v2{
   display:flex!important;
@@ -8702,7 +8722,7 @@ body.coding-workspace #truxCodeWorkspace.code-workspace-dismissed{
 .trux-home-v2::before{display:none!important}
 .trux-home-logo,
 .trux-code-logo{
-  mix-blend-mode:screen!important;
+  mix-blend-mode:normal!important;
 }
 
 /* Coding landing: fade out as soon as a coding session begins. */
