@@ -1173,7 +1173,20 @@ async function streamVertexGemini({ model, contents, systemInstruction, tools, t
 
   if (tools?.length) payload.tools = tools;
   if (toolConfig && tools?.length) payload.toolConfig = toolConfig;
-  if (generationConfig) payload.generationConfig = generationConfig;
+
+  // Gemini 3.1 Pro already defaults to HIGH thinking. Sending an explicit
+  // thinkingConfig is unnecessary and makes this preview endpoint more
+  // sensitive to request-shape differences. Keep explicit generation config
+  // for other models, but omit a thinking-only config for 3.1 Pro.
+  const effectiveGenerationConfig =
+    model === 'gemini-3.1-pro-preview' &&
+    generationConfig &&
+    Object.keys(generationConfig).length === 1 &&
+    generationConfig.thinkingConfig
+      ? undefined
+      : generationConfig;
+
+  if (effectiveGenerationConfig) payload.generationConfig = effectiveGenerationConfig;
 
   const response = await fetch(url, {
     method: 'POST',
@@ -1188,7 +1201,22 @@ async function streamVertexGemini({ model, contents, systemInstruction, tools, t
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Vertex AI ${model} Stream Error: ${errorText}`);
+    let detail = '';
+    try {
+      const parsed = JSON.parse(errorText);
+      const violations = Array.isArray(parsed?.error?.details)
+        ? parsed.error.details
+            .flatMap(item => Array.isArray(item?.violations) ? item.violations : [])
+            .map(v => {
+              const field = v?.field ? String(v.field) : '';
+              const description = v?.description ? String(v.description) : '';
+              return field && description ? field + ': ' + description : (description || field);
+            })
+            .filter(Boolean)
+        : [];
+      if (violations.length) detail = ' Field violations: ' + violations.join(' | ');
+    } catch {}
+    throw new Error(`Vertex AI ${model} Stream Error: ${errorText}${detail}`);
   }
 
   if (!response.body) throw new Error('Vertex AI returned an empty streaming body.');
