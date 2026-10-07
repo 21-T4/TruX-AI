@@ -1277,7 +1277,7 @@ export async function onRequestPost(context) {
       try {
         const result = await generateImageWithVertex({
           prompt: message || 'Abstract technological artwork',
-          projectId
+          env
         });
 
         if (!developerAccount) await recordSuccessfulImage(userIdentifier, previousCount, env);
