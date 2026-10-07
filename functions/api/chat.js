@@ -58,14 +58,43 @@ const DEEP_RESEARCH_LIMIT = 1;
    account email, private key, or manually minted access token is needed.
    ========================================================= */
 
-function resolveGoogleProjectId(env = {}) {
-  return String(
+async function resolveGoogleProjectId(env = {}) {
+  const configured = String(
     env.GOOGLE_CLOUD_PROJECT ||
     env.GCLOUD_PROJECT ||
     env.PROJECT_ID ||
     env.FIREBASE_PROJECT_ID ||
     ''
   ).trim();
+
+  if (configured) return configured;
+
+  // Cloud Run exposes the owning Google Cloud project through the metadata
+  // server. This is project discovery only; authentication remains native
+  // Application Default Credentials handled by @google/genai.
+  const metadataUrls = [
+    'http://metadata.google.internal/computeMetadata/v1/project/project-id',
+    'http://169.254.169.254/computeMetadata/v1/project/project-id'
+  ];
+
+  if (env.K_SERVICE || env.K_REVISION || env.K_CONFIGURATION) {
+    for (const url of metadataUrls) {
+      try {
+        const response = await fetch(url, {
+          headers: { 'Metadata-Flavor': 'Google' }
+        });
+
+        if (response.ok) {
+          const projectId = (await response.text()).trim();
+          if (projectId) return projectId;
+        }
+      } catch {
+        // Try the alternate metadata hostname/IP.
+      }
+    }
+  }
+
+  return '';
 }
 
 let vertexAIClient = null;
@@ -175,7 +204,7 @@ async function sendFcmNotification(userIdentifier, env, title, body, data = {}) 
   try {
     const app = getApps()[0] || initializeApp({
       credential: applicationDefault(),
-      projectId: resolveGoogleProjectId(env) || undefined
+      projectId: undefined
     });
 
     const response = await getMessaging(app).sendEachForMulticast({
@@ -1570,10 +1599,10 @@ export async function onRequestPost(context) {
         : (codingMode ? 'base' : (tier || 'base'));
     const proTier = effectiveTier === 'pro' || effectiveTier === 'ultra' || researchMode;
 
-    const projectId = resolveGoogleProjectId(env);
+    const projectId = await resolveGoogleProjectId(env);
     if (!projectId) {
       return Response.json({
-        error: 'GOOGLE_CLOUD_PROJECT is not configured on this Cloud Run service.'
+        error: 'Cloud Run could not discover the Google Cloud project ID from its metadata server.'
       }, { status: 500 });
     }
     env.GOOGLE_CLOUD_PROJECT = projectId;
