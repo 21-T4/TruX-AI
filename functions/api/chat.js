@@ -1,3 +1,6 @@
+import { GoogleGenAI } from '@google/genai';
+import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
+import { getMessaging } from 'firebase-admin/messaging';
 import { getCloudRunKv } from '../cloud-run-store.js';
 import { getGithubSession } from '../github-session.js';
 import { requireFirebaseUser } from '../firebase-auth.js';
@@ -48,205 +51,53 @@ const DEEP_RESEARCH_LIMIT = 1;
 
 
 /* =========================================================
-   GOOGLE SERVICE ACCOUNT AUTHENTICATION
+   NATIVE VERTEX AI / GOOGLE GEN AI AUTHENTICATION
+
+   Cloud Run supplies Application Default Credentials (ADC) through the
+   revision service identity. The Gen AI SDK uses ADC here; no service-
+   account email, private key, or manually minted access token is needed.
    ========================================================= */
 
-let cachedAccessToken = null;
-let cachedTokenExpiry = 0;
-
-async function resolveGoogleProjectId(env) {
-  const configured = String(
-    env.GCP_PROJECT_ID ||
+function resolveGoogleProjectId(env = {}) {
+  return String(
     env.GOOGLE_CLOUD_PROJECT ||
     env.GCLOUD_PROJECT ||
     env.PROJECT_ID ||
+    env.FIREBASE_PROJECT_ID ||
     ''
   ).trim();
-
-  if (configured) return configured;
-
-  if (env.K_SERVICE || env.K_REVISION || env.K_CONFIGURATION) {
-    const metadataUrls = [
-      'http://metadata.google.internal/computeMetadata/v1/project/project-id',
-      'http://169.254.169.254/computeMetadata/v1/project/project-id'
-    ];
-
-    for (const url of metadataUrls) {
-      try {
-        const response = await fetch(url, {
-          headers: { 'Metadata-Flavor': 'Google' }
-        });
-
-        if (response.ok) {
-          const value = (await response.text()).trim();
-          if (value) return value;
-        }
-      } catch {
-        // Try the next metadata endpoint.
-      }
-    }
-  }
-
-  return 'trux-ai';
 }
 
+let vertexAIClient = null;
+let vertexAIClientProject = '';
+let vertexAIClientLocation = '';
 
-function base64UrlEncode(data) {
-  let bytes;
+function getVertexAIClient(projectId, location = LOCATION) {
+  const resolvedProject = String(projectId || '').trim();
+  const resolvedLocation = String(location || LOCATION).trim() || LOCATION;
 
-  if (typeof data === 'string') {
-    bytes = new TextEncoder().encode(data);
-  } else {
-    bytes = new Uint8Array(data);
-  }
-
-  let binary = '';
-  const chunkSize = 0x8000;
-
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    binary += String.fromCharCode(
-      ...bytes.subarray(i, Math.min(i + chunkSize, bytes.length))
+  if (!resolvedProject) {
+    throw new Error(
+      'Google Cloud project is not configured. Set GOOGLE_CLOUD_PROJECT on Cloud Run.'
     );
   }
 
-  return btoa(binary)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/g, '');
+  if (
+    !vertexAIClient ||
+    vertexAIClientProject !== resolvedProject ||
+    vertexAIClientLocation !== resolvedLocation
+  ) {
+    vertexAIClient = new GoogleGenAI({
+      vertexai: true,
+      project: resolvedProject,
+      location: resolvedLocation
+    });
+    vertexAIClientProject = resolvedProject;
+    vertexAIClientLocation = resolvedLocation;
+  }
+
+  return vertexAIClient;
 }
-
-
-function pemToArrayBuffer(pem) {
-  const cleanPem = pem
-    .replace(/\\n/g, '\n')
-    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
-    .replace(/-----END PRIVATE KEY-----/g, '')
-    .replace(/\s/g, '');
-
-  const binary = atob(cleanPem);
-  const bytes = new Uint8Array(binary.length);
-
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-
-  return bytes.buffer;
-}
-
-
-async function createGoogleAccessToken(env) {
-  if (cachedAccessToken && Date.now() < cachedTokenExpiry - 60000) {
-    return cachedAccessToken;
-  }
-
-  /*
-   * Cloud Run exposes Application Default Credentials through its metadata
-   * server. Prefer that path when available so chat/image generation does not
-   * fail just because a private-key environment variable was omitted or
-   * reformatted during deployment. Keep the explicit service-account JWT path
-   * below for non-Cloud-Run deployments.
-   */
-  const metadataUrls = [
-    'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token',
-    'http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token'
-  ];
-
-  if (env.K_SERVICE || env.K_REVISION || env.K_CONFIGURATION) {
-    for (const url of metadataUrls) {
-      try {
-        const response = await fetch(url, {
-          headers: { 'Metadata-Flavor': 'Google' }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data?.access_token) {
-            cachedAccessToken = data.access_token;
-            cachedTokenExpiry = Date.now() + ((Number(data.expires_in) || 3600) * 1000);
-            return cachedAccessToken;
-          }
-        }
-      } catch {
-        // Try the next metadata endpoint, then fall back to explicit credentials.
-      }
-    }
-  }
-
-  const projectId = await resolveGoogleProjectId(env);
-  env.GCP_PROJECT_ID = projectId;
-
-  const clientEmail = String(
-    env.GCP_CLIENT_EMAIL || env.GOOGLE_CLIENT_EMAIL || ''
-  ).trim();
-  const privateKey = String(
-    env.GCP_PRIVATE_KEY || env.GOOGLE_PRIVATE_KEY || ''
-  );
-
-  if (!projectId) throw new Error('Google Cloud project ID is not configured.');
-  if (!clientEmail) throw new Error('Google service-account client email is not configured.');
-  if (!privateKey) throw new Error('Google service-account private key is not configured.');
-
-  const now = Math.floor(Date.now() / 1000);
-
-  const header = { alg: 'RS256', typ: 'JWT' };
-
-  const claims = {
-    iss: clientEmail,
-    scope: 'https://www.googleapis.com/auth/cloud-platform',
-    aud: 'https://oauth2.googleapis.com/token',
-    iat: now,
-    exp: now + 3600
-  };
-
-  const encodedHeader = base64UrlEncode(JSON.stringify(header));
-  const encodedClaims = base64UrlEncode(JSON.stringify(claims));
-  const unsignedJwt = `${encodedHeader}.${encodedClaims}`;
-
-  const privateKeyPem = privateKey.replace(/\\n/g, '\n');
-
-  const cryptoKey = await crypto.subtle.importKey(
-    'pkcs8',
-    await pemToArrayBuffer(privateKeyPem),
-    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-
-  const signature = await crypto.subtle.sign(
-    'RSASSA-PKCS1-v1_5',
-    cryptoKey,
-    new TextEncoder().encode(unsignedJwt)
-  );
-
-  const signedJwt = `${unsignedJwt}.${base64UrlEncode(signature)}`;
-
-  const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-      assertion: signedJwt
-    }).toString()
-  });
-
-  if (!tokenResponse.ok) {
-    const errorText = await tokenResponse.text();
-    throw new Error(`Google authentication failed: ${errorText}`);
-  }
-
-  const tokenData = await tokenResponse.json();
-
-  if (!tokenData.access_token) {
-    throw new Error('Google authentication returned no access token.');
-  }
-
-  cachedAccessToken = tokenData.access_token;
-  cachedTokenExpiry = Date.now() + ((tokenData.expires_in || 3600) * 1000);
-
-  return cachedAccessToken;
-}
-
-
 
 function getPushKv(env) {
   return getCloudRunKv(env);
@@ -301,9 +152,11 @@ async function resolveTrustedChatIdentity(request, env, backgroundJobId = '') {
 
 async function sendFcmNotification(userIdentifier, env, title, body, data = {}) {
   if (!userIdentifier) return;
+
   const kv = getPushKv(env);
   const key = 'trux_push_tokens_' + String(userIdentifier);
   let tokens = [];
+
   try {
     tokens = await kv.get(key, 'json') || [];
   } catch {
@@ -312,56 +165,44 @@ async function sendFcmNotification(userIdentifier, env, title, body, data = {}) 
 
   if (!Array.isArray(tokens) || !tokens.length) return;
 
-  let accessToken;
-  try {
-    accessToken = await createGoogleAccessToken(env);
-  } catch {
-    return;
-  }
+  const validTokens = tokens
+    .filter(token => typeof token === 'string' && token.trim())
+    .map(token => token.trim())
+    .slice(0, 10);
 
-  const projectId = String(env.GCP_PROJECT_ID || env.GOOGLE_CLOUD_PROJECT || env.GCLOUD_PROJECT || '').trim();
-  const remaining = [];
-
-  for (const token of tokens.slice(0, 10)) {
-    if (!token || typeof token !== 'string') continue;
-    try {
-      const response = await fetch('https://fcm.googleapis.com/v1/projects/' + encodeURIComponent(projectId) + '/messages:send', {
-        method: 'POST',
-        headers: {
-          Authorization: 'Bearer ' + accessToken,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          message: {
-            token,
-            /* Data-only FCM keeps foreground delivery silent. The service
-               worker turns the same payload into the full OS notification
-               when the app is backgrounded. */
-            data: Object.fromEntries(
-              Object.entries({
-                ...(data || {}),
-                title: String(title || 'TruX-AI').slice(0, 120),
-                body: String(body || 'Your response is ready.').slice(0, 240)
-              }).map(([k, v]) => [String(k), String(v ?? '')])
-            )
-          }
-        })
-      });
-
-      if (response.ok) {
-        remaining.push(token);
-      } else if (response.status !== 404 && response.status !== 400) {
-        remaining.push(token);
-      }
-    } catch {
-      remaining.push(token);
-    }
-  }
+  if (!validTokens.length) return;
 
   try {
+    const app = getApps()[0] || initializeApp({
+      credential: applicationDefault(),
+      projectId: resolveGoogleProjectId(env) || undefined
+    });
+
+    const response = await getMessaging(app).sendEachForMulticast({
+      tokens: validTokens,
+      data: Object.fromEntries(
+        Object.entries({
+          ...(data || {}),
+          title: String(title || 'TruX-AI').slice(0, 120),
+          body: String(body || 'Your response is ready.').slice(0, 240)
+        }).map(([keyName, value]) => [String(keyName), String(value ?? '')])
+      )
+    });
+
+    const remaining = validTokens.filter((token, index) => {
+      const code = String(response.responses?.[index]?.error?.code || '');
+      return (
+        code !== 'messaging/registration-token-not-registered' &&
+        code !== 'messaging/invalid-registration-token'
+      );
+    });
+
     await kv.put(key, JSON.stringify(remaining));
-  } catch {
-    // Notification delivery must never break the chat response.
+  } catch (error) {
+    console.warn(
+      'FCM notification delivery failed:',
+      String(error?.message || error)
+    );
   }
 }
 
@@ -1122,69 +963,71 @@ async function executeGithubToolCallInner(session, repository, branch, call, req
    STANDARD VERTEX REQUEST
    ========================================================= */
 
-async function fetchVertexGemini({ model, contents, systemInstruction, tools, accessToken, projectId, generationConfig, signal }) {
-  if (!accessToken) throw new Error('Google access token missing.');
+async function fetchVertexGemini({
+  model,
+  contents,
+  systemInstruction,
+  tools,
+  accessToken,
+  projectId,
+  generationConfig,
+  signal
+}) {
+  void accessToken;
 
-  const url =
-    `https://aiplatform.googleapis.com/v1/` +
-    `projects/${projectId}/locations/${LOCATION}/` +
-    `publishers/google/models/${model}:generateContent`;
+  const client = getVertexAIClient(projectId);
+  const config = {};
 
-  const payload = { contents };
-
-  if (systemInstruction) {
-    payload.systemInstruction = { parts: [{ text: systemInstruction }] };
+  if (systemInstruction) config.systemInstruction = systemInstruction;
+  if (tools?.length) config.tools = tools;
+  if (generationConfig && typeof generationConfig === 'object') {
+    Object.assign(config, generationConfig);
   }
+  if (signal) config.abortSignal = signal;
 
-  if (tools?.length) payload.tools = tools;
-  if (generationConfig) payload.generationConfig = generationConfig;
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
-    body: JSON.stringify(payload),
-    ...(signal ? { signal } : {})
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Vertex AI ${model} Error: ${errorText}`);
+  try {
+    return await client.models.generateContent({
+      model,
+      contents,
+      config
+    });
+  } catch (error) {
+    throw new Error(
+      `Vertex AI ${model} Error: ${String(error?.message || error)}`
+    );
   }
-
-  return await response.json();
 }
-
 
 /* =========================================================
    VERTEX STREAMING REQUEST
    ========================================================= */
 
-async function streamVertexGemini({ model, contents, systemInstruction, tools, toolConfig, accessToken, projectId, onText, onStatus, generationConfig, signal }) {
-  const url =
-    `https://aiplatform.googleapis.com/v1/` +
-    `projects/${projectId}/locations/${LOCATION}/` +
-    `publishers/google/models/${model}:streamGenerateContent?alt=sse`;
+async function streamVertexGemini({
+  model,
+  contents,
+  systemInstruction,
+  tools,
+  toolConfig,
+  accessToken,
+  projectId,
+  onText,
+  onStatus,
+  generationConfig,
+  signal
+}) {
+  void accessToken;
+  void onStatus;
 
-  const payload = { contents };
+  const client = getVertexAIClient(projectId);
+  const config = {};
 
-  if (systemInstruction) {
-    payload.systemInstruction = { parts: [{ text: systemInstruction }] };
-  }
+  if (systemInstruction) config.systemInstruction = systemInstruction;
+  if (tools?.length) config.tools = tools;
 
-  if (tools?.length) payload.tools = tools;
-
-  // Gemini 3.1 Pro can use the supplied function declarations directly in
-  // AUTO mode. Avoid sending an additional FunctionCallingConfig for this
-  // preview model; the documented request only requires the tools array, and
-  // this removes a fragile source of INVALID_ARGUMENT errors.
   if (toolConfig && tools?.length && model !== 'gemini-3.1-pro-preview') {
-    payload.toolConfig = toolConfig;
+    config.toolConfig = toolConfig;
   }
 
-  // Gemini 3.1 Pro already defaults to HIGH thinking. Sending an explicit
-  // thinkingConfig is unnecessary and makes this preview endpoint more
-  // sensitive to request-shape differences. Keep explicit generation config
-  // for other models, but omit a thinking-only config for 3.1 Pro.
   const effectiveGenerationConfig =
     model === 'gemini-3.1-pro-preview' &&
     generationConfig &&
@@ -1193,124 +1036,55 @@ async function streamVertexGemini({ model, contents, systemInstruction, tools, t
       ? undefined
       : generationConfig;
 
-  if (effectiveGenerationConfig) payload.generationConfig = effectiveGenerationConfig;
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`,
-      'Accept': 'text/event-stream'
-    },
-    body: JSON.stringify(payload),
-    ...(signal ? { signal } : {})
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    let detail = '';
-    try {
-      const parsed = JSON.parse(errorText);
-      const violations = Array.isArray(parsed?.error?.details)
-        ? parsed.error.details
-            .flatMap(item => Array.isArray(item?.violations) ? item.violations : [])
-            .map(v => {
-              const field = v?.field ? String(v.field) : '';
-              const description = v?.description ? String(v.description) : '';
-              return field && description ? field + ': ' + description : (description || field);
-            })
-            .filter(Boolean)
-        : [];
-      if (violations.length) detail = ' Field violations: ' + violations.join(' | ');
-    } catch {}
-    throw new Error(`Vertex AI ${model} Stream Error: ${errorText}${detail}`);
+  if (effectiveGenerationConfig && typeof effectiveGenerationConfig === 'object') {
+    Object.assign(config, effectiveGenerationConfig);
   }
 
-  if (!response.body) throw new Error('Vertex AI returned an empty streaming body.');
+  if (signal) config.abortSignal = signal;
 
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-
-  let buffer = '';
-  let functionCalls = [];
+  const functionCalls = [];
   const functionCallKeys = new Set();
   const modelContentParts = [];
   let groundingMetadata = null;
   let accumulatedText = '';
 
-  async function processSseData(rawData) {
-    if (!rawData) return;
+  try {
+    const stream = await client.models.generateContentStream({
+      model,
+      contents,
+      config
+    });
 
-    let parsed;
-    try { parsed = JSON.parse(rawData); } catch { return; }
+    for await (const chunk of stream) {
+      const candidate = chunk?.candidates?.[0];
 
-    const candidate = parsed?.candidates?.[0];
-    const parts = candidate?.content?.parts || [];
-
-    if (candidate?.groundingMetadata) groundingMetadata = candidate.groundingMetadata;
-
-    for (const part of parts) {
-      if (typeof part.text === 'string') {
-        modelContentParts.push(part);
-        accumulatedText += part.text;
-        if (onText) await onText(part.text);
+      if (candidate?.groundingMetadata) {
+        groundingMetadata = candidate.groundingMetadata;
       }
 
-      if (part.functionCall) {
-        const key = stableJson(part.functionCall);
-        if (!functionCallKeys.has(key)) {
-          functionCallKeys.add(key);
-          functionCalls.push(part.functionCall);
-          /*
-           * Gemini 3 can attach thought_signature to the function-call part.
-           * Preserve the complete model part exactly for the next turn.
-           */
+      const parts = candidate?.content?.parts || [];
+
+      for (const part of parts) {
+        if (typeof part?.text === 'string') {
           modelContentParts.push(part);
+          accumulatedText += part.text;
+          if (onText) await onText(part.text);
+        }
+
+        if (part?.functionCall) {
+          const key = stableJson(part.functionCall);
+          if (!functionCallKeys.has(key)) {
+            functionCallKeys.add(key);
+            functionCalls.push(part.functionCall);
+            modelContentParts.push(part);
+          }
         }
       }
     }
-  }
-
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-
-    buffer += decoder.decode(value, { stream: true });
-
-    const lines = buffer.split(/\r?\n/);
-    buffer = lines.pop() || '';
-
-    let dataLines = [];
-
-    for (const line of lines) {
-      if (line.startsWith('data:')) {
-        dataLines.push(line.slice(5).trimStart());
-      } else if (line.trim() === '') {
-        if (dataLines.length) {
-          const data = dataLines.join('\n');
-          await processSseData(data);
-          dataLines = [];
-        }
-      }
-    }
-  }
-
-  buffer += decoder.decode();
-
-  if (buffer.trim()) {
-    const trailingLines = buffer.split(/\r?\n/);
-    let trailingData = [];
-
-    for (const line of trailingLines) {
-      if (line.startsWith('data:')) {
-        trailingData.push(line.slice(5).trimStart());
-      } else if (line.trim() === '' && trailingData.length) {
-        await processSseData(trailingData.join('\n'));
-        trailingData = [];
-      }
-    }
-
-    if (trailingData.length) await processSseData(trailingData.join('\n'));
+  } catch (error) {
+    throw new Error(
+      `Vertex AI ${model} Stream Error: ${String(error?.message || error)}`
+    );
   }
 
   const functionContentParts = modelContentParts.length
@@ -1327,7 +1101,6 @@ async function streamVertexGemini({ model, contents, systemInstruction, tools, t
     groundingMetadata
   };
 }
-
 
 /* =========================================================
    MODEL SELECTION
@@ -1427,51 +1200,87 @@ function videoSafePathPart(value) {
   return String(value || "anonymous").replace(/[^a-zA-Z0-9_-]/g,"_").slice(0,48) || "anonymous";
 }
 function videoDelay(ms) { return new Promise(resolve => setTimeout(resolve,ms)); }
-async function generateVideoWithVertex({ prompt, accessToken, projectId, env, onStatus }) {
-  if(!accessToken) throw new Error("Google access token missing.");
-  const outputBase=getVideoOutputUri(env);
-  if(!outputBase.startsWith("gs://")) throw new Error("Video output storage is not configured. Set TRUX_VIDEO_OUTPUT_GCS_URI to a gs:// bucket prefix.");
-  const randomPart = typeof crypto.randomUUID === "function" ? crypto.randomUUID() : String(Math.random()).slice(2);
-  const folder=outputBase+"/trux-video-"+Date.now()+"-"+videoSafePathPart(randomPart);
-  const model=String(env.TRUX_VIDEO_MODEL || VIDEO_MODEL);
-  const location=String(env.TRUX_VIDEO_LOCATION || VIDEO_LOCATION);
-  const baseUrl="https://"+location+"-aiplatform.googleapis.com/v1/projects/"+projectId+"/locations/"+location+"/publishers/google/models/"+model;
-  const startResponse=await fetch(baseUrl+":predictLongRunning",{
-    method:"POST",
-    headers:{"Content-Type":"application/json","Authorization":"Bearer "+accessToken},
-    body:JSON.stringify({
-      instances:[{prompt:String(prompt || "").slice(0,8000)}],
-      parameters:{storageUri:folder+"/",sampleCount:1,aspectRatio:"16:9",durationSeconds:8,resolution:"720p"}
-    })
-  });
-  if(!startResponse.ok){ const errorText=await startResponse.text(); throw new Error("Vertex AI "+model+" Error: "+errorText); }
-  const started=await startResponse.json();
-  const operationName=started && started.name;
-  if(!operationName) throw new Error("Vertex AI did not return a video operation.");
-  const deadline=Date.now()+VIDEO_MAX_POLL_MS;
-  let lastStatusAt=0;
-  while(Date.now()<deadline){
-    const now=Date.now();
-    if(onStatus && now-lastStatusAt>9000){ lastStatusAt=now; await onStatus("Generating video…"); }
-    await videoDelay(10000);
-    const pollResponse=await fetch(baseUrl+":fetchPredictOperation",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","Authorization":"Bearer "+accessToken},
-      body:JSON.stringify({operationName})
-    });
-    if(!pollResponse.ok){ const errorText=await pollResponse.text(); throw new Error("Vertex AI video status Error: "+errorText); }
-    const operation=await pollResponse.json();
-    if(operation && operation.done){
-      if(operation.error && operation.error.message) throw new Error(operation.error.message);
-      const v=(operation.response && operation.response.videos && operation.response.videos[0]) || null;
-      const gcsUri=(v && (v.gcsUri || v.uri)) || "";
-      if(!gcsUri) throw new Error("Vertex AI returned no generated video.");
-      return {gcsUri:gcsUri,mimeType:(v && v.mimeType) || "video/mp4",operationName:operationName};
-    }
-  }
-  throw new Error("Video generation exceeded the 20-minute operation window.");
-}
+async function generateVideoWithVertex({
+  prompt,
+  accessToken,
+  projectId,
+  env,
+  onStatus
+}) {
+  void accessToken;
 
+  const outputBase = getVideoOutputUri(env);
+  if (!outputBase.startsWith('gs://')) {
+    throw new Error(
+      'Video output storage is not configured. Set TRUX_VIDEO_OUTPUT_GCS_URI to a gs:// bucket prefix.'
+    );
+  }
+
+  const randomPart =
+    typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : String(Math.random()).slice(2);
+
+  const folder =
+    outputBase +
+    '/trux-video-' +
+    Date.now() +
+    '-' +
+    videoSafePathPart(randomPart);
+
+  const model = String(env.TRUX_VIDEO_MODEL || VIDEO_MODEL);
+  const location = String(env.TRUX_VIDEO_LOCATION || VIDEO_LOCATION);
+  const client = getVertexAIClient(projectId, location);
+
+  let operation = await client.models.generateVideos({
+    model,
+    prompt: String(prompt || '').slice(0, 8000),
+    config: {
+      numberOfVideos: 1,
+      aspectRatio: '16:9',
+      durationSeconds: 8,
+      resolution: '720p',
+      outputGcsUri: folder + '/'
+    }
+  });
+
+  const deadline = Date.now() + VIDEO_MAX_POLL_MS;
+  let lastStatusAt = 0;
+
+  while (!operation?.done && Date.now() < deadline) {
+    const now = Date.now();
+    if (onStatus && now - lastStatusAt > 9000) {
+      lastStatusAt = now;
+      await onStatus('Generating video…');
+    }
+
+    await videoDelay(10000);
+    operation = await client.operations.get({ operation });
+  }
+
+  if (!operation?.done) {
+    throw new Error('Video generation exceeded the 20-minute operation window.');
+  }
+
+  if (operation.error?.message) {
+    throw new Error(String(operation.error.message));
+  }
+
+  const generatedVideo =
+    operation.response?.generatedVideos?.[0]?.video || null;
+
+  const gcsUri = String(generatedVideo?.uri || generatedVideo?.gcsUri || '');
+
+  if (!gcsUri) {
+    throw new Error('Vertex AI returned no generated video.');
+  }
+
+  return {
+    gcsUri,
+    mimeType: generatedVideo?.mimeType || 'video/mp4',
+    operationName: operation.name || ''
+  };
+}
 
 /* =========================================================
    STREAM RESPONSE HELPER
@@ -1761,14 +1570,17 @@ export async function onRequestPost(context) {
         : (codingMode ? 'base' : (tier || 'base'));
     const proTier = effectiveTier === 'pro' || effectiveTier === 'ultra' || researchMode;
 
-    const projectId = await resolveGoogleProjectId(env);
-    env.GCP_PROJECT_ID = projectId;
-    // TruX-Code opens its SSE response before Google authentication so the
-    // browser receives bytes immediately and can keep the connection alive.
-    let accessToken = null;
-    if (!codingMode) {
-      accessToken = await createGoogleAccessToken(env);
+    const projectId = resolveGoogleProjectId(env);
+    if (!projectId) {
+      return Response.json({
+        error: 'GOOGLE_CLOUD_PROJECT is not configured on this Cloud Run service.'
+      }, { status: 500 });
     }
+    env.GOOGLE_CLOUD_PROJECT = projectId;
+
+    // Native @google/genai + Cloud Run ADC handles authentication inside the
+    // service. No bearer token or service-account key is created by the app.
+    let accessToken = null;
 
     /* =====================================================
        VIDEO GENERATION — Pro + Owner only.
@@ -1981,7 +1793,6 @@ export async function onRequestPost(context) {
         send({ type: 'status', status: 'Compressing older conversation context…' });
       }
 
-      if (!accessToken) accessToken = await createGoogleAccessToken(env);
       formattedHistory = await buildConversationHistory(history, accessToken, projectId, signal);
 
       const contents = [...formattedHistory, { role: 'user', parts: currentParts }];
@@ -1989,7 +1800,6 @@ export async function onRequestPost(context) {
          First streamed generation
          ------------------------------------------------- */
 
-      if (!accessToken) accessToken = await createGoogleAccessToken(env);
 
       /* Legacy per-workspace GitHub repository access is intentionally disabled.
          GitHub actions now enter the same Composio plugin path as every other integration. */
