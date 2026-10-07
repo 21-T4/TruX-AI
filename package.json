@@ -12,6 +12,7 @@
     "lint": "node --check cloud-run-server.js"
   },
   "dependencies": {
+    "@google/genai": "^2.27.0",
     "@google-cloud/storage": "^8.2.0",
     "pdf-parse": "^2.4.5",
     "unzipper": "^0.12.5",
