@@ -173,20 +173,6 @@ async function processJob(job, env) {
         return;
       }
 
-      if (event.type === 'github_proposal' || event.type === 'github_commit') {
-        const commit = event.type === 'github_commit' ? event.commit : (event.proposal?.commit || null);
-        const proposal = event.proposal || null;
-        if (proposal && commit) proposal.commit = commit;
-        await updateJob(env, {
-          jobId,
-          jobSecret: job.jobSecret,
-          status: 'running',
-          events,
-          proposal,
-          commit: commit || null
-        });
-        return;
-      }
 
       if (event.type === 'final') {
         finalText = String(event.text || '');
