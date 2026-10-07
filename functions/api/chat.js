@@ -54,11 +54,35 @@ const DEEP_RESEARCH_LIMIT = 1;
    ========================================================= */
 
 let vertexAIClient = null;
+let vertexAIClientConfigKey = '';
 
-function getVertexAIClient() {
-  if (!vertexAIClient) {
-    vertexAIClient = new GoogleGenAI();
+function getVertexAIClient(env = {}) {
+  const project =
+    String(env?.GOOGLE_CLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || '').trim();
+  const location =
+    String(env?.GOOGLE_CLOUD_LOCATION || process.env.GOOGLE_CLOUD_LOCATION || 'global').trim() ||
+    'global';
+
+  if (!project) {
+    throw new Error('GOOGLE_CLOUD_PROJECT is not configured on this Cloud Run service.');
   }
+
+  const configKey = project + '|' + location;
+
+  if (!vertexAIClient || vertexAIClientConfigKey !== configKey) {
+    /*
+     * Cloud Run ADC + explicit Vertex mode.
+     * Do not rely on GOOGLE_GENAI_USE_ENTERPRISE/auto-detection here:
+     * TruX-AI uses the Vertex AI Gemini endpoint directly.
+     */
+    vertexAIClient = new GoogleGenAI({
+      vertexai: true,
+      project,
+      location
+    });
+    vertexAIClientConfigKey = configKey;
+  }
+
   return vertexAIClient;
 }
 
@@ -357,7 +381,7 @@ async function fetchVertexGemini({
   env
 }) {
 
-  const client = getVertexAIClient();
+  const client = getVertexAIClient(env);
   const config = {};
 
   if (systemInstruction) config.systemInstruction = systemInstruction;
