@@ -1,4 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
+import { execFile } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
 import { getMessaging } from 'firebase-admin/messaging';
 import { getCloudRunKv } from '../cloud-run-store.js';
@@ -102,6 +105,220 @@ async function getVertexAIClient() {
   }
 
   return vertexAIClient;
+}
+
+
+const TERMINAL_TOOL_NAME = 'trux_terminal_execute';
+const TERMINAL_MAX_OUTPUT = 24000;
+const TERMINAL_MAX_TIMEOUT_MS = 60000;
+
+const TERMINAL_ALLOWED_BINARIES = new Set([
+  'node', 'npm', 'npx', 'pnpm', 'yarn',
+  'python', 'python3',
+  'git',
+  'ls', 'pwd', 'find', 'grep', 'head', 'tail', 'sed', 'awk', 'wc',
+  'cat', 'printf', 'mkdir'
+]);
+
+const TERMINAL_BLOCKED_BINARIES = new Set([
+  'sudo', 'su', 'ssh', 'scp', 'sftp',
+  'curl', 'wget', 'nc', 'netcat', 'telnet',
+  'gcloud', 'docker', 'kubectl',
+  'mount', 'umount', 'mkfs', 'dd',
+  'shutdown', 'reboot', 'kill', 'pkill',
+  'chmod', 'chown', 'rm', 'rmdir'
+]);
+
+const TRUX_TERMINAL_TOOL = {
+  name: TERMINAL_TOOL_NAME,
+  description:
+    'Run one local development command in the TruX-Code terminal for build, test, lint, or code inspection. ' +
+    'Use Composio for GitHub and external-service changes. Do not use this terminal for networking, credentials, or Git push.',
+  parameters: {
+    type: 'object',
+    properties: {
+      command: {
+        type: 'string',
+        description: 'One development command to execute.'
+      },
+      cwd: {
+        type: 'string',
+        description: 'Optional working directory relative to the application workspace.'
+      },
+      timeoutMs: {
+        type: 'number',
+        description: 'Optional timeout in milliseconds, maximum 60000.'
+      }
+    },
+    required: ['command']
+  }
+};
+
+function terminalSplitCommand(command) {
+  const input = String(command || '').trim();
+  if (!input) return [];
+
+  const tokens = [];
+  let token = '';
+  let quote = '';
+  let escaping = false;
+
+  for (const char of input) {
+    if (escaping) {
+      token += char;
+      escaping = false;
+      continue;
+    }
+    if (char === '\\') {
+      escaping = true;
+      continue;
+    }
+    if (quote) {
+      if (char === quote) quote = '';
+      else token += char;
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+      continue;
+    }
+    if (/\\s/.test(char)) {
+      if (token) {
+        tokens.push(token);
+        token = '';
+      }
+      continue;
+    }
+    token += char;
+  }
+
+  if (escaping) token += '\\';
+  if (quote) throw new Error('Unclosed quote in terminal command.');
+  if (token) tokens.push(token);
+  return tokens;
+}
+
+function validateTerminalCommand(command) {
+  const parts = terminalSplitCommand(command);
+  if (!parts.length) throw new Error('Terminal command is empty.');
+
+  if (/[;&|<>\`$]/.test(String(command))) {
+    throw new Error('Shell chaining, redirection, interpolation, and subshell syntax are disabled.');
+  }
+
+  const executable = String(parts[0] || '').split('/').pop().toLowerCase();
+
+  if (TERMINAL_BLOCKED_BINARIES.has(executable)) {
+    throw new Error('That terminal command is not permitted.');
+  }
+  if (!TERMINAL_ALLOWED_BINARIES.has(executable)) {
+    throw new Error('Only approved development commands can run in the TruX-Code terminal.');
+  }
+
+  if (
+    ['node', 'python', 'python3'].includes(executable) &&
+    /^(?:-e|--eval|-c|--command|--require|-r)$/.test(String(parts[1] || ''))
+  ) {
+    throw new Error('Inline code execution flags are disabled in the TruX-Code terminal.');
+  }
+
+  if (
+    executable === 'git' &&
+    /^(?:push|remote|credential|config|clone|fetch|pull)$/i.test(String(parts[1] || ''))
+  ) {
+    throw new Error('Git remote, credential, and push operations are handled by Composio.');
+  }
+
+  for (const part of parts) {
+    if (
+      /(^|\\/)(?:proc|sys|dev|etc)\\//i.test(part) ||
+      /metadata\\.google\\.internal/i.test(part) ||
+      part === '..' ||
+      part.includes('../') ||
+      part.includes('..\\')
+    ) {
+      throw new Error('System, credential, and parent-directory paths are not permitted.');
+    }
+  }
+
+  return { executable, args: parts.slice(1) };
+}
+
+async function executeTerminalCommand(command, cwd = '', onOutput = null) {
+  const { executable, args } = validateTerminalCommand(command);
+  const root = path.resolve(process.cwd());
+  const requestedCwd = String(cwd || '').trim();
+  const workingDirectory = requestedCwd
+    ? path.resolve(root, requestedCwd)
+    : root;
+
+  if (
+    workingDirectory !== root &&
+    !workingDirectory.startsWith(root + path.sep)
+  ) {
+    throw new Error('Terminal working directory must remain inside the application workspace.');
+  }
+
+  const timeoutMs = Math.min(
+    TERMINAL_MAX_TIMEOUT_MS,
+    Math.max(1000, Number(args.timeoutMs || 0) || TERMINAL_MAX_TIMEOUT_MS)
+  );
+
+  const terminalEnv = {
+    PATH: String(process.env.PATH || '/usr/local/bin:/usr/bin:/bin'),
+    HOME: '/tmp/trux-terminal-home',
+    TMPDIR: '/tmp',
+    NODE_ENV: 'production',
+    CI: '1'
+  };
+
+  await fs.promises.mkdir(terminalEnv.HOME, { recursive: true });
+
+  return await new Promise(resolve => {
+    const startedAt = Date.now();
+    let stdout = '';
+    let stderr = '';
+
+    const pushOutput = (kind, value) => {
+      const text = String(value || '');
+      if (!text) return;
+      if (kind === 'stdout') stdout += text;
+      else stderr += text;
+      if (onOutput) onOutput(kind, text.slice(-6000));
+    };
+
+    const child = execFile(
+      executable,
+      args,
+      {
+        cwd: workingDirectory,
+        env: terminalEnv,
+        timeout: timeoutMs,
+        maxBuffer: 1024 * 1024 * 2,
+        windowsHide: true
+      },
+      (error, finalStdout, finalStderr) => {
+        const timedOut = error?.code === 'ETIMEDOUT' || error?.signal === 'SIGTERM';
+        const code = timedOut
+          ? 124
+          : (Number.isInteger(error?.code) ? error.code : (error ? 1 : 0));
+
+        resolve({
+          success: !error,
+          code,
+          signal: error?.signal ? String(error.signal) : null,
+          stdout: (stdout || String(finalStdout || '')).slice(-TERMINAL_MAX_OUTPUT),
+          stderr: (stderr || String(finalStderr || '')).slice(-TERMINAL_MAX_OUTPUT),
+          durationMs: Date.now() - startedAt,
+          cwd: workingDirectory,
+          timedOut
+        });
+      }
+    );
+
+    child.stdout?.on('data', chunk => pushOutput('stdout', chunk));
+    child.stderr?.on('data', chunk => pushOutput('stderr', chunk));
+  });
 }
 
 function getPushKv(env) {
@@ -433,7 +650,9 @@ async function streamVertexGemini({
   tools,
   toolConfig,
   onText,
+  onThought,
   onStatus,
+  holdTextUntilToolDecision = false,
   generationConfig,
   signal,
   env
@@ -467,6 +686,7 @@ async function streamVertexGemini({
   const functionCalls = [];
   const functionCallKeys = new Set();
   const modelContentParts = [];
+  let bufferedText = '';
   let groundingMetadata = null;
   let accumulatedText = '';
 
@@ -489,8 +709,15 @@ async function streamVertexGemini({
       for (const part of parts) {
         if (typeof part?.text === 'string') {
           modelContentParts.push(part);
-          accumulatedText += part.text;
-          if (onText) await onText(part.text);
+
+          if (part?.thought === true) {
+            if (onThought) await onThought(part.text);
+          } else if (holdTextUntilToolDecision) {
+            bufferedText += part.text;
+          } else {
+            accumulatedText += part.text;
+            if (onText) await onText(part.text);
+          }
         }
 
         if (part?.functionCall) {
@@ -507,6 +734,15 @@ async function streamVertexGemini({
     throw new Error(
       `Vertex AI ${model} Stream Error: ${String(error?.message || error)}`
     );
+  }
+
+  if (bufferedText) {
+    accumulatedText = bufferedText;
+    if (functionCalls.length) {
+      if (onThought) await onThought(bufferedText);
+    } else if (onText) {
+      await onText(bufferedText);
+    }
   }
 
   const functionContentParts = modelContentParts.length
@@ -937,6 +1173,7 @@ export async function onRequestPost(context) {
       userEmail,
       developer,
       advancedThinking,
+      thinkingLevel,
       location,
       generateImage: forceImageGen,
       githubRepository,
@@ -1133,7 +1370,10 @@ export async function onRequestPost(context) {
     const pluginInstruction = explicitExternalAction
       ? `\n\n[COMPOSIO PLUGINS]: The user has explicitly requested an external action. You MUST use the matching connected plugin function instead of only drafting, explaining, or simulating the action. Never claim success unless the tool actually succeeds. "Draft" means create/save the draft in the external service; "send" means actually send it. If required input is missing, ask only for that missing input. Do not ask for a second confirmation unless the external service itself requires one. If no matching connected tool is available, state that the integration is unavailable.`
       : '';
-    const modeWithPlugins = modeInstruction + pluginInstruction;
+    const terminalInstruction = codingMode && explicitCodeWork
+      ? `\\n\\n[TRUX-CODE TERMINAL]: You may use the built-in development terminal for local build, test, lint, and inspection commands. Use Composio for GitHub/external changes. Do not use the terminal for networking or credentials.`
+      : '';
+    const modeWithPlugins = modeInstruction + pluginInstruction + terminalInstruction;
     const thinkingInstruction = effectiveAdvancedThinking
       ? `${combinedSystemInstruction}${modeWithPlugins}\n\n[REASONING MODE]: Take extra time to reason carefully, check assumptions and calculations, then return only the concise final answer. Do not expose private chain-of-thought.`
       : `${combinedSystemInstruction}${modeWithPlugins}`;
@@ -1302,6 +1542,9 @@ export async function onRequestPost(context) {
       if (composioToolDeclarations.length) {
         modelTools.push({ functionDeclarations: composioToolDeclarations });
       }
+      if (codingMode && explicitCodeWork) {
+        modelTools.push({ functionDeclarations: [TRUX_TERMINAL_TOOL] });
+      }
       if (researchMode) modelTools.push({ googleSearch: {} });
 
       const agentContents = contents.slice();
@@ -1415,22 +1658,36 @@ export async function onRequestPost(context) {
                      or whether it should produce the final user-facing answer. */
                   mode: agentRound === 1 ? 'ANY' : 'AUTO',
                   ...(agentRound === 1
-                    ? { allowedFunctionNames: composioToolDeclarations.map(tool => tool.name) }
+                    ? { allowedFunctionNames: [
+                    ...composioToolDeclarations.map(tool => tool.name),
+                    ...(codingMode && explicitCodeWork ? [TERMINAL_TOOL_NAME] : [])
+                  ] }
                     : {})
                 }
               }
             : undefined,
           signal,
           env,
-          generationConfig: effectiveAdvancedThinking
-          ? {
-              thinkingConfig: {
-                // Gemini 3 uses levels; combining this with a numeric
-                // thinkingBudget makes the Vertex API reject the request.
-                thinkingLevel: 'HIGH'
-              }
+          holdTextUntilToolDecision: codingMode,
+          onThought: async text => {
+            if (codingMode) {
+              send({ type: 'thinking_chunk', text: String(text || '') });
             }
-          : undefined,
+          },
+          generationConfig:
+            codingMode || effectiveAdvancedThinking
+              ? {
+                  thinkingConfig: {
+                    thinkingLevel:
+                      String(thinkingLevel || 'medium').toLowerCase() === 'low'
+                        ? 'LOW'
+                        : String(thinkingLevel || '').toLowerCase() === 'extended'
+                          ? 'HIGH'
+                          : 'MEDIUM',
+                    includeThoughts: codingMode
+                  }
+                }
+              : undefined,
         onText: async text => {
           const piece = String(text || '');
           if (!piece) return;
@@ -1491,7 +1748,9 @@ export async function onRequestPost(context) {
               break;
             }
             const composioLabel = composioToolMetadata.get(call?.name);
-            const toolName = composioLabel
+            const toolName = call?.name === TERMINAL_TOOL_NAME
+              ? 'Terminal'
+              : composioLabel
               ? String(composioLabel.toolkitName || composioLabel.toolkitSlug || 'Plugin') +
                 ' · ' + String(composioLabel.name || call?.name)
               : 'External Tool';
@@ -1521,6 +1780,36 @@ export async function onRequestPost(context) {
                 callResult = {
                   error: 'This exact external tool call was already executed in this turn. Use its previous result and choose a different tool step.'
                 };
+              } else if (call?.name === TERMINAL_TOOL_NAME) {
+                send({
+                  type: 'terminal',
+                  phase: 'start',
+                  command: String(call?.args?.command || ''),
+                  cwd: String(call?.args?.cwd || '')
+                });
+                callResult = await executeTerminalCommand(
+                  call?.args?.command || '',
+                  call?.args?.cwd || '',
+                  (kind, text) => send({
+                    type: 'terminal',
+                    phase: 'output',
+                    stream: kind,
+                    text
+                  })
+                );
+                send({
+                  type: 'terminal',
+                  phase: 'complete',
+                  command: String(call?.args?.command || ''),
+                  cwd: String(callResult?.cwd || call?.args?.cwd || ''),
+                  code: Number(callResult?.code ?? 0),
+                  signal: callResult?.signal || null,
+                  stdout: String(callResult?.stdout || ''),
+                  stderr: String(callResult?.stderr || ''),
+                  durationMs: Number(callResult?.durationMs || 0),
+                  timedOut: !!callResult?.timedOut,
+                  success: !!callResult?.success
+                });
               } else if (composioLabel) {
                 callResult = effectiveUserId
                   ? await executeComposioTool(
@@ -1732,7 +2021,7 @@ export async function onRequestPost(context) {
           });
           const synthesizedText =
             synthesized?.candidates?.[0]?.content?.parts
-              ?.filter(part => typeof part?.text === 'string')
+              ?.filter(part => typeof part?.text === 'string' && part?.thought !== true)
               .map(part => part.text)
               .join('') || '';
           if (synthesizedText.trim()) finalResult = { ...synthesized, text: synthesizedText.trim() };
