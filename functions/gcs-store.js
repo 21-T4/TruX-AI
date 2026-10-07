@@ -6,22 +6,12 @@ import { promisify } from 'node:util';
 const gzip = promisify(gzipCallback);
 let storageInstance = null;
 
-function projectId(env = {}) {
-  return String(
-    env.GCP_PROJECT_ID ||
-    env.GOOGLE_CLOUD_PROJECT ||
-    env.GCLOUD_PROJECT ||
-    env.PROJECT_ID ||
-    ''
-  ).trim() || undefined;
-}
-
 export function bucketName(env = {}) {
   return String(env.TRUX_BUCKET_NAME || 'trux-ai-bucket').trim();
 }
 
 export function getStorage(env = {}) {
-  if (!storageInstance) storageInstance = new Storage({ projectId: projectId(env) });
+  if (!storageInstance) storageInstance = new Storage();
   return storageInstance;
 }
 
