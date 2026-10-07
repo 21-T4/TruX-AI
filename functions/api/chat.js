@@ -55,29 +55,68 @@ const DEEP_RESEARCH_LIMIT = 1;
 
 let vertexAIClient = null;
 let vertexAIClientConfigKey = '';
+let googleCloudRuntimeConfigPromise = null;
 
-function getVertexAIClient(env = {}) {
-  const project =
-    String(env?.GOOGLE_CLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || '').trim();
-  const location =
-    String(env?.GOOGLE_CLOUD_LOCATION || process.env.GOOGLE_CLOUD_LOCATION || 'global').trim() ||
-    'global';
+const GCP_METADATA_BASE =
+  'http://metadata.google.internal/computeMetadata/v1';
 
-  if (!project) {
-    throw new Error('GOOGLE_CLOUD_PROJECT is not configured on this Cloud Run service.');
+async function fetchGcpMetadata(path) {
+  const response = await fetch(GCP_METADATA_BASE + path, {
+    headers: { 'Metadata-Flavor': 'Google' }
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      'Unable to read Cloud Run GCP metadata (' +
+      path +
+      '): HTTP ' +
+      response.status
+    );
   }
 
-  const configKey = project + '|' + location;
+  return String(await response.text()).trim();
+}
+
+async function getGoogleCloudRuntimeConfig() {
+  if (!googleCloudRuntimeConfigPromise) {
+    googleCloudRuntimeConfigPromise = (async () => {
+      const [projectId, regionPath] = await Promise.all([
+        fetchGcpMetadata('/project/project-id'),
+        fetchGcpMetadata('/instance/region')
+      ]);
+
+      const regionMatch = regionPath.match(/\/regions\/([^/]+)$/);
+      const location = String(regionMatch?.[1] || '').trim();
+
+      if (!projectId || !location) {
+        throw new Error(
+          'Cloud Run GCP metadata did not provide a valid project ID and region.'
+        );
+      }
+
+      return { projectId, location };
+    })().catch(error => {
+      googleCloudRuntimeConfigPromise = null;
+      throw error;
+    });
+  }
+
+  return googleCloudRuntimeConfigPromise;
+}
+
+async function getVertexAIClient() {
+  const { projectId, location } = await getGoogleCloudRuntimeConfig();
+  const configKey = projectId + '|' + location;
 
   if (!vertexAIClient || vertexAIClientConfigKey !== configKey) {
     /*
-     * Cloud Run ADC + explicit Vertex mode.
-     * Do not rely on GOOGLE_GENAI_USE_ENTERPRISE/auto-detection here:
-     * TruX-AI uses the Vertex AI Gemini endpoint directly.
+     * Cloud Run provides the project and region through its native metadata
+     * server. Authentication remains native ADC through the Cloud Run service
+     * identity; no project/location environment variables or manual tokens.
      */
     vertexAIClient = new GoogleGenAI({
       vertexai: true,
-      project,
+      project: projectId,
       location
     });
     vertexAIClientConfigKey = configKey;
