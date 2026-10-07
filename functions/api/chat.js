@@ -47,97 +47,18 @@ const DEEP_RESEARCH_LIMIT = 1;
 
 
 /* =========================================================
-   NATIVE VERTEX AI / GOOGLE GEN AI AUTHENTICATION
-
-   Cloud Run supplies Application Default Credentials (ADC) through the
-   revision service identity. The Gen AI SDK uses ADC here; no service-
-   account email, private key, or manually minted access token is needed.
+   NATIVE GOOGLE GEN AI / VERTEX AI CLIENT
+   Cloud Run provides the runtime identity and environment configuration.
+   @google/genai handles authentication natively; no metadata-server calls,
+   service-account credentials, or manually minted access tokens are used.
    ========================================================= */
 
 let vertexAIClient = null;
-let vertexRuntimeConfigPromise = null;
 
-async function resolveVertexRuntimeConfig(env = {}) {
-  if (vertexRuntimeConfigPromise) return vertexRuntimeConfigPromise;
-
-  vertexRuntimeConfigPromise = (async () => {
-    const configuredProject = String(
-      env.GOOGLE_CLOUD_PROJECT ||
-      env.GCLOUD_PROJECT ||
-      env.PROJECT_ID ||
-      env.FIREBASE_PROJECT_ID ||
-      ''
-    ).trim();
-
-    const configuredLocation = String(
-      env.GOOGLE_CLOUD_LOCATION ||
-      env.GOOGLE_CLOUD_REGION ||
-      ''
-    ).trim();
-
-    let projectId = configuredProject;
-    let location = configuredLocation;
-
-    const metadataBase =
-      'http://metadata.google.internal/computeMetadata/v1';
-
-    async function metadata(path) {
-      const response = await fetch(metadataBase + path, {
-        headers: { 'Metadata-Flavor': 'Google' }
-      });
-      if (!response.ok) throw new Error('metadata HTTP ' + response.status);
-      return (await response.text()).trim();
-    }
-
-    if (!projectId) {
-      try {
-        projectId = await metadata('/project/project-id');
-      } catch {}
-    }
-
-    if (!location) {
-      try {
-        const regionPath = await metadata('/instance/region');
-        location = regionPath.split('/').pop() || '';
-      } catch {}
-    }
-
-    if (!projectId) {
-      throw new Error(
-        'Cloud Run could not determine the Google Cloud project from its metadata server.'
-      );
-    }
-
-    if (!location) {
-      throw new Error(
-        'Cloud Run could not determine its region from the metadata server.'
-      );
-    }
-
-    return { projectId, location };
-  })();
-
-  try {
-    return await vertexRuntimeConfigPromise;
-  } catch (error) {
-    vertexRuntimeConfigPromise = null;
-    throw error;
+function getVertexAIClient() {
+  if (!vertexAIClient) {
+    vertexAIClient = new GoogleGenAI();
   }
-}
-
-async function getVertexAIClient(env = {}) {
-  const { projectId, location } = await resolveVertexRuntimeConfig(env);
-
-  if (
-    !vertexAIClient
-  ) {
-    vertexAIClient = new GoogleGenAI({
-      vertexai: true,
-      project: projectId,
-      location
-    });
-  }
-
   return vertexAIClient;
 }
 
@@ -436,7 +357,7 @@ async function fetchVertexGemini({
   env
 }) {
 
-  const client = await getVertexAIClient(env);
+  const client = getVertexAIClient();
   const config = {};
 
   if (systemInstruction) config.systemInstruction = systemInstruction;
@@ -477,7 +398,7 @@ async function streamVertexGemini({
 }) {
   void onStatus;
 
-  const client = await getVertexAIClient(env);
+  const client = getVertexAIClient();
   const config = {};
 
   if (systemInstruction) config.systemInstruction = systemInstruction;
@@ -684,7 +605,7 @@ async function generateVideoWithVertex({
     videoSafePathPart(randomPart);
 
   const model = String(env.TRUX_VIDEO_MODEL || VIDEO_MODEL);
-    const client = await getVertexAIClient(env);
+    const client = getVertexAIClient();
 
   let operation = await client.models.generateVideos({
     model,
@@ -1023,10 +944,6 @@ export async function onRequestPost(context) {
         : (codingMode ? 'base' : (tier || 'base'));
     const proTier = effectiveTier === 'pro' || effectiveTier === 'ultra' || researchMode;
 
-    // Resolve project + region from Cloud Run metadata. Authentication is
-    // still handled by Application Default Credentials inside @google/genai.
-    await resolveVertexRuntimeConfig(env);
-    const accessToken = undefined;
 
     /* =====================================================
        VIDEO GENERATION — Pro + Owner only.
