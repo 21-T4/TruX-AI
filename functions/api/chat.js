@@ -1265,9 +1265,7 @@ export async function onRequestPost(context) {
       // If Composio produced no executable functions, stop with a truthful
       // integration error instead of drafting/simulating the requested action.
       if (
-        explicitExternalAction &&
-        effectiveUserId &&
-        String(env.COMPOSIO_API_KEY || '').trim() &&
+        shouldLoadComposioTools &&
         !composioToolDeclarations.length
       ) {
         const messageText =
@@ -1501,34 +1499,11 @@ export async function onRequestPost(context) {
 
             try {
               const duplicateBatch = repeatedToolSignatureCount > 0;
-              const isComposioCall = !!composioLabel;
               let callResult;
               if (duplicateBatch) {
                 callResult = {
                   error: 'This exact external tool call was already executed in this turn. Use its previous result and choose a different tool step.'
                 };
-              } else if (composioLabel) {
-                callResult = effectiveUserId
-                  ? await executeComposioTool(
-                      env,
-                      effectiveUserId,
-                      call.name,
-                      call.args || {},
-                      composioLabel,
-                      new URL(request.url).origin +
-                        '/?trux_plugins=1&plugin=' +
-                        encodeURIComponent(
-                          PLUGIN_CATALOG.find(p =>
-                            Array.isArray(p?.slugs) &&
-                            p.slugs.includes(String(composioLabel?.toolkitSlug || ''))
-                          )?.id || ''
-                        ) +
-                        '&composio_callback=1'
-                    )
-                  : {
-                      success: false,
-                      error: 'A signed-in account is required for plugin actions.'
-                    };
               } else if (composioLabel) {
                 callResult = effectiveUserId
                   ? await executeComposioTool(
