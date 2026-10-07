@@ -182,7 +182,7 @@ function terminalSplitCommand(command) {
       quote = char;
       continue;
     }
-    if (/\\s/.test(char)) {
+    if (/\s/.test(char)) {
       if (token) {
         tokens.push(token);
         token = '';
@@ -244,7 +244,7 @@ function validateTerminalCommand(command) {
   return { executable, args: parts.slice(1) };
 }
 
-async function executeTerminalCommand(command, cwd = '', onOutput = null) {
+async function executeTerminalCommand(command, cwd = '', timeoutMs = TERMINAL_MAX_TIMEOUT_MS, onOutput = null) {
   const { executable, args } = validateTerminalCommand(command);
   const root = path.resolve(process.cwd());
   const requestedCwd = String(cwd || '').trim();
@@ -259,9 +259,9 @@ async function executeTerminalCommand(command, cwd = '', onOutput = null) {
     throw new Error('Terminal working directory must remain inside the application workspace.');
   }
 
-  const timeoutMs = Math.min(
+  timeoutMs = Math.min(
     TERMINAL_MAX_TIMEOUT_MS,
-    Math.max(1000, Number(args.timeoutMs || 0) || TERMINAL_MAX_TIMEOUT_MS)
+    Math.max(1000, Number(timeoutMs || 0) || TERMINAL_MAX_TIMEOUT_MS)
   );
 
   const terminalEnv = {
@@ -1790,6 +1790,7 @@ export async function onRequestPost(context) {
                 callResult = await executeTerminalCommand(
                   call?.args?.command || '',
                   call?.args?.cwd || '',
+                  call?.args?.timeoutMs || TERMINAL_MAX_TIMEOUT_MS,
                   (kind, text) => send({
                     type: 'terminal',
                     phase: 'output',
