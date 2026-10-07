@@ -483,7 +483,7 @@ async function streamVertexGemini({
   void accessToken;
   void onStatus;
 
-  const client = getVertexAIClient(projectId);
+  const client = await getVertexAIClient(env);
   const config = {};
 
   if (systemInstruction) config.systemInstruction = systemInstruction;
