@@ -1173,7 +1173,6 @@ export async function onRequestPost(context) {
       userEmail,
       developer,
       advancedThinking,
-      thinkingLevel,
       location,
       generateImage: forceImageGen,
       githubRepository,
@@ -1674,20 +1673,13 @@ export async function onRequestPost(context) {
               send({ type: 'thinking_chunk', text: String(text || '') });
             }
           },
-          generationConfig:
-            codingMode || effectiveAdvancedThinking
-              ? {
-                  thinkingConfig: {
-                    thinkingLevel:
-                      String(thinkingLevel || 'medium').toLowerCase() === 'low'
-                        ? 'LOW'
-                        : String(thinkingLevel || '').toLowerCase() === 'extended'
-                          ? 'HIGH'
-                          : 'MEDIUM',
-                    includeThoughts: codingMode
-                  }
+          generationConfig: effectiveAdvancedThinking
+            ? {
+                thinkingConfig: {
+                  thinkingLevel: 'HIGH'
                 }
-              : undefined,
+              }
+            : undefined,
         onText: async text => {
           const piece = String(text || '');
           if (!piece) return;
