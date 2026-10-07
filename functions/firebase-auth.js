@@ -3,13 +3,9 @@ import { getAuth } from 'firebase-admin/auth';
 
 let authInstance = null;
 
-function projectId(env = {}) {
-  return String(env.GCP_PROJECT_ID || env.GOOGLE_CLOUD_PROJECT || env.GCLOUD_PROJECT || env.PROJECT_ID || '').trim() || undefined;
-}
-
 function getAdminAuth(env = {}) {
   if(authInstance) return authInstance;
-  const app = getApps()[0] || initializeApp({ credential: applicationDefault(), projectId: projectId(env) });
+  const app = getApps()[0] || initializeApp({ credential: applicationDefault() });
   authInstance = getAuth(app);
   return authInstance;
 }
