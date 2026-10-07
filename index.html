@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TruX AI | Next-Gen AI Solutions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#1e293b',
+                        dark: '#0f172a',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        .gradient-text {
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hero-glow {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: rgba(59, 130, 246, 0.5);
+            filter: blur(100px);
+            border-radius: 50%;
+            z-index: -1;
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body class="antialiased min-h-screen flex flex-col relative overflow-x-hidden">
+    <div class="hero-glow"></div>
+    
+    <!-- Navbar -->
+    <nav class="flex justify-between items-center py-6 px-8 max-w-7xl mx-auto w-full border-b border-gray-800">
+        <div class="text-2xl font-extrabold tracking-tighter">
+            TruX <span class="text-blue-500">AI</span>
+        </div>
+        <ul class="hidden md:flex gap-8 text-sm font-semibold text-gray-300">
+            <li><a href="#" class="hover:text-white transition">Products</a></li>
+            <li><a href="#" class="hover:text-white transition">Developers</a></li>
+            <li><a href="#" class="hover:text-white transition">About</a></li>
+        </ul>
+        <div>
+            <a href="#" class="px-5 py-2.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-semibold transition shadow-lg shadow-blue-500/30">
+                Get Started
+            </a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <main class="flex-grow flex items-center justify-center flex-col text-center px-4 pt-24 pb-16 z-10">
+        <div class="inline-block py-1 px-3 rounded-full bg-secondary border border-gray-700 text-xs font-semibold text-blue-400 mb-6 tracking-wide">
+            🚀 V2.0 Now Available
+        </div>
+        <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight max-w-4xl mb-6 leading-tight">
+            Supercharge your workflow with <span class="gradient-text">Intelligent AI</span>
+        </h1>
+        <p class="text-lg md:text-xl text-gray-400 max-w-2xl mb-10 leading-relaxed">
+            TruX AI provides state-of-the-art tools and autonomous agents to help you build, optimize, and scale your applications faster than ever before.
+        </p>
+        
+        <div class="flex flex-col sm:flex-row gap-4">
+            <a href="#" class="px-8 py-3.5 rounded-full bg-white text-gray-900 hover:bg-gray-200 font-bold text-lg transition shadow-xl">
+                Start Building Free
+            </a>
+            <a href="#" class="px-8 py-3.5 rounded-full bg-transparent border border-gray-600 hover:border-gray-400 text-white font-bold text-lg transition">
+                View Documentation
+            </a>
+        </div>
+    </main>
+
+    <!-- Features Section -->
+    <section class="max-w-7xl mx-auto px-6 py-20 grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="bg-secondary/50 border border-gray-800 p-8 rounded-2xl backdrop-blur-sm hover:border-blue-500/50 transition">
+            <div class="w-12 h-12 bg-blue-900/50 rounded-xl flex items-center justify-center mb-6 border border-blue-500/20">
+                <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            </div>
+            <h3 class="text-xl font-bold mb-3 text-white">Lightning Fast</h3>
+            <p class="text-gray-400 leading-relaxed">Experience zero-latency generations and ultra-fast inference for real-time applications.</p>
+        </div>
+        <div class="bg-secondary/50 border border-gray-800 p-8 rounded-2xl backdrop-blur-sm hover:border-purple-500/50 transition">
+            <div class="w-12 h-12 bg-purple-900/50 rounded-xl flex items-center justify-center mb-6 border border-purple-500/20">
+                <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+            </div>
+            <h3 class="text-xl font-bold mb-3 text-white">Advanced Models</h3>
+            <p class="text-gray-400 leading-relaxed">Powered by next-generation neural architectures to handle the most complex developer queries.</p>
+        </div>
+        <div class="bg-secondary/50 border border-gray-800 p-8 rounded-2xl backdrop-blur-sm hover:border-emerald-500/50 transition">
+            <div class="w-12 h-12 bg-emerald-900/50 rounded-xl flex items-center justify-center mb-6 border border-emerald-500/20">
+                <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            </div>
+            <h3 class="text-xl font-bold mb-3 text-white">Enterprise Security</h3>
+            <p class="text-gray-400 leading-relaxed">Built from the ground up with military-grade encryption to keep your IP and data safe.</p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-800 py-8 mt-auto">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
+            <p>&copy; 2024 TruX Technologies. All rights reserved.</p>
+            <div class="flex gap-6 mt-4 md:mt-0">
+                <a href="#" class="hover:text-white transition">Privacy Policy</a>
+                <a href="#" class="hover:text-white transition">Terms of Service</a>
+                <a href="#" class="hover:text-white transition">Twitter</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
