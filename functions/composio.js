@@ -56,7 +56,10 @@ async function composioRequest(env, pathname, init = {}) {
     });
     // Composio can report a scoped-project-key denial as a generic 401
     // "Invalid API key". Keep this distinct from a provider OAuth failure.
-    if (response.status === 401 && /invalid\s+api\s+key|project\s+api\s+key|api\s+key/i.test(String(message))) {
+    if (
+      (response.status === 401 || response.status === 403) &&
+      /invalid\s+api\s+key|project\s+api\s+key|api\s+key|not permitted|permission/i.test(String(message))
+    ) {
       error.composioProjectKeyPermission = true;
     }
     throw error;
@@ -182,12 +185,12 @@ export async function deleteConnectedAccount(env, connectedAccountId) {
   );
 }
 
-export async function listConnectedAccounts(env, userId) {
+export async function listConnectedAccounts(env, userId, toolkitSlug = '') {
   const query = new URLSearchParams();
   query.set('user_ids', userId);
   query.set('statuses', 'ACTIVE');
-  query.set('account_type', 'PRIVATE');
   query.set('limit', '200');
+  if (toolkitSlug) query.set('toolkit_slugs', toolkitSlug);
 
   const payload = await composioRequest(env, '/connected_accounts?' + query.toString());
   return Array.isArray(payload?.items) ? payload.items : [];
@@ -392,7 +395,9 @@ function normalizeSchema(schema) {
 }
 
 export async function getComposioGeminiTools(env, enabledToolkitSlugs, queryText = '') {
-  const slugs = [...new Set((enabledToolkitSlugs || []).filter(Boolean).map(String))];
+  const slugs = [...new Set(
+    (enabledToolkitSlugs || []).filter(Boolean).map(String)
+  )];
   if (!slugs.length) return { declarations: [], metadata: new Map() };
 
   const baseParams = new URLSearchParams({
@@ -402,26 +407,48 @@ export async function getComposioGeminiTools(env, enabledToolkitSlugs, queryText
     limit: '100'
   });
 
-  const query = String(queryText || '').replace(/\s+/g, ' ').trim().slice(0, 600);
-  const params = new URLSearchParams(baseParams);
-  if (query) params.set('query', query);
+  const requested = String(queryText || '').replace(/\s+/g, ' ').trim().slice(0, 600);
+  const queries = [];
 
-  let payload = null;
-  try {
-    payload = await composioRequest(env, '/tools?' + params.toString());
+  if (requested) queries.push(requested);
 
-    // Composio's query filter is a search filter, not a guarantee that the
-    // toolkit's tools will be returned. A valid zero-result search must fall
-    // back to the toolkit catalogue so the model can still select the action.
-    if (query && (!Array.isArray(payload?.items) || payload.items.length === 0)) {
-      payload = await composioRequest(env, '/tools?' + baseParams.toString());
-    }
-  } catch (error) {
-    if (!query) throw error;
-    payload = await composioRequest(env, '/tools?' + baseParams.toString());
+  if (slugs.some(slug => slug.toLowerCase() === 'github')) {
+    queries.push(
+      'search repository code files',
+      'read repository file contents',
+      'update edit create delete repository files',
+      'commit push branch pull request repository'
+    );
   }
 
-  const items = Array.isArray(payload?.items) ? payload.items : [];
+  const uniqueQueries = [...new Set(queries)];
+
+  const payloads = await Promise.all(
+    (uniqueQueries.length ? uniqueQueries : ['']).map(async query => {
+      const params = new URLSearchParams(baseParams);
+      if (query) params.set('query', query);
+
+      try {
+        return await composioRequest(env, '/tools?' + params.toString());
+      } catch (error) {
+        if (query && error?.status) return null;
+        throw error;
+      }
+    })
+  );
+
+  const items = [];
+  const seenItems = new Set();
+
+  for (const payload of payloads) {
+    for (const item of Array.isArray(payload?.items) ? payload.items : []) {
+      const slug = String(item?.slug || item?.name || '').trim();
+      if (!slug || seenItems.has(slug)) continue;
+      seenItems.add(slug);
+      items.push(item);
+    }
+  }
+
   const declarations = [];
   const metadata = new Map();
 
@@ -429,17 +456,26 @@ export async function getComposioGeminiTools(env, enabledToolkitSlugs, queryText
     const slug = String(item?.slug || item?.name || '').trim();
     if (!slug || declarations.some(tool => tool.name === slug)) continue;
 
-    const toolkitSlug = String(item?.toolkit?.slug || item?.toolkit_slug || '').trim();
+    const toolkitSlug = String(
+      item?.toolkit?.slug || item?.toolkit_slug || ''
+    ).trim();
+
     if (!toolkitSlug || !slugs.includes(toolkitSlug)) continue;
 
-    const schema = schemaFromInputParameters(item?.input_parameters || item?.inputParameters || item?.parameters);
-    const declaration = {
-      name: slug,
-      description: String(item?.description || item?.name || slug).slice(0, 1200),
-      parameters: schema
-    };
+    const schema = schemaFromInputParameters(
+      item?.input_parameters ||
+      item?.inputParameters ||
+      item?.parameters
+    );
 
-    declarations.push(declaration);
+    declarations.push({
+      name: slug,
+      description: String(
+        item?.description || item?.name || slug
+      ).slice(0, 1200),
+      parameters: schema
+    });
+
     metadata.set(slug, {
       toolkitSlug,
       toolkitName: String(item?.toolkit?.name || toolkitSlug),
@@ -452,11 +488,14 @@ export async function getComposioGeminiTools(env, enabledToolkitSlugs, queryText
 
 export async function executeComposioTool(env, userId, toolSlug, args, metadata = null, callbackUrl = '') {
   const toolkitSlug = String(metadata?.toolkitSlug || '').trim();
+
   const accounts = toolkitSlug
-    ? await listConnectedAccounts(env, userId)
-    : [];
+    ? await listConnectedAccounts(env, userId, toolkitSlug)
+    : await listConnectedAccounts(env, userId);
+
   const account = accounts.find(item =>
-    String(item?.toolkit?.slug || item?.toolkit_slug || '').trim() === toolkitSlug
+    String(item?.toolkit?.slug || item?.toolkit_slug || '').trim().toLowerCase() ===
+    toolkitSlug.toLowerCase()
   );
   const connectedAccountId = getConnectedAccountId(account);
 
@@ -467,7 +506,7 @@ export async function executeComposioTool(env, userId, toolSlug, args, metadata 
       authRequired: true,
       tool: toolSlug,
       toolkit: toolkitSlug || null,
-      error: 'This app is not currently authorized. Reconnect it to grant TruX access.',
+      error: 'This app is not currently authorized for this user. Reconnect it to grant TruX access.',
       reconnectUrl
     };
   }
@@ -475,8 +514,7 @@ export async function executeComposioTool(env, userId, toolSlug, args, metadata 
   const body = {
     connected_account_id: connectedAccountId,
     user_id: userId,
-    arguments: args && typeof args === 'object' ? args : {},
-    version: 'latest'
+    arguments: args && typeof args === 'object' ? args : {}
   };
 
   try {
@@ -486,8 +524,31 @@ export async function executeComposioTool(env, userId, toolSlug, args, metadata 
       { method: 'POST', body: JSON.stringify(body) }
     );
 
+    const success =
+      result?.successful !== false &&
+      result?.success !== false &&
+      result?.error == null;
+
+    if (!success) {
+      return {
+        success: false,
+        tool: toolSlug,
+        toolkit: toolkitSlug || null,
+        connectedAccountId,
+        error:
+          String(
+            result?.error?.message ||
+            result?.error ||
+            result?.message ||
+            result?.status_reason ||
+            'Composio reported that the tool action failed.'
+          ),
+        result
+      };
+    }
+
     return {
-      success: result?.successful !== false && result?.success !== false,
+      success: true,
       tool: toolSlug,
       toolkit: toolkitSlug || null,
       connectedAccountId,
@@ -501,21 +562,32 @@ export async function executeComposioTool(env, userId, toolSlug, args, metadata 
         tool: toolSlug,
         toolkit: toolkitSlug || null,
         connectedAccountId,
-        error: 'The Composio project API key cannot execute tools. Enable Tool execution write access for this key.'
+        error:
+          'The COMPOSIO_API_KEY is valid but is not permitted to execute tools. Enable tool execution for this project key.'
       };
     }
+
     if (isLikelyAuthFailure(error)) {
-      const reconnectUrl = await createReconnectUrl(env, userId, toolkitSlug, callbackUrl);
+      const reconnectUrl = await createReconnectUrl(
+        env,
+        userId,
+        toolkitSlug,
+        callbackUrl
+      );
       return {
         success: false,
         authRequired: true,
         tool: toolSlug,
         toolkit: toolkitSlug || null,
         connectedAccountId,
-        error: String(error?.message || 'The connected account needs authorization again.'),
+        error: String(
+          error?.message ||
+          'The connected account needs authorization again.'
+        ),
         reconnectUrl
       };
     }
+
     throw error;
   }
 }
