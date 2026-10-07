@@ -412,7 +412,21 @@ export async function getComposioGeminiTools(env, enabledToolkitSlugs, queryText
 
   if (requested) queries.push(requested);
 
+  const exactToolSlugs = new Set();
+
   if (slugs.some(slug => slug.toLowerCase() === 'github')) {
+    // Search is useful for discovery, but search ranking can omit GitHub's
+    // write actions. Always load the core coding/write tools explicitly.
+    [
+      'GITHUB_CREATE_OR_UPDATE_FILE_CONTENTS',
+      'GITHUB_COMMIT_MULTIPLE_FILES',
+      'GITHUB_CREATE_A_COMMIT',
+      'GITHUB_CREATE_BRANCH',
+      'GITHUB_CREATE_A_PULL_REQUEST',
+      'GITHUB_UPDATE_A_REFERENCE',
+      'GITHUB_DELETE_A_FILE'
+    ].forEach(toolSlug => exactToolSlugs.add(toolSlug));
+
     queries.push(
       'search repository code files',
       'read repository file contents',
@@ -423,8 +437,8 @@ export async function getComposioGeminiTools(env, enabledToolkitSlugs, queryText
 
   const uniqueQueries = [...new Set(queries)];
 
-  const payloads = await Promise.all(
-    (uniqueQueries.length ? uniqueQueries : ['']).map(async query => {
+  const payloads = await Promise.all([
+    ...uniqueQueries.map(async query => {
       const params = new URLSearchParams(baseParams);
       if (query) params.set('query', query);
 
@@ -434,8 +448,21 @@ export async function getComposioGeminiTools(env, enabledToolkitSlugs, queryText
         if (query && error?.status) return null;
         throw error;
       }
-    })
-  );
+    }),
+    ...(exactToolSlugs.size
+      ? [composioRequest(
+          env,
+          '/tools?' +
+            new URLSearchParams({
+              toolkit_slug: slugs.join(','),
+              toolkit_versions: 'latest',
+              include_deprecated: 'false',
+              tool_slugs: [...exactToolSlugs].join(','),
+              limit: String(exactToolSlugs.size)
+            }).toString()
+        )]
+      : [])
+  ]);
 
   const items = [];
   const seenItems = new Set();
