@@ -1,4 +1,5 @@
 import { Storage } from '@google-cloud/storage';
+import { Readable } from 'node:stream';
 
 const storage = new Storage();
 
