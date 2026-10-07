@@ -55,17 +55,89 @@ const DEEP_RESEARCH_LIMIT = 1;
    ========================================================= */
 
 let vertexAIClient = null;
+let vertexRuntimeConfigPromise = null;
 
-function getVertexAIClient() {
-  /*
-   * Native @google/genai runtime configuration.
-   * Cloud Run provides Application Default Credentials through the attached
-   * service identity. The SDK resolves project/location without requiring
-   * application-owned GCP credential or location environment variables.
-   */
-  if (!vertexAIClient) {
-    vertexAIClient = new GoogleGenAI({ vertexai: true });
+async function resolveVertexRuntimeConfig(env = {}) {
+  if (vertexRuntimeConfigPromise) return vertexRuntimeConfigPromise;
+
+  vertexRuntimeConfigPromise = (async () => {
+    const configuredProject = String(
+      env.GOOGLE_CLOUD_PROJECT ||
+      env.GCLOUD_PROJECT ||
+      env.PROJECT_ID ||
+      env.FIREBASE_PROJECT_ID ||
+      ''
+    ).trim();
+
+    const configuredLocation = String(
+      env.GOOGLE_CLOUD_LOCATION ||
+      env.GOOGLE_CLOUD_REGION ||
+      ''
+    ).trim();
+
+    let projectId = configuredProject;
+    let location = configuredLocation;
+
+    const metadataBase =
+      'http://metadata.google.internal/computeMetadata/v1';
+
+    async function metadata(path) {
+      const response = await fetch(metadataBase + path, {
+        headers: { 'Metadata-Flavor': 'Google' }
+      });
+      if (!response.ok) throw new Error('metadata HTTP ' + response.status);
+      return (await response.text()).trim();
+    }
+
+    if (!projectId) {
+      try {
+        projectId = await metadata('/project/project-id');
+      } catch {}
+    }
+
+    if (!location) {
+      try {
+        const regionPath = await metadata('/instance/region');
+        location = regionPath.split('/').pop() || '';
+      } catch {}
+    }
+
+    if (!projectId) {
+      throw new Error(
+        'Cloud Run could not determine the Google Cloud project from its metadata server.'
+      );
+    }
+
+    if (!location) {
+      throw new Error(
+        'Cloud Run could not determine its region from the metadata server.'
+      );
+    }
+
+    return { projectId, location };
+  })();
+
+  try {
+    return await vertexRuntimeConfigPromise;
+  } catch (error) {
+    vertexRuntimeConfigPromise = null;
+    throw error;
   }
+}
+
+async function getVertexAIClient(env = {}) {
+  const { projectId, location } = await resolveVertexRuntimeConfig(env);
+
+  if (
+    !vertexAIClient
+  ) {
+    vertexAIClient = new GoogleGenAI({
+      vertexai: true,
+      project: projectId,
+      location
+    });
+  }
+
   return vertexAIClient;
 }
 
@@ -362,11 +434,12 @@ async function fetchVertexGemini({
   accessToken,
   projectId,
   generationConfig,
-  signal
+  signal,
+  env
 }) {
   void accessToken;
 
-  const client = getVertexAIClient();
+  const client = await getVertexAIClient(env);
   const config = {};
 
   if (systemInstruction) config.systemInstruction = systemInstruction;
@@ -404,7 +477,8 @@ async function streamVertexGemini({
   onText,
   onStatus,
   generationConfig,
-  signal
+  signal,
+  env
 }) {
   void accessToken;
   void onStatus;
@@ -542,7 +616,7 @@ function getGroundingData(groundingMetadata) {
    GEMINI IMAGE GENERATION (shared by every chat tier)
    ========================================================= */
 
-async function generateImageWithVertex({ prompt, accessToken, projectId }) {
+async function generateImageWithVertex({ prompt, accessToken, projectId, env }) {
   const response = await fetchVertexGemini({
     model: ['gemini', '3.1-flash-image'].join('-'),
     contents: [
@@ -561,6 +635,7 @@ async function generateImageWithVertex({ prompt, accessToken, projectId }) {
     systemInstruction: 'Generate the requested image. Return the generated image.',
     accessToken,
     projectId,
+    env,
     generationConfig: {
       responseModalities: ['TEXT', 'IMAGE'],
       imageConfig: { aspectRatio: '1:1' }
@@ -620,7 +695,7 @@ async function generateVideoWithVertex({
     videoSafePathPart(randomPart);
 
   const model = String(env.TRUX_VIDEO_MODEL || VIDEO_MODEL);
-    const client = getVertexAIClient();
+    const client = await getVertexAIClient(env);
 
   let operation = await client.models.generateVideos({
     model,
@@ -806,7 +881,7 @@ function extractGeminiText(response) {
     .trim();
 }
 
-async function summarizeOlderHistory(olderMessages, accessToken, projectId, signal) {
+async function summarizeOlderHistory(olderMessages, accessToken, projectId, signal, env) {
   if (!olderMessages.length) return '';
 
   const transcript = olderMessages
@@ -839,13 +914,14 @@ async function summarizeOlderHistory(olderMessages, accessToken, projectId, sign
     generationConfig: {
       maxOutputTokens: 700,
       temperature: 0.2
-    }
+    },
+    env
   });
 
   return extractGeminiText(response);
 }
 
-async function buildConversationHistory(history, accessToken, projectId, signal) {
+async function buildConversationHistory(history, accessToken, projectId, signal, env) {
   const normalized = normalizeHistoryMessages(history);
   if (!normalized.length) return [];
 
@@ -854,7 +930,7 @@ async function buildConversationHistory(history, accessToken, projectId, signal)
 
   let summary = '';
   if (older.length) {
-    summary = await summarizeOlderHistory(older, accessToken, projectId, signal);
+    summary = await summarizeOlderHistory(older, accessToken, projectId, signal, env);
   }
 
   const result = [];
@@ -960,10 +1036,11 @@ export async function onRequestPost(context) {
         : (codingMode ? 'base' : (tier || 'base'));
     const proTier = effectiveTier === 'pro' || effectiveTier === 'ultra' || researchMode;
 
-    // Native @google/genai + Cloud Run ADC handles project, credentials, and
-    // location discovery. No Vertex project/location environment variables
-    // are required by the application.
-    const projectId = undefined;
+    // Resolve project + region from Cloud Run metadata. Authentication is
+    // still handled by Application Default Credentials inside @google/genai.
+    const vertexRuntime = await resolveVertexRuntimeConfig(env);
+    const projectId = vertexRuntime.projectId;
+    const location = vertexRuntime.location;
     const accessToken = undefined;
 
     /* =====================================================
@@ -1177,7 +1254,7 @@ export async function onRequestPost(context) {
         send({ type: 'status', status: 'Compressing older conversation context…' });
       }
 
-      formattedHistory = await buildConversationHistory(history, accessToken, projectId, signal);
+      formattedHistory = await buildConversationHistory(history, accessToken, projectId, signal, env);
 
       const contents = [...formattedHistory, { role: 'user', parts: currentParts }];
       /* -------------------------------------------------
@@ -1405,6 +1482,7 @@ export async function onRequestPost(context) {
           accessToken,
           projectId,
           signal,
+          env,
           generationConfig: effectiveAdvancedThinking
           ? {
               thinkingConfig: {
@@ -1719,6 +1797,7 @@ export async function onRequestPost(context) {
             accessToken,
             projectId,
             signal,
+            env,
             generationConfig: effectiveAdvancedThinking
               ? { thinkingConfig: { thinkingLevel: 'HIGH' } }
               : undefined
