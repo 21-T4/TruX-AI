@@ -49,13 +49,13 @@ const DEEP_RESEARCH_LIMIT = 1;
 /* =========================================================
    NATIVE GOOGLE GEN AI / VERTEX AI CLIENT
    Cloud Run provides the runtime identity and native GCP metadata.
-   Project ID and region are discovered from the Cloud Run metadata server;
-   authentication remains Application Default Credentials from the service identity.
+   Project ID is discovered from the Cloud Run metadata server.
+   Gen AI uses the global location directly in code.
    ========================================================= */
 
 let vertexAIClient = null;
 let vertexAIClientConfigKey = '';
-let googleCloudRuntimeConfigPromise = null;
+let googleCloudProjectPromise = null;
 
 const GCP_METADATA_BASE =
   'http://metadata.google.internal/computeMetadata/v1';
@@ -77,47 +77,26 @@ async function fetchGcpMetadata(path) {
   return String(await response.text()).trim();
 }
 
-async function getGoogleCloudRuntimeConfig() {
-  if (!googleCloudRuntimeConfigPromise) {
-    googleCloudRuntimeConfigPromise = (async () => {
-      const [projectId, regionPath] = await Promise.all([
-        fetchGcpMetadata('/project/project-id'),
-        fetchGcpMetadata('/instance/region')
-      ]);
-
-      const regionMatch = regionPath.match(/\/regions\/([^/]+)$/);
-      const location = String(regionMatch?.[1] || '').trim();
-
-      if (!projectId || !location) {
-        throw new Error(
-          'Cloud Run GCP metadata did not provide a valid project ID and region.'
-        );
-      }
-
-      return { projectId, location };
-    })().catch(error => {
-      googleCloudRuntimeConfigPromise = null;
+async function getGoogleCloudProjectId() {
+  if (!googleCloudProjectPromise) {
+    googleCloudProjectPromise = fetchGcpMetadata('/project/project-id').catch(error => {
+      googleCloudProjectPromise = null;
       throw error;
     });
   }
 
-  return googleCloudRuntimeConfigPromise;
+  return googleCloudProjectPromise;
 }
 
 async function getVertexAIClient() {
-  const { projectId, location } = await getGoogleCloudRuntimeConfig();
-  const configKey = projectId + '|' + location;
+  const projectId = await getGoogleCloudProjectId();
+  const configKey = projectId;
 
   if (!vertexAIClient || vertexAIClientConfigKey !== configKey) {
-    /*
-     * Cloud Run provides the project and region through its native metadata
-     * server. Authentication remains native ADC through the Cloud Run service
-     * identity; no project/location environment variables or manual tokens.
-     */
     vertexAIClient = new GoogleGenAI({
       vertexai: true,
       project: projectId,
-      location
+      location: 'global'
     });
     vertexAIClientConfigKey = configKey;
   }
