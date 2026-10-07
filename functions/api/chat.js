@@ -431,13 +431,10 @@ async function fetchVertexGemini({
   contents,
   systemInstruction,
   tools,
-  accessToken,
-  projectId,
   generationConfig,
   signal,
   env
 }) {
-  void accessToken;
 
   const client = await getVertexAIClient(env);
   const config = {};
@@ -472,15 +469,12 @@ async function streamVertexGemini({
   systemInstruction,
   tools,
   toolConfig,
-  accessToken,
-  projectId,
   onText,
   onStatus,
   generationConfig,
   signal,
   env
 }) {
-  void accessToken;
   void onStatus;
 
   const client = await getVertexAIClient(env);
@@ -616,7 +610,7 @@ function getGroundingData(groundingMetadata) {
    GEMINI IMAGE GENERATION (shared by every chat tier)
    ========================================================= */
 
-async function generateImageWithVertex({ prompt, accessToken, projectId, env }) {
+async function generateImageWithVertex({ prompt, env }) {
   const response = await fetchVertexGemini({
     model: ['gemini', '3.1-flash-image'].join('-'),
     contents: [
@@ -633,8 +627,6 @@ async function generateImageWithVertex({ prompt, accessToken, projectId, env }) 
       }
     ],
     systemInstruction: 'Generate the requested image. Return the generated image.',
-    accessToken,
-    projectId,
     env,
     generationConfig: {
       responseModalities: ['TEXT', 'IMAGE'],
@@ -668,12 +660,9 @@ function videoSafePathPart(value) {
 function videoDelay(ms) { return new Promise(resolve => setTimeout(resolve,ms)); }
 async function generateVideoWithVertex({
   prompt,
-  accessToken,
-  projectId,
   env,
   onStatus
 }) {
-  void accessToken;
 
   const outputBase = getVideoOutputUri(env);
   if (!outputBase.startsWith('gs://')) {
@@ -881,7 +870,7 @@ function extractGeminiText(response) {
     .trim();
 }
 
-async function summarizeOlderHistory(olderMessages, accessToken, projectId, signal, env) {
+async function summarizeOlderHistory(olderMessages, signal, env) {
   if (!olderMessages.length) return '';
 
   const transcript = olderMessages
@@ -908,8 +897,6 @@ async function summarizeOlderHistory(olderMessages, accessToken, projectId, sign
     systemInstruction:
       'You are a conversation-memory compressor. Keep only information that can materially improve the next response. ' +
       'Do not answer the user request; summarize the conversation history.',
-    accessToken,
-    projectId,
     signal,
     generationConfig: {
       maxOutputTokens: 700,
@@ -921,7 +908,7 @@ async function summarizeOlderHistory(olderMessages, accessToken, projectId, sign
   return extractGeminiText(response);
 }
 
-async function buildConversationHistory(history, accessToken, projectId, signal, env) {
+async function buildConversationHistory(history, signal, env) {
   const normalized = normalizeHistoryMessages(history);
   if (!normalized.length) return [];
 
@@ -930,7 +917,7 @@ async function buildConversationHistory(history, accessToken, projectId, signal,
 
   let summary = '';
   if (older.length) {
-    summary = await summarizeOlderHistory(older, accessToken, projectId, signal, env);
+    summary = await summarizeOlderHistory(older, signal, env);
   }
 
   const result = [];
@@ -1038,9 +1025,7 @@ export async function onRequestPost(context) {
 
     // Resolve project + region from Cloud Run metadata. Authentication is
     // still handled by Application Default Credentials inside @google/genai.
-    const vertexRuntime = await resolveVertexRuntimeConfig(env);
-    const projectId = vertexRuntime.projectId;
-    const location = vertexRuntime.location;
+    await resolveVertexRuntimeConfig(env);
     const accessToken = undefined;
 
     /* =====================================================
@@ -1058,8 +1043,6 @@ export async function onRequestPost(context) {
         try {
           const result=await generateVideoWithVertex({
             prompt:message || "Create a cinematic video.",
-            accessToken:accessToken,
-            projectId:projectId,
             env:env,
             onStatus:status => send({type:"status",status:status})
           });
@@ -1099,7 +1082,6 @@ export async function onRequestPost(context) {
       try {
         const result = await generateImageWithVertex({
           prompt: message || 'Abstract technological artwork',
-          accessToken,
           projectId
         });
 
@@ -1254,7 +1236,7 @@ export async function onRequestPost(context) {
         send({ type: 'status', status: 'Compressing older conversation context…' });
       }
 
-      formattedHistory = await buildConversationHistory(history, accessToken, projectId, signal, env);
+      formattedHistory = await buildConversationHistory(history, signal, env);
 
       const contents = [...formattedHistory, { role: 'user', parts: currentParts }];
       /* -------------------------------------------------
@@ -1479,8 +1461,6 @@ export async function onRequestPost(context) {
                 }
               }
             : undefined,
-          accessToken,
-          projectId,
           signal,
           env,
           generationConfig: effectiveAdvancedThinking
@@ -1794,8 +1774,6 @@ export async function onRequestPost(context) {
             contents: agentContents,
             systemInstruction: synthesisInstruction,
             tools: undefined,
-            accessToken,
-            projectId,
             signal,
             env,
             generationConfig: effectiveAdvancedThinking
