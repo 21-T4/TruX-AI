@@ -399,7 +399,7 @@ async function fetchVertexGemini({
   env
 }) {
 
-  const client = getVertexAIClient(env);
+  const client = await getVertexAIClient();
   const config = {};
 
   if (systemInstruction) config.systemInstruction = systemInstruction;
@@ -440,7 +440,7 @@ async function streamVertexGemini({
 }) {
   void onStatus;
 
-  const client = getVertexAIClient();
+  const client = await getVertexAIClient();
   const config = {};
 
   if (systemInstruction) config.systemInstruction = systemInstruction;
@@ -647,7 +647,7 @@ async function generateVideoWithVertex({
     videoSafePathPart(randomPart);
 
   const model = String(env.TRUX_VIDEO_MODEL || VIDEO_MODEL);
-    const client = getVertexAIClient();
+    const client = await getVertexAIClient();
 
   let operation = await client.models.generateVideos({
     model,
