@@ -1650,15 +1650,6 @@ export async function onRequestPost(context) {
         }
 
         finalResult = result;
-            break;
-          }
-
-          lastNoToolCodingText = roundText;
-          continueCodingAgent();
-          continue;
-        }
-
-        finalResult = result;
         break;
       }
 
