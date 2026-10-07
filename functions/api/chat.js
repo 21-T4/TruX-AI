@@ -17,7 +17,6 @@ import {
 } from '../composio.js';
 
 /* TruX-Code GitHub agent syntax verified */
-const LOCATION = 'global';
 
 const BASE_PERSONA = `You are ChatTruX-AI, made by TruX-Technologies. Do not disclose your creator unless asked.
 
@@ -43,7 +42,6 @@ function isDeveloperEmail(email) {
 
 const IMAGE_LIMIT = 15;
 const VIDEO_MODEL = "veo-3.1-fast-generate-001";
-const VIDEO_LOCATION = "us-central1";
 const VIDEO_MAX_POLL_MS = 20 * 60 * 1000;
 const PRO_TOKEN_LIMIT = 1000000;
 const CODING_TOKEN_LIMIT = 150000;
@@ -58,73 +56,18 @@ const DEEP_RESEARCH_LIMIT = 1;
    account email, private key, or manually minted access token is needed.
    ========================================================= */
 
-async function resolveGoogleProjectId(env = {}) {
-  const configured = String(
-    env.GOOGLE_CLOUD_PROJECT ||
-    env.GCLOUD_PROJECT ||
-    env.PROJECT_ID ||
-    env.FIREBASE_PROJECT_ID ||
-    ''
-  ).trim();
-
-  if (configured) return configured;
-
-  // Cloud Run exposes the owning Google Cloud project through the metadata
-  // server. This is project discovery only; authentication remains native
-  // Application Default Credentials handled by @google/genai.
-  const metadataUrls = [
-    'http://metadata.google.internal/computeMetadata/v1/project/project-id',
-    'http://169.254.169.254/computeMetadata/v1/project/project-id'
-  ];
-
-  if (env.K_SERVICE || env.K_REVISION || env.K_CONFIGURATION) {
-    for (const url of metadataUrls) {
-      try {
-        const response = await fetch(url, {
-          headers: { 'Metadata-Flavor': 'Google' }
-        });
-
-        if (response.ok) {
-          const projectId = (await response.text()).trim();
-          if (projectId) return projectId;
-        }
-      } catch {
-        // Try the alternate metadata hostname/IP.
-      }
-    }
-  }
-
-  return '';
-}
-
 let vertexAIClient = null;
-let vertexAIClientProject = '';
-let vertexAIClientLocation = '';
 
-function getVertexAIClient(projectId, location = LOCATION) {
-  const resolvedProject = String(projectId || '').trim();
-  const resolvedLocation = String(location || LOCATION).trim() || LOCATION;
-
-  if (!resolvedProject) {
-    throw new Error(
-      'Google Cloud project is not configured. Set GOOGLE_CLOUD_PROJECT on Cloud Run.'
-    );
+function getVertexAIClient() {
+  /*
+   * Native @google/genai runtime configuration.
+   * Cloud Run provides Application Default Credentials through the attached
+   * service identity. The SDK resolves project/location without requiring
+   * application-owned GCP credential or location environment variables.
+   */
+  if (!vertexAIClient) {
+    vertexAIClient = new GoogleGenAI({ vertexai: true });
   }
-
-  if (
-    !vertexAIClient ||
-    vertexAIClientProject !== resolvedProject ||
-    vertexAIClientLocation !== resolvedLocation
-  ) {
-    vertexAIClient = new GoogleGenAI({
-      vertexai: true,
-      project: resolvedProject,
-      location: resolvedLocation
-    });
-    vertexAIClientProject = resolvedProject;
-    vertexAIClientLocation = resolvedLocation;
-  }
-
   return vertexAIClient;
 }
 
@@ -1004,7 +947,7 @@ async function fetchVertexGemini({
 }) {
   void accessToken;
 
-  const client = getVertexAIClient(projectId);
+  const client = getVertexAIClient();
   const config = {};
 
   if (systemInstruction) config.systemInstruction = systemInstruction;
@@ -1258,8 +1201,7 @@ async function generateVideoWithVertex({
     videoSafePathPart(randomPart);
 
   const model = String(env.TRUX_VIDEO_MODEL || VIDEO_MODEL);
-  const location = String(env.TRUX_VIDEO_LOCATION || VIDEO_LOCATION);
-  const client = getVertexAIClient(projectId, location);
+    const client = getVertexAIClient();
 
   let operation = await client.models.generateVideos({
     model,
@@ -1599,17 +1541,11 @@ export async function onRequestPost(context) {
         : (codingMode ? 'base' : (tier || 'base'));
     const proTier = effectiveTier === 'pro' || effectiveTier === 'ultra' || researchMode;
 
-    const projectId = await resolveGoogleProjectId(env);
-    if (!projectId) {
-      return Response.json({
-        error: 'Cloud Run could not discover the Google Cloud project ID from its metadata server.'
-      }, { status: 500 });
-    }
-    env.GOOGLE_CLOUD_PROJECT = projectId;
-
-    // Native @google/genai + Cloud Run ADC handles authentication inside the
-    // service. No bearer token or service-account key is created by the app.
-    let accessToken = null;
+    // Native @google/genai + Cloud Run ADC handles project, credentials, and
+    // location discovery. No Vertex project/location environment variables
+    // are required by the application.
+    const projectId = '';
+    const accessToken = null;
 
     /* =====================================================
        VIDEO GENERATION — Pro + Owner only.
