@@ -26,12 +26,6 @@ const routes = {
   "/api/background/update": "./functions/api/background/update.js",
   "/api/background/cancel": "./functions/api/background/cancel.js",
   "/api/background/execute": "./functions/api/background/execute.js",
-  "/api/github/apply-edits": "./functions/api/github/apply-edits.js",
-  "/api/github/authorize": "./functions/api/github/authorize.js",
-  "/api/github/callback": "./functions/api/github/callback.js",
-  "/api/github/commit": "./functions/api/github/commit.js",
-  "/api/github/disconnect": "./functions/api/github/disconnect.js",
-  "/api/github/repos": "./functions/api/github/repos.js",
   "/api/push/config": "./functions/api/push/config.js",
   "/api/push/register": "./functions/api/push/register.js",
   "/api/push/unregister": "./functions/api/push/unregister.js"
