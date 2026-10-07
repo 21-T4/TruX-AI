@@ -2,10 +2,8 @@ import { GoogleGenAI } from '@google/genai';
 import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
 import { getMessaging } from 'firebase-admin/messaging';
 import { getCloudRunKv } from '../cloud-run-store.js';
-import { getGithubSession } from '../github-session.js';
 import { requireFirebaseUser } from '../firebase-auth.js';
 import { getProcessedText } from '../gcs-store.js';
-import { applyEditsDirectly } from './github/apply-edits.js';
 import {
   getEnabledPluginIds,
   listConnectedAccounts,
@@ -247,59 +245,73 @@ async function recordModeUsage(userIdentifier, mode, previousCount, delta, limit
 
 
 /* =========================================================
-   GITHUB WORKSPACE TOOLS — TruX-Code can inspect a connected
-   repository, but writes are always returned as a proposal.
-   The browser must explicitly confirm before /apply-edits runs.
+   TOOL INTENT
+
+   GitHub is a normal Composio integration now. TruX-Code gets GitHub tools
+   only for an explicit coding/repository request; simple greetings never
+   trigger repository access.
    ========================================================= */
-
-
-
-function validGithubRepo(value) {
-  return /^[\w.-]+\/[\w.-]+$/.test(String(value || ''));
-}
-
-function isGithubChangeRequest(value) {
-  const text = String(value || '').trim();
-  if (!text) return false;
-  return /\b(?:fix|repair|solve|correct|address|change|modify|update|adjust|refactor|add|remove|delete|implement|edit|rewrite|replace|rename|migrate|create|build|design|redesign|restyle|improve|enhance|customize|patch|prepare)\b/i.test(text);
-}
 
 function isExplicitRepoRequest(value) {
   const text = String(value || '').trim();
   if (!text) return false;
-  const target = /(?:github|repository|repo|codebase|pull request|branch|commit|push|public\/|src\/|package\.json)/i.test(text);
-  const action = /\b(?:check|inspect|scan|read|search|find|open|review|fix|repair|solve|correct|change|modify|update|refactor|add|remove|delete|implement|edit|rewrite|replace|rename|migrate|create|build|design|redesign|restyle|improve|patch|commit|push|work on)\b/i.test(text);
+
+  const target =
+    /(?:github|git(?:hub)?|repository|repo|codebase|pull request|branch|commit|push|source control|public\/|src\/|package\.json|index\.html)/i
+      .test(text);
+
+  const action =
+    /\b(?:check|inspect|scan|read|search|find|open|review|fix|repair|solve|correct|change|modify|update|refactor|add|remove|delete|implement|edit|rewrite|replace|rename|migrate|create|build|design|redesign|restyle|improve|patch|commit|push|work on)\b/i
+      .test(text);
+
   return target && action;
 }
 
 function isExplicitExternalActionRequest(value) {
   const text = String(value || '').trim();
   if (!text) return false;
-  const target = /(?:gmail|email|mail|google sheets|sheets|google docs|docs|calendar|drive|meet|excel|outlook|teams|onedrive|slack|notion|github|repository|repo|codebase|pull request|branch|commit|push)/i.test(text);
-  const action = /\b(?:send|email|mail|create|write|draft|read|search|find|get|check|inspect|open|update|edit|delete|remove|add|schedule|connect|disconnect|commit|push|upload|download|share|move|rename|use|run|work with|manage)\b/i.test(text);
+
+  const target =
+    /(?:gmail|email|mail|google sheets|sheets|google docs|docs|calendar|drive|meet|excel|outlook|teams|onedrive|slack|notion|github|git|repository|repo|codebase|pull request|branch|commit|push)/i
+      .test(text);
+
+  const action =
+    /\b(?:send|email|mail|create|write|draft|read|search|find|get|check|inspect|open|update|edit|delete|remove|add|schedule|connect|disconnect|commit|push|upload|download|share|move|rename|use|run|work with|manage)\b/i
+      .test(text);
+
   return target && action;
 }
 
 function isConfirmedExternalFollowup(value, history) {
   const text = String(value || '').trim();
-  if (!/^(?:yes|yeah|yep|ye|sure|ok|okay|go ahead|do it|send it|please do|proceed)$/i.test(text)) return false;
+  if (!/^(?:yes|yeah|yep|ye|sure|ok|okay|go ahead|do it|send it|please do|proceed)$/i.test(text)) {
+    return false;
+  }
+
   const recent = Array.isArray(history) ? history.slice(-6) : [];
   return recent.some(item =>
     item?.role === 'assistant' &&
-    /(?:send|email|mail|create|update|schedule|connect|disconnect|github|repository|plugin|integration)/i.test(String(item?.text || ''))
+    /(?:send|email|mail|create|update|schedule|connect|disconnect|github|git|repository|plugin|integration)/i
+      .test(String(item?.text || ''))
   );
 }
 
 function hasExplicitCodeWorkRequest(value) {
   const text = String(value || '').trim();
   if (!text) return false;
-  return /\b(?:code|coding|program|script|function|class|bug|debug|error|fix|refactor|implement|edit|modify|build|compile|test|tests|api|endpoint|javascript|typescript|python|java|html|css|react|node|sql|regex)\b/i.test(text);
+
+  return /\b(?:code|coding|program|script|function|class|bug|debug|error|fix|refactor|implement|edit|modify|build|compile|test|tests|api|endpoint|javascript|typescript|python|java|html|css|react|node|sql|regex)\b/i
+    .test(text);
 }
 
-function selectRequestedPluginIds(enabledIds, message) {
+function selectRequestedPluginIds(enabledIds, message, { codingMode = false } = {}) {
   const text = String(message || '').toLowerCase();
   const ids = Array.isArray(enabledIds) ? enabledIds.map(String) : [];
-  const wantsRepo = /(?:github|repository|repo|codebase|pull request|branch|commit|push|source control)/i.test(text);
+
+  const wantsRepo =
+    codingMode ||
+    /(?:github|git|repository|repo|codebase|pull request|branch|commit|push|source control)/i.test(text);
+
   const wantsMail = /(?:gmail|email|mail|outlook)/i.test(text);
   const wantsCalendar = /(?:calendar|meeting|schedule|appointment)/i.test(text);
   const wantsSheets = /(?:google sheets|sheets|excel|spreadsheet|workbook)/i.test(text);
@@ -311,6 +323,7 @@ function selectRequestedPluginIds(enabledIds, message) {
   const wantsNotion = /(?:notion|database page|notion page)/i.test(text);
 
   const matches = new Set();
+
   for (const id of ids) {
     if (wantsRepo && id === 'github') matches.add(id);
     if (wantsMail && (id === 'gmail' || id === 'microsoft-outlook')) matches.add(id);
@@ -324,46 +337,8 @@ function selectRequestedPluginIds(enabledIds, message) {
     if (wantsNotion && id === 'notion') matches.add(id);
   }
 
-  // For an explicit external action that names only a generic app family
-  // (for example "send an email"), prefer the corresponding family only.
   return ids.filter(id => matches.has(id));
 }
-
-function validGithubPath(value) {
-  return typeof value === 'string'
-    && value.length > 0
-    && value.length < 500
-    && !value.split('/').includes('..');
-}
-
-function decodeGithubBase64(value) {
-  const binary = atob(String(value || '').replace(/\s/g, ''));
-  const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
-  return new TextDecoder().decode(bytes);
-}
-
-async function githubApi(session, url, options = {}) {
-  return fetch(url, {
-    ...options,
-    headers: {
-      Authorization: 'Bearer ' + session.token,
-      Accept: 'application/vnd.github+json',
-      'User-Agent': 'TruX-Code',
-      ...(options.headers || {})
-    }
-  });
-}
-
-function githubSearchTokens(query) {
-  return String(query || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9_./-]+/g, ' ')
-    .split(/\s+/)
-    .filter(token => token.length >= 3);
-}
-
-const githubTreeCache = new Map();
-const githubSearchCache = new Map();
 
 function stableJson(value) {
   if (Array.isArray(value)) return '[' + value.map(stableJson).join(',') + ']';
@@ -374,562 +349,6 @@ function stableJson(value) {
   }
   return JSON.stringify(value);
 }
-
-async function githubGetRepositoryTree(session, repository, treeSha) {
-  const cacheKey = repository + '|' + treeSha;
-  if (githubTreeCache.has(cacheKey)) return githubTreeCache.get(cacheKey);
-
-  const pending = (async () => {
-    const response = await githubApi(
-      session,
-      'https://api.github.com/repos/' + repository + '/git/trees/' + encodeURIComponent(treeSha) + '?recursive=1'
-    );
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(payload?.message || 'GitHub repository tree lookup failed.');
-    return payload;
-  })();
-
-  githubTreeCache.set(cacheKey, pending);
-  try {
-    const payload = await pending;
-    githubTreeCache.set(cacheKey, Promise.resolve(payload));
-    return payload;
-  } catch (error) {
-    githubTreeCache.delete(cacheKey);
-    throw error;
-  }
-}
-
-async function githubSearchPathFallback(session, repository, branch, query, failureReason = '') {
-  let treeSha = null;
-
-  if (branch) {
-    const branchResponse = await githubApi(
-      session,
-      'https://api.github.com/repos/' + repository + '/branches/' + encodeURIComponent(branch)
-    ).catch(() => null);
-    const branchPayload = branchResponse ? await branchResponse.json().catch(() => null) : null;
-    treeSha = branchPayload?.commit?.commit?.tree?.sha || null;
-  } else {
-    const repoResponse = await githubApi(
-      session,
-      'https://api.github.com/repos/' + repository
-    ).catch(() => null);
-    const repoPayload = repoResponse ? await repoResponse.json().catch(() => null) : null;
-    const defaultBranch = repoPayload?.default_branch || '';
-    if (defaultBranch) {
-      const branchResponse = await githubApi(
-        session,
-        'https://api.github.com/repos/' + repository + '/branches/' + encodeURIComponent(defaultBranch)
-      ).catch(() => null);
-      const branchPayload = branchResponse ? await branchResponse.json().catch(() => null) : null;
-      treeSha = branchPayload?.commit?.commit?.tree?.sha || null;
-    }
-  }
-
-  if (!treeSha) {
-    return {
-      results: [],
-      fallback: true,
-      reason: 'GitHub code search was unavailable and the repository tree could not be loaded.' +
-        (failureReason ? ' ' + failureReason : '')
-    };
-  }
-
-  let payload;
-  try {
-    payload = await githubGetRepositoryTree(session, repository, treeSha);
-  } catch (treeError) {
-    return {
-      results: [],
-      fallback: true,
-      reason: 'GitHub code search and repository tree lookup were unavailable.' +
-        (failureReason ? ' ' + failureReason : '') + ' ' +
-        String(treeError?.message || '')
-    };
-  }
-
-  const tree = Array.isArray(payload?.tree) ? payload.tree : [];
-  const tokens = githubSearchTokens(query);
-  const scored = tree
-    .filter(item => item?.type === 'blob' && typeof item.path === 'string')
-    .map(item => {
-      const lower = item.path.toLowerCase();
-      let score = 0;
-      for (const token of tokens) {
-        if (lower.includes(token)) score += token.length >= 6 ? 3 : 1;
-      }
-      return { item, score };
-    })
-    .filter(x => x.score > 0)
-    .sort((a, b) => b.score - a.score || a.item.path.length - b.item.path.length)
-    .slice(0, 100);
-
-  return {
-    results: scored.map(({ item, score }) => ({
-      path: item.path,
-      name: item.path.split('/').pop() || item.path,
-      score,
-      matches: []
-    })),
-    fallback: true,
-    reason: 'GitHub code search was unavailable; matched repository paths instead.' +
-      (failureReason ? ' ' + failureReason : '') +
-      (payload?.truncated ? ' The repository tree is truncated; continue with more focused searches or known paths.' : '')
-  };
-}
-
-async function githubSearchCode(session, repository, branch, query) {
-  const cleanQuery = String(query || '')
-    .replace(/\brepo:[^\s]+\b/gi, '')
-    .trim();
-  if (!cleanQuery) return { results: [] };
-
-  const cacheKey = repository + '|' + String(branch || '') + '|' + cleanQuery.toLowerCase();
-  const cached = githubSearchCache.get(cacheKey);
-  if (cached) {
-    if (cached.value) return cached.value;
-    return await cached.promise;
-  }
-
-  const pending = (async () => {
-    const q = cleanQuery + ' repo:' + repository + (branch ? ' ref:' + branch : '');
-    try {
-      const response = await githubApi(
-        session,
-        'https://api.github.com/search/code?q=' + encodeURIComponent(q) + '&per_page=100',
-        { headers: { Accept: 'application/vnd.github.text-match+json, application/vnd.github+json' } }
-      );
-
-      let payload = {};
-      try { payload = await response.json(); } catch {}
-
-      if (response.ok) {
-        return {
-          results: Array.isArray(payload.items) ? payload.items.map(item => ({
-            path: item.path,
-            name: item.name,
-            score: item.score,
-            matches: Array.isArray(item.text_matches)
-              ? item.text_matches.map(m => String(m.fragment || '').slice(0, 800))
-              : []
-          })) : []
-        };
-      }
-
-      return await githubSearchPathFallback(
-        session, repository, branch, cleanQuery,
-        payload?.message || ('GitHub returned HTTP ' + response.status + '.')
-      );
-    } catch (error) {
-      return await githubSearchPathFallback(
-        session, repository, branch, cleanQuery,
-        String(error?.message || 'GitHub code search request failed.')
-      );
-    }
-  })();
-
-  githubSearchCache.set(cacheKey, { promise: pending });
-  try {
-    const value = await pending;
-    githubSearchCache.set(cacheKey, { value, at: Date.now() });
-    return value;
-  } catch (error) {
-    githubSearchCache.delete(cacheKey);
-    throw error;
-  }
-}
-
-const githubFileReadCache = new Map();
-
-async function githubGetFileContent(session, repository, path, branch) {
-  if (!validGithubPath(path)) throw new Error('Invalid repository path.');
-
-  const refQuery = branch ? '?ref=' + encodeURIComponent(branch) : '';
-  const response = await githubApi(
-    session,
-    'https://api.github.com/repos/' + repository + '/contents/' +
-      path.split('/').map(encodeURIComponent).join('/') + refQuery,
-    { headers: { Accept: 'application/vnd.github.object+json, application/vnd.github+json' } }
-  );
-  const payload = await response.json().catch(() => ({}));
-
-  if (!response.ok) throw new Error(payload?.message || 'GitHub file read failed.');
-  if (Array.isArray(payload) || payload?.type === 'dir' || payload?.type === 'submodule') {
-    throw new Error('That path is not a text file.');
-  }
-
-  let content = '';
-  if (typeof payload?.content === 'string' && payload.content.trim()) {
-    content = decodeGithubBase64(payload.content);
-  } else if (payload?.sha) {
-    const blobResponse = await githubApi(
-      session,
-      'https://api.github.com/repos/' + repository + '/git/blobs/' + encodeURIComponent(payload.sha),
-      { headers: { Accept: 'application/vnd.github+json' } }
-    );
-    const blobPayload = await blobResponse.json().catch(() => ({}));
-    if (!blobResponse.ok || typeof blobPayload?.content !== 'string') {
-      throw new Error(blobPayload?.message || 'GitHub could not read the file blob.');
-    }
-    content = decodeGithubBase64(blobPayload.content);
-  } else {
-    throw new Error('GitHub returned no readable file content.');
-  }
-
-  return {
-    content,
-    sha: String(payload?.sha || ''),
-    size: Number(payload?.size || content.length) || content.length,
-    displayUrl: payload?.html_url || ''
-  };
-}
-
-const GITHUB_DEFAULT_FILE_WINDOW = 240;
-const GITHUB_HEAD_LINES = 140;
-const GITHUB_TAIL_LINES = 80;
-
-async function githubReadFile(session, repository, path, branch, startLine, endLine, includeFullContent = false) {
-  const file = await githubGetFileContent(session, repository, path, branch);
-  const fullContent = file.content;
-  const lines = fullContent.split('\n');
-
-  const normalizedBranch = String(branch || '');
-  const from = Number.isInteger(startLine) && startLine > 0 ? startLine : 1;
-  const requestedEnd = Number.isInteger(endLine) && endLine >= from ? endLine : null;
-  const cacheKey = repository + '|' + normalizedBranch + '|' + path + '|' + from + '|' + (requestedEnd || '') + '|' + (includeFullContent ? 'full' : 'window') + '|' + file.sha;
-
-  if (!includeFullContent) {
-    const cached = githubFileReadCache.get(cacheKey);
-    if (cached && Date.now() - cached.at < 60000) return cached.value;
-  }
-
-  let selected = '';
-  let selectedStart = from;
-  let selectedEnd = from - 1;
-  let truncated = false;
-  let nextStartLine = null;
-
-  if (includeFullContent) {
-    selected = fullContent;
-    selectedStart = 1;
-    selectedEnd = lines.length;
-  } else if (!requestedEnd && from === 1 && lines.length > GITHUB_DEFAULT_FILE_WINDOW) {
-    const headEnd = Math.min(GITHUB_HEAD_LINES, lines.length);
-    const tailStart = Math.max(headEnd + 1, lines.length - GITHUB_TAIL_LINES + 1);
-    selected =
-      lines.slice(0, headEnd).join('\n') +
-      '\n\n[... MIDDLE OF LARGE FILE OMITTED ...]\n\n' +
-      lines.slice(tailStart - 1).join('\n');
-    selectedStart = 1;
-    selectedEnd = lines.length;
-    truncated = true;
-    nextStartLine = headEnd + 1;
-  } else {
-    selectedEnd = requestedEnd
-      ? Math.min(requestedEnd, lines.length)
-      : Math.min(from + GITHUB_DEFAULT_FILE_WINDOW - 1, lines.length);
-    selected = lines.slice(from - 1, selectedEnd).join('\n');
-    truncated = selectedEnd < lines.length;
-    nextStartLine = truncated ? selectedEnd + 1 : null;
-  }
-
-  const value = {
-    path,
-    sha: file.sha || null,
-    branch: branch || null,
-    totalLines: lines.length,
-    startLine: selectedStart,
-    endLine: selectedEnd,
-    truncated,
-    nextStartLine,
-    totalChars: fullContent.length,
-    returnedChars: selected.length,
-    size: file.size,
-    displayUrl: file.displayUrl,
-    content: selected
-  };
-
-  githubFileReadCache.set(cacheKey, { at: Date.now(), value });
-  return value;
-}
-
-async function githubImportRepository(session, repository, branch) {
-  let treeSha = null;
-
-  if (branch) {
-    const branchResponse = await githubApi(
-      session,
-      'https://api.github.com/repos/' + repository + '/branches/' + encodeURIComponent(branch)
-    );
-    const branchPayload = await branchResponse.json();
-    if (!branchResponse.ok) throw new Error(branchPayload?.message || 'GitHub branch lookup failed.');
-    treeSha = branchPayload?.commit?.commit?.tree?.sha || null;
-  } else {
-    const repoResponse = await githubApi(
-      session,
-      'https://api.github.com/repos/' + repository
-    );
-    const repoPayload = await repoResponse.json();
-    if (!repoResponse.ok) throw new Error(repoPayload?.message || 'GitHub repository lookup failed.');
-
-    const defaultBranch = repoPayload?.default_branch;
-    if (!defaultBranch) throw new Error('GitHub did not return the repository default branch.');
-
-    const branchResponse = await githubApi(
-      session,
-      'https://api.github.com/repos/' + repository + '/branches/' + encodeURIComponent(defaultBranch)
-    );
-    const branchPayload = await branchResponse.json();
-    if (!branchResponse.ok) throw new Error(branchPayload?.message || 'GitHub branch lookup failed.');
-    treeSha = branchPayload?.commit?.commit?.tree?.sha || null;
-  }
-
-  if (!treeSha) throw new Error('GitHub did not return a repository tree SHA.');
-
-  const response = await githubApi(
-    session,
-    'https://api.github.com/repos/' + repository + '/git/trees/' + encodeURIComponent(treeSha) + '?recursive=1'
-  );
-  const payload = await response.json();
-
-  if (!response.ok) throw new Error(payload?.message || 'GitHub repository import failed.');
-
-  const tree = Array.isArray(payload.tree) ? payload.tree : [];
-  const blobs = tree
-    .filter(item => item?.type === 'blob' && typeof item.path === 'string')
-    .map(item => ({
-      path: item.path,
-      size: Number(item.size) || 0
-    }));
-
-  const selected = blobs;
-
-  return {
-    repository,
-    branch: branch || null,
-    totalFiles: blobs.length,
-    returnedFiles: selected.length,
-    truncated: !!payload.truncated,
-    files: selected
-  };
-}
-
-async function validateGithubProposal(session, repository, edits, branch, requestText = '', summary = '') {
-  if (!Array.isArray(edits) || !edits.length) {
-    throw new Error('The GitHub proposal did not contain any edit fragments.');
-  }
-
-  // No artificial file-count, fragment-count, or character-size ceiling.
-  // Validate exact fragments against each current file and keep them separate
-  // so distant edits never inflate one giant replacement string.
-  const grouped = new Map();
-
-
-  for (const edit of edits) {
-    const path = edit?.path;
-    const oldText = typeof edit?.oldText === 'string' ? edit.oldText : '';
-    const newText = typeof edit?.newText === 'string' ? edit.newText : '';
-
-    if (!validGithubPath(path) || !oldText) {
-      throw new Error('Invalid GitHub edit for ' + String(path || 'unknown') + '.');
-    }
-
-    if (!grouped.has(path)) grouped.set(path, []);
-    grouped.get(path).push({ oldText, newText });
-  }
-
-  const groups = [];
-  for (const [path, pathEdits] of grouped.entries()) {
-    const current = await githubReadFile(session, repository, path, branch, 1, null, true);
-    const source = current.content;
-    const placements = pathEdits.map(edit => {
-      const first = source.indexOf(edit.oldText);
-      const second = first < 0 ? -1 : source.indexOf(edit.oldText, first + edit.oldText.length);
-      if (first < 0 || second >= 0) {
-        throw new Error(
-          'The exact edit target for ' + path + ' was not found exactly once. Read the current file again before proposing changes.'
-        );
-      }
-      return { start: first, end: first + edit.oldText.length };
-    }).sort((a, b) => a.start - b.start);
-
-    for (let i = 1; i < placements.length; i++) {
-      if (placements[i].start < placements[i - 1].end) {
-        throw new Error(
-          'Multiple proposed edits for ' + path + ' overlap. Combine only the overlapping fragments.'
-        );
-      }
-    }
-
-    groups.push(pathEdits.map(edit => ({
-      path,
-      oldText: edit.oldText,
-      newText: edit.newText,
-      baseSha: current.sha || null,
-      oldChars: edit.oldText.length,
-      newChars: edit.newText.length
-    })));
-  }
-
-  const normalized = groups.flat();
-
-
-
-  return normalized;
-}
-
-function getGithubToolDeclarations() {
-  return [
-    {
-      name: 'github_import_repository',
-      description: 'Import the connected GitHub repository structure for the current branch. Use this first when the user asks to import, load, open, map, or inspect the whole repository. It returns the repository file tree and sizes; then use github_search_code and github_read_file for specific content.',
-      parameters: {
-        type: 'object',
-        properties: {},
-        required: []
-      }
-    },
-    {
-      name: 'github_search_code',
-      description: 'Search the active connected GitHub repository for code, filenames, symbols, or configuration relevant to the user request. Use this before guessing which file to change. If GitHub Code Search is unavailable, this tool can fall back to the active branch repository tree.',
-      parameters: {
-        type: 'object',
-        properties: {
-          query: { type: 'string', description: 'A concise code search query such as a function name, UI label, route, CSS class, or error text.' }
-        },
-        required: ['query']
-      }
-    },
-    {
-      name: 'github_read_file',
-      description: 'Read the current contents of a text file in the active connected GitHub repository. Large files return a compact head/tail sample by default; use focused start_line/end_line ranges for exact sections, or set include_full_content=true when the complete current file is needed. Files larger than 1 MB are read through the Git blob API.',
-      parameters: {
-        type: 'object',
-        properties: {
-          path: { type: 'string', description: 'Repository-relative file path.' },
-          start_line: { type: 'integer', description: 'Optional 1-based starting line.' },
-          end_line: { type: 'integer', description: 'Optional 1-based ending line.' },
-          include_full_content: { type: 'boolean', description: 'Set true when the complete current file is required, including very large files.' }
-        },
-        required: ['path']
-      }
-    },
-    {
-      name: 'github_apply_changes',
-      description: 'Apply and commit code changes directly to the active connected GitHub repository branch. Reads target files, computes replacements, creates Git commit, and updates the branch. Always inspect the files first with github_read_file.',
-      parameters: {
-        type: 'object',
-        properties: {
-          summary: { type: 'string', description: 'Brief human-readable summary of what changed.' },
-          commit_message: { type: 'string', description: 'Suggested Git commit message.' },
-          edits: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                path: { type: 'string', description: 'Repository-relative path.' },
-                oldText: { type: 'string', description: 'Exact current text to replace, copied from the file you just read.' },
-                newText: { type: 'string', description: 'Replacement text.' }
-              },
-              required: ['path', 'oldText', 'newText']
-            }
-          }
-        },
-        required: ['summary', 'commit_message', 'edits']
-      }
-    },
-    {
-      name: 'github_propose_changes',
-      description: 'Prepare and apply code changes to the connected GitHub repository branch. Reads target files, computes replacements, and commits them directly to git.',
-      parameters: {
-        type: 'object',
-        properties: {
-          summary: { type: 'string', description: 'Brief human-readable summary of what will change.' },
-          commit_message: { type: 'string', description: 'Suggested Git commit message.' },
-          edits: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                path: { type: 'string', description: 'Repository-relative path.' },
-                oldText: { type: 'string', description: 'Exact current text to replace, copied from the file you just read.' },
-                newText: { type: 'string', description: 'Replacement text.' }
-              },
-              required: ['path', 'oldText', 'newText']
-            }
-          }
-        },
-        required: ['summary', 'commit_message', 'edits']
-      }
-    }
-  ];
-}
-
-async function executeGithubToolCall(session, repository, branch, call, requestText = '') {
-  return await executeGithubToolCallInner(session, repository, branch, call, requestText);
-}
-async function executeGithubToolCallInner(session, repository, branch, call, requestText = '') {
-  const name = call?.name;
-  const args = call?.args || {};
-
-  if (name === 'github_import_repository') return await githubImportRepository(session, repository, branch);
-
-  if (name === 'github_search_code') return await githubSearchCode(session, repository, branch, args.query);
-
-  if (name === 'github_read_file') {
-    return await githubReadFile(
-      session,
-      repository,
-      args.path,
-      branch,
-      Number.isInteger(args.start_line) ? args.start_line : null,
-      Number.isInteger(args.end_line) ? args.end_line : null,
-      args.include_full_content === true
-    );
-  }
-
-  if (name === 'github_apply_changes' || name === 'github_propose_changes') {
-    const rawEdits = Array.isArray(args.edits) ? args.edits : [];
-    const commitMessage = String(args.commit_message || args.summary || 'Update files with TruX-Code').slice(0, 250);
-    const summary = String(args.summary || 'Applied repository changes.').slice(0, 1000);
-
-    try {
-      const applyResult = await applyEditsDirectly(session, repository, branch, rawEdits, commitMessage);
-      return {
-        applied: true,
-        verified: true,
-        proposalReady: true,
-        summary,
-        commitMessage,
-        commit: applyResult.commit,
-        branch: applyResult.branch,
-        edits: rawEdits
-      };
-    } catch (applyErr) {
-      console.warn('Direct GitHub commit encountered issue, attempting validated proposal:', applyErr?.message || applyErr);
-      const edits = await validateGithubProposal(
-        session,
-        repository,
-        args.edits,
-        branch,
-        requestText,
-        args.summary
-      );
-      return {
-        proposalReady: true,
-        applied: false,
-        applyError: applyErr?.message || 'Could not apply directly to GitHub.',
-        summary,
-        commitMessage,
-        edits
-      };
-    }
-  }
-
-  throw new Error('Unknown GitHub tool: ' + String(name || ''));
-}
-
 
 /* =========================================================
    STANDARD VERTEX REQUEST
@@ -1544,8 +963,8 @@ export async function onRequestPost(context) {
     // Native @google/genai + Cloud Run ADC handles project, credentials, and
     // location discovery. No Vertex project/location environment variables
     // are required by the application.
-    const projectId = '';
-    const accessToken = null;
+    const projectId = undefined;
+    const accessToken = undefined;
 
     /* =====================================================
        VIDEO GENERATION — Pro + Owner only.
@@ -1766,17 +1185,18 @@ export async function onRequestPost(context) {
          ------------------------------------------------- */
 
 
-      /* Legacy per-workspace GitHub repository access is intentionally disabled.
-         GitHub actions now enter the same Composio plugin path as every other integration. */
-      const githubSession = null;
-
       let composioToolMetadata = new Map();
       let composioToolDeclarations = [];
       let enabledComposioPluginIds = [];
       let enabledComposioToolkitSlugs = [];
       let composioPluginConfigError = null;
 
-      if (explicitExternalAction && effectiveUserId && String(env.COMPOSIO_API_KEY || '').trim()) {
+      const shouldLoadComposioTools =
+        effectiveUserId &&
+        String(env.COMPOSIO_API_KEY || '').trim() &&
+        (explicitExternalAction || (codingMode && explicitCodeWork));
+
+      if (shouldLoadComposioTools) {
         try {
           const connectedAccounts = await listConnectedAccounts(env, effectiveUserId);
           const activeToolkitSlugs = new Set(
@@ -1795,7 +1215,8 @@ export async function onRequestPost(context) {
           const legacyEnabled = await getEnabledPluginIds(env, effectiveUserId);
           enabledComposioPluginIds = selectRequestedPluginIds(
             [...new Set([...connectedPluginIds, ...legacyEnabled])],
-            message
+            message,
+            { codingMode }
           );
           const resolved = await Promise.all(
             enabledComposioPluginIds.map(async pluginId => {
@@ -1861,34 +1282,27 @@ export async function onRequestPost(context) {
         return;
       }
 
-      const changeRequested = codingMode && explicitRepoRequest && isGithubChangeRequest(message);
-      /* Only Composio tools are exposed to the live model. */
-      const modelFunctionDeclarations = [...composioToolDeclarations];
       const modelTools = [];
-      if (modelFunctionDeclarations.length) modelTools.push({ functionDeclarations: modelFunctionDeclarations });
+      if (composioToolDeclarations.length) {
+        modelTools.push({ functionDeclarations: composioToolDeclarations });
+      }
       if (researchMode) modelTools.push({ googleSearch: {} });
 
-      let agentContents = contents.slice();
+      const agentContents = contents.slice();
       let finalResult = null;
       let lastModelResult = null;
-      let repositoryImported = false;
-      let githubProposalPrepared = false;
-      let githubInspectionCount = 0;
-      const accumulatedGithubProposalEdits = new Map();
-      let accumulatedGithubProposalSummary = '';
-      let accumulatedGithubProposalCommitMessage = '';
       let generationStopped = false;
       let lastToolSignature = '';
       let repeatedToolSignatureCount = 0;
       let lastNoToolCodingText = '';
       let noToolCodingRounds = 0;
 
-      /* A coding request that asks for a repository change must not terminate
-         on an intermediate text-only turn such as "the repo is imported, now
-         I'll make the changes". Keep the agent loop alive until it produces
-         the reviewable github_propose_changes tool result. */
-      // Change intent is calculated once before tool exposure so read-only GitHub
-      // requests never receive or force the proposal tool.
+      const githubToolsAvailable =
+        enabledComposioPluginIds.includes('github') &&
+        composioToolDeclarations.some(tool => {
+          const meta = composioToolMetadata.get(tool.name);
+          return String(meta?.toolkitSlug || '').toLowerCase() === 'github';
+        });
 
       function extractUserProgress(value) {
         const clean = String(value || '')
@@ -1907,10 +1321,10 @@ export async function onRequestPost(context) {
           parts: [{
             text:
               '[TRUX-CODE CONTINUE INSTRUCTION]\n' +
-              'Continue inspecting the current repository files as needed, then call github_apply_changes (or github_propose_changes) with ' +
-              'exact oldText/newText replacements copied from the latest reads to apply and commit the changes directly to git. ' +
-              'Never repeat an already executed tool call. Re-read files whenever a target may have changed. ' +
-              'After the required tool work succeeds, stop calling tools and write the final user-facing answer.'
+              'Continue the requested coding task using the connected Composio tools. ' +
+              'Read the relevant repository/files first when needed. Use the actual connected GitHub tools to inspect or modify the repository. ' +
+              'Do not claim a change happened unless a tool result confirms it. ' +
+              'After the required tool work succeeds, write the final user-facing answer.'
           }]
         });
       }
@@ -2061,17 +1475,11 @@ export async function onRequestPost(context) {
               generationStopped = true;
               break;
             }
-            const toolLabels = {
-              github_import_repository: 'GitHub Import',
-              github_search_code: 'GitHub Search',
-              github_read_file: 'GitHub File Reader',
-              github_apply_changes: 'GitHub Direct Commit',
-              github_propose_changes: 'GitHub Direct Commit'
-            };
             const composioLabel = composioToolMetadata.get(call?.name);
             const toolName = composioLabel
-              ? String(composioLabel.toolkitName || composioLabel.toolkitSlug || 'Plugin') + ' · ' + String(composioLabel.name || call?.name)
-              : (toolLabels[call?.name] || 'External Tool');
+              ? String(composioLabel.toolkitName || composioLabel.toolkitSlug || 'Plugin') +
+                ' · ' + String(composioLabel.name || call?.name)
+              : 'External Tool';
             const rawPath = call?.args?.path ? String(call.args.path) : '';
             const toolTarget = rawPath ? toolName + ' · ' + rawPath : toolName;
             const activeExplanation = progressLine || toolTarget;
@@ -2099,7 +1507,7 @@ export async function onRequestPost(context) {
                 callResult = {
                   error: 'This exact external tool call was already executed in this turn. Use its previous result and choose a different tool step.'
                 };
-              } else if (isComposioCall) {
+              } else if (composioLabel) {
                 callResult = effectiveUserId
                   ? await executeComposioTool(
                       env,
@@ -2117,11 +1525,37 @@ export async function onRequestPost(context) {
                         ) +
                         '&composio_callback=1'
                     )
-                  : { error: 'A signed-in account is required for plugin actions.' };
-              } else if (githubSession && codingMode && validGithubRepo(githubRepository)) {
-                callResult = await executeGithubToolCall(githubSession, githubRepository, githubBranch, call, message);
+                  : {
+                      success: false,
+                      error: 'A signed-in account is required for plugin actions.'
+                    };
+              } else if (composioLabel) {
+                callResult = effectiveUserId
+                  ? await executeComposioTool(
+                      env,
+                      effectiveUserId,
+                      call.name,
+                      call.args || {},
+                      composioLabel,
+                      new URL(request.url).origin +
+                        '/?trux_plugins=1&plugin=' +
+                        encodeURIComponent(
+                          PLUGIN_CATALOG.find(p =>
+                            Array.isArray(p?.slugs) &&
+                            p.slugs.includes(String(composioLabel?.toolkitSlug || ''))
+                          )?.id || ''
+                        ) +
+                        '&composio_callback=1'
+                    )
+                  : {
+                      success: false,
+                      error: 'A signed-in account is required for plugin actions.'
+                    };
               } else {
-                callResult = { error: 'This external tool is not connected.' };
+                callResult = {
+                  success: false,
+                  error: 'This external tool is not connected.'
+                };
               }
 
               if (callResult?.configurationError) {
@@ -2197,69 +1631,15 @@ export async function onRequestPost(context) {
                 break;
               }
 
-              if (call?.name === 'github_import_repository' && !callResult?.error) {
-                repositoryImported = true;
-              }
-
-              if (
-                (call?.name === 'github_search_code' || call?.name === 'github_read_file') &&
-                !callResult?.error
-              ) {
-                githubInspectionCount += 1;
-              }
-
-              send({
-                type: 'tool_status',
-                tool: toolName,
-                phase: 'complete',
-                status: toolTarget,
-                details: {
-                  ...toolCallDetails,
-                  ok: !callResult?.error,
-                  result: summarizeToolResult(callResult)
-                }
-              });
-
-              if ((call?.name === 'github_apply_changes' || call?.name === 'github_propose_changes') && (callResult?.applied || callResult?.proposalReady)) {
-                githubProposalPrepared = true;
-                accumulatedGithubProposalSummary = callResult.summary || accumulatedGithubProposalSummary || 'Applied repository changes.';
-                accumulatedGithubProposalCommitMessage = callResult.commitMessage || accumulatedGithubProposalCommitMessage || 'Update files with TruX-Code';
-                for (const edit of Array.isArray(callResult.edits) ? callResult.edits : []) {
-                  const key = String(edit?.path || '') + '\u0000' + String(edit?.oldText || '');
-                  accumulatedGithubProposalEdits.set(key, edit);
-                }
-                const proposalPayload = {
-                  repository: githubRepository,
-                  branch: callResult.branch || githubBranch || null,
-                  summary: accumulatedGithubProposalSummary,
-                  commitMessage: accumulatedGithubProposalCommitMessage,
-                  edits: Array.from(accumulatedGithubProposalEdits.values()),
-                  applied: !!callResult.applied,
-                  commit: callResult.commit || null
-                };
-                if (callResult.applied && callResult.commit) {
-                  send({
-                    type: 'github_commit',
-                    commit: callResult.commit,
-                    proposal: proposalPayload
-                  });
-                }
-                send({
-                  type: 'github_proposal',
-                  proposal: proposalPayload
-                });
-              }
-
-              if (signal?.aborted) {
-                generationStopped = true;
-                break;
-              }
-
               responseParts.push({
                 functionResponse: {
-                  ...((call?.id ?? call?.call_id) ? { id: String(call.id ?? call.call_id) } : {}),
+                  ...((call?.id ?? call?.call_id)
+                    ? { id: String(call.id ?? call.call_id) }
+                    : {}),
                   name: call.name,
-                  response: { output: callResult }
+                  response: {
+                    output: callResult
+                  }
                 }
               });
             } catch (toolError) {
@@ -2289,29 +1669,37 @@ export async function onRequestPost(context) {
           continue;
         }
 
-        if (codingMode && changeRequested && githubSession && validGithubRepo(githubRepository) && !githubProposalPrepared) {
+        if (codingMode && explicitCodeWork && githubToolsAvailable && !result.functionCalls?.length) {
           const roundText = String(result?.text || '').trim();
 
-          if (result?.functionCallContent) {
-            agentContents.push(result.functionCallContent);
-          } else if (roundText) {
+          if (roundText) {
             agentContents.push({
               role: 'model',
               parts: [{ text: roundText }]
             });
           }
 
-          const progressLine = extractUserProgress(roundText);
-          if (progressLine) send({ type: 'status', status: progressLine });
-
           noToolCodingRounds += 1;
 
-          /* A tool-less coding round is allowed one explicit recovery turn,
-             but never an unbounded "thinking" loop. Large edits are still
-             unrestricted; this only protects against the model repeatedly
-             emitting prose instead of using its GitHub tools. */
-          if ((roundText && roundText === lastNoToolCodingText) || noToolCodingRounds >= 2) {
+          if (
+            roundText &&
+            roundText === lastNoToolCodingText
+          ) {
             finalResult = result;
+            break;
+          }
+
+          if (noToolCodingRounds >= 2) {
+            finalResult = result;
+            break;
+          }
+
+          lastNoToolCodingText = roundText;
+          continueCodingAgent();
+          continue;
+        }
+
+        finalResult = result;
             break;
           }
 
