@@ -48,9 +48,9 @@ const DEEP_RESEARCH_LIMIT = 1;
 
 /* =========================================================
    NATIVE GOOGLE GEN AI / VERTEX AI CLIENT
-   Cloud Run provides the runtime identity and environment configuration.
-   @google/genai handles authentication natively; no metadata-server calls,
-   service-account credentials, or manually minted access tokens are used.
+   Cloud Run provides the runtime identity and native GCP metadata.
+   Project ID and region are discovered from the Cloud Run metadata server;
+   authentication remains Application Default Credentials from the service identity.
    ========================================================= */
 
 let vertexAIClient = null;
