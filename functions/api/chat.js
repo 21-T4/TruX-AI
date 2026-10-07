@@ -231,7 +231,7 @@ function validateTerminalCommand(command) {
 
   for (const part of parts) {
     if (
-      /(^|\\/)(?:proc|sys|dev|etc)\\//i.test(part) ||
+      /(^|[\\/])(?:proc|sys|dev|etc)[\\/]/i.test(part) ||
       /metadata\\.google\\.internal/i.test(part) ||
       part === '..' ||
       part.includes('../') ||
