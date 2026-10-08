@@ -1362,7 +1362,7 @@ export async function onRequestPost(context) {
     const modeInstruction = researchMode
       ? `\n\n[DEEP RESEARCH MODE]: Use Google Search grounding for fresh, niche, or source-backed information. Synthesize multiple relevant sources and distinguish facts from inference. Use TruX-Code reasoning engine.`
       : (codingMode && explicitCodeWork)
-        ? `\n\n[TRUX-CODE MODE]: Think deeply before answering, but never expose private chain-of-thought. Prioritize complete, maintainable code, careful debugging, tests, and concise implementation notes. Only inspect repositories or use external tools when the user explicitly asks for that work. Before each external-tool call, emit one brief, natural user-facing activity sentence describing the action; do not emit internal reasoning.`
+        ? `\n\n[TRUX-CODE MODE]: Think deeply before answering, but never expose private chain-of-thought. Prioritize complete, maintainable code, careful debugging, tests, and concise implementation notes. Only inspect repositories or use external tools when the user explicitly asks for that work. When the requested task changes a repository, use the connected Composio repository tools to perform the change rather than merely describing it. After a tool result confirms the requested change, do not repeat the same tool call with the same arguments; use that result as the source of truth and continue with any remaining work or the final answer. Before each external-tool call, emit one brief, natural user-facing activity sentence describing the action; do not emit internal reasoning.`
         : codingMode
           ? `\n\n[TRUX-CODE LIGHT MODE]: This is a lightweight coding-workspace conversation. Answer directly without external tools, repository inspection, plugin calls, or deep reasoning unless the user explicitly requests coding work or an external action.`
           : '';
@@ -1550,17 +1550,6 @@ export async function onRequestPost(context) {
       let finalResult = null;
       let lastModelResult = null;
       let generationStopped = false;
-      let lastToolSignature = '';
-      let repeatedToolSignatureCount = 0;
-      let lastNoToolCodingText = '';
-      let noToolCodingRounds = 0;
-
-      const githubToolsAvailable =
-        enabledComposioPluginIds.includes('github') &&
-        composioToolDeclarations.some(tool => {
-          const meta = composioToolMetadata.get(tool.name);
-          return String(meta?.toolkitSlug || '').toLowerCase() === 'github';
-        });
 
       function extractUserProgress(value) {
         const clean = String(value || '')
@@ -1571,20 +1560,6 @@ export async function onRequestPost(context) {
         if (!clean) return '';
         const sentence = clean.match(/^.{1,240}?[.!?](?:\s|$)/);
         return String(sentence?.[0] || clean.slice(0, 240)).trim();
-      }
-
-      function continueCodingAgent() {
-        agentContents.push({
-          role: 'user',
-          parts: [{
-            text:
-              '[TRUX-CODE CONTINUE INSTRUCTION]\n' +
-              'Continue the requested coding task using the connected Composio tools. ' +
-              'Read the relevant repository/files first when needed. Use the actual connected GitHub tools to inspect or modify the repository. ' +
-              'Do not claim a change happened unless a tool result confirms it. ' +
-              'After the required tool work succeeds, write the final user-facing answer.'
-          }]
-        });
       }
 
       function redactToolDetail(value, depth = 0) {
@@ -1611,6 +1586,12 @@ export async function onRequestPost(context) {
         catch { rendered = String(safe); }
         return rendered.length > 1800 ? rendered.slice(0, 1800) + '…' : rendered;
       }
+
+      // Per-turn tool replay cache. When Gemini repeats the exact same tool
+      // call, return the real prior result instead of executing the side effect
+      // again or manufacturing a synthetic error. This is idempotency, not an
+      // agent iteration limit.
+      const executedToolResults = new Map();
 
       let agentRound = 0;
       while (true) {
@@ -1717,20 +1698,6 @@ export async function onRequestPost(context) {
           if (progressLine) send({ type: 'status', status: progressLine });
           if (!result.functionCallContent) throw new Error('GitHub tool call returned without model content.');
 
-          const toolSignature = stableJson(
-            result.functionCalls.map(call => ({
-              name: call?.name || '',
-              args: call?.args || {}
-            }))
-          );
-
-          if (toolSignature === lastToolSignature) {
-            repeatedToolSignatureCount += 1;
-          } else {
-            repeatedToolSignatureCount = 0;
-            lastToolSignature = toolSignature;
-          }
-
           agentContents.push(result.functionCallContent);
           const responseParts = [];
 
@@ -1766,12 +1733,17 @@ export async function onRequestPost(context) {
             });
 
             try {
-              const duplicateBatch = repeatedToolSignatureCount > 0;
+              const toolSignature = stableJson({
+                name: call?.name || '',
+                args: call?.args || {}
+              });
+
               let callResult;
-              if (duplicateBatch) {
-                callResult = {
-                  error: 'This exact external tool call was already executed in this turn. Use its previous result and choose a different tool step.'
-                };
+              if (executedToolResults.has(toolSignature)) {
+                // Do not repeat a side-effectful Composio action. Feed Gemini
+                // the exact result it already received so it can move on and
+                // decide the next tool step or produce the final answer.
+                callResult = executedToolResults.get(toolSignature);
               } else if (call?.name === TERMINAL_TOOL_NAME) {
                 send({
                   type: 'terminal',
@@ -1830,6 +1802,10 @@ export async function onRequestPost(context) {
                   success: false,
                   error: 'This external tool is not connected.'
                 };
+              }
+
+              if (!executedToolResults.has(toolSignature)) {
+                executedToolResults.set(toolSignature, callResult);
               }
 
               if (callResult?.configurationError) {
@@ -1943,34 +1919,11 @@ export async function onRequestPost(context) {
           continue;
         }
 
-        if (codingMode && explicitCodeWork && githubToolsAvailable && !result.functionCalls?.length) {
-          const roundText = String(result?.text || '').trim();
-
-          if (roundText) {
-            agentContents.push({
-              role: 'model',
-              parts: [{ text: roundText }]
-            });
-          }
-
-          noToolCodingRounds += 1;
-
-          if (
-            roundText &&
-            roundText === lastNoToolCodingText
-          ) {
-            finalResult = result;
-            break;
-          }
-
-          if (noToolCodingRounds >= 2) {
-            finalResult = result;
-            break;
-          }
-
-          lastNoToolCodingText = roundText;
-          continueCodingAgent();
-          continue;
+        if (codingMode && explicitCodeWork && !result.functionCalls?.length) {
+          // No artificial coding-round ceiling. When Gemini has no more tool
+          // calls, its current model response is the natural completion signal.
+          finalResult = result;
+          break;
         }
 
         finalResult = result;
