@@ -1587,11 +1587,53 @@ export async function onRequestPost(context) {
         return rendered.length > 1800 ? rendered.slice(0, 1800) + '…' : rendered;
       }
 
-      // Per-turn tool replay cache. When Gemini repeats the exact same tool
-      // call, return the real prior result instead of executing the side effect
-      // again or manufacturing a synthetic error. This is idempotency, not an
-      // agent iteration limit.
+      // Tool replay protection is keyed by the exact tool name + arguments.
+      // It prevents duplicate side effects without imposing an agent iteration
+      // ceiling. Background jobs additionally persist the result so a worker
+      // retry can replay a completed tool call instead of executing it again.
       const executedToolResults = new Map();
+
+      async function toolReplayDigest(signature) {
+        const digest = await crypto.subtle.digest(
+          'SHA-256',
+          new TextEncoder().encode(String(signature))
+        );
+        return [...new Uint8Array(digest)]
+          .map(byte => byte.toString(16).padStart(2, '0'))
+          .join('');
+      }
+
+      async function readBackgroundToolReplay(signature) {
+        if (!backgroundJobId) return { hit: false, value: null };
+
+        try {
+          const digest = await toolReplayDigest(signature);
+          const value = await getCloudRunKv(env).get(
+            'trux_tool_replay_' + backgroundJobId + '_' + digest,
+            'json'
+          );
+          return value == null
+            ? { hit: false, value: null }
+            : { hit: true, value };
+        } catch {
+          return { hit: false, value: null };
+        }
+      }
+
+      async function writeBackgroundToolReplay(signature, value) {
+        if (!backgroundJobId) return;
+
+        try {
+          const digest = await toolReplayDigest(signature);
+          await getCloudRunKv(env).put(
+            'trux_tool_replay_' + backgroundJobId + '_' + digest,
+            JSON.stringify(value),
+            { expirationTtl: 24 * 60 * 60 }
+          );
+        } catch {
+          // In-memory replay protection remains active for this request.
+        }
+      }
 
       let agentRound = 0;
       while (true) {
@@ -1739,11 +1781,25 @@ export async function onRequestPost(context) {
               });
 
               let callResult;
+              let replayedToolCall = false;
+
               if (executedToolResults.has(toolSignature)) {
-                // Do not repeat a side-effectful Composio action. Feed Gemini
-                // the exact result it already received so it can move on and
-                // decide the next tool step or produce the final answer.
+                replayedToolCall = true;
                 callResult = executedToolResults.get(toolSignature);
+              } else {
+                const persistedReplay = await readBackgroundToolReplay(toolSignature);
+                if (persistedReplay.hit) {
+                  replayedToolCall = true;
+                  callResult = persistedReplay.value;
+                  executedToolResults.set(toolSignature, callResult);
+                }
+              }
+
+              if (replayedToolCall) {
+                send({
+                  type: 'status',
+                  status: toolTarget + ' · already completed, reusing result'
+                });
               } else if (call?.name === TERMINAL_TOOL_NAME) {
                 send({
                   type: 'terminal',
@@ -1804,8 +1860,21 @@ export async function onRequestPost(context) {
                 };
               }
 
-              if (!executedToolResults.has(toolSignature)) {
+              if (!replayedToolCall) {
                 executedToolResults.set(toolSignature, callResult);
+                await writeBackgroundToolReplay(toolSignature, callResult);
+              }
+
+              if (replayedToolCall) {
+                const replayNotice = {
+                  _truxToolReplay: true,
+                  message: 'This exact tool call was already executed successfully in this turn or background job. Treat the returned result as authoritative and continue with the next required step or the final answer.'
+                };
+                if (callResult && typeof callResult === 'object' && !Array.isArray(callResult)) {
+                  callResult = { ...callResult, ...replayNotice };
+                } else {
+                  callResult = { output: callResult, ...replayNotice };
+                }
               }
 
               if (callResult?.configurationError) {
