@@ -23,7 +23,7 @@ export async function onRequestGet({ request, env }) {
       authorized = true;
     } else if (/^Bearer\s+\S+$/i.test(authHeader)) {
       const verified = await requireFirebaseUser(request, env);
-      const ownerId = String(job?.body?.userId || '');
+      const ownerId = String(job?.userId || job?.body?.userId || '');
       authorized = !!ownerId && ownerId === String(verified.uid || '');
     }
 
@@ -31,7 +31,7 @@ export async function onRequestGet({ request, env }) {
       return Response.json({ error: 'Authentication required.' }, { status: 401 });
     }
 
-    const { jobSecret, ...safeJob } = job;
+    const { jobSecret, userId, ...safeJob } = job;
     return Response.json(safeJob, {
       headers: { 'Cache-Control': 'no-store' }
     });
