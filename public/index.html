@@ -3288,18 +3288,6 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 </style>
   
 <style id="trux-code-stream-terminal-fix">
-  body.coding-workspace .thinking-status-line.thought-summary{
-    display:block!important;
-    max-width:min(820px,88vw);
-    margin-top:5px!important;
-    color:var(--txt-3)!important;
-    font:500 14px/1.5 var(--font-body)!important;
-    white-space:pre-wrap!important;
-    max-height:72px;
-    overflow:auto;
-    scrollbar-width:thin;
-    opacity:.9;
-  }
   body.coding-workspace .trux-terminal-window{
     width:min(980px,100%);
     margin:8px 0 12px;
@@ -4910,6 +4898,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     }
 
     function toggleModelDropdown(e) {
+      if (workspaceMode === "coding") { closeModelDropdown(); return; }
       e?.stopPropagation();
       const dropdown = getEl("modelDropdown"), button = getEl("modelPickerBtn");
       if(!dropdown || !button) return;
@@ -4934,6 +4923,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     }
 
     function selectModel(m, e) {
+      if (workspaceMode === "coding") { closeModelDropdown(); return; }
       e?.stopPropagation();
       const owner = isTruxDeveloper(auth?.currentUser);
       if(m === "ultra" && !owner) return toast("TruX-Ultra 6.5 is owner-only.", "err");
@@ -6866,7 +6856,6 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     function finalizeResponse(id, aid, text, prompt, voice, streamer, sources) {
       let b = getEl(id);
       const responseRow = b?.closest(".row");
-      dismissThinkingPanel(responseRow);
       const codingTurn = workspaceMode === "coding";
       const durationMs = responseRow?._startedAt
         ? Math.max(0, Date.now() - responseRow._startedAt)
@@ -6875,12 +6864,29 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       if(responseRow?._elapsedTimer) clearInterval(responseRow._elapsedTimer);
 
       if (codingTurn && responseRow) {
-        const stack = b?.closest(".trux-response-stack");
-        if (stack && !stack.querySelector(".coding-worked-for")) {
-          const worked = document.createElement("div");
-          worked.className = "coding-worked-for";
-          worked.textContent = "Worked for " + formatCodexElapsed(durationMs);
-          stack.insertBefore(worked, b);
+        const panel = responseRow.querySelector(".trux-thinking-panel");
+        if (panel) {
+          panel.classList.add("completed");
+          panel.removeAttribute("data-thinking-visible");
+          panel.setAttribute("aria-label", "Executed steps");
+          const elapsed = panel.querySelector(".trux-thinking-elapsed");
+          if (elapsed) elapsed.textContent = "Worked for " + formatCodexElapsed(durationMs);
+          const toggle = panel.querySelector(".trux-thinking-toggle");
+          if (toggle) {
+            toggle.setAttribute("aria-label", "Show executed steps");
+            toggle.title = "Show executed steps";
+          }
+          panel.querySelectorAll(".thinking-tool-item.active").forEach(item => {
+            item.classList.remove("active");
+            item.classList.add("completed");
+          });
+          const details = panel.querySelector(".trux-thinking-details");
+          if (details && !details.children.length) {
+            const item = document.createElement("div");
+            item.className = "thinking-status-step";
+            item.textContent = "Response completed";
+            details.appendChild(item);
+          }
         }
       }
 
@@ -7685,8 +7691,11 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       panel.classList.toggle("expanded", expanded);
       details.hidden = !expanded;
       toggle.setAttribute("aria-expanded", String(expanded));
-      toggle.setAttribute("aria-label", expanded ? "Minimize AI activity" : "Show exact AI activity");
-      toggle.title = expanded ? "Minimize AI activity" : "Show exact AI activity";
+      const completed = panel.classList.contains("completed");
+      const expandedLabel = completed ? "Hide executed steps" : "Minimize AI activity";
+      const collapsedLabel = completed ? "Show executed steps" : "Expand AI activity";
+      toggle.setAttribute("aria-label", expanded ? expandedLabel : collapsedLabel);
+      toggle.title = expanded ? expandedLabel : collapsedLabel;
       if (expanded) requestAnimationFrame(() => { details.scrollTop = details.scrollHeight; });
     }
 
@@ -7744,18 +7753,6 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       actions.appendChild(editBtn);
     }
 
-
-    function appendThinkingThought(statusId, text) {
-      const el = getEl("thought_" + statusId);
-      if (!el) return;
-      const next = normalizeAiActivity(text);
-      if (!next) return;
-      const current = String(el.textContent || "").trim();
-      const combined = (current ? current + " " : "") + next;
-      el.textContent = combined.slice(-2400);
-      el.hidden = false;
-      el.scrollTop = el.scrollHeight;
-    }
 
     function escapeTerminalText(value) {
       return escapeHtml(String(value == null ? "" : value));
@@ -8110,7 +8107,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
             ${workspaceMode === "chat"
               ? `<span class="trux-thinking-chat-marker" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><defs><linearGradient id="truxChatStarGradient_${sid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f7f7fb"/><stop offset="55%" stop-color="#e1e2ed"/><stop offset="100%" stop-color="#c9cce0"/></linearGradient></defs><path fill="url(#truxChatStarGradient_${sid})" d="M12 1.5C13.45 7.95 16.05 10.55 22.5 12C16.05 13.45 13.45 16.05 12 22.5C10.55 16.05 7.95 13.45 1.5 12C7.95 10.55 10.55 7.95 12 1.5Z"/></svg></span>`
               : '<span class="trux-thinking-spark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 1.5C13.45 7.95 16.05 10.55 22.5 12C16.05 13.45 13.45 16.05 12 22.5C10.55 16.05 7.95 13.45 1.5 12C7.95 10.55 10.55 7.95 12 1.5Z"/></svg></span>'}
-            <div class="trux-thinking-copy"><span class="status-msg" id="${sid}" role="status" aria-live="polite"><span class="thinking-status-line compact"></span><span class="thinking-status-line full"></span><span class="thinking-status-line thought-summary" id="thought_${sid}" hidden></span></span></div>
+            <div class="trux-thinking-copy"><span class="status-msg" id="${sid}" role="status" aria-live="polite"><span class="thinking-status-line compact"></span><span class="thinking-status-line full"></span></span></div>
             <span class="trux-thinking-elapsed ${codingTurn ? "" : "chat-thinking-elapsed"}" id="elapsed_${id}">${codingTurn ? "Working for 00:00" : ""}</span>
             ${codingTurn ? `<button type="button" class="trux-thinking-toggle" onclick="toggleThinkingDetails('${thid}')" aria-expanded="false" aria-label="Expand AI activity" title="Expand AI activity"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>` : ""}
           </div>
@@ -8140,14 +8137,11 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         }, 1000);
       }
 
-      // Decide whether this coding turn needs the deep model/tool-capable tier.
-      const codingNeedsWorkspaceTools = /\b(?:github|repo|repository|codebase|pull request|branch|commit|push|plugin|integration|gmail|google sheets|google docs|calendar|drive|slack|notion|outlook|teams|excel|onedrive|fix|debug|refactor|implement|edit|modify|rewrite|replace|build|test|compile|api|endpoint|javascript|typescript|python|java|html|css|react|node|sql)\b/i.test(String(prompt || ''));
+      // TruX-Code is always pinned to Gemini 3.1 Pro Preview.
 
       const requestBody = {
         message: prompt,
-        tier: workspaceMode === "deep-research"
-          ? "ultra"
-          : (workspaceMode === "coding" ? (codingNeedsWorkspaceTools ? "ultra" : "base") : currentModel),
+        tier: (workspaceMode === "deep-research" || workspaceMode === "coding") ? "ultra" : currentModel,
         mode: workspaceMode,
         advancedThinking: advancedThinkingLevel === "extended" || workspaceMode === "deep-research",
         thinkingLevel: advancedThinkingLevel,
@@ -8228,7 +8222,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           let bubble = getEl(id);
           if (!bubble) return null;
           const responseRow = bubble.closest(".row");
-          dismissThinkingPanel(responseRow);
+          if (!codingTurn) dismissThinkingPanel(responseRow);
           bubble.classList.remove("thinking");
           activeStreamer = createStreamRenderer(bubble);
           return activeStreamer;
@@ -8242,7 +8236,6 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           else if(j.type === "chunk") {
             let piece = j.text || "";
             if (!piece) return;
-            if (codingTurn) return;
             full += piece;
             sniffRoute();
             if (!routeSettled || imageRoute) return;
@@ -8252,12 +8245,9 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
               else s.push(piece);
             }
           }
-          else if(j.type === "thinking_chunk") {
-            if (codingTurn && j.text) appendThinkingThought(sid, j.text);
-          }
           else if(j.type === "final") {
             fin = j.text || "";
-            if (codingTurn && fin && !finalizedEarly) {
+            if (codingTurn && fin && !finalizedEarly && !imageRoute) {
               finalizedEarly = true;
               finalizeResponse(id, aid, fin, prompt, voice, activeStreamer, turnSources);
               activeStreamer = null;
@@ -9419,5 +9409,27 @@ body.coding-workspace .trux-code-center-mark{
 </script>
 
 
+
+<style id="trux-code-locked-model-and-completed-trace">
+  body.coding-workspace #modelPickerContainer {
+    display:none!important;
+    visibility:hidden!important;
+    pointer-events:none!important;
+  }
+  body.coding-workspace .trux-thinking-panel.completed .trux-thinking-spark::before,
+  body.coding-workspace .trux-thinking-panel.completed .trux-thinking-spark::after {
+    animation:none!important;
+    opacity:0!important;
+  }
+  body.coding-workspace .trux-thinking-panel.completed .trux-thinking-spark svg {
+    animation:none!important;
+    transform:scale(1)!important;
+  }
+  body.coding-workspace .trux-thinking-panel.completed .trux-thinking-toggle {
+    visibility:visible!important;
+    pointer-events:auto!important;
+    opacity:1!important;
+  }
+</style>
 </body>
 </html>
