@@ -2503,7 +2503,7 @@ body.sidebar-open .topbar{filter:brightness(.78)}
 #profileModal .modal-avatar{width:82px;height:82px;border-radius:23px;margin:0;border:1px solid var(--line-2);box-shadow:0 18px 42px rgba(0,0,0,.35)}
 #profileModal .mtitle{font-family:var(--font-disp);font-size:clamp(28px,5vw,44px)}
 #profileModal .msub{font-size:15px;color:var(--txt-2)}
-#profileModal .profile-upgrade-card>.settings-card{display:none}
+
 #profileModal .profile-list-group-title{max-width:900px;margin:24px auto 10px;padding:0 clamp(18px,6vw,80px);color:var(--txt-4);font:600 10px/1 var(--font-mono);letter-spacing:.14em;text-transform:uppercase}
 .profile-option-list{max-width:900px;margin:0 auto;overflow:hidden;border:1px solid var(--line);border-radius:20px;background:rgba(10,10,12,.84);box-shadow:0 22px 55px rgba(0,0,0,.2)}
 .profile-option-row{width:100%;min-height:74px;display:grid;grid-template-columns:44px minmax(0,1fr) 20px;gap:14px;align-items:center;padding:11px 18px;text-align:left;background:rgba(11,11,14,.6);color:var(--txt);border-bottom:1px solid rgba(255,255,255,.065);transition:background .18s var(--ease),transform .18s var(--ease)}
@@ -3588,11 +3588,6 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
         <div class="profile-meta-item"><b id="profileModelText">Core 4.0</b><small>Selected model</small></div>
         <div class="profile-meta-item"><b id="profileLimitText">Unlimited</b><small>Core limit</small></div>
       </div>
-      <div class="settings-card" style="margin-top:0;padding:10px 18px">
-        <div class="mrow"><span>Custom instructions</span><button class="mbtn" onclick="closeProfileModal();openSettingsModal();switchSettingsSection(&quot;personalization&quot;)">Edit</button></div>
-        <div class="mrow"><span>Usage & limits</span><button class="mbtn" onclick="closeProfileModal();openSettingsModal();switchSettingsSection(&quot;usage&quot;)">View</button></div>
-        <div class="mrow"><span>Developer access</span><span class="badge" style="margin-left:auto">Standard</span></div>
-      </div>
       <div class="profile-list-group-title profile-options-label">Account & workspace</div>
       <div class="profile-option-list" id="profileOptionList">
         <button type="button" class="profile-option-row" data-profile-page="account"><span class="profile-option-icon account-icon">G</span><span class="profile-option-copy"><b>Manage your account</b><small>Open your connected Google account</small></span><span class="profile-option-chevron">›</span></button>
@@ -3628,14 +3623,14 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
           <div><b>TruX settings</b><small>Personal workspace</small></div>
         </div>
         <nav class="settings-nav" aria-label="Settings sections">
-          <button type="button" class="active" data-settings-section="general" data-settings-page="general"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.6 1.6-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.1h-2.2v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-1.6-1.6.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H7v-2.2h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1L9.9 6l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6v-.1h2.2v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3L18.2 6l1.6 1.6-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.1v2.2H21a1.7 1.7 0 0 0-1.6 1Z"/></svg>General</button>
-          <button type="button" data-settings-section="appearance" data-settings-page="appearance"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16"/></svg>Appearance</button>
-          <button type="button" data-settings-section="voice" data-settings-page="voice"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8"/></svg>Voice</button>
-          <button type="button" data-settings-section="personalization" data-settings-page="personalization"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v13H4z"/><path d="M8 9h8M8 13h5"/></svg>Personalization</button>
-          <button type="button" data-settings-section="notifications" data-settings-page="notifications"><svg viewBox="0 0 24 24"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 8h18c0 7-1 8-3 8Z"/><path d="M10 21h4"/></svg>Notifications</button>
-          <button type="button" data-settings-section="usage" data-settings-page="usage"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/></svg>Usage</button>
-          <button type="button" data-settings-section="data" data-settings-page="data"><svg viewBox="0 0 24 24"><path d="M4 7.5h16M5.5 7.5v11h13v-11M8 4.5h8"/><path d="M9 11v4M12 11v4M15 11v4"/></svg>Data & tools</button>
-          <button type="button" class="developer-nav" data-settings-section="developer" data-settings-page="developer"><svg viewBox="0 0 24 24"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 4l-4 16"/></svg>Developer</button>
+          <button type="button" class="active" data-settings-section="general"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.6 1.6-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.1h-2.2v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-1.6-1.6.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H7v-2.2h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1L9.9 6l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6v-.1h2.2v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3L18.2 6l1.6 1.6-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.1v2.2H21a1.7 1.7 0 0 0-1.6 1Z"/></svg>General</button>
+          <button type="button" data-settings-section="appearance"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16"/></svg>Appearance</button>
+          <button type="button" data-settings-section="voice"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8"/></svg>Voice</button>
+          <button type="button" data-settings-section="personalization"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v13H4z"/><path d="M8 9h8M8 13h5"/></svg>Personalization</button>
+          <button type="button" data-settings-section="notifications"><svg viewBox="0 0 24 24"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 8h18c0 7-1 8-3 8Z"/><path d="M10 21h4"/></svg>Notifications</button>
+          <button type="button" data-settings-section="usage"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/></svg>Usage</button>
+          <button type="button" data-settings-section="data"><svg viewBox="0 0 24 24"><path d="M4 7.5h16M5.5 7.5v11h13v-11M8 4.5h8"/><path d="M9 11v4M12 11v4M15 11v4"/></svg>Data & tools</button>
+          <button type="button" class="developer-nav" data-settings-section="developer"><svg viewBox="0 0 24 24"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 4l-4 16"/></svg>Developer</button>
         </nav>
         <button type="button" class="settings-close" onclick="closeSettingsModal()"><svg viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/><path d="M9 12h11"/></svg>Back to chat</button>
       </aside>
@@ -3646,7 +3641,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
             <div class="mtitle">Settings</div>
             <div class="msub">Tune your TruX workspace without leaving the app.</div>
           </div>
-          <select id="settingsMobileSelect" class="settings-mobile-select" aria-label="Settings section" onchange="openSettingsModal(this.value)">
+          <select id="settingsMobileSelect" class="settings-mobile-select" aria-label="Settings section" onchange="switchSettingsSection(this.value)">
             <option value="general">General</option><option value="appearance">Appearance</option><option value="voice">Voice</option>
             <option value="personalization">Personalization</option><option value="notifications">Notifications</option>
             <option value="usage">Usage</option><option value="data">Data & privacy</option><option value="developer">Developer</option>
@@ -3737,9 +3732,9 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
             </section>
 
             <section class="settings-section" data-settings-content="data">
-              <div class="settings-section-head"><h2>Data & tools</h2><p>Manage local chats, export your data, and diagnose the API connection.</p></div>
+              <div class="settings-section-head"><h2>Data & tools</h2><p>Manage local chats, import or export your workspace, and diagnose the API connection.</p></div>
               <div class="settings-card">
-                <div class="sect"><h4>System & tools</h4><button class="mbtn" onclick="checkApiLatency()">Check API status</button><button class="mbtn" onclick="exportChatData()">Export chats</button><button class="mbtn danger" onclick="resetAllSettings()">Reset settings</button><button class="mbtn danger" onclick="clearAllHistory()">Clear all chats</button></div>
+                <div class="sect"><h4>System & tools</h4><button class="mbtn" onclick="checkApiLatency()">Check API status</button><button class="mbtn" onclick="exportChatData()">Export chats</button><button class="mbtn" onclick="exportTruxMemory()">Export workspace memory</button><button class="mbtn" onclick="importTruxMemory()">Import workspace memory</button><button class="mbtn danger" onclick="resetAllSettings()">Reset settings</button><button class="mbtn danger" onclick="clearAllHistory()">Clear all chats</button></div>
               </div>
             </section>
 
@@ -4261,33 +4256,26 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     }
 
     function profileDetailData(key){
-      const owner=isTruxDeveloper(auth&&auth.currentUser);
-      const c=getCoreUsageData(), p=getProUsageData(), i=getImageUsageData();
-      if(key==="account") return {title:"Manage your account",subtitle:"Your connected sign-in and account controls.",html:'<div class="detail-callout"><h4>Connected account</h4><p>'+escapeHtml((auth&&auth.currentUser&&auth.currentUser.email)||"No account")+'</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="window.open(&#39;https://myaccount.google.com/&#39;,&#39;_blank&#39;,&#39;noopener&#39;)">Open Google Account</button></div></div>'};
-      if(key==="usage") return {title:"Usage & limits",subtitle:"Your current workspace usage.",html:'<div class="settings-card"><div class="sect"><h4>Core 4.0</h4><div class="usage"><i style="width:12%"></i></div><div class="utxt">Unlimited · '+Number(c.tokensUsed||0).toLocaleString()+' tokens used</div></div><div class="sect"><h4>Pro 5.0</h4><div class="usage"><i style="width:'+(owner?"100%":Math.min(100,(Number(p.tokensUsed||0)/1000000)*100))+'%"></i></div><div class="utxt">'+(owner?"Unlimited · ":"")+Number(p.tokensUsed||0).toLocaleString()+' / 1,000,000 Tokens</div></div><div class="sect"><h4>Image generations</h4><div class="usage"><i style="width:'+Math.min(100,(Number(i.count||0)/15)*100)+'%"></i></div><div class="utxt">'+Number(i.count||0)+' / 15 Images</div></div></div><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption();openSettingsModal();switchSettingsSection(&quot;usage&quot;)">Open usage settings</button></div>'};
-      if(key==="personalization") return {title:"Personalization",subtitle:"Controls that shape your TruX experience.",html:'<div class="detail-callout"><h4>Everything is editable</h4><p>System instructions, home UI looks, accent colour and location access are managed from Personalization.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption();openSettingsModal();switchSettingsSection(&quot;personalization&quot;)">Open personalization</button></div></div>'};
-      if(key==="notifications") return {title:"Notifications",subtitle:"Completion alerts for this device.",html:'<div class="settings-card"><div class="mrow"><span><b>Response notifications</b><small class="mrow-sub">Text, image and video completion alerts.</small></span><label class="toggle"><input id="profileNotificationsToggle" type="checkbox" onchange="toggleTruxNotificationsSetting(this.checked)"><span class="slider"></span></label></div><div class="location-status" id="profileNotificationStatus"></div></div>'};
-      if(key==="memory") return {title:"Memory & data",subtitle:"Move your local TruX workspace between devices.",html:'<div class="detail-callout"><h4>Export</h4><p>Save local chats, pinned insights, custom instructions, selected home look and accent colour.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="exportTruxMemory()">Export memory</button></div></div><div class="detail-callout"><h4>Import</h4><p>Merge a previously exported TruX JSON file into this browser.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="importTruxMemory()">Import memory</button></div></div>'};
+      const email=escapeHtml((auth&&auth.currentUser&&auth.currentUser.email)||"No account");
+      if(key==="account") return {title:"Manage your account",subtitle:"Your connected sign-in and account controls.",html:'<div class="detail-callout"><h4>Connected account</h4><p>'+email+'</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="window.open(&#39;https://myaccount.google.com/&#39;,&#39;_blank&#39;,&#39;noopener&#39;)">Open Google Account</button></div></div>'};
       if(key==="avatar") return {title:"Avatar",subtitle:"Choose the image shown in your TruX profile.",html:'<div class="detail-callout"><h4>Profile image</h4><p>Choose a local image or reset to your connected Google photo.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="openAvatarPicker()">Choose image</button><button class="mbtn" type="button" onclick="resetAvatarOverride()">Reset avatar</button></div></div>'};
-      if(key==="appearance") return {title:"Appearance",subtitle:"Choose your home experience and accent colour.",html:'<div class="settings-card"><div class="sect"><h4>Home UI</h4><div class="home-ui-fixed-note">Standard TruX home surface</div><div class="accent-palette"><h4>Accent colour</h4><div class="accent-options"><button type="button" class="accent-option" data-accent-option="blue" onclick="applyTruxAccent(&quot;blue&quot;)" aria-label="Blue"><i></i></button><button type="button" class="accent-option" data-accent-option="cyan" onclick="applyTruxAccent(&quot;cyan&quot;)" aria-label="Cyan"><i></i></button><button type="button" class="accent-option" data-accent-option="purple" onclick="applyTruxAccent(&quot;purple&quot;)" aria-label="Purple"><i></i></button><button type="button" class="accent-option" data-accent-option="pink" onclick="applyTruxAccent(&quot;pink&quot;)" aria-label="Pink"><i></i></button><button type="button" class="accent-option" data-accent-option="red" onclick="applyTruxAccent(&quot;red&quot;)" aria-label="Red"><i></i></button><button type="button" class="accent-option" data-accent-option="orange" onclick="applyTruxAccent(&quot;orange&quot;)" aria-label="Orange"><i></i></button><button type="button" class="accent-option" data-accent-option="yellow" onclick="applyTruxAccent(&quot;yellow&quot;)" aria-label="Yellow"><i></i></button><button type="button" class="accent-option" data-accent-option="green" onclick="applyTruxAccent(&quot;green&quot;)" aria-label="Green"><i></i></button><button type="button" class="accent-option" data-accent-option="teal" onclick="applyTruxAccent(&quot;teal&quot;)" aria-label="Teal"><i></i></button><button type="button" class="accent-option" data-accent-option="white" onclick="applyTruxAccent(&quot;white&quot;)" aria-label="White"><i></i></button></div></div></div></div>'};
-      if(key==="settings") return {title:"Settings",subtitle:"Open the complete TruX preferences page.",html:'<div class="detail-callout"><h4>Detailed controls</h4><p>General, Appearance, Voice, Personalization, Notifications, Usage, Data & privacy and Developer are all available.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption();openSettingsModal()">Open Settings</button></div></div>'};
-      if(key==="help") return {title:"Help & privacy",subtitle:"Quick guidance and privacy controls.",html:'<div class="detail-callout"><h4>Location privacy</h4><p>Location access can be turned off at any time from Personalization.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption();openSettingsModal();switchSettingsSection(&quot;personalization&quot;)">Location settings</button></div></div><div class="detail-callout"><h4>Quick help</h4><p>Use + for Coding, Deep Research, image generation, files, camera and photos. Use Library to revisit generated media.</p></div>'};
-      if(key==="developer" && owner) return {title:"Developer workspace",subtitle:"Developer-only TruX controls and identity.",html:'<div class="detail-callout"><h4>Developer recognition</h4><p>This account has access to the developer workspace and owner controls.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption();openSettingsModal();switchSettingsSection(&quot;developer&quot;)">Open developer settings</button></div></div>'};
+      if(key==="help") return {title:"Help & privacy",subtitle:"Quick guidance and privacy controls.",html:'<div class="detail-callout"><h4>Location privacy</h4><p>Location access can be turned off at any time from Personalization.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption();closeProfileModal();openSettingsModal(&quot;personalization&quot;)">Location settings</button></div></div><div class="detail-callout"><h4>Quick help</h4><p>Use + for Coding, Deep Research, image generation, files, camera and photos. Use Library to revisit generated media.</p></div>'};
       return {title:"Profile",subtitle:"Choose a profile setting.",html:'<div class="detail-callout"><p>That option is not available for this account.</p></div>'};
     }
 
     function openProfileOption(key){
+      const settingsSections={usage:"usage",personalization:"personalization",notifications:"notifications",memory:"data",appearance:"appearance",settings:"general",developer:"developer"};
+      if(Object.prototype.hasOwnProperty.call(settingsSections,key)){
+        closeProfileModal();
+        openSettingsModal(settingsSections[key]);
+        return;
+      }
       currentProfileOption=key;
       const home=getEl("profileOptionList"), label=document.querySelector(".profile-options-label"), detail=getEl("profileDetailView");
       const data=profileDetailData(key);
       if(home) home.style.display="none";
       if(label) label.style.display="none";
       if(detail){ detail.hidden=false; getEl("profileDetailTitle").textContent=data.title; getEl("profileDetailSubtitle").textContent=data.subtitle; getEl("profileDetailBody").innerHTML=data.html; }
-      if(key==="notifications"){
-        const t=getEl("profileNotificationsToggle"); if(t) t.checked=("Notification" in window && Notification.permission==="granted");
-        const s=getEl("profileNotificationStatus"); if(s) s.textContent=("Notification" in window) ? "Permission: "+Notification.permission : "Notifications are not supported.";
-      }
-      if(key==="appearance") applyHomeLook(document.body.dataset.homeLook||"midnight",false);
       const scroller=getEl("profileModal"); if(scroller) scroller.scrollTop=0;
     }
 
@@ -4303,9 +4291,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     function updateNotificationSettingsUI(){
       const granted=("Notification" in window && Notification.permission==="granted");
       const t=getEl("notificationsToggle"); if(t) t.checked=granted;
-      const pt=getEl("profileNotificationsToggle"); if(pt) pt.checked=granted;
       const s=getEl("notificationStatusText"); if(s) s.textContent=("Notification" in window) ? "Permission: "+Notification.permission : "Notifications are not supported.";
-      const ps=getEl("profileNotificationStatus"); if(ps) ps.textContent=("Notification" in window) ? "Permission: "+Notification.permission : "Notifications are not supported.";
     }
 
     async function toggleTruxNotificationsSetting(enabled){
@@ -4544,25 +4530,29 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       getEl("profileModal").style.display = "flex";
     }
     function closeProfileModal() { getEl("profileModal").style.display = "none"; }
-    function switchSettingsSection(name, button) {
+    function switchSettingsSection(name) {
+      const validSections = ["general","appearance","voice","personalization","notifications","usage","data","developer"];
+      const requested = String(name || "general");
+      const hasSection = validSections.includes(requested) &&
+        Array.from(document.querySelectorAll("[data-settings-content]")).some(section => section.getAttribute("data-settings-content") === requested);
+      const activeSection = hasSection ? requested : "general";
       document.querySelectorAll("[data-settings-content]").forEach(section => {
-        section.classList.toggle("active", section.getAttribute("data-settings-content") === name);
+        section.classList.toggle("active", section.getAttribute("data-settings-content") === activeSection);
       });
       document.querySelectorAll(".settings-nav button[data-settings-section]").forEach(btn => {
-        btn.classList.toggle("active", btn.getAttribute("data-settings-section") === name);
+        btn.classList.toggle("active", btn.getAttribute("data-settings-section") === activeSection);
       });
       const scroller = document.querySelector(".settings-main-scroll");
       if (scroller) scroller.scrollTop = 0;
-      const mobileSelect=getEl("settingsMobileSelect"); if(mobileSelect) mobileSelect.value=name;
+      const mobileSelect=getEl("settingsMobileSelect"); if(mobileSelect) mobileSelect.value=activeSection;
     }
-    function openSettingsModal() {
+    function openSettingsModal(section) {
       updateAllUsageUI();
       loadSettings();
       updateLocationSettingUI();
       updateNotificationSettingsUI();
       getEl("settingsModal").style.display = "flex";
-      const first = document.querySelector('.settings-nav button[data-settings-section="general"]');
-      switchSettingsSection("general", first);
+      switchSettingsSection(section || "general");
     }
     function closeSettingsModal() { getEl("settingsModal").style.display = "none"; }
     function confirmSignOut() { auth?.signOut().then(() => { closeProfileModal(); }); }
@@ -8089,11 +8079,11 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     const settingsModalNode=getEl("settingsModal");
     if(settingsModalNode){
       settingsModalNode.addEventListener("click",function(event){
-        const nav=event.target && event.target.closest ? event.target.closest("[data-settings-page]") : null;
+        const nav=event.target && event.target.closest ? event.target.closest("[data-settings-section]") : null;
         if(nav && settingsModalNode.contains(nav)){
           event.preventDefault();
           event.stopPropagation();
-          showSettingsPage(nav.getAttribute("data-settings-page"));
+          switchSettingsSection(nav.getAttribute("data-settings-section"));
         }
       },true);
     }
