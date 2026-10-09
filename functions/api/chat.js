@@ -1762,7 +1762,8 @@ export async function onRequestPost(context) {
           : Promise.resolve('');
 
         if (needsOpeningActivity) {
-          await stageLabelTask;
+          // Start the generated activity label in parallel; do not delay the main model.
+          stageLabelTask.catch(() => '');
         }
 
         const result = await streamVertexGemini({
