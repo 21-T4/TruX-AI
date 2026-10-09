@@ -1702,8 +1702,8 @@ export async function onRequestPost(context) {
               ? (agentRound === 1 ? 'examining the requested implementation task' : 'reviewing tool results to choose the next coding action')
               : (agentRound === 1 ? 'working through the coding request' : 'reviewing the latest coding results'))
             : (researchMode
-              ? (agentRound === 1 ? 'preparing a research response' : 'synthesizing newly gathered research')
-              : (agentRound === 1 ? 'interpreting the user request' : 'refining the response with newly available results')),
+              ? (agentRound === 1 ? 'researching the request and gathering relevant sources' : 'synthesizing newly gathered research')
+              : (agentRound === 1 ? 'drafting a response to the user request' : 'refining the response with newly available results')),
           'Model round ' + agentRound + '; mode=' + (codingMode ? 'TruX-Code' : researchMode ? 'research' : 'chat') +
           '; this is the current model round.'
         );
@@ -2074,15 +2074,6 @@ export async function onRequestPost(context) {
             status: 'Final response generation failed'
           });
         }
-      }
-
-      if (!codingMode) {
-        await emitAiActivity(
-          researchMode ? 'combining the verified research findings' : 'composing the final user-facing response',
-          researchMode
-            ? 'Research gathering has finished; prepare the final answer from available sources.'
-            : 'The response content is ready to be finalized for the user.'
-        );
       }
 
       const grounding = getGroundingData(finalResult?.groundingMetadata);
