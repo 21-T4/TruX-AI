@@ -7461,6 +7461,10 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     async function watchBackgroundJob(chatId, jobId, options = {}) {
       const key = String(jobId || "");
       if (!key) return false;
+      const sessionMode = String(chatSessions[chatId]?.mode || "chat");
+      const codingSession = sessionMode === "coding";
+      const isJobViewActive = () => chatId === currentChatId &&
+        (codingSession ? workspaceMode === "coding" : workspaceMode !== "coding");
       const existingWatcher = backgroundJobWatchers.get(key);
       if (existingWatcher) return existingWatcher.promise;
 
@@ -7482,7 +7486,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         let statusFailureCount = 0;
 
         const failBackgroundWatch = async message => {
-          if (chatId === currentChatId && workspaceMode === "coding") {
+          if (isJobViewActive()) {
             const bubble = getEl(state.id);
             if (bubble) {
               bubble.classList.remove("thinking");
@@ -7550,8 +7554,10 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
             state._streamer = null;
           }
 
-          if (chatId === currentChatId && workspaceMode === "coding") {
-            const ensured = state.row ? { row: state.row, id: state.id, sid: state.sid, tsid: state.tsid } : ensureBackgroundRow(chatId);
+          if (isJobViewActive()) {
+            const ensured = state.row?.isConnected
+              ? { row: state.row, id: state.id, sid: state.sid, tsid: state.tsid, aid: state.aid }
+              : ensureBackgroundRow(chatId);
             if (ensured) {
               state.row = ensured.row;
               state.id = ensured.id;
@@ -7564,7 +7570,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
                 if (eventId && seenEventIds.has(eventId)) continue;
                 if (eventId) seenEventIds.add(eventId);
 
-                if (event?.type === "tool_status") {
+                if (codingSession && event?.type === "tool_status") {
                   appendToolStatusLine(state.tsid, event.tool || "TruX-Code", event.status || "", event.phase || "complete", event.details || null);
                 } else if (event?.type === "status") {
                   setThinkingStatus(state.sid, event.status || event.text || "");
@@ -7590,7 +7596,15 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
             }
             try { state.controller.abort(); } catch {}
 
-            if (chatId === currentChatId && workspaceMode === "coding") {
+            const stoppedSession = chatSessions[chatId];
+            if (stoppedSession && String(stoppedSession.activeBackgroundJobId || "") === key) {
+              delete stoppedSession.activeBackgroundJobId;
+              delete stoppedSession.backgroundJobSecret;
+              delete stoppedSession.backgroundStartedAt;
+              delete stoppedSession.backgroundJobMode;
+              saveChatSessions();
+            }
+            if (isJobViewActive()) {
               markGenerationStopped(state.row, state.id, state.sid, state.tsid);
               isGenerating = false;
               activeAbortController = null;
@@ -7612,8 +7626,10 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
             await commitBackgroundResult(
               chatId,
               key,
-              String(currentState.error || "The background coding request failed."),
-              currentState.proposal || null
+              String(currentState.error || "The background request failed."),
+              currentState.proposal || null,
+              Array.isArray(currentState.events) ? currentState.events : [],
+              Number(currentState.updatedAt || Date.now())
             );
             return false;
           }
@@ -7631,7 +7647,9 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
               chatId,
               key,
               String(currentState.final || currentState.liveText || "").trim(),
-              proposal
+              proposal,
+              Array.isArray(currentState.events) ? currentState.events : [],
+              Number(currentState.updatedAt || Date.now())
             );
             return true;
           }
