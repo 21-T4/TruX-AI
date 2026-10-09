@@ -7851,6 +7851,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       const currentLine = fullLine || compactLine;
       const previous = String(fullLine?.textContent || currentLine?.textContent || "").trim();
       const panel = el.closest(".trux-thinking-panel");
+      if (panel?.classList.contains("completed")) return;
       const activityKey = value => String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
       if (panel && !(panel._seenThinkingActivities instanceof Set)) {
         panel._seenThinkingActivities = new Set();
