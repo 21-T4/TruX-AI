@@ -8066,8 +8066,12 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         return generateImage(basePrompt, { imagePrompt: basePrompt });
       }
 
-      /* Start location lookup without making chat wait on a slow GPS fix. */
-      const locationPromise=getTruxLocationForTurn();
+      /* Request GPS only for prompts that need local/current-location context. */
+      const needsTurnLocation = /\\b(?:near me|nearby|around me|around here|in my area|my location|where am i|closest|nearest|local weather|weather near|restaurants? near|shops? near|stores? near|cafes? near|places? near)\\b/i
+        .test(String(prompt || ""));
+      const locationPromise = needsTurnLocation
+        ? getTruxLocationForTurn()
+        : Promise.resolve(null);
 
       /* No keyword gate here any more. Every turn goes to the model, and the
          model answers with an "[[IMAGE]] <prompt>" line when it judges that a
@@ -8164,10 +8168,12 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         systemInstruction: store.getItem("trux_custom_instructions") || "",
         userId: auth?.currentUser?.uid || null,
         userEmail: auth?.currentUser?.email || "",
-        location: await Promise.race([
-          locationPromise,
-          new Promise(resolve => setTimeout(() => resolve(null), 900))
-        ]),
+        location: needsTurnLocation
+          ? await Promise.race([
+              locationPromise,
+              new Promise(resolve => setTimeout(() => resolve(null), 900))
+            ])
+          : null,
         notifyOnComplete: true
       };
 
