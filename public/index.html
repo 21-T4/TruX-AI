@@ -360,6 +360,21 @@
       width: 2px; height: 16px; border-radius: 2px;
       background: linear-gradient(180deg, var(--acc), var(--acc-2));
     }
+    .hist-row { display: flex; align-items: center; gap: 2px; min-width: 0; border-radius: 10px; }
+    .hist-row .hist { flex: 1; min-width: 0; padding-right: 8px; }
+    .hist-menu-btn {
+      flex: 0 0 28px; width: 28px; height: 30px; padding: 0;
+      display: grid; place-items: center; border: 1px solid transparent;
+      border-radius: 8px; background: transparent; color: var(--txt-3);
+      cursor: pointer; font-size: 20px; line-height: 1;
+      opacity: 0; visibility: hidden;
+      transition: opacity .16s var(--ease), background .16s var(--ease), color .16s var(--ease);
+    }
+    .hist-row:hover .hist-menu-btn,
+    .hist-row:focus-within .hist-menu-btn { opacity: 1; visibility: visible; }
+    .hist-menu-btn:hover { background: var(--bg-3); color: var(--txt); border-color: var(--line); }
+    .hist-menu-btn:focus-visible { opacity: 1; visibility: visible; outline: 2px solid var(--acc-line); outline-offset: 1px; }
+    @media (hover: none) { .hist-menu-btn { opacity: .85; visibility: visible; } }
     .empty {
       padding: 16px 11px;
       font-size: 13.5px; line-height: 1.6; color: var(--txt-4);
@@ -658,6 +673,68 @@
       overscroll-behavior-y: contain;
       -webkit-overflow-scrolling: touch;
       scroll-behavior: smooth;
+    }
+
+    /* Notebook pages use the same main workspace instead of opening a blank chat. */
+    .notebook-workspace {
+      display: none; flex: 1; min-height: 0; overflow-y: auto;
+      overscroll-behavior-y: contain;
+      padding: clamp(22px, 4vw, 48px) clamp(16px, 4vw, 36px) 36px;
+    }
+    body.notebook-open #notebookWorkspace { display: block !important; }
+    body.notebook-open #welcomeScreen,
+    body.notebook-open #chatContainer,
+    body.notebook-open #codeChatContainer,
+    body.notebook-open .composer { display: none !important; }
+    .notebook-workspace-inner { width: min(840px, 100%); margin: 0 auto; }
+    .notebook-workspace-head {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 20px; padding: 8px 0 24px; border-bottom: 1px solid var(--line);
+    }
+    .notebook-workspace-eyebrow {
+      color: var(--txt-4); font-size: 10px; font-weight: 600;
+      letter-spacing: .15em; text-transform: uppercase;
+    }
+    .notebook-workspace-head h1 {
+      margin: 8px 0 7px; color: var(--txt); font-size: clamp(24px, 4vw, 32px);
+      font-weight: 600; letter-spacing: -.04em; overflow-wrap: anywhere;
+    }
+    .notebook-workspace-head p { margin: 0; color: var(--txt-3); font-size: 13.5px; line-height: 1.5; }
+    .notebook-primary-btn {
+      flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+      gap: 8px; min-height: 40px; padding: 0 14px; border-radius: 11px;
+      border: 1px solid var(--line-2); background: var(--bg-3); color: var(--txt);
+      font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: background .16s var(--ease), border-color .16s var(--ease);
+    }
+    .notebook-primary-btn:hover { background: var(--bg-4); border-color: var(--line-3); }
+    .notebook-chat-list { display: flex; flex-direction: column; gap: 8px; padding-top: 20px; }
+    .nb-chat-row {
+      display: flex; align-items: stretch; gap: 4px; padding: 3px;
+      border: 1px solid var(--line); border-radius: 14px;
+      background: rgba(255,255,255,.018);
+      transition: background .16s var(--ease), border-color .16s var(--ease);
+    }
+    .nb-chat-row:hover { background: rgba(255,255,255,.035); border-color: var(--line-2); }
+    .nb-chat-open {
+      flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: stretch;
+      gap: 5px; padding: 12px; text-align: left;
+      background: transparent; border: 0; color: var(--txt); cursor: pointer;
+    }
+    .nb-chat-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 570; }
+    .nb-chat-preview { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--txt-3); font-size: 12.5px; line-height: 1.45; }
+    .notebook-chat-menu { margin: 7px 7px 0 0; opacity: .78; visibility: visible; }
+    .notebook-empty {
+      margin-top: 24px; padding: 24px 18px; border: 1px dashed var(--line-2);
+      border-radius: 16px; color: var(--txt-3); text-align: center;
+      font-size: 13.5px; line-height: 1.65;
+    }
+    .notebook-empty strong { display: block; margin-bottom: 5px; color: var(--txt-2); font-size: 15px; font-weight: 600; }
+    .notebook-empty .notebook-primary-btn { margin-top: 14px; }
+    @media (max-width: 600px) {
+      .notebook-workspace { padding: 20px 14px 28px; }
+      .notebook-workspace-head { flex-direction: column; align-items: stretch; gap: 16px; }
+      .notebook-workspace-head h1 { font-size: 25px; }
     }
 
     .row {
@@ -1593,7 +1670,30 @@
       cursor: pointer;
       transition: background 0.15s var(--ease);
     }
+    .context-action {
+      padding: 9px 11px; border-radius: 9px; font-size: 14px; font-weight: 550;
+      color: var(--txt-2); cursor: pointer; transition: background .15s var(--ease), color .15s var(--ease);
+      white-space: nowrap;
+    }
+    .context-action:hover { background: var(--bg-3); color: var(--txt); }
     .del:hover { background: rgba(242,96,122,0.12); }
+    .notebook-choice-list { display: flex; flex-direction: column; gap: 7px; margin-top: 18px; }
+    .notebook-choice {
+      display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px;
+      padding: 10px 12px; text-align: left; border: 1px solid var(--line);
+      border-radius: 12px; color: var(--txt); background: rgba(255,255,255,.018);
+      cursor: pointer; transition: background .15s var(--ease), border-color .15s var(--ease);
+    }
+    .notebook-choice:hover { background: var(--bg-3); border-color: var(--line-3); }
+    .notebook-choice.current { border-color: var(--acc-line); background: var(--acc-soft); }
+    .notebook-choice-icon {
+      flex: 0 0 32px; width: 32px; height: 32px; display: grid; place-items: center;
+      border: 1px solid var(--line-2); border-radius: 9px; color: var(--txt-2);
+    }
+    .notebook-choice-copy { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 3px; }
+    .notebook-choice-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 570; }
+    .notebook-choice-meta { color: var(--txt-4); font-size: 11px; }
+    .notebook-choice-empty { padding: 14px 4px; color: var(--txt-3); font-size: 13px; line-height: 1.55; }
 
     /* ---------- toasts ---------- */
     .toast-host {
@@ -2473,6 +2573,7 @@
 .notebook-list{display:flex;flex-direction:column;gap:4px}
 .notebook-item{min-height:62px;display:flex;align-items:center;gap:16px;padding:0 17px 0 21px;border-radius:16px;color:#d8d8df;border:1px solid transparent;cursor:pointer}
 .notebook-item:hover{background:rgba(255,255,255,.045);color:#fff;border-color:rgba(255,255,255,.04)}
+.notebook-item.active{background:var(--bg-3);color:#fff;border-color:var(--line)}
 .notebook-icon{width:28px;height:28px;display:grid;place-items:center;border:1px solid var(--line-2);border-radius:8px;background:rgba(255,255,255,.035);color:var(--txt-2)}
 .notebook-icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
 .notebook-item b{font-size:16px;font-weight:560}.recent-section{margin-top:33px}
@@ -4123,6 +4224,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
 
       <div class="chat" id="chatContainer"></div>
       <div class="chat" id="codeChatContainer"></div>
+      <section class="notebook-workspace" id="notebookWorkspace" aria-label="Notebook contents"></section>
 
       <section class="composer">
         <div class="compose">
@@ -4444,8 +4546,18 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     </div>
   </div>
 
-  <div class="context" id="contextMenu">
-    <div class="del" id="contextMenuDeleteBtn">Delete chat</div>
+  <div class="context" id="contextMenu" role="menu" aria-label="Chat actions">
+    <div class="context-action" id="contextMenuMoveBtn" role="menuitem" tabindex="0">Move to notebook</div>
+    <div class="del" id="contextMenuDeleteBtn" role="menuitem" tabindex="0">Delete chat</div>
+  </div>
+
+  <div class="modal" id="notebookMoveModal" role="dialog" aria-modal="true" aria-labelledby="notebookMoveTitle" aria-hidden="true" onclick="if(event.target===this) closeNotebookMoveModal()">
+    <div class="card">
+      <button class="close" type="button" onclick="closeNotebookMoveModal()" aria-label="Close">×</button>
+      <div class="mtitle" id="notebookMoveTitle">Move chat to notebook</div>
+      <div class="msub" id="notebookMoveSubtitle">Choose where this conversation belongs.</div>
+      <div class="notebook-choice-list" id="notebookMoveChoices"></div>
+    </div>
   </div>
 
   <div class="toast-host" id="toastHost" aria-live="polite"></div>
@@ -4680,6 +4792,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         fileAttachments = [],
         wasInputByVoice = false,
         contextMenuTargetId = null,
+        notebookMoveTargetId = null,
         codeBlockCounter = 0,
         recognition = null,
         isRecording = false,
@@ -4972,7 +5085,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     }
 
     function setWorkspaceMode(mode, options) {
-      document.body.classList.remove("plugins-page-active");
+      document.body.classList.remove("plugins-page-active","notebook-open");
       options = options || {};
       const nextMode = mode || "chat";
       const previousMode = workspaceMode;
@@ -5491,7 +5604,12 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     let cloudChatSyncTimer = null;
     function queueSidebarSync() {
       clearTimeout(sidebarSyncTimer);
-      sidebarSyncTimer = setTimeout(() => { try { renderSidebar(); } catch (e) { /* ignore */ } }, 120);
+      sidebarSyncTimer = setTimeout(() => {
+        try {
+          renderSidebar();
+          if(document.body.classList.contains("notebook-open")) renderNotebookWorkspace(getActiveNotebookId());
+        } catch (e) { /* ignore */ }
+      }, 120);
     }
     async function syncChatsToCloud(immediate = false) {
       if(!auth?.currentUser) return;
@@ -5628,7 +5746,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     function startNewChat() {
       if(currentChatId && chatSessions[currentChatId]?.incognito) delete chatSessions[currentChatId];
       incognitoMode = false;
-      document.body.classList.remove("plugins-page-active","incognito-mode");
+      document.body.classList.remove("plugins-page-active","incognito-mode","notebook-open");
       closeSidebar();
       closeAttachmentMenu();
       closeModelDropdown();
@@ -6743,7 +6861,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       isGenerating = true; isScrolledUp = false;
       getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>'; getEl("actionBtn").classList.add("stop"); getEl("actionBtn").classList.remove("ready");
 
-      if(!currentChatId) { currentChatId = "chat_" + Date.now(); chatSessions[currentChatId] = { title: basePrompt ? basePrompt.slice(0, 32) : "Image", mode: workspaceMode, messages: [] }; }
+      if(!currentChatId) { currentChatId = "chat_" + Date.now(); chatSessions[currentChatId] = { title: basePrompt ? basePrompt.slice(0, 32) : "Image", mode: workspaceMode, notebookId: notebookIdForNewChat(), messages: [] }; }
       if(!opts.reuseTurn) {
         chatSessions[currentChatId].messages.push({ role: "user", text: basePrompt });
         saveChatSessions();
@@ -7870,7 +7988,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>'; getEl("actionBtn").classList.add("stop"); getEl("actionBtn").classList.remove("ready");
       let voice = wasInputByVoice; wasInputByVoice = false;
 
-      if(!currentChatId) { currentChatId = "chat_" + Date.now(); chatSessions[currentChatId] = { title: basePrompt ? basePrompt.slice(0, 32) : "Query", mode: workspaceMode, messages: [] }; }
+      if(!currentChatId) { currentChatId = "chat_" + Date.now(); chatSessions[currentChatId] = { title: basePrompt ? basePrompt.slice(0, 32) : "Query", mode: workspaceMode, notebookId: notebookIdForNewChat(), messages: [] }; }
       chatSessions[currentChatId].mode = workspaceMode;
       chatSessions[currentChatId].messages.push({
         role: "user",
@@ -8233,7 +8351,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       getEl("actionBtn").classList.add("stop"); getEl("actionBtn").classList.remove("ready");
       if(!currentChatId) {
         currentChatId="chat_"+Date.now();
-        chatSessions[currentChatId]={title:(basePrompt||"Video").slice(0,32),mode:"video",messages:[]};
+        chatSessions[currentChatId]={title:(basePrompt||"Video").slice(0,32),mode:"video",notebookId:notebookIdForNewChat(),messages:[]};
       }
       chatSessions[currentChatId].mode="video";
       chatSessions[currentChatId].messages.push({role:"user",text:basePrompt});
@@ -8546,21 +8664,52 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       return Array.isArray(value) ? value : fallback;
     }
 
+    function getActiveNotebookId() {
+      const active = store.getItem("trux_active_notebook");
+      return getNotebooks().some(n => n && n.id === active) ? active : null;
+    }
+
+    function notebookIdForNewChat() {
+      const notebooks = getNotebooks();
+      const active = getActiveNotebookId();
+      return active || (notebooks[0] && notebooks[0].id) || null;
+    }
+
+    function ensureNotebookAssignments() {
+      const notebooks = getNotebooks();
+      if(!notebooks.length) return false;
+      const fallbackId = notebooks[0].id;
+      let changed = false;
+      Object.keys(chatSessions).forEach(id => {
+        const chat = chatSessions[id];
+        if(!chat || chat.incognito) return;
+        if(!chat.notebookId || !notebooks.some(n => n && n.id === chat.notebookId)) {
+          chat.notebookId = fallbackId;
+          changed = true;
+        }
+      });
+      if(changed) saveChatSessions();
+      return changed;
+    }
+
     function renderNotebooks() {
       const host = getEl("notebookList");
       if(!host) return;
       host.innerHTML = "";
+      const activeId = getActiveNotebookId();
       getNotebooks().forEach(n => {
         const item = document.createElement("div");
-        item.className = "notebook-item";
+        item.className = "notebook-item" + (n.id === activeId ? " active" : "");
         item.setAttribute("role","button");
         item.tabIndex = 0;
+        item.setAttribute("aria-label","Open notebook " + n.title);
+        item.setAttribute("aria-current", n.id === activeId ? "page" : "false");
         item.onclick = () => openNotebook(n.id);
         item.onkeydown = e => { if(e.key === "Enter" || e.key === " ") { e.preventDefault(); openNotebook(n.id); } };
 
         const icon = document.createElement("span");
         icon.className = "notebook-icon";
-        icon.innerHTML = '<svg viewBox="0 0 24 24"><path d="M5 4.5h8.5L18.5 9v10A1.5 1.5 0 0 1 17 20.5H5A1.5 1.5 0 0 1 3.5 19V6A1.5 1.5 0 0 1 5 4.5Z"/><path d="M13 4.5V9h5"/></svg>';
+        icon.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h8.5L18.5 9v10A1.5 1.5 0 0 1 17 20.5H5A1.5 1.5 0 0 1 3.5 19V6A1.5 1.5 0 0 1 5 4.5Z"/><path d="M13 4.5V9h5"/></svg>';
 
         const label = document.createElement("b");
         label.textContent = n.title;
@@ -8577,6 +8726,12 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         item.append(icon, label, del);
         host.appendChild(item);
       });
+      if(!host.children.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "No notebooks yet. Create one to organize chats.";
+        host.appendChild(empty);
+      }
     }
 
     function createNotebook() {
@@ -8586,30 +8741,262 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       const notebooks = getNotebooks();
       notebooks.push({ id:"notebook_" + Date.now(), title:clean });
       store.setItem(TRUX_NOTEBOOKS_KEY, JSON.stringify(notebooks));
-      renderNotebooks();
+      ensureNotebookAssignments();
+      renderSidebar();
+      toast("Notebook created.", "ok");
     }
 
     function deleteNotebook(id) {
-      const notebook = getNotebooks().find(n => n.id === id);
+      const notebook = getNotebooks().find(n => n && n.id === id);
       if(!notebook) return;
-      if(!confirm("Delete " + JSON.stringify(notebook.title) + "?")) return;
-      const notebooks = getNotebooks().filter(n => n.id !== id);
+      if(!confirm("Delete " + JSON.stringify(notebook.title) + "? Chats will be kept and moved to another notebook when possible.")) return;
+
+      const wasActive = store.getItem("trux_active_notebook") === id;
+      const notebooks = getNotebooks().filter(n => n && n.id !== id);
+      const replacementId = notebooks[0] ? notebooks[0].id : null;
+      Object.keys(chatSessions).forEach(chatId => {
+        const chat = chatSessions[chatId];
+        if(!chat || chat.incognito || chat.notebookId !== id) return;
+        if(replacementId) chat.notebookId = replacementId;
+        else delete chat.notebookId;
+      });
       store.setItem(TRUX_NOTEBOOKS_KEY, JSON.stringify(notebooks));
-      if(store.getItem("trux_active_notebook") === id) store.removeItem("trux_active_notebook");
-      renderNotebooks();
-      toast("Notebook deleted.","ok");
+      if(wasActive && replacementId) store.setItem("trux_active_notebook", replacementId);
+      else if(wasActive) store.removeItem("trux_active_notebook");
+
+      saveChatSessions();
+      renderSidebar();
+      if(wasActive) {
+        if(replacementId) openNotebook(replacementId);
+        else {
+          document.body.classList.remove("notebook-open");
+          startNewChat();
+        }
+      } else if(document.body.classList.contains("notebook-open")) {
+        renderNotebookWorkspace(getActiveNotebookId());
+      }
+      toast("Notebook deleted. Chats were kept.", "ok");
+    }
+
+    function renderNotebookWorkspace(id) {
+      const host = getEl("notebookWorkspace");
+      if(!host) return;
+      ensureNotebookAssignments();
+      const notebook = getNotebooks().find(n => n && n.id === id);
+      if(!notebook) {
+        host.innerHTML = '<div class="notebook-workspace-inner"><div class="notebook-empty"><strong>Notebook unavailable</strong>This notebook may have been deleted. Choose another notebook from the sidebar.</div></div>';
+        return;
+      }
+
+      host.innerHTML = "";
+      const inner = document.createElement("div");
+      inner.className = "notebook-workspace-inner";
+
+      const header = document.createElement("header");
+      header.className = "notebook-workspace-head";
+      const copy = document.createElement("div");
+      copy.style.minWidth = "0";
+      const eyebrow = document.createElement("div");
+      eyebrow.className = "notebook-workspace-eyebrow";
+      eyebrow.textContent = "Notebook";
+      const title = document.createElement("h1");
+      title.textContent = notebook.title;
+      const description = document.createElement("p");
+      description.textContent = "Chats saved here stay together. Open a conversation or start a new one in this notebook.";
+      copy.append(eyebrow, title, description);
+
+      const actions = document.createElement("div");
+      actions.className = "notebook-workspace-actions";
+      const newChat = document.createElement("button");
+      newChat.type = "button";
+      newChat.className = "notebook-primary-btn";
+      newChat.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>New chat here</span>';
+      newChat.onclick = () => startNotebookChat(notebook.id);
+      actions.appendChild(newChat);
+      header.append(copy, actions);
+
+      const list = document.createElement("div");
+      list.className = "notebook-chat-list";
+      const ids = Object.keys(chatSessions).filter(chatId => {
+        const chat = chatSessions[chatId];
+        return chat && !chat.incognito && chat.notebookId === notebook.id;
+      }).reverse();
+
+      if(!ids.length) {
+        const empty = document.createElement("div");
+        empty.className = "notebook-empty";
+        const emptyTitle = document.createElement("strong");
+        emptyTitle.textContent = "No chats in this notebook yet";
+        const emptyText = document.createElement("div");
+        emptyText.textContent = "Start a chat here, or move an existing conversation into this notebook from its chat menu.";
+        const emptyAction = document.createElement("button");
+        emptyAction.type = "button";
+        emptyAction.className = "notebook-primary-btn";
+        emptyAction.textContent = "Start a chat";
+        emptyAction.onclick = () => startNotebookChat(notebook.id);
+        empty.append(emptyTitle, emptyText, emptyAction);
+        list.appendChild(empty);
+      } else {
+        ids.forEach(chatId => {
+          const chat = chatSessions[chatId];
+          const row = document.createElement("div");
+          row.className = "nb-chat-row";
+
+          const open = document.createElement("button");
+          open.type = "button";
+          open.className = "nb-chat-open";
+          const chatTitle = document.createElement("span");
+          chatTitle.className = "nb-chat-title";
+          chatTitle.textContent = chat.title || "Untitled chat";
+          const messages = Array.isArray(chat.messages) ? chat.messages : [];
+          const lastMessage = messages.length ? messages[messages.length - 1] : null;
+          const preview = document.createElement("span");
+          preview.className = "nb-chat-preview";
+          const previewText = String(lastMessage && lastMessage.text || "").replace(/\s+/g, " ").trim();
+          preview.textContent = previewText || (messages.length ? "Conversation" : "Empty conversation");
+          open.append(chatTitle, preview);
+          open.onclick = () => loadChatSession(chatId);
+          open.oncontextmenu = e => {
+            e.preventDefault();
+            showChatContextMenu(chatId, e.clientX, e.clientY);
+          };
+
+          const more = document.createElement("button");
+          more.type = "button";
+          more.className = "hist-menu-btn notebook-chat-menu";
+          more.textContent = "⋯";
+          more.setAttribute("aria-label", "Chat actions for " + (chat.title || "Untitled chat"));
+          more.title = "Chat actions";
+          more.onclick = e => {
+            e.preventDefault();
+            e.stopPropagation();
+            const rect = more.getBoundingClientRect();
+            showChatContextMenu(chatId, rect.right - 190, rect.bottom + 4);
+          };
+          row.append(open, more);
+          list.appendChild(row);
+        });
+      }
+
+      inner.append(header, list);
+      host.appendChild(inner);
     }
 
     function openNotebook(id) {
-      const notebook = getNotebooks().find(n => n.id === id);
+      const notebook = getNotebooks().find(n => n && n.id === id);
       if(!notebook) return;
       store.setItem("trux_active_notebook", notebook.id);
       closeSidebar();
+      document.body.classList.remove("home-active","chat-session-active","coding-workspace","plugins-page-active","incognito-mode");
+      document.body.classList.add("notebook-open");
+      const welcome = getEl("welcomeScreen");
+      if(welcome) welcome.style.display = "none";
+      renderNotebookWorkspace(notebook.id);
+      renderSidebar();
+    }
+
+    function startNotebookChat(id) {
+      const notebook = getNotebooks().find(n => n && n.id === id);
+      if(!notebook) return;
+      store.setItem("trux_active_notebook", notebook.id);
+      document.body.classList.remove("notebook-open");
       startNewChat();
-      toast("Opened " + notebook.title + ".", "ok");
+      toast("New chat will be saved to " + notebook.title + ".", "ok");
+    }
+
+    function showChatContextMenu(id, x, y) {
+      if(!chatSessions[id]) return;
+      contextMenuTargetId = id;
+      const menu = getEl("contextMenu");
+      if(!menu) return;
+      menu.style.display = "block";
+      const width = menu.offsetWidth || 190;
+      const height = menu.offsetHeight || 78;
+      menu.style.left = Math.max(8, Math.min(Number(x) || 8, innerWidth - width - 8)) + "px";
+      menu.style.top = Math.max(8, Math.min(Number(y) || 8, innerHeight - height - 8)) + "px";
+    }
+
+    function openMoveChatToNotebook(chatId) {
+      const chat = chatSessions[chatId];
+      if(!chat || chat.incognito) return;
+      ensureNotebookAssignments();
+      notebookMoveTargetId = chatId;
+      const host = getEl("notebookMoveChoices");
+      const subtitle = getEl("notebookMoveSubtitle");
+      if(subtitle) subtitle.textContent = 'Choose a notebook for "' + (chat.title || "Untitled chat") + '".';
+      if(host) {
+        host.innerHTML = "";
+        const notebooks = getNotebooks();
+        notebooks.forEach(notebook => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "notebook-choice" + (chat.notebookId === notebook.id ? " current" : "");
+          const icon = document.createElement("span");
+          icon.className = "notebook-choice-icon";
+          icon.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5h8.5L18.5 9v10A1.5 1.5 0 0 1 17 20.5H5A1.5 1.5 0 0 1 3.5 19V6A1.5 1.5 0 0 1 5 4.5Z"/><path d="M13 4.5V9h5"/></svg>';
+          const copy = document.createElement("span");
+          copy.className = "notebook-choice-copy";
+          const title = document.createElement("span");
+          title.className = "notebook-choice-title";
+          title.textContent = notebook.title;
+          const count = Object.keys(chatSessions).filter(id => {
+            const item = chatSessions[id];
+            return item && !item.incognito && item.notebookId === notebook.id;
+          }).length;
+          const meta = document.createElement("span");
+          meta.className = "notebook-choice-meta";
+          meta.textContent = count + (count === 1 ? " chat" : " chats") + (chat.notebookId === notebook.id ? " · Current notebook" : "");
+          copy.append(title, meta);
+          button.append(icon, copy);
+          button.onclick = () => moveChatToNotebook(chatId, notebook.id);
+          host.appendChild(button);
+        });
+        if(!notebooks.length) {
+          const empty = document.createElement("div");
+          empty.className = "notebook-choice-empty";
+          empty.textContent = "There are no notebooks yet. Create one from the sidebar, then move this chat.";
+          const create = document.createElement("button");
+          create.type = "button";
+          create.className = "notebook-primary-btn";
+          create.textContent = "Create notebook";
+          create.onclick = () => { closeNotebookMoveModal(); createNotebook(); };
+          host.append(empty, create);
+        }
+      }
+      const modal = getEl("notebookMoveModal");
+      if(modal) {
+        modal.classList.add("active");
+        modal.setAttribute("aria-hidden","false");
+      }
+    }
+
+    function closeNotebookMoveModal() {
+      const modal = getEl("notebookMoveModal");
+      if(modal) {
+        modal.classList.remove("active");
+        modal.setAttribute("aria-hidden","true");
+      }
+      notebookMoveTargetId = null;
+    }
+
+    function moveChatToNotebook(chatId, notebookId) {
+      const chat = chatSessions[chatId];
+      const notebook = getNotebooks().find(n => n && n.id === notebookId);
+      if(!chat || chat.incognito || !notebook) return closeNotebookMoveModal();
+      const previousNotebookId = chat.notebookId;
+      chat.notebookId = notebook.id;
+      saveChatSessions();
+      closeNotebookMoveModal();
+      renderSidebar();
+      if(document.body.classList.contains("notebook-open")) {
+        renderNotebookWorkspace(getActiveNotebookId());
+      }
+      if(previousNotebookId === notebook.id) toast("This chat is already in " + notebook.title + ".", "ok");
+      else toast('Moved "' + (chat.title || "Untitled chat") + '" to ' + notebook.title + ".", "ok");
     }
 
     function renderSidebar() {
+      ensureNotebookAssignments();
       renderNotebooks();
       let hL = getEl("historyList"); if(!hL) return;
       let q = (getEl("historySearch")?.value || "").trim().toLowerCase();
@@ -8632,13 +9019,33 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           let h = document.createElement("div"); h.className = "history-head"; h.textContent = label;
           hL.appendChild(h); lastLabel = label;
         }
-        let x = document.createElement("div");
+        const row = document.createElement("div");
+        row.className = "hist-row";
+
+        const x = document.createElement("div");
         x.className = "hist" + (id === currentChatId ? " active" : "");
-        x.textContent = chatSessions[id].title;
-        x.title = chatSessions[id].title;
+        x.textContent = chatSessions[id].title || "Untitled chat";
+        x.title = chatSessions[id].title || "Untitled chat";
+        x.setAttribute("role","button");
+        x.tabIndex = 0;
         x.onclick = () => loadChatSession(id);
-        x.oncontextmenu = e => { e.preventDefault(); contextMenuTargetId = id; let ctx = getEl("contextMenu"); ctx.style.display = "block"; ctx.style.left = Math.min(e.clientX, innerWidth - 170) + "px"; ctx.style.top = Math.min(e.clientY, innerHeight - 56) + "px"; };
-        hL.appendChild(x);
+        x.onkeydown = e => { if(e.key === "Enter" || e.key === " ") { e.preventDefault(); loadChatSession(id); } };
+        x.oncontextmenu = e => { e.preventDefault(); showChatContextMenu(id, e.clientX, e.clientY); };
+
+        const more = document.createElement("button");
+        more.type = "button";
+        more.className = "hist-menu-btn";
+        more.textContent = "⋯";
+        more.setAttribute("aria-label", "Chat actions for " + (chatSessions[id].title || "Untitled chat"));
+        more.title = "Move or delete chat";
+        more.onclick = e => {
+          e.preventDefault();
+          e.stopPropagation();
+          const rect = more.getBoundingClientRect();
+          showChatContextMenu(id, rect.right - 190, rect.bottom + 4);
+        };
+        row.append(x, more);
+        hL.appendChild(row);
       });
     }
     function enterChatWorkspace() {
@@ -8680,6 +9087,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
 
     function loadChatSession(id) {
       if(!chatSessions[id]) return;
+      document.body.classList.remove("notebook-open");
       incognitoMode = false;
       activeAbortController?.abort();
        activeStreamer?.cancel(); activeStreamer = null;
@@ -8718,9 +9126,36 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       }
       renderSidebar(); if(innerWidth <= 768) closeSidebar();
     }
-    function deleteChat(id) { if(confirm("Delete this chat?")) { delete chatSessions[id]; saveChatSessions(); if(currentChatId === id) startNewChat(); else renderSidebar(); } }
+    function deleteChat(id) {
+      if(!confirm("Delete this chat?")) return;
+      const notebookWasOpen = document.body.classList.contains("notebook-open");
+      const openNotebookId = getActiveNotebookId();
+      delete chatSessions[id];
+      saveChatSessions();
+      if(currentChatId === id) {
+        if(notebookWasOpen) {
+          try { activeAbortController?.abort(); } catch {}
+          try { activeStreamer?.cancel(); } catch {}
+          activeStreamer = null;
+          isGenerating = false;
+          generationStopRequested = true;
+          currentChatId = null;
+        } else {
+          startNewChat();
+        }
+      }
+      renderSidebar();
+      if(notebookWasOpen) renderNotebookWorkspace(openNotebookId);
+    }
 
+    getEl("contextMenuMoveBtn").onclick = () => {
+      const targetId = contextMenuTargetId;
+      getEl("contextMenu").style.display = "none";
+      if(targetId) openMoveChatToNotebook(targetId);
+    };
+    getEl("contextMenuMoveBtn").onkeydown = e => { if(e.key === "Enter" || e.key === " ") { e.preventDefault(); getEl("contextMenuMoveBtn").click(); } };
     getEl("contextMenuDeleteBtn").onclick = () => { if(contextMenuTargetId) { deleteChat(contextMenuTargetId); contextMenuTargetId = null; getEl("contextMenu").style.display = "none"; } };
+    getEl("contextMenuDeleteBtn").onkeydown = e => { if(e.key === "Enter" || e.key === " ") { e.preventDefault(); getEl("contextMenuDeleteBtn").click(); } };
     
     addEventListener("click", e => {
       let ctx = getEl("contextMenu"); if(ctx && !ctx.contains(e.target)) ctx.style.display = "none";
