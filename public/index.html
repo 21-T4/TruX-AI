@@ -7382,56 +7382,57 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       return { row, id, sid, tsid, aid, thid };
     }
 
-    async function commitBackgroundResult(chatId, jobId, finalText, proposal) {
+    async function commitBackgroundResult(chatId, jobId, finalText, proposal, toolEvents = [], completedAtMs = 0) {
       const session = chatSessions[chatId];
       if (!session) return;
+      const codingSession = String(session.mode || "chat") === "coding";
+      const watcher = backgroundJobWatchers.get(String(jobId));
+      const startedAt = Number(session.backgroundStartedAt || watcher?.row?._startedAt || 0);
+      const completedAt = Number(completedAtMs || Date.now());
+      const durationMs = startedAt ? Math.max(0, completedAt - startedAt) : 0;
+      const events = Array.isArray(toolEvents) ? toolEvents.slice() : [];
 
-      const alreadySaved = session.messages.some(m =>
+      let savedMessage = session.messages.find(m =>
         m && m.role === "trux" && String(m.backgroundJobId || "") === String(jobId)
       );
-
-      if (!alreadySaved && finalText) {
-        const savedMessage = {
-          role: "trux",
-          text: finalText,
-          backgroundJobId: String(jobId)
-        };
-        const activeWatcher = backgroundJobWatchers.get(String(jobId));
-        if (activeWatcher?.row?._startedAt) {
-          savedMessage.durationMs = Math.max(0, Date.now() - activeWatcher.row._startedAt);
-        }
+      if (!savedMessage && finalText) {
+        savedMessage = { role: "trux", text: finalText, backgroundJobId: String(jobId) };
+        session.messages.push(savedMessage);
+      }
+      if (savedMessage) {
+        if (finalText) savedMessage.text = finalText;
+        savedMessage.durationMs = durationMs;
+        if (codingSession) savedMessage.toolEvents = events;
         if (proposal) savedMessage.githubProposal = proposal;
         if (proposal?.commit) savedMessage.githubCommit = proposal.commit;
-        session.messages.push(savedMessage);
       }
 
       if (String(session.activeBackgroundJobId || "") === String(jobId)) {
         delete session.activeBackgroundJobId;
+        delete session.backgroundJobSecret;
+        delete session.backgroundStartedAt;
+        delete session.backgroundJobMode;
       }
       saveChatSessions();
 
-      if (chatId === currentChatId && workspaceMode === "coding") {
-        const info = backgroundJobWatchers.get(String(jobId));
-        const row = info?.row;
-        const durationMs = row?._startedAt
-          ? Math.max(0, Date.now() - row._startedAt)
-          : 0;
-        if (row?._elapsedTimer) clearInterval(row._elapsedTimer);
-        if (row?.isConnected) row.remove();
+      const viewIsActive = chatId === currentChatId &&
+        (codingSession ? workspaceMode === "coding" : workspaceMode !== "coding");
+      if (viewIsActive) {
+        const row = watcher?.row?.isConnected
+          ? watcher.row
+          : Array.from(getActiveChatContainer()?.querySelectorAll(".row.trux-row") || [])
+              .find(item => item.dataset.backgroundJobId === String(jobId));
+        if (row) {
+          if (row._elapsedTimer) clearInterval(row._elapsedTimer);
+          row.remove();
+        }
 
         if (finalText) {
           appendMessageRow("ChatTruX-AI", finalText, "trux-row", "trux-bubble", null, false, [], null);
-          if (durationMs >= 0) {
-            const rows = getActiveChatContainer().querySelectorAll(".row.trux-row");
-            const responseRow = rows[rows.length - 1];
-            const stack = responseRow?.querySelector(".trux-response-stack");
-            const bubble = responseRow?.querySelector(".trux-bubble");
-            if (stack && bubble) {
-              const worked = document.createElement("div");
-              worked.className = "coding-worked-for";
-              worked.textContent = "Worked for " + formatCodexElapsed(durationMs);
-              stack.insertBefore(worked, bubble);
-            }
+          const rows = getActiveChatContainer()?.querySelectorAll(".row.trux-row") || [];
+          const responseRow = rows[rows.length - 1];
+          if (codingSession && responseRow) {
+            restoreCompletedCodeSteps(responseRow, { durationMs, toolEvents: events });
           }
         }
 
@@ -7439,7 +7440,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           if (proposal.commit) {
             appendGithubCommitResponse(proposal, proposal.commit, chatId);
           } else {
-            const rows = getActiveChatContainer().querySelectorAll(".row.trux-row");
+            const rows = getActiveChatContainer()?.querySelectorAll(".row.trux-row") || [];
             const lastRow = rows[rows.length - 1];
             const host = lastRow?.querySelector(".trux-response-stack") || lastRow;
             if (host) renderGithubProposalCard(host, proposal);
@@ -7447,11 +7448,14 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         }
       }
 
-      isGenerating = false;
-      activeAbortController = null;
-      getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15-2-15 2z"/>';
-      getEl("actionBtn").classList.remove("stop");
-      handleInputChange();
+      if (chatId === currentChatId) {
+        isGenerating = false;
+        activeAbortController = null;
+        generationStopRequested = false;
+        getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15-2 2 2 15 2z"/>';
+        getEl("actionBtn").classList.remove("stop");
+        handleInputChange();
+      }
     }
 
     async function watchBackgroundJob(chatId, jobId, options = {}) {
