@@ -4731,8 +4731,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           maybeAskForLocation();
           if("Notification" in window && Notification.permission === "granted") syncTruxNotificationsSilently();
           syncChatsToCloud(true);
-          // TruX-Code now runs on the direct Cloud Run SSE path; do not revive
-          // legacy queue-backed jobs in the foreground UI.
+          resumePersistedBackgroundJobs();
         } else {
           getEl("userName").innerText = "Guest User";
           getEl("userEmail").innerText = "Tap to sign in";
@@ -8295,9 +8294,25 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         notifyOnComplete: true
       };
 
-      /* TruX-Code runs directly on the Cloud Run SSE path. This keeps model
-       * streaming, tool calls, final-answer synthesis, and cancellation on
-       * the same live request instead of depending on a separate queue worker. */
+      // Signed-in text turns use durable jobs, so a closed app cannot discard the final answer.
+      const canRunDurably = !incognitoMode && !!auth?.currentUser &&
+        ["chat", "coding", "deep-research"].includes(String(workspaceMode)) &&
+        !(workspaceMode !== "coding" && (img || allAttachments.some(a => a?.dataUrl)));
+      if (canRunDurably) {
+        try {
+          await runCodeBackgroundJob({
+            row, id, aid, sid, tsid, prompt, voice,
+            requestBody,
+            chatId: currentChatId,
+            mode: workspaceMode
+          });
+          return;
+        } catch (backgroundError) {
+          console.warn("Durable TruX task could not start; continuing on the live stream:", backgroundError?.message || backgroundError);
+          setThinkingStatus(sid, "Continuing with the live connection…");
+        }
+      }
+
       while (true) {
         if (navigator.onLine === false) {
           await waitForInternet(sid);
@@ -9347,14 +9362,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
          if (workspaceMode === "coding" && m.role === "trux" && Number.isFinite(Number(m.durationMs))) {
            const rows = getActiveChatContainer()?.querySelectorAll(".row.trux-row") || [];
            const restoredRow = rows[rows.length - 1];
-           const restoredStack = restoredRow?.querySelector(".trux-response-stack");
-           const restoredBubble = restoredRow?.querySelector(".trux-bubble");
-           if (restoredStack && restoredBubble) {
-             const worked = document.createElement("div");
-             worked.className = "coding-worked-for";
-             worked.textContent = "Worked for " + formatCodexElapsed(Number(m.durationMs));
-             restoredStack.insertBefore(worked, restoredBubble);
-           }
+           restoreCompletedCodeSteps(restoredRow, m);
          }
          if (m.githubProposal) {
            const rows = getActiveChatContainer()?.querySelectorAll(".row.trux-row") || [];
@@ -9363,8 +9371,8 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
            if (host) renderGithubProposalCard(host, m.githubProposal);
          }
        });
-      if (workspaceMode === "coding" && chatSessions[id].activeBackgroundJobId) {
-        watchBackgroundJob(id, String(chatSessions[id].activeBackgroundJobId));
+      if (chatSessions[id].activeBackgroundJobId) {
+        watchBackgroundJob(id, String(chatSessions[id].activeBackgroundJobId), { jobSecret: chatSessions[id].backgroundJobSecret || "" });
       }
       renderSidebar(); if(innerWidth <= 768) closeSidebar();
     }
