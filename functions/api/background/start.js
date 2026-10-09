@@ -72,6 +72,7 @@ export async function onRequestPost({ request, env }) {
     const initialState = {
       jobId: payload.jobId,
       userId,
+      userEmail,
       mode,
       status: 'queued',
       events: [{ id: 1, type: 'status', tool: label, status: 'Thinking…' }],
