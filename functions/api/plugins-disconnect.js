@@ -1,7 +1,5 @@
 import { requireFirebaseUser } from '../firebase-auth.js';
 import {
-  getEnabledPluginIds,
-  setEnabledPluginIds,
   getPluginById,
   listConnectedAccounts,
   deleteConnectedAccount
@@ -25,9 +23,7 @@ export async function onRequestPost({ request, env }) {
     });
 
     if (!account) {
-      const enabled = await getEnabledPluginIds(env, userId);
-      const saved = await setEnabledPluginIds(env, userId, enabled.filter(id => id !== pluginId));
-      return Response.json({ ok: true, disconnected: false, enabled: saved });
+      return Response.json({ ok: true, disconnected: false, pluginId });
     }
 
     const accountId = String(
@@ -43,14 +39,10 @@ export async function onRequestPost({ request, env }) {
 
     await deleteConnectedAccount(env, accountId);
 
-    const enabled = await getEnabledPluginIds(env, userId);
-    const saved = await setEnabledPluginIds(env, userId, enabled.filter(id => id !== pluginId));
-
     return Response.json({
       ok: true,
       disconnected: true,
-      pluginId,
-      enabled: saved
+      pluginId
     });
   } catch (error) {
     return Response.json(
