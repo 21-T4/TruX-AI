@@ -1453,7 +1453,7 @@ export async function onRequestPost(context) {
 
           try {
             const response = await fetchVertexGemini({
-              model: targetModel,
+              model: HISTORY_SUMMARY_MODEL,
               contents: [{ role: 'user', parts: [{ text: prompt }] }],
               systemInstruction:
                 'You write short, accurate progress labels for a user interface. ' +
