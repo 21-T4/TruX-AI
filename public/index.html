@@ -8067,7 +8067,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       }
 
       /* Request GPS only for prompts that need local/current-location context. */
-      const needsTurnLocation = /\\b(?:near me|nearby|around me|around here|in my area|my location|where am i|closest|nearest|local weather|weather near|restaurants? near|shops? near|stores? near|cafes? near|places? near)\\b/i
+      const needsTurnLocation = /\b(?:near me|nearby|around me|around here|in my area|my location|where am i|closest|nearest|local weather|weather near|restaurants?|cafes?|coffee|shops?|stores?|malls?|gas stations?|doctors?|hospitals?|pharmacies?|events?|things to do|what(?:'s| is) open|directions|sunrise|sunset)\b/i
         .test(String(prompt || ""));
       const locationPromise = needsTurnLocation
         ? getTruxLocationForTurn()
