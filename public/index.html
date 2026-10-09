@@ -3955,7 +3955,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
 
 
   <style id="trux-chat-thinking-marker-refresh">
-    /* Chat-only aurora ring and four-point sparkle. TruX-Code is untouched. */
+    /* Chat-only clean star with a brief cool-colour orbit every 2.65 seconds. */
     .trux-thinking-chat-marker {
       position: relative;
       isolation: isolate;
@@ -3976,27 +3976,17 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       border-radius: 50%;
       background: conic-gradient(
         from 0deg,
-        #63e7ff 0deg,
-        #7e9bff 62deg,
-        #b28bff 115deg,
-        #fa8bda 174deg,
-        #ffd18b 226deg,
-        #7ff0ce 284deg,
-        #63e7ff 360deg
+        #8eeaff 0deg,
+        #91aaff 105deg,
+        #c1a4ff 210deg,
+        #8eeaff 360deg
       );
       -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.1px));
       mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.1px));
-      filter: drop-shadow(0 0 3px rgba(130, 179, 255, .48));
+      filter: drop-shadow(0 0 3px rgba(130, 179, 255, .36));
       transform-origin: 50% 50%;
+      opacity: 0;
       animation: truxChatAuroraOrbit 2.65s linear infinite;
-    }
-    .trux-thinking-chat-marker::after {
-      content: "";
-      position: absolute;
-      inset: 3px;
-      border: 1px solid rgba(226, 231, 255, .10);
-      border-radius: 50%;
-      pointer-events: none;
     }
     .trux-thinking-chat-marker svg {
       position: relative;
@@ -4005,17 +3995,26 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       width: 14px;
       height: 14px;
       overflow: visible;
-      filter: drop-shadow(0 0 3px rgba(164, 197, 255, .7));
+      filter: drop-shadow(0 0 1.5px rgba(216, 220, 240, .22));
       transform-origin: 50% 50%;
       animation: truxChatStarGlow 2.65s ease-in-out infinite;
     }
     @keyframes truxChatAuroraOrbit {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
+      0%, 73% { opacity: 0; transform: rotate(0deg) scale(.84); }
+      76% { opacity: .95; transform: rotate(55deg) scale(1); }
+      88% { opacity: .95; transform: rotate(300deg) scale(1); }
+      96%, 100% { opacity: 0; transform: rotate(360deg) scale(.9); }
     }
     @keyframes truxChatStarGlow {
-      0%, 100% { transform: scale(.91); filter: drop-shadow(0 0 2px rgba(164,197,255,.42)); }
-      48% { transform: scale(1.08); filter: drop-shadow(0 0 5px rgba(208,174,255,.88)); }
+      0%, 72%, 100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 1.5px rgba(216,220,240,.22));
+      }
+      78%, 88% {
+        transform: scale(1.13);
+        filter: drop-shadow(0 0 4px rgba(187,199,255,.48));
+      }
+      96% { transform: scale(1); }
     }
     @media (prefers-reduced-motion: reduce) {
       .trux-thinking-chat-marker::before,
@@ -8091,7 +8090,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         <div class="trux-thinking-panel" id="${thid}" data-thinking-visible="true">
           <div class="trux-thinking-bar">
             ${workspaceMode === "chat"
-              ? `<span class="trux-thinking-chat-marker" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><defs><linearGradient id="truxChatStarGradient_${sid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fff6c7"/><stop offset="48%" stop-color="#c5a8ff"/><stop offset="100%" stop-color="#8ceaff"/></linearGradient></defs><path fill="url(#truxChatStarGradient_${sid})" d="M12 1.5C13.45 7.95 16.05 10.55 22.5 12C16.05 13.45 13.45 16.05 12 22.5C10.55 16.05 7.95 13.45 1.5 12C7.95 10.55 10.55 7.95 12 1.5Z"/></svg></span>`
+              ? `<span class="trux-thinking-chat-marker" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><defs><linearGradient id="truxChatStarGradient_${sid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f7f7fb"/><stop offset="55%" stop-color="#e1e2ed"/><stop offset="100%" stop-color="#c9cce0"/></linearGradient></defs><path fill="url(#truxChatStarGradient_${sid})" d="M12 1.5C13.45 7.95 16.05 10.55 22.5 12C16.05 13.45 13.45 16.05 12 22.5C10.55 16.05 7.95 13.45 1.5 12C7.95 10.55 10.55 7.95 12 1.5Z"/></svg></span>`
               : '<span class="trux-thinking-spark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 1.5C13.45 7.95 16.05 10.55 22.5 12C16.05 13.45 13.45 16.05 12 22.5C10.55 16.05 7.95 13.45 1.5 12C7.95 10.55 10.55 7.95 12 1.5Z"/></svg></span>'}
             <div class="trux-thinking-copy"><span class="status-msg" id="${sid}" role="status" aria-live="polite"><span class="thinking-status-line compact"></span><span class="thinking-status-line full"></span><span class="thinking-status-line thought-summary" id="thought_${sid}" hidden></span></span></div>
             <span class="trux-thinking-elapsed ${codingTurn ? "" : "chat-thinking-elapsed"}" id="elapsed_${id}">${codingTurn ? "Working for 00:00" : ""}</span>
