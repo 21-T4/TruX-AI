@@ -1531,17 +1531,23 @@ export async function onRequestPost(context) {
         return '';
       }
 
-      // Build the shared context here so both Chat and TruX-Code use the
-      // exact same five-message + compressed-older-history policy.
+      // A plain greeting doesn't need a costly summary request for older turns.
+      // Keep the recent context, while normal requests retain the shared
+      // five-message + compressed-older-history policy.
+      const isStandaloneGreeting = /^(?:hi|hello|hey|hiya|howdy|yo|good morning|good afternoon|good evening)[\\s!.,?]*$/i
+        .test(String(message || '').trim());
+      const historyForTurn = isStandaloneGreeting && Array.isArray(history)
+        ? history.slice(-HISTORY_RECENT_LIMIT)
+        : history;
       let formattedHistory = [];
-      if (Array.isArray(history) && history.length > HISTORY_RECENT_LIMIT) {
+      if (Array.isArray(historyForTurn) && historyForTurn.length > HISTORY_RECENT_LIMIT) {
         await emitAiActivity(
           'compressing older conversation history',
-          'The conversation contains ' + history.length + ' messages; summarizing older messages before the model response.'
+          'The conversation contains ' + historyForTurn.length + ' messages; summarizing older messages before the model response.'
         );
       }
 
-      formattedHistory = await buildConversationHistory(history, signal, env);
+      formattedHistory = await buildConversationHistory(historyForTurn, signal, env);
 
       const contents = [...formattedHistory, { role: 'user', parts: currentParts }];
       /* -------------------------------------------------
@@ -1743,7 +1749,7 @@ export async function onRequestPost(context) {
         }
 
         agentRound += 1;
-        await emitAiActivity(
+        const stageLabelTask = emitAiActivity(
           codingMode
             ? (explicitCodeWork
               ? (agentRound === 1 ? 'examining the requested implementation task' : 'reviewing tool results to choose the next coding action')
@@ -1754,6 +1760,16 @@ export async function onRequestPost(context) {
           'Model round ' + agentRound + '; mode=' + (codingMode ? 'TruX-Code' : researchMode ? 'research' : 'chat') +
           '; this is the current model round.'
         );
+
+        if (!codingMode && !researchMode && !explicitExternalAction) {
+          // Chat starts its actual answer immediately. The AI-written activity
+          // label is generated concurrently and never gates the first token.
+          chatActivityQueue = chatActivityQueue
+            .then(() => stageLabelTask)
+            .catch(() => '');
+        } else {
+          await stageLabelTask;
+        }
 
         const result = await streamVertexGemini({
           model: targetModel,
@@ -1823,9 +1839,7 @@ export async function onRequestPost(context) {
         }
         });
 
-        // Keep SSE open for any Chat activity label that was already requested;
-        // short answers never queue these extra labels and add no delay here.
-        if (chatActivityLabelsQueued) await chatActivityQueue;
+        // Activity labels are non-blocking; never delay answer completion for them.
 
         lastModelResult = result;
 
