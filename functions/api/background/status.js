@@ -31,7 +31,7 @@ export async function onRequestGet({ request, env }) {
       return Response.json({ error: 'Authentication required.' }, { status: 401 });
     }
 
-    const { jobSecret, userId, ...safeJob } = job;
+    const { jobSecret, userId, userEmail, ...safeJob } = job;
     return Response.json(safeJob, {
       headers: { 'Cache-Control': 'no-store' }
     });
