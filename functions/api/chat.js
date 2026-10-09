@@ -1825,6 +1825,7 @@ export async function onRequestPost(context) {
 
           agentContents.push(result.functionCallContent);
           const responseParts = [];
+          let roundDidNewWork = false;
 
           for (const call of result.functionCalls) {
             if (signal?.aborted) {
@@ -1859,8 +1860,9 @@ export async function onRequestPost(context) {
               details: toolCallDetails
             });
 
+            let toolSignature = '';
             try {
-              const toolSignature = stableJson({
+              toolSignature = stableJson({
                 name: call?.name || '',
                 args: call?.args || {}
               });
@@ -1886,6 +1888,7 @@ export async function onRequestPost(context) {
                   'The same tool action and arguments were completed earlier; using its stored result for ' + toolTarget + '.'
                 );
               } else if (call?.name === TERMINAL_TOOL_NAME) {
+                roundDidNewWork = true;
                 send({
                   type: 'terminal',
                   phase: 'start',
@@ -1917,6 +1920,7 @@ export async function onRequestPost(context) {
                   success: !!callResult?.success
                 });
               } else if (composioLabel) {
+                roundDidNewWork = true;
                 callResult = effectiveUserId
                   ? await executeComposioTool(
                       env,
@@ -2035,6 +2039,22 @@ export async function onRequestPost(context) {
                 break;
               }
 
+              const resultSucceeded = typeof callResult?.success === 'boolean'
+                ? callResult.success
+                : !callResult?.error;
+              send({
+                type: 'tool_status',
+                tool: toolName,
+                phase: 'complete',
+                status: resultSucceeded
+                  ? (replayedToolCall ? toolTarget + ' · reused completed result' : toolTarget + ' · completed')
+                  : toolTarget + ' · returned an error',
+                details: {
+                  ...toolCallDetails,
+                  ok: resultSucceeded,
+                  result: summarizeToolResult(callResult)
+                }
+              });
               responseParts.push({
                 functionResponse: {
                   ...((call?.id ?? call?.call_id)
@@ -2047,6 +2067,14 @@ export async function onRequestPost(context) {
                 }
               });
             } catch (toolError) {
+              const failedToolResult = {
+                success: false,
+                error: String(toolError?.message || 'External tool failed.')
+              };
+              if (toolSignature) {
+                executedToolResults.set(toolSignature, failedToolResult);
+                await writeBackgroundToolReplay(toolSignature, failedToolResult);
+              }
               send({
                 type: 'tool_status',
                 tool: toolName,
@@ -2070,6 +2098,14 @@ export async function onRequestPost(context) {
 
           if (generationStopped) break;
           agentContents.push({ role: 'user', parts: responseParts });
+          if (!roundDidNewWork && responseParts.length) {
+            await emitAiActivity(
+              'finishing the response from verified tool results',
+              'This round produced no new tool work. The existing results are authoritative, so TruX is composing the user-facing summary.'
+            );
+            finalResult = { text: '' };
+            break;
+          }
           continue;
         }
 
