@@ -18,7 +18,6 @@ const routes = {
   "/api/plugins": "./functions/api/plugins.js",
   "/api/plugins/connect": "./functions/api/plugins-connect.js",
   "/api/plugins/disconnect": "./functions/api/plugins-disconnect.js",
-  "/api/plugins/enable": "./functions/api/plugins-enable.js",
   "/api/files/upload": "./functions/api/files-upload.js",
   "/api/files/process": "./functions/api/files-process.js",
   "/api/background/start": "./functions/api/background/start.js",
