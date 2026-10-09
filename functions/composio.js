@@ -196,17 +196,6 @@ export async function listConnectedAccounts(env, userId, toolkitSlug = '') {
   return Array.isArray(payload?.items) ? payload.items : [];
 }
 
-export function connectedToolkitSet(accounts) {
-  return Array.isArray(accounts)
-    ? new Set(
-        accounts
-          .map(account => account?.toolkit?.slug || account?.toolkit_slug || '')
-          .filter(Boolean)
-          .map(String)
-      )
-    : new Set();
-}
-
 function getConnectedAccountId(account) {
   return String(
     account?.id ||
