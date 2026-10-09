@@ -3953,6 +3953,56 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
 .trux-bubble .katex-display{margin:12px 0!important}
 </style>
 
+
+  <style id="trux-chat-thinking-marker-refresh">
+    /* Chat uses a quiet orbit indicator instead of the legacy spinning star.
+       TruX-Code keeps its separate workspace indicator unchanged. */
+    .trux-thinking-chat-marker {
+      position: relative;
+      isolation: isolate;
+      flex: 0 0 18px;
+      width: 18px;
+      height: 18px;
+      display: inline-grid;
+      place-items: center;
+      align-self: center;
+      margin: 0;
+      overflow: visible;
+    }
+    .trux-thinking-chat-marker::before {
+      content: "";
+      position: absolute;
+      inset: 2px;
+      border: 1.25px solid rgba(188,185,177,.34);
+      border-top-color: rgba(232,229,219,.92);
+      border-right-color: rgba(215,212,203,.62);
+      border-radius: 50%;
+      animation: truxChatThinkingOrbit 1.85s cubic-bezier(.55,.08,.35,.92) infinite;
+    }
+    .trux-thinking-chat-marker > span {
+      position: relative;
+      z-index: 1;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #d8d4ca;
+      box-shadow: 0 0 5px rgba(220,216,205,.32);
+      animation: truxChatThinkingPulse 1.85s ease-in-out infinite;
+    }
+    @keyframes truxChatThinkingOrbit {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    @keyframes truxChatThinkingPulse {
+      0%,100% { opacity: .56; transform: scale(.82); }
+      48% { opacity: 1; transform: scale(1.12); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .trux-thinking-chat-marker::before,
+      .trux-thinking-chat-marker > span { animation: none !important; }
+    }
+  </style>
+
 </head>
 <body class="home-active" data-workspace-mode="chat">
 
@@ -8020,7 +8070,9 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       const thinkingMarkup = `
         <div class="trux-thinking-panel" id="${thid}" data-thinking-visible="true">
           <div class="trux-thinking-bar">
-            <span class="trux-thinking-spark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 1.5C13.45 7.95 16.05 10.55 22.5 12C16.05 13.45 13.45 16.05 12 22.5C10.55 16.05 7.95 13.45 1.5 12C7.95 10.55 10.55 7.95 12 1.5Z"/></svg></span>
+            ${codingTurn
+              ? '<span class="trux-thinking-spark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 1.5C13.45 7.95 16.05 10.55 22.5 12C16.05 13.45 13.45 16.05 12 22.5C10.55 16.05 7.95 13.45 1.5 12C7.95 10.55 10.55 7.95 12 1.5Z"/></svg></span>'
+              : '<span class="trux-thinking-chat-marker" aria-hidden="true"><span></span></span>'}
             <div class="trux-thinking-copy"><span class="status-msg" id="${sid}" role="status" aria-live="polite"><span class="thinking-status-line compact"></span><span class="thinking-status-line full"></span><span class="thinking-status-line thought-summary" id="thought_${sid}" hidden></span></span></div>
             <span class="trux-thinking-elapsed ${codingTurn ? "" : "chat-thinking-elapsed"}" id="elapsed_${id}">${codingTurn ? "Working for 00:00" : ""}</span>
             ${codingTurn ? `<button type="button" class="trux-thinking-toggle" onclick="toggleThinkingDetails('${thid}')" aria-expanded="false" aria-label="Expand AI activity" title="Expand AI activity"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>` : ""}
