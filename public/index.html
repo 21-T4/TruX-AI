@@ -1051,17 +1051,20 @@
       opacity:0;transform:rotate(0deg) scale(.62);
       filter:drop-shadow(0 0 3px rgba(145,157,255,.24));
       animation:truxThinkingOrbit 2s cubic-bezier(.22,.61,.36,1) infinite;
+      animation-delay:2s;
     }
     .trux-thinking-spark::after{
       content:"";position:absolute;top:-3px;left:calc(50% - 1px);width:2px;height:2px;
       border-radius:50%;background:#fff;box-shadow:0 0 7px 2px rgba(235,239,255,.58);
       transform-origin:1px 13px;opacity:0;
       animation:truxThinkingOrbitDot 2s cubic-bezier(.22,.61,.36,1) infinite;
+      animation-delay:2s;
     }
     .trux-thinking-spark svg{
       position:relative;z-index:1;width:16px;height:16px;display:block;overflow:visible;
-      fill:currentColor;transform-origin:50% 50%;
+      fill:currentColor;transform-origin:50% 50%;transform:scale(.94);
       animation:truxThinkingStarTurn 2s cubic-bezier(.22,.61,.36,1) infinite;
+      animation-delay:2s;
     }
     .trux-thinking-copy{
       position:relative;min-width:0;display:flex;align-items:center;gap:0;
