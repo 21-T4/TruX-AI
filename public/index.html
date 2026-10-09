@@ -433,6 +433,9 @@
     body.scrolled .topbar { border-bottom-color: var(--line); }
     .topbar-left  { display: flex; align-items: center; gap: 8px; }
     .topbar-right { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+    /* The profile control is styled before first paint, matching the other topbar controls. */
+    .top-profile-btn { width: 37px; height: 37px; display: grid; place-items: center; margin: 0; padding: 0; box-sizing: border-box; border: 1px solid transparent; border-radius: 10px; background: transparent; color: var(--txt-2); appearance: none; -webkit-appearance: none; cursor: pointer; transition: background 0.18s var(--ease), color 0.18s var(--ease), border-color 0.18s var(--ease); }
+    .top-profile-btn:hover { background: var(--bg-3); color: #fff; border-color: var(--line); }
     .top-profile-avatar{width:30px;height:30px;display:grid;place-items:center;border-radius:50%;border:1px solid var(--line-2);color:var(--txt-3);background:var(--bg-2)}
     .top-profile-avatar svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 
@@ -3183,8 +3186,8 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
   body.coding-workspace .trux-terminal-window.collapsed .trux-terminal-body{display:none}
 </style>
 
-</head>
-<body class="home-active" data-workspace-mode="chat">
+
+
 <style id="trux-boot-safety">
   /* Keep the real app shell recoverable even when a third-party script or
      startup handler fails. This is a safety net, not a normal display state. */
@@ -3194,6 +3197,674 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
   body.trux-boot-recovered .composer{display:flex!important;visibility:visible!important;opacity:1!important}
   body.trux-boot-recovered .welcome{display:flex!important;visibility:visible!important;opacity:1!important}
 </style>
+
+<style id="trux-clean-ui-20261005">
+/* ==========================================================
+   TRUX CLEAN UI — single source of truth for shell/home/code
+   Existing legacy home/code surfaces are no longer mounted.
+   ========================================================== */
+html,body{
+  width:100%!important;height:100%!important;min-width:0!important;
+  margin:0!important;padding:0!important;overflow:hidden!important;
+  background:#151515!important;background-image:none!important;
+}
+body{
+  color:#d8d8d8!important;
+}
+.shell{
+  position:relative!important;display:block!important;
+  width:100vw!important;height:100dvh!important;max-width:none!important;
+  margin:0!important;padding:0!important;overflow:hidden!important;
+}
+.main{
+  position:relative!important;display:flex!important;flex-direction:column!important;
+  width:100vw!important;height:100dvh!important;max-width:none!important;
+  min-width:0!important;margin:0!important;padding:0!important;
+  overflow:hidden!important;background:#151515!important;background-image:none!important;
+}
+.topbar{
+  position:relative!important;z-index:100!important;
+  flex:0 0 60px!important;width:100%!important;height:60px!important;
+  min-width:0!important;display:grid!important;
+  grid-template-columns:minmax(46px,1fr) auto minmax(46px,1fr)!important;
+  align-items:center!important;margin:0!important;padding:0 14px!important;
+  background:#151515!important;background-image:none!important;
+  border:0!important;box-shadow:none!important;backdrop-filter:none!important;
+}
+.topbar-left{justify-self:start!important;display:flex!important;align-items:center!important;gap:7px!important}
+.topbar-right{justify-self:end!important;display:flex!important;align-items:center!important;gap:7px!important}
+.top-btn.mobile-new{display:none!important}
+.top-btn,.trux-mode-btn,.icon-btn,.send-btn,.model-picker-btn{transform:none!important;box-shadow:none!important}
+.trux-mode-switch{
+  justify-self:center!important;align-self:center!important;
+  display:grid!important;grid-template-columns:1fr 1fr!important;
+  width:250px!important;max-width:calc(100vw - 120px)!important;min-width:172px!important;
+  height:40px!important;padding:3px!important;gap:3px!important;
+  border-radius:13px!important;background:#1b1b1b!important;
+  border:1px solid rgba(255,255,255,.07)!important;
+  box-shadow:none!important;backdrop-filter:none!important;
+}
+.trux-mode-btn{
+  width:100%!important;height:32px!important;min-width:0!important;padding:0 8px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  border-radius:9px!important;border:1px solid transparent!important;
+  background:transparent!important;color:#858585!important;
+  font-size:13px!important;font-weight:650!important;white-space:nowrap!important;
+}
+.trux-mode-btn:hover{background:#242424!important;color:#cfcfcf!important}
+.trux-mode-btn.active{background:#292929!important;border-color:rgba(255,255,255,.08)!important;color:#ededed!important}
+
+#imageWorkspace,#videoWorkspace,#truxCodeWorkspace,#welcomeScreen,#chatContainer,#codeChatContainer{
+  min-width:0!important;box-sizing:border-box!important;
+}
+body.home-active:not(.coding-workspace):not([data-media-mode="image"]):not([data-media-mode="video"]):not(.plugins-page-active) #welcomeScreen{
+  display:flex!important;
+}
+body:not(.home-active) #welcomeScreen{display:none!important}
+body.home-active #imageWorkspace,body.home-active #videoWorkspace,body.home-active #truxCodeWorkspace,
+body.home-active #chatContainer,body.home-active #codeChatContainer{display:none!important}
+body.coding-workspace #welcomeScreen,body.coding-workspace #imageWorkspace,body.coding-workspace #videoWorkspace,
+body.coding-workspace #chatContainer{display:none!important}
+body:not(.coding-workspace) #codeChatContainer{display:none!important}
+body.coding-workspace #codeChatContainer{display:block!important;flex:1 1 auto;min-height:0;overflow:auto}
+body.coding-workspace #truxCodeWorkspace{display:flex!important}
+body[data-media-mode="image"] #imageWorkspace{display:flex!important}
+body[data-media-mode="video"] #videoWorkspace{display:flex!important}
+body:not([data-media-mode="image"]) #imageWorkspace{display:none!important}
+body:not([data-media-mode="video"]) #videoWorkspace{display:none!important}
+body.plugins-page-active #welcomeScreen,body.plugins-page-active #chatContainer,body.plugins-page-active #codeChatContainer,
+body.plugins-page-active #truxCodeWorkspace,body.plugins-page-active #imageWorkspace,body.plugins-page-active #videoWorkspace{display:none!important}
+
+.trux-home-v2{
+  position:relative!important;flex:1 1 auto!important;min-height:0!important;
+  width:100%!important;display:flex!important;align-items:center!important;justify-content:center!important;
+  overflow:hidden!important;background:#151515!important;
+}
+.trux-home-v2::before{
+  content:"";position:absolute;inset:0;pointer-events:none;background:#151515!important;
+}
+
+.trux-code-v2{
+  position:relative!important;flex:1 1 auto!important;min-height:0!important;width:100%!important;
+  display:none;align-items:center!important;justify-content:center!important;overflow:hidden!important;
+  background:#151515!important;color:#d8d8d8!important;
+}
+.trux-code-v2-inner{
+  width:min(760px,calc(100% - 36px));text-align:center;
+  display:flex;flex-direction:column;align-items:center;
+}
+.trux-code-v2-mark{width:92px;height:92px;margin-bottom:18px}
+.trux-code-v2-mark svg{width:100%;height:100%;display:block}
+.trux-code-v2-kicker{
+  font:700 10px/1 var(--font-mono);letter-spacing:.22em;color:#676767;margin-bottom:10px
+}
+.trux-code-v2 h1{
+  margin:0;color:#ededed;font-size:clamp(30px,5vw,46px);font-weight:600;letter-spacing:-.035em
+}
+.trux-code-v2 p{
+  margin:10px 0 0;max-width:560px;color:#747474;font-size:13px;line-height:1.55
+}
+.trux-code-v2-meta{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-top:20px;color:#626262;font-size:11px}
+.trux-code-v2-meta span{white-space:nowrap}
+.trux-code-v2-status{
+  margin-top:28px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
+  color:#777;font-size:11px
+}
+.trux-code-v2-ready,.trux-code-v2-plugins{display:inline-flex;align-items:center;gap:6px}
+.trux-code-v2-ready i,.trux-code-v2-plugins i{
+  width:6px;height:6px;border-radius:50%;background:#777;display:block
+}
+.trux-code-v2-plugins{color:#686868}
+.trux-code-v2-plugin-btn{
+  height:30px;padding:0 11px;border-radius:9px;border:1px solid rgba(255,255,255,.08);
+  background:#1c1c1c;color:#b8b8b8;font-size:11px;font-weight:650
+}
+.trux-code-v2-plugin-btn:hover{background:#242424;color:#fff}
+.trux-code-v2-integrations{min-height:20px;margin-top:11px;color:#5c5c5c;font-size:10px}
+.trux-code-v2-integrations:empty{display:none}
+.trux-code-v2-empty{color:#5c5c5c}
+.trux-sr-only{
+  position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;
+  overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important
+}
+
+.chat{min-width:0!important}
+body.chat-session-active #chatContainer{display:block!important;flex:1 1 auto!important;min-height:0!important;overflow:auto!important}
+body.chat-session-active #welcomeScreen{display:none!important}
+
+.composer{
+  position:relative!important;z-index:200!important;flex:0 0 auto!important;
+  width:100%!important;min-width:0!important;margin:0!important;padding:8px 18px calc(18px + var(--safe-b))!important;
+  background:#151515!important;background-image:none!important;border:0!important;box-shadow:none!important;overflow:visible!important;
+}
+.compose{width:min(740px,100%)!important;max-width:740px!important;min-width:0!important;margin:0 auto!important}
+.bar{
+  position:relative!important;display:grid!important;
+  grid-template-columns:42px minmax(0,1fr) 42px 42px 48px!important;
+  grid-template-rows:1fr 42px!important;align-items:center!important;gap:0 7px!important;
+  width:100%!important;min-width:0!important;min-height:116px!important;
+  margin:0!important;padding:12px!important;border-radius:30px!important;
+  background:#1d1d1d!important;background-image:none!important;
+  border:1px solid rgba(255,255,255,.08)!important;box-shadow:none!important;overflow:visible!important
+}
+.bar:focus-within{background:#1d1d1d!important;border-color:rgba(255,255,255,.12)!important;box-shadow:none!important}
+.bar > #attachBtn{grid-column:1!important;grid-row:2!important;width:42px!important;height:42px!important;justify-self:center!important}
+.bar > #modelPickerContainer{grid-column:2!important;grid-row:2!important;width:100%!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;position:relative!important;z-index:30!important}
+.bar > #incognitoBtn{grid-column:3!important;grid-row:2!important;width:42px!important;height:42px!important;justify-self:center!important}
+.bar > #voiceBtn{grid-column:4!important;grid-row:2!important;width:42px!important;height:42px!important;justify-self:center!important}
+.bar > #promptInput{
+  grid-column:1 / -1!important;grid-row:1!important;width:100%!important;height:60px!important;min-height:0!important;
+  padding:4px 12px!important;align-self:stretch!important;box-sizing:border-box!important;
+  background:transparent!important;border:0!important;resize:none!important;overflow:hidden!important;
+  color:#d8d8d8!important;line-height:1.3!important
+}
+#promptInput::placeholder{color:#7a7a7a!important;opacity:1!important}
+.bar > #actionBtn{
+  grid-column:5!important;grid-row:2!important;width:48px!important;height:48px!important;justify-self:end!important;align-self:center!important;
+  padding:0!important;border-radius:50%!important;background:#ededed!important;color:#171717!important;box-shadow:none!important
+}
+.model-picker-container{position:relative!important;min-width:0!important;overflow:visible!important}
+#modelPickerBtn{
+  width:auto!important;min-width:116px!important;max-width:100%!important;height:42px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;
+  padding:0 13px!important;border-radius:999px!important;background:#242424!important;
+  border:1px solid rgba(255,255,255,.06)!important;color:#d7d7d7!important;white-space:nowrap!important
+}
+#modelPickerBtn:hover,#modelPickerBtn[aria-expanded="true"]{background:#292929!important;color:#fff!important}
+#modelDropdown{
+  display:none!important;position:absolute!important;left:0!important;bottom:50px!important;top:auto!important;
+  z-index:100000!important;width:min(360px,calc(100vw - 24px))!important;max-width:calc(100vw - 24px)!important;
+  max-height:min(62dvh,520px)!important;overflow:auto!important;padding:8px!important;border-radius:18px!important;
+  background:#1a1a1a!important;border:1px solid rgba(255,255,255,.10)!important;
+  box-shadow:0 18px 48px rgba(0,0,0,.42)!important;backdrop-filter:none!important
+}
+#modelDropdown.open{display:block!important}
+#modelDropdown .model-item{
+  width:100%!important;min-height:56px!important;display:flex!important;align-items:center!important;gap:10px!important;
+  padding:9px 10px!important;border-radius:12px!important;color:#d5d5d5!important;background:transparent!important;
+  border:1px solid transparent!important;text-align:left!important
+}
+#modelDropdown .model-item:hover,#modelDropdown .model-item.active{background:#252525!important;border-color:rgba(255,255,255,.07)!important;color:#fff!important}
+#modelDropdown .thinking-choice-wrap{margin-top:7px!important;padding:10px 8px 8px!important;border-top:1px solid rgba(255,255,255,.08)!important}
+#modelDropdown .thinking-choice{
+  width:100%!important;min-height:40px!important;padding:8px 9px!important;display:flex!important;
+  align-items:center!important;justify-content:space-between!important;border-radius:10px!important;
+  color:#aaa!important;background:transparent!important;border:1px solid transparent!important;text-align:left!important
+}
+#modelDropdown .thinking-choice:hover,#modelDropdown .thinking-choice.active{background:#292929!important;color:#fff!important}
+
+/* TruX-Code integration logos: compact, never allowed to expand from image intrinsic size. */
+.trux-code-v2-integrations{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  flex-wrap:wrap!important;gap:7px!important;min-height:24px!important;
+}
+.trux-code-integration-app{
+  display:inline-flex!important;align-items:center!important;gap:6px!important;
+  max-width:150px!important;height:28px!important;padding:0 8px!important;
+  border:1px solid rgba(255,255,255,.065)!important;border-radius:9px!important;
+  background:#1b1b1b!important;color:#686868!important;font-size:10px!important;
+  overflow:hidden!important;
+}
+.trux-code-integration-app img{
+  width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;
+  max-width:16px!important;max-height:16px!important;object-fit:contain!important;display:block!important;flex:0 0 16px!important;
+}
+.trux-code-integration-app b{
+  min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
+  font-size:10px!important;font-weight:600!important;
+}
+
+#attachmentMenu{
+  display:block!important;position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;
+  width:100vw!important;max-width:none!important;min-width:0!important;height:min(60dvh,560px)!important;
+  max-height:calc(100dvh - 38px)!important;padding:15px 18px calc(20px + var(--safe-b))!important;
+  border-radius:26px 26px 0 0!important;background:#1a1a1a!important;background-image:none!important;
+  border:1px solid rgba(255,255,255,.08)!important;border-bottom:0!important;
+  opacity:0!important;visibility:hidden!important;pointer-events:none!important;transform:translateY(100%)!important;
+  z-index:100000!important;box-shadow:0 -14px 40px rgba(0,0,0,.35)!important;
+}
+#attachmentMenu.open{opacity:1!important;visibility:visible!important;pointer-events:auto!important;transform:translateY(0)!important}
+#attachmentMenu .trux-plus-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:9px!important}
+#attachmentMenu .trux-plus-item{min-height:82px!important;background:#202020!important;border:1px solid rgba(255,255,255,.07)!important;box-shadow:none!important}
+.hint{color:#666!important}
+
+.sidebar{position:fixed!important;left:0!important;top:0!important;bottom:0!important;width:100vw!important;max-width:none!important;z-index:1200!important}
+.sidebar-overlay{position:fixed!important;inset:0!important;z-index:1100!important}
+
+
+@media(max-width:700px){
+  .topbar{flex-basis:58px!important;height:58px!important;padding:0 10px!important}
+  .trux-mode-switch{width:min(190px,calc(100vw - 108px))!important;min-width:170px!important;height:38px!important}
+  .trux-mode-btn{height:30px!important;font-size:11.5px!important;padding:0 6px!important}
+  .composer{padding:8px 14px calc(14px + var(--safe-b))!important}
+  .bar{grid-template-columns:40px minmax(0,1fr) 40px 40px 48px!important;grid-template-rows:1fr 42px!important;min-height:116px!important;gap:0 6px!important;padding:11px!important;border-radius:28px!important}
+  .bar > #attachBtn,.bar > #incognitoBtn,.bar > #voiceBtn{width:40px!important;height:40px!important}
+  .bar > #actionBtn{width:46px!important;height:46px!important}
+  .bar > #promptInput{height:60px!important;font-size:20px!important;padding:4px 10px!important}
+  #modelPickerBtn{min-width:102px!important;height:40px!important;padding:0 10px!important}
+  #modelDropdown{left:50%!important;transform:translateX(-50%)!important;max-width:calc(100vw - 20px)!important}
+  
+  .trux-code-v2-inner{width:min(680px,calc(100% - 28px))}
+  .trux-code-v2-mark{width:74px;height:74px;margin-bottom:14px}
+  .trux-code-v2 h1{font-size:28px}
+  .trux-code-v2-meta{gap:10px;font-size:10px}
+}
+  .home-ui-fixed-note{color:#727272;font-size:12px;line-height:1.4}
+
+</style>
+
+<style id="trux-final-ui-20261005">
+/* Incognito — same app shell/layout, but visibly isolated and never listed in history. */
+.trux-incognito-top{
+  display:none;align-items:center;justify-content:center;gap:7px;
+  width:max-content;height:36px;padding:0 13px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.08);background:#1d1d1d;color:#a2a2a2;
+  font-size:12px;font-weight:650;letter-spacing:.01em;
+}
+.trux-incognito-dot{
+  width:6px;height:6px;border-radius:50%;background:#8b8b8b;display:block;
+  box-shadow:0 0 8px rgba(255,255,255,.13);
+}
+body.incognito-mode #truxModeSwitch{display:none!important}
+body.incognito-mode #truxIncognitoTop{display:flex!important}
+body.incognito-mode .topbar{grid-template-columns:minmax(46px,1fr) auto minmax(46px,1fr)!important}
+.incognito-session-banner{
+  position:relative;display:flex;align-items:center;gap:9px;
+  width:fit-content;max-width:min(100%,740px);margin:12px auto 2px;padding:9px 12px;
+  color:#8a8a8a;font-size:11px;line-height:1.25;
+}
+.incognito-session-dot{width:6px;height:6px;border-radius:50%;background:#8b8b8b;flex:0 0 6px}
+.incognito-session-banner span:last-child{display:flex;flex-direction:column;gap:2px}
+.incognito-session-banner b{color:#b8b8b8;font-size:11px;font-weight:700}
+.incognito-session-banner small{color:#626262;font-size:10px}
+
+
+/* Floating AI activity — deliberately no container/box. */
+.trux-thinking-panel{background:transparent!important;border:0!important;box-shadow:none!important}
+.trux-thinking-bar{background:transparent!important;border:0!important;box-shadow:none!important}
+.trux-thinking-bar::before,.trux-thinking-bar::after{display:none!important}
+.trux-thinking-copy{overflow:visible!important}
+.trux-thinking-elapsed{background:transparent!important}
+.trux-thinking-details{background:transparent!important;box-shadow:none!important}
+.trux-thinking-details::-webkit-scrollbar{width:5px}
+
+/* Sidebar brand — compact mark, stacked copy, no collision. */
+.sidebar-header{min-width:0!important;gap:14px!important;padding:2px 0 18px!important}
+.sidebar .brand{display:flex!important;align-items:center!important;gap:11px!important;min-width:0!important;padding:0!important}
+.sidebar-brand-mark{width:34px!important;height:34px!important;display:grid!important;place-items:center!important;flex:0 0 34px!important;color:#9a9893!important}
+.sidebar-brand-mark svg{width:100%!important;height:100%!important;display:block!important}
+.sidebar-brand-mark img{width:100%!important;height:100%!important;display:block!important;object-fit:contain!important;background:transparent!important;border:0!important;box-shadow:none!important;}
+.sidebar-brand-copy{min-width:0!important;display:flex!important;flex-direction:column!important;justify-content:center!important;gap:2px!important;overflow:hidden!important}
+.sidebar-brand-copy b{display:block!important;max-width:100%!important;font-size:16px!important;line-height:1.05!important;font-weight:700!important;letter-spacing:-.025em!important;color:#e8e8e8!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.sidebar-brand-copy small{display:block!important;font-size:9px!important;line-height:1.15!important;letter-spacing:.13em!important;text-transform:uppercase!important;color:#686868!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+
+/* Smaller plugin cards: logos stay visually secondary to the plugin name. */
+.trux-plugin-logo{width:42px!important;height:42px!important;border-radius:12px!important}
+.trux-plugin-logo img{width:23px!important;height:23px!important;max-width:23px!important;max-height:23px!important}
+
+/* Model picker — single source of truth. The button itself is the model name. */
+.model-picker-container{
+  position:relative!important;min-width:0!important;overflow:visible!important;
+  justify-self:start!important;width:100%!important;
+}
+#modelPickerBtn{
+  width:auto!important;min-width:112px!important;max-width:100%!important;height:40px!important;
+  display:inline-flex!important;align-items:center!important;justify-content:flex-start!important;gap:0!important;
+  margin:0!important;padding:0 13px!important;border-radius:999px!important;
+  background:#242424!important;border:1px solid rgba(255,255,255,.06)!important;color:#d7d7d7!important;
+  font-size:13px!important;font-weight:650!important;line-height:1!important;white-space:nowrap!important;
+  overflow:hidden!important;vertical-align:middle!important;transform:none!important;box-shadow:none!important;
+}
+#modelPickerBtn:hover,#modelPickerBtn[aria-expanded="true"]{background:#292929!important;color:#fff!important;border-color:rgba(255,255,255,.09)!important}
+#modelPickerLabel{display:block!important;min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+#modelDropdown{
+  display:none!important;position:fixed!important;z-index:100000!important;width:min(360px,calc(100vw - 20px))!important;
+  max-width:calc(100vw - 20px)!important;max-height:min(540px,calc(100dvh - 24px))!important;overflow:auto!important;
+  overscroll-behavior:contain!important;padding:8px!important;border-radius:18px!important;background:#1a1a1a!important;
+  background-image:none!important;border:1px solid rgba(255,255,255,.10)!important;box-shadow:0 22px 58px rgba(0,0,0,.48)!important;
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;transform:none!important;
+}
+#modelDropdown.open{display:block!important;visibility:visible!important;opacity:1!important}
+#modelDropdown .model-item{
+  width:100%!important;min-height:62px!important;display:grid!important;grid-template-columns:30px minmax(0,1fr) auto!important;
+  align-items:start!important;gap:10px!important;padding:10px!important;border-radius:12px!important;color:#d5d5d5!important;
+  background:transparent!important;border:1px solid transparent!important;text-align:left!important;overflow:hidden!important;
+}
+#modelDropdown .model-item:hover,#modelDropdown .model-item.active{background:#252525!important;border-color:rgba(255,255,255,.07)!important;color:#fff!important}
+#modelDropdown .model-icon{width:30px!important;height:30px!important;margin-top:1px!important}
+#modelDropdown .model-info{min-width:0!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:3px!important;overflow:hidden!important;padding:1px 0!important}
+#modelDropdown .model-info b{display:block!important;width:100%!important;font-size:14px!important;line-height:1.2!important;white-space:normal!important}
+#modelDropdown .model-info small{display:block!important;width:100%!important;margin:0!important;font-size:11px!important;line-height:1.35!important;color:#777!important;white-space:normal!important}
+#modelDropdown .model-check{min-width:18px!important;margin-top:3px!important;text-align:center!important;color:#bdbdbd!important}
+#modelDropdown .thinking-choice-wrap{margin-top:7px!important}
+#modelDropdown .thinking-choice{display:flex!important;align-items:center!important;justify-content:space-between!important}
+@media(max-width:700px){
+  #modelPickerBtn{min-width:104px!important;height:40px!important;max-width:152px!important;padding:0 10px!important}
+  #modelDropdown{width:min(360px,calc(100vw - 20px))!important}
+}
+
+/* Hard workspace separation: Chat and TruX-Code never coexist visually. */
+body.home-active #chatContainer,
+body.home-active #codeChatContainer,
+body.home-active #truxCodeWorkspace{display:none!important}
+body:not(.coding-workspace) #codeChatContainer{display:none!important;visibility:hidden!important;pointer-events:none!important}
+body:not(.coding-workspace) #truxCodeWorkspace{display:none!important;visibility:hidden!important;pointer-events:none!important}
+body.coding-workspace #chatContainer,
+body.coding-workspace #welcomeScreen{display:none!important;visibility:hidden!important;pointer-events:none!important}
+body.coding-workspace #codeChatContainer{display:block!important;visibility:visible!important;pointer-events:auto!important}
+body.coding-workspace #truxCodeWorkspace{display:flex!important;visibility:visible!important;pointer-events:auto!important}
+body.chat-session-active:not(.coding-workspace) #chatContainer{display:block!important;visibility:visible!important;pointer-events:auto!important}
+body.chat-session-active:not(.coding-workspace) #codeChatContainer{display:none!important}
+
+</style>
+
+<style id="trux-final-ui-20261006">
+/* Exact TruX startup sequence: Hello 2s -> I am TruX 2s -> icon-grey. */
+.trux-home-v2{
+  background:#151515!important;
+  background-image:none!important;
+  isolation:isolate!important;
+}
+.trux-home-v2::before{display:none!important}
+.trux-home-sequence{
+  position:absolute!important;
+  inset:0!important;
+  display:grid!important;
+  place-items:center!important;
+  pointer-events:none!important;
+  z-index:2!important;
+}
+.trux-home-sequence-text{
+  margin:0!important;
+  padding:0!important;
+  color:#9a9a9a!important;
+  font-family:var(--font-disp)!important;
+  font-size:clamp(28px,5vw,44px)!important;
+  font-weight:600!important;
+  line-height:1!important;
+  letter-spacing:-.045em!important;
+  text-align:center!important;
+  white-space:nowrap!important;
+  opacity:0!important;
+  transform:translateY(4px)!important;
+  transition:opacity .22s ease,transform .22s ease!important;
+}
+.trux-home-sequence-text.is-visible{opacity:1!important;transform:none!important}
+.trux-home-sequence-text.is-replacing{opacity:0!important;transform:translateY(-3px)!important}
+.trux-home-logo{
+  position:absolute!important;
+  inset:0!important;
+  width:min(108px,18vw)!important;
+  height:min(108px,18vw)!important;
+  max-width:108px!important;
+  max-height:108px!important;
+  margin:auto!important;
+  display:block!important;
+  object-fit:contain!important;
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  filter:none!important;
+  animation:none!important;
+  transform:none!important;
+  opacity:1!important;
+}
+.trux-home-logo[hidden]{display:none!important}
+
+/* Thinking is floating text only. Remove all legacy pill/card treatment. */
+.trux-thinking-panel,
+.trux-thinking-bar,
+.trux-thinking-copy,
+.trux-thinking-details,
+.trux-thinking-elapsed,
+.trux-thinking-panel .thinking-container{
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+.trux-thinking-panel{
+  width:100%!important;
+  margin:2px 0 7px!important;
+  padding:0!important;
+}
+.trux-thinking-bar{
+  min-height:22px!important;
+  width:100%!important;
+  gap:9px!important;
+  padding:0!important;
+}
+.trux-thinking-copy{
+  flex:1 1 auto!important;
+  min-width:0!important;
+  padding:0!important;
+  margin:0!important;
+}
+.status-msg{
+  min-height:0!important;
+  display:block!important;
+  width:auto!important;
+  max-width:100%!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:transparent!important;
+  font:560 13px/1.35 var(--font-body)!important;
+  letter-spacing:-.012em!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  white-space:nowrap!important;
+  box-shadow:none!important;
+}
+.thinking-status-line{margin:0!important;padding:0!important}
+.chat-thinking-elapsed{display:none!important}
+.trux-thinking-elapsed{flex:0 0 auto!important;min-width:0!important;padding:0!important;margin:0!important;font-size:9px!important}
+.trux-thinking-details{
+  width:min(760px,100%)!important;
+  margin:3px 0 0!important;
+  padding:3px 0 4px 13px!important;
+}
+.trux-thinking-toggle{
+  width:20px!important;height:20px!important;margin:0!important;padding:0!important;
+  border:0!important;background:transparent!important;box-shadow:none!important;
+}
+.trux-thinking-panel.thinking-dismissed{display:none!important}
+
+/* Restore the small blue decorative lines flanking the selected model name. */
+#modelPickerBtn{
+  position:relative!important;
+  justify-content:center!important;
+  padding-left:34px!important;
+  padding-right:34px!important;
+}
+#modelPickerBtn::before,#modelPickerBtn::after{
+  content:""!important;
+  position:absolute!important;
+  top:50%!important;
+  width:13px!important;
+  height:1px!important;
+  margin:0!important;
+  background:#6d83ff!important;
+  opacity:.9!important;
+  transform:translateY(-50%)!important;
+  pointer-events:none!important;
+}
+#modelPickerBtn::before{left:11px!important}
+#modelPickerBtn::after{right:11px!important}
+
+/* Do not render a text X as the sign-in emblem; use the real repository logo. */
+.login-orb::after{display:none!important;content:none!important}
+.login-orb{overflow:hidden!important;padding:0!important}
+.login-orb img{
+  width:44px!important;height:44px!important;object-fit:contain!important;
+  display:block!important;border:0!important;box-shadow:none!important;background:transparent!important;
+}
+</style>
+
+<style id="trux-final-ui-20261006b">
+/* Chat home: only the new minimal intro/logo surface is allowed. */
+body.chat-session-active #welcomeScreen,
+body.coding-workspace #welcomeScreen,
+body.plugins-page-active #welcomeScreen,
+body[data-media-mode] #welcomeScreen{
+  display:none!important;visibility:hidden!important;pointer-events:none!important;
+}
+body.home-active #welcomeScreen{
+  display:flex!important;visibility:visible!important;pointer-events:auto!important;
+}
+
+/* Hard visual separation: never show the opposite workspace container. */
+body:not(.coding-workspace) #truxCodeWorkspace,
+body:not(.coding-workspace) #codeChatContainer{
+  display:none!important;visibility:hidden!important;pointer-events:none!important;
+}
+body.coding-workspace #chatContainer,
+body.coding-workspace #welcomeScreen{
+  display:none!important;visibility:hidden!important;pointer-events:none!important;
+}
+body.coding-workspace #truxCodeWorkspace.code-workspace-dismissed{
+  display:none!important;visibility:hidden!important;pointer-events:none!important;
+}
+
+/* TruX-Code landing: real icon-grey asset + exact title. */
+.trux-code-v2-mark{
+  position:relative!important;width:104px!important;height:104px!important;
+  margin:0 0 22px!important;display:grid!important;place-items:center!important;
+  background:transparent!important;border:0!important;box-shadow:none!important;
+}
+.trux-code-logo{
+  width:104px!important;height:104px!important;display:block!important;
+  object-fit:contain!important;background:transparent!important;border:0!important;
+  border-radius:0!important;box-shadow:none!important;animation:none!important;filter:none!important;
+}
+.trux-code-v2-mark::after{
+  content:""!important;position:absolute!important;inset:-11px!important;border-radius:50%!important;
+  border:1px solid transparent!important;border-top-color:rgba(255,255,255,.72)!important;
+  border-right-color:rgba(255,255,255,.18)!important;opacity:0!important;
+  pointer-events:none!important;transform:rotate(-35deg)!important;
+  animation:truxCodeRingEveryFive 5s cubic-bezier(.22,.61,.36,1) infinite!important;
+}
+@keyframes truxCodeRingEveryFive{
+  0%,7%{opacity:0;transform:rotate(-35deg)}
+  10%{opacity:.72;transform:rotate(15deg)}
+  28%{opacity:.38;transform:rotate(190deg)}
+  40%{opacity:.10;transform:rotate(325deg)}
+  43%,100%{opacity:0;transform:rotate(325deg)}
+}
+.trux-code-v2-kicker,.trux-code-v2-meta{display:none!important}
+.trux-code-v2 h1{font-size:clamp(30px,5vw,44px)!important;letter-spacing:-.04em!important}
+.trux-code-v2 p{margin-top:8px!important;color:#777!important}
+
+/* Model dropdown: remove the mobile 50% positioning conflict and clamp to viewport. */
+#modelDropdown{
+  left:auto!important;right:auto!important;transform:none!important;
+  width:min(360px,calc(100vw - 20px))!important;
+  max-width:calc(100vw - 20px)!important;
+  box-sizing:border-box!important;overflow-x:hidden!important;
+}
+#modelDropdown .model-item{
+  box-sizing:border-box!important;width:100%!important;min-width:0!important;
+  grid-template-columns:30px minmax(0,1fr) 20px!important;align-items:start!important;
+}
+#modelDropdown .model-info{min-width:0!important;overflow:hidden!important}
+#modelDropdown .model-info b,#modelDropdown .model-info small{
+  min-width:0!important;overflow-wrap:anywhere!important;
+}
+#modelDropdown .thinking-choice{
+  box-sizing:border-box!important;width:100%!important;min-width:0!important;
+  display:grid!important;grid-template-columns:minmax(0,1fr) 20px!important;
+  gap:8px!important;align-items:center!important;
+}
+#modelDropdown .thinking-choice > span:first-child{
+  min-width:0!important;display:flex!important;flex-direction:column!important;
+  gap:2px!important;overflow:hidden!important;
+}
+#modelDropdown .thinking-choice b{display:block!important;line-height:1.2!important}
+#modelDropdown .thinking-choice small{
+  display:block!important;color:#777!important;line-height:1.25!important;
+  overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
+}
+#modelDropdown .thinking-check{
+  display:block!important;width:20px!important;text-align:center!important;
+}
+</style>
+
+<style id="trux-final-ui-20261006c">
+/* Keep the provided logo exactly as authored.
+   Its #151515 image background already matches the workspace surface.
+   No blending, glow, ring, or extra visual layer is applied. */
+.trux-home-logo,
+.trux-code-logo{
+  mix-blend-mode:normal!important;
+  filter:none!important;
+  box-shadow:none!important;
+  background:transparent!important;
+}
+.trux-code-v2-mark::before,
+.trux-code-v2-mark::after{
+  content:none!important;
+  display:none!important;
+  animation:none!important;
+  background:none!important;
+  border:0!important;
+  box-shadow:none!important;
+  filter:none!important;
+}
+/* Chat intro is the only Chat home surface; it is not a second legacy UI. */
+.trux-home-v2{
+  display:flex!important;
+  background:#151515!important;
+  border:0!important;
+}
+.trux-home-v2::before{display:none!important}
+.trux-home-logo,
+.trux-code-logo{
+  mix-blend-mode:normal!important;
+}
+
+/* Coding landing: fade out as soon as a coding session begins. */
+.trux-code-v2{
+  transition:opacity .22s ease,transform .22s ease!important;
+}
+.trux-code-v2.code-workspace-dismissed{
+  opacity:0!important;
+  transform:translateY(-8px)!important;
+  pointer-events:none!important;
+}
+body.coding-workspace #truxCodeWorkspace.code-workspace-dismissed{
+  display:none!important;
+}
+
+/* No divider left behind between coding landing and coding transcript. */
+.coding-workspace #codeChatContainer{
+  border-top:0!important;
+  margin-top:0!important;
+  padding-top:0!important;
+}
+
+/* The Chat logo must be visible on the actual Chat home, not buried under old
+   hiding rules. */
+body.home-active #welcomeScreen .trux-home-logo[hidden]{
+  display:none!important;
+}
+body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
+  display:block!important;
+}
+</style>
+
+<style id="trux-math-final-20261006e">
+.katex-display{max-width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;padding:2px 0!important;scrollbar-width:thin!important}
+.katex{max-width:100%!important}
+.trux-bubble .katex-display{margin:12px 0!important}
+</style>
+
+</head>
+<body class="home-active" data-workspace-mode="chat">
+
+
 <script>
   /* Startup safety: one failed optional dependency must never leave a black
      shell. The normal boot remains unchanged; this only runs before boot
@@ -8159,598 +8830,16 @@ body.coding-workspace .trux-code-center-mark{
 
 
 
-<style id="trux-clean-ui-20261005">
-/* ==========================================================
-   TRUX CLEAN UI — single source of truth for shell/home/code
-   Existing legacy home/code surfaces are no longer mounted.
-   ========================================================== */
-html,body{
-  width:100%!important;height:100%!important;min-width:0!important;
-  margin:0!important;padding:0!important;overflow:hidden!important;
-  background:#151515!important;background-image:none!important;
-}
-body{
-  color:#d8d8d8!important;
-}
-.shell{
-  position:relative!important;display:block!important;
-  width:100vw!important;height:100dvh!important;max-width:none!important;
-  margin:0!important;padding:0!important;overflow:hidden!important;
-}
-.main{
-  position:relative!important;display:flex!important;flex-direction:column!important;
-  width:100vw!important;height:100dvh!important;max-width:none!important;
-  min-width:0!important;margin:0!important;padding:0!important;
-  overflow:hidden!important;background:#151515!important;background-image:none!important;
-}
-.topbar{
-  position:relative!important;z-index:100!important;
-  flex:0 0 60px!important;width:100%!important;height:60px!important;
-  min-width:0!important;display:grid!important;
-  grid-template-columns:minmax(46px,1fr) auto minmax(46px,1fr)!important;
-  align-items:center!important;margin:0!important;padding:0 14px!important;
-  background:#151515!important;background-image:none!important;
-  border:0!important;box-shadow:none!important;backdrop-filter:none!important;
-}
-.topbar-left{justify-self:start!important;display:flex!important;align-items:center!important;gap:7px!important}
-.topbar-right{justify-self:end!important;display:flex!important;align-items:center!important;gap:7px!important}
-.top-btn.mobile-new{display:none!important}
-.top-btn,.trux-mode-btn,.icon-btn,.send-btn,.model-picker-btn{transform:none!important;box-shadow:none!important}
-.trux-mode-switch{
-  justify-self:center!important;align-self:center!important;
-  display:grid!important;grid-template-columns:1fr 1fr!important;
-  width:250px!important;max-width:calc(100vw - 120px)!important;min-width:172px!important;
-  height:40px!important;padding:3px!important;gap:3px!important;
-  border-radius:13px!important;background:#1b1b1b!important;
-  border:1px solid rgba(255,255,255,.07)!important;
-  box-shadow:none!important;backdrop-filter:none!important;
-}
-.trux-mode-btn{
-  width:100%!important;height:32px!important;min-width:0!important;padding:0 8px!important;
-  display:flex!important;align-items:center!important;justify-content:center!important;
-  border-radius:9px!important;border:1px solid transparent!important;
-  background:transparent!important;color:#858585!important;
-  font-size:13px!important;font-weight:650!important;white-space:nowrap!important;
-}
-.trux-mode-btn:hover{background:#242424!important;color:#cfcfcf!important}
-.trux-mode-btn.active{background:#292929!important;border-color:rgba(255,255,255,.08)!important;color:#ededed!important}
-
-#imageWorkspace,#videoWorkspace,#truxCodeWorkspace,#welcomeScreen,#chatContainer,#codeChatContainer{
-  min-width:0!important;box-sizing:border-box!important;
-}
-body.home-active:not(.coding-workspace):not([data-media-mode="image"]):not([data-media-mode="video"]):not(.plugins-page-active) #welcomeScreen{
-  display:flex!important;
-}
-body:not(.home-active) #welcomeScreen{display:none!important}
-body.home-active #imageWorkspace,body.home-active #videoWorkspace,body.home-active #truxCodeWorkspace,
-body.home-active #chatContainer,body.home-active #codeChatContainer{display:none!important}
-body.coding-workspace #welcomeScreen,body.coding-workspace #imageWorkspace,body.coding-workspace #videoWorkspace,
-body.coding-workspace #chatContainer{display:none!important}
-body:not(.coding-workspace) #codeChatContainer{display:none!important}
-body.coding-workspace #codeChatContainer{display:block!important;flex:1 1 auto;min-height:0;overflow:auto}
-body.coding-workspace #truxCodeWorkspace{display:flex!important}
-body[data-media-mode="image"] #imageWorkspace{display:flex!important}
-body[data-media-mode="video"] #videoWorkspace{display:flex!important}
-body:not([data-media-mode="image"]) #imageWorkspace{display:none!important}
-body:not([data-media-mode="video"]) #videoWorkspace{display:none!important}
-body.plugins-page-active #welcomeScreen,body.plugins-page-active #chatContainer,body.plugins-page-active #codeChatContainer,
-body.plugins-page-active #truxCodeWorkspace,body.plugins-page-active #imageWorkspace,body.plugins-page-active #videoWorkspace{display:none!important}
-
-.trux-home-v2{
-  position:relative!important;flex:1 1 auto!important;min-height:0!important;
-  width:100%!important;display:flex!important;align-items:center!important;justify-content:center!important;
-  overflow:hidden!important;background:#151515!important;
-}
-.trux-home-v2::before{
-  content:"";position:absolute;inset:0;pointer-events:none;background:#151515!important;
-}
-
-.trux-code-v2{
-  position:relative!important;flex:1 1 auto!important;min-height:0!important;width:100%!important;
-  display:none;align-items:center!important;justify-content:center!important;overflow:hidden!important;
-  background:#151515!important;color:#d8d8d8!important;
-}
-.trux-code-v2-inner{
-  width:min(760px,calc(100% - 36px));text-align:center;
-  display:flex;flex-direction:column;align-items:center;
-}
-.trux-code-v2-mark{width:92px;height:92px;margin-bottom:18px}
-.trux-code-v2-mark svg{width:100%;height:100%;display:block}
-.trux-code-v2-kicker{
-  font:700 10px/1 var(--font-mono);letter-spacing:.22em;color:#676767;margin-bottom:10px
-}
-.trux-code-v2 h1{
-  margin:0;color:#ededed;font-size:clamp(30px,5vw,46px);font-weight:600;letter-spacing:-.035em
-}
-.trux-code-v2 p{
-  margin:10px 0 0;max-width:560px;color:#747474;font-size:13px;line-height:1.55
-}
-.trux-code-v2-meta{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-top:20px;color:#626262;font-size:11px}
-.trux-code-v2-meta span{white-space:nowrap}
-.trux-code-v2-status{
-  margin-top:28px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
-  color:#777;font-size:11px
-}
-.trux-code-v2-ready,.trux-code-v2-plugins{display:inline-flex;align-items:center;gap:6px}
-.trux-code-v2-ready i,.trux-code-v2-plugins i{
-  width:6px;height:6px;border-radius:50%;background:#777;display:block
-}
-.trux-code-v2-plugins{color:#686868}
-.trux-code-v2-plugin-btn{
-  height:30px;padding:0 11px;border-radius:9px;border:1px solid rgba(255,255,255,.08);
-  background:#1c1c1c;color:#b8b8b8;font-size:11px;font-weight:650
-}
-.trux-code-v2-plugin-btn:hover{background:#242424;color:#fff}
-.trux-code-v2-integrations{min-height:20px;margin-top:11px;color:#5c5c5c;font-size:10px}
-.trux-code-v2-integrations:empty{display:none}
-.trux-code-v2-empty{color:#5c5c5c}
-.trux-sr-only{
-  position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;
-  overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important
-}
-
-.chat{min-width:0!important}
-body.chat-session-active #chatContainer{display:block!important;flex:1 1 auto!important;min-height:0!important;overflow:auto!important}
-body.chat-session-active #welcomeScreen{display:none!important}
-
-.composer{
-  position:relative!important;z-index:200!important;flex:0 0 auto!important;
-  width:100%!important;min-width:0!important;margin:0!important;padding:8px 18px calc(18px + var(--safe-b))!important;
-  background:#151515!important;background-image:none!important;border:0!important;box-shadow:none!important;overflow:visible!important;
-}
-.compose{width:min(740px,100%)!important;max-width:740px!important;min-width:0!important;margin:0 auto!important}
-.bar{
-  position:relative!important;display:grid!important;
-  grid-template-columns:42px minmax(0,1fr) 42px 42px 48px!important;
-  grid-template-rows:1fr 42px!important;align-items:center!important;gap:0 7px!important;
-  width:100%!important;min-width:0!important;min-height:116px!important;
-  margin:0!important;padding:12px!important;border-radius:30px!important;
-  background:#1d1d1d!important;background-image:none!important;
-  border:1px solid rgba(255,255,255,.08)!important;box-shadow:none!important;overflow:visible!important
-}
-.bar:focus-within{background:#1d1d1d!important;border-color:rgba(255,255,255,.12)!important;box-shadow:none!important}
-.bar > #attachBtn{grid-column:1!important;grid-row:2!important;width:42px!important;height:42px!important;justify-self:center!important}
-.bar > #modelPickerContainer{grid-column:2!important;grid-row:2!important;width:100%!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;position:relative!important;z-index:30!important}
-.bar > #incognitoBtn{grid-column:3!important;grid-row:2!important;width:42px!important;height:42px!important;justify-self:center!important}
-.bar > #voiceBtn{grid-column:4!important;grid-row:2!important;width:42px!important;height:42px!important;justify-self:center!important}
-.bar > #promptInput{
-  grid-column:1 / -1!important;grid-row:1!important;width:100%!important;height:60px!important;min-height:0!important;
-  padding:4px 12px!important;align-self:stretch!important;box-sizing:border-box!important;
-  background:transparent!important;border:0!important;resize:none!important;overflow:hidden!important;
-  color:#d8d8d8!important;line-height:1.3!important
-}
-#promptInput::placeholder{color:#7a7a7a!important;opacity:1!important}
-.bar > #actionBtn{
-  grid-column:5!important;grid-row:2!important;width:48px!important;height:48px!important;justify-self:end!important;align-self:center!important;
-  padding:0!important;border-radius:50%!important;background:#ededed!important;color:#171717!important;box-shadow:none!important
-}
-.model-picker-container{position:relative!important;min-width:0!important;overflow:visible!important}
-#modelPickerBtn{
-  width:auto!important;min-width:116px!important;max-width:100%!important;height:42px!important;
-  display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;
-  padding:0 13px!important;border-radius:999px!important;background:#242424!important;
-  border:1px solid rgba(255,255,255,.06)!important;color:#d7d7d7!important;white-space:nowrap!important
-}
-#modelPickerBtn:hover,#modelPickerBtn[aria-expanded="true"]{background:#292929!important;color:#fff!important}
-#modelDropdown{
-  display:none!important;position:absolute!important;left:0!important;bottom:50px!important;top:auto!important;
-  z-index:100000!important;width:min(360px,calc(100vw - 24px))!important;max-width:calc(100vw - 24px)!important;
-  max-height:min(62dvh,520px)!important;overflow:auto!important;padding:8px!important;border-radius:18px!important;
-  background:#1a1a1a!important;border:1px solid rgba(255,255,255,.10)!important;
-  box-shadow:0 18px 48px rgba(0,0,0,.42)!important;backdrop-filter:none!important
-}
-#modelDropdown.open{display:block!important}
-#modelDropdown .model-item{
-  width:100%!important;min-height:56px!important;display:flex!important;align-items:center!important;gap:10px!important;
-  padding:9px 10px!important;border-radius:12px!important;color:#d5d5d5!important;background:transparent!important;
-  border:1px solid transparent!important;text-align:left!important
-}
-#modelDropdown .model-item:hover,#modelDropdown .model-item.active{background:#252525!important;border-color:rgba(255,255,255,.07)!important;color:#fff!important}
-#modelDropdown .thinking-choice-wrap{margin-top:7px!important;padding:10px 8px 8px!important;border-top:1px solid rgba(255,255,255,.08)!important}
-#modelDropdown .thinking-choice{
-  width:100%!important;min-height:40px!important;padding:8px 9px!important;display:flex!important;
-  align-items:center!important;justify-content:space-between!important;border-radius:10px!important;
-  color:#aaa!important;background:transparent!important;border:1px solid transparent!important;text-align:left!important
-}
-#modelDropdown .thinking-choice:hover,#modelDropdown .thinking-choice.active{background:#292929!important;color:#fff!important}
-
-/* TruX-Code integration logos: compact, never allowed to expand from image intrinsic size. */
-.trux-code-v2-integrations{
-  display:flex!important;align-items:center!important;justify-content:center!important;
-  flex-wrap:wrap!important;gap:7px!important;min-height:24px!important;
-}
-.trux-code-integration-app{
-  display:inline-flex!important;align-items:center!important;gap:6px!important;
-  max-width:150px!important;height:28px!important;padding:0 8px!important;
-  border:1px solid rgba(255,255,255,.065)!important;border-radius:9px!important;
-  background:#1b1b1b!important;color:#686868!important;font-size:10px!important;
-  overflow:hidden!important;
-}
-.trux-code-integration-app img{
-  width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;
-  max-width:16px!important;max-height:16px!important;object-fit:contain!important;display:block!important;flex:0 0 16px!important;
-}
-.trux-code-integration-app b{
-  min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
-  font-size:10px!important;font-weight:600!important;
-}
-
-#attachmentMenu{
-  display:block!important;position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;
-  width:100vw!important;max-width:none!important;min-width:0!important;height:min(60dvh,560px)!important;
-  max-height:calc(100dvh - 38px)!important;padding:15px 18px calc(20px + var(--safe-b))!important;
-  border-radius:26px 26px 0 0!important;background:#1a1a1a!important;background-image:none!important;
-  border:1px solid rgba(255,255,255,.08)!important;border-bottom:0!important;
-  opacity:0!important;visibility:hidden!important;pointer-events:none!important;transform:translateY(100%)!important;
-  z-index:100000!important;box-shadow:0 -14px 40px rgba(0,0,0,.35)!important;
-}
-#attachmentMenu.open{opacity:1!important;visibility:visible!important;pointer-events:auto!important;transform:translateY(0)!important}
-#attachmentMenu .trux-plus-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:9px!important}
-#attachmentMenu .trux-plus-item{min-height:82px!important;background:#202020!important;border:1px solid rgba(255,255,255,.07)!important;box-shadow:none!important}
-.hint{color:#666!important}
-
-.sidebar{position:fixed!important;left:0!important;top:0!important;bottom:0!important;width:100vw!important;max-width:none!important;z-index:1200!important}
-.sidebar-overlay{position:fixed!important;inset:0!important;z-index:1100!important}
-.top-profile-btn{transform:none!important}
-
-@media(max-width:700px){
-  .topbar{flex-basis:58px!important;height:58px!important;padding:0 10px!important}
-  .trux-mode-switch{width:min(190px,calc(100vw - 108px))!important;min-width:170px!important;height:38px!important}
-  .trux-mode-btn{height:30px!important;font-size:11.5px!important;padding:0 6px!important}
-  .composer{padding:8px 14px calc(14px + var(--safe-b))!important}
-  .bar{grid-template-columns:40px minmax(0,1fr) 40px 40px 48px!important;grid-template-rows:1fr 42px!important;min-height:116px!important;gap:0 6px!important;padding:11px!important;border-radius:28px!important}
-  .bar > #attachBtn,.bar > #incognitoBtn,.bar > #voiceBtn{width:40px!important;height:40px!important}
-  .bar > #actionBtn{width:46px!important;height:46px!important}
-  .bar > #promptInput{height:60px!important;font-size:20px!important;padding:4px 10px!important}
-  #modelPickerBtn{min-width:102px!important;height:40px!important;padding:0 10px!important}
-  #modelDropdown{left:50%!important;transform:translateX(-50%)!important;max-width:calc(100vw - 20px)!important}
-  
-  .trux-code-v2-inner{width:min(680px,calc(100% - 28px))}
-  .trux-code-v2-mark{width:74px;height:74px;margin-bottom:14px}
-  .trux-code-v2 h1{font-size:28px}
-  .trux-code-v2-meta{gap:10px;font-size:10px}
-}
-  .home-ui-fixed-note{color:#727272;font-size:12px;line-height:1.4}
-
-</style>
-
-<style id="trux-final-ui-20261005">
-/* Incognito — same app shell/layout, but visibly isolated and never listed in history. */
-.trux-incognito-top{
-  display:none;align-items:center;justify-content:center;gap:7px;
-  width:max-content;height:36px;padding:0 13px;border-radius:999px;
-  border:1px solid rgba(255,255,255,.08);background:#1d1d1d;color:#a2a2a2;
-  font-size:12px;font-weight:650;letter-spacing:.01em;
-}
-.trux-incognito-dot{
-  width:6px;height:6px;border-radius:50%;background:#8b8b8b;display:block;
-  box-shadow:0 0 8px rgba(255,255,255,.13);
-}
-body.incognito-mode #truxModeSwitch{display:none!important}
-body.incognito-mode #truxIncognitoTop{display:flex!important}
-body.incognito-mode .topbar{grid-template-columns:minmax(46px,1fr) auto minmax(46px,1fr)!important}
-.incognito-session-banner{
-  position:relative;display:flex;align-items:center;gap:9px;
-  width:fit-content;max-width:min(100%,740px);margin:12px auto 2px;padding:9px 12px;
-  color:#8a8a8a;font-size:11px;line-height:1.25;
-}
-.incognito-session-dot{width:6px;height:6px;border-radius:50%;background:#8b8b8b;flex:0 0 6px}
-.incognito-session-banner span:last-child{display:flex;flex-direction:column;gap:2px}
-.incognito-session-banner b{color:#b8b8b8;font-size:11px;font-weight:700}
-.incognito-session-banner small{color:#626262;font-size:10px}
 
 
-/* Floating AI activity — deliberately no container/box. */
-.trux-thinking-panel{background:transparent!important;border:0!important;box-shadow:none!important}
-.trux-thinking-bar{background:transparent!important;border:0!important;box-shadow:none!important}
-.trux-thinking-bar::before,.trux-thinking-bar::after{display:none!important}
-.trux-thinking-copy{overflow:visible!important}
-.trux-thinking-elapsed{background:transparent!important}
-.trux-thinking-details{background:transparent!important;box-shadow:none!important}
-.trux-thinking-details::-webkit-scrollbar{width:5px}
 
-/* Sidebar brand — compact mark, stacked copy, no collision. */
-.sidebar-header{min-width:0!important;gap:14px!important;padding:2px 0 18px!important}
-.sidebar .brand{display:flex!important;align-items:center!important;gap:11px!important;min-width:0!important;padding:0!important}
-.sidebar-brand-mark{width:34px!important;height:34px!important;display:grid!important;place-items:center!important;flex:0 0 34px!important;color:#9a9893!important}
-.sidebar-brand-mark svg{width:100%!important;height:100%!important;display:block!important}
-.sidebar-brand-mark img{width:100%!important;height:100%!important;display:block!important;object-fit:contain!important;background:transparent!important;border:0!important;box-shadow:none!important;}
-.sidebar-brand-copy{min-width:0!important;display:flex!important;flex-direction:column!important;justify-content:center!important;gap:2px!important;overflow:hidden!important}
-.sidebar-brand-copy b{display:block!important;max-width:100%!important;font-size:16px!important;line-height:1.05!important;font-weight:700!important;letter-spacing:-.025em!important;color:#e8e8e8!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
-.sidebar-brand-copy small{display:block!important;font-size:9px!important;line-height:1.15!important;letter-spacing:.13em!important;text-transform:uppercase!important;color:#686868!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
 
-/* Smaller plugin cards: logos stay visually secondary to the plugin name. */
-.trux-plugin-logo{width:42px!important;height:42px!important;border-radius:12px!important}
-.trux-plugin-logo img{width:23px!important;height:23px!important;max-width:23px!important;max-height:23px!important}
 
-/* Model picker — single source of truth. The button itself is the model name. */
-.model-picker-container{
-  position:relative!important;min-width:0!important;overflow:visible!important;
-  justify-self:start!important;width:100%!important;
-}
-#modelPickerBtn{
-  width:auto!important;min-width:112px!important;max-width:100%!important;height:40px!important;
-  display:inline-flex!important;align-items:center!important;justify-content:flex-start!important;gap:0!important;
-  margin:0!important;padding:0 13px!important;border-radius:999px!important;
-  background:#242424!important;border:1px solid rgba(255,255,255,.06)!important;color:#d7d7d7!important;
-  font-size:13px!important;font-weight:650!important;line-height:1!important;white-space:nowrap!important;
-  overflow:hidden!important;vertical-align:middle!important;transform:none!important;box-shadow:none!important;
-}
-#modelPickerBtn:hover,#modelPickerBtn[aria-expanded="true"]{background:#292929!important;color:#fff!important;border-color:rgba(255,255,255,.09)!important}
-#modelPickerLabel{display:block!important;min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
-#modelDropdown{
-  display:none!important;position:fixed!important;z-index:100000!important;width:min(360px,calc(100vw - 20px))!important;
-  max-width:calc(100vw - 20px)!important;max-height:min(540px,calc(100dvh - 24px))!important;overflow:auto!important;
-  overscroll-behavior:contain!important;padding:8px!important;border-radius:18px!important;background:#1a1a1a!important;
-  background-image:none!important;border:1px solid rgba(255,255,255,.10)!important;box-shadow:0 22px 58px rgba(0,0,0,.48)!important;
-  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;transform:none!important;
-}
-#modelDropdown.open{display:block!important;visibility:visible!important;opacity:1!important}
-#modelDropdown .model-item{
-  width:100%!important;min-height:62px!important;display:grid!important;grid-template-columns:30px minmax(0,1fr) auto!important;
-  align-items:start!important;gap:10px!important;padding:10px!important;border-radius:12px!important;color:#d5d5d5!important;
-  background:transparent!important;border:1px solid transparent!important;text-align:left!important;overflow:hidden!important;
-}
-#modelDropdown .model-item:hover,#modelDropdown .model-item.active{background:#252525!important;border-color:rgba(255,255,255,.07)!important;color:#fff!important}
-#modelDropdown .model-icon{width:30px!important;height:30px!important;margin-top:1px!important}
-#modelDropdown .model-info{min-width:0!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:3px!important;overflow:hidden!important;padding:1px 0!important}
-#modelDropdown .model-info b{display:block!important;width:100%!important;font-size:14px!important;line-height:1.2!important;white-space:normal!important}
-#modelDropdown .model-info small{display:block!important;width:100%!important;margin:0!important;font-size:11px!important;line-height:1.35!important;color:#777!important;white-space:normal!important}
-#modelDropdown .model-check{min-width:18px!important;margin-top:3px!important;text-align:center!important;color:#bdbdbd!important}
-#modelDropdown .thinking-choice-wrap{margin-top:7px!important}
-#modelDropdown .thinking-choice{display:flex!important;align-items:center!important;justify-content:space-between!important}
-@media(max-width:700px){
-  #modelPickerBtn{min-width:104px!important;height:40px!important;max-width:152px!important;padding:0 10px!important}
-  #modelDropdown{width:min(360px,calc(100vw - 20px))!important}
-}
 
-/* Hard workspace separation: Chat and TruX-Code never coexist visually. */
-body.home-active #chatContainer,
-body.home-active #codeChatContainer,
-body.home-active #truxCodeWorkspace{display:none!important}
-body:not(.coding-workspace) #codeChatContainer{display:none!important;visibility:hidden!important;pointer-events:none!important}
-body:not(.coding-workspace) #truxCodeWorkspace{display:none!important;visibility:hidden!important;pointer-events:none!important}
-body.coding-workspace #chatContainer,
-body.coding-workspace #welcomeScreen{display:none!important;visibility:hidden!important;pointer-events:none!important}
-body.coding-workspace #codeChatContainer{display:block!important;visibility:visible!important;pointer-events:auto!important}
-body.coding-workspace #truxCodeWorkspace{display:flex!important;visibility:visible!important;pointer-events:auto!important}
-body.chat-session-active:not(.coding-workspace) #chatContainer{display:block!important;visibility:visible!important;pointer-events:auto!important}
-body.chat-session-active:not(.coding-workspace) #codeChatContainer{display:none!important}
 
-</style>
 
-<style id="trux-final-ui-20261006">
-/* Exact TruX startup sequence: Hello 2s -> I am TruX 2s -> icon-grey. */
-.trux-home-v2{
-  background:#151515!important;
-  background-image:none!important;
-  isolation:isolate!important;
-}
-.trux-home-v2::before{display:none!important}
-.trux-home-sequence{
-  position:absolute!important;
-  inset:0!important;
-  display:grid!important;
-  place-items:center!important;
-  pointer-events:none!important;
-  z-index:2!important;
-}
-.trux-home-sequence-text{
-  margin:0!important;
-  padding:0!important;
-  color:#9a9a9a!important;
-  font-family:var(--font-disp)!important;
-  font-size:clamp(28px,5vw,44px)!important;
-  font-weight:600!important;
-  line-height:1!important;
-  letter-spacing:-.045em!important;
-  text-align:center!important;
-  white-space:nowrap!important;
-  opacity:0!important;
-  transform:translateY(4px)!important;
-  transition:opacity .22s ease,transform .22s ease!important;
-}
-.trux-home-sequence-text.is-visible{opacity:1!important;transform:none!important}
-.trux-home-sequence-text.is-replacing{opacity:0!important;transform:translateY(-3px)!important}
-.trux-home-logo{
-  position:absolute!important;
-  inset:0!important;
-  width:min(108px,18vw)!important;
-  height:min(108px,18vw)!important;
-  max-width:108px!important;
-  max-height:108px!important;
-  margin:auto!important;
-  display:block!important;
-  object-fit:contain!important;
-  background:transparent!important;
-  border:0!important;
-  border-radius:0!important;
-  box-shadow:none!important;
-  filter:none!important;
-  animation:none!important;
-  transform:none!important;
-  opacity:1!important;
-}
-.trux-home-logo[hidden]{display:none!important}
 
-/* Thinking is floating text only. Remove all legacy pill/card treatment. */
-.trux-thinking-panel,
-.trux-thinking-bar,
-.trux-thinking-copy,
-.trux-thinking-details,
-.trux-thinking-elapsed,
-.trux-thinking-panel .thinking-container{
-  background:transparent!important;
-  border:0!important;
-  border-radius:0!important;
-  box-shadow:none!important;
-}
-.trux-thinking-panel{
-  width:100%!important;
-  margin:2px 0 7px!important;
-  padding:0!important;
-}
-.trux-thinking-bar{
-  min-height:22px!important;
-  width:100%!important;
-  gap:9px!important;
-  padding:0!important;
-}
-.trux-thinking-copy{
-  flex:1 1 auto!important;
-  min-width:0!important;
-  padding:0!important;
-  margin:0!important;
-}
-.status-msg{
-  min-height:0!important;
-  display:block!important;
-  width:auto!important;
-  max-width:100%!important;
-  margin:0!important;
-  padding:0!important;
-  border:0!important;
-  border-radius:0!important;
-  background:transparent!important;
-  color:transparent!important;
-  font:560 13px/1.35 var(--font-body)!important;
-  letter-spacing:-.012em!important;
-  overflow:visible!important;
-  text-overflow:clip!important;
-  white-space:nowrap!important;
-  box-shadow:none!important;
-}
-.thinking-status-line{margin:0!important;padding:0!important}
-.chat-thinking-elapsed{display:none!important}
-.trux-thinking-elapsed{flex:0 0 auto!important;min-width:0!important;padding:0!important;margin:0!important;font-size:9px!important}
-.trux-thinking-details{
-  width:min(760px,100%)!important;
-  margin:3px 0 0!important;
-  padding:3px 0 4px 13px!important;
-}
-.trux-thinking-toggle{
-  width:20px!important;height:20px!important;margin:0!important;padding:0!important;
-  border:0!important;background:transparent!important;box-shadow:none!important;
-}
-.trux-thinking-panel.thinking-dismissed{display:none!important}
 
-/* Restore the small blue decorative lines flanking the selected model name. */
-#modelPickerBtn{
-  position:relative!important;
-  justify-content:center!important;
-  padding-left:34px!important;
-  padding-right:34px!important;
-}
-#modelPickerBtn::before,#modelPickerBtn::after{
-  content:""!important;
-  position:absolute!important;
-  top:50%!important;
-  width:13px!important;
-  height:1px!important;
-  margin:0!important;
-  background:#6d83ff!important;
-  opacity:.9!important;
-  transform:translateY(-50%)!important;
-  pointer-events:none!important;
-}
-#modelPickerBtn::before{left:11px!important}
-#modelPickerBtn::after{right:11px!important}
-
-/* Do not render a text X as the sign-in emblem; use the real repository logo. */
-.login-orb::after{display:none!important;content:none!important}
-.login-orb{overflow:hidden!important;padding:0!important}
-.login-orb img{
-  width:44px!important;height:44px!important;object-fit:contain!important;
-  display:block!important;border:0!important;box-shadow:none!important;background:transparent!important;
-}
-</style>
-<style id="trux-final-ui-20261006b">
-/* Chat home: only the new minimal intro/logo surface is allowed. */
-body.chat-session-active #welcomeScreen,
-body.coding-workspace #welcomeScreen,
-body.plugins-page-active #welcomeScreen,
-body[data-media-mode] #welcomeScreen{
-  display:none!important;visibility:hidden!important;pointer-events:none!important;
-}
-body.home-active #welcomeScreen{
-  display:flex!important;visibility:visible!important;pointer-events:auto!important;
-}
-
-/* Hard visual separation: never show the opposite workspace container. */
-body:not(.coding-workspace) #truxCodeWorkspace,
-body:not(.coding-workspace) #codeChatContainer{
-  display:none!important;visibility:hidden!important;pointer-events:none!important;
-}
-body.coding-workspace #chatContainer,
-body.coding-workspace #welcomeScreen{
-  display:none!important;visibility:hidden!important;pointer-events:none!important;
-}
-body.coding-workspace #truxCodeWorkspace.code-workspace-dismissed{
-  display:none!important;visibility:hidden!important;pointer-events:none!important;
-}
-
-/* TruX-Code landing: real icon-grey asset + exact title. */
-.trux-code-v2-mark{
-  position:relative!important;width:104px!important;height:104px!important;
-  margin:0 0 22px!important;display:grid!important;place-items:center!important;
-  background:transparent!important;border:0!important;box-shadow:none!important;
-}
-.trux-code-logo{
-  width:104px!important;height:104px!important;display:block!important;
-  object-fit:contain!important;background:transparent!important;border:0!important;
-  border-radius:0!important;box-shadow:none!important;animation:none!important;filter:none!important;
-}
-.trux-code-v2-mark::after{
-  content:""!important;position:absolute!important;inset:-11px!important;border-radius:50%!important;
-  border:1px solid transparent!important;border-top-color:rgba(255,255,255,.72)!important;
-  border-right-color:rgba(255,255,255,.18)!important;opacity:0!important;
-  pointer-events:none!important;transform:rotate(-35deg)!important;
-  animation:truxCodeRingEveryFive 5s cubic-bezier(.22,.61,.36,1) infinite!important;
-}
-@keyframes truxCodeRingEveryFive{
-  0%,7%{opacity:0;transform:rotate(-35deg)}
-  10%{opacity:.72;transform:rotate(15deg)}
-  28%{opacity:.38;transform:rotate(190deg)}
-  40%{opacity:.10;transform:rotate(325deg)}
-  43%,100%{opacity:0;transform:rotate(325deg)}
-}
-.trux-code-v2-kicker,.trux-code-v2-meta{display:none!important}
-.trux-code-v2 h1{font-size:clamp(30px,5vw,44px)!important;letter-spacing:-.04em!important}
-.trux-code-v2 p{margin-top:8px!important;color:#777!important}
-
-/* Model dropdown: remove the mobile 50% positioning conflict and clamp to viewport. */
-#modelDropdown{
-  left:auto!important;right:auto!important;transform:none!important;
-  width:min(360px,calc(100vw - 20px))!important;
-  max-width:calc(100vw - 20px)!important;
-  box-sizing:border-box!important;overflow-x:hidden!important;
-}
-#modelDropdown .model-item{
-  box-sizing:border-box!important;width:100%!important;min-width:0!important;
-  grid-template-columns:30px minmax(0,1fr) 20px!important;align-items:start!important;
-}
-#modelDropdown .model-info{min-width:0!important;overflow:hidden!important}
-#modelDropdown .model-info b,#modelDropdown .model-info small{
-  min-width:0!important;overflow-wrap:anywhere!important;
-}
-#modelDropdown .thinking-choice{
-  box-sizing:border-box!important;width:100%!important;min-width:0!important;
-  display:grid!important;grid-template-columns:minmax(0,1fr) 20px!important;
-  gap:8px!important;align-items:center!important;
-}
-#modelDropdown .thinking-choice > span:first-child{
-  min-width:0!important;display:flex!important;flex-direction:column!important;
-  gap:2px!important;overflow:hidden!important;
-}
-#modelDropdown .thinking-choice b{display:block!important;line-height:1.2!important}
-#modelDropdown .thinking-choice small{
-  display:block!important;color:#777!important;line-height:1.25!important;
-  overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
-}
-#modelDropdown .thinking-check{
-  display:block!important;width:20px!important;text-align:center!important;
-}
-</style>
 <script>
 /* Position the model menu from the actual button; important inline values beat all legacy/mobile CSS. */
 (function(){
@@ -8777,68 +8866,8 @@ body.coding-workspace #truxCodeWorkspace.code-workspace-dismissed{
   },{passive:true});
 })();
 </script>
-<style id="trux-final-ui-20261006c">
-/* Keep the provided logo exactly as authored.
-   Its #151515 image background already matches the workspace surface.
-   No blending, glow, ring, or extra visual layer is applied. */
-.trux-home-logo,
-.trux-code-logo{
-  mix-blend-mode:normal!important;
-  filter:none!important;
-  box-shadow:none!important;
-  background:transparent!important;
-}
-.trux-code-v2-mark::before,
-.trux-code-v2-mark::after{
-  content:none!important;
-  display:none!important;
-  animation:none!important;
-  background:none!important;
-  border:0!important;
-  box-shadow:none!important;
-  filter:none!important;
-}
-/* Chat intro is the only Chat home surface; it is not a second legacy UI. */
-.trux-home-v2{
-  display:flex!important;
-  background:#151515!important;
-  border:0!important;
-}
-.trux-home-v2::before{display:none!important}
-.trux-home-logo,
-.trux-code-logo{
-  mix-blend-mode:normal!important;
-}
 
-/* Coding landing: fade out as soon as a coding session begins. */
-.trux-code-v2{
-  transition:opacity .22s ease,transform .22s ease!important;
-}
-.trux-code-v2.code-workspace-dismissed{
-  opacity:0!important;
-  transform:translateY(-8px)!important;
-  pointer-events:none!important;
-}
-body.coding-workspace #truxCodeWorkspace.code-workspace-dismissed{
-  display:none!important;
-}
 
-/* No divider left behind between coding landing and coding transcript. */
-.coding-workspace #codeChatContainer{
-  border-top:0!important;
-  margin-top:0!important;
-  padding-top:0!important;
-}
-
-/* The Chat logo must be visible on the actual Chat home, not buried under old
-   hiding rules. */
-body.home-active #welcomeScreen .trux-home-logo[hidden]{
-  display:none!important;
-}
-body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
-  display:block!important;
-}
-</style>
 
 <script>
 (function(){
@@ -8851,10 +8880,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
   };
 })();
 </script>
-<style id="trux-math-final-20261006e">
-.katex-display{max-width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;padding:2px 0!important;scrollbar-width:thin!important}
-.katex{max-width:100%!important}
-.trux-bubble .katex-display{margin:12px 0!important}
-</style>
+
+
 </body>
 </html>
