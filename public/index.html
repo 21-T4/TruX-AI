@@ -8190,7 +8190,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         if(!res.body) throw Error("Streaming body unavailable.");
         
         let rd = res.body.getReader(), dec = new TextDecoder(), buf = "", full = "", fin = null;
-        let streamDone = false, finalizedEarly = false;
+        let streamDone = false, finalizedEarly = false, finalizedOnFinal = false;
         let githubProposal = null;
         let toolInProgress = false;
         /* Web pages the model actually consulted when it ran a Google search. */
@@ -8247,11 +8247,18 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           }
           else if(j.type === "final") {
             fin = j.text || "";
-            if (codingTurn && fin && !finalizedEarly && !imageRoute) {
-              finalizedEarly = true;
-              finalizeResponse(id, aid, fin, prompt, voice, activeStreamer, turnSources);
-              activeStreamer = null;
-              try { rd.cancel(); } catch {}
+            if (fin && !imageRoute) {
+              if (codingTurn && !finalizedEarly) {
+                finalizedEarly = true;
+                finalizeResponse(id, aid, fin, prompt, voice, activeStreamer, turnSources);
+                activeStreamer = null;
+                try { rd.cancel(); } catch {}
+              } else if (!codingTurn && !finalizedOnFinal) {
+                finalizedOnFinal = true;
+                if (!activeStreamer) dismissThinkingPanel(getEl(id)?.closest(".row"));
+                finalizeResponse(id, aid, fin, prompt, voice, activeStreamer, turnSources);
+                activeStreamer = null;
+              }
             }
           }
           else if(j.type === "status") {
@@ -8380,8 +8387,10 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         /* Defensive: never show the routing tag if it slipped into prose. */
         text = text.replace(/\[\[IMAGE\]\]/gi, "").trim();
 
-        let streamer = activeStreamer || ensureStreamer();
-        finalizeResponse(id, aid, text, prompt, voice, streamer, turnSources);
+        if (!finalizedOnFinal) {
+          let streamer = activeStreamer || ensureStreamer();
+          finalizeResponse(id, aid, text, prompt, voice, streamer, turnSources);
+        }
         if(githubProposal) {
           const session = chatSessions[currentChatId];
           const lastMessage = session?.messages?.[session.messages.length - 1];
