@@ -1211,8 +1211,8 @@ export async function onRequestPost(context) {
       explicitRepoRequest ||
       isConfirmedExternalFollowup(message, history);
     const explicitCodeWork = hasExplicitCodeWorkRequest(message);
-    // TruX-Code uses the deep-reasoning model only for an actual coding task.
-    // A simple greeting in the coding workspace remains a normal lightweight turn.
+    // TruX-Code is pinned to Gemini 3.1 Pro Preview for every turn.
+    // This flag controls reasoning instructions and tool availability only.
     const codingNeedsDeepWork =
       codingMode && (explicitCodeWork || explicitRepoRequest || explicitExternalAction);
     const effectiveTier =
@@ -1741,11 +1741,8 @@ export async function onRequestPost(context) {
         }
 
         agentRound += 1;
-        // Do not spend a second model call generating a label before the answer
-        // starts. Short Chat prompts and lightweight Code chats go straight to
-        // the core model; richer turns can request labels after visible output
-        // begins, while explicit coding/research/plugin operations retain their
-        // operation-specific labels.
+        // Keep ordinary Chat answer generation on the hot path. Generate activity
+        // labels only for real coding, research, and external-tool operations.
         const needsOpeningActivity =
           researchMode ||
           explicitExternalAction ||
@@ -1804,8 +1801,7 @@ export async function onRequestPost(context) {
           const piece = String(text || '');
           if (!piece) return;
 
-          // Send the user's visible response immediately; prepare status labels
-          // off the hot path so they do not interrupt normal token streaming.
+          // Send answer content immediately without parallel status-model calls.
           send({ type: 'chunk', text: piece });
 
         },
