@@ -1534,7 +1534,7 @@ export async function onRequestPost(context) {
       // A plain greeting doesn't need a costly summary request for older turns.
       // Keep the recent context, while normal requests retain the shared
       // five-message + compressed-older-history policy.
-      const isStandaloneGreeting = /^(?:hi|hello|hey|hiya|howdy|yo|good morning|good afternoon|good evening)[\\s!.,?]*$/i
+      const isStandaloneGreeting = /^(?:hi|hello|hey|hiya|howdy|yo|good morning|good afternoon|good evening)[\s!.,?]*$/i
         .test(String(message || '').trim());
       const historyForTurn = isStandaloneGreeting && Array.isArray(history)
         ? history.slice(-HISTORY_RECENT_LIMIT)
