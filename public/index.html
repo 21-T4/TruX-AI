@@ -8124,46 +8124,8 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
 
 
 <script src="/trux-plugins.js?v=20261004c" defer></script>
-<script>
-/* FINAL HOME SANITIZER
-   The Home surface must never display legacy welcome artwork. This guard also
-   catches stale/dynamically inserted legacy nodes without touching Chat,
-   TruX-Code, Image, Video, or the sidebar. */
-(function(){
-  function cleanHome(){
-    if(!document.body || !document.body.classList.contains('home-active')) return;
-    var root=document.querySelector('.main') || document.body;
-    root.querySelectorAll('.welcome, .hero, .welcome-title, .animated-sub').forEach(function(node){
-      if(node.id === 'welcomeScreen') return;
-      node.style.setProperty('display','none','important');
-      node.style.setProperty('visibility','hidden','important');
-    });
-    root.querySelectorAll('img').forEach(function(img){
-      if(!img.isConnected) return;
-      var r=img.getBoundingClientRect();
-      var area=r.width*r.height;
-      if(r.width>140 || r.height>140 || area>19600){
-        img.style.setProperty('display','none','important');
-        img.style.setProperty('visibility','hidden','important');
-      }
-    });
-    var walker=document.createTreeWalker(root,NodeFilter.SHOW_ELEMENT);
-    while(walker.nextNode()){
-      var el=walker.currentNode;
-      if(el.id==='welcomeScreen' || el.closest('#welcomeScreen') || el.closest('.topbar') || el.closest('.composer')) continue;
-      var t=(el.textContent||'').trim().toLowerCase();
-      if(t==='work on or chat about! 😊' || t==='work on or chat about!'){
-        el.style.setProperty('display','none','important');
-        el.style.setProperty('visibility','hidden','important');
-      }
-    }
-  }
-  document.addEventListener('DOMContentLoaded',cleanHome);
-  new MutationObserver(cleanHome).observe(document.documentElement,{subtree:true,childList:true});
-  window.addEventListener('resize',cleanHome,{passive:true});
-})();
-</script>
-/* Keep TruX-Code on the same quiet #151515 surface; no colored or glossy panel tint. */
+
+
 body.coding-workspace,
 body.coding-workspace .main,
 body.coding-workspace .composer,
@@ -8282,19 +8244,6 @@ body.plugins-page-active #truxCodeWorkspace,body.plugins-page-active #imageWorks
 .trux-home-v2::before{
   content:"";position:absolute;inset:0;pointer-events:none;background:#151515!important;
 }
-.trux-home-mark{
-  position:relative;z-index:1;width:108px;height:108px;display:grid;place-items:center;
-}
-.trux-home-mark svg{width:100%;height:100%;display:block;overflow:visible}
-.trux-home-mark svg path{vector-effect:non-scaling-stroke}
-.trux-home-mark::after{
-  content:"";position:absolute;inset:12% 10%;
-  border-radius:50%;pointer-events:none;
-  background:linear-gradient(105deg,transparent 25%,rgba(255,255,255,.10) 48%,transparent 66%);
-  filter:blur(5px);mix-blend-mode:screen;
-  animation:truxMetalSweep 3.8s ease-in-out infinite;
-}
-@keyframes truxMetalSweep{0%,38%{transform:translateX(-34%);opacity:0}52%{opacity:.8}72%,100%{transform:translateX(34%);opacity:0}}
 
 .trux-code-v2{
   position:relative!important;flex:1 1 auto!important;min-height:0!important;width:100%!important;
@@ -8455,7 +8404,7 @@ body.chat-session-active #welcomeScreen{display:none!important}
   .bar > #promptInput{height:60px!important;font-size:20px!important;padding:4px 10px!important}
   #modelPickerBtn{min-width:102px!important;height:40px!important;padding:0 10px!important}
   #modelDropdown{left:50%!important;transform:translateX(-50%)!important;max-width:calc(100vw - 20px)!important}
-  .trux-home-mark{width:84px;height:84px}
+  
   .trux-code-v2-inner{width:min(680px,calc(100% - 28px))}
   .trux-code-v2-mark{width:74px;height:74px;margin-bottom:14px}
   .trux-code-v2 h1{font-size:28px}
@@ -8463,71 +8412,9 @@ body.chat-session-active #welcomeScreen{display:none!important}
 }
   .home-ui-fixed-note{color:#727272;font-size:12px;line-height:1.4}
 
-/* FINAL HOME LOGO KILL-SWITCH — keep Home as a clean #151515 surface.
-   No legacy/full-color/oversized logo or legacy welcome art may render here. */
-#welcomeScreen,
-body.home-active #welcomeScreen{
-  background:#151515!important;
-  background-image:none!important;
-}
-#welcomeScreen .trux-home-mark,
-#welcomeScreen .trux-home-v2-mark,
-body.home-active .welcome,
-body.home-active .hero,
-body.home-active .welcome-title,
-body.home-active .animated-sub{
-  display:none!important;
-  visibility:hidden!important;
-  opacity:0!important;
-  width:0!important;
-  height:0!important;
-  max-width:0!important;
-  max-height:0!important;
-  overflow:hidden!important;
-  pointer-events:none!important;
-}
 </style>
 
 <style id="trux-final-ui-20261005">
-/* Home greeting — centered, quiet grey, no logo/artwork. */
-.trux-home-greeting{
-  position:relative;z-index:2;width:min(760px,calc(100% - 32px));
-  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
-}
-.trux-home-hello,.trux-home-name,.trux-home-activity{
-  color:#999!important;font-weight:600;letter-spacing:-.035em;
-}
-.trux-home-hello{
-  font-size:clamp(28px,5vw,44px);line-height:1.05;
-  animation:truxHomeGreetingIn .8s cubic-bezier(.22,.61,.36,1) both;
-}
-.trux-home-name{
-  margin-top:8px;font-size:clamp(22px,4vw,34px);line-height:1.1;
-  color:#b0b0b0!important;
-  animation:truxHomeGreetingIn .8s .72s cubic-bezier(.22,.61,.36,1) both;
-}
-.trux-home-activity{
-  margin-top:15px;min-height:1.4em;
-  font-size:clamp(12px,1.8vw,15px);line-height:1.4;color:#747474!important;
-  letter-spacing:.01em;font-weight:500;
-  opacity:0;animation:truxHomeActivityIn .8s 1.48s cubic-bezier(.22,.61,.36,1) forwards;
-}
-@keyframes truxHomeGreetingIn{
-  from{opacity:0;transform:translateY(12px);filter:blur(4px)}
-  to{opacity:1;transform:translateY(0);filter:blur(0)}
-}
-@keyframes truxHomeActivityIn{
-  from{opacity:0;transform:translateY(9px)}
-  to{opacity:1;transform:translateY(0)}
-}
-.trux-home-activity.trux-home-activity-change{
-  animation:truxHomeActivityChange .55s cubic-bezier(.22,.61,.36,1) both;
-}
-@keyframes truxHomeActivityChange{
-  0%{opacity:.1;transform:translateY(6px);filter:blur(2px)}
-  100%{opacity:1;transform:translateY(0);filter:blur(0)}
-}
-
 /* Incognito — same app shell/layout, but visibly isolated and never listed in history. */
 .trux-incognito-top{
   display:none;align-items:center;justify-content:center;gap:7px;
@@ -8939,32 +8826,6 @@ body.coding-workspace #truxCodeWorkspace.code-workspace-dismissed{
   display:none!important;
 }
 
-/* Visible smooth circular sweep, repeating every five seconds. */
-.trux-code-v2-mark::after{
-  content:""!important;
-  position:absolute!important;
-  inset:-16px!important;
-  width:auto!important;height:auto!important;
-  border-radius:50%!important;
-  border:2px solid transparent!important;
-  border-top-color:rgba(239,239,239,.85)!important;
-  border-right-color:rgba(239,239,239,.30)!important;
-  border-bottom-color:rgba(239,239,239,.08)!important;
-  background:transparent!important;
-  opacity:0!important;
-  filter:drop-shadow(0 0 4px rgba(255,255,255,.10))!important;
-  transform:rotate(-35deg)!important;
-  animation:truxCodeRingFive 5s cubic-bezier(.22,.61,.36,1) infinite!important;
-}
-@keyframes truxCodeRingFive{
-  0%{opacity:0;transform:rotate(-35deg)}
-  8%{opacity:.85}
-  32%{opacity:.55;transform:rotate(105deg)}
-  55%{opacity:.30;transform:rotate(230deg)}
-  72%{opacity:0;transform:rotate(325deg)}
-  100%{opacity:0;transform:rotate(325deg)}
-}
-
 /* No divider left behind between coding landing and coding transcript. */
 .coding-workspace #codeChatContainer{
   border-top:0!important;
@@ -8981,10 +8842,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
   display:block!important;
 }
 </style>
-<style id="trux-math-safe-20261006">
-.katex-display{max-width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;padding:2px 0!important;scrollbar-width:thin!important}
-.katex{max-width:100%!important}
-</style>
+
 <script>
 (function(){
   const oldSchedule=window.scheduleTruxMath;
