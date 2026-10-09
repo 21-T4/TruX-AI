@@ -30,7 +30,7 @@ async function persistWorkerFailure(body, env, error) {
         error: message,
         events: pushEvent(existing.events || [], {
           type: 'status',
-          tool: 'TruX-Code',
+          tool: String(body?.body?.mode || 'coding') === 'coding' ? 'TruX-Code' : 'TruX-AI',
           status: 'Background worker failed: ' + message
         }),
         updatedAt: Date.now()
