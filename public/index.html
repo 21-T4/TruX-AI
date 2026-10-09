@@ -8408,6 +8408,13 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         return;
         } catch(e) {
           if (row._backgroundHandover) return;
+          // The authoritative answer has already been rendered; a late stream
+          // close/error must not overwrite it with a false failure message.
+          if (finalizedOnFinal) {
+            activeStreamer = null;
+            activeAbortController = null;
+            return;
+          }
           if (isNetworkFailure(e) && isGenerating) {
             activeStreamer?.cancel();
             activeStreamer = null;
