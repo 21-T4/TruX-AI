@@ -8887,7 +8887,9 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       if(!notebook) return;
       store.setItem("trux_active_notebook", notebook.id);
       closeSidebar();
+      getEl("contextMenu").style.display = "none";
       document.body.classList.remove("home-active","chat-session-active","coding-workspace","plugins-page-active","incognito-mode");
+      document.body.removeAttribute("data-media-mode");
       document.body.classList.add("notebook-open");
       const welcome = getEl("welcomeScreen");
       if(welcome) welcome.style.display = "none";
