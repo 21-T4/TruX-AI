@@ -47,13 +47,17 @@ async function isJobStopped(job, env) {
 async function processJob(job, env) {
   const jobId = String(job?.jobId || '');
   if (!jobId) return;
+  const jobMode = ['chat', 'coding', 'deep-research'].includes(String(job?.body?.mode || ''))
+    ? String(job.body.mode)
+    : 'coding';
+  const activityLabel = jobMode === 'coding' ? 'TruX-Code' : 'TruX-AI';
 
   if (await isJobStopped(job, env)) return;
 
   let events = [{
     id: 1,
     type: 'status',
-    tool: 'TruX-Code',
+    tool: activityLabel,
     status: 'Thinking…'
   }];
 
@@ -67,7 +71,7 @@ async function processJob(job, env) {
 
     const body = {
       ...(job.body || {}),
-      mode: 'coding',
+      mode: jobMode,
       notifyOnComplete: true,
       backgroundJobId: jobId
     };
@@ -136,7 +140,7 @@ async function processJob(job, env) {
             events.push({
               id: ++seq,
               type: 'status',
-              tool: 'TruX-Code',
+              tool: activityLabel,
               text: piece,
               status: piece
             });
@@ -165,7 +169,7 @@ async function processJob(job, env) {
         events.push({
           id: ++seq,
           type: 'status',
-          tool: 'TruX-Code',
+          tool: activityLabel,
           status: String(event.status || '')
         });
         events = events.slice(-120);
@@ -235,7 +239,9 @@ async function processJob(job, env) {
     if (await isJobStopped(job, env)) return;
 
     if (!finalText.trim()) {
-      throw new Error('The model completed the coding tool phase but did not return a final response.');
+      throw new Error(jobMode === 'coding'
+        ? 'The model completed the coding tool phase but did not return a final response.'
+        : 'The model completed the request but did not return a final response.');
     }
 
     await updateJob(env, {
@@ -253,7 +259,7 @@ async function processJob(job, env) {
     events.push({
       id: events.length + 1,
       type: 'status',
-      tool: 'TruX-Code',
+      tool: activityLabel,
       status: 'Background run failed: ' + String(error?.message || 'Unknown error.')
     });
 
