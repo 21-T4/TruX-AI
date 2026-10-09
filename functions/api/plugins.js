@@ -1,11 +1,8 @@
-import { getCloudRunKv } from '../cloud-run-store.js';
 import { requireFirebaseUser } from '../firebase-auth.js';
 import {
   resolveAllPluginToolkits,
   listConnectedAccounts,
-  connectedToolkitSet,
   pluginDetailForResolved,
-  getEnabledPluginIds
 } from '../composio.js';
 
 export async function onRequestGet({ request, env }) {
@@ -16,13 +13,11 @@ export async function onRequestGet({ request, env }) {
 
     const resolved = await resolveAllPluginToolkits(env);
     const accounts = await listConnectedAccounts(env, userId);
-    const enabled = await getEnabledPluginIds(env, userId);
 
     return Response.json({
       configured: !!String(env.COMPOSIO_API_KEY || '').trim(),
-      plugins: resolved.map(item => pluginDetailForResolved(item, accounts, enabled)),
-      connectedCount: accounts.length,
-      enabledCount: enabled.length
+      plugins: resolved.map(item => pluginDetailForResolved(item, accounts)),
+      connectedCount: accounts.length
     });
   } catch (error) {
     return Response.json(
