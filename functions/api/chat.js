@@ -359,12 +359,12 @@ async function resolveTrustedChatIdentity(request, env, backgroundJobId = '') {
     const job = await getCloudRunKv(env).get('trux_background_job_' + jobId, 'json');
     if (!job || String(job.jobSecret || '') !== secret) return null;
 
-    const uid = String(job?.body?.userId || '').trim();
+    const uid = String(job?.userId || job?.body?.userId || '').trim();
     if (!uid) return null;
 
     return {
       uid,
-      email: String(job?.body?.userEmail || '')
+      email: String(job?.userEmail || job?.body?.userEmail || '')
     };
   } catch {
     return null;
