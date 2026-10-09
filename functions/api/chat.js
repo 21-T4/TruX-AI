@@ -1688,6 +1688,13 @@ export async function onRequestPost(context) {
         }
       }
 
+      // Ordinary Chat gets additional model-written, user-facing activity
+      // labels as the visible answer grows. These describe output progress only;
+      // they never expose private reasoning or block token delivery.
+      let streamedChatAnswerText = '';
+      let chatActivityLabelsQueued = 0;
+      let chatActivityQueue = Promise.resolve();
+
       let agentRound = 0;
       while (true) {
         if (await isBackgroundJobCancelled(env, backgroundJobId)) {
@@ -1749,12 +1756,36 @@ export async function onRequestPost(context) {
           const piece = String(text || '');
           if (!piece) return;
 
+          // Send the user's visible response immediately; prepare status labels
+          // off the hot path so they do not interrupt normal token streaming.
           send({ type: 'chunk', text: piece });
+
+          if (!codingMode && !researchMode && !explicitExternalAction && chatActivityLabelsQueued < 2) {
+            streamedChatAnswerText += piece;
+            const milestones = [220, 650];
+            if (streamedChatAnswerText.length >= milestones[chatActivityLabelsQueued]) {
+              const labelIndex = chatActivityLabelsQueued++;
+              const visibleLength = streamedChatAnswerText.length;
+              const excerpt = streamedChatAnswerText.slice(-240).replace(/\s+/g, ' ').trim();
+              const stage = labelIndex === 0
+                ? 'developing the explanation as the answer takes shape'
+                : 'refining the response around its key points';
+              const details = 'A regular Chat answer is actively streaming and has reached about ' +
+                visibleLength + ' characters. Latest visible answer excerpt: ' + excerpt;
+              chatActivityQueue = chatActivityQueue
+                .then(() => emitAiActivity(stage, details))
+                .catch(() => '');
+            }
+          }
         },
         onStatus: async status => {
           send({ type: 'status', status });
         }
         });
+
+        // Keep SSE open for any Chat activity label that was already requested;
+        // short answers never queue these extra labels and add no delay here.
+        if (chatActivityLabelsQueued) await chatActivityQueue;
 
         lastModelResult = result;
 
