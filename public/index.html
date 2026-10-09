@@ -7319,49 +7319,67 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     }
 
     function ensureBackgroundRow(chatId) {
-      if (chatId !== currentChatId || workspaceMode !== "coding") return null;
+      const session = chatSessions[chatId];
+      const codingSession = String(session?.mode || "chat") === "coding";
+      if (chatId !== currentChatId || (codingSession ? workspaceMode !== "coding" : workspaceMode === "coding")) return null;
       const chatContainer = getActiveChatContainer();
       if (!chatContainer) return null;
+      const jobId = String(session?.activeBackgroundJobId || "");
+      if (!jobId) return null;
 
       const existing = Array.from(chatContainer.querySelectorAll(".row.trux-row"))
-        .find(row => row.dataset.backgroundJobId === String(chatSessions[chatId]?.activeBackgroundJobId || ""));
-      if (existing) return existing;
-
-      const jobId = String(chatSessions[chatId]?.activeBackgroundJobId || "");
-      if (!jobId) return null;
+        .find(row => row.dataset.backgroundJobId === jobId);
+      if (existing) {
+        return {
+          row: existing,
+          id: existing.querySelector(".trux-bubble")?.id || "",
+          sid: existing.querySelector(".status-msg")?.id || "",
+          tsid: existing.querySelector(".trux-thinking-details")?.id || "",
+          aid: existing.querySelector(".actions")?.id || "",
+          thid: existing.querySelector(".trux-thinking-panel")?.id || ""
+        };
+      }
 
       const id = "bg_b_" + Date.now() + "_" + Math.random().toString(36).slice(2);
       const sid = "bg_s_" + Date.now() + "_" + Math.random().toString(36).slice(2);
       const tsid = "bg_ts_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+      const aid = "bg_a_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+      const thid = "bg_th_" + Date.now() + "_" + Math.random().toString(36).slice(2);
       const row = document.createElement("div");
       row.className = "row trux-row appear";
       row.dataset.backgroundJobId = jobId;
-       const thid = "bg_th_" + Date.now() + "_" + Math.random().toString(36).slice(2);
-       row.innerHTML =
-         '<div class="trux-response-stack">' +
-           '<div class="trux-thinking-panel" id="' + thid + '">' +
-             '<div class="trux-thinking-bar">' +
-               '<span class="trux-thinking-spark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 1.5C13.45 7.95 16.05 10.55 22.5 12C16.05 13.45 13.45 16.05 12 22.5C10.55 16.05 7.95 13.45 1.5 12C7.95 10.55 10.55 7.95 12 1.5Z"/></svg></span>' +
-               '<div class="trux-thinking-copy"><span class="trux-thinking-kicker">AI ACTIVITY</span><span class="status-msg" id="' + sid + '" role="status" aria-live="polite"><span class="thinking-status-line compact"></span><span class="thinking-status-line full"></span></span></div>' +
-               '<span class="trux-thinking-elapsed" id="elapsed_' + id + '">Working for 00:00</span>' +
-               '<button type="button" class="trux-thinking-toggle" onclick="toggleThinkingDetails(\'' + thid + '\')" aria-expanded="false" aria-label="Expand AI activity" title="Expand AI activity"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>' +
-             '</div>' +
-             '<div class="trux-thinking-details" id="' + tsid + '" hidden></div>' +
-           '</div>' +
-           '<div class="bubble trux-bubble thinking" id="' + id + '"></div>' +
-           '<div class="actions"></div>' +
-         '</div>';
-
+      const spark = '<span class="trux-thinking-spark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 1.5C13.45 7.95 16.05 10.55 22.5 12C16.05 13.45 13.45 16.05 12 22.5C10.55 16.05 7.95 12 1.5 12C7.95 10.55 10.55 7.95 12 1.5Z"/></svg></span>';
+      const toggle = codingSession
+        ? '<button type="button" class="trux-thinking-toggle" aria-expanded="false" aria-label="Expand AI activity" title="Expand AI activity"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>'
+        : "";
+      row.innerHTML =
+        '<div class="trux-response-stack">' +
+          '<div class="trux-thinking-panel" id="' + thid + '" data-thinking-visible="true">' +
+            '<span class="trux-thinking-elapsed ' + (codingSession ? "" : "chat-thinking-elapsed") + '" id="elapsed_' + id + '">' + (codingSession ? "Working for 00:00" : "") + '</span>' +
+            '<div class="trux-thinking-bar">' + spark +
+              '<div class="trux-thinking-copy"><span class="status-msg" id="' + sid + '" role="status" aria-live="polite"><span class="thinking-status-line compact"></span><span class="thinking-status-line full"></span></span></div>' +
+              toggle +
+            '</div>' +
+            '<div class="trux-thinking-details" id="' + tsid + '" hidden></div>' +
+          '</div>' +
+          (codingSession ? '<div class="trux-terminal-window" data-trux-terminal-window hidden></div>' : '') +
+          '<div class="bubble trux-bubble thinking" id="' + id + '"></div>' +
+          '<div class="actions" id="' + aid + '"></div>' +
+        '</div>';
       chatContainer.appendChild(row);
+      if (codingSession) {
+        const button = row.querySelector(".trux-thinking-toggle");
+        if (button) button.onclick = () => toggleThinkingDetails(thid);
+      }
       chatContainer.scrollTop = chatContainer.scrollHeight;
-      row._startedAt = Date.now();
-
+      row._startedAt = Number(session?.backgroundStartedAt || 0) || Date.now();
       const elapsedEl = getEl("elapsed_" + id);
-      row._elapsedTimer = setInterval(() => {
-        if (elapsedEl) elapsedEl.innerText = "Working for " + formatThinkingClock(Date.now() - row._startedAt);
-      }, 1000);
-
-      return { row, id, sid, tsid };
+      if (codingSession) {
+        row._elapsedTimer = setInterval(() => {
+          if (elapsedEl) elapsedEl.innerText = "Working for " + formatThinkingClock(Date.now() - row._startedAt);
+        }, 1000);
+      }
+      return { row, id, sid, tsid, aid, thid };
     }
 
     async function commitBackgroundResult(chatId, jobId, finalText, proposal) {
