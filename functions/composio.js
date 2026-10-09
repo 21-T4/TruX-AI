@@ -245,13 +245,7 @@ async function createReconnectUrl(env, userId, toolkitSlug, callbackUrl) {
   }
 }
 
-export function pluginDetailForResolved(resolved, connectedAccounts, enabledIds) {
-  const connectedSlugs = new Set(
-    (Array.isArray(connectedAccounts) ? connectedAccounts : [])
-      .map(account => account?.toolkit?.slug || account?.toolkit_slug || '')
-      .filter(Boolean)
-      .map(String)
-  );
+export function pluginDetailForResolved(resolved, connectedAccounts) {
   const plugin = resolved.plugin;
   const detail = resolved.detail;
   const actualSlug = resolved.slug || '';
@@ -617,21 +611,6 @@ export async function executeComposioTool(env, userId, toolSlug, args, metadata 
 
     throw error;
   }
-}
-
-export async function getEnabledPluginIds(env, userId) {
-  if (!userId) return [];
-  const kv = (await import('./cloud-run-store.js')).getCloudRunKv(env);
-  const data = await kv.get('trux_composio_plugins_' + userId, 'json').catch(() => []);
-  return Array.isArray(data) ? data : [];
-}
-
-export async function setEnabledPluginIds(env, userId, pluginIds) {
-  const kv = (await import('./cloud-run-store.js')).getCloudRunKv(env);
-  const allowed = new Set(PLUGIN_CATALOG.map(plugin => plugin.id));
-  const clean = [...new Set((Array.isArray(pluginIds) ? pluginIds : []).map(String).filter(id => allowed.has(id)))];
-  await kv.put('trux_composio_plugins_' + userId, JSON.stringify(clean));
-  return clean;
 }
 
 export function getPluginById(id) {
