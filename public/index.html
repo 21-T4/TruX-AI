@@ -1037,6 +1037,26 @@
       min-height:0;gap:9px;padding:0;overflow:visible;
     }
     .trux-thinking-bar::before,.trux-thinking-bar::after{display:none!important}
+    .trux-thinking-spark{
+      position:relative;isolation:isolate;display:grid;place-items:center;flex:0 0 20px;
+      width:20px;height:20px;overflow:visible;color:#d8d7d2;
+    }
+    .trux-thinking-spark::before{
+      content:"";position:absolute;inset:1px;border:1px dotted rgba(220,220,215,.42);
+      border-radius:50%;opacity:.3;transform:scale(.78);
+      animation:truxThinkingOrbit 3.8s cubic-bezier(.22,.61,.36,1) infinite;
+    }
+    .trux-thinking-spark::after{
+      content:"";position:absolute;top:1px;left:calc(50% - 1px);width:2px;height:2px;
+      border-radius:50%;background:#fff;box-shadow:0 0 7px 2px rgba(235,239,255,.58);
+      transform-origin:1px 9px;opacity:.28;
+      animation:truxThinkingOrbitDot 3.8s cubic-bezier(.22,.61,.36,1) infinite;
+    }
+    .trux-thinking-spark svg{
+      position:relative;z-index:1;width:16px;height:16px;display:block;overflow:visible;
+      fill:currentColor;transform-origin:50% 50%;
+      animation:truxThinkingStarTurn 3.8s cubic-bezier(.22,.61,.36,1) infinite;
+    }
     .trux-thinking-copy{
       position:relative;min-width:0;display:flex;align-items:center;gap:0;
       overflow:visible;flex:0 1 auto;padding:0;margin:0;
@@ -1047,7 +1067,7 @@
     .trux-thinking-panel .status-msg{
       position:relative;min-width:0;min-height:0;display:block;width:auto;max-width:100%;
       margin:0;padding:0;border:0;border-radius:0;background:transparent;color:transparent;
-      font:500 19px/1.42 var(--font-body);letter-spacing:0;
+      font:500 18px/1.42 var(--font-body);letter-spacing:0;
       white-space:nowrap;overflow:visible;text-overflow:clip;box-shadow:none;
     }
     .thinking-status-line{
@@ -1127,6 +1147,24 @@
       27.27%{background-position:0% 50%}
       27.28%,100%{background-position:0% 50%}
     }
+    @keyframes truxThinkingStarTurn{
+      0%{transform:rotate(0deg) scale(.92);filter:drop-shadow(0 0 0 rgba(235,239,255,0))}
+      25%{transform:rotate(180deg) scale(1.14);filter:drop-shadow(0 0 7px rgba(235,239,255,.72))}
+      42%{transform:rotate(360deg) scale(1);filter:drop-shadow(0 0 3px rgba(235,239,255,.35))}
+      42.01%,100%{transform:rotate(360deg) scale(1);filter:drop-shadow(0 0 1px rgba(235,239,255,.12))}
+    }
+    @keyframes truxThinkingOrbit{
+      0%{transform:rotate(0deg) scale(.76);opacity:.12}
+      25%{transform:rotate(180deg) scale(1.08);opacity:.76}
+      42%{transform:rotate(360deg) scale(.84);opacity:.24}
+      42.01%,100%{transform:rotate(360deg) scale(.84);opacity:.24}
+    }
+    @keyframes truxThinkingOrbitDot{
+      0%{transform:rotate(0deg);opacity:.3}
+      25%{transform:rotate(180deg);opacity:1}
+      42%{transform:rotate(360deg);opacity:.28}
+      42.01%,100%{transform:rotate(360deg);opacity:.28}
+    }
     @media (max-width:700px){
       .trux-thinking-bar{gap:7px;min-height:0}
       .status-msg{font-size:18px}
@@ -1135,7 +1173,7 @@
       .thinking-status-line.full{line-height:1.45}
     }
     @media (prefers-reduced-motion:reduce){
-      .thinking-status-line.compact,.thinking-status-line.full{animation:none!important;filter:none!important;transform:none!important}
+      .thinking-status-line.compact,.thinking-status-line.full,.trux-thinking-spark::before,.trux-thinking-spark::after,.trux-thinking-spark svg{animation:none!important;filter:none!important;transform:none!important}
     }
 
     /* ---------- streaming ---------- */
@@ -7169,6 +7207,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
          '<div class="trux-response-stack">' +
            '<div class="trux-thinking-panel" id="' + thid + '">' +
              '<div class="trux-thinking-bar">' +
+               '<span class="trux-thinking-spark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 1.5C13.45 7.95 16.05 10.55 22.5 12C16.05 13.45 13.45 16.05 12 22.5C10.55 16.05 7.95 13.45 1.5 12C7.95 10.55 10.55 7.95 12 1.5Z"/></svg></span>' +
                '<div class="trux-thinking-copy"><span class="trux-thinking-kicker">AI ACTIVITY</span><span class="status-msg" id="' + sid + '" role="status" aria-live="polite"><span class="thinking-status-line compact">Tracing the task…</span><span class="thinking-status-line full">Tracing the task…</span></span></div>' +
                '<span class="trux-thinking-elapsed" id="elapsed_' + id + '">Working for 00:00</span>' +
                '<button type="button" class="trux-thinking-toggle" onclick="toggleThinkingDetails(\'' + thid + '\')" aria-expanded="false" aria-label="Expand AI activity" title="Expand AI activity"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>' +
@@ -7972,6 +8011,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       const thinkingMarkup = `
         <div class="trux-thinking-panel" id="${thid}" data-thinking-visible="true">
           <div class="trux-thinking-bar">
+            <span class="trux-thinking-spark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 1.5C13.45 7.95 16.05 10.55 22.5 12C16.05 13.45 13.45 16.05 12 22.5C10.55 16.05 7.95 13.45 1.5 12C7.95 10.55 10.55 7.95 12 1.5Z"/></svg></span>
             <div class="trux-thinking-copy"><span class="status-msg" id="${sid}" role="status" aria-live="polite"><span class="thinking-status-line compact">Understanding the request…</span><span class="thinking-status-line full">Understanding the request…</span><span class="thinking-status-line thought-summary" id="thought_${sid}" hidden></span></span></div>
             <span class="trux-thinking-elapsed ${codingTurn ? "" : "chat-thinking-elapsed"}" id="elapsed_${id}">${codingTurn ? "Working for 00:00" : ""}</span>
             ${codingTurn ? `<button type="button" class="trux-thinking-toggle" onclick="toggleThinkingDetails('${thid}')" aria-expanded="false" aria-label="Expand AI activity" title="Expand AI activity"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>` : ""}
