@@ -18,12 +18,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="ChatTruX-AI">
   
-  <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700,900&f[]=cabinet-grotesk@700,800&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Source+Serif+4:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- KaTeX: real math rendering happens in the browser. -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.18.7/dist/katex.min.css" integrity="sha384-JctiRyLzXCrSoOOzFlSoWLdyzQl7OrrRnhyeBmzB6ZWtcjccUyc8lCQJqIbs3uQX" crossorigin="anonymous">
@@ -77,8 +74,8 @@
       --ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
       --safe-b:    env(safe-area-inset-bottom, 0px);
 
-      --font-body: 'Satoshi', 'Inter', system-ui, sans-serif;
-      --font-disp: 'Cabinet Grotesk', 'Satoshi', system-ui, sans-serif;
+      --font-body: 'Manrope', system-ui, sans-serif;
+      --font-disp: 'Manrope', 'Manrope', system-ui, sans-serif;
       --font-mono: 'JetBrains Mono', ui-monospace, monospace;
     }
 
@@ -1013,110 +1010,118 @@
       animation: pulseDot 1.4s var(--ease) infinite;
     }
 
-    /* ---------- AI activity / thinking : floating text ---------- */
+    /* AI activity / thinking — one source of truth, with a periodic metallic wave. */
     .trux-thinking-panel{
-      position:relative;width:min(100%,820px);margin:5px 0 8px;
+      position:relative;width:100%;margin:2px 0 7px;padding:0;
       display:flex;flex-direction:column;align-items:flex-start;color:var(--txt);
       contain:layout paint;pointer-events:none;
-      transition:opacity .24s var(--ease),transform .28s var(--ease-out);
     }
-    .trux-thinking-panel.thinking-dismissed{opacity:0;transform:translateY(-4px)}
+    .trux-thinking-panel.thinking-dismissed{display:none!important}
+    .trux-thinking-panel,
+    .trux-thinking-bar,
+    .trux-thinking-copy,
+    .trux-thinking-details,
+    .trux-thinking-elapsed,
+    .trux-thinking-panel .thinking-container{
+      background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;
+    }
     .trux-thinking-bar{
       position:relative;z-index:1;display:flex;align-items:center;width:100%;
-      min-height:30px;gap:12px;padding:2px 0;overflow:visible;
+      min-height:28px;gap:9px;padding:0;overflow:visible;
     }
+    .trux-thinking-bar::before,.trux-thinking-bar::after{display:none!important}
     .trux-thinking-copy{
       position:relative;min-width:0;display:flex;align-items:center;gap:0;
-      overflow:visible;flex:1 1 auto;
+      overflow:visible;flex:1 1 auto;padding:0;margin:0;
     }
     .trux-thinking-kicker{display:none!important}
     .status-msg{
-      min-width:0;display:block;margin:0;padding:0;border:0;background:none;
-      color:#84807a;font:560 14px/1.35 var(--font-body);letter-spacing:-.012em;
-      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:none;
+      position:relative;min-width:0;display:block;width:auto;max-width:100%;
+      margin:0;padding:0;border:0;background:transparent;color:transparent;
+      font:560 17px/1.4 var(--font-body);letter-spacing:-.005em;
+      white-space:nowrap;overflow:visible;text-overflow:clip;box-shadow:none;
     }
     .thinking-status-line{
-      display:none;max-width:100%;will-change:transform,opacity,background-position;
+      display:none;max-width:100%;margin:0;padding:0;
+      will-change:background-position,transform,filter;
     }
-    .thinking-status-line.compact{
-      display:inline-block;color:transparent;
-      background:linear-gradient(110deg,#605d58 0%,#858079 24%,#e7e2da 49%,#8e8a82 72%,#5b5853 100%);
-      background-size:250% 100%;-webkit-background-clip:text;background-clip:text;
-      -webkit-text-fill-color:transparent;
-      animation:truxThinkingFloat 4.8s cubic-bezier(.22,.61,.36,1) infinite,
-                 truxThinkingShine 5.8s linear infinite;
+    .thinking-status-line.compact,
+    .thinking-status-line.full{
+      color:transparent;
+      background:linear-gradient(108deg,
+        #5d5a54 0%,#79766e 13%,#b8b3a8 25%,#f8f5ec 32%,
+        #d4cfc4 38%,#77736b 48%,#aaa59b 59%,#fffaf0 65%,
+        #c5c0b5 72%,#77736c 84%,#5b5852 100%);
+      background-size:280% 100%;background-position:220% 50%;
+      -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+      animation:truxMetallicWave 2s cubic-bezier(.22,.61,.36,1) infinite;
+      transform-origin:center;
     }
-    .thinking-status-line.full{display:none;color:transparent;
-      background:linear-gradient(110deg,#66635e 0%,#a19b94 24%,#f0ece5 49%,#8c8780 73%,#5d5954 100%);
-      background-size:250% 100%;-webkit-background-clip:text;background-clip:text;
-      -webkit-text-fill-color:transparent;
-      animation:truxThinkingFloat 4.8s cubic-bezier(.22,.61,.36,1) infinite,
-                 truxThinkingShine 5.8s linear infinite;
-    }
+    .thinking-status-line.compact{display:inline-block}
+    .thinking-status-line.full{display:none}
     .trux-thinking-panel.expanded .thinking-status-line.compact{display:none}
     .trux-thinking-panel.expanded .thinking-status-line.full{
       display:inline-block;white-space:normal;overflow-wrap:anywhere;
     }
+    .chat-thinking-elapsed{display:none!important}
     .trux-thinking-elapsed{
-      position:relative;flex:0 0 auto;color:#5e5b56;
-      font:600 10px/1 var(--font-mono);font-variant-numeric:tabular-nums;
-      letter-spacing:.055em;white-space:nowrap;
+      position:relative;flex:0 0 auto;min-width:0;padding:0;margin:0;color:#77736b;
+      font:500 11px/1 var(--font-body);font-variant-numeric:tabular-nums;
+      letter-spacing:.02em;white-space:nowrap;
     }
     .trux-thinking-toggle{
       pointer-events:auto;position:relative;flex:0 0 auto;width:22px;height:22px;
-      display:grid;place-items:center;padding:0;border:0;border-radius:50%;
-      background:transparent;color:#65615c;cursor:pointer;opacity:.82;
+      display:grid;place-items:center;margin:0;padding:0;border:0;border-radius:50%;
+      background:transparent;color:#77736b;cursor:pointer;opacity:.82;
       transition:color .2s var(--ease),transform .2s var(--ease),opacity .2s var(--ease);
     }
-    .trux-thinking-toggle:hover{color:#aaa59d;opacity:1}
+    .trux-thinking-toggle:hover{color:#c5c0b7;opacity:1}
     .trux-thinking-toggle:active{transform:scale(.9)}
     .trux-thinking-toggle svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.65;
       stroke-linecap:round;stroke-linejoin:round;transition:transform .35s var(--ease-out)}
     .trux-thinking-panel.expanded .trux-thinking-toggle svg{transform:rotate(180deg)}
     .trux-thinking-details{
-      width:min(760px,100%);display:flex;flex-direction:column;gap:4px;max-height:300px;
-      margin:2px 0 0 2px;padding:4px 0 5px 14px;overflow:auto;
-      border-left:1px solid rgba(255,255,255,.055);pointer-events:auto;
-      scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.11) transparent;
+      width:min(760px,100%);display:flex;flex-direction:column;gap:5px;max-height:300px;
+      margin:3px 0 0;padding:3px 0 4px 13px;overflow:auto;
+      pointer-events:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.11) transparent;
     }
     .trux-thinking-details[hidden]{display:none!important}
+    .trux-thinking-details::-webkit-scrollbar{width:5px}
     .thinking-status-step,.thinking-tool-item{
-      position:relative;display:block;padding:1px 0 1px 11px;color:#65615c;
-      font:500 11.5px/1.5 var(--font-body);letter-spacing:0;
+      position:relative;display:block;padding:1px 0 1px 11px;color:#77736b;
+      font:500 13px/1.5 var(--font-body);letter-spacing:0;
       white-space:normal;overflow-wrap:anywhere;
     }
     .thinking-status-step::before,.thinking-tool-item::before{
       content:"";position:absolute;left:0;top:.8em;width:3px;height:3px;border-radius:50%;
-      background:#5f5b56;opacity:.8;
+      background:#77736b;opacity:.8;
     }
-    .thinking-tool-item.active{color:#77736e}
-    .thinking-tool-item.completed{color:#5b5752}
-    .thinking-tool-item.failed{color:#817b73}
+    .thinking-tool-item.active{color:#aaa59b}
+    .thinking-tool-item.completed{color:#77736b}
+    .thinking-tool-item.failed{color:#8e8880}
     .thinking-tool-head{display:block;color:inherit}
     .thinking-tool-meta,.thinking-tool-result{
-      display:block;margin-top:1px;color:#4e4b47;font:480 10px/1.4 var(--font-mono);overflow-wrap:anywhere;
+      display:block;margin-top:2px;color:#77736b;
+      font:500 11.5px/1.4 var(--font-body);overflow-wrap:anywhere;
     }
-    .thinking-tool-result{color:#595550}
+    .thinking-tool-result{color:#aaa59b}
     .thinking-container{display:block;width:100%;padding:0;background:none!important;border:0!important;box-shadow:none!important}
-    @keyframes truxThinkingFloat{
-      0%,100%{transform:translate3d(0,0,0);opacity:.72}
-      24%{transform:translate3d(.15px,-.55px,0);opacity:.88}
-      49%{transform:translate3d(-.25px,-1.35px,0);opacity:1}
-      76%{transform:translate3d(.18px,-.38px,0);opacity:.84}
-    }
-    @keyframes truxThinkingShine{
-      0%{background-position:225% 0}
-      100%{background-position:-45% 0}
+    @keyframes truxMetallicWave{
+      0%,8%{background-position:220% 50%;transform:translate3d(0,0,0) skewX(0deg);filter:brightness(.92)}
+      18%{background-position:132% 50%;transform:translate3d(0,-.55px,0) skewX(-.55deg);filter:brightness(1.02)}
+      29%{background-position:28% 50%;transform:translate3d(0,.25px,0) skewX(.35deg);filter:brightness(1.16)}
+      40%{background-position:-65% 50%;transform:translate3d(0,0,0) skewX(0deg);filter:brightness(1)}
+      41%,100%{background-position:-65% 50%;transform:none;filter:none}
     }
     @media (max-width:700px){
-      .trux-thinking-bar{gap:8px;min-height:28px}
-      .status-msg{font-size:13px}
-      .trux-thinking-elapsed{font-size:9px}
+      .trux-thinking-bar{gap:8px;min-height:26px}
+      .status-msg{font-size:16px}
+      .trux-thinking-elapsed{font-size:10px}
       .trux-thinking-toggle{width:20px;height:20px}
       .thinking-status-line.full{line-height:1.45}
     }
     @media (prefers-reduced-motion:reduce){
-      .thinking-status-line.compact,.thinking-status-line.full{animation:none!important}
+      .thinking-status-line.compact,.thinking-status-line.full{animation:none!important;filter:none!important;transform:none!important}
     }
 
     /* ---------- streaming ---------- */
@@ -2333,8 +2338,8 @@
       --acc-3:     #7d612e;
       --acc-soft:  rgba(213,185,106,0.14);
       --acc-line:  rgba(213,185,106,0.42);
-      --font-body: 'Manrope', 'Satoshi', 'Inter', system-ui, sans-serif;
-      --font-disp: 'Source Serif 4', 'Georgia', serif;
+      --font-body: 'Manrope', system-ui, sans-serif;
+      --font-disp: 'Manrope', system-ui, sans-serif;
     }
 
     html, body { background: var(--bg); }
@@ -2366,7 +2371,7 @@
     }
 
     .trux-bubble {
-      font-family: 'Source Serif 4', 'Georgia', serif;
+      font-family: var(--font-disp);
       color: var(--txt);
       font-size: clamp(18.5px, 1.25vw, 21px);
       font-weight: 500;
@@ -2381,7 +2386,7 @@
     .trux-bubble h3,
     .trux-bubble h4,
     .welcome-title {
-      font-family: 'Source Serif 4', 'Georgia', serif;
+      font-family: var(--font-disp);
     }
     .trux-bubble h1 { font-size: 29px; }
     .trux-bubble h2 { font-size: 25px; }
@@ -3215,7 +3220,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     max-width:min(820px,88vw);
     margin-top:5px!important;
     color:var(--txt-3)!important;
-    font:500 11.5px/1.5 var(--font-mono)!important;
+    font:500 14px/1.5 var(--font-body)!important;
     white-space:pre-wrap!important;
     max-height:72px;
     overflow:auto;
@@ -3580,14 +3585,7 @@ body.incognito-mode .topbar{grid-template-columns:minmax(46px,1fr) auto minmax(4
 .incognito-session-banner small{color:#626262;font-size:10px}
 
 
-/* Floating AI activity — deliberately no container/box. */
-.trux-thinking-panel{background:transparent!important;border:0!important;box-shadow:none!important}
-.trux-thinking-bar{background:transparent!important;border:0!important;box-shadow:none!important}
-.trux-thinking-bar::before,.trux-thinking-bar::after{display:none!important}
-.trux-thinking-copy{overflow:visible!important}
-.trux-thinking-elapsed{background:transparent!important}
-.trux-thinking-details{background:transparent!important;box-shadow:none!important}
-.trux-thinking-details::-webkit-scrollbar{width:5px}
+
 
 /* Sidebar brand — compact mark, stacked copy, no collision. */
 .sidebar-header{min-width:0!important;gap:14px!important;padding:2px 0 18px!important}
@@ -3713,66 +3711,7 @@ body.chat-session-active:not(.coding-workspace) #codeChatContainer{display:none!
 }
 .trux-home-logo[hidden]{display:none!important}
 
-/* Thinking is floating text only. Remove all legacy pill/card treatment. */
-.trux-thinking-panel,
-.trux-thinking-bar,
-.trux-thinking-copy,
-.trux-thinking-details,
-.trux-thinking-elapsed,
-.trux-thinking-panel .thinking-container{
-  background:transparent!important;
-  border:0!important;
-  border-radius:0!important;
-  box-shadow:none!important;
-}
-.trux-thinking-panel{
-  width:100%!important;
-  margin:2px 0 7px!important;
-  padding:0!important;
-}
-.trux-thinking-bar{
-  min-height:22px!important;
-  width:100%!important;
-  gap:9px!important;
-  padding:0!important;
-}
-.trux-thinking-copy{
-  flex:1 1 auto!important;
-  min-width:0!important;
-  padding:0!important;
-  margin:0!important;
-}
-.status-msg{
-  min-height:0!important;
-  display:block!important;
-  width:auto!important;
-  max-width:100%!important;
-  margin:0!important;
-  padding:0!important;
-  border:0!important;
-  border-radius:0!important;
-  background:transparent!important;
-  color:transparent!important;
-  font:560 13px/1.35 var(--font-body)!important;
-  letter-spacing:-.012em!important;
-  overflow:visible!important;
-  text-overflow:clip!important;
-  white-space:nowrap!important;
-  box-shadow:none!important;
-}
-.thinking-status-line{margin:0!important;padding:0!important}
-.chat-thinking-elapsed{display:none!important}
-.trux-thinking-elapsed{flex:0 0 auto!important;min-width:0!important;padding:0!important;margin:0!important;font-size:9px!important}
-.trux-thinking-details{
-  width:min(760px,100%)!important;
-  margin:3px 0 0!important;
-  padding:3px 0 4px 13px!important;
-}
-.trux-thinking-toggle{
-  width:20px!important;height:20px!important;margin:0!important;padding:0!important;
-  border:0!important;background:transparent!important;box-shadow:none!important;
-}
-.trux-thinking-panel.thinking-dismissed{display:none!important}
+
 
 /* Restore the small blue decorative lines flanking the selected model name. */
 #modelPickerBtn{
