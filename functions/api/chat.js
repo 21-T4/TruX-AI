@@ -8,7 +8,6 @@ import { getCloudRunKv } from '../cloud-run-store.js';
 import { requireFirebaseUser } from '../firebase-auth.js';
 import { getProcessedText } from '../gcs-store.js';
 import {
-  getEnabledPluginIds,
   listConnectedAccounts,
   PLUGIN_CATALOG,
   getComposioGeminiTools,
@@ -1444,8 +1443,8 @@ export async function onRequestPost(context) {
 
       let composioToolMetadata = new Map();
       let composioToolDeclarations = [];
-      let enabledComposioPluginIds = [];
-      let enabledComposioToolkitSlugs = [];
+      let requestedComposioPluginIds = [];
+      let requestedComposioToolkitSlugs = [];
       let composioPluginConfigError = null;
 
       const shouldLoadComposioTools =
@@ -1466,17 +1465,15 @@ export async function onRequestPost(context) {
             .filter(plugin => plugin.slugs.some(slug => activeToolkitSlugs.has(String(slug))))
             .map(plugin => plugin.id);
 
-          // Do not depend on the legacy "enabled" KV flag. A successfully
-          // connected account is enough; explicitExternalAction is the gate
-          // that prevents unsolicited plugin usage.
-          const legacyEnabled = await getEnabledPluginIds(env, effectiveUserId);
-          enabledComposioPluginIds = selectRequestedPluginIds(
-            [...new Set([...connectedPluginIds, ...legacyEnabled])],
+          // Connected Composio accounts are the source of truth. The explicit
+          // action gate above prevents unsolicited plugin usage.
+          requestedComposioPluginIds = selectRequestedPluginIds(
+            connectedPluginIds,
             message,
             { codingMode }
           );
           const resolved = await Promise.all(
-            enabledComposioPluginIds.map(async pluginId => {
+            requestedComposioPluginIds.map(async pluginId => {
               const plugin = getPluginById(pluginId);
               if (!plugin) return null;
               try {
@@ -1487,15 +1484,15 @@ export async function onRequestPost(context) {
               }
             })
           );
-          enabledComposioToolkitSlugs = [...new Set(resolved.filter(Boolean))];
+          requestedComposioToolkitSlugs = [...new Set(resolved.filter(Boolean))];
 
-          if (enabledComposioToolkitSlugs.length) {
+          if (requestedComposioToolkitSlugs.length) {
             send({
               type: 'status',
-              status: 'Loading ' + enabledComposioToolkitSlugs.length + ' connected plugin' +
-                (enabledComposioToolkitSlugs.length === 1 ? '' : 's') + '…'
+              status: 'Loading ' + requestedComposioToolkitSlugs.length + ' connected plugin' +
+                (requestedComposioToolkitSlugs.length === 1 ? '' : 's') + '…'
             });
-            const composioTools = await getComposioGeminiTools(env, enabledComposioToolkitSlugs, message);
+            const composioTools = await getComposioGeminiTools(env, requestedComposioToolkitSlugs, message);
             composioToolDeclarations = composioTools.declarations || [];
             composioToolMetadata = composioTools.metadata || new Map();
           }
@@ -1526,7 +1523,7 @@ export async function onRequestPost(context) {
         !composioToolDeclarations.length
       ) {
         const messageText =
-          enabledComposioPluginIds.length
+          requestedComposioPluginIds.length
             ? 'TruX could not load an executable action from the connected integration. Please reconnect that integration and try again.'
             : 'TruX could not find an active connected integration for this request. Connect the requested app in Plugins, then try again.';
         send({
