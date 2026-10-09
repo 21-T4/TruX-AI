@@ -1429,7 +1429,7 @@ export async function onRequestPost(context) {
       // Model-written labels describe real stages; show a visible Chat status
       // immediately while the first generated label is being prepared.
       const initialChatActivity = (!codingMode && !researchMode)
-        ? 'Understanding your request'
+        ? 'Thinking'
         : '';
       const generatedActivityLabels = initialChatActivity ? [initialChatActivity] : [];
       const initialActivityKey = initialChatActivity.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
