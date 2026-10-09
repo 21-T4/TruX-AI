@@ -1042,20 +1042,26 @@
       width:20px;height:20px;overflow:visible;color:#d8d7d2;
     }
     .trux-thinking-spark::before{
-      content:"";position:absolute;inset:1px;border:1px dotted rgba(220,220,215,.42);
-      border-radius:50%;opacity:.3;transform:scale(.78);
-      animation:truxThinkingOrbit 3.8s cubic-bezier(.22,.61,.36,1) infinite;
+      content:"";position:absolute;inset:-3px;border-radius:50%;
+      background:conic-gradient(from 0deg,
+        rgba(134,151,255,0) 0deg,#8e9eff 62deg,#7adbf0 154deg,
+        #b9a0ff 246deg,rgba(134,151,255,0) 332deg,rgba(134,151,255,0) 360deg);
+      -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 1.5px),#000 calc(100% - .75px));
+      mask:radial-gradient(farthest-side,transparent calc(100% - 1.5px),#000 calc(100% - .75px));
+      opacity:0;transform:rotate(0deg) scale(.62);
+      filter:drop-shadow(0 0 3px rgba(145,157,255,.24));
+      animation:truxThinkingOrbit 2s cubic-bezier(.22,.61,.36,1) infinite;
     }
     .trux-thinking-spark::after{
-      content:"";position:absolute;top:1px;left:calc(50% - 1px);width:2px;height:2px;
+      content:"";position:absolute;top:-3px;left:calc(50% - 1px);width:2px;height:2px;
       border-radius:50%;background:#fff;box-shadow:0 0 7px 2px rgba(235,239,255,.58);
-      transform-origin:1px 9px;opacity:.28;
-      animation:truxThinkingOrbitDot 3.8s cubic-bezier(.22,.61,.36,1) infinite;
+      transform-origin:1px 13px;opacity:0;
+      animation:truxThinkingOrbitDot 2s cubic-bezier(.22,.61,.36,1) infinite;
     }
     .trux-thinking-spark svg{
       position:relative;z-index:1;width:16px;height:16px;display:block;overflow:visible;
       fill:currentColor;transform-origin:50% 50%;
-      animation:truxThinkingStarTurn 3.8s cubic-bezier(.22,.61,.36,1) infinite;
+      animation:truxThinkingStarTurn 2s cubic-bezier(.22,.61,.36,1) infinite;
     }
     .trux-thinking-copy{
       position:relative;min-width:0;display:flex;align-items:center;gap:0;
@@ -1148,22 +1154,29 @@
       27.28%,100%{background-position:0% 50%}
     }
     @keyframes truxThinkingStarTurn{
-      0%{transform:rotate(0deg) scale(.92);filter:drop-shadow(0 0 0 rgba(235,239,255,0))}
-      25%{transform:rotate(180deg) scale(1.14);filter:drop-shadow(0 0 7px rgba(235,239,255,.72))}
-      42%{transform:rotate(360deg) scale(1);filter:drop-shadow(0 0 3px rgba(235,239,255,.35))}
-      42.01%,100%{transform:rotate(360deg) scale(1);filter:drop-shadow(0 0 1px rgba(235,239,255,.12))}
+      0%{transform:rotate(0deg) scale(.94);filter:drop-shadow(0 0 0 rgba(235,239,255,0))}
+      38%{transform:rotate(136.8deg) scale(1);filter:drop-shadow(0 0 2px rgba(145,157,255,.18))}
+      50%{transform:rotate(180deg) scale(1.16);filter:drop-shadow(0 0 7px rgba(160,174,255,.7))}
+      64%{transform:rotate(230.4deg) scale(1.09);filter:drop-shadow(0 0 5px rgba(129,218,240,.38))}
+      80%{transform:rotate(288deg) scale(1);filter:drop-shadow(0 0 2px rgba(235,239,255,.2))}
+      100%{transform:rotate(360deg) scale(.94);filter:drop-shadow(0 0 1px rgba(235,239,255,.12))}
     }
     @keyframes truxThinkingOrbit{
-      0%{transform:rotate(0deg) scale(.76);opacity:.12}
-      25%{transform:rotate(180deg) scale(1.08);opacity:.76}
-      42%{transform:rotate(360deg) scale(.84);opacity:.24}
-      42.01%,100%{transform:rotate(360deg) scale(.84);opacity:.24}
+      0%{transform:rotate(0deg) scale(.62);opacity:0}
+      28%{transform:rotate(100.8deg) scale(.68);opacity:.06}
+      42%{transform:rotate(151.2deg) scale(1.14);opacity:.68}
+      50%{transform:rotate(180deg) scale(1.27);opacity:.96}
+      60%{transform:rotate(216deg) scale(1.14);opacity:.7}
+      74%{transform:rotate(266.4deg) scale(.82);opacity:.12}
+      100%{transform:rotate(360deg) scale(.62);opacity:0}
     }
     @keyframes truxThinkingOrbitDot{
-      0%{transform:rotate(0deg);opacity:.3}
-      25%{transform:rotate(180deg);opacity:1}
-      42%{transform:rotate(360deg);opacity:.28}
-      42.01%,100%{transform:rotate(360deg);opacity:.28}
+      0%{transform:rotate(0deg);opacity:0}
+      20%{transform:rotate(72deg);opacity:.08}
+      42%{transform:rotate(151.2deg);opacity:.94}
+      55%{transform:rotate(198deg);opacity:1}
+      72%{transform:rotate(259.2deg);opacity:.14}
+      100%{transform:rotate(360deg);opacity:0}
     }
     @media (max-width:700px){
       .trux-thinking-bar{gap:7px;min-height:0}
@@ -8111,7 +8124,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       // Keep the Chat activity line populated immediately while the first
       // model-written status is being prepared by the streaming endpoint.
       if (workspaceMode === "chat") {
-        setThinkingStatus(sid, "Understanding your request");
+        setThinkingStatus(sid, "Thinking");
       }
 
       row._startedAt = codingTurn ? Date.now() : 0;
