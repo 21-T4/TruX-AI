@@ -60,8 +60,8 @@ function forwardedOrigin(req) {
 function createRuntimeEnv(req) {
   const env = { ...process.env };
   if (!env.TRUX_APP_ORIGIN) env.TRUX_APP_ORIGIN = forwardedOrigin(req);
-  // Background work stays inside the Cloud Run container. Avoid public-domain
-  // routing so Cloudflare/browser connectivity cannot interrupt the worker.
+  // Keep background work inside the Cloud Run service; avoid routing worker
+  // requests through the public app domain.
   env.TRUX_BACKGROUND_ORIGIN = env.TRUX_BACKGROUND_ORIGIN || ('http://127.0.0.1:' + PORT);
 
   /*
@@ -263,8 +263,6 @@ async function serveStatic(req, res) {
     const basename = path.basename(filePath).toLowerCase();
     if (extension === ".html" || basename === "sw.js") {
       res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
-      res.setHeader("CDN-Cache-Control", "no-store");
-      res.setHeader("Cloudflare-CDN-Cache-Control", "no-store");
       res.setHeader("Pragma", "no-cache");
       res.setHeader("Expires", "0");
     }
@@ -288,8 +286,6 @@ async function serveStatic(req, res) {
       res.statusCode = 200;
       res.setHeader("Content-Type", "text/html; charset=utf-8");
       res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
-      res.setHeader("CDN-Cache-Control", "no-store");
-      res.setHeader("Cloudflare-CDN-Cache-Control", "no-store");
       res.setHeader("Pragma", "no-cache");
       res.setHeader("Expires", "0");
       return fs.createReadStream(indexPath).pipe(res);
