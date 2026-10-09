@@ -7584,7 +7584,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     function appendThinkingHistory(panel, text) {
       const details = panel?.querySelector?.(".trux-thinking-details");
       if (!details || !text) return;
-      if (details.lastElementChild?.dataset?.activity === text) return;
+      if (Array.from(details.children).some(item => item.dataset?.activity === text)) return;
       const item = document.createElement("div");
       item.className = "thinking-status-step";
       item.dataset.activity = text;
@@ -7770,8 +7770,17 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       const fullLine = el.querySelector(".thinking-status-line.full");
       const currentLine = fullLine || compactLine;
       const previous = String(fullLine?.textContent || currentLine?.textContent || "").trim();
-      if (previous === next) return;
       const panel = el.closest(".trux-thinking-panel");
+      const activityKey = value => String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+      if (panel && !(panel._seenThinkingActivities instanceof Set)) {
+        panel._seenThinkingActivities = new Set();
+      }
+      const seenActivities = panel?._seenThinkingActivities;
+      const previousKey = activityKey(previous);
+      const nextKey = activityKey(next);
+      if (seenActivities && previousKey) seenActivities.add(previousKey);
+      if (previous === next || (seenActivities && nextKey && seenActivities.has(nextKey))) return;
+      if (seenActivities && nextKey) seenActivities.add(nextKey);
       if (previous) appendThinkingHistory(panel, previous);
       if (compactLine) compactLine.textContent = compact;
       if (fullLine) { fullLine.textContent = next; fullLine.title = next; }
