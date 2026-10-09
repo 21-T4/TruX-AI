@@ -7451,7 +7451,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         isGenerating = false;
         activeAbortController = null;
         generationStopRequested = false;
-        getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15-2 2 2 15 2z"/>';
+        getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
         getEl("actionBtn").classList.remove("stop");
         handleInputChange();
       }
@@ -7474,6 +7474,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         jobSecret: String(options.jobSecret || chatSessions[chatId]?.backgroundJobSecret || ""),
         row: targetRow,
         id: options.id || "",
+        aid: options.aid || "",
         sid: options.sid || "",
         tsid: options.tsid || "",
         promise: null
