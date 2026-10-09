@@ -1428,9 +1428,8 @@ export async function onRequestPost(context) {
     return createSseResponse(async ({ send, signal }) => {
       // Model-written labels describe real stages; show a visible Chat status
       // immediately while the first generated label is being prepared.
-      const initialChatActivity = (!codingMode && !researchMode)
-        ? 'Thinking'
-        : '';
+      // Show an immediate truthful status in Chat and Code while the answer begins.
+      const initialChatActivity = 'Thinking';
       const generatedActivityLabels = initialChatActivity ? [initialChatActivity] : [];
       const initialActivityKey = initialChatActivity.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
       const generatedActivityKeys = new Set(initialActivityKey ? [initialActivityKey] : []);
@@ -1749,25 +1748,30 @@ export async function onRequestPost(context) {
         }
 
         agentRound += 1;
-        const stageLabelTask = emitAiActivity(
-          codingMode
-            ? (explicitCodeWork
-              ? (agentRound === 1 ? 'examining the requested implementation task' : 'reviewing tool results to choose the next coding action')
-              : (agentRound === 1 ? 'working through the coding request' : 'reviewing the latest coding results'))
-            : (researchMode
-              ? (agentRound === 1 ? 'researching the request and gathering relevant sources' : 'synthesizing newly gathered research')
-              : (agentRound === 1 ? 'drafting a response to the user request' : 'refining the response with newly available results')),
-          'Model round ' + agentRound + '; mode=' + (codingMode ? 'TruX-Code' : researchMode ? 'research' : 'chat') +
-          '; this is the current model round.'
-        );
+        // Do not spend a second model call generating a label before the answer
+        // starts. Short Chat prompts and lightweight Code chats go straight to
+        // the core model; richer turns can request labels after visible output
+        // begins, while explicit coding/research/plugin operations retain their
+        // operation-specific labels.
+        const needsOpeningActivity =
+          researchMode ||
+          explicitExternalAction ||
+          (codingMode && explicitCodeWork);
+        const stageLabelTask = needsOpeningActivity
+          ? emitAiActivity(
+              codingMode
+                ? (explicitCodeWork
+                  ? (agentRound === 1 ? 'examining the requested implementation task' : 'reviewing tool results to choose the next coding action')
+                  : (agentRound === 1 ? 'working through the coding request' : 'reviewing the latest coding results'))
+                : (researchMode
+                  ? (agentRound === 1 ? 'researching the request and gathering relevant sources' : 'synthesizing newly gathered research')
+                  : (agentRound === 1 ? 'drafting a response to the user request' : 'refining the response with newly available results')),
+              'Model round ' + agentRound + '; mode=' + (codingMode ? 'TruX-Code' : researchMode ? 'research' : 'chat') +
+              '; this is the current model round.'
+            )
+          : Promise.resolve('');
 
-        if (!codingMode && !researchMode && !explicitExternalAction) {
-          // Chat starts its actual answer immediately. The AI-written activity
-          // label is generated concurrently and never gates the first token.
-          chatActivityQueue = chatActivityQueue
-            .then(() => stageLabelTask)
-            .catch(() => '');
-        } else {
+        if (needsOpeningActivity) {
           await stageLabelTask;
         }
 
