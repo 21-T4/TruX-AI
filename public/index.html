@@ -7671,64 +7671,111 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       return state.promise;
     }
 
-    async function runCodeBackgroundJob({ row, id, sid, tsid, prompt, voice, requestBody, chatId }) {
+    async function runCodeBackgroundJob({ row, id, sid, tsid, aid, prompt, voice, requestBody, chatId, mode }) {
       const targetChatId = chatId || currentChatId;
-      if (!targetChatId || !chatSessions[targetChatId]) throw new Error("The coding chat session is unavailable.");
-
-      const existingJob = String(chatSessions[targetChatId].activeBackgroundJobId || "");
+      if (!targetChatId || !chatSessions[targetChatId]) throw new Error("The chat session is unavailable.");
+      const jobMode = ["chat", "coding", "deep-research"].includes(String(mode || requestBody?.mode || ""))
+        ? String(mode || requestBody?.mode)
+        : "coding";
+      const session = chatSessions[targetChatId];
+      const existingJob = String(session.activeBackgroundJobId || "");
       if (existingJob) {
-        return watchBackgroundJob(targetChatId, existingJob, { row, id, sid, tsid, jobSecret: chatSessions[targetChatId]?.backgroundJobSecret || "" });
+        return watchBackgroundJob(targetChatId, existingJob, {
+          row, id, sid, tsid, aid,
+          jobSecret: session.backgroundJobSecret || ""
+        });
       }
 
-
-       
-
-       if (generationStopRequested || !isGenerating) {
-         markGenerationStopped(row, id, sid, tsid);
-         isGenerating = false;
-         activeAbortController = null;
-         generationStopRequested = false;
-         getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
-         getEl("actionBtn").classList.remove("stop");
-         handleInputChange();
-         return false;
-       }
-
-       const start = await fetch("/api/background/start", {
-         method: "POST",
-         credentials: "same-origin",
-         headers: { "Content-Type": "application/json", "Authorization": "Bearer " + (auth?.currentUser ? await auth.currentUser.getIdToken() : "") },
-         body: JSON.stringify({ ...requestBody, mode: "coding", backgroundJobId: "" })
-       });
-
-      const startData = await start.json().catch(() => ({}));
-      if (!start.ok) {
-        throw new Error(startData.error || "Background coding could not be started.");
-      }
-
-      const jobId = String(startData.jobId || "");
-      const jobSecret = String(startData.jobSecret || "");
-      if (!jobId) throw new Error("Background coding did not return a job id.");
-      if (!jobSecret) throw new Error("Background coding did not return a job control secret.");
-
-       if(generationStopRequested || !isGenerating){
-        await requestBackgroundJobStop(jobId, jobSecret);
+      if (generationStopRequested || !isGenerating) {
         markGenerationStopped(row, id, sid, tsid);
         isGenerating = false;
         activeAbortController = null;
         generationStopRequested = false;
-        getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
+        getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15-2-15 2z"/>';
         getEl("actionBtn").classList.remove("stop");
         handleInputChange();
         return false;
       }
 
-      chatSessions[targetChatId].activeBackgroundJobId = jobId;
-      chatSessions[targetChatId].backgroundJobSecret = jobSecret;
-      chatSessions[targetChatId].backgroundStartedAt = Date.now();
+      const clientJobId = crypto.randomUUID
+        ? crypto.randomUUID()
+        : [...crypto.getRandomValues(new Uint8Array(24))].map(x => x.toString(16).padStart(2, "0")).join("");
+      const startedAt = Date.now();
+      session.activeBackgroundJobId = clientJobId;
+      session.backgroundJobSecret = "";
+      session.backgroundStartedAt = startedAt;
+      session.backgroundJobMode = jobMode;
+      if (row) {
+        row.dataset.backgroundJobId = clientJobId;
+        row._startedAt = startedAt;
+      }
+      saveChatSessions();
+      setThinkingStatus(sid, "Starting durable task…");
+
+      const startOptions = {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + await auth.currentUser.getIdToken()
+        },
+        body: JSON.stringify({ ...requestBody, mode: jobMode, clientJobId })
+      };
+      let start;
+      try {
+        start = await fetch("/api/background/start", startOptions);
+      } catch (firstStartError) {
+        // Reuse the same id if the response was lost; the endpoint is idempotent.
+        try {
+          start = await fetch("/api/background/start", startOptions);
+        } catch {
+          return watchBackgroundJob(targetChatId, clientJobId, {
+            row, id, sid, tsid, aid, jobSecret: ""
+          });
+        }
+      }
+
+      const startData = await start.json().catch(() => ({}));
+      if (!start.ok) {
+        if (String(session.activeBackgroundJobId || "") === clientJobId) {
+          delete session.activeBackgroundJobId;
+          delete session.backgroundJobSecret;
+          delete session.backgroundStartedAt;
+          delete session.backgroundJobMode;
+          saveChatSessions();
+        }
+        throw new Error(startData.error || "Background task could not be started.");
+      }
+
+      const jobId = String(startData.jobId || clientJobId);
+      const jobSecret = String(startData.jobSecret || "");
+      session.activeBackgroundJobId = jobId;
+      session.backgroundJobSecret = jobSecret;
+      session.backgroundStartedAt = startedAt;
+      session.backgroundJobMode = jobMode;
+      if (row) row.dataset.backgroundJobId = jobId;
       saveChatSessions();
 
-      return watchBackgroundJob(targetChatId, jobId, { row, id, sid, tsid, jobSecret });
+      if (generationStopRequested || !isGenerating) {
+        if (jobSecret) await requestBackgroundJobStop(jobId, jobSecret);
+        delete session.activeBackgroundJobId;
+        delete session.backgroundJobSecret;
+        delete session.backgroundStartedAt;
+        delete session.backgroundJobMode;
+        saveChatSessions();
+        markGenerationStopped(row, id, sid, tsid);
+        isGenerating = false;
+        activeAbortController = null;
+        generationStopRequested = false;
+        getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15-2-15 2z"/>';
+        getEl("actionBtn").classList.remove("stop");
+        handleInputChange();
+        return false;
+      }
+
+      return watchBackgroundJob(targetChatId, jobId, {
+        row, id, sid, tsid, aid, jobSecret
+      });
     }
 
     function resumePersistedBackgroundJobs() {
