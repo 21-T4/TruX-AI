@@ -18,9 +18,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="ChatTruX-AI">
   
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://cdn.prod.website-files.com" crossorigin>
+  <link rel="preload" href="https://cdn.prod.website-files.com/67ce28cfec624e2b733f8a52/69971a1551eb6cda0d656e8a_AnthropicSerif-Roman-Web.woff2" as="font" type="font/woff2" crossorigin>
 
   <!-- KaTeX: real math rendering happens in the browser. -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.18.7/dist/katex.min.css" integrity="sha384-JctiRyLzXCrSoOOzFlSoWLdyzQl7OrrRnhyeBmzB6ZWtcjccUyc8lCQJqIbs3uQX" crossorigin="anonymous">
@@ -36,6 +35,14 @@
     /* ============================================================
        TruX-AI — design system
        ============================================================ */
+    @font-face {
+      font-family: "Anthropic Serif";
+      src: url("https://cdn.prod.website-files.com/67ce28cfec624e2b733f8a52/69971a1551eb6cda0d656e8a_AnthropicSerif-Roman-Web.woff2") format("woff2");
+      font-style: normal;
+      font-weight: 300 800;
+      font-display: swap;
+    }
+
     :root {
       /* Base surface colors (dark mode defaults) */
       --bg:        #000000;
@@ -74,9 +81,9 @@
       --ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
       --safe-b:    env(safe-area-inset-bottom, 0px);
 
-      --font-body: 'Manrope', system-ui, sans-serif;
-      --font-disp: 'Manrope', 'Manrope', system-ui, sans-serif;
-      --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+      --font-body: 'Anthropic Serif', Georgia, 'Times New Roman', serif;
+      --font-disp: 'Anthropic Serif', Georgia, 'Times New Roman', serif;
+      --font-mono: 'Anthropic Serif', Georgia, 'Times New Roman', serif;
     }
 
     [data-theme="light"] {
@@ -1010,11 +1017,11 @@
       animation: pulseDot 1.4s var(--ease) infinite;
     }
 
-    /* AI activity / thinking — one source of truth, with a periodic metallic wave. */
+    /* AI activity: floating text with one metallic glint and a real pause between passes. */
     .trux-thinking-panel{
-      position:relative;width:100%;margin:2px 0 7px;padding:0;
+      position:relative;width:fit-content;max-width:100%;margin:2px 0 7px;padding:0;
       display:flex;flex-direction:column;align-items:flex-start;color:var(--txt);
-      contain:layout paint;pointer-events:none;
+      contain:layout;pointer-events:none;background:transparent;border:0;box-shadow:none;
     }
     .trux-thinking-panel.thinking-dismissed{display:none!important}
     .trux-thinking-panel,
@@ -1026,36 +1033,37 @@
       background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;
     }
     .trux-thinking-bar{
-      position:relative;z-index:1;display:flex;align-items:center;width:100%;
-      min-height:28px;gap:9px;padding:0;overflow:visible;
+      position:relative;z-index:1;display:flex;align-items:center;width:fit-content;max-width:100%;
+      min-height:0;gap:9px;padding:0;overflow:visible;
     }
     .trux-thinking-bar::before,.trux-thinking-bar::after{display:none!important}
     .trux-thinking-copy{
       position:relative;min-width:0;display:flex;align-items:center;gap:0;
-      overflow:visible;flex:1 1 auto;padding:0;margin:0;
+      overflow:visible;flex:0 1 auto;padding:0;margin:0;
     }
     .trux-thinking-kicker{display:none!important}
     .status-msg{
       position:relative;min-width:0;display:block;width:auto;max-width:100%;
       margin:0;padding:0;border:0;background:transparent;color:transparent;
-      font:560 17px/1.4 var(--font-body);letter-spacing:-.005em;
+      font:500 19px/1.42 var(--font-body);letter-spacing:0;
       white-space:nowrap;overflow:visible;text-overflow:clip;box-shadow:none;
     }
     .thinking-status-line{
       display:none;max-width:100%;margin:0;padding:0;
-      will-change:background-position,transform,filter;
+      will-change:background-position;
     }
     .thinking-status-line.compact,
     .thinking-status-line.full{
       color:transparent;
-      background:linear-gradient(108deg,
-        #5d5a54 0%,#79766e 13%,#b8b3a8 25%,#f8f5ec 32%,
-        #d4cfc4 38%,#77736b 48%,#aaa59b 59%,#fffaf0 65%,
-        #c5c0b5 72%,#77736c 84%,#5b5852 100%);
-      background-size:280% 100%;background-position:220% 50%;
+      background-image:linear-gradient(90deg,
+        #a09d96 0%,#a09d96 48.5%,#c6c2b9 49.25%,#eeece6 49.75%,
+        #ffffff 50%,#eeece6 50.25%,#c6c2b9 50.75%,#a09d96 51.5%,#a09d96 100%);
+      background-size:250% 100%;
+      background-position:100% 50%;
+      background-repeat:no-repeat;
       -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
-      animation:truxMetallicWave 2s cubic-bezier(.22,.61,.36,1) infinite;
-      transform-origin:center;
+      animation:truxMetallicShine 2.75s linear infinite;
+      transform:none;filter:none;
     }
     .thinking-status-line.compact{display:inline-block}
     .thinking-status-line.full{display:none}
@@ -1063,19 +1071,25 @@
     .trux-thinking-panel.expanded .thinking-status-line.full{
       display:inline-block;white-space:normal;overflow-wrap:anywhere;
     }
+    [data-theme="light"] .thinking-status-line.compact,
+    [data-theme="light"] .thinking-status-line.full{
+      background-image:linear-gradient(90deg,
+        #6c6963 0%,#6c6963 48.5%,#aaa69d 49.25%,#eeece6 49.75%,
+        #ffffff 50%,#eeece6 50.25%,#aaa69d 50.75%,#6c6963 51.5%,#6c6963 100%);
+    }
     .chat-thinking-elapsed{display:none!important}
     .trux-thinking-elapsed{
-      position:relative;flex:0 0 auto;min-width:0;padding:0;margin:0;color:#77736b;
-      font:500 11px/1 var(--font-body);font-variant-numeric:tabular-nums;
-      letter-spacing:.02em;white-space:nowrap;
+      position:relative;flex:0 0 auto;min-width:0;padding:0;margin:0;color:var(--txt-3);
+      font:500 12px/1.2 var(--font-body);font-variant-numeric:tabular-nums;
+      letter-spacing:0;white-space:nowrap;
     }
     .trux-thinking-toggle{
       pointer-events:auto;position:relative;flex:0 0 auto;width:22px;height:22px;
       display:grid;place-items:center;margin:0;padding:0;border:0;border-radius:50%;
-      background:transparent;color:#77736b;cursor:pointer;opacity:.82;
+      background:transparent;color:var(--txt-3);cursor:pointer;opacity:.82;
       transition:color .2s var(--ease),transform .2s var(--ease),opacity .2s var(--ease);
     }
-    .trux-thinking-toggle:hover{color:#c5c0b7;opacity:1}
+    .trux-thinking-toggle:hover{color:var(--txt);opacity:1}
     .trux-thinking-toggle:active{transform:scale(.9)}
     .trux-thinking-toggle svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.65;
       stroke-linecap:round;stroke-linejoin:round;transition:transform .35s var(--ease-out)}
@@ -1088,35 +1102,33 @@
     .trux-thinking-details[hidden]{display:none!important}
     .trux-thinking-details::-webkit-scrollbar{width:5px}
     .thinking-status-step,.thinking-tool-item{
-      position:relative;display:block;padding:1px 0 1px 11px;color:#77736b;
-      font:500 13px/1.5 var(--font-body);letter-spacing:0;
+      position:relative;display:block;padding:1px 0 1px 11px;color:var(--txt-3);
+      font:500 14px/1.5 var(--font-body);letter-spacing:0;
       white-space:normal;overflow-wrap:anywhere;
     }
     .thinking-status-step::before,.thinking-tool-item::before{
       content:"";position:absolute;left:0;top:.8em;width:3px;height:3px;border-radius:50%;
-      background:#77736b;opacity:.8;
+      background:currentColor;opacity:.8;
     }
-    .thinking-tool-item.active{color:#aaa59b}
-    .thinking-tool-item.completed{color:#77736b}
-    .thinking-tool-item.failed{color:#8e8880}
+    .thinking-tool-item.active{color:var(--txt-2)}
+    .thinking-tool-item.completed{color:var(--txt-3)}
+    .thinking-tool-item.failed{color:var(--txt-2)}
     .thinking-tool-head{display:block;color:inherit}
     .thinking-tool-meta,.thinking-tool-result{
-      display:block;margin-top:2px;color:#77736b;
-      font:500 11.5px/1.4 var(--font-body);overflow-wrap:anywhere;
+      display:block;margin-top:2px;color:var(--txt-3);
+      font:500 12px/1.4 var(--font-body);overflow-wrap:anywhere;
     }
-    .thinking-tool-result{color:#aaa59b}
+    .thinking-tool-result{color:var(--txt-2)}
     .thinking-container{display:block;width:100%;padding:0;background:none!important;border:0!important;box-shadow:none!important}
-    @keyframes truxMetallicWave{
-      0%,8%{background-position:220% 50%;transform:translate3d(0,0,0) skewX(0deg);filter:brightness(.92)}
-      18%{background-position:132% 50%;transform:translate3d(0,-.55px,0) skewX(-.55deg);filter:brightness(1.02)}
-      29%{background-position:28% 50%;transform:translate3d(0,.25px,0) skewX(.35deg);filter:brightness(1.16)}
-      40%{background-position:-65% 50%;transform:translate3d(0,0,0) skewX(0deg);filter:brightness(1)}
-      41%,100%{background-position:-65% 50%;transform:none;filter:none}
+    @keyframes truxMetallicShine{
+      0%{background-position:100% 50%}
+      27.27%{background-position:0% 50%}
+      27.28%,100%{background-position:0% 50%}
     }
     @media (max-width:700px){
-      .trux-thinking-bar{gap:8px;min-height:26px}
-      .status-msg{font-size:16px}
-      .trux-thinking-elapsed{font-size:10px}
+      .trux-thinking-bar{gap:7px;min-height:0}
+      .status-msg{font-size:18px}
+      .trux-thinking-elapsed{font-size:11px}
       .trux-thinking-toggle{width:20px;height:20px}
       .thinking-status-line.full{line-height:1.45}
     }
@@ -2338,8 +2350,8 @@
       --acc-3:     #7d612e;
       --acc-soft:  rgba(213,185,106,0.14);
       --acc-line:  rgba(213,185,106,0.42);
-      --font-body: 'Manrope', system-ui, sans-serif;
-      --font-disp: 'Manrope', system-ui, sans-serif;
+      --font-body: 'Anthropic Serif', Georgia, 'Times New Roman', serif;
+      --font-disp: 'Anthropic Serif', Georgia, 'Times New Roman', serif;
     }
 
     html, body { background: var(--bg); }
@@ -2520,7 +2532,7 @@
 .github-proposal-summary{opacity:.82;font-size:.9rem;line-height:1.45}
 .github-proposal-files{display:flex;flex-direction:column;gap:7px;margin:12px 0}
 .github-proposal-file{padding:9px 10px;border-radius:10px;background:rgba(0,0,0,.16)}
-.github-proposal-file-name{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.84rem;overflow-wrap:anywhere}
+.github-proposal-file-name{font-family:var(--font-body);font-size:.84rem;overflow-wrap:anywhere}
 .github-proposal-file-stats{opacity:.68;font-size:.76rem;margin-top:3px}
 .github-proposal-card details{margin-top:8px}
 .github-proposal-card summary{cursor:pointer;opacity:.82;font-size:.82rem}
