@@ -7549,7 +7549,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
 
           statusFailureCount = 0;
 
-          if (state._streamer && (chatId !== currentChatId || workspaceMode !== "coding")) {
+          if (state._streamer && !isJobViewActive()) {
             state._streamer.cancel();
             state._streamer = null;
           }
@@ -7578,12 +7578,23 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
               }
 
               if (typeof currentState.liveText === "string" && currentState.liveText !== lastLiveText) {
-                lastLiveText = currentState.liveText;
+                const nextLiveText = currentState.liveText;
                 const bubble = getEl(state.id);
                 if (bubble) {
                   bubble.classList.remove("thinking");
-                  if (!state._streamer) state._streamer = createStreamRenderer(bubble);
-                  state._streamer.setText(currentState.liveText);
+                  if (!state._streamer) {
+                    state._streamer = createStreamRenderer(bubble);
+                    // Restore the saved prefix once after reopening, then append
+                    // only new text so an active response never redraws from scratch.
+                    state._streamer.setText(nextLiveText);
+                  } else if (nextLiveText.startsWith(lastLiveText)) {
+                    const delta = nextLiveText.slice(lastLiveText.length);
+                    if (delta) state._streamer.push(delta);
+                  } else {
+                    // A corrected snapshot can differ from the previous prefix.
+                    state._streamer.setText(nextLiveText);
+                  }
+                  lastLiveText = nextLiveText;
                 }
               }
             }
@@ -7710,7 +7721,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         row._startedAt = startedAt;
       }
       saveChatSessions();
-      setThinkingStatus(sid, "Starting durable task…");
+      setThinkingStatus(sid, "Thinking");
 
       const startOptions = {
         method: "POST",
@@ -8259,9 +8270,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
 
       // Keep the Chat activity line populated immediately while the first
       // model-written status is being prepared by the streaming endpoint.
-      if (workspaceMode === "chat") {
-        setThinkingStatus(sid, "Thinking");
-      }
+      setThinkingStatus(sid, "Thinking");
 
       row._startedAt = codingTurn ? Date.now() : 0;
       if (codingTurn) {
@@ -8349,19 +8358,27 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         /* Image routing: the model answers with "[[IMAGE]] <prompt>" when it
            decides the turn wants a picture. Hold the first few characters back
            until we know which it is, so the tag never flashes on screen. */
-        const IMG_TAG = "[[IMAGE]]";
+        const IMG_TAGS = ["[[IMAGE]]", "[IMAGE]"];
         let imageRoute = false, routeSettled = false;
+        function extractImageRoutePrompt(value, fallbackPrompt) {
+          const textValue = String(value || "").trim();
+          const marker = textValue.match(/^[\s\u0060>*_]*\[\[?\s*IMAGE\s*\]\]?\s*/i);
+          if (!marker) return null;
+          return textValue.slice(marker[0].length).replace(/\u0060/g, "").trim() || String(fallbackPrompt || "").trim();
+        }
         function sniffRoute() {
           if (routeSettled) return;
-          let head = full.replace(/^[\s`>*_]+/, "");
+          let head = full.replace(/^[\s\u0060>*_]+/, "");
           if (!head) return;
-          let up = head.slice(0, IMG_TAG.length).toUpperCase();
-          if (up === IMG_TAG) {
-            imageRoute = true; routeSettled = true;
-            let st = getEl(sid); if (st) st.innerText = "Composing your image…";
+          const up = head.toUpperCase();
+          if (IMG_TAGS.some(tag => up.startsWith(tag))) {
+            imageRoute = true;
+            routeSettled = true;
+            let st = getEl(sid);
+            if (st) st.innerText = "Composing your image…";
             return;
           }
-          if (head.length < IMG_TAG.length && IMG_TAG.startsWith(up)) return;  // still ambiguous
+          if (IMG_TAGS.some(tag => up.length < tag.length && tag.startsWith(up))) return;
           routeSettled = true;
         }
 
@@ -8518,11 +8535,13 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         let text = (fin !== null ? fin : full).trim();
          if(!text) throw Error("The model completed the request without returning a final response.");
         sniffRoute();
+        const routedImagePrompt = extractImageRoutePrompt(text, prompt);
+        if (routedImagePrompt !== null) imageRoute = true;
 
         /* The model asked for a picture — hand this turn to the image model,
            reusing the row that is already on screen. */
         if(imageRoute && !img) {
-          let imagePrompt = text.replace(/^[\s`>*_]*\[\[IMAGE\]\]\s*/i, "").replace(/`/g, "").trim() || prompt;
+          let imagePrompt = routedImagePrompt || extractImageRoutePrompt(full, prompt) || prompt;
           activeStreamer?.cancel(); activeStreamer = null;
           activeAbortController = null;
           if(!isTruxDeveloper(auth?.currentUser) && getImageUsageData().count >= 15) {
@@ -8535,7 +8554,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           return generateImage(basePrompt, { row: row, reuseTurn: true, imagePrompt: imagePrompt });
         }
         /* Defensive: never show the routing tag if it slipped into prose. */
-        text = text.replace(/\[\[IMAGE\]\]/gi, "").trim();
+        text = text.replace(/^[\s\u0060>*_]*\[\[?\s*IMAGE\s*\]\]?\s*/i, "").replace(/\[\[IMAGE\]\]/gi, "").replace(/^\[image\]\s*/i, "").trim();
 
         if (!finalizedOnFinal) {
           let streamer = activeStreamer || ensureStreamer();
