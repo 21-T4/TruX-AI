@@ -8414,6 +8414,14 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           }
           else if(j.type === "final") {
             fin = j.text || "";
+            // Detect routing tags in the authoritative final payload before
+            // the normal Chat finalizer can briefly render them as plain text.
+            if (extractImageRoutePrompt(fin, prompt) !== null) {
+              imageRoute = true;
+              routeSettled = true;
+              const status = getEl(sid);
+              if (status) status.innerText = "Composing your image…";
+            }
             if (fin && !imageRoute) {
               if (codingTurn && !finalizedEarly) {
                 finalizedEarly = true;
