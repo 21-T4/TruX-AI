@@ -75,7 +75,7 @@ export async function onRequestPost({ request, env }) {
       userEmail,
       mode,
       status: 'queued',
-      events: [{ id: 1, type: 'status', tool: label, status: 'Thinking…' }],
+      events: [{ id: 1, type: 'status', tool: label, status: 'Thinking' }],
       final: null,
       liveText: '',
       error: null,
