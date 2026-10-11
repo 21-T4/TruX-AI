@@ -3,10 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="description" content="ChatTruX-AI — a fast, secure intelligent workspace for deep thinking and focused work.">
-  <meta property="og:title" content="ChatTruX-AI - Intelligent Workspace">
-  <meta property="og:description" content="ChatTruX-AI — a fast, secure intelligent workspace for deep thinking and focused work.">
-  <title>ChatTruX-AI - Intelligent Workspace</title>
+  <meta name="description" content="TruX Workspace — a fast, secure intelligent workspace for deep thinking and focused work.">
+  <link rel="canonical" href="https://trux-ai-workspace.trux.website/">
+  <meta property="og:url" content="https://trux-ai-workspace.trux.website/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="TruX Workspace">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="TruX Workspace">
+  <meta name="twitter:description" content="TruX Workspace — a fast, secure intelligent workspace for deep thinking and focused work.">
+  <meta property="og:title" content="TruX Workspace">
+  <meta property="og:description" content="TruX Workspace — a fast, secure intelligent workspace for deep thinking and focused work.">
+  <title>TruX Workspace</title>
   <base target="_top">
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
@@ -16,7 +23,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="ChatTruX-AI">
+  <meta name="apple-mobile-web-app-title" content="TruX Workspace">
   
   <link rel="preconnect" href="https://cdn.prod.website-files.com" crossorigin>
   <link rel="preload" href="https://cdn.prod.website-files.com/67ce28cfec624e2b733f8a52/69971a1551eb6cda0d656e8a_AnthropicSerif-Roman-Web.woff2" as="font" type="font/woff2" crossorigin>
@@ -4141,13 +4148,13 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     <button class="login-wall-close" onclick="closeLoginWall()" title="Close">×</button>
     <div class="login-box">
       <div class="login-orb"><img src="/icon-grey.png" alt="TruX"></div>
-      <div class="mtitle">Welcome to ChatTruX-AI</div>
+      <div class="mtitle">Welcome to TruX Workspace</div>
       <div class="msub">Sign in to unlock your intelligent workspace — conversations, image generation, and memory, all in one place.</div>
       <button class="login-btn-google" onclick="handleGoogleLogin()">
         <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
         Sign in with Google
       </button>
-      <div class="login-wall-footer">Powered by ChatTruX-AI</div>
+      <div class="login-wall-footer">Powered by TruX Workspace</div>
     </div>
   </div>
   
@@ -4161,7 +4168,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           <span class="sidebar-brand-mark" aria-hidden="true">
             <img src="/icon-512.png" alt="" decoding="async">
           </span>
-          <div class="sidebar-brand-copy"><b>ChatTruX-AI</b><small>Intelligent workspace</small></div>
+          <div class="sidebar-brand-copy"><b>TruX Workspace</b><small>Intelligent workspace</small></div>
         </div>
         <button class="sidebar-close" type="button" onclick="closeSidebar()" title="Close sidebar" aria-label="Close sidebar">
           <svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>
@@ -5296,7 +5303,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           target.innerHTML = "";
           target.style.display = "block";
           (chatSessions[currentChatId].messages || []).forEach(m => appendMessageRow(
-            m.role === "user" ? "You" : "ChatTruX-AI",
+            m.role === "user" ? "You" : "TruX Workspace",
             m.text || "",
             m.role === "user" ? "user-row" : "trux-row",
             m.role === "user" ? "user-bubble" : "trux-bubble",
@@ -7307,7 +7314,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     })();
 
     /* Assistant rows are text-only; app icons remain PWA/metadata assets. */
-    const BRAND_LABEL = 'ChatTruX-AI';
+    const BRAND_LABEL = 'TruX Workspace';
 
     /* Grounding URIs come back as Vertex redirect links, so the readable domain
        lives in the title. Prefer a real hostname when the URI has one. */
@@ -8298,7 +8305,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       });
       saveChatSessions();
 
-      appendMessageRow("ChatTruX-AI", responseText, "trux-row", "trux-bubble", null, true);
+      appendMessageRow("TruX Workspace", responseText, "trux-row", "trux-bubble", null, true);
     }
 
     async function applyGithubProposal(proposal, card, apply, cancel, status) {
@@ -10138,7 +10145,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       getEl("codeChatContainer").innerHTML = "";
       const cC = enterChatWorkspace();
        chatSessions[id].messages.forEach((m, index) => {
-         appendMessageRow(m.role === "user" ? "You" : "ChatTruX-AI", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image, false, m.sources, m.video, { messageIndex: index, stopped: m.role === "user" && m.stopped === true, incomplete: m.role === "trux" && m.incomplete === true });
+         appendMessageRow(m.role === "user" ? "You" : "TruX Workspace", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image, false, m.sources, m.video, { messageIndex: index, stopped: m.role === "user" && m.stopped === true, incomplete: m.role === "trux" && m.incomplete === true });
          if (workspaceMode === "coding" && m.role === "trux" && Number.isFinite(Number(m.durationMs))) {
            const rows = getActiveChatContainer()?.querySelectorAll(".row.trux-row") || [];
            const restoredRow = rows[rows.length - 1];
