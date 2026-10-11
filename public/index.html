@@ -5488,7 +5488,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     function detectCodeInInput(text) {
       if (!text) return false;
       let hasCodeBlock = text.includes("```");
-      let hasCodePattern = /functiongetEl("profileModelText").innerText = "Auto";s*\w*\(|const\s+\w+\s*=|let\s+\w+\s*=|var\s+\w+\s*=|class\s+\w+|import\s+.*from|def\s+\w+\(|<html|<div|public\s+class|select\s+.*from/i.test(text);
+      let hasCodePattern = /function\s*\w*\(|const\s+\w+\s*=|let\s+\w+\s*=|var\s+\w+\s*=|class\s+\w+|import\s+.*from|def\s+\w+\(|<html|<div|public\s+class|select\s+.*from/i.test(text);
       let isLongStructure = text.split('\n').length > 5 || text.length > 280;
       return hasCodeBlock || (hasCodePattern && isLongStructure);
     }
