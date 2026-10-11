@@ -4324,22 +4324,12 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
             </div>
 
             <div class="model-picker-container" id="modelPickerContainer">
-              <button type="button" id="modelPickerBtn" class="model-picker-btn" onclick="toggleModelDropdown(event)" aria-haspopup="menu" aria-expanded="false" aria-label="Choose model"><span id="modelPickerLabel">Core 4.0</span></button>
-              <div class="model-dropdown-menu" id="modelDropdown" role="menu" aria-label="Choose model">
-                <button type="button" class="model-item active" data-model="base" onclick="selectModel('base',event);closeModelDropdown()">
-                  <span class="model-icon">ϟ</span>
-                  <span class="model-info"><b>Core 4.0</b><small>Unlimited core access</small></span>
+              <button type="button" id="modelPickerBtn" class="model-picker-btn" onclick="toggleModelDropdown(event)" aria-haspopup="menu" aria-expanded="false" aria-label="Automatic model routing"><span id="modelPickerLabel">Auto</span></button>
+              <div class="model-dropdown-menu" id="modelDropdown" role="menu" aria-label="Automatic model routing">
+                <button type="button" class="model-item active" data-model="auto" onclick="selectModel('auto',event);closeModelDropdown()">
+                  <span class="model-icon">✧</span>
+                  <span class="model-info"><b>Auto</b><small>Chooses the best Gemini 3rd-generation model for each Chat request</small></span>
                   <span class="model-check">✓</span>
-                </button>
-                <button type="button" class="model-item" data-model="pro" onclick="selectModel('pro',event);closeModelDropdown()">
-                  <span class="model-icon">✦</span>
-                  <span class="model-info"><b>Pro 5.0</b><small>1,000,000 tokens/month</small></span>
-                  <span class="model-check"></span>
-                </button>
-                <button type="button" class="model-item trux-owner-only" data-model="ultra" onclick="selectModel('ultra',event);closeModelDropdown()">
-                  <span class="model-icon">∞</span>
-                  <span class="model-info"><b>TruX-Ultra 6.5</b><small>TruX-Code reasoning engine · owner</small></span>
-                  <span class="model-check"></span>
                 </button>
                 <div class="thinking-choice-wrap">
                   <div class="thinking-choice-title">Thinking</div>
@@ -4420,7 +4410,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       </div>
       <div class="profile-meta-grid">
         <div class="profile-meta-item"><b id="profilePlanText">Core</b><small>Workspace</small></div>
-        <div class="profile-meta-item"><b id="profileModelText">Core 4.0</b><small>Selected model</small></div>
+        <div class="profile-meta-item"><b id="profileModelText">Auto</b><small>Selected model</small></div>
         <div class="profile-meta-item"><b id="profileLimitText">Unlimited</b><small>Core limit</small></div>
       </div>
       <div class="profile-list-group-title profile-options-label">Account & workspace</div>
@@ -4839,7 +4829,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       };
     })();
 
-    let currentModel = "base",
+    let currentPlanTier = "base",
         workspaceMode = "chat",
         chatSessions = store.json("trux_chats", {}),
         pinnedInsights = store.json("trux_pinned", []),
@@ -4867,15 +4857,16 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         truxLocationCache = null,
         currentProfileOption = null;
     try {
-      currentModel = ["base","pro","ultra"].includes(store.getItem("trux_model")) ? store.getItem("trux_model") : "base";
+      const legacyModel = store.getItem("trux_model");
+      const savedPlanTier = store.getItem("trux_plan_tier");
+      currentPlanTier = ["base","pro"].includes(savedPlanTier)
+        ? savedPlanTier
+        : (legacyModel === "pro" ? "pro" : "base");
+      if(!isTruxDeveloper(auth?.currentUser) && legacyModel === "ultra") currentPlanTier = "base";
+      store.setItem("trux_plan_tier", currentPlanTier);
+      store.setItem("trux_model", "auto");
       advancedThinkingLevel = ["low","medium","extended"].includes(store.getItem("trux_thinking_level")) ? store.getItem("trux_thinking_level") : "medium";
       advancedThinkingEnabled = advancedThinkingLevel === "extended";
-    } catch (_) {}
-    try {
-      if(!isTruxDeveloper(auth?.currentUser) && currentModel === "ultra") {
-        currentModel = "base";
-        store.setItem("trux_model","base");
-      }
     } catch (_) {}
 
     function positionModelDropdown() {
@@ -4924,18 +4915,17 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     function selectModel(m, e) {
       if (workspaceMode === "coding") { closeModelDropdown(); return; }
       e?.stopPropagation();
-      const owner = isTruxDeveloper(auth?.currentUser);
-      if(m === "ultra" && !owner) return toast("TruX-Ultra 6.5 is owner-only.", "err");
-      if(m === "pro" && !owner && getProUsageData().tokensUsed >= 1000000) return toast("TruX Pro monthly limit reached.", "err");
-      if(!["base","pro","ultra"].includes(m)) m = "base";
-      currentModel = m;
-      try { store.setItem("trux_model", currentModel); } catch (_) {}
-      const labels = { base:"Core 4.0", pro:"Pro 5.0", ultra:"TruX-Ultra 6.5" };
+      // Auto is the only Chat model selection; account entitlements remain separate.
+      try { store.setItem("trux_model", "auto"); } catch (_) {}
       const modelEl = getEl("profileModelText");
-      if(modelEl) modelEl.innerText = labels[m] || "Core 4.0";
+      if(modelEl) modelEl.innerText = "Auto";
       const pickerLabel = getEl("modelPickerLabel");
-      if(pickerLabel) pickerLabel.textContent = labels[m] || "Core 4.0";
-      document.querySelectorAll("[data-model]").forEach(x => x.classList.toggle("active", x.dataset.model === m));
+      if(pickerLabel) pickerLabel.textContent = "Auto";
+      document.querySelectorAll("[data-model]").forEach(x => {
+        x.classList.toggle("active", x.dataset.model === "auto");
+        const check = x.querySelector(".model-check");
+        if(check) check.textContent = x.dataset.model === "auto" ? "✓" : "";
+      });
       updateAllUsageUI();
     }
 
@@ -4953,13 +4943,14 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     }
 
     function syncModelPickerUI() {
-      const labels = { base:"Core 4.0", pro:"Pro 5.0", ultra:"TruX-Ultra 6.5" };
       const pickerLabel = getEl("modelPickerLabel");
-      if(pickerLabel) pickerLabel.textContent = labels[currentModel] || "Core 4.0";
+      if(pickerLabel) pickerLabel.textContent = "Auto";
+      const modelEl = getEl("profileModelText");
+      if(modelEl) modelEl.innerText = "Auto";
       document.querySelectorAll("[data-model]").forEach(x => {
-        x.classList.toggle("active", x.dataset.model === currentModel);
+        x.classList.toggle("active", x.dataset.model === "auto");
         const check = x.querySelector(".model-check");
-        if(check) check.textContent = x.dataset.model === currentModel ? "✓" : "";
+        if(check) check.textContent = x.dataset.model === "auto" ? "✓" : "";
       });
       document.querySelectorAll("[data-thinking-level]").forEach(x => {
         x.classList.toggle("active", x.dataset.thinkingLevel === advancedThinkingLevel);
@@ -5331,7 +5322,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       getEl("imageUsageText").innerText = owner ? `${iU.count} / 15 Images · Owner access` : `${iU.count} / 15 Images`;
 
       const plan = getEl("profilePlanText"), limit = getEl("profileLimitText");
-      if(plan) plan.innerText = owner ? "Owner" : (currentModel === "pro" ? "Pro" : "Core");
+      if(plan) plan.innerText = owner ? "Owner" : (currentPlanTier === "pro" ? "Pro" : "Core");
       if(limit) limit.innerText = "Unlimited";
       updateFeedbackCounterUI();
     }
@@ -5371,8 +5362,8 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       getEl("modalName").innerText = auth.currentUser.displayName || "User";
       getEl("modalEmail").innerText = auth.currentUser.email || "";
       const ownerBadge=document.querySelector(".owner-profile-badge"); if(ownerBadge) ownerBadge.style.display=isTruxDeveloper(auth.currentUser) ? "inline-flex" : "none";
-      getEl("profilePlanText").innerText = isTruxDeveloper(auth.currentUser) ? "Owner" : (currentModel === "pro" ? "Pro" : "Core");
-      getEl("profileModelText").innerText = ({base:"Core 4.0",pro:"Pro 5.0",ultra:"TruX-Ultra 6.5"})[currentModel] || "Core 4.0";
+      getEl("profilePlanText").innerText = isTruxDeveloper(auth.currentUser) ? "Owner" : (currentPlanTier === "pro" ? "Pro" : "Core");
+      getEl("profileModelText").innerText = ({base:"Core 4.0",pro:"Pro 5.0",ultra:"TruX-Ultra 6.5"})[currentPlanTier] || "Core 4.0";
       getEl("profileLimitText").innerText = "Unlimited";
       getEl("profileModal").style.display = "flex";
     }
@@ -5497,7 +5488,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     function detectCodeInInput(text) {
       if (!text) return false;
       let hasCodeBlock = text.includes("```");
-      let hasCodePattern = /function\s*\w*\(|const\s+\w+\s*=|let\s+\w+\s*=|var\s+\w+\s*=|class\s+\w+|import\s+.*from|def\s+\w+\(|<html|<div|public\s+class|select\s+.*from/i.test(text);
+      let hasCodePattern = /functiongetEl("profileModelText").innerText = "Auto";s*\w*\(|const\s+\w+\s*=|let\s+\w+\s*=|var\s+\w+\s*=|class\s+\w+|import\s+.*from|def\s+\w+\(|<html|<div|public\s+class|select\s+.*from/i.test(text);
       let isLongStructure = text.split('\n').length > 5 || text.length > 280;
       return hasCodeBlock || (hasCodePattern && isLongStructure);
     }
@@ -6954,8 +6945,8 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       if(b) attachSources(b.closest(".row"), cleanSources);
 
       let tokensUsed = Math.ceil((prompt.length + text.length) / 4);
-      if(currentModel === "pro") recordProTokens(tokensUsed);
-      if(currentModel === "base") recordCoreTokens(tokensUsed);
+      if(currentPlanTier === "pro") recordProTokens(tokensUsed);
+      if(currentPlanTier === "base") recordCoreTokens(tokensUsed);
 
       let a = getEl(aid);
       if(a) {
@@ -7020,7 +7011,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           method: "POST",
           headers: imageHeaders,
           signal: activeAbortController.signal,
-          body: JSON.stringify({ message: imagePrompt, tier: currentModel, mode: "image", generateImage: true, userId: auth?.currentUser?.uid || null, userEmail: auth?.currentUser?.email || "" })
+          body: JSON.stringify({ message: imagePrompt, tier: currentPlanTier, mode: "image", generateImage: true, userId: auth?.currentUser?.uid || null, userEmail: auth?.currentUser?.email || "" })
         });
         let payload = await res.json().catch(() => ({}));
 
@@ -8184,10 +8175,10 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       if(modeUsage.month !== month) { modeUsage.month = month; modeUsage.codingTokens = 0; modeUsage.deepResearchRuns = 0; store.setItem("trux_mode_usage", JSON.stringify(modeUsage)); }
       if(!owner && workspaceMode === "coding" && modeUsage.codingTokens >= 150000) return toast("TruX-Code monthly limit reached (150k tokens).", "err");
       if(!owner && workspaceMode === "deep-research" && modeUsage.deepResearchRuns >= 1) return toast("Deep Research is limited to one run per month.", "err");
-      if(!owner && currentModel === "pro" && workspaceMode !== "coding" && getProUsageData().tokensUsed >= 1000000) return toast("TruX Pro monthly limit reached.", "err");
+      if(!owner && currentPlanTier === "pro" && workspaceMode !== "coding" && getProUsageData().tokensUsed >= 1000000) return toast("TruX Pro monthly limit reached.", "err");
       if(workspaceMode === "video") {
         if(!owner && !auth?.currentUser) return toast("Sign in to use Video generation.", "err");
-        if(!owner && currentModel !== "pro") return toast("Video generation is available to Pro accounts and Owner access.", "err");
+        if(!owner && currentPlanTier !== "pro") return toast("Video generation is available to Pro accounts and Owner access.", "err");
         return generateVideo(basePrompt || prompt);
       }
 
@@ -8284,7 +8275,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
 
       const requestBody = {
         message: prompt,
-        tier: (workspaceMode === "deep-research" || workspaceMode === "coding") ? "ultra" : currentModel,
+        tier: (workspaceMode === "deep-research" || workspaceMode === "coding") ? "ultra" : currentPlanTier,
         mode: workspaceMode,
         advancedThinking: advancedThinkingLevel === "extended" || workspaceMode === "deep-research",
         thinkingLevel: advancedThinkingLevel,
@@ -8625,7 +8616,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     async function generateVideo(basePrompt) {
       const owner=isTruxDeveloper(auth?.currentUser);
       if(!owner && !auth?.currentUser) return toast("Sign in to use Video generation.","err");
-      if(!owner && currentModel!=="pro") return toast("Video generation is available to Pro accounts and Owner access.","err");
+      if(!owner && currentPlanTier!=="pro") return toast("Video generation is available to Pro accounts and Owner access.","err");
 
       enterChatWorkspace();
       document.body.removeAttribute("data-media-mode");
@@ -8661,7 +8652,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           method:"POST",
           headers:videoHeaders,
           signal:activeAbortController.signal,
-          body:JSON.stringify({message:basePrompt,tier:currentModel,mode:"video",userId:auth?.currentUser?.uid||null,userEmail:auth?.currentUser?.email||"",notifyOnComplete:true})
+          body:JSON.stringify({message:basePrompt,tier:currentPlanTier,mode:"video",userId:auth?.currentUser?.uid||null,userEmail:auth?.currentUser?.email||"",notifyOnComplete:true})
         });
         if(!res.ok){ const p=await res.json().catch(()=>({})); throw Error(p.error||p.reply||"Video generation failed."); }
         if(!res.body) throw Error("Video streaming body unavailable.");
