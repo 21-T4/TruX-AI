@@ -6737,7 +6737,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       return null;
     }
     const TRUX_SVG_ELEMENTS = new Set([
-      "svg","g","defs","path","line","polyline","polygon","rect","circle","ellipse","text","tspan","title","desc",
+      "svg","g","defs","path","line","polyline","polygon","rect","circle","ellipse","text","tspan","textpath","title","desc",
       "clippath","mask","lineargradient","radialgradient","stop","marker","pattern","symbol","use",
       "filter","fegaussianblur","feoffset","femerge","femergenode","fecolormatrix","fecomponenttransfer",
       "fefunca","fefuncr","fefuncg","fefuncb","feblend","feflood","fecomposite","fedropshadow"
@@ -6755,7 +6755,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       "seed stitchTiles edgeMode lighting-color surfaceScale diffuseConstant specularConstant specularExponent " +
       "azimuth elevation xml:space role aria-label"
     ).split(/\s+/).map(x=>x.toLowerCase()));
-    const TRUX_SVG_TAG_NAMES = {clippath:"clipPath",lineargradient:"linearGradient",radialgradient:"radialGradient",fegaussianblur:"feGaussianBlur",feoffset:"feOffset",femerge:"feMerge",femergenode:"feMergeNode",fecolormatrix:"feColorMatrix",fecomponenttransfer:"feComponentTransfer",fefunca:"feFuncA",fefuncr:"feFuncR",fefuncg:"feFuncG",fefuncb:"feFuncB",feblend:"feBlend",feflood:"feFlood",fecomposite:"feComposite",fedropshadow:"feDropShadow"};
+    const TRUX_SVG_TAG_NAMES = {textpath:"textPath",clippath:"clipPath",lineargradient:"linearGradient",radialgradient:"radialGradient",fegaussianblur:"feGaussianBlur",feoffset:"feOffset",femerge:"feMerge",femergenode:"feMergeNode",fecolormatrix:"feColorMatrix",fecomponenttransfer:"feComponentTransfer",fefunca:"feFuncA",fefuncr:"feFuncR",fefuncg:"feFuncG",fefuncb:"feFuncB",feblend:"feBlend",feflood:"feFlood",fecomposite:"feComposite",fedropshadow:"feDropShadow"};
     function normalizeTruxSvgSource(raw){
       let source=String(raw||"").replace(/^\uFEFF/,"").replace(/\r\n?/g,"\n").trim();
       const fence=String.fromCharCode(96).repeat(3);
