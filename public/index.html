@@ -7577,7 +7577,12 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           }
 
           const currentState = await response.json().catch(() => ({}));
-          if (locallyStoppedBackgroundJobs.has(key)) return false;
+          if (locallyStoppedBackgroundJobs.has(key)) {
+            // A start response can be lost while the server still queues the
+            // job. Retry cancellation once the job becomes visible in status.
+            void requestBackgroundJobStop(key, state.jobSecret || "").catch(() => {});
+            return false;
+          }
           if (!response.ok) {
             statusFailureCount += 1;
             if (statusFailureCount >= 8) {
@@ -7737,6 +7742,18 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           row, id, sid, tsid, aid,
           jobSecret: session.backgroundJobSecret || ""
         });
+      }
+
+      if (locallyStoppedBackgroundJobs.has(clientJobId)) {
+        if (jobSecret) await requestBackgroundJobStop(jobId, jobSecret);
+        if (String(session.activeBackgroundJobId || "") === jobId) {
+          delete session.activeBackgroundJobId;
+          delete session.backgroundJobSecret;
+          delete session.backgroundStartedAt;
+          delete session.backgroundJobMode;
+          saveChatSessions();
+        }
+        return false;
       }
 
       if (generationStopRequested || !isGenerating) {
