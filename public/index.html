@@ -4015,20 +4015,13 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
 
 
   <style id="trux-native-mermaid-diagrams">
-    .trux-diagram {
-      width:100%;max-width:100%;box-sizing:border-box;overflow-x:auto;overflow-y:hidden;
-      overscroll-behavior-x:contain;margin:14px 0;padding:12px;
-      border:1px solid var(--line);border-radius:12px;background:var(--bg-1);
-    }
-    .trux-diagram svg {display:block;max-width:100%;height:auto;margin:0 auto}
-    .trux-diagram-status {padding:12px 4px;color:var(--txt-3);font-size:13px}
-    .trux-diagram-source {
-      display:block;box-sizing:border-box;max-width:100%;max-height:360px;overflow:auto;
-      padding:12px;border-radius:8px;background:var(--bg-2);color:var(--txt-2);
-      white-space:pre-wrap;overflow-wrap:anywhere;
-      font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
-    }
-    .trux-diagram-source[hidden] {display:none}
+    .trux-diagram{position:relative;width:100%;max-width:100%;box-sizing:border-box;margin:10px 0;padding:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;background:#151515!important;border:0!important;border-radius:0!important;box-shadow:none!important}
+    .trux-diagram-stage{position:relative;width:100%;min-height:26px;background:#151515!important}
+    .trux-diagram-svg{width:100%;max-width:100%;background:#151515!important}
+    .trux-diagram-svg svg{display:block;width:100%;max-width:100%;height:auto;margin:0;background:#151515!important;overflow:visible}
+    .trux-diagram-cursor{position:absolute;left:0;top:0;z-index:2;display:block;width:24px;height:24px;max-width:24px;max-height:24px;margin:0;padding:0;object-fit:contain;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;filter:none!important;mix-blend-mode:normal!important;animation:none!important;opacity:1!important;pointer-events:none;user-select:none;-webkit-user-drag:none}
+    .trux-diagram-cursor[hidden],.trux-diagram-source{display:none!important}
+    .trux-diagram-error{margin:6px 0;color:var(--txt-3);font-size:13px}
   </style>
 
   <style id="trux-chat-thinking-marker-refresh">
@@ -6372,74 +6365,91 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
 
     let truxMermaidRenderSequence = 0;
 
-    function buildTruxDiagramCard(source) {
-      return '<div class="trux-diagram" data-trux-diagram>' +
-        '<div class="trux-diagram-status" role="status">Rendering diagram…</div>' +
-        '<pre class="trux-diagram-source" hidden>' + escapeHtml(String(source || "")) + '</pre>' +
-        '</div>';
+    function isTruxMermaidDiagram(lang, code) {
+      const label=String(lang||"").trim().toLowerCase(), source=String(code||"").trim();
+      if(label==="mermaid") return true;
+      return /^(?:flowchart|graph|sequencediagram|classdiagram|statediagram(?:-v2)?|erdiagram|journey|gantt|pie(?:\s|$)|mindmap|timeline|quadrantchart|xychart-beta|block-beta|architecture-beta|gitgraph|sankey-beta|zenuml|requirementdiagram)\b/i.test(source);
     }
-
-    async function renderTruxDiagramElement(element) {
-      if (!element || !element.isConnected ||
-          element.dataset.truxDiagramRendered === "true" ||
-          element.dataset.truxDiagramRendering === "true" ||
-          element.dataset.truxDiagramFailed === "true") return;
-
-      element.dataset.truxDiagramRendering = "true";
-      const sourceNode = element.querySelector(".trux-diagram-source");
-      const source = sourceNode ? sourceNode.textContent : "";
-
-      try {
-        let attempts = 0;
-        while ((!window.mermaid || typeof window.mermaid.render !== "function") &&
-               attempts < 40 && element.isConnected) {
-          await new Promise(resolve => window.setTimeout(resolve, 100));
-          attempts++;
+    function buildTruxDiagramCard(source,pending=false) {
+      return '<div class="trux-diagram" data-trux-diagram'+(pending?' data-trux-diagram-pending="true"':'')+'>'+
+        '<div class="trux-diagram-stage"><div class="trux-diagram-svg"></div>'+
+        '<img class="trux-diagram-cursor" src="/icon-grey.png" alt="" aria-hidden="true" draggable="false"></div>'+
+        '<pre class="trux-diagram-source" hidden>'+escapeHtml(String(source||""))+'</pre>'+
+        '<div class="trux-diagram-error" hidden></div></div>';
+    }
+    function truxSvgLength(shape){try{return typeof shape.getTotalLength==="function"?Math.max(0,shape.getTotalLength()):0}catch(_){return 0}}
+    function truxSvgPointToStage(svg,stage,p){
+      const r=svg.getBoundingClientRect(),s=stage.getBoundingClientRect(),v=svg.viewBox&&svg.viewBox.baseVal;
+      return {x:r.left-s.left+(p.x-(v?v.x:0))*r.width/Math.max(1,v&&v.width?v.width:r.width),
+        y:r.top-s.top+(p.y-(v?v.y:0))*r.height/Math.max(1,v&&v.height?v.height:r.height)};
+    }
+    function animateTruxDiagramDrawing(stage,svg,cursor){
+      const labels=Array.from(svg.querySelectorAll("text,foreignObject,.edgeLabel,.nodeLabel,.cluster-label"));
+      labels.forEach(x=>x.style.visibility="hidden");
+      const shapes=Array.from(svg.querySelectorAll("path,line,polyline,polygon,rect,circle,ellipse"))
+        .filter(x=>!x.closest("defs,marker,.edgeLabel,.labelBkg,.label-container")&&truxSvgLength(x)>0);
+      const edges=shapes.filter(x=>/(edge|flowchart-link|messageLine|transition|mindmap-link|relationship|dependency|section)/i.test(
+        String(x.getAttribute("class")||"")+" "+String(x.parentElement?.getAttribute("class")||"")));
+      const nodes=shapes.filter(x=>!edges.includes(x)&&!!x.closest(".node,.cluster,.actor,.section"));
+      const ordered=(edges.length?edges:shapes).concat(edges.length?nodes:[]);
+      const segments=ordered.map(shape=>{const length=truxSvgLength(shape),dash=shape.style.strokeDasharray,offset=shape.style.strokeDashoffset;
+        shape.style.strokeDasharray=length+" "+length;shape.style.strokeDashoffset=String(length);shape.style.transition="none";
+        return {shape,length,duration:Math.max(160,Math.min(520,length*1.35)),dash,offset};}).filter(x=>x.length>0);
+      if(!segments.length){cursor.hidden=true;labels.forEach(x=>x.style.visibility="");return}
+      const started=performance.now();
+      function finish(){segments.forEach(x=>{x.shape.style.strokeDasharray=x.dash;x.shape.style.strokeDashoffset=x.offset;x.shape.style.transition=""});labels.forEach(x=>x.style.visibility="");cursor.hidden=true}
+      function tick(now){
+        if(!stage.isConnected||!svg.isConnected)return;
+        let elapsed=now-started,active=null;
+        for(const seg of segments){if(elapsed<=seg.duration){active=seg;break}seg.shape.style.strokeDashoffset="0";elapsed-=seg.duration}
+        if(!active){finish();return}
+        const p=Math.max(0,Math.min(1,elapsed/active.duration));active.shape.style.strokeDashoffset=String(active.length*(1-p));
+        try{const pos=truxSvgPointToStage(svg,stage,active.shape.getPointAtLength(active.length*p));
+          cursor.style.transform="translate("+(pos.x-cursor.offsetWidth/2)+"px,"+(pos.y-cursor.offsetHeight/2)+"px)"}catch(_){}
+        requestAnimationFrame(tick);
+      }
+      try{const pos=truxSvgPointToStage(svg,stage,segments[0].shape.getPointAtLength(0));
+        cursor.style.transform="translate("+(pos.x-cursor.offsetWidth/2)+"px,"+(pos.y-cursor.offsetHeight/2)+"px)"}catch(_){}
+      requestAnimationFrame(tick);
+    }
+    async function renderTruxDiagramElement(element){
+      if(!element||!element.isConnected||element.dataset.truxDiagramPending==="true"||element.dataset.truxDiagramRendered==="true"||element.dataset.truxDiagramRendering==="true"||element.dataset.truxDiagramFailed==="true")return;
+      element.dataset.truxDiagramRendering="true";
+      const sourceNode=element.querySelector(".trux-diagram-source"),svgSlot=element.querySelector(".trux-diagram-svg");
+      const stage=element.querySelector(".trux-diagram-stage"),cursor=element.querySelector(".trux-diagram-cursor");
+      const source=sourceNode?sourceNode.textContent:"";
+      try{
+        let attempts=0;while((!window.mermaid||typeof window.mermaid.render!=="function")&&attempts<40&&element.isConnected){await new Promise(resolve=>window.setTimeout(resolve,100));attempts++}
+        if(!element.isConnected)return;
+        if(!window.mermaid||typeof window.mermaid.render!=="function"||!source.trim())throw Error("Diagram renderer/source unavailable");
+        if(!window.__truxMermaidInitialized){
+          window.mermaid.initialize({startOnLoad:false,securityLevel:"strict",theme:"base",themeVariables:{
+            background:"#151515",primaryColor:"#151515",primaryTextColor:"#d8d8d8",primaryBorderColor:"#818181",
+            lineColor:"#b4b4b4",secondaryColor:"#151515",tertiaryColor:"#151515",mainBkg:"#151515",
+            clusterBkg:"#151515",clusterBorder:"#515151",edgeLabelBackground:"#151515",
+            noteBkgColor:"#151515",noteTextColor:"#d8d8d8",noteBorderColor:"#818181",
+            textColor:"#d8d8d8",fontFamily:"Arial, sans-serif"
+          },flowchart:{htmlLabels:false,useMaxWidth:true,curve:"basis"}});
+          window.__truxMermaidInitialized=true;
         }
-        if (!element.isConnected) return;
-        if (!window.mermaid || typeof window.mermaid.render !== "function") {
-          throw new Error("The diagram renderer did not load.");
-        }
-        if (!source.trim()) throw new Error("The diagram source is empty.");
-
-        if (!window.__truxMermaidInitialized) {
-          window.mermaid.initialize({
-            startOnLoad: false,
-            securityLevel: "strict",
-            theme: "dark",
-            fontFamily: "inherit",
-            flowchart: { htmlLabels: false, useMaxWidth: true, curve: "basis" }
-          });
-          window.__truxMermaidInitialized = true;
-        }
-
-        const id = "trux-mermaid-" + (++truxMermaidRenderSequence);
-        const result = await window.mermaid.render(id, source);
-        if (!element.isConnected) return;
-        element.innerHTML = result.svg;
-        element.dataset.truxDiagramRendered = "true";
-        delete element.dataset.truxDiagramRendering;
-        if (typeof result.bindFunctions === "function") result.bindFunctions(element);
-      } catch (error) {
-        if (!element.isConnected) return;
-        delete element.dataset.truxDiagramRendering;
-        element.dataset.truxDiagramFailed = "true";
-        const status = element.querySelector(".trux-diagram-status");
-        if (status) status.textContent = "Diagram preview unavailable — source shown below.";
-        const fallback = element.querySelector(".trux-diagram-source");
-        if (fallback) {
-          fallback.hidden = false;
-          fallback.classList.add("trux-diagram-source-fallback");
-        }
-        console.warn("TruX diagram render skipped:", error);
+        const result=await window.mermaid.render("trux-mermaid-"+(++truxMermaidRenderSequence),source);
+        if(!element.isConnected)return;if(!svgSlot||!stage||!cursor)throw Error("Diagram surface unavailable");
+        svgSlot.innerHTML=result.svg;const svg=svgSlot.querySelector("svg");if(!svg)throw Error("Mermaid returned no SVG");
+        svg.style.background="#151515";svg.style.backgroundColor="#151515";
+        element.dataset.truxDiagramRendered="true";delete element.dataset.truxDiagramRendering;
+        if(typeof result.bindFunctions==="function")result.bindFunctions(svgSlot);
+        requestAnimationFrame(()=>{if(element.isConnected)animateTruxDiagramDrawing(stage,svg,cursor)});
+      }catch(error){
+        if(!element.isConnected)return;delete element.dataset.truxDiagramRendering;element.dataset.truxDiagramFailed="true";
+        if(cursor)cursor.hidden=true;const errorNode=element.querySelector(".trux-diagram-error");
+        if(errorNode){errorNode.hidden=false;errorNode.textContent="This diagram couldn't be rendered."}
+        console.warn("TruX diagram render skipped:",error);
       }
     }
-
-    function renderTruxDiagrams(root) {
-      if (!root || typeof root.querySelectorAll !== "function") return;
-      const diagrams = [];
-      if (root instanceof Element && root.matches(".trux-diagram[data-trux-diagram]")) diagrams.push(root);
-      root.querySelectorAll(".trux-diagram[data-trux-diagram]").forEach(el => diagrams.push(el));
+    function renderTruxDiagrams(root){
+      if(!root||typeof root.querySelectorAll!=="function")return;
+      const diagrams=[];if(root instanceof Element&&root.matches(".trux-diagram[data-trux-diagram]"))diagrams.push(root);
+      root.querySelectorAll(".trux-diagram[data-trux-diagram]").forEach(el=>diagrams.push(el));
       diagrams.forEach(renderTruxDiagramElement);
     }
 
@@ -6453,11 +6463,10 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
 
       let src = String(t).replace(/\r\n/g, "\n");
       let cards = [];
+      if (!src.includes("```") && isTruxMermaidDiagram("", src)) return buildTruxDiagramCard(src, false);
 
       src = src.replace(/```([\w+#.-]*)[ \t]*\n?([\s\S]*?)```/g, (m, lang, code) => {
-        cards.push(/^mermaid$/i.test(String(lang || "").trim())
-          ? buildTruxDiagramCard(code)
-          : buildCodeCard(lang, code, false));
+        cards.push(isTruxMermaidDiagram(lang, code) ? buildTruxDiagramCard(code, false) : buildCodeCard(lang, code, false));
         return `\n\n\u0000F${cards.length - 1}\u0000\n\n`;
       });
 
@@ -6468,7 +6477,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         let nl = rest.indexOf("\n");
         let lang = (nl === -1 ? rest : rest.slice(0, nl)).trim();
         let code = nl === -1 ? "" : rest.slice(nl + 1);
-        cards.push(buildCodeCard(lang, code, !!allowOpenFence));
+        cards.push(isTruxMermaidDiagram(lang, code) ? buildTruxDiagramCard(code, true) : buildCodeCard(lang, code, !!allowOpenFence));
         src = src.slice(0, openFence) + `\n\n\u0000F${cards.length - 1}\u0000\n`;
       }
 
@@ -7101,7 +7110,18 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         liveHtml = html;
 
         if (!liveEl) liveEl = commitBlock(html, true);
-        else liveEl.innerHTML = html;
+        else {
+          const currentPending = liveEl.querySelector('.trux-diagram[data-trux-diagram-pending="true"]');
+          if (currentPending) {
+            const parsed = document.createElement("div"); parsed.innerHTML = html;
+            const nextPending = parsed.querySelector('.trux-diagram[data-trux-diagram-pending="true"]');
+            if (nextPending) {
+              const oldSource = currentPending.querySelector(".trux-diagram-source");
+              const newSource = nextPending.querySelector(".trux-diagram-source");
+              if (oldSource && newSource) oldSource.textContent = newSource.textContent;
+            } else liveEl.innerHTML = html;
+          } else liveEl.innerHTML = html;
+        }
 
         renderTruxDiagrams(liveEl);
         liveEl.classList.toggle("single-line", liveEl.offsetHeight < 46);
