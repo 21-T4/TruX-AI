@@ -6382,7 +6382,8 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       let source=String(raw||"").replace(/^\uFEFF/,"").replace(/\r\n?/g,"\n")
         .replace(/[\u2018\u2019\u201A\u201B]/g,"'")
         .replace(/[\u201C\u201D\u201E\u201F]/g,'"').trim();
-      source=source.replace(/^\s*```(?:mermaid)?\s*\n?/i,"").replace(/\n?\s*```\s*$/,"").trim();
+      const fence = String.fromCharCode(96).repeat(3);
+      source=source.replace(new RegExp("^\\s*"+fence+"(?:[\\w+#.-]+)?[ \\t]*\\n?","i"),"").replace(new RegExp("\\n?\\s*"+fence+"\\s*$"),"").trim();
       source=source.replace(/&nbsp;/gi," ").replace(/<br\s*\/?\s*>/gi," ");
       const lines=source.split("\n");
       const first=lines.findIndex(line=>/^\s*(?:flowchart|graph|sequenceDiagram|classDiagram|stateDiagram(?:-v2)?|erDiagram|journey|gantt|pie|mindmap|timeline|quadrantChart|xychart-beta|block-beta|architecture-beta|gitGraph|sankey-beta|zenuml|requirementDiagram)\b/i.test(line));
@@ -6735,15 +6736,151 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       }
       return null;
     }
-    function isTruxMermaidDiagram(lang, code) {
+    const TRUX_SVG_ELEMENTS = new Set([
+      "svg","g","defs","path","line","polyline","polygon","rect","circle","ellipse","text","tspan","title","desc",
+      "clippath","mask","lineargradient","radialgradient","stop","marker","pattern","symbol","use",
+      "filter","fegaussianblur","feoffset","femerge","femergenode","fecolormatrix","fecomponenttransfer",
+      "fefunca","fefuncr","fefuncg","fefuncb","feblend","feflood","fecomposite","fedropshadow"
+    ]);
+    const TRUX_SVG_ATTRIBUTES = new Set((
+      "xmlns viewBox preserveAspectRatio width height x y x1 y1 x2 y2 cx cy r rx ry d points transform " +
+      "fill fill-opacity fill-rule stroke stroke-width stroke-linecap stroke-linejoin stroke-dasharray " +
+      "stroke-dashoffset stroke-opacity stroke-miterlimit opacity vector-effect pathLength font-family font-size " +
+      "font-style font-weight text-anchor dominant-baseline alignment-baseline letter-spacing word-spacing " +
+      "textLength lengthAdjust dx dy rotate offset stop-color stop-opacity gradientUnits gradientTransform " +
+      "spreadMethod fx fy fr clip-path clip-rule mask maskUnits maskContentUnits marker-start marker-mid marker-end " +
+      "markerUnits markerWidth markerHeight refX refY orient patternUnits patternContentUnits patternTransform href " +
+      "filter filterUnits primitiveUnits in in2 result stdDeviation type values operator k1 k2 k3 k4 scale slope " +
+      "intercept tableValues mode flood-color flood-opacity color-interpolation-filters baseFrequency numOctaves " +
+      "seed stitchTiles edgeMode lighting-color surfaceScale diffuseConstant specularConstant specularExponent " +
+      "azimuth elevation xml:space role aria-label"
+    ).split(/\s+/).map(x=>x.toLowerCase()));
+    function normalizeTruxSvgSource(raw){
+      let source=String(raw||"").replace(/^\uFEFF/,"").replace(/\r\n?/g,"\n").trim();
+      const fence=String.fromCharCode(96).repeat(3);
+      source=source.replace(new RegExp("^\\s*"+fence+"(?:svg|xml)?[ \\t]*\\n?","i"),"")
+        .replace(new RegExp("\\n?\\s*"+fence+"\\s*$"),"").trim();
+      const start=source.search(/<(?:[A-Za-z_][\\w.-]*:)?svg\\b/i);
+      if(start>0)source=source.slice(start).trim();
+      return source;
+    }
+    function isTruxSvgDrawing(raw){
+      return /^\\s*(?:<\\?xml[\\s\\S]*?\\?>\\s*)?<(?:[A-Za-z_][\\w.-]*:)?svg\\b/i.test(normalizeTruxSvgSource(raw));
+    }
+    function isTruxDiagram(lang, code) {
       const label=String(lang||"").trim().toLowerCase(), source=String(code||"").trim();
-      if(label==="mermaid") return true;
-      return /^(?:flowchart|graph|sequencediagram|classdiagram|statediagram(?:-v2)?|erdiagram|journey|gantt|pie(?:\s|$)|mindmap|timeline|quadrantchart|xychart-beta|block-beta|architecture-beta|gitgraph|sankey-beta|zenuml|requirementdiagram)\b/i.test(source);
+      if(label==="mermaid" || label==="svg") return true;
+      if(label==="xml" && isTruxSvgDrawing(source)) return true;
+      if(!label && isTruxSvgDrawing(source)) return true;
+      return /^(?:flowchart|graph|sequencediagram|classdiagram|statediagram(?:-v2)?|erdiagram|journey|gantt|pie(?:\\s|$)|mindmap|timeline|quadrantchart|xychart-beta|block-beta|architecture-beta|gitgraph|sankey-beta|zenuml|requirementdiagram)\\b/i.test(source);
+    }
+    function sanitizeTruxSvgNode(sourceNode, context, depth){
+      if(depth>64)throw new Error("SVG drawing nesting is too deep");
+      if(sourceNode.nodeType===3)return document.createTextNode(sourceNode.nodeValue||"");
+      if(sourceNode.nodeType!==1)return null;
+      if(++context.nodes>12000)throw new Error("SVG drawing has too many elements");
+      const tag=String(sourceNode.localName||sourceNode.nodeName||"").toLowerCase();
+      if(!TRUX_SVG_ELEMENTS.has(tag))return null;
+      const clean=document.createElementNS(context.namespace,tag);
+      for(const attribute of Array.from(sourceNode.attributes||[])){
+        const name=String(attribute.name||"");
+        const lower=name.toLowerCase();
+        let value=String(attribute.value||"").trim();
+        if(!TRUX_SVG_ATTRIBUTES.has(lower)||value.length>16000)continue;
+        if(lower==="href" && !/^#[A-Za-z_][\\w.-]*$/.test(value))continue;
+        if(lower==="id" && !/^[A-Za-z_][\\w.-]*$/.test(value))continue;
+        if(/url\\s*\\(/i.test(value)){
+          const urls=value.match(/url\\s*\\([^)]*\\)/gi)||[];
+          if(!urls.length||urls.some(item=>!/^url\\(\\s*#[A-Za-z_][\\w.-]*\\s*\\)$/i.test(item.trim())))continue;
+        }else if(/(?:javascript:|data:|https?:\\/\\/|\\/\\/)/i.test(value)){
+          continue;
+        }
+        if(lower==="viewbox"){
+          const parts=value.split(/[\\s,]+/).map(Number);
+          if(parts.length!==4||!parts.every(Number.isFinite)||parts[2]<=0||parts[3]<=0)continue;
+        }
+        clean.setAttribute(name,value);
+      }
+      for(const child of Array.from(sourceNode.childNodes||[])){
+        const safeChild=sanitizeTruxSvgNode(child,context,depth+1);
+        if(safeChild)clean.appendChild(safeChild);
+      }
+      return clean;
+    }
+    function renderTruxSvgDrawing(raw, slot, stage){
+      if(!slot||!stage)throw new Error("Drawing surface is unavailable");
+      const source=normalizeTruxSvgSource(raw);
+      if(!source||source.length>350000)throw new Error("SVG source is empty or exceeds the drawing size limit");
+      const parsed=new DOMParser().parseFromString(source,"image/svg+xml");
+      const sourceRoot=parsed.documentElement;
+      if(!sourceRoot||String(sourceRoot.localName||"").toLowerCase()!=="svg"||parsed.querySelector("parsererror")){
+        throw new Error("The SVG drawing is invalid XML or has no SVG root");
+      }
+      const namespace="http://www.w3.org/2000/svg";
+      const context={namespace,nodes:0};
+      const svg=sanitizeTruxSvgNode(sourceRoot,context,0);
+      if(!svg||String(svg.localName||"").toLowerCase()!=="svg")throw new Error("The SVG drawing could not be sanitized");
+      const numberLength=(value,fallback)=>{
+        const text=String(value||"").trim();
+        if(!text||/%$/.test(text))return fallback;
+        const n=Number.parseFloat(text);
+        return Number.isFinite(n)&&n>0&&n<=50000?n:fallback;
+      };
+      let vx=0,vy=0,vw=numberLength(sourceRoot.getAttribute("width"),1600),vh=numberLength(sourceRoot.getAttribute("height"),900);
+      const rawViewBox=String(sourceRoot.getAttribute("viewBox")||"").trim();
+      const vb=rawViewBox.split(/[\\s,]+/).map(Number);
+      if(vb.length===4&&vb.every(Number.isFinite)&&vb[2]>0&&vb[3]>0&&vb[2]<=50000&&vb[3]<=50000){
+        vx=vb[0];vy=vb[1];vw=vb[2];vh=vb[3];
+      }
+      svg.setAttribute("xmlns",namespace);
+      svg.setAttribute("viewBox",[vx,vy,vw,vh].join(" "));
+      svg.setAttribute("width",String(vw));
+      svg.setAttribute("height",String(vh));
+      svg.setAttribute("role","img");
+      if(!svg.getAttribute("aria-label"))svg.setAttribute("aria-label","Custom vector drawing");
+      svg.style.background="#151515";
+      svg.style.backgroundColor="#151515";
+      svg.style.setProperty("width","100%","important");
+      svg.style.setProperty("min-width","100%","important");
+      svg.style.setProperty("max-width","none","important");
+      svg.style.setProperty("height","auto","important");
+      svg.style.setProperty("min-height","460px","important");
+      svg.style.overflow="visible";
+      const drawable=Array.from(svg.querySelectorAll("path,line,polyline,polygon,rect,circle,ellipse,text,use"))
+        .filter(node=>!node.closest("defs,clippath,mask,marker,pattern,symbol,filter"));
+      if(!drawable.length)throw new Error("The SVG contains no visible drawing elements");
+      const coversCanvas=(node)=>{
+        const x=Number.parseFloat(node.getAttribute("x")||"0"),y=Number.parseFloat(node.getAttribute("y")||"0");
+        const w=String(node.getAttribute("width")||""),h=String(node.getAttribute("height")||"");
+        const covers=(raw,viewSize)=>/%$/.test(raw)?Number.parseFloat(raw)>=99:Number.parseFloat(raw)>=viewSize*.99;
+        return Math.abs(x-vx)<1&&Math.abs(y-vy)<1&&covers(w,vw)&&covers(h,vh);
+      };
+      let background=Array.from(svg.children).find(node=>String(node.localName||"").toLowerCase()==="rect"&&coversCanvas(node));
+      if(background){
+        background.setAttribute("fill","#151515");
+        background.setAttribute("stroke","none");
+        background.setAttribute("class","trux-canvas-background");
+        svg.insertBefore(background,svg.firstChild);
+      }else{
+        background=document.createElementNS(namespace,"rect");
+        background.setAttribute("x",String(vx));background.setAttribute("y",String(vy));
+        background.setAttribute("width",String(vw));background.setAttribute("height",String(vh));
+        background.setAttribute("fill","#151515");background.setAttribute("stroke","none");
+        background.setAttribute("class","trux-canvas-background");
+        svg.insertBefore(background,svg.firstChild);
+      }
+      const stageWidth=Math.max(1440,Math.min(2200,vw));
+      const stageHeight=Math.max(460,Math.min(3200,stageWidth*vh/vw));
+      stage.style.width=stageWidth+"px";
+      stage.style.minWidth=stageWidth+"px";
+      stage.style.minHeight=stageHeight+"px";
+      slot.replaceChildren(svg);
+      return svg;
     }
     function buildTruxDiagramCard(source,pending=false) {
       return '<div class="trux-diagram" data-trux-diagram'+(pending?' data-trux-diagram-pending="true"':'')+'>'+
         '<div class="trux-diagram-toolbar"><button type="button" data-trux-diagram-action="edit" aria-label="Edit diagram source">Edit diagram</button></div>'+
-        '<div class="trux-diagram-editor" hidden><textarea spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Editable Mermaid diagram source"></textarea>'+
+        '<div class="trux-diagram-editor" hidden><textarea spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Editable vector drawing or diagram source"></textarea>'+
         '<div class="trux-diagram-editor-actions"><button type="button" data-trux-diagram-action="cancel">Cancel</button><button type="button" data-trux-diagram-action="apply">Apply changes</button></div></div>'+
         '<div class="trux-diagram-stage"><div class="trux-diagram-svg"></div>'+
         '<img class="trux-diagram-cursor" src="/icon-grey.png" alt="" aria-hidden="true" draggable="false"></div>'+
@@ -6829,21 +6966,41 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       const labels=Array.from(svg.querySelectorAll("text,foreignObject,.edgeLabel,.nodeLabel,.cluster-label"));
       labels.forEach(x=>x.style.visibility="hidden");
       const shapes=Array.from(svg.querySelectorAll("path,line,polyline,polygon,rect,circle,ellipse"))
-        .filter(x=>!x.closest("defs,marker,.edgeLabel,.labelBkg,.label-container")&&truxSvgLength(x)>0);
+        .filter(x=>!x.classList.contains("trux-canvas-background")&&
+          !x.closest("defs,marker,.edgeLabel,.labelBkg,.label-container")&&truxSvgLength(x)>0);
       const edges=shapes.filter(x=>/(edge|flowchart-link|messageLine|transition|mindmap-link|relationship|dependency|section)/i.test(
         String(x.getAttribute("class")||"")+" "+String(x.parentElement?.getAttribute("class")||"")));
       const nodes=shapes.filter(x=>!edges.includes(x)&&!!x.closest(".node,.cluster,.actor,.section"));
       const ordered=(edges.length?edges:shapes).concat(edges.length?nodes:[]);
-      const segments=ordered.map(shape=>{const length=truxSvgLength(shape),dash=shape.style.strokeDasharray,offset=shape.style.strokeDashoffset;
+      const segments=ordered.map(shape=>{
+        const dash=shape.style.strokeDasharray,offset=shape.style.strokeDashoffset;
+        const originalFillOpacity=shape.style.fillOpacity,originalStroke=shape.style.stroke,originalStrokeWidth=shape.style.strokeWidth;
+        let computedStroke="none",computedFill="none";
+        try{const computed=window.getComputedStyle(shape);computedStroke=computed.stroke;computedFill=computed.fill;}catch(_){}
+        const hasFill=!!computedFill&&computedFill!=="none"&&computedFill!=="rgba(0, 0, 0, 0)";
+        const needsTemporaryStroke=(!computedStroke||computedStroke==="none"||computedStroke==="rgba(0, 0, 0, 0)");
+        if(hasFill)shape.style.fillOpacity="0";
+        if(needsTemporaryStroke){shape.style.stroke=hasFill?computedFill:"#b4b4b4";shape.style.strokeWidth=originalStrokeWidth||"2";}
+        const length=truxSvgLength(shape);
         shape.style.strokeDasharray=length+" "+length;shape.style.strokeDashoffset=String(length);shape.style.transition="none";
-        return {shape,length,duration:Math.max(160,Math.min(520,length*1.35)),dash,offset};}).filter(x=>x.length>0);
+        return {shape,length,duration:Math.max(160,Math.min(520,length*1.35)),dash,offset,
+          originalFillOpacity,originalStroke,originalStrokeWidth,hasFill,needsTemporaryStroke};
+      }).filter(x=>x.length>0);
       if(!segments.length){cursor.hidden=true;labels.forEach(x=>x.style.visibility="");return}
+      function restoreSegment(seg){
+        seg.shape.style.strokeDasharray=seg.dash;seg.shape.style.strokeDashoffset=seg.offset;seg.shape.style.transition="";
+        if(seg.hasFill)seg.shape.style.fillOpacity=seg.originalFillOpacity;
+        if(seg.needsTemporaryStroke){seg.shape.style.stroke=seg.originalStroke;seg.shape.style.strokeWidth=seg.originalStrokeWidth;}
+      }
       const started=performance.now();
-      function finish(){segments.forEach(x=>{x.shape.style.strokeDasharray=x.dash;x.shape.style.strokeDashoffset=x.offset;x.shape.style.transition=""});labels.forEach(x=>x.style.visibility="");cursor.hidden=true}
+      function finish(){segments.forEach(restoreSegment);labels.forEach(x=>x.style.visibility="");cursor.hidden=true}
       function tick(now){
         if(!stage.isConnected||!svg.isConnected)return;
         let elapsed=now-started,active=null;
-        for(const seg of segments){if(elapsed<=seg.duration){active=seg;break}seg.shape.style.strokeDashoffset="0";elapsed-=seg.duration}
+        for(const seg of segments){
+          if(elapsed<=seg.duration){active=seg;break}
+          restoreSegment(seg);elapsed-=seg.duration;
+        }
         if(!active){finish();return}
         const p=Math.max(0,Math.min(1,elapsed/active.duration));active.shape.style.strokeDashoffset=String(active.length*(1-p));
         try{const pos=truxSvgPointToStage(svg,stage,active.shape.getPointAtLength(active.length*p));
@@ -6854,6 +7011,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         cursor.style.transform="translate("+(pos.x-cursor.offsetWidth/2)+"px,"+(pos.y-cursor.offsetHeight/2)+"px)"}catch(_){}
       requestAnimationFrame(tick);
     }
+
     async function renderTruxDiagramElement(element){
       if(!element||!element.isConnected||element.dataset.truxDiagramPending==="true"||element.dataset.truxDiagramRendered==="true"||element.dataset.truxDiagramRendering==="true"||element.dataset.truxDiagramFailed==="true")return;
       element.dataset.truxDiagramRendering="true";
@@ -6861,6 +7019,14 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       const stage=element.querySelector(".trux-diagram-stage"),cursor=element.querySelector(".trux-diagram-cursor");
       const source=sourceNode?sourceNode.textContent:"";
       try{
+        if(isTruxSvgDrawing(source)){
+          const drawing=renderTruxSvgDrawing(source,svgSlot,stage);
+          if(!element.isConnected)return;
+          element.dataset.truxDiagramRendered="true";
+          delete element.dataset.truxDiagramRendering;
+          requestAnimationFrame(()=>{if(element.isConnected)animateTruxDiagramDrawing(stage,drawing,cursor)});
+          return;
+        }
         const mermaidApi=await waitForTruxMermaidApi(element);
         if(!element.isConnected)return;
         if(!mermaidApi)throw Error("Mermaid renderer could not be loaded from either CDN");
@@ -6952,10 +7118,10 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
 
       let src = String(t).replace(/\r\n/g, "\n");
       let cards = [];
-      if (!src.includes("```") && isTruxMermaidDiagram("", src)) return buildTruxDiagramCard(src, false);
+      if (!src.includes("```") && isTruxDiagram("", src)) return buildTruxDiagramCard(src, false);
 
       src = src.replace(/```([\w+#.-]*)[ \t]*\n?([\s\S]*?)```/g, (m, lang, code) => {
-        cards.push(isTruxMermaidDiagram(lang, code) ? buildTruxDiagramCard(code, false) : buildCodeCard(lang, code, false));
+        cards.push(isTruxDiagram(lang, code) ? buildTruxDiagramCard(code, false) : buildCodeCard(lang, code, false));
         return `\n\n\u0000F${cards.length - 1}\u0000\n\n`;
       });
 
@@ -6966,7 +7132,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         let nl = rest.indexOf("\n");
         let lang = (nl === -1 ? rest : rest.slice(0, nl)).trim();
         let code = nl === -1 ? "" : rest.slice(nl + 1);
-        cards.push(isTruxMermaidDiagram(lang, code) ? buildTruxDiagramCard(code, true) : buildCodeCard(lang, code, !!allowOpenFence));
+        cards.push(isTruxDiagram(lang, code) ? buildTruxDiagramCard(code, true) : buildCodeCard(lang, code, !!allowOpenFence));
         src = src.slice(0, openFence) + `\n\n\u0000F${cards.length - 1}\u0000\n`;
       }
 
