@@ -113,13 +113,22 @@ async function processJob(job, env) {
     let liveText = '';
     let seq = 1;
     let lastLivePublishAt = 0;
-    async function publishLiveState(force = false) {
+    let livePublishChain = Promise.resolve();
+    function publishLiveState(force = false) {
       const now = Date.now();
-      // Keep background state updates frequent enough for live UI without
-      // turning every streamed token into a datastore write.
-      if (!force && now - lastLivePublishAt < 750) return;
+      // Publish frequently for a responsive resumed chat, but never make
+      // model-stream consumption wait on a state-store write.
+      if (!force && now - lastLivePublishAt < 250) return livePublishChain;
       lastLivePublishAt = now;
-      await updateJob(env, { jobId, jobSecret: job.jobSecret, status: 'running', events, liveText });
+      const snapshot = {
+        jobId,
+        jobSecret: job.jobSecret,
+        status: 'running',
+        events: events.map(event => ({ ...event })),
+        liveText
+      };
+      livePublishChain = livePublishChain.catch(() => {}).then(() => updateJob(env, snapshot));
+      return livePublishChain;
     }
 
 
@@ -146,7 +155,7 @@ async function processJob(job, env) {
             });
             events = events.slice(-120);
           }
-          await publishLiveState(false);
+          void publishLiveState(false).catch(() => {});
         }
         return;
       }
@@ -189,8 +198,12 @@ async function processJob(job, env) {
 
     let pendingRead = reader.read();
     while (true) {
-      const stopPulse = new Promise(resolve => setTimeout(() => resolve({ __stopPulse: true }), 750));
+      let stopPulseTimer;
+      const stopPulse = new Promise(resolve => {
+        stopPulseTimer = setTimeout(() => resolve({ __stopPulse: true }), 250);
+      });
       const readResult = await Promise.race([pendingRead, stopPulse]);
+      if (!readResult?.__stopPulse) clearTimeout(stopPulseTimer);
 
       if (readResult?.__stopPulse) {
         if (await isJobStopped(job, env)) {
@@ -236,6 +249,7 @@ async function processJob(job, env) {
       }
     }
 
+    await publishLiveState(true).catch(() => {});
     if (await isJobStopped(job, env)) return;
 
     if (!finalText.trim()) {
