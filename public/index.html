@@ -6622,6 +6622,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
 
         // Replace this turn and any later turns, then submit the same prompt
         // again so the transcript never contains duplicate user messages.
+        store.removeItem("trux_turn_draft_" + currentChatId);
         session.messages.splice(index);
         saveChatSessions();
         let node = userRow;
@@ -6956,8 +6957,41 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       draft.text = value;
       draft.incomplete = true;
 
-      // Local-only checkpoints: do not upload every stream update to cloud storage.
-      try { store.setItem("trux_chats", JSON.stringify(chatSessions)); } catch {}
+      // Store only the active turn's draft locally, rather than serializing all chats
+      // and large attachments several times per second. Never cloud-sync each chunk.
+      try {
+        store.setItem("trux_turn_draft_" + context.chatId, JSON.stringify({
+          turnKey: context.turnKey,
+          userMessageIndex: context.userMessageIndex,
+          text: value
+        }));
+      } catch {}
+    }
+
+    function restorePersistedTurnDraft(chatId) {
+      const session = chatSessions[chatId];
+      if (!session?.messages || session.incognito) return;
+      const saved = store.json("trux_turn_draft_" + chatId, null);
+      if (!saved || !String(saved.text || "")) return;
+
+      const turnKey = String(saved.turnKey || "");
+      let draft = turnKey
+        ? session.messages.find(message => message?.role === "trux" && message.draftTurnId === turnKey)
+        : null;
+      if (!draft) {
+        const userIndex = Number(saved.userMessageIndex);
+        if (!Number.isInteger(userIndex) || userIndex < 0 || session.messages[userIndex]?.role !== "user") return;
+        draft = {
+          role: "trux",
+          text: String(saved.text),
+          incomplete: true,
+          ...(turnKey ? { draftTurnId: turnKey } : {})
+        };
+        session.messages.splice(userIndex + 1, 0, draft);
+      } else {
+        draft.text = String(saved.text);
+        draft.incomplete = true;
+      }
     }
 
     function finalizeResponse(id, aid, text, prompt, voice, streamer, sources, turnContext = null) {
@@ -7026,6 +7060,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         if (cleanSources.length) responseMessage.sources = cleanSources;
         else delete responseMessage.sources;
         if (codingTurn) responseMessage.durationMs = durationMs;
+        if (turnContext) store.removeItem("trux_turn_draft_" + resultChatId);
         saveChatSessions();
       }
       if(b) attachSources(b.closest(".row"), cleanSources);
@@ -8975,6 +9010,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       document.body.classList.remove("notebook-open");
       incognitoMode = false;
       currentChatId = id;
+      restorePersistedTurnDraft(id);
       generationStopRequested = false;
       setWorkspaceMode(chatSessions[id].mode || "chat", {reload:false,preserveSession:true});
       getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
@@ -9006,6 +9042,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       const notebookWasOpen = document.body.classList.contains("notebook-open");
       const openNotebookId = getActiveNotebookId();
       delete chatSessions[id];
+      store.removeItem("trux_turn_draft_" + id);
       saveChatSessions();
       if(currentChatId === id) {
         if(notebookWasOpen) {
