@@ -6390,7 +6390,8 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         /^(\s*[A-Za-z_][\w-]*\s*)\[([^\]\n]*)\](.*)$/,
         (whole,id,label,tail)=>{
           const value=label.trim();
-          return /[():,;|{}]/.test(value)&&!/^["'`]/.test(value)
+          const alreadyQuoted=/^(?:"(?:\\.|[^"\\\\])*"|'(?:\\.|[^'\\\\])*'|`[^`]*`)$/.test(value);
+          return /[():,;|{}]/.test(value)&&!alreadyQuoted
             ? id+"["+JSON.stringify(value)+"]"+tail : whole;
         }
       )).join("\n");
