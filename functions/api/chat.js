@@ -1953,7 +1953,7 @@ export async function onRequestPost(context) {
                   model: 'gemini-3.8-flash'
                 });
                 const webSources = call.name === 'trux_web_search'
-                  ? (Array.isArray(callResult?.sources) ? callResult.sources.map(source => ({ title: source?.title || '', uri: source?.url || '' })) : [])
+                  ? (Array.isArray(callResult?.sources) ? callResult.sources.map(source => ({ title: source?.title || '', uri: source?.url || '', domain: source?.domain || '' })) : [])
                   : (callResult?.url ? [{ title: callResult?.title || '', uri: callResult.url }] : []);
                 if (webSources.some(source => source.uri)) {
                   send({ type: 'grounding', grounding: { sources: webSources.filter(source => source.uri), searchSuggestionHtml: '' } });
