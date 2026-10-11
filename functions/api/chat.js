@@ -1993,11 +1993,11 @@ export async function onRequestPost(context) {
                   type: 'tool_status',
                   tool: toolName,
                   phase: 'complete',
-                  status: toolTarget + ' · configuration error',
+                  status: toolTarget + ' · (failed)',
                   details: {
                     ...toolCallDetails,
                     ok: false,
-                    result: summarizeToolResult(callResult)
+                    result: '(failed)'
                   }
                 });
                 send({
@@ -2031,11 +2031,11 @@ export async function onRequestPost(context) {
                   type: 'tool_status',
                   tool: toolName,
                   phase: 'complete',
-                  status: toolTarget + ' · authorization required',
+                  status: toolTarget + ' · (failed)',
                   details: {
                     ...toolCallDetails,
                     ok: false,
-                    result: summarizeToolResult(callResult)
+                    result: '(failed)'
                   }
                 });
                 send({
@@ -2066,12 +2066,12 @@ export async function onRequestPost(context) {
                 tool: toolName,
                 phase: 'complete',
                 status: resultSucceeded
-                  ? (replayedToolCall ? toolTarget + ' · reused completed result' : toolTarget + ' · completed')
-                  : toolTarget + ' · returned an error',
+                  ? toolTarget + ' · (success)'
+                  : toolTarget + ' · (failed)',
                 details: {
                   ...toolCallDetails,
                   ok: resultSucceeded,
-                  result: summarizeToolResult(callResult)
+                  result: resultSucceeded ? '(success)' : '(failed)'
                 }
               });
               responseParts.push({
@@ -2113,11 +2113,11 @@ export async function onRequestPost(context) {
                 type: 'tool_status',
                 tool: toolName,
                 phase: 'complete',
-                status: toolTarget + ' · failed: ' + String(toolError?.message || 'External tool failed.'),
+                status: toolTarget + ' · (failed)',
                 details: {
                   ...toolCallDetails,
                   ok: false,
-                  result: String(toolError?.message || 'External tool failed.')
+                  result: '(failed)'
                 }
               });
               responseParts.push({
