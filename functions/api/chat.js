@@ -324,50 +324,18 @@ function getPushKv(env) {
   return getCloudRunKv(env);
 }
 
-async function isBackgroundJobCancelled(env, jobId) {
-  const id = String(jobId || '');
-  if (!id) return false;
-
-  try {
-    const job = await getCloudRunKv(env).get('trux_background_job_' + id, 'json');
-    return job?.status === 'stopped' || job?.cancelRequested === true;
-  } catch {
-    return false;
-  }
-}
-
-async function resolveTrustedChatIdentity(request, env, backgroundJobId = '') {
+async function resolveTrustedChatIdentity(request, env) {
   const authorization = String(request?.headers?.get('authorization') || '').trim();
-
-  if (/^Bearer\s+\S+$/i.test(authorization)) {
-    try {
-      const verified = await requireFirebaseUser(request, env);
-      return {
-        uid: String(verified?.uid || ''),
-        email: String(verified?.email || '')
-      };
-    } catch {
-      throw Object.assign(new Error('Invalid or expired authentication token.'), { status: 401 });
-    }
-  }
-
-  const jobId = String(backgroundJobId || '').trim();
-  const secret = String(request?.headers?.get('x-trux-background-secret') || '');
-  if (!jobId || !secret) return null;
+  if (!/^Bearer\s+\S+$/i.test(authorization)) return null;
 
   try {
-    const job = await getCloudRunKv(env).get('trux_background_job_' + jobId, 'json');
-    if (!job || String(job.jobSecret || '') !== secret) return null;
-
-    const uid = String(job?.userId || job?.body?.userId || '').trim();
-    if (!uid) return null;
-
+    const verified = await requireFirebaseUser(request, env);
     return {
-      uid,
-      email: String(job?.userEmail || job?.body?.userEmail || '')
+      uid: String(verified?.uid || ''),
+      email: String(verified?.email || '')
     };
   } catch {
-    return null;
+    throw Object.assign(new Error('Invalid or expired authentication token.'), { status: 401 });
   }
 }
 
@@ -1253,8 +1221,7 @@ export async function onRequestPost(context) {
       generateImage: forceImageGen,
       githubRepository,
       githubBranch,
-      notifyOnComplete = true,
-      backgroundJobId = ''
+      notifyOnComplete = true
     } = body;
 
     /*
@@ -1263,7 +1230,7 @@ export async function onRequestPost(context) {
      * If userId exists, it is used for image limits.
      * Otherwise the request IP is used.
      */
-    const trustedIdentity = await resolveTrustedChatIdentity(request, env, backgroundJobId);
+    const trustedIdentity = await resolveTrustedChatIdentity(request, env);
     const trustedUserId = String(trustedIdentity?.uid || '');
     const requestedUserId = String(userId || '').trim();
 
@@ -1365,7 +1332,7 @@ export async function onRequestPost(context) {
               env,
               'TruX-AI',
               'Your image is ready.',
-              { type: 'image', jobId: backgroundJobId || '' }
+              { type: 'image' }
             );
           } catch {}
         }
@@ -1770,57 +1737,13 @@ export async function onRequestPost(context) {
         return rendered.length > 1800 ? rendered.slice(0, 1800) + '…' : rendered;
       }
 
-      // Tool replay protection is keyed by the exact tool name + arguments.
-      // It prevents duplicate side effects without imposing an agent iteration
-      // ceiling. Background jobs additionally persist the result so a worker
-      // retry can replay a completed tool call instead of executing it again.
+      // Tool replay protection is local to this request and prevents the same
+      // tool action from being executed twice during one streamed turn.
       const executedToolResults = new Map();
-
-      async function toolReplayDigest(signature) {
-        const digest = await crypto.subtle.digest(
-          'SHA-256',
-          new TextEncoder().encode(String(signature))
-        );
-        return [...new Uint8Array(digest)]
-          .map(byte => byte.toString(16).padStart(2, '0'))
-          .join('');
-      }
-
-      async function readBackgroundToolReplay(signature) {
-        if (!backgroundJobId) return { hit: false, value: null };
-
-        try {
-          const digest = await toolReplayDigest(signature);
-          const value = await getCloudRunKv(env).get(
-            'trux_tool_replay_' + backgroundJobId + '_' + digest,
-            'json'
-          );
-          return value == null
-            ? { hit: false, value: null }
-            : { hit: true, value };
-        } catch {
-          return { hit: false, value: null };
-        }
-      }
-
-      async function writeBackgroundToolReplay(signature, value) {
-        if (!backgroundJobId) return;
-
-        try {
-          const digest = await toolReplayDigest(signature);
-          await getCloudRunKv(env).put(
-            'trux_tool_replay_' + backgroundJobId + '_' + digest,
-            JSON.stringify(value),
-            { expirationTtl: 24 * 60 * 60 }
-          );
-        } catch {
-          // In-memory replay protection remains active for this request.
-        }
-      }
 
       let agentRound = 0;
       while (true) {
-        if (await isBackgroundJobCancelled(env, backgroundJobId)) {
+        if (signal?.aborted) {
           generationStopped = true;
           break;
         }
@@ -1900,7 +1823,7 @@ export async function onRequestPost(context) {
 
         lastModelResult = result;
 
-        if (await isBackgroundJobCancelled(env, backgroundJobId)) {
+        if (signal?.aborted) {
           generationStopped = true;
           break;
         }
@@ -1958,13 +1881,6 @@ export async function onRequestPost(context) {
               if (executedToolResults.has(toolSignature)) {
                 replayedToolCall = true;
                 callResult = executedToolResults.get(toolSignature);
-              } else {
-                const persistedReplay = await readBackgroundToolReplay(toolSignature);
-                if (persistedReplay.hit) {
-                  replayedToolCall = true;
-                  callResult = persistedReplay.value;
-                  executedToolResults.set(toolSignature, callResult);
-                }
               }
 
               if (replayedToolCall) {
@@ -2036,13 +1952,13 @@ export async function onRequestPost(context) {
 
               if (!replayedToolCall) {
                 executedToolResults.set(toolSignature, callResult);
-                await writeBackgroundToolReplay(toolSignature, callResult);
+
               }
 
               if (replayedToolCall) {
                 const replayNotice = {
                   _truxToolReplay: true,
-                  message: 'This exact tool call was already executed successfully in this turn or background job. Treat the returned result as authoritative and continue with the next required step or the final answer.'
+                  message: 'This exact tool call was already executed successfully in this turn. Treat the returned result as authoritative and continue with the next required step or the final answer.'
                 };
                 if (callResult && typeof callResult === 'object' && !Array.isArray(callResult)) {
                   callResult = { ...callResult, ...replayNotice };
@@ -2158,7 +2074,7 @@ export async function onRequestPost(context) {
               };
               if (toolSignature) {
                 executedToolResults.set(toolSignature, failedToolResult);
-                await writeBackgroundToolReplay(toolSignature, failedToolResult);
+
               }
               send({
                 type: 'tool_status',
@@ -2278,7 +2194,7 @@ export async function onRequestPost(context) {
               env,
               codingMode ? 'TruX-Code' : 'TruX-AI',
               codingMode ? 'Your coding response is ready.' : 'Your response is ready.',
-              { type: codingMode ? 'coding' : 'chat', jobId: backgroundJobId || '' }
+              { type: codingMode ? 'coding' : 'chat' }
             );
           } catch {}
         }
