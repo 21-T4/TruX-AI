@@ -1,6 +1,6 @@
 {
-  "name": "ChatTruX-AI - Intelligent Workspace",
-  "description": "ChatTruX-AI — a fast, secure intelligent workspace for deep thinking and focused work.",
+  "name": "TruX Workspace",
+  "description": "TruX Workspace — a fast, secure intelligent workspace for deep thinking and focused work.",
   "requestFrame": false,
   "capabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
