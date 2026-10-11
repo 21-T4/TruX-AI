@@ -1192,7 +1192,6 @@
     }
     @media (prefers-reduced-motion:reduce){
       .thinking-status-line.compact,.thinking-status-line.full{animation:none!important}
-      .md-block.live{animation:none!important}
       .trux-thinking-spark::before{animation:truxThinkingOrbit 2s cubic-bezier(.22,.61,.36,1) 2s infinite!important}
       .trux-thinking-spark::after{animation:truxThinkingOrbitDot 2s cubic-bezier(.22,.61,.36,1) 2s infinite!important}
       .trux-thinking-spark svg{animation:truxThinkingStarTurn 2s cubic-bezier(.22,.61,.36,1) 2s infinite!important}
@@ -1203,9 +1202,9 @@
     .md-stream { display: block; }
     .md-block { display: block; }
     .md-block.settled { animation: none; }
-    .md-block.live { animation: blockFadeIn 0.24s var(--ease-out); }
+    .md-block.live { animation: blockFadeIn 0.16s var(--ease-out); will-change: opacity, transform, filter; }
     .md-block.live.single-line { display: block; }
-    @keyframes blockFadeIn { from { opacity: 0.72; transform: translateY(1px); filter: blur(0.2px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+    @keyframes blockFadeIn { from { opacity: 0.48; transform: translateY(1px); filter: blur(0.55px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
     .stream-stopped {
       margin-top: 12px;
       font-size: 13px; color: var(--txt-4);
@@ -6866,7 +6865,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     }
 
     function createStreamRenderer(bubble) {
-      /* Replace the existing progressive renderer in place; keep one stream host. */
+      /* Replace the existing renderer in place. No second layer or duplicate host. */
       bubble.innerHTML = '<div class="md-stream"></div>';
       const host = bubble.firstElementChild;
 
@@ -6879,49 +6878,44 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       let stopped = false;
       let rafId = null;
       let doneCb = null;
+      let lastRevealAt = -Infinity;
 
+      const REVEAL_INTERVAL_MS = 42;
+      const MAX_LINES_PER_TICK = 2;
       const measureCanvas = document.createElement("canvas");
       const measureContext = measureCanvas.getContext("2d");
 
-      /*
-       * Return the end of one complete display line. Explicit source newlines
-       * are respected; ordinary prose is wrapped using the bubble's measured
-       * width, with sentence boundaries as an early release for short lines.
-       * Nothing is revealed from the middle of a word unless the word itself
-       * is wider than the available line.
-       */
-      function nextLineEnd(text, start) {
-        if (start >= text.length) return -1;
+      function nextLineEnd(text, from) {
+        if (from >= text.length) return -1;
 
         const style = window.getComputedStyle(bubble);
         if (measureContext) {
           measureContext.font = style.font || (style.fontSize + " " + style.fontFamily);
         }
-        const availableWidth = Math.max(80, (host.clientWidth || bubble.clientWidth || 360) - 10);
-        let lastWhitespace = -1;
+        const width = Math.max(80, (host.clientWidth || bubble.clientWidth || 360) - 10);
+        let lastSpace = -1;
 
-        for (let i = start; i < text.length; i++) {
+        for (let i = from; i < text.length; i++) {
           const ch = text[i];
           if (ch === "\n") return i + 1;
 
-          const sample = text.slice(start, i + 1).replace(/[*_~]/g, "");
-          const measuredWidth = measureContext
+          const sample = text.slice(from, i + 1).replace(/[*_~]/g, "");
+          const sampleWidth = measureContext
             ? measureContext.measureText(sample).width
             : sample.length * 8;
 
-          if (measuredWidth > availableWidth && i > start) {
-            if (lastWhitespace >= start) return lastWhitespace + 1;
-            return i;
+          if (sampleWidth > width && i > from) {
+            return lastSpace >= from ? lastSpace + 1 : i;
           }
-          if (/\s/.test(ch)) lastWhitespace = i;
+          if (/\s/.test(ch)) lastSpace = i;
         }
 
-        /* Let a completed sentence appear even when it does not fill the row. */
-        const tail = text.slice(start);
-        const punctuation = /[.!?]\s+/.exec(tail);
-        const sentenceThreshold = Math.min(24, Math.floor(availableWidth / 8));
+        /* A complete sentence is a natural release point for short prose lines. */
+        const rest = text.slice(from);
+        const punctuation = /[.!?]\s+/.exec(rest);
+        const sentenceThreshold = Math.min(24, Math.floor(width / 8));
         if (punctuation && punctuation.index >= sentenceThreshold) {
-          return start + punctuation.index + punctuation[0].length;
+          return from + punctuation.index + punctuation[0].length;
         }
         return -1;
       }
@@ -6929,19 +6923,19 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       function nextRevealOffset() {
         let cursor = shown;
         let end = shown;
-        let lines = 0;
+        let lineCount = 0;
 
-        /* At most two whole lines per animation frame keeps the reveal fluid. */
-        while (cursor < target.length && lines < 2) {
-          const boundary = nextLineEnd(target, cursor);
-          if (boundary <= cursor) break;
+        while (cursor < target.length && lineCount < MAX_LINES_PER_TICK) {
+          let boundary = nextLineEnd(target, cursor);
+          if (boundary <= cursor) {
+            /* Only flush an incomplete short final line after stream completion. */
+            if (finished) boundary = target.length;
+            else break;
+          }
           end = boundary;
           cursor = boundary;
-          lines++;
+          lineCount++;
         }
-
-        /* At EOF, flush a short final line instead of waiting for a wrap. */
-        if (finished && end < target.length && lines < 2) end = target.length;
         return end;
       }
 
@@ -6958,7 +6952,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         const blocks = splitStreamBlocks(visible);
         if (!blocks.length) return false;
 
-        /* Commit complete Markdown blocks once; only the live tail is re-parsed. */
+        /* Commit completed Markdown blocks once; refresh only the active tail. */
         while (settled < blocks.length - 1) {
           if (liveEl) {
             if (liveEl.parentNode === host) host.removeChild(liveEl);
@@ -6989,11 +6983,17 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         el.classList.add("live");
       }
 
-      function tick() {
+      function tick(timestamp) {
         rafId = null;
         if (stopped) return;
         if (!bubble.isConnected) {
           stopped = true;
+          return;
+        }
+
+        /* A real, visible cadence is intentional: don't dump the final payload. */
+        if (timestamp - lastRevealAt < REVEAL_INTERVAL_MS) {
+          rafId = requestAnimationFrame(tick);
           return;
         }
 
@@ -7005,13 +7005,14 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         if (nextShown > shown) {
           const previousLive = liveEl;
           shown = nextShown;
+          lastRevealAt = timestamp;
           advanced = paint();
           if (advanced && liveEl && liveEl === previousLive) replayFade(liveEl);
           if (stick) container.scrollTop = container.scrollHeight;
         }
 
         if (finished && shown >= target.length) {
-          /* Authoritative final Markdown render: no cursor or streaming residue. */
+          /* Final render happens only after every display line has been revealed. */
           host.innerHTML = renderFormattedText(target, false);
           scheduleTruxMath(host);
           if (stick) container.scrollTop = container.scrollHeight;
@@ -7023,9 +7024,10 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           return;
         }
 
-        /* Sleep until another network chunk arrives if no full line is ready. */
-        if (!advanced && !finished) return;
-        rafId = requestAnimationFrame(tick);
+        /* Continue only while a full line is ready, or while draining a finished stream. */
+        if (nextRevealOffset() > shown || finished) {
+          rafId = requestAnimationFrame(tick);
+        }
       }
 
       function start() {
@@ -7039,7 +7041,11 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         },
         setText(text) {
           target = String(text || "");
+          /* Never let an updated authoritative payload expose half a word. */
           shown = Math.min(shown, target.length);
+          while (shown > 0 && shown < target.length && !/\s/.test(target.charAt(shown - 1))) {
+            shown--;
+          }
           start();
         },
         finish(cb) {
@@ -7986,6 +7992,10 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     }
 
     async function sendPromptImpl() {
+      // Prime Android's user-activation-gated Vibration API inside the send gesture.
+      try {
+        if (typeof navigator.vibrate === "function") navigator.vibrate(0);
+      } catch (_) {}
       // Sign-in wall appears only when the person actually tries to send a message.
       if(!auth?.currentUser) {
         openLoginWall();
@@ -8215,11 +8225,9 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           if (responseStartVibrated) return;
           responseStartVibrated = true;
           try {
-            const touchDevice = navigator.maxTouchPoints > 0 ||
-              (window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
-            if (touchDevice && document.visibilityState === "visible" &&
+            if (document.visibilityState === "visible" &&
                 typeof navigator.vibrate === "function") {
-              navigator.vibrate(10);
+              navigator.vibrate(24);
             }
           } catch (_) {
             /* Haptics are optional; a missing device/browser API must not affect streaming. */
