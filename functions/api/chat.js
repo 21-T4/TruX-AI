@@ -811,12 +811,28 @@ function selectAutoChatModel({
   const reasoningSignal = /\b(?:reason(?:ing)?|analy[sz]e|analysis|evaluate|compare|contrast|justify|logic|implications|strategy|solve|calculate|derive|prove)\b/i.test(lower);
   const multiStage = /\b(?:step[- ]by[- ]step|multi[- ]step|end[- ]to[- ]end|first.+then|then.+finally|multiple stages|several parts)\b/i.test(lower);
   const actionCount = (lower.match(/\b(?:design|implement|fix|debug|refactor|test|deploy|migrate|integrate|analyze|analyse|compare|evaluate|explain|summarize|optimise|optimize|document)\b/g) || []).length;
+  const projectFeatureSignals = [
+    /\b(?:authentication|authorization|auth|login|sign[- ]?up|permissions|roles|user management)\b/i,
+    /\b(?:persistence|persistent storage|database|schema|caching|sync)\b/i,
+    /\b(?:api routes?|backend|server|microservices?|endpoints?)\b/i,
+    /\b(?:tests?|test suite|unit tests?|integration tests?)\b/i,
+    /\b(?:deploy|deployment|ci\/cd|release pipeline|production)\b/i,
+    /\b(?:monitoring|observability|logging|analytics)\b/i
+  ];
+  const projectFeatureCount = projectFeatureSignals.filter(pattern => pattern.test(lower)).length;
+  const complexProjectBuild =
+    hasCodeSignal &&
+    /\b(?:build|create|develop|design|implement)\b/i.test(lower) &&
+    projectFeatureCount >= 2;
+  const asksForFullerAnswer =
+    /\b(?:essay|report|proposal|lesson plan|detailed|thorough|long[- ]form|complete guide|full explanation|\d{3,4}[- ]word)\b/i.test(lower);
   const longPrompt = text.length >= 900 || words.length >= 125;
 
   if (
     explicitExternalAction ||
     complexCoding ||
     complexReasoning ||
+    complexProjectBuild ||
     (hasCodeSignal && (words.length >= 42 || actionCount >= 2 || multiStage)) ||
     (reasoningSignal && (words.length >= 40 || advancedThinking || actionCount >= 2)) ||
     multiStage ||
@@ -833,7 +849,8 @@ function selectAutoChatModel({
     words.length <= 18 &&
     text.length <= 140 &&
     !hasCodeSignal &&
-    !reasoningSignal;
+    !reasoningSignal &&
+    !asksForFullerAnswer;
 
   if (lightweight) return 'gemini-3.5-flash-lite';
   return 'gemini-3.5-flash';
