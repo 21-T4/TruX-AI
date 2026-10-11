@@ -4328,16 +4328,16 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
               <div class="model-dropdown-menu" id="modelDropdown" role="menu" aria-label="Automatic model routing">
                 <button type="button" class="model-item active" data-model="auto" onclick="selectModel('auto',event);closeModelDropdown()">
                   <span class="model-icon">✧</span>
-                  <span class="model-info"><b>Auto</b><small>Chooses the best Gemini 3rd-generation model for each Chat request</small></span>
+                  <span class="model-info"><b>Auto</b><small>Chooses the best model according to your request</small></span>
                   <span class="model-check">✓</span>
                 </button>
                 <div class="thinking-choice-wrap">
                   <div class="thinking-choice-title">Thinking</div>
-                  <button type="button" class="thinking-choice" data-thinking-level="low" onclick="setThinkingLevel('low',event)">
-                    <span><b>Low</b><small>Fastest responses</small></span><span class="thinking-check"></span>
+                  <button type="button" class="thinking-choice active" data-thinking-level="low" onclick="setThinkingLevel('low',event)">
+                    <span><b>Low</b><small>Fastest responses</small></span><span class="thinking-check">✓</span>
                   </button>
-                  <button type="button" class="thinking-choice active" data-thinking-level="medium" onclick="setThinkingLevel('medium',event)">
-                    <span><b>Medium</b><small>Balanced reasoning</small></span><span class="thinking-check">✓</span>
+                  <button type="button" class="thinking-choice" data-thinking-level="medium" onclick="setThinkingLevel('medium',event)">
+                    <span><b>Medium</b><small>Balanced reasoning</small></span><span class="thinking-check"></span>
                   </button>
                   <button type="button" class="thinking-choice" data-thinking-level="extended" onclick="setThinkingLevel('extended',event)">
                     <span><b>Extended</b><small>Deepest reasoning</small></span><span class="thinking-check"></span>
@@ -4850,7 +4850,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         isScrolledUp = false,
         activeStreamer = null,
         advancedThinkingEnabled = false,
-        advancedThinkingLevel = "medium",
+        advancedThinkingLevel = "low",
         incognitoMode = false,
         backgroundJobWatchers = new Map(),
         generationStopRequested = false,
@@ -4865,7 +4865,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       if(!isTruxDeveloper(auth?.currentUser) && legacyModel === "ultra") currentPlanTier = "base";
       store.setItem("trux_plan_tier", currentPlanTier);
       store.setItem("trux_model", "auto");
-      advancedThinkingLevel = ["low","medium","extended"].includes(store.getItem("trux_thinking_level")) ? store.getItem("trux_thinking_level") : "medium";
+      advancedThinkingLevel = ["low","medium","extended"].includes(store.getItem("trux_thinking_level")) ? store.getItem("trux_thinking_level") : "low";
       advancedThinkingEnabled = advancedThinkingLevel === "extended";
     } catch (_) {}
 
