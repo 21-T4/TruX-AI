@@ -6519,7 +6519,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     function truxFallbackInstall(svg,slot,stage){
       const width=Number(svg.getAttribute("width"))||1440;
       svg.style.setProperty("width","100%","important");svg.style.setProperty("min-width","100%","important");svg.style.setProperty("max-width","none","important");svg.style.setProperty("height","auto","important");svg.style.setProperty("min-height","460px","important");
-      slot.replaceChildren(svg);stage.style.width=Math.max(1280,width)+"px";stage.style.minWidth=Math.max(1280,width)+"px";stage.style.minHeight=(Number(svg.getAttribute("height"))||460)+"px";return svg;
+      slot.replaceChildren(svg);stage.style.width=Math.max(1280,width)+"px";stage.style.minWidth=Math.max(1280,width)+"px";stage.style.minHeight=Math.max(460,Number(svg.getAttribute("height"))||460)+"px";return svg;
     }
     function renderTruxFallbackSequence(source,slot,stage){
       const rows=normalizeTruxMermaidSource(source).split("\n").slice(1),actors=new Map(),messages=[];
@@ -6664,7 +6664,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         let m=row.match(/^\s*x-axis\s+(.+?)\s*-->\s*(.+)$/i);if(m)xLabel=m[1].replace(/^["']|["']$/g,"")+" — "+m[2].replace(/^["']|["']$/g,"");
         m=row.match(/^\s*y-axis\s+(.+?)\s*-->\s*(.+)$/i);if(m)yLabel=m[1].replace(/^["']|["']$/g,"")+" — "+m[2].replace(/^["']|["']$/g,"");
         m=row.match(/^\s*quadrant-([1-4])\s+(.+)$/i);if(m)quadrants[Number(m[1])-1]=m[2].trim();
-        m=row.match(/^\s*point\s+["']?(.+?)["']?\s*:\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)/i);if(m)points.push({label:m[1].replace(/^["']|["']$/g,""),x:Number(m[2]),y:Number(m[3])});
+        m=row.match(/^\s*point\s+["']?(.+?)["']?\s*:\s*\[?\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*\]?/i);if(m)points.push({label:m[1].replace(/^["']|["']$/g,""),x:Number(m[2]),y:Number(m[3])});
       }
       if(!points.length)return null;
       const width=1440,height=600,left=150,top=70,pw=width-280,ph=height-170,cx=left+pw/2,cy=top+ph/2,svg=truxFallbackSvg(width,height,"Quadrant chart");
@@ -6692,7 +6692,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         let current=null;for(const line0 of lines){const line=line0.trim();let m=line.match(/^([\w-]+)\s*\{$/);if(m){current=add(m[1],m[1]);continue;}if(line==="}"){current=null;continue;}if(current&&line&&!line.startsWith("%%")){byId.get(current).label=clean(byId.get(current).label+" · "+line.replace(/\s+/g," "));continue;}
           m=line.match(/^([\w-]+)\s+([|o}{.]+)--([|o}{.]+)\s+([\w-]+)(?:\s*:\s*(.*))?$/);if(m)link(m[1],m[4],m[5]||"relationship");}
       }else if(/^mindmap/i.test(source)){
-        const stack=[];for(const line0 of lines){if(!line0.trim())continue;const indent=(line0.match(/^\s*/)||[""])[0].replace(/\t/g,"  ").length,label=clean(line0.trim().replace(/^[()]+|[()]+$/g,""));if(!label)continue;while(stack.length&&stack[stack.length-1].indent>=indent)stack.pop();const id="M"+(nodes.length+1);add(id,label);if(stack.length)link(stack[stack.length-1].id,id);stack.push({id,indent});}
+        const stack=[];for(const line0 of lines){if(!line0.trim())continue;const indent=(line0.match(/^\s*/)||[""])[0].replace(/\t/g,"  ").length,label=clean(line0.trim().replace(/^root\s*\(\((.*?)\)\)$/i,"$1").replace(/^\(\((.*?)\)\)$/,"$1").replace(/^[()]+|[()]+$/g,""));if(!label)continue;while(stack.length&&stack[stack.length-1].indent>=indent)stack.pop();const id="M"+(nodes.length+1);add(id,label);if(stack.length)link(stack[stack.length-1].id,id);stack.push({id,indent});}
       }else if(/^journey/i.test(source)){
         let idx=0;for(const line0 of lines){const line=line0.trim();if(!line||/^(?:title|section)\b/i.test(line))continue;const m=line.match(/^(.+?):\s*(\d+)\s*:\s*(.*)$/);if(m){const id="J"+(++idx);add(id,m[1]+" · score "+m[2]+" · "+m[3]);if(idx>1)link("J"+(idx-1),id);}}
       }else if(/^architecture-beta/i.test(source)){
@@ -6729,7 +6729,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       if(/^gantt\b/i.test(source))return renderTruxFallbackGantt(source,slot,stage);
       if(/^xychart-beta\b/i.test(source))return renderTruxFallbackXyChart(source,slot,stage);
       if(/^quadrantChart\b/i.test(source))return renderTruxFallbackQuadrant(source,slot,stage);
-      if(/^(?:stateDiagram(?:-v2)?|classDiagram|erDiagram|mindmap|journey|architecture-beta|sankey-beta|block-beta|gitGraph)\b/i.test(source)){
+      if(/^(?:stateDiagram(?:-v2)?|classDiagram|erDiagram|mindmap|journey|architecture-beta|sankey-beta|block-beta|gitGraph|requirementDiagram|zenuml)\b/i.test(source)){
         const graph=truxFallbackGraphSource(source,source.split(/\s/)[0]);
         return graph?renderTruxFallbackFlowchart(graph,slot,stage):null;
       }
