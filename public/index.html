@@ -6377,6 +6377,12 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         '<pre class="trux-diagram-source" hidden>'+escapeHtml(String(source||""))+'</pre>'+
         '<div class="trux-diagram-error" hidden></div></div>';
     }
+    function getTruxMermaidApi(){
+      const root=window.mermaid;
+      if(root?.default && typeof root.default.render==="function") return root.default;
+      if(root && typeof root.render==="function") return root;
+      return null;
+    }
     function truxSvgLength(shape){try{return typeof shape.getTotalLength==="function"?Math.max(0,shape.getTotalLength()):0}catch(_){return 0}}
     function truxSvgPointToStage(svg,stage,p){
       const r=svg.getBoundingClientRect(),s=stage.getBoundingClientRect(),v=svg.viewBox&&svg.viewBox.baseVal;
@@ -6419,11 +6425,12 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       const stage=element.querySelector(".trux-diagram-stage"),cursor=element.querySelector(".trux-diagram-cursor");
       const source=sourceNode?sourceNode.textContent:"";
       try{
-        let attempts=0;while((!window.mermaid||typeof window.mermaid.render!=="function")&&attempts<40&&element.isConnected){await new Promise(resolve=>window.setTimeout(resolve,100));attempts++}
+        let mermaidApi=getTruxMermaidApi(),attempts=0;
+        while(!mermaidApi&&attempts<40&&element.isConnected){await new Promise(resolve=>window.setTimeout(resolve,100));mermaidApi=getTruxMermaidApi();attempts++}
         if(!element.isConnected)return;
-        if(!window.mermaid||typeof window.mermaid.render!=="function"||!source.trim())throw Error("Diagram renderer/source unavailable");
+        if(!mermaidApi||!source.trim())throw Error("Mermaid API/source unavailable");
         if(!window.__truxMermaidInitialized){
-          window.mermaid.initialize({startOnLoad:false,securityLevel:"strict",theme:"base",themeVariables:{
+          mermaidApi.initialize({startOnLoad:false,securityLevel:"strict",theme:"base",themeVariables:{
             background:"#151515",primaryColor:"#151515",primaryTextColor:"#d8d8d8",primaryBorderColor:"#818181",
             lineColor:"#b4b4b4",secondaryColor:"#151515",tertiaryColor:"#151515",mainBkg:"#151515",
             clusterBkg:"#151515",clusterBorder:"#515151",edgeLabelBackground:"#151515",
@@ -6432,7 +6439,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           },flowchart:{htmlLabels:false,useMaxWidth:true,curve:"basis"}});
           window.__truxMermaidInitialized=true;
         }
-        const result=await window.mermaid.render("trux-mermaid-"+(++truxMermaidRenderSequence),source);
+        const result=await mermaidApi.render("trux-mermaid-"+(++truxMermaidRenderSequence),source);
         if(!element.isConnected)return;if(!svgSlot||!stage||!cursor)throw Error("Diagram surface unavailable");
         svgSlot.innerHTML=result.svg;const svg=svgSlot.querySelector("svg");if(!svg)throw Error("Mermaid returned no SVG");
         svg.style.background="#151515";svg.style.backgroundColor="#151515";
