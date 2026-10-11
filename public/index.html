@@ -1201,20 +1201,26 @@
     
     .md-stream { display: block; }
     .md-stream.md-stream-fade-active {
+      /* About six lines remain in the active fade window; the newest line is
+         strongly faded, then becomes crisp as subsequent lines move it upward. */
       -webkit-mask-image: linear-gradient(to bottom,
         #000 0,
-        #000 calc(100% - 7em),
-        rgba(0,0,0,.94) calc(100% - 5.4em),
-        rgba(0,0,0,.76) calc(100% - 3.9em),
-        rgba(0,0,0,.48) calc(100% - 2.3em),
-        rgba(0,0,0,.14) 100%);
+        #000 calc(100% - 11.5em),
+        rgba(0,0,0,.96) calc(100% - 9.5em),
+        rgba(0,0,0,.84) calc(100% - 7.5em),
+        rgba(0,0,0,.64) calc(100% - 5.5em),
+        rgba(0,0,0,.38) calc(100% - 3.5em),
+        rgba(0,0,0,.12) calc(100% - 1.5em),
+        rgba(0,0,0,.015) 100%);
       mask-image: linear-gradient(to bottom,
         #000 0,
-        #000 calc(100% - 7em),
-        rgba(0,0,0,.94) calc(100% - 5.4em),
-        rgba(0,0,0,.76) calc(100% - 3.9em),
-        rgba(0,0,0,.48) calc(100% - 2.3em),
-        rgba(0,0,0,.14) 100%);
+        #000 calc(100% - 11.5em),
+        rgba(0,0,0,.96) calc(100% - 9.5em),
+        rgba(0,0,0,.84) calc(100% - 7.5em),
+        rgba(0,0,0,.64) calc(100% - 5.5em),
+        rgba(0,0,0,.38) calc(100% - 3.5em),
+        rgba(0,0,0,.12) calc(100% - 1.5em),
+        rgba(0,0,0,.015) 100%);
       -webkit-mask-repeat: no-repeat;
       mask-repeat: no-repeat;
     }
@@ -6896,8 +6902,8 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       let doneCb = null;
       let lastRevealAt = -Infinity;
 
-      const REVEAL_INTERVAL_MS = 58;
-      const MAX_LINES_PER_TICK = 1;
+      const REVEAL_INTERVAL_MS = 34;
+      const MAX_LINES_PER_TICK = 3;
       const measureCanvas = document.createElement("canvas");
       const measureContext = measureCanvas.getContext("2d");
 
