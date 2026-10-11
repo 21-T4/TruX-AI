@@ -6369,6 +6369,39 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     let truxMermaidRenderQueue = Promise.resolve();
     let truxMermaidFallbackPromise = null;
 
+    function normalizeTruxMermaidSource(raw){
+      let source=String(raw||"").replace(/^\uFEFF/,"").replace(/\r\n?/g,"\n")
+        .replace(/[\u2018\u2019\u201A\u201B]/g,"'")
+        .replace(/[\u201C\u201D\u201E\u201F]/g,'"').trim();
+      source=source.replace(/^\s*```(?:mermaid)?\s*\n?/i,"").replace(/\n?\s*```\s*$/,"").trim();
+      source=source.replace(/&nbsp;/gi," ").replace(/<br\s*\/?\s*>/gi," ");
+      const lines=source.split("\n");
+      const first=lines.findIndex(line=>/^\s*(?:flowchart|graph|sequenceDiagram|classDiagram|stateDiagram(?:-v2)?|erDiagram|journey|gantt|pie|mindmap|timeline|quadrantChart|xychart-beta|block-beta|architecture-beta|gitGraph|sankey-beta|zenuml|requirementDiagram)\b/i.test(line));
+      if(first>0) source=lines.slice(first).join("\n");
+      return source.trim();
+    }
+    function repairTruxMermaidSource(raw){
+      let source=normalizeTruxMermaidSource(raw);
+      if(!/^(?:flowchart|graph)\b/i.test(source))return source;
+      // Recover common model-generated flowchart slips without changing valid edge syntax.
+      source=source.replace(/^(\s*(?:flowchart|graph))\s*$/im,"$1 TD");
+      source=source.replace(/(?<![-.])-(?![-.])>/g,"-->");
+      source=source.split("\n").map(line=>line.replace(
+        /^(\s*[A-Za-z_][\w-]*\s*)\[([^\]\n]*)\](.*)$/,
+        (whole,id,label,tail)=>{
+          const value=label.trim();
+          return /[():,;|{}]/.test(value)&&!/^["'`]/.test(value)
+            ? id+"["+JSON.stringify(value)+"]"+tail : whole;
+        }
+      )).join("\n");
+      return source;
+    }
+    function getTruxMermaidCandidates(raw){
+      const original=String(raw||"").trim();
+      const normalized=normalizeTruxMermaidSource(original);
+      const repaired=repairTruxMermaidSource(normalized);
+      return [...new Set([normalized,repaired,original].filter(Boolean))];
+    }
     function isTruxMermaidDiagram(lang, code) {
       const label=String(lang||"").trim().toLowerCase(), source=String(code||"").trim();
       if(label==="mermaid") return true;
@@ -6471,10 +6504,22 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         }
         // Mermaid keeps shared parser/render state; serialize renders so diagrams that
         // arrive together during streaming cannot collide intermittently.
-        const renderJob=()=>mermaidApi.render("trux-mermaid-"+(++truxMermaidRenderSequence),source);
+        const renderJob=async()=>{
+          let lastError=null;
+          for(const candidate of getTruxMermaidCandidates(source)){
+            try{
+              // Validate before render, then try the next normalized variant on parser errors.
+              if(typeof mermaidApi.parse==="function") await mermaidApi.parse(candidate);
+              const result=await mermaidApi.render("trux-mermaid-"+(++truxMermaidRenderSequence),candidate);
+              return {result,source:candidate};
+            }catch(error){lastError=error;}
+          }
+          throw lastError||Error("Mermaid rejected all normalized source variants");
+        };
         const renderPromise=truxMermaidRenderQueue.then(renderJob,renderJob);
-        truxMermaidRenderQueue=renderPromise.catch(()=>{});
-        const result=await renderPromise;
+        truxMermaidRenderQueue=renderPromise.then(()=>undefined,()=>undefined);
+        const rendered=await renderPromise;
+        const result=rendered.result;
         if(!element.isConnected)return;if(!svgSlot||!stage||!cursor)throw Error("Diagram surface unavailable");
         svgSlot.innerHTML=result.svg;const svg=svgSlot.querySelector("svg");if(!svg)throw Error("Mermaid returned no SVG");
         // Override Mermaid's generated max-width/width values; keep full-resolution content visible in the large stage.
@@ -6500,8 +6545,12 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         element.dataset.truxDiagramFailed="true";
         if(cursor)cursor.hidden=true;
         const errorNode=element.querySelector(".trux-diagram-error");
-        if(errorNode){errorNode.hidden=false;errorNode.textContent="This diagram couldn't be rendered after retrying."}
-        console.warn("TruX diagram render failed after retries:",error);
+        if(errorNode){
+          const reason=String(error&&error.message||error||"Unknown rendering error").replace(/\s+/g," ").trim().slice(0,220);
+          errorNode.hidden=false;
+          errorNode.textContent="Diagram render error: "+(reason||"Unknown Mermaid error");
+        }
+        console.warn("TruX diagram render failed:",{message:String(error&&error.message||error||"Unknown error"),sourceLength:source.length});
       }
     }
     function renderTruxDiagrams(root){
