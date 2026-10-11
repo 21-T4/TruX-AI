@@ -1146,11 +1146,11 @@
     .thinking-tool-item.completed{color:var(--txt-3)}
     .thinking-tool-item.failed{color:var(--txt-2)}
     .thinking-tool-head{display:block;color:inherit}
-    .thinking-tool-meta,.thinking-tool-result{
-      display:block;margin-top:2px;color:var(--txt-3);
-      font:500 12px/1.4 var(--font-body);overflow-wrap:anywhere;
+    .thinking-tool-status{
+      display:block;margin-top:1px;color:var(--txt-3);
+      font:500 11px/1.25 var(--font-body);letter-spacing:.01em;
     }
-    .thinking-tool-result{color:var(--txt-2)}
+    .thinking-tool-status.failed{color:var(--txt-3)}
     .thinking-container{display:block;width:100%;padding:0;background:none!important;border:0!important;box-shadow:none!important}
     @keyframes truxMetallicShine{
       0%{background-position:100% 50%}
@@ -7426,10 +7426,13 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     function appendToolStatusLine(toolId, tool, detail, phase = "complete", details = null) {
       const wrap = getEl(toolId);
       if (!wrap) return;
-      const toolName = String(tool || "External tool");
-      const text = String(detail || toolName || "Tool step");
+      const toolName = String(tool || "External tool").trim();
+      const text = String(detail || "");
       const callId = String(details?.id || "");
-      const signature = callId || (toolName + "||" + JSON.stringify(details?.args || {}));
+      const serializedArgs = details?.args && typeof details.args === "object"
+        ? JSON.stringify(details.args)
+        : "";
+      const signature = callId || (toolName + "||" + serializedArgs);
 
       let item = Array.from(wrap.querySelectorAll(".thinking-tool-item")).find(el => el.dataset.signature === signature);
       if (!item && phase === "start") {
@@ -7448,25 +7451,30 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         }
       }
 
+      const target = String(details?.target || toolName).trim() || toolName;
+      const failureText = /failed|error|authorization required|configuration error/i.test(text);
+      const succeeded = typeof details?.ok === "boolean" ? details.ok : !failureText;
       item.classList.toggle("active", phase === "start");
-      item.classList.toggle("completed", phase !== "start");
-      item.classList.toggle("failed", details?.ok === false || /failed|error|authorization required/i.test(text));
+      item.classList.toggle("completed", phase !== "start" && succeeded);
+      item.classList.toggle("failed", phase !== "start" && !succeeded);
 
       let head = item.querySelector(".thinking-tool-head");
       if (!head) { head = document.createElement("div"); head.className = "thinking-tool-head"; item.appendChild(head); }
-      head.textContent = text;
+      head.textContent = target;
 
-      let meta = item.querySelector(".thinking-tool-meta");
-      if (!meta) { meta = document.createElement("div"); meta.className = "thinking-tool-meta"; item.appendChild(meta); }
-      const args = details?.args && typeof details.args === "object" && Object.keys(details.args).length ? JSON.stringify(details.args) : "";
-      meta.textContent = args ? args.slice(0, 900) + (args.length > 900 ? "…" : "") : "";
-
-      if (phase !== "start") {
-        let result = item.querySelector(".thinking-tool-result");
-        if (!result) { result = document.createElement("div"); result.className = "thinking-tool-result"; item.appendChild(result); }
-        const resultText = String(details?.result || "").trim();
-        result.textContent = resultText ? "Result · " + resultText.slice(0, 720) + (resultText.length > 720 ? "…" : "") : (details?.ok === false ? "Tool failed" : "Completed");
+      // Keep the thinking bar compact: never print raw tool arguments or large
+      // provider responses here. Terminal commands and their output are rendered
+      // separately in the TruX-Code terminal.
+      item.querySelector(".thinking-tool-meta")?.remove();
+      item.querySelector(".thinking-tool-result")?.remove();
+      let status = item.querySelector(".thinking-tool-status");
+      if (!status) {
+        status = document.createElement("div");
+        status.className = "thinking-tool-status";
+        item.appendChild(status);
       }
+      status.classList.toggle("failed", phase !== "start" && !succeeded);
+      status.textContent = phase === "start" ? "(running…)" : (succeeded ? "(success)" : "(failed)");
 
       wrap.closest(".trux-thinking-panel")?.classList.add("has-tools");
 
