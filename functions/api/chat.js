@@ -760,11 +760,11 @@ async function streamVertexGemini({
 }
 
 /* =========================================================
-   MODEL SELECTION
-   Note: image generation is now available from ANY chat tier —
-   there is no separate "nano-banana" model anymore. The tier
-   only controls the TEXT model used; image generation always
-   uses the dedicated Gemini image model under the hood.
+   REQUEST-MODEL ROUTING
+   Chat requests are routed by prompt complexity. The tier still
+   controls legacy account entitlements; dedicated TruX-Code and
+   Deep Research use their existing pinned model path. Image
+   generation always uses the dedicated image model under the hood.
    ========================================================= */
 
 function getVertexModel(tier) {
