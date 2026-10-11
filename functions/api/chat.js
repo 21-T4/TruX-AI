@@ -680,7 +680,29 @@ async function streamVertexGemini({
       const candidate = chunk?.candidates?.[0];
 
       if (candidate?.groundingMetadata) {
-        groundingMetadata = candidate.groundingMetadata;
+        const incomingGrounding = candidate.groundingMetadata;
+        const priorChunks = Array.isArray(groundingMetadata?.groundingChunks) ? groundingMetadata.groundingChunks : [];
+        const incomingChunks = Array.isArray(incomingGrounding?.groundingChunks) ? incomingGrounding.groundingChunks : [];
+        const uniqueChunks = [];
+        const seenGroundingUris = new Set();
+        for (const groundingChunk of [...priorChunks, ...incomingChunks]) {
+          const key = String(groundingChunk?.web?.uri || stableJson(groundingChunk));
+          if (!key || seenGroundingUris.has(key)) continue;
+          seenGroundingUris.add(key);
+          uniqueChunks.push(groundingChunk);
+        }
+        const priorQueries = Array.isArray(groundingMetadata?.webSearchQueries) ? groundingMetadata.webSearchQueries : [];
+        const incomingQueries = Array.isArray(incomingGrounding?.webSearchQueries) ? incomingGrounding.webSearchQueries : [];
+        const previousSearchEntryPoint = groundingMetadata?.searchEntryPoint;
+        groundingMetadata = {
+          ...(groundingMetadata || {}),
+          ...incomingGrounding,
+          groundingChunks: uniqueChunks,
+          webSearchQueries: [...new Set([...priorQueries, ...incomingQueries])],
+          searchEntryPoint: incomingGrounding?.searchEntryPoint?.renderedContent
+            ? incomingGrounding.searchEntryPoint
+            : (previousSearchEntryPoint || incomingGrounding?.searchEntryPoint)
+        };
       }
 
       const parts = candidate?.content?.parts || [];
@@ -1417,7 +1439,10 @@ export async function onRequestPost(context) {
     const terminalInstruction = codingMode && explicitCodeWork
       ? `\\n\\n[TRUX-CODE TERMINAL]: You may use the built-in development terminal for local build, test, lint, and inspection commands. Use Composio for GitHub/external changes. Do not use the terminal for networking or credentials.`
       : '';
-    const modeWithPlugins = modeInstruction + pluginInstruction + terminalInstruction;
+    const liveSearchInstruction = !codingMode
+      ? `\\n\\n[LIVE GOOGLE SEARCH]: Google Search grounding is available in this mode. Use it when the user asks about current/latest/today/recent information or when details may have changed since training, including software documentation, API behavior, versions, prices, schedules, regulations, and current events. For simple greetings and stable facts, answer directly when search would add no value. Base grounded claims on the retrieved results, but do not invent citations, and do not print raw source URLs merely as citations because the client shows linked source icons below the response.`
+      : '';
+    const modeWithPlugins = modeInstruction + pluginInstruction + terminalInstruction + liveSearchInstruction;
     const thinkingInstruction = effectiveAdvancedThinking
       ? `${combinedSystemInstruction}${modeWithPlugins}\n\n[REASONING MODE]: Take extra time to reason carefully, check assumptions and calculations, then return only the concise final answer. Do not expose private chain-of-thought.`
       : `${combinedSystemInstruction}${modeWithPlugins}`;
@@ -1653,7 +1678,7 @@ export async function onRequestPost(context) {
       if (codingMode) {
         modelTools.push({ functionDeclarations: TRUX_WEB_TOOL_DECLARATIONS });
       }
-      if (researchMode) modelTools.push({ googleSearch: {} });
+      if (!codingMode) modelTools.push({ googleSearch: {} });
 
       const agentContents = contents.slice();
       let finalResult = null;
@@ -1916,6 +1941,12 @@ export async function onRequestPost(context) {
                   client: await getVertexAIClient(),
                   model: 'gemini-3.8-flash'
                 });
+                const webSources = call.name === 'trux_web_search'
+                  ? (Array.isArray(callResult?.sources) ? callResult.sources.map(source => ({ title: source?.title || '', uri: source?.url || '' })) : [])
+                  : (callResult?.url ? [{ title: callResult?.title || '', uri: callResult.url }] : []);
+                if (webSources.some(source => source.uri)) {
+                  send({ type: 'grounding', grounding: { sources: webSources.filter(source => source.uri), searchSuggestionHtml: '' } });
+                }
               } else if (composioLabel) {
                 roundDidNewWork = true;
                 callResult = effectiveUserId
