@@ -6528,14 +6528,27 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     /* Grounding URIs come back as Vertex redirect links, so the readable domain
        lives in the title. Prefer a real hostname when the URI has one. */
     function sourceDomain(src) {
-      let host = "";
-      try { host = new URL(src.uri).hostname.replace(/^www\./, ""); } catch (e) {}
-      if(!host || /vertexaisearch|googleapis|google\.com|grounding-api-redirect/i.test(host)) {
-        let t = (src.title || "").trim();
-        let m = t.match(/([a-z0-9-]+(?:\.[a-z0-9-]+)+)/i);
-        return m ? m[1].replace(/^www\./, "") : (t || "source");
+      const cleanDomain = value => {
+        const raw = String(value || "").trim();
+        if (!raw) return "";
+        try {
+          const candidate = /^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : "https://" + raw;
+          return new URL(candidate).hostname.replace(/^www\./i, "").toLowerCase();
+        } catch (e) {
+          return raw.split(/[/?#]/)[0].replace(/^www\./i, "").toLowerCase();
+        }
+      };
+      const explicitDomain = cleanDomain(src?.domain);
+      if (explicitDomain && !/vertexaisearch|googleapis|grounding-api-redirect/i.test(explicitDomain)) {
+        return explicitDomain;
       }
-      return host;
+      const host = cleanDomain(src?.uri);
+      if (host && !/vertexaisearch|googleapis|grounding-api-redirect|(^|\.)google\.com$/i.test(host)) {
+        return host;
+      }
+      const title = String(src?.title || "");
+      const match = title.match(/(?:https?:\/\/)?(?:www\.)?([a-z0-9-]+(?:\.[a-z0-9-]+)+)/i);
+      return match ? match[1].replace(/^www\./i, "").toLowerCase() : "";
     }
     function buildSourcesStrip(sources) {
       if(!Array.isArray(sources) || !sources.length) return null;
@@ -6555,12 +6568,19 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         a.rel = "noopener noreferrer";
         a.setAttribute("aria-label", "Open source website");
         const ico = document.createElement("img");
-        ico.src = "https://www.google.com/s2/favicons?sz=64&domain=" + encodeURIComponent(dom);
+        ico.src = dom
+          ? "https://www.google.com/s2/favicons?sz=64&domain=" + encodeURIComponent(dom)
+          : "https://www.google.com/s2/favicons?sz=64&domain_url=" + encodeURIComponent(src.uri);
         ico.alt = "";
         ico.loading = "lazy";
         ico.referrerPolicy = "no-referrer";
-        /* Sites without a favicon get a neutral fallback, never a text label. */
+        /* Retry with a second favicon provider before using a neutral fallback. */
         ico.onerror = function() {
+          if (dom && !ico.dataset.directFallback) {
+            ico.dataset.directFallback = "1";
+            ico.src = "https://icons.duckduckgo.com/ip3/" + encodeURIComponent(dom) + ".ico";
+            return;
+          }
           const dot = document.createElement("span");
           dot.className = "sc-dot";
           dot.setAttribute("aria-hidden", "true");
@@ -6946,7 +6966,20 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       return {
         push(chunk) { target += chunk; start(); },
         setText(text) { target = text; start(); },
-        finish(cb) { finished = true; doneCb = cb; start(); },
+        finish(cb) {
+          finished = true;
+          doneCb = cb || null;
+          if (rafId !== null) cancelAnimationFrame(rafId);
+          rafId = null;
+          if (!bubble.isConnected) { stopped = true; return; }
+          stopped = false;
+          shown = target.length;
+          host.innerHTML = renderFormattedText(target, false);
+          scheduleTruxMath(host);
+          const container = getActiveChatContainer();
+          if (isNearBottom(container)) container.scrollTop = container.scrollHeight;
+          if (doneCb) { const callback = doneCb; doneCb = null; callback(); }
+        },
         cancel() {
           stopped = true;
           if (rafId !== null) cancelAnimationFrame(rafId);
@@ -8201,6 +8234,16 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           }
           else if(j.type === "done") {
             streamDone = true;
+            /* A clean EOF is authoritative even if the server omitted a final frame.
+               Finalize once here so the caret and Stop control cannot be left active. */
+            if (!finalizedEarly && !finalizedOnFinal && !imageRoute) {
+              const completedText = String(fin !== null ? fin : full).trim();
+              if (completedText) {
+                finalizedOnFinal = true;
+                finalizeResponse(id, aid, completedText, prompt, voice, activeStreamer, turnSources, turnContext);
+                activeStreamer = null;
+              }
+            }
           }
           else if(j.type === "tool_status") {
             const phase = j.phase || "complete";
