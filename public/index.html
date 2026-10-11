@@ -1201,25 +1201,29 @@
     
     .md-stream { display: block; }
     .md-stream.md-stream-fade-active {
-      /* About six lines remain in the active fade window; the newest line is
-         strongly faded, then becomes crisp as subsequent lines move it upward. */
+      /* About twelve lines stay in the active fade window. The newest lines
+         are very dim; older lines progressively return to full clarity. */
       -webkit-mask-image: linear-gradient(to bottom,
         #000 0,
-        #000 calc(100% - 11.5em),
-        rgba(0,0,0,.96) calc(100% - 9.5em),
-        rgba(0,0,0,.84) calc(100% - 7.5em),
-        rgba(0,0,0,.64) calc(100% - 5.5em),
-        rgba(0,0,0,.38) calc(100% - 3.5em),
-        rgba(0,0,0,.12) calc(100% - 1.5em),
+        #000 calc(100% - 23em),
+        rgba(0,0,0,.99) calc(100% - 20em),
+        rgba(0,0,0,.95) calc(100% - 17em),
+        rgba(0,0,0,.87) calc(100% - 14em),
+        rgba(0,0,0,.74) calc(100% - 11em),
+        rgba(0,0,0,.56) calc(100% - 8em),
+        rgba(0,0,0,.34) calc(100% - 5em),
+        rgba(0,0,0,.12) calc(100% - 2em),
         rgba(0,0,0,.015) 100%);
       mask-image: linear-gradient(to bottom,
         #000 0,
-        #000 calc(100% - 11.5em),
-        rgba(0,0,0,.96) calc(100% - 9.5em),
-        rgba(0,0,0,.84) calc(100% - 7.5em),
-        rgba(0,0,0,.64) calc(100% - 5.5em),
-        rgba(0,0,0,.38) calc(100% - 3.5em),
-        rgba(0,0,0,.12) calc(100% - 1.5em),
+        #000 calc(100% - 23em),
+        rgba(0,0,0,.99) calc(100% - 20em),
+        rgba(0,0,0,.95) calc(100% - 17em),
+        rgba(0,0,0,.87) calc(100% - 14em),
+        rgba(0,0,0,.74) calc(100% - 11em),
+        rgba(0,0,0,.56) calc(100% - 8em),
+        rgba(0,0,0,.34) calc(100% - 5em),
+        rgba(0,0,0,.12) calc(100% - 2em),
         rgba(0,0,0,.015) 100%);
       -webkit-mask-repeat: no-repeat;
       mask-repeat: no-repeat;
