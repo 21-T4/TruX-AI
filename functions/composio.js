@@ -401,6 +401,7 @@ export async function getComposioGeminiTools(env, enabledToolkitSlugs, queryText
     // Search is useful for discovery, but search ranking can omit GitHub's
     // write actions. Always load the core coding/write tools explicitly.
     [
+      'GITHUB_GET_THE_AUTHENTICATED_USER',
       'GITHUB_CREATE_OR_UPDATE_FILE_CONTENTS',
       'GITHUB_COMMIT_MULTIPLE_FILES',
       'GITHUB_CREATE_A_COMMIT',
@@ -411,6 +412,7 @@ export async function getComposioGeminiTools(env, enabledToolkitSlugs, queryText
     ].forEach(toolSlug => exactToolSlugs.add(toolSlug));
 
     queries.push(
+      'get the authenticated GitHub user and username',
       'search repository code files',
       'read repository file contents',
       'update edit create delete repository files',
