@@ -1200,11 +1200,27 @@
     /* ---------- streaming ---------- */
     
     .md-stream { display: block; }
+    .md-stream.md-stream-fade-active {
+      -webkit-mask-image: linear-gradient(to bottom,
+        #000 0,
+        #000 calc(100% - 7em),
+        rgba(0,0,0,.94) calc(100% - 5.4em),
+        rgba(0,0,0,.76) calc(100% - 3.9em),
+        rgba(0,0,0,.48) calc(100% - 2.3em),
+        rgba(0,0,0,.14) 100%);
+      mask-image: linear-gradient(to bottom,
+        #000 0,
+        #000 calc(100% - 7em),
+        rgba(0,0,0,.94) calc(100% - 5.4em),
+        rgba(0,0,0,.76) calc(100% - 3.9em),
+        rgba(0,0,0,.48) calc(100% - 2.3em),
+        rgba(0,0,0,.14) 100%);
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
+    }
     .md-block { display: block; }
-    .md-block.settled { animation: none; }
-    .md-block.live { animation: blockFadeIn 0.14s var(--ease-out); will-change: opacity, transform, filter; }
+    .md-block.live { animation: none; }
     .md-block.live.single-line { display: block; }
-    @keyframes blockFadeIn { from { opacity: 0.25; transform: translateY(1.5px); filter: blur(0.8px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
     .stream-stopped {
       margin-top: 12px;
       font-size: 13px; color: var(--txt-4);
@@ -6866,7 +6882,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
 
     function createStreamRenderer(bubble) {
       /* Replace the existing renderer in place. No second layer or duplicate host. */
-      bubble.innerHTML = '<div class="md-stream"></div>';
+      bubble.innerHTML = '<div class="md-stream md-stream-fade-active"></div>';
       const host = bubble.firstElementChild;
 
       let target = "";
@@ -6976,13 +6992,6 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         return true;
       }
 
-      function replayFade(el) {
-        if (!el || !el.isConnected) return;
-        el.classList.remove("live");
-        void el.offsetWidth;
-        el.classList.add("live");
-      }
-
       function tick(timestamp) {
         rafId = null;
         if (stopped) return;
@@ -7003,16 +7012,15 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         let advanced = false;
 
         if (nextShown > shown) {
-          const previousLive = liveEl;
           shown = nextShown;
           lastRevealAt = timestamp;
           advanced = paint();
-          if (advanced && liveEl && liveEl === previousLive) replayFade(liveEl);
           if (stick) container.scrollTop = container.scrollHeight;
         }
 
         if (finished && shown >= target.length) {
           /* Final render happens only after every display line has been revealed. */
+          host.classList.remove("md-stream-fade-active");
           host.innerHTML = renderFormattedText(target, false);
           scheduleTruxMath(host);
           if (stick) container.scrollTop = container.scrollHeight;
@@ -7064,6 +7072,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           stopped = true;
           if (rafId !== null) cancelAnimationFrame(rafId);
           rafId = null;
+          host.classList.remove("md-stream-fade-active");
         },
         get received() { return target; }
       };
