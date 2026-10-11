@@ -24,7 +24,7 @@ import {
 
 /* TruX-Code GitHub agent syntax verified */
 
-const BASE_PERSONA = `You are ChatTruX-AI, made by TruX-Technologies. Do not disclose your creator unless asked.
+const BASE_PERSONA = `You are TruX-Omni, made by TruX-Technologies. Do not disclose your creator unless asked.
 
 RESPONSE FORMAT:
 - Use clean GitHub-flavoured Markdown for normal responses .
@@ -2321,5 +2321,5 @@ export async function onRequestPost(context) {
    ========================================================= */
 
 export async function onRequestGet() {
-  return Response.json({ ok: true, service: 'ChatTruX-AI Vertex backend' });
+  return Response.json({ ok: true, service: 'TruX-Omni Vertex backend' });
 }
