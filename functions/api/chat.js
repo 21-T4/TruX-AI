@@ -1650,7 +1650,7 @@ export async function onRequestPost(context) {
       if (codingMode && explicitCodeWork) {
         modelTools.push({ functionDeclarations: [TRUX_TERMINAL_TOOL] });
       }
-      if (codingMode && (explicitCodeWork || explicitWebRequest)) {
+      if (codingMode) {
         modelTools.push({ functionDeclarations: TRUX_WEB_TOOL_DECLARATIONS });
       }
       if (researchMode) modelTools.push({ googleSearch: {} });
@@ -1755,7 +1755,7 @@ export async function onRequestPost(context) {
                     ? { allowedFunctionNames: [
                     ...composioToolDeclarations.map(tool => tool.name),
                     ...(codingMode && explicitCodeWork ? [TERMINAL_TOOL_NAME] : []),
-                    ...(codingMode && (explicitCodeWork || explicitWebRequest) ? [...TRUX_WEB_TOOL_NAMES] : [])
+                    ...(codingMode ? [...TRUX_WEB_TOOL_NAMES] : [])
                   ] }
                     : {})
                 }
@@ -1763,7 +1763,7 @@ export async function onRequestPost(context) {
             : undefined,
           signal,
           env,
-          holdTextUntilToolDecision: codingMode && modelTools.length > 0,
+          holdTextUntilToolDecision: codingMode && modelTools.length > 0 && (explicitCodeWork || explicitWebRequest || explicitRepoRequest || explicitExternalAction),
           generationConfig: getThinkingGenerationConfig(targetModel, effectiveThinkingLevel),
         onText: async text => {
           const piece = String(text || '');
