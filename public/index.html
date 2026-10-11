@@ -1326,51 +1326,52 @@
 
     /* search sources the model actually used, under the answer */
     .sources {
-      display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
-      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 5px;
+      margin-top: 14px;
+      min-height: 30px;
     }
-    .sources-label {
-      font-family: var(--font-mono);
-      font-size: 10px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase;
-      color: var(--txt-4);
-      margin-right: 2px;
-    }
+    /* Search citations are represented by site icons only. Each icon links
+       directly to the grounded source; no source name or URL is printed. */
     .source-chip {
-      display: inline-flex; align-items: center; gap: 8px;
-      max-width: 250px;
-      padding: 7px 12px 7px 9px;
-      border-radius: 999px;
-      background: var(--bg-2);
-      border: 1px solid var(--line);
-      color: var(--txt-2);
-      font-size: 13px; font-weight: 550;
-      letter-spacing: -0.005em;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      flex: 0 0 30px;
+      padding: 3px;
+      border-radius: 9px;
+      background: transparent;
+      border: 1px solid transparent;
       text-decoration: none;
-      transition: background 0.2s var(--ease), border-color 0.2s var(--ease), color 0.2s var(--ease), transform 0.2s var(--ease-out);
+      transition: background 0.18s var(--ease), border-color 0.18s var(--ease), transform 0.18s var(--ease-out);
     }
-    .source-chip:hover {
-      background: var(--bg-3); border-color: var(--acc-line); color: #fff;
+    .source-chip:hover,
+    .source-chip:focus-visible {
+      background: var(--bg-2);
+      border-color: var(--line);
       transform: translateY(-1px);
       text-decoration: none;
     }
     .source-chip img {
-      width: 17px; height: 17px; flex: 0 0 17px;
-      border-radius: 4px;
-      background: var(--bg-4);
-      object-fit: cover;
+      display: block;
+      width: 23px;
+      height: 23px;
+      flex: 0 0 23px;
+      border-radius: 6px;
+      background: transparent;
+      object-fit: contain;
     }
     .source-chip .sc-dot {
-      width: 17px; height: 17px; flex: 0 0 17px;
-      border-radius: 5px;
+      width: 23px;
+      height: 23px;
+      flex: 0 0 23px;
+      border-radius: 7px;
       background: linear-gradient(160deg, var(--acc), var(--acc-2));
       opacity: 0.75;
-    }
-    .source-chip span {
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .source-chip b {
-      font-family: var(--font-mono);
-      font-size: 11px; font-weight: 500; color: var(--txt-4);
     }
 
     /* ============================================================
@@ -6538,34 +6539,37 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     }
     function buildSourcesStrip(sources) {
       if(!Array.isArray(sources) || !sources.length) return null;
-      let wrap = document.createElement("div");
+      const wrap = document.createElement("div");
       wrap.className = "sources";
-      let lab = document.createElement("div"); lab.className = "sources-label"; lab.textContent = "Sources";
-      wrap.appendChild(lab);
-      sources.slice(0, 6).forEach(function(src) {
-        if(!src || !src.uri) return;
-        let dom = sourceDomain(src);
-        let a = document.createElement("a");
+      const seen = new Set();
+      sources.slice(0, 12).forEach(function(src) {
+        if(!src || !src.uri || seen.has(src.uri)) return;
+        seen.add(src.uri);
+        const dom = sourceDomain(src);
+        const a = document.createElement("a");
         a.className = "source-chip";
+        /* Keep the exact grounded URL so a tap opens that source, not a
+           reconstructed homepage or a generic search results page. */
         a.href = src.uri;
         a.target = "_blank";
         a.rel = "noopener noreferrer";
-        a.title = (src.title || dom) + " — " + dom;
-        let ico = document.createElement("img");
+        a.setAttribute("aria-label", "Open source website");
+        const ico = document.createElement("img");
         ico.src = "https://www.google.com/s2/favicons?sz=64&domain=" + encodeURIComponent(dom);
         ico.alt = "";
         ico.loading = "lazy";
         ico.referrerPolicy = "no-referrer";
-        /* A site with no favicon gets the accent tile instead of a broken icon. */
+        /* Sites without a favicon get a neutral fallback, never a text label. */
         ico.onerror = function() {
-          let dot = document.createElement("span"); dot.className = "sc-dot";
+          const dot = document.createElement("span");
+          dot.className = "sc-dot";
+          dot.setAttribute("aria-hidden", "true");
           ico.replaceWith(dot);
         };
-        let name = document.createElement("span"); name.textContent = dom;
-        a.append(ico, name);
+        a.appendChild(ico);
         wrap.appendChild(a);
       });
-      return wrap.children.length > 1 ? wrap : null;
+      return wrap.children.length ? wrap : null;
     }
     /* Sources sit between the answer and its action row. */
     function attachSources(row, sources) {
@@ -8256,7 +8260,19 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
               if (host && githubProposal) renderGithubProposalCard(host, githubProposal);
             }
           }
-          else if(j.type === "grounding") { turnSources = (j.grounding && j.grounding.sources) || []; }
+          else if(j.type === "grounding") {
+            const incomingSources = (j.grounding && Array.isArray(j.grounding.sources)) ? j.grounding.sources : [];
+            const mergedSources = [...turnSources, ...incomingSources];
+            const uniqueSources = new Map();
+            for (const source of mergedSources) {
+              if (source?.uri && !uniqueSources.has(source.uri)) uniqueSources.set(source.uri, source);
+            }
+            turnSources = Array.from(uniqueSources.values()).slice(0, 12);
+            const responseRow = getEl(id)?.closest(".row");
+            if (responseRow && responseRow.querySelector(".bubble:not(.user-bubble)")) {
+              attachSources(responseRow, turnSources);
+            }
+          }
           else if(j.type === "usage" && j.kind === "pro") {
             let u = getProUsageData();
             u.tokensUsed = Math.min(1000000, Number(j.tokensUsed) || u.tokensUsed);
