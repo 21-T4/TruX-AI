@@ -6760,19 +6760,19 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       const fence=String.fromCharCode(96).repeat(3);
       source=source.replace(new RegExp("^\\s*"+fence+"(?:svg|xml)?[ \\t]*\\n?","i"),"")
         .replace(new RegExp("\\n?\\s*"+fence+"\\s*$"),"").trim();
-      const start=source.search(/<(?:[A-Za-z_][\\w.-]*:)?svg\\b/i);
+      const start=source.search(/<(?:[A-Za-z_][\w.-]*:)?svg\b/i);
       if(start>0)source=source.slice(start).trim();
       return source;
     }
     function isTruxSvgDrawing(raw){
-      return /^\\s*(?:<\\?xml[\\s\\S]*?\\?>\\s*)?<(?:[A-Za-z_][\\w.-]*:)?svg\\b/i.test(normalizeTruxSvgSource(raw));
+      return /^\s*(?:<\?xml[\s\S]*?\?>\s*)?<(?:[A-Za-z_][\w.-]*:)?svg\b/i.test(normalizeTruxSvgSource(raw));
     }
     function isTruxDiagram(lang, code) {
       const label=String(lang||"").trim().toLowerCase(), source=String(code||"").trim();
       if(label==="mermaid" || label==="svg") return true;
       if(label==="xml" && isTruxSvgDrawing(source)) return true;
       if(!label && isTruxSvgDrawing(source)) return true;
-      return /^(?:flowchart|graph|sequencediagram|classdiagram|statediagram(?:-v2)?|erdiagram|journey|gantt|pie(?:\\s|$)|mindmap|timeline|quadrantchart|xychart-beta|block-beta|architecture-beta|gitgraph|sankey-beta|zenuml|requirementdiagram)\\b/i.test(source);
+      return /^(?:flowchart|graph|sequencediagram|classdiagram|statediagram(?:-v2)?|erdiagram|journey|gantt|pie(?:\s|$)|mindmap|timeline|quadrantchart|xychart-beta|block-beta|architecture-beta|gitgraph|sankey-beta|zenuml|requirementdiagram)\b/i.test(source);
     }
     function sanitizeTruxSvgNode(sourceNode, context, depth){
       if(depth>64)throw new Error("SVG drawing nesting is too deep");
@@ -6787,16 +6787,16 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         const lower=name.toLowerCase();
         let value=String(attribute.value||"").trim();
         if(!TRUX_SVG_ATTRIBUTES.has(lower)||value.length>16000)continue;
-        if(lower==="href" && !/^#[A-Za-z_][\\w.-]*$/.test(value))continue;
-        if(lower==="id" && !/^[A-Za-z_][\\w.-]*$/.test(value))continue;
-        if(/url\\s*\\(/i.test(value)){
-          const urls=value.match(/url\\s*\\([^)]*\\)/gi)||[];
-          if(!urls.length||urls.some(item=>!/^url\\(\\s*#[A-Za-z_][\\w.-]*\\s*\\)$/i.test(item.trim())))continue;
-        }else if(/(?:javascript:|data:|https?:\\/\\/|\\/\\/)/i.test(value)){
+        if(lower==="href" && !/^#[A-Za-z_][\w.-]*$/.test(value))continue;
+        if(lower==="id" && !/^[A-Za-z_][\w.-]*$/.test(value))continue;
+        if(/url\s*\(/i.test(value)){
+          const urls=value.match(/url\s*\([^)]*\)/gi)||[];
+          if(!urls.length||urls.some(item=>!/^url\(\s*#[A-Za-z_][\w.-]*\s*\)$/i.test(item.trim())))continue;
+        }else if(/(?:javascript:|data:|https?:\/\/|\/\/)/i.test(value)){
           continue;
         }
         if(lower==="viewbox"){
-          const parts=value.split(/[\\s,]+/).map(Number);
+          const parts=value.split(/[\s,]+/).map(Number);
           if(parts.length!==4||!parts.every(Number.isFinite)||parts[2]<=0||parts[3]<=0)continue;
         }
         clean.setAttribute(name,value);
@@ -6828,7 +6828,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       };
       let vx=0,vy=0,vw=numberLength(sourceRoot.getAttribute("width"),1600),vh=numberLength(sourceRoot.getAttribute("height"),900);
       const rawViewBox=String(sourceRoot.getAttribute("viewBox")||"").trim();
-      const vb=rawViewBox.split(/[\\s,]+/).map(Number);
+      const vb=rawViewBox.split(/[\s,]+/).map(Number);
       if(vb.length===4&&vb.every(Number.isFinite)&&vb[2]>0&&vb[3]>0&&vb[2]<=50000&&vb[3]<=50000){
         vx=vb[0];vy=vb[1];vw=vb[2];vh=vb[3];
       }
