@@ -781,7 +781,7 @@ function getVertexModel(tier) {
 
 /*
  * Chat-only automatic model router.
- * Short, uncomplicated turns use Flash-Lite; normal requests use Flash;
+ * Short, uncomplicated turns use Flash-Lite; normal requests use Gemini 3.6 Flash;
  * complex coding, deep reasoning, multi-stage work, and large attachments
  * use Gemini 3.8 Flash. Dedicated TruX-Code and Deep Research stay pinned
  * to their existing model path.
@@ -853,7 +853,7 @@ function selectAutoChatModel({
     !asksForFullerAnswer;
 
   if (lightweight) return 'gemini-3.5-flash-lite';
-  return 'gemini-3.5-flash';
+  return 'gemini-3.6-flash';
 }
 
 
