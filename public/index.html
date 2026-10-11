@@ -25,6 +25,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.18.7/dist/katex.min.css" integrity="sha384-JctiRyLzXCrSoOOzFlSoWLdyzQl7OrrRnhyeBmzB6ZWtcjccUyc8lCQJqIbs3uQX" crossorigin="anonymous">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.18.7/dist/katex.min.js" integrity="sha384-+7Keh381hSkXmXqnjC0JBM/kzsN6TFj+wMKychSLjTvJ8/0ElMde2uKl8i6p6Buj" crossorigin="anonymous"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.18.7/dist/contrib/auto-render.min.js" integrity="sha384-bjyGPfbij8/NDKJhSGZNP/khQVgtHUE5exjm4Ydllo42FwIgYsdLO2lXGmRBf5Mz" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js" crossorigin="anonymous"></script>
   
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -4013,6 +4014,23 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
 </style>
 
 
+  <style id="trux-native-mermaid-diagrams">
+    .trux-diagram {
+      width:100%;max-width:100%;box-sizing:border-box;overflow-x:auto;overflow-y:hidden;
+      overscroll-behavior-x:contain;margin:14px 0;padding:12px;
+      border:1px solid var(--line);border-radius:12px;background:var(--bg-1);
+    }
+    .trux-diagram svg {display:block;max-width:100%;height:auto;margin:0 auto}
+    .trux-diagram-status {padding:12px 4px;color:var(--txt-3);font-size:13px}
+    .trux-diagram-source {
+      display:block;box-sizing:border-box;max-width:100%;max-height:360px;overflow:auto;
+      padding:12px;border-radius:8px;background:var(--bg-2);color:var(--txt-2);
+      white-space:pre-wrap;overflow-wrap:anywhere;
+      font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
+    }
+    .trux-diagram-source[hidden] {display:none}
+  </style>
+
   <style id="trux-chat-thinking-marker-refresh">
     /* Chat uses the same two-second star/aurora pulse as TruX-Code. */
     .trux-thinking-chat-marker {
@@ -6352,6 +6370,79 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       return html + closeTag;
     }
 
+    let truxMermaidRenderSequence = 0;
+
+    function buildTruxDiagramCard(source) {
+      return '<div class="trux-diagram" data-trux-diagram>' +
+        '<div class="trux-diagram-status" role="status">Rendering diagram…</div>' +
+        '<pre class="trux-diagram-source" hidden>' + escapeHtml(String(source || "")) + '</pre>' +
+        '</div>';
+    }
+
+    async function renderTruxDiagramElement(element) {
+      if (!element || !element.isConnected ||
+          element.dataset.truxDiagramRendered === "true" ||
+          element.dataset.truxDiagramRendering === "true" ||
+          element.dataset.truxDiagramFailed === "true") return;
+
+      element.dataset.truxDiagramRendering = "true";
+      const sourceNode = element.querySelector(".trux-diagram-source");
+      const source = sourceNode ? sourceNode.textContent : "";
+
+      try {
+        let attempts = 0;
+        while ((!window.mermaid || typeof window.mermaid.render !== "function") &&
+               attempts < 40 && element.isConnected) {
+          await new Promise(resolve => window.setTimeout(resolve, 100));
+          attempts++;
+        }
+        if (!element.isConnected) return;
+        if (!window.mermaid || typeof window.mermaid.render !== "function") {
+          throw new Error("The diagram renderer did not load.");
+        }
+        if (!source.trim()) throw new Error("The diagram source is empty.");
+
+        if (!window.__truxMermaidInitialized) {
+          window.mermaid.initialize({
+            startOnLoad: false,
+            securityLevel: "strict",
+            theme: "dark",
+            fontFamily: "inherit",
+            flowchart: { htmlLabels: false, useMaxWidth: true, curve: "basis" }
+          });
+          window.__truxMermaidInitialized = true;
+        }
+
+        const id = "trux-mermaid-" + (++truxMermaidRenderSequence);
+        const result = await window.mermaid.render(id, source);
+        if (!element.isConnected) return;
+        element.innerHTML = result.svg;
+        element.dataset.truxDiagramRendered = "true";
+        delete element.dataset.truxDiagramRendering;
+        if (typeof result.bindFunctions === "function") result.bindFunctions(element);
+      } catch (error) {
+        if (!element.isConnected) return;
+        delete element.dataset.truxDiagramRendering;
+        element.dataset.truxDiagramFailed = "true";
+        const status = element.querySelector(".trux-diagram-status");
+        if (status) status.textContent = "Diagram preview unavailable — source shown below.";
+        const fallback = element.querySelector(".trux-diagram-source");
+        if (fallback) {
+          fallback.hidden = false;
+          fallback.classList.add("trux-diagram-source-fallback");
+        }
+        console.warn("TruX diagram render skipped:", error);
+      }
+    }
+
+    function renderTruxDiagrams(root) {
+      if (!root || typeof root.querySelectorAll !== "function") return;
+      const diagrams = [];
+      if (root instanceof Element && root.matches(".trux-diagram[data-trux-diagram]")) diagrams.push(root);
+      root.querySelectorAll(".trux-diagram[data-trux-diagram]").forEach(el => diagrams.push(el));
+      diagrams.forEach(renderTruxDiagramElement);
+    }
+
     /*
      * allowOpenFence: when streaming, the tail of the text may contain a
      * fence that hasn't been closed yet. We render that as a live
@@ -6364,7 +6455,9 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       let cards = [];
 
       src = src.replace(/```([\w+#.-]*)[ \t]*\n?([\s\S]*?)```/g, (m, lang, code) => {
-        cards.push(buildCodeCard(lang, code, false));
+        cards.push(/^mermaid$/i.test(String(lang || "").trim())
+          ? buildTruxDiagramCard(code)
+          : buildCodeCard(lang, code, false));
         return `\n\n\u0000F${cards.length - 1}\u0000\n\n`;
       });
 
@@ -6825,6 +6918,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         let actions = r.querySelector(".actions");
 
         bubble.innerHTML = renderFormattedText(textContent, false);
+        renderTruxDiagrams(bubble);
         scheduleTruxMath(bubble);
 
         if(imageUrl) {
@@ -6980,6 +7074,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         el.className = "md-block" + (isLive ? " live" : "");
         el.innerHTML = html;
         host.appendChild(el);
+        renderTruxDiagrams(el);
         return el;
       }
 
@@ -7008,6 +7103,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         if (!liveEl) liveEl = commitBlock(html, true);
         else liveEl.innerHTML = html;
 
+        renderTruxDiagrams(liveEl);
         liveEl.classList.toggle("single-line", liveEl.offsetHeight < 46);
         return true;
       }
@@ -7043,6 +7139,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
              text over 2.6 seconds instead of clearing the mask abruptly. */
           host.classList.add("md-stream-fade-settling");
           host.innerHTML = renderFormattedText(target, false);
+          renderTruxDiagrams(host);
           scheduleTruxMath(host);
           if (stick) container.scrollTop = container.scrollHeight;
           if (doneCb) {
@@ -7256,6 +7353,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           streamer.finish();
         } else {
           b.innerHTML = renderFormattedText(text, false);
+          renderTruxDiagrams(b);
           scheduleTruxMath(b);
         }
       }
@@ -7369,6 +7467,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         let bubble = row.querySelector(".bubble");
         let replyText = payload.reply || "Your image is ready.";
         bubble.innerHTML = renderFormattedText(replyText, false);
+        renderTruxDiagrams(bubble);
         let wrap = document.createElement("div"); wrap.className = "gen-image-wrap";
         let img = document.createElement("img"); img.src = payload.image.dataUrl; img.alt = payload.image.alt || "Generated image";
         img.onload = () => img.classList.add("loaded");
@@ -8011,6 +8110,9 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       const value = String(text || "").trim().toLowerCase();
       if (!value) return false;
 
+      // Diagrams are native rendered SVG, not image-generation requests.
+      if (/\b(?:diagram|flowchart|sequence diagram|architecture diagram|mind ?map|er diagram|uml|state diagram|gantt chart|class diagram|process flow|network topology)\b/i.test(value)) return false;
+
       // Do not hijack requests that are clearly asking about an existing image.
       if (/\b(analy[sz]e|describe|explain|read|ocr|identify|interpret|what(?:'s| is) in)\b/.test(value)) {
         return false;
@@ -8553,6 +8655,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
               b.classList.remove("thinking");
               if (full.trim()) {
                 b.innerHTML = renderFormattedText(full, false);
+                renderTruxDiagrams(b);
                 scheduleTruxMath(b);
               } else {
                 b.innerHTML = "Error: " + escapeHtml(e.message || "The connection was lost.");
@@ -8652,7 +8755,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         if(!result?.video?.url) throw Error("Video generation returned no playable video.");
 
         const bubble=getEl(id);
-        bubble.innerHTML=renderFormattedText(result.reply||"Your video is ready.",false); scheduleTruxMath(bubble);
+        bubble.innerHTML=renderFormattedText(result.reply||"Your video is ready.",false); renderTruxDiagrams(bubble); scheduleTruxMath(bubble);
         const wrap=document.createElement("div"); wrap.className="gen-video-wrap";
         const video=document.createElement("video"); video.src=result.video.url; video.controls=true; video.preload="metadata"; video.playsInline=true; wrap.appendChild(video); bubble.appendChild(wrap);
         const reply=result.reply||"Your video is ready.";
