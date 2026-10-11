@@ -4023,6 +4023,15 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     @media(max-width:768px){.trux-diagram-stage{width:max(100%, 1280px);min-width:1280px;min-height:460px}.trux-diagram-svg svg{min-height:460px!important}}
     .trux-diagram-cursor{position:absolute;left:0;top:0;z-index:2;display:block;width:24px;height:24px;max-width:24px;max-height:24px;margin:0;padding:0;object-fit:contain;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;filter:none!important;mix-blend-mode:normal!important;animation:none!important;opacity:1!important;pointer-events:none;user-select:none;-webkit-user-drag:none}
     .trux-diagram-cursor[hidden],.trux-diagram-source{display:none!important}
+    .trux-diagram-toolbar{position:sticky;left:0;display:flex;justify-content:flex-end;gap:8px;padding:8px 10px 0;z-index:3;background:#151515}
+    .trux-diagram-toolbar button{font:12px/1.2 Arial,sans-serif;color:#bdbdbd;background:transparent;border:1px solid #414141;border-radius:7px;padding:7px 10px;cursor:pointer}
+    .trux-diagram-toolbar button:hover{color:#fff;border-color:#777}
+    .trux-diagram-editor{position:relative;min-width:280px;margin:10px 0 4px;padding:0 10px 10px;background:#151515}
+    .trux-diagram-editor[hidden]{display:none!important}
+    .trux-diagram-editor textarea{display:block;width:100%;min-height:210px;resize:vertical;padding:12px;color:#dedede;background:#191919;border:1px solid #444;border-radius:8px;font:13px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre;tab-size:2;user-select:text;-webkit-user-select:text}
+    .trux-diagram-editor-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+    .trux-diagram-editor-actions button{font:12px/1.2 Arial,sans-serif;color:#d6d6d6;background:#222;border:1px solid #444;border-radius:7px;padding:8px 11px;cursor:pointer}
+    .trux-diagram-editor-actions button[data-trux-diagram-apply]{background:#dedede;color:#151515;border-color:#dedede}
     .trux-diagram-error{margin:6px 0;color:var(--txt-3);font-size:13px}
   </style>
 
@@ -6501,11 +6510,51 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     }
     function buildTruxDiagramCard(source,pending=false) {
       return '<div class="trux-diagram" data-trux-diagram'+(pending?' data-trux-diagram-pending="true"':'')+'>'+
+        '<div class="trux-diagram-toolbar"><button type="button" data-trux-diagram-action="edit" aria-label="Edit diagram source">Edit diagram</button></div>'+
+        '<div class="trux-diagram-editor" hidden><textarea spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Editable Mermaid diagram source"></textarea>'+
+        '<div class="trux-diagram-editor-actions"><button type="button" data-trux-diagram-action="cancel">Cancel</button><button type="button" data-trux-diagram-action="apply">Apply changes</button></div></div>'+
         '<div class="trux-diagram-stage"><div class="trux-diagram-svg"></div>'+
         '<img class="trux-diagram-cursor" src="/icon-grey.png" alt="" aria-hidden="true" draggable="false"></div>'+
         '<pre class="trux-diagram-source" hidden>'+escapeHtml(String(source||""))+'</pre>'+
         '<div class="trux-diagram-error" hidden></div></div>';
     }
+    function toggleTruxDiagramEditor(button){
+      const card=button&&button.closest(".trux-diagram");if(!card)return;
+      const editor=card.querySelector(".trux-diagram-editor"),textarea=editor&&editor.querySelector("textarea"),source=card.querySelector(".trux-diagram-source");
+      if(!editor||!textarea||!source)return;
+      textarea.value=source.textContent||"";
+      editor.hidden=false;
+      textarea.focus();
+    }
+    function cancelTruxDiagramEditor(button){
+      const card=button&&button.closest(".trux-diagram");if(!card)return;
+      const editor=card.querySelector(".trux-diagram-editor");if(editor)editor.hidden=true;
+    }
+    function applyTruxDiagramEditor(button){
+      const card=button&&button.closest(".trux-diagram");if(!card)return;
+      const editor=card.querySelector(".trux-diagram-editor"),textarea=editor&&editor.querySelector("textarea");
+      const source=card.querySelector(".trux-diagram-source"),svgSlot=card.querySelector(".trux-diagram-svg");
+      const errorNode=card.querySelector(".trux-diagram-error"),cursor=card.querySelector(".trux-diagram-cursor");
+      if(!textarea||!source||!svgSlot)return;
+      const value=normalizeTruxMermaidSource(textarea.value);
+      if(!value){if(errorNode){errorNode.hidden=false;errorNode.textContent="Add a diagram declaration and content before applying.";}return;}
+      source.textContent=value;
+      if(editor)editor.hidden=true;
+      if(errorNode){errorNode.hidden=true;errorNode.textContent="";}
+      svgSlot.replaceChildren();
+      if(cursor)cursor.hidden=false;
+      delete card.dataset.truxDiagramPending;delete card.dataset.truxDiagramRendered;delete card.dataset.truxDiagramRendering;
+      delete card.dataset.truxDiagramFailed;delete card.dataset.truxDiagramFallback;delete card.dataset.truxDiagramRetry;
+      renderTruxDiagramElement(card);
+    }
+    document.addEventListener("click",function(event){
+      const button=event.target&&event.target.closest?event.target.closest("[data-trux-diagram-action]"):null;
+      if(!button)return;
+      const action=button.getAttribute("data-trux-diagram-action");
+      if(action==="edit")toggleTruxDiagramEditor(button);
+      else if(action==="cancel")cancelTruxDiagramEditor(button);
+      else if(action==="apply")applyTruxDiagramEditor(button);
+    });
     function getTruxMermaidApi(){
       const root=window.mermaid;
       if(root?.default && typeof root.default.render==="function") return root.default;
