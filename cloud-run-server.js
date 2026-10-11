@@ -91,14 +91,8 @@ function makeRequest(req, body, signal = null) {
 }
 
 function contextFor(request, env) {
-  return {
-    request,
-    env,
-    params: {},
-    waitUntil(promise) {
-      Promise.resolve(promise).catch(error => console.error("waitUntil failed:", error));
-    }
-  };
+  // Cloud Run handles the live request/stream directly; no background-task shim.
+  return { request, env, params: {} };
 }
 
 async function sendResponse(res, response) {
