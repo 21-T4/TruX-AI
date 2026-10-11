@@ -8016,7 +8016,37 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         advancedThinking: advancedThinkingLevel === "extended" || workspaceMode === "deep-research",
         thinkingLevel: advancedThinkingLevel,
         incognito: !!incognitoMode,
-        history: (chatSessions[turnChatId]?.messages || []).slice(0, sentMessageIndex).map(m => ({ role: m.role, text: m.text || "" })),
+        history: (() => {
+          const prior = (chatSessions[turnChatId]?.messages || []).slice(0, sentMessageIndex);
+          const deepMode = workspaceMode === "coding" || workspaceMode === "deep-research";
+          const selected = [];
+          const maxMessages = deepMode ? 24 : advancedThinkingLevel === "extended" ? 18 : advancedThinkingLevel === "medium" ? 14 : 12;
+          const maxChars = deepMode ? 80000 : advancedThinkingLevel === "extended" ? 60000 : advancedThinkingLevel === "medium" ? 45000 : 36000;
+          let usedChars = 0;
+          for (let index = prior.length - 1; index >= 0 && selected.length < maxMessages; index -= 1) {
+            const message = prior[index];
+            const raw = String(message?.text || "");
+            if (!raw.trim()) continue;
+            const remaining = maxChars - usedChars;
+            if (remaining <= 0) break;
+            if (raw.length > remaining) {
+              const marker = "\n[… earlier context trimmed for speed …]\n";
+              const contentBudget = remaining - marker.length;
+              if (contentBudget >= 64) {
+                const headLength = Math.min(320, Math.floor(contentBudget * 0.25));
+                const tailLength = Math.max(0, contentBudget - headLength);
+                selected.unshift({
+                  role: message.role,
+                  text: raw.slice(0, headLength) + marker + raw.slice(-tailLength)
+                });
+              }
+              break;
+            }
+            selected.unshift({ role: message.role, text: raw });
+            usedChars += raw.length;
+          }
+          return selected;
+        })(),
         image: img,
         attachments: allAttachments,
         systemInstruction: store.getItem("trux_custom_instructions") || "",
