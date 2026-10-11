@@ -1357,8 +1357,8 @@ export async function onRequestPost(context) {
     /* =====================================================
        HISTORY
        =====================================================
-       The actual history compression runs inside the SSE response so
-       TruX-Code can open the stream first and avoid a long silent wait.
+       The client-provided conversation history is formatted directly for
+       the primary stream; no separate history-summary model request is made.
        ===================================================== */
 
     /* =====================================================
@@ -1406,9 +1406,8 @@ export async function onRequestPost(context) {
         });
 
     return createSseResponse(async ({ send, signal }) => {
-      // Model-written labels describe real stages; show a visible Chat status
-      // immediately while the first generated label is being prepared.
-      // Show an immediate truthful status in Chat and Code while the answer begins.
+      // Show Thinking immediately. Later activity labels map real pipeline stages
+      // locally, without delaying the primary Vertex request for another model call.
       const initialChatActivity = 'Thinking';
       const initialActivityKey = initialChatActivity.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
       const generatedActivityKeys = new Set(initialActivityKey ? [initialActivityKey] : []);
@@ -1602,8 +1601,8 @@ export async function onRequestPost(context) {
         }
 
         agentRound += 1;
-        // Keep ordinary Chat answer generation on the hot path. Generate activity
-        // labels only for real coding, research, and external-tool operations.
+        // Keep ordinary Chat on the hot path; only emit concise activity labels
+        // when coding, research, or a real external-tool operation is underway.
         const needsOpeningActivity =
           researchMode ||
           explicitExternalAction ||
@@ -1623,7 +1622,7 @@ export async function onRequestPost(context) {
           : Promise.resolve('');
 
         if (needsOpeningActivity) {
-          // Start the generated activity label in parallel; do not delay the main model.
+          // Send the stage label immediately without waiting on a status model.
           stageLabelTask.catch(() => '');
         }
 
