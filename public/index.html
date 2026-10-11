@@ -1202,9 +1202,9 @@
     .md-stream { display: block; }
     .md-block { display: block; }
     .md-block.settled { animation: none; }
-    .md-block.live { animation: blockFadeIn 0.16s var(--ease-out); will-change: opacity, transform, filter; }
+    .md-block.live { animation: blockFadeIn 0.14s var(--ease-out); will-change: opacity, transform, filter; }
     .md-block.live.single-line { display: block; }
-    @keyframes blockFadeIn { from { opacity: 0.48; transform: translateY(1px); filter: blur(0.55px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+    @keyframes blockFadeIn { from { opacity: 0.25; transform: translateY(1.5px); filter: blur(0.8px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
     .stream-stopped {
       margin-top: 12px;
       font-size: 13px; color: var(--txt-4);
@@ -6880,8 +6880,8 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       let doneCb = null;
       let lastRevealAt = -Infinity;
 
-      const REVEAL_INTERVAL_MS = 42;
-      const MAX_LINES_PER_TICK = 2;
+      const REVEAL_INTERVAL_MS = 58;
+      const MAX_LINES_PER_TICK = 1;
       const measureCanvas = document.createElement("canvas");
       const measureContext = measureCanvas.getContext("2d");
 
