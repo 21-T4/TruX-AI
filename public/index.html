@@ -1221,7 +1221,14 @@
       font-family: var(--font-mono); letter-spacing: 0.04em;
     }
 
-    /* ---------- message actions (hover-revealed) ---------- */
+    /* The app is an interface, not a document: keep all UI text non-selectable. */
+    html, body, body * {
+      -webkit-user-select: none !important;
+      user-select: none !important;
+      -webkit-touch-callout: none;
+    }
+
+    /* ---------- message actions ---------- */
     .actions {
       display: flex; flex-wrap: wrap; gap: 2px;
       margin-top: 12px;
@@ -1229,10 +1236,26 @@
       transform: translateY(-2px);
       transition: opacity 0.22s var(--ease), transform 0.22s var(--ease);
     }
-    .row:hover .actions,
-    .row:focus-within .actions,
-    .row:last-child .actions { opacity: 1; transform: none; }
-    @media (hover: none) { .actions { opacity: 1; transform: none; } }
+    .row:not(.user-row):hover .actions,
+    .row:not(.user-row):focus-within .actions,
+    .row:not(.user-row):last-child .actions { opacity: 1; transform: none; }
+    @media (hover: none) {
+      .row:not(.user-row) .actions { opacity: 1; transform: none; }
+    }
+
+    /* User-message Copy/Resend controls appear only after a press-and-hold. */
+    .user-row .user-message-actions {
+      display: none !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+    .user-row.user-actions-visible .user-message-actions {
+      display: flex !important;
+      opacity: 1 !important;
+      visibility: visible;
+      pointer-events: auto !important;
+      transform: none;
+    }
 
     .act {
       height: 30px;
@@ -6651,6 +6674,61 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
 
       actions.append(copyBtn, resendBtn);
       userRow.appendChild(actions);
+
+      if (userRow.dataset.longPressActionsBound !== "true") {
+        userRow.dataset.longPressActionsBound = "true";
+        let holdTimer = null;
+        let holdStartX = 0;
+        let holdStartY = 0;
+        const clearHoldTimer = () => {
+          if (holdTimer !== null) clearTimeout(holdTimer);
+          holdTimer = null;
+        };
+
+        userRow.addEventListener("pointerdown", event => {
+          const target = event.target;
+          if (target instanceof Element && target.closest(".user-message-actions")) return;
+          if (event.isPrimary === false || (typeof event.button === "number" && event.button !== 0)) return;
+          clearHoldTimer();
+          holdStartX = event.clientX;
+          holdStartY = event.clientY;
+          holdTimer = window.setTimeout(() => {
+            holdTimer = null;
+            document.querySelectorAll(".user-row.user-actions-visible").forEach(other => {
+              if (other !== userRow) other.classList.remove("user-actions-visible");
+            });
+            userRow.classList.add("user-actions-visible");
+            if (event.pointerType === "touch" && typeof navigator.vibrate === "function") {
+              navigator.vibrate(12);
+            }
+          }, 450);
+        });
+        userRow.addEventListener("pointermove", event => {
+          if (holdTimer !== null &&
+              (Math.abs(event.clientX - holdStartX) > 12 || Math.abs(event.clientY - holdStartY) > 12)) {
+            clearHoldTimer();
+          }
+        });
+        userRow.addEventListener("pointerup", clearHoldTimer);
+        userRow.addEventListener("pointercancel", clearHoldTimer);
+        userRow.addEventListener("pointerleave", clearHoldTimer);
+        userRow.addEventListener("contextmenu", event => {
+          const target = event.target;
+          if (target instanceof Element && target.closest(".user-bubble")) event.preventDefault();
+        });
+      }
+
+      if (!window.__truxUserActionDismissBound) {
+        window.__truxUserActionDismissBound = true;
+        document.addEventListener("pointerdown", event => {
+          const target = event.target;
+          if (target instanceof Element &&
+              (target.closest(".user-message-actions") || target.closest(".user-row.user-actions-visible"))) return;
+          document.querySelectorAll(".user-row.user-actions-visible").forEach(row => {
+            row.classList.remove("user-actions-visible");
+          });
+        }, true);
+      }
     }
 
     function markPromptMessageStopped(assistantRow) {
@@ -6836,16 +6914,9 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         let remaining = target.length - shown;
 
         if (remaining > 0) {
-          // Proportional catch-up: fast on big backlogs, gentle on small ones.
-          let step = Math.max(4, Math.ceil(remaining / 4));
-          shown = Math.min(target.length, shown + step);
-
-          // Avoid stopping mid-word so text never looks chopped.
-          if (shown < target.length) {
-            let probe = shown;
-            while (probe < target.length && probe - shown < 14 && /\S/.test(target[probe])) probe++;
-            if (probe - shown < 14) shown = probe;
-          }
+          // Render everything already received on the next frame; do not add a
+          // client-side reveal animation or make the UI lag behind the network.
+          shown = target.length;
           paint();
           if (stick) chatContainer.scrollTop = chatContainer.scrollHeight;
         }
