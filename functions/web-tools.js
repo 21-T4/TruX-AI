@@ -42,7 +42,7 @@ export function getTruxWebToolLabel(name) {
 
 const MAX_FETCH_BYTES = 3 * 1024 * 1024;
 const MAX_REDIRECTS = 6;
-const USER_AGENT = 'Mozilla/5.0 (compatible; TruX-AI-WebReader/1.0; +https://chat.trux.website)';
+const USER_AGENT = 'Mozilla/5.0 (compatible; TruX-AI-WebReader/1.0; +https://trux-ai-workspace.trux.website)';
 
 function isNonPublicIp(address) {
   const version = isIP(String(address || '').split('%')[0]);
