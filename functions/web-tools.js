@@ -82,7 +82,7 @@ async function validatePublicWebUrl(rawUrl) {
     throw new Error('URLs containing embedded usernames or passwords are not allowed.');
   }
 
-  const hostname = url.hostname.toLowerCase().replace(/\.$/, '');
+  const hostname = url.hostname.toLowerCase().replace(/^\[|\]$/g, '').replace(/\.$/, '');
   if (
     !hostname ||
     hostname === 'localhost' ||
