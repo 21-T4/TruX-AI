@@ -881,7 +881,11 @@ function getGroundingSources(groundingMetadata) {
       const web = chunk?.web;
       if (!web?.uri || seen.has(web.uri)) return null;
       seen.add(web.uri);
-      return { title: web.title || web.domain || 'Google Search result', uri: web.uri };
+      return {
+        title: web.title || web.domain || 'Google Search result',
+        uri: web.uri,
+        domain: String(web.domain || '')
+      };
     })
     .filter(Boolean)
     .slice(0, 6);
@@ -1817,6 +1821,13 @@ export async function onRequestPost(context) {
         // Activity labels are non-blocking; never delay answer completion for them.
 
         lastModelResult = result;
+
+        /* Preserve sources from every model round. A later synthesis/tool round
+           may replace finalResult and otherwise discard earlier search grounding. */
+        const roundGrounding = getGroundingData(result?.groundingMetadata);
+        if (roundGrounding.sources.length || roundGrounding.searchSuggestionHtml) {
+          send({ type: 'grounding', grounding: roundGrounding });
+        }
 
         if (signal?.aborted) {
           generationStopped = true;
