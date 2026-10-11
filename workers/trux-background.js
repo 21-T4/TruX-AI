@@ -112,6 +112,7 @@ async function processJob(job, env) {
     let finalText = '';
     let liveText = '';
     let seq = 1;
+    let lastStopCheckAt = 0;
     let lastLivePublishAt = 0;
     let livePublishChain = Promise.resolve();
     function publishLiveState(force = false) {
@@ -229,10 +230,15 @@ async function processJob(job, env) {
 
         if (lines.length) {
           await handleEvent(lines.map(line => line.slice(5).trimStart()).join('\n'));
-          if (await isJobStopped(job, env)) {
-            try { chatController.abort(); } catch {}
-            try { await reader.cancel(); } catch {}
-            return;
+          // Keep stop responsive without making every model token wait on a
+          // status-store request. The idle-read pulse covers silent intervals.
+          if (Date.now() - lastStopCheckAt >= 250) {
+            lastStopCheckAt = Date.now();
+            if (await isJobStopped(job, env)) {
+              try { chatController.abort(); } catch {}
+              try { await reader.cancel(); } catch {}
+              return;
+            }
           }
         }
       }
