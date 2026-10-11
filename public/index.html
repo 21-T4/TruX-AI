@@ -4853,6 +4853,8 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         advancedThinkingLevel = "low",
         incognitoMode = false,
         backgroundJobWatchers = new Map(),
+        generationEpoch = 0,
+        locallyStoppedBackgroundJobs = new Set(),
         generationStopRequested = false,
         truxLocationCache = null,
         currentProfileOption = null;
@@ -6553,7 +6555,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       }
       for (let i = session.messages.length - 1; i >= 0; i--) {
         const m = session.messages[i];
-        if (m?.role === "user" && m?.stopped && String(m.text || "") === String(fallbackText || "")) return i;
+        if (m?.role === "user" && String(m.text || "") === String(fallbackText || "")) return i;
       }
       return -1;
     }
@@ -6568,44 +6570,76 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       return true;
     }
 
-    function attachStoppedUserActions(userRow, messageIndex, promptText) {
+    function attachUserMessageActions(userRow, messageIndex, promptText) {
       if (!userRow) return;
+      userRow.querySelector(".user-message-actions")?.remove();
       userRow.querySelector(".user-stopped-actions")?.remove();
       const index = Number.isInteger(messageIndex) ? messageIndex : findStoppedMessageIndex(userRow, promptText);
       const actions = document.createElement("div");
-      actions.className = "actions user-stopped-actions";
+      actions.className = "actions user-message-actions user-stopped-actions";
 
-      const editBtn = document.createElement("button");
-      editBtn.className = "act";
-      editBtn.title = "Edit stopped question";
-      editBtn.textContent = "Edit";
-      editBtn.onclick = () => {
-        if (isGenerating) return toast("Stop the current generation first.", "err");
-        const session = chatSessions[currentChatId];
-        const text = String(session?.messages?.[index]?.text ?? promptText ?? "");
-        if (!removeStoppedPrompt(index, userRow)) return;
-        const input = getEl("promptInput");
-        input.value = text;
-        input.focus();
-        handleInputChange();
+      const getPromptText = () => {
+        const message = chatSessions[currentChatId]?.messages?.[index];
+        if (message?.role === "user") return String(message.text || "");
+        return String(promptText ?? userRow.querySelector(".user-bubble")?.innerText ?? "");
       };
+
+      const copyBtn = document.createElement("button");
+      copyBtn.className = "act";
+      copyBtn.type = "button";
+      copyBtn.title = "Copy your message";
+      copyBtn.innerHTML = ICON.copy + "Copy";
+      copyBtn.onclick = () => copyTextMessage(getPromptText(), copyBtn);
 
       const resendBtn = document.createElement("button");
       resendBtn.className = "act";
-      resendBtn.title = "Resend stopped question";
+      resendBtn.type = "button";
+      resendBtn.title = "Resend this message";
       resendBtn.innerHTML = ICON.redo + "Resend";
       resendBtn.onclick = () => {
         if (isGenerating) return toast("Stop the current generation first.", "err");
         const session = chatSessions[currentChatId];
-        const text = String(session?.messages?.[index]?.text ?? promptText ?? "");
-        if (!removeStoppedPrompt(index, userRow)) return;
+        const message = session?.messages?.[index];
+        if (!message || message.role !== "user") {
+          return toast("This message is no longer available.", "err");
+        }
+
+        const text = String(message.text || "");
+        const savedAttachments = (Array.isArray(message.attachments) ? message.attachments : [])
+          .filter(item => item && item.objectKey);
+        if (!text.trim() && !savedAttachments.length) {
+          return toast("This message has no text or saved attachments to resend.", "err");
+        }
+
+        // Replace this turn and any later turns, then submit the same prompt
+        // again so the transcript never contains duplicate user messages.
+        session.messages.splice(index);
+        saveChatSessions();
+        let node = userRow;
+        while (node) {
+          const next = node.nextElementSibling;
+          node.remove();
+          node = next;
+        }
+
+        selectedImageBase64 = null;
+        pastedTextBlocks = [];
+        fileAttachments = savedAttachments.map(item => ({
+          name: String(item.name || "attachment"),
+          size: Number(item.size || 0),
+          mimeType: String(item.mimeType || "application/octet-stream"),
+          objectKey: String(item.objectKey),
+          processedKey: item.processedKey || null,
+          processing: false
+        }));
         const input = getEl("promptInput");
         input.value = text;
+        renderFileChips();
         handleInputChange();
         sendPrompt();
       };
 
-      actions.append(editBtn, resendBtn);
+      actions.append(copyBtn, resendBtn);
       userRow.appendChild(actions);
     }
 
@@ -6623,7 +6657,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       session.messages[index].stopped = true;
       saveChatSessions();
       userRow.dataset.messageIndex = String(index);
-      attachStoppedUserActions(userRow, index, String(session.messages[index].text || ""));
+      attachUserMessageActions(userRow, index, String(session.messages[index].text || ""));
     }
 
     function appendMessageRow(label, text, rc, bc, imageUrl, animate, sources, videoUrl, messageMeta = null) {
@@ -6635,9 +6669,12 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         // No stray newlines inside the bubble: it is white-space: pre-wrap,
         // so template indentation would render as blank lines.
         r.dataset.chatId = currentChatId || "";
-        if (Number.isInteger(messageMeta?.messageIndex)) r.dataset.messageIndex = String(messageMeta.messageIndex);
+        const userMessageIndex = Number.isInteger(messageMeta?.messageIndex)
+          ? Number(messageMeta.messageIndex)
+          : findStoppedMessageIndex(r, textContent);
+        if (Number.isInteger(userMessageIndex) && userMessageIndex >= 0) r.dataset.messageIndex = String(userMessageIndex);
         r.innerHTML = `<div class="label">You</div><div class="bubble user-bubble">${escapeHtml(textContent).replace(/\n/g, "<br>")}</div>`;
-        if (messageMeta?.stopped) attachStoppedUserActions(r, Number(messageMeta.messageIndex), textContent);
+        attachUserMessageActions(r, userMessageIndex, textContent);
       } else {
         r.innerHTML = `<div class="bubble ${bc}"></div><div class="actions"></div>`;
         let bubble = r.querySelector(".bubble");
@@ -6969,6 +7006,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
        opts.imagePrompt - the prompt the MODEL wrote for the picture */
     async function generateImage(basePrompt, opts) {
       opts = opts || {};
+      const turnId = ++generationEpoch;
       let imagePrompt = opts.imagePrompt || basePrompt;
       enterChatWorkspace();
       document.body.removeAttribute("data-media-mode");
@@ -7044,9 +7082,11 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         store.setItem("trux_image_usage", JSON.stringify(iu));
         updateAllUsageUI();
       } catch(e) {
+        if (turnId !== generationEpoch) return;
         let bubble = row.querySelector(".bubble");
         bubble.innerHTML = e.name === "AbortError" ? "Generation stopped." : "Error: " + escapeHtml(e.message);
       } finally {
+        if (turnId !== generationEpoch) return;
         isGenerating = false; activeAbortController = null;
         getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>'; getEl("actionBtn").classList.remove("stop"); handleInputChange();
       }
@@ -7375,6 +7415,16 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     async function commitBackgroundResult(chatId, jobId, finalText, proposal, toolEvents = [], completedAtMs = 0) {
       const session = chatSessions[chatId];
       if (!session) return;
+      if (locallyStoppedBackgroundJobs.has(String(jobId))) {
+        if (String(session.activeBackgroundJobId || "") === String(jobId)) {
+          delete session.activeBackgroundJobId;
+          delete session.backgroundJobSecret;
+          delete session.backgroundStartedAt;
+          delete session.backgroundJobMode;
+          saveChatSessions();
+        }
+        return;
+      }
       const codingSession = String(session.mode || "chat") === "coding";
       const watcher = backgroundJobWatchers.get(String(jobId));
       const startedAt = Number(session.backgroundStartedAt || watcher?.row?._startedAt || 0);
@@ -7527,6 +7577,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           }
 
           const currentState = await response.json().catch(() => ({}));
+          if (locallyStoppedBackgroundJobs.has(key)) return false;
           if (!response.ok) {
             statusFailureCount += 1;
             if (statusFailureCount >= 8) {
@@ -7656,7 +7707,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
             return true;
           }
 
-          await new Promise(resolve => setTimeout(resolve, 850));
+          await new Promise(resolve => setTimeout(resolve, 250));
         }
 
         return false;
@@ -8203,6 +8254,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       closeModelDropdown();
       closeAttachmentMenu();
       generationStopRequested = false;
+      const turnId = ++generationEpoch;
       /* Dedicated TruX-Code transcript replaces its own landing surface for the active turn. */
       isGenerating = true; isScrolledUp = false;
       getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>'; getEl("actionBtn").classList.add("stop"); getEl("actionBtn").classList.remove("ready");
@@ -8228,7 +8280,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       getEl("welcomeScreen").style.display = "none";
       let chatContainer = getActiveChatContainer(); chatContainer.style.display = "block";
       
-      appendMessageRow("You", basePrompt + attachmentLabel + (selectedImageBase64 ? "\n[Image Attached]" : ""), "user-row", "user-bubble", null, true);
+      appendMessageRow("You", basePrompt + attachmentLabel + (selectedImageBase64 ? "\n[Image Attached]" : ""), "user-row", "user-bubble", null, true, undefined, undefined, { messageIndex: sentMessageIndex });
       promptInput.value = ""; let img = selectedImageBase64; removeImage(); pastedTextBlocks = []; fileAttachments = []; renderFileChips(); handleInputChange();
 
       const codingTurn = workspaceMode === "coding";
@@ -8321,6 +8373,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         }
 
         activeAbortController = new AbortController();
+        const requestController = activeAbortController;
         try {
           const chatHeaders = { "Content-Type": "application/json", "Accept": "text/event-stream" };
           if (authToken) chatHeaders.Authorization = "Bearer " + authToken;
@@ -8328,7 +8381,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           method: "POST",
           cache: incognitoMode ? "no-store" : "default",
           headers: chatHeaders,
-          signal: activeAbortController.signal,
+          signal: requestController.signal,
           body: JSON.stringify(requestBody)
         });
         if(!res.ok) {
@@ -8387,6 +8440,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         }
 
         function ev(raw) {
+          if (turnId !== generationEpoch || generationStopRequested || requestController.signal.aborted) return;
           if(!raw) return; let j; try { j = JSON.parse(raw); } catch { return; }
           if(j.type === "progress") {
             return;
@@ -8506,7 +8560,16 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         }
 
         while(1) {
-          let { value, done } = await rd.read(); if(done) break;
+          if (turnId !== generationEpoch || generationStopRequested || requestController.signal.aborted) {
+            try { await rd.cancel(); } catch {}
+            return;
+          }
+          let { value, done } = await rd.read();
+          if (turnId !== generationEpoch || generationStopRequested || requestController.signal.aborted) {
+            try { await rd.cancel(); } catch {}
+            return;
+          }
+          if(done) break;
           buf += dec.decode(value, { stream: true });
           let es = buf.split(/\r?\n\r?\n/); buf = es.pop() || "";
           for(let x of es) {
@@ -8574,6 +8637,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         activeStreamer = null;
         return;
         } catch(e) {
+          if (turnId !== generationEpoch) return;
           if (row._backgroundHandover) return;
           // The authoritative answer has already been rendered; a late stream
           // close/error must not overwrite it with a false failure message.
@@ -8614,6 +8678,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       }
     }
     async function generateVideo(basePrompt) {
+      const turnId = ++generationEpoch;
       const owner=isTruxDeveloper(auth?.currentUser);
       if(!owner && !auth?.currentUser) return toast("Sign in to use Video generation.","err");
       if(!owner && currentPlanTier!=="pro") return toast("Video generation is available to Pro accounts and Owner access.","err");
@@ -8679,9 +8744,12 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         await saveGeneratedMedia({type:"video",url:result.video.url,prompt:basePrompt,mimeType:result.video.mimeType||"video/mp4"});
         const actions=getEl(aid); if(actions){ const openBtn=document.createElement("button"); openBtn.className="act"; openBtn.textContent="Open"; openBtn.onclick=()=>window.open(result.video.url,"_blank","noopener"); actions.appendChild(openBtn); }
       } catch(e) {
+        if (turnId !== generationEpoch) return;
         const bubble=getEl(id); if(bubble) bubble.innerHTML=e.name==="AbortError"?"Generation stopped.":"Error: "+escapeHtml(e.message);
       } finally {
-        clearInterval(timer); isGenerating=false; activeAbortController=null;
+        clearInterval(timer);
+        if (turnId !== generationEpoch) return;
+        isGenerating=false; activeAbortController=null;
         getEl("btnIcon").innerHTML='<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15-2z"/>';
         getEl("actionBtn").classList.remove("stop"); handleInputChange();
       }
@@ -8818,7 +8886,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       }
 
       const actions = row?.querySelector?.(".actions");
-      appendAssistantActions(actions, responseText, row);
+      actions?.replaceChildren();
       markPromptMessageStopped(row);
     }
 
@@ -8826,7 +8894,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       const id = String(jobId || "");
       if(!id) return false;
 
-      const sendCancel = async forceRefresh => {
+      const sendCancel = async (forceRefresh, attempt = 0) => {
         const user = auth?.currentUser;
         const secret = String(jobSecret || "");
         if(!user && !secret) return false;
@@ -8849,8 +8917,12 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           headers,
           body:JSON.stringify({jobId:id,userId,jobSecret:secret})
         });
-        if(response.ok || response.status === 404) return true;
-        if(response.status === 401 && !forceRefresh && user) return sendCancel(true);
+        if (response.ok) return true;
+        if (response.status === 404 && attempt < 4) {
+          await new Promise(resolve => setTimeout(resolve, 250));
+          return sendCancel(forceRefresh, attempt + 1);
+        }
+        if (response.status === 401 && !forceRefresh && user) return sendCancel(true, attempt);
         return false;
       };
 
@@ -8862,25 +8934,56 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     }
 
     function handleActionButton() {
-      /* One stop path for Chat and TruX-Code: abort the live request immediately
-         and update the visible turn without depending on a background job id. */
       if (sendPromptInFlight && !isGenerating) return;
       if (isGenerating) {
         generationStopRequested = true;
+        generationEpoch += 1;
 
-        const activeRow = getActiveChatContainer()?.querySelector(".row.trux-row:last-of-type");
+        const session = chatSessions[currentChatId];
+        const jobId = String(session?.activeBackgroundJobId || "");
+        const jobSecret = String(session?.backgroundJobSecret || "");
+        const watcher = jobId ? backgroundJobWatchers.get(jobId) : null;
+        if (jobId) locallyStoppedBackgroundJobs.add(jobId);
+
+        const container = getActiveChatContainer();
+        const assistantRows = Array.from(container?.querySelectorAll(".row.trux-row") || []);
+        const activeRow = (jobId && assistantRows.find(item => item.dataset.backgroundJobId === jobId))
+          || assistantRows[assistantRows.length - 1]
+          || null;
         const bubble = activeRow?.querySelector(".bubble");
-        const sid = bubble?.querySelector(".status-msg")?.id || "";
+        const sid = activeRow?.querySelector(".status-msg")?.id || "";
         const tsid = activeRow?.querySelector(".thinking-tool-trace")?.id ||
           activeRow?.querySelector(".trux-thinking-details")?.id || "";
+
+        // Dispatch cancellation first; the existing UI state changes synchronously.
+        const cancelPromise = jobId ? requestBackgroundJobStop(jobId, jobSecret) : Promise.resolve(true);
 
         try { activeAbortController?.abort(); } catch {}
         if (activeStreamer) {
           try { activeStreamer.cancel(); } catch {}
           activeStreamer = null;
         }
+        if (watcher?._streamer) {
+          try { watcher._streamer.cancel(); } catch {}
+          watcher._streamer = null;
+        }
 
         markGenerationStopped(activeRow, bubble?.id || "", sid, tsid);
+
+        if (jobId) {
+          try { watcher?.controller?.abort(); } catch {}
+          if (session && String(session.activeBackgroundJobId || "") === jobId) {
+            delete session.activeBackgroundJobId;
+            delete session.backgroundJobSecret;
+            delete session.backgroundStartedAt;
+            delete session.backgroundJobMode;
+            saveChatSessions();
+          }
+          Promise.resolve(cancelPromise).then(ok => {
+            if (!ok) console.warn("The background stop request could not be confirmed.");
+          }).catch(error => console.warn("Background stop request failed:", error?.message || error));
+        }
+
         isGenerating = false;
         activeAbortController = null;
         getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
@@ -9368,9 +9471,17 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       activeAbortController?.abort();
        activeStreamer?.cancel(); activeStreamer = null;
       currentChatId = id;
-       isGenerating = !!chatSessions[id].activeBackgroundJobId;
-       generationStopRequested = false;
+      generationStopRequested = false;
       setWorkspaceMode(chatSessions[id].mode || "chat", {reload:false,preserveSession:true});
+      isGenerating = !!chatSessions[id].activeBackgroundJobId;
+      if (isGenerating) {
+        getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>';
+        getEl("actionBtn").classList.add("stop");
+        getEl("actionBtn").classList.remove("ready");
+      } else {
+        getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
+        getEl("actionBtn").classList.remove("stop");
+      }
       const welcome = getEl("welcomeScreen");
       if(welcome) welcome.style.display = "none";
       getEl("chatContainer").innerHTML = "";
