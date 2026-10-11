@@ -825,6 +825,19 @@ function selectAutoChatModel({
 }
 
 
+function getThinkingGenerationConfig(model, level = 'LOW') {
+  const normalizedLevel = String(level || 'LOW').toUpperCase();
+  if (model === 'gemini-3.1-pro-preview') return undefined;
+  if (model === 'gemini-3.5-flash-lite' && normalizedLevel === 'LOW') return undefined;
+  return {
+    thinkingConfig: {
+      thinkingLevel: ['LOW', 'MEDIUM', 'HIGH'].includes(normalizedLevel)
+        ? normalizedLevel
+        : 'LOW'
+    }
+  };
+}
+
 function getGroundingSources(groundingMetadata) {
   const chunks = groundingMetadata?.groundingChunks || [];
   const seen = new Set();
@@ -1103,9 +1116,43 @@ function normalizeHistoryMessages(history) {
     .filter(msg => msg.text);
 }
 
-async function buildConversationHistory(history, signal, env) {
+function compactHistoryMessages(messages, options = {}) {
+  const deepMode = !!(options.codingMode || options.researchMode);
+  const level = String(options.thinkingLevel || 'LOW').toUpperCase();
+  const maxMessages = deepMode ? 24 : level === 'HIGH' ? 18 : level === 'MEDIUM' ? 14 : 12;
+  const maxChars = deepMode ? 80000 : level === 'HIGH' ? 60000 : level === 'MEDIUM' ? 45000 : 36000;
+  const selected = [];
+  let usedChars = 0;
+
+  for (let index = messages.length - 1; index >= 0 && selected.length < maxMessages; index -= 1) {
+    const message = messages[index];
+    const remaining = maxChars - usedChars;
+    if (remaining <= 0) break;
+
+    if (message.text.length > remaining) {
+      const marker = '\n[… earlier context trimmed for speed …]\n';
+      const contentBudget = remaining - marker.length;
+      if (contentBudget >= 64) {
+        const headLength = Math.min(320, Math.floor(contentBudget * 0.25));
+        const tailLength = Math.max(0, contentBudget - headLength);
+        selected.unshift({
+          ...message,
+          text: message.text.slice(0, headLength) + marker + message.text.slice(-tailLength)
+        });
+      }
+      break;
+    }
+
+    selected.unshift(message);
+    usedChars += message.text.length;
+  }
+
+  return selected;
+}
+
+async function buildConversationHistory(history, signal, env, options = {}) {
   if (signal?.aborted) return [];
-  const normalized = normalizeHistoryMessages(history);
+  const normalized = compactHistoryMessages(normalizeHistoryMessages(history), options);
   if (!normalized.length) return [];
 
   const result = normalized.map(msg => ({
@@ -1129,6 +1176,7 @@ async function buildConversationHistory(history, signal, env) {
    ========================================================= */
 
 export async function onRequestPost(context) {
+  const requestStartedAt = Date.now();
   try {
     const { request, env } = context;
     const body = await request.json();
@@ -1145,6 +1193,7 @@ export async function onRequestPost(context) {
       userEmail,
       developer,
       advancedThinking,
+      thinkingLevel,
       location,
       generateImage: forceImageGen,
       githubRepository,
@@ -1326,10 +1375,22 @@ export async function onRequestPost(context) {
       ? `${BASE_PERSONA}${developerInstruction}${locationInstruction}\n\n[USER INSTRUCTIONS]:\n${systemInstruction}`
       : `${BASE_PERSONA}${developerInstruction}${locationInstruction}`;
 
-    const effectiveAdvancedThinking =
-      researchMode ||
-      (codingMode && explicitCodeWork) ||
-      (!codingMode && !!advancedThinking);
+    const requestedThinkingLevel = String(
+      thinkingLevel || (advancedThinking ? 'extended' : 'low')
+    ).trim().toLowerCase();
+    const normalizedRequestedThinkingLevel =
+      requestedThinkingLevel === 'extended' || requestedThinkingLevel === 'high'
+        ? 'HIGH'
+        : requestedThinkingLevel === 'medium'
+          ? 'MEDIUM'
+          : 'LOW';
+    const effectiveThinkingLevel =
+      researchMode || (codingMode && explicitCodeWork)
+        ? 'HIGH'
+        : codingMode
+          ? 'LOW'
+          : normalizedRequestedThinkingLevel;
+    const effectiveAdvancedThinking = effectiveThinkingLevel === 'HIGH';
     const modeInstruction = researchMode
       ? `\n\n[DEEP RESEARCH MODE]: Use Google Search grounding for fresh, niche, or source-backed information. Synthesize multiple relevant sources and distinguish facts from inference. Use TruX-Code reasoning engine.`
       : (codingMode && explicitCodeWork)
@@ -1408,6 +1469,9 @@ export async function onRequestPost(context) {
     return createSseResponse(async ({ send, signal }) => {
       // Show Thinking immediately. Later activity labels map real pipeline stages
       // locally, without delaying the primary Vertex request for another model call.
+      let firstTextAt = 0;
+      let streamedChunkCount = 0;
+      let streamedCharCount = 0;
       const initialChatActivity = 'Thinking';
       const initialActivityKey = initialChatActivity.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
       const generatedActivityKeys = new Set(initialActivityKey ? [initialActivityKey] : []);
@@ -1450,7 +1514,23 @@ export async function onRequestPost(context) {
       const historyForTurn = isStandaloneGreeting && Array.isArray(history)
         ? history.slice(-HISTORY_RECENT_LIMIT)
         : history;
-      const formattedHistory = await buildConversationHistory(historyForTurn, signal, env);
+      const formattedHistory = await buildConversationHistory(historyForTurn, signal, env, {
+        codingMode,
+        researchMode,
+        thinkingLevel: effectiveThinkingLevel
+      });
+      const historyCharacterCount = formattedHistory.reduce(
+        (total, item) => total + String(item?.parts?.[0]?.text || '').length,
+        0
+      );
+      console.info('[trux-latency] stream-start', JSON.stringify({
+        mode: codingMode ? 'coding' : researchMode ? 'deep-research' : 'chat',
+        model: targetModel,
+        preStreamMs: Date.now() - requestStartedAt,
+        historyMessages: formattedHistory.length,
+        historyChars: historyCharacterCount,
+        thinkingLevel: effectiveThinkingLevel
+      }));
 
       const contents = [...formattedHistory, { role: 'user', parts: currentParts }];
       /* -------------------------------------------------
@@ -1626,6 +1706,7 @@ export async function onRequestPost(context) {
           stageLabelTask.catch(() => '');
         }
 
+        const modelRoundStartedAt = Date.now();
         const result = await streamVertexGemini({
           model: targetModel,
           contents: agentContents,
@@ -1651,20 +1732,25 @@ export async function onRequestPost(context) {
           signal,
           env,
           holdTextUntilToolDecision: codingMode && modelTools.length > 0,
-          generationConfig: effectiveAdvancedThinking
-            ? {
-                thinkingConfig: {
-                  thinkingLevel: 'HIGH'
-                }
-              }
-            : undefined,
+          generationConfig: getThinkingGenerationConfig(targetModel, effectiveThinkingLevel),
         onText: async text => {
           const piece = String(text || '');
           if (!piece) return;
 
+          streamedChunkCount += 1;
+          streamedCharCount += piece.length;
+          if (!firstTextAt) {
+            firstTextAt = Date.now();
+            console.info('[trux-latency] first-text', JSON.stringify({
+              model: targetModel,
+              mode: codingMode ? 'coding' : researchMode ? 'deep-research' : 'chat',
+              firstTextMs: firstTextAt - requestStartedAt,
+              currentRoundMs: firstTextAt - modelRoundStartedAt
+            }));
+          }
+
           // Send answer content immediately without parallel status-model calls.
           send({ type: 'chunk', text: piece });
-
         },
         onStatus: async status => {
           send({ type: 'status', status });
@@ -2004,9 +2090,7 @@ export async function onRequestPost(context) {
             tools: undefined,
             signal,
             env,
-            generationConfig: effectiveAdvancedThinking
-              ? { thinkingConfig: { thinkingLevel: 'HIGH' } }
-              : undefined
+            generationConfig: getThinkingGenerationConfig(targetModel, effectiveThinkingLevel)
           });
           const synthesizedText =
             synthesized?.candidates?.[0]?.content?.parts
@@ -2030,6 +2114,18 @@ export async function onRequestPost(context) {
       const finalText = String(finalResult?.text || '').trim();
 
       if (signal?.aborted) return;
+      console.info('[trux-latency] complete', JSON.stringify({
+        model: targetModel,
+        mode: codingMode ? 'coding' : researchMode ? 'deep-research' : 'chat',
+        totalMs: Date.now() - requestStartedAt,
+        firstTextMs: firstTextAt ? firstTextAt - requestStartedAt : null,
+        modelRounds: agentRound,
+        historyMessages: formattedHistory.length,
+        historyChars: historyCharacterCount,
+        streamedChunks: streamedChunkCount,
+        streamedChars: streamedCharCount,
+        finalChars: finalText.length
+      }));
       if (!finalText) {
         send({
           type: 'error',
