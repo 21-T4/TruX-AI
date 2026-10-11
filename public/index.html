@@ -1116,9 +1116,9 @@
       letter-spacing:0;white-space:nowrap;
     }
     .trux-thinking-toggle{
-      pointer-events:auto;position:relative;flex:0 0 auto;width:22px;height:22px;
-      display:grid;place-items:center;margin:0;padding:0;border:0;border-radius:50%;
-      background:transparent;color:var(--txt-3);cursor:pointer;opacity:.82;
+      pointer-events:auto!important;position:relative;z-index:2;flex:0 0 auto;width:22px;height:22px;
+      display:grid!important;place-items:center;margin:0;padding:0;border:0;border-radius:50%;
+      visibility:visible!important;background:transparent;color:var(--txt-3);cursor:pointer;opacity:.82;
       transition:color .2s var(--ease),transform .2s var(--ease),opacity .2s var(--ease);
     }
     .trux-thinking-toggle:hover{color:var(--txt);opacity:1}
@@ -8182,7 +8182,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
                 try { rd.cancel(); } catch {}
               } else if (!codingTurn && !finalizedOnFinal) {
                 finalizedOnFinal = true;
-                if (!activeStreamer) dismissThinkingPanel(getEl(id)?.closest(".row"));
+                if (!activeStreamer && !codingTurn) dismissThinkingPanel(getEl(id)?.closest(".row"));
                 finalizeResponse(id, aid, fin, prompt, voice, activeStreamer, turnSources, turnContext);
                 activeStreamer = null;
               }
