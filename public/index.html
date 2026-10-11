@@ -8201,14 +8201,14 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         } catch(e) {
           if (turnId !== generationEpoch) return;
           if (row._backgroundHandover) return;
-          persistTurnDraft(turnContext, full, true);
           // The authoritative answer has already been rendered; a late stream
-          // close/error must not overwrite it with a false failure message.
+          // close/error must not overwrite it or create a duplicate partial draft.
           if (finalizedOnFinal) {
             activeStreamer = null;
             activeAbortController = null;
             return;
           }
+          persistTurnDraft(turnContext, full, true);
           if (isNetworkFailure(e) && isGenerating) {
             activeStreamer?.cancel();
             activeStreamer = null;
