@@ -1410,7 +1410,6 @@ export async function onRequestPost(context) {
       // immediately while the first generated label is being prepared.
       // Show an immediate truthful status in Chat and Code while the answer begins.
       const initialChatActivity = 'Thinking';
-      const generatedActivityLabels = initialChatActivity ? [initialChatActivity] : [];
       const initialActivityKey = initialChatActivity.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
       const generatedActivityKeys = new Set(initialActivityKey ? [initialActivityKey] : []);
       if (initialChatActivity) send({ type: 'status', status: initialChatActivity });
@@ -1441,7 +1440,6 @@ export async function onRequestPost(context) {
         const label = choices.find(candidate => !generatedActivityKeys.has(keyFor(candidate))) || choices[0];
         const key = keyFor(label);
         generatedActivityKeys.add(key);
-        generatedActivityLabels.push(label);
         send({ type: 'status', status: label });
         return label;
       }
