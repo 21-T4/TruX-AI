@@ -1669,6 +1669,21 @@ export async function onRequestPost(context) {
         return rendered.length > 1800 ? rendered.slice(0, 1800) + '…' : rendered;
       }
 
+      function terminalSafePayload(value, depth = 0) {
+        if (depth > 12) return '[nested payload omitted]';
+        if (value == null || typeof value !== 'object') return value;
+        if (Array.isArray(value)) return value.map(item => terminalSafePayload(item, depth + 1));
+        const out = {};
+        for (const [key, item] of Object.entries(value)) {
+          if (/token|secret|password|authorization|api[_-]?key|private[_-]?key|cookie/i.test(key)) {
+            out[key] = '[redacted]';
+          } else {
+            out[key] = terminalSafePayload(item, depth + 1);
+          }
+        }
+        return out;
+      }
+
       // Tool replay protection is local to this request and prevents the same
       // tool action from being executed twice during one streamed turn.
       const executedToolResults = new Map();
@@ -1805,6 +1820,16 @@ export async function onRequestPost(context) {
               status: activeExplanation,
               details: toolCallDetails
             });
+            const terminalToolCommand = 'composio.execute ' + String(call?.name || 'unknown') +
+              ' --arguments ' + JSON.stringify(terminalSafePayload(call?.args || {}));
+            if (codingMode && composioLabel) {
+              send({
+                type: 'terminal',
+                phase: 'start',
+                command: terminalToolCommand,
+                cwd: 'Composio'
+              });
+            }
 
             let toolSignature = '';
             try {
@@ -1903,6 +1928,28 @@ export async function onRequestPost(context) {
                 } else {
                   callResult = { output: callResult, ...replayNotice };
                 }
+              }
+
+              if (codingMode && composioLabel) {
+                const terminalSuccess = typeof callResult?.success === 'boolean'
+                  ? callResult.success
+                  : !callResult?.error && !callResult?.authRequired && !callResult?.configurationError;
+                let terminalOutput = '';
+                try { terminalOutput = JSON.stringify(terminalSafePayload(callResult), null, 2); }
+                catch { terminalOutput = String(callResult ?? ''); }
+                send({
+                  type: 'terminal',
+                  phase: 'complete',
+                  command: terminalToolCommand,
+                  cwd: 'Composio',
+                  code: terminalSuccess ? 0 : 1,
+                  signal: null,
+                  stdout: terminalOutput.slice(0, TERMINAL_MAX_OUTPUT),
+                  stderr: '',
+                  durationMs: 0,
+                  timedOut: false,
+                  success: terminalSuccess
+                });
               }
 
               if (callResult?.configurationError) {
@@ -2010,6 +2057,21 @@ export async function onRequestPost(context) {
                 success: false,
                 error: String(toolError?.message || 'External tool failed.')
               };
+              if (codingMode && composioLabel) {
+                send({
+                  type: 'terminal',
+                  phase: 'complete',
+                  command: terminalToolCommand,
+                  cwd: 'Composio',
+                  code: 1,
+                  signal: null,
+                  stdout: '',
+                  stderr: String(toolError?.message || 'External tool failed.'),
+                  durationMs: 0,
+                  timedOut: false,
+                  success: false
+                });
+              }
               if (toolSignature) {
                 executedToolResults.set(toolSignature, failedToolResult);
 
