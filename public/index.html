@@ -1200,33 +1200,44 @@
     /* ---------- streaming ---------- */
     
     .md-stream { display: block; }
+        @property --trux-stream-fade-strength {
+      syntax: "<number>";
+      inherits: false;
+      initial-value: 1;
+    }
     .md-stream.md-stream-fade-active {
-      /* About twelve lines stay in the active fade window. The newest lines
-         are very dim; older lines progressively return to full clarity. */
+      /* Wide, twelve-line tail fade stays visible through a gentle settling
+         transition instead of disappearing the instant the stream completes. */
+      --trux-stream-fade-strength: 1;
+      transition: --trux-stream-fade-strength 2600ms cubic-bezier(.22,.61,.36,1);
       -webkit-mask-image: linear-gradient(to bottom,
         #000 0,
         #000 calc(100% - 23em),
-        rgba(0,0,0,.99) calc(100% - 20em),
-        rgba(0,0,0,.95) calc(100% - 17em),
-        rgba(0,0,0,.87) calc(100% - 14em),
-        rgba(0,0,0,.74) calc(100% - 11em),
-        rgba(0,0,0,.56) calc(100% - 8em),
-        rgba(0,0,0,.34) calc(100% - 5em),
-        rgba(0,0,0,.12) calc(100% - 2em),
-        rgba(0,0,0,.015) 100%);
+        rgba(0,0,0,calc(1 - var(--trux-stream-fade-strength) * .01)) calc(100% - 20em),
+        rgba(0,0,0,calc(1 - var(--trux-stream-fade-strength) * .05)) calc(100% - 17em),
+        rgba(0,0,0,calc(1 - var(--trux-stream-fade-strength) * .13)) calc(100% - 14em),
+        rgba(0,0,0,calc(1 - var(--trux-stream-fade-strength) * .26)) calc(100% - 11em),
+        rgba(0,0,0,calc(1 - var(--trux-stream-fade-strength) * .44)) calc(100% - 8em),
+        rgba(0,0,0,calc(1 - var(--trux-stream-fade-strength) * .66)) calc(100% - 5em),
+        rgba(0,0,0,calc(1 - var(--trux-stream-fade-strength) * .88)) calc(100% - 2em),
+        rgba(0,0,0,calc(1 - var(--trux-stream-fade-strength) * .985)) 100%);
       mask-image: linear-gradient(to bottom,
         #000 0,
         #000 calc(100% - 23em),
-        rgba(0,0,0,.99) calc(100% - 20em),
-        rgba(0,0,0,.95) calc(100% - 17em),
-        rgba(0,0,0,.87) calc(100% - 14em),
-        rgba(0,0,0,.74) calc(100% - 11em),
-        rgba(0,0,0,.56) calc(100% - 8em),
-        rgba(0,0,0,.34) calc(100% - 5em),
-        rgba(0,0,0,.12) calc(100% - 2em),
-        rgba(0,0,0,.015) 100%);
+        rgba(0,0,0,calc(1 - var(--trux-stream-fade-strength) * .01)) calc(100% - 20em),
+        rgba(0,0,0,calc(1 - var(--trux-stream-fade-strength) * .05)) calc(100% - 17em),
+        rgba(0,0,0,calc(1 - var(--trux-stream-fade-strength) * .13)) calc(100% - 14em),
+        rgba(0,0,0,calc(1 - var(--trux-stream-fade-strength) * .26)) calc(100% - 11em),
+        rgba(0,0,0,calc(1 - var(--trux-stream-fade-strength) * .44)) calc(100% - 8em),
+        rgba(0,0,0,calc(1 - var(--trux-stream-fade-strength) * .66)) calc(100% - 5em),
+        rgba(0,0,0,calc(1 - var(--trux-stream-fade-strength) * .88)) calc(100% - 2em),
+        rgba(0,0,0,calc(1 - var(--trux-stream-fade-strength) * .985)) 100%);
       -webkit-mask-repeat: no-repeat;
       mask-repeat: no-repeat;
+    }
+    }
+    .md-stream.md-stream-fade-active.md-stream-fade-settling {
+      --trux-stream-fade-strength: 0;
     }
     .md-block { display: block; }
     .md-block.live { animation: none; }
@@ -6906,8 +6917,8 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       let doneCb = null;
       let lastRevealAt = -Infinity;
 
-      const REVEAL_INTERVAL_MS = 34;
-      const MAX_LINES_PER_TICK = 3;
+      const REVEAL_INTERVAL_MS = 24;
+      const MAX_LINES_PER_TICK = 2;
       const measureCanvas = document.createElement("canvas");
       const measureContext = measureCanvas.getContext("2d");
 
@@ -7029,8 +7040,9 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         }
 
         if (finished && shown >= target.length) {
-          /* Final render happens only after every display line has been revealed. */
-          host.classList.remove("md-stream-fade-active");
+          /* Keep the last lines fading gently after completion; resolve to crisp
+             text over 2.6 seconds instead of clearing the mask abruptly. */
+          host.classList.add("md-stream-fade-settling");
           host.innerHTML = renderFormattedText(target, false);
           scheduleTruxMath(host);
           if (stick) container.scrollTop = container.scrollHeight;
@@ -7082,7 +7094,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           stopped = true;
           if (rafId !== null) cancelAnimationFrame(rafId);
           rafId = null;
-          host.classList.remove("md-stream-fade-active");
+          host.classList.add("md-stream-fade-settling");
         },
         get received() { return target; }
       };
