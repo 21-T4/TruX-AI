@@ -4721,7 +4721,6 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           maybeAskForLocation();
           if("Notification" in window && Notification.permission === "granted") syncTruxNotificationsSilently();
           syncChatsToCloud(true);
-          resumePersistedBackgroundJobs();
         } else {
           getEl("userName").innerText = "Guest User";
           getEl("userEmail").innerText = "Tap to sign in";
@@ -4852,9 +4851,8 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         advancedThinkingEnabled = false,
         advancedThinkingLevel = "low",
         incognitoMode = false,
-        backgroundJobWatchers = new Map(),
         generationEpoch = 0,
-        locallyStoppedBackgroundJobs = new Set(),
+        activeTurnContext = null,
         generationStopRequested = false,
         truxLocationCache = null,
         currentProfileOption = null;
@@ -5151,6 +5149,9 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       closeAttachmentMenu(); closeModelDropdown();
 
       if(modeChanged) {
+        if (activeTurnContext) persistTurnDraft(activeTurnContext, activeTurnContext.latestText || "", true);
+        generationEpoch += 1;
+        activeTurnContext = null;
         activeAbortController?.abort();
         stopToolStatusTyping();
         activeStreamer?.cancel(); activeStreamer = null;
@@ -5741,6 +5742,9 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       /* Incognito is a memory-only Chat workspace.
          It intentionally never enters localStorage/cloud sync and is removed on exit. */
       if (isGenerating) {
+        if (activeTurnContext) persistTurnDraft(activeTurnContext, activeTurnContext.latestText || "", true);
+        generationEpoch += 1;
+        activeTurnContext = null;
         try { activeAbortController?.abort(); } catch {}
         try { activeStreamer?.cancel(); } catch {}
       }
@@ -5760,6 +5764,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       activeAbortController = null;
       activeStreamer = null;
       isGenerating = false;
+      activeTurnContext = null;
       generationStopRequested = false;
       pastedTextBlocks = [];
       fileAttachments = [];
@@ -5810,10 +5815,14 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       document.body.classList.remove("chat-session-active");
       document.body.removeAttribute("data-media-mode");
       workspaceMode="chat";
-      activeAbortController?.abort();
-       activeStreamer?.cancel(); activeStreamer = null;
-       isGenerating = false;
-       generationStopRequested = false;
+      if (activeTurnContext) persistTurnDraft(activeTurnContext, activeTurnContext.latestText || "", true);
+      generationEpoch += 1;
+      activeTurnContext = null;
+      try { activeAbortController?.abort(); } catch {}
+      try { activeStreamer?.cancel(); } catch {}
+      activeStreamer = null;
+      isGenerating = false;
+      generationStopRequested = false;
       document.body.classList.remove("scrolled");
       stopToolStatusTyping();
       getEl("chatContainer").innerHTML = ""; getEl("chatContainer").style.display = "none";
@@ -6713,7 +6722,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         let pinBtn = document.createElement("button"); pinBtn.className = "act"; pinBtn.title = "Pin to insights"; pinBtn.innerHTML = ICON.pin + "Pin"; pinBtn.onclick = () => pinInsight(textContent);
         let regenBtn = document.createElement("button"); regenBtn.className = "act"; regenBtn.title = "Regenerate this answer"; regenBtn.innerHTML = ICON.redo + "Retry"; regenBtn.onclick = () => regenerateLast();
 
-        actions.append(readBtn, copyBtn, pinBtn, regenBtn);
+        if (!messageMeta?.incomplete) actions.append(readBtn, copyBtn, pinBtn, regenBtn);
         attachSources(r, sources);
       }
 
@@ -6925,10 +6934,36 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       }
     }
 
-    function finalizeResponse(id, aid, text, prompt, voice, streamer, sources) {
+    function persistTurnDraft(context, text, force = false) {
+      if (!context?.chatId || incognitoMode || chatSessions[context.chatId]?.incognito) return;
+      const value = String(text == null ? "" : text);
+      context.latestText = value;
+      const now = Date.now();
+      if (!force && now - Number(context.lastPersistAt || 0) < 350) return;
+      context.lastPersistAt = now;
+
+      const session = chatSessions[context.chatId];
+      if (!session?.messages) return;
+      let draft = session.messages.find(message =>
+        message?.role === "trux" && message.draftTurnId === context.turnKey
+      );
+      if (!draft) {
+        if (!value) return;
+        const insertAt = Math.min(Number(context.userMessageIndex) + 1, session.messages.length);
+        draft = { role: "trux", text: "", incomplete: true, draftTurnId: context.turnKey };
+        session.messages.splice(insertAt, 0, draft);
+      }
+      draft.text = value;
+      draft.incomplete = true;
+
+      // Local-only checkpoints: do not upload every stream update to cloud storage.
+      try { store.setItem("trux_chats", JSON.stringify(chatSessions)); } catch {}
+    }
+
+    function finalizeResponse(id, aid, text, prompt, voice, streamer, sources, turnContext = null) {
       let b = getEl(id);
       const responseRow = b?.closest(".row");
-      const codingTurn = workspaceMode === "coding";
+      const codingTurn = (turnContext?.mode || workspaceMode) === "coding";
       const durationMs = responseRow?._startedAt
         ? Math.max(0, Date.now() - responseRow._startedAt)
         : 0;
@@ -6974,11 +7009,25 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       }
 
       let cleanSources = Array.isArray(sources) ? sources.filter(x => x && x.uri).slice(0, 6) : [];
-      let responseMessage = { role: "trux", text };
-      if (cleanSources.length) responseMessage.sources = cleanSources;
-      if (codingTurn) responseMessage.durationMs = durationMs;
-      chatSessions[currentChatId].messages.push(responseMessage);
-      saveChatSessions();
+      const resultChatId = turnContext?.chatId || currentChatId;
+      const resultSession = chatSessions[resultChatId];
+      if (resultSession?.messages) {
+        let responseMessage = turnContext
+          ? resultSession.messages.find(message => message?.draftTurnId === turnContext.turnKey)
+          : null;
+        if (!responseMessage) {
+          responseMessage = { role: "trux", text };
+          resultSession.messages.push(responseMessage);
+        }
+        responseMessage.role = "trux";
+        responseMessage.text = text;
+        responseMessage.incomplete = false;
+        delete responseMessage.draftTurnId;
+        if (cleanSources.length) responseMessage.sources = cleanSources;
+        else delete responseMessage.sources;
+        if (codingTurn) responseMessage.durationMs = durationMs;
+        saveChatSessions();
+      }
       if(b) attachSources(b.closest(".row"), cleanSources);
 
       let tokensUsed = Math.ceil((prompt.length + text.length) / 4);
@@ -6996,7 +7045,14 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         a.append(readBtn, copyBtn, editBtn, pinBtn, regenBtn);
       }
 
-      isGenerating = false; activeAbortController = null; getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>'; getEl("actionBtn").classList.remove("stop"); handleInputChange();
+      if (!turnContext || turnContext.turnId === generationEpoch) {
+        isGenerating = false;
+        activeAbortController = null;
+        if (activeTurnContext === turnContext) activeTurnContext = null;
+        getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
+        getEl("actionBtn").classList.remove("stop");
+        handleInputChange();
+      }
       if(voice || getEl("autoReadToggle")?.checked) speakText(text);
     }
 
@@ -7346,514 +7402,6 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       getEl("promptInput").value = lastUser.text;
       handleInputChange();
       sendPrompt();
-    }
-
-    function ensureBackgroundRow(chatId) {
-      const session = chatSessions[chatId];
-      const codingSession = String(session?.mode || "chat") === "coding";
-      if (chatId !== currentChatId || (codingSession ? workspaceMode !== "coding" : workspaceMode === "coding")) return null;
-      const chatContainer = getActiveChatContainer();
-      if (!chatContainer) return null;
-      const jobId = String(session?.activeBackgroundJobId || "");
-      if (!jobId) return null;
-
-      const existing = Array.from(chatContainer.querySelectorAll(".row.trux-row"))
-        .find(row => row.dataset.backgroundJobId === jobId);
-      if (existing) {
-        return {
-          row: existing,
-          id: existing.querySelector(".trux-bubble")?.id || "",
-          sid: existing.querySelector(".status-msg")?.id || "",
-          tsid: existing.querySelector(".trux-thinking-details")?.id || "",
-          aid: existing.querySelector(".actions")?.id || "",
-          thid: existing.querySelector(".trux-thinking-panel")?.id || ""
-        };
-      }
-
-      const id = "bg_b_" + Date.now() + "_" + Math.random().toString(36).slice(2);
-      const sid = "bg_s_" + Date.now() + "_" + Math.random().toString(36).slice(2);
-      const tsid = "bg_ts_" + Date.now() + "_" + Math.random().toString(36).slice(2);
-      const aid = "bg_a_" + Date.now() + "_" + Math.random().toString(36).slice(2);
-      const thid = "bg_th_" + Date.now() + "_" + Math.random().toString(36).slice(2);
-      const row = document.createElement("div");
-      row.className = "row trux-row appear";
-      row.dataset.backgroundJobId = jobId;
-      const spark = '<span class="trux-thinking-spark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 1.5C13.45 7.95 16.05 10.55 22.5 12C16.05 13.45 13.45 16.05 12 22.5C10.55 16.05 7.95 12 1.5 12C7.95 10.55 10.55 7.95 12 1.5Z"/></svg></span>';
-      const toggle = codingSession
-        ? '<button type="button" class="trux-thinking-toggle" aria-expanded="false" aria-label="Expand AI activity" title="Expand AI activity"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>'
-        : "";
-      row.innerHTML =
-        '<div class="trux-response-stack">' +
-          '<div class="trux-thinking-panel" id="' + thid + '" data-thinking-visible="true">' +
-            '<span class="trux-thinking-elapsed ' + (codingSession ? "" : "chat-thinking-elapsed") + '" id="elapsed_' + id + '">' + (codingSession ? "Working for 00:00" : "") + '</span>' +
-            '<div class="trux-thinking-bar">' + spark +
-              '<div class="trux-thinking-copy"><span class="status-msg" id="' + sid + '" role="status" aria-live="polite"><span class="thinking-status-line compact"></span><span class="thinking-status-line full"></span></span></div>' +
-              toggle +
-            '</div>' +
-            '<div class="trux-thinking-details" id="' + tsid + '" hidden></div>' +
-          '</div>' +
-          (codingSession ? '<div class="trux-terminal-window" data-trux-terminal-window hidden></div>' : '') +
-          '<div class="bubble trux-bubble thinking" id="' + id + '"></div>' +
-          '<div class="actions" id="' + aid + '"></div>' +
-        '</div>';
-      chatContainer.appendChild(row);
-      if (codingSession) {
-        const button = row.querySelector(".trux-thinking-toggle");
-        if (button) button.onclick = () => toggleThinkingDetails(thid);
-      }
-      chatContainer.scrollTop = chatContainer.scrollHeight;
-      row._startedAt = Number(session?.backgroundStartedAt || 0) || Date.now();
-      const elapsedEl = getEl("elapsed_" + id);
-      if (codingSession) {
-        row._elapsedTimer = setInterval(() => {
-          if (elapsedEl) elapsedEl.innerText = "Working for " + formatThinkingClock(Date.now() - row._startedAt);
-        }, 1000);
-      }
-      return { row, id, sid, tsid, aid, thid };
-    }
-
-    async function commitBackgroundResult(chatId, jobId, finalText, proposal, toolEvents = [], completedAtMs = 0) {
-      const session = chatSessions[chatId];
-      if (!session) return;
-      if (locallyStoppedBackgroundJobs.has(String(jobId))) {
-        if (String(session.activeBackgroundJobId || "") === String(jobId)) {
-          delete session.activeBackgroundJobId;
-          delete session.backgroundJobSecret;
-          delete session.backgroundStartedAt;
-          delete session.backgroundJobMode;
-          saveChatSessions();
-        }
-        return;
-      }
-      const codingSession = String(session.mode || "chat") === "coding";
-      const watcher = backgroundJobWatchers.get(String(jobId));
-      const startedAt = Number(session.backgroundStartedAt || watcher?.row?._startedAt || 0);
-      const completedAt = Number(completedAtMs || Date.now());
-      const durationMs = startedAt ? Math.max(0, completedAt - startedAt) : 0;
-      const events = Array.isArray(toolEvents) ? toolEvents.slice() : [];
-
-      let savedMessage = session.messages.find(m =>
-        m && m.role === "trux" && String(m.backgroundJobId || "") === String(jobId)
-      );
-      if (!savedMessage && finalText) {
-        savedMessage = { role: "trux", text: finalText, backgroundJobId: String(jobId) };
-        session.messages.push(savedMessage);
-      }
-      if (savedMessage) {
-        if (finalText) savedMessage.text = finalText;
-        savedMessage.durationMs = durationMs;
-        if (codingSession) savedMessage.toolEvents = events;
-        if (proposal) savedMessage.githubProposal = proposal;
-        if (proposal?.commit) savedMessage.githubCommit = proposal.commit;
-      }
-
-      if (String(session.activeBackgroundJobId || "") === String(jobId)) {
-        delete session.activeBackgroundJobId;
-        delete session.backgroundJobSecret;
-        delete session.backgroundStartedAt;
-        delete session.backgroundJobMode;
-      }
-      saveChatSessions();
-
-      const viewIsActive = chatId === currentChatId &&
-        (codingSession ? workspaceMode === "coding" : workspaceMode !== "coding");
-      if (viewIsActive) {
-        const row = watcher?.row?.isConnected
-          ? watcher.row
-          : Array.from(getActiveChatContainer()?.querySelectorAll(".row.trux-row") || [])
-              .find(item => item.dataset.backgroundJobId === String(jobId));
-        if (row) {
-          if (row._elapsedTimer) clearInterval(row._elapsedTimer);
-          row.remove();
-        }
-
-        if (finalText) {
-          appendMessageRow("ChatTruX-AI", finalText, "trux-row", "trux-bubble", null, false, [], null);
-          const rows = getActiveChatContainer()?.querySelectorAll(".row.trux-row") || [];
-          const responseRow = rows[rows.length - 1];
-          if (codingSession && responseRow) {
-            restoreCompletedCodeSteps(responseRow, { durationMs, toolEvents: events });
-          }
-        }
-
-        if (proposal) {
-          if (proposal.commit) {
-            appendGithubCommitResponse(proposal, proposal.commit, chatId);
-          } else {
-            const rows = getActiveChatContainer()?.querySelectorAll(".row.trux-row") || [];
-            const lastRow = rows[rows.length - 1];
-            const host = lastRow?.querySelector(".trux-response-stack") || lastRow;
-            if (host) renderGithubProposalCard(host, proposal);
-          }
-        }
-      }
-
-      if (chatId === currentChatId) {
-        isGenerating = false;
-        activeAbortController = null;
-        generationStopRequested = false;
-        getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
-        getEl("actionBtn").classList.remove("stop");
-        handleInputChange();
-      }
-    }
-
-    async function watchBackgroundJob(chatId, jobId, options = {}) {
-      const key = String(jobId || "");
-      if (!key) return false;
-      const sessionMode = String(chatSessions[chatId]?.mode || "chat");
-      const codingSession = sessionMode === "coding";
-      const isJobViewActive = () => chatId === currentChatId &&
-        (codingSession ? workspaceMode === "coding" : workspaceMode !== "coding");
-      const existingWatcher = backgroundJobWatchers.get(key);
-      if (existingWatcher) return existingWatcher.promise;
-
-      const controller = new AbortController();
-      const targetRow = options.row || null;
-      const state = {
-        controller,
-        jobSecret: String(options.jobSecret || chatSessions[chatId]?.backgroundJobSecret || ""),
-        row: targetRow,
-        id: options.id || "",
-        aid: options.aid || "",
-        sid: options.sid || "",
-        tsid: options.tsid || "",
-        promise: null
-      };
-
-      state.promise = (async () => {
-        let seenEventIds = new Set();
-        let lastLiveText = "";
-        let statusFailureCount = 0;
-
-        const failBackgroundWatch = async message => {
-          if (isJobViewActive()) {
-            const bubble = getEl(state.id);
-            if (bubble) {
-              bubble.classList.remove("thinking");
-              bubble.innerHTML = '<span class="generation-error">' + escapeHtml(message) + '</span>';
-            }
-          }
-          await commitBackgroundResult(chatId, key, "Error: " + message, null);
-          return false;
-        };
-
-        while (true) {
-          let response;
-          try {
-            const statusUser = auth?.currentUser;
-            const statusHeaders = {};
-            if (state.jobSecret) {
-              statusHeaders["X-Trux-Background-Secret"] = state.jobSecret;
-            }
-            if (statusUser && !state.jobSecret) {
-              try {
-                statusHeaders.Authorization = "Bearer " + await statusUser.getIdToken(false);
-              } catch {}
-            }
-            response = await fetch("/api/background/status?jobId=" + encodeURIComponent(key), {
-              cache: "no-store",
-              credentials: "same-origin",
-              headers: statusHeaders,
-              signal: controller.signal
-            });
-          } catch (error) {
-            if (error?.name === "AbortError") return false;
-            statusFailureCount += 1;
-            if (statusFailureCount >= 8) {
-              return failBackgroundWatch("The TruX-Code background worker could not be reached.");
-            }
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            continue;
-          }
-
-          if (response.status === 404) {
-            statusFailureCount += 1;
-            if (statusFailureCount >= 8) {
-              return failBackgroundWatch("The TruX-Code background job could not be found.");
-            }
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            continue;
-          }
-
-          const currentState = await response.json().catch(() => ({}));
-          if (locallyStoppedBackgroundJobs.has(key)) {
-            // A start response can be lost while the server still queues the
-            // job. Retry cancellation once the job becomes visible in status.
-            void requestBackgroundJobStop(key, state.jobSecret || "").catch(() => {});
-            return false;
-          }
-          if (!response.ok) {
-            statusFailureCount += 1;
-            if (statusFailureCount >= 8) {
-              return failBackgroundWatch(
-                String(currentState?.error || "The TruX-Code background state service is unavailable.")
-              );
-            }
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            continue;
-          }
-
-          statusFailureCount = 0;
-
-          if (state._streamer && !isJobViewActive()) {
-            state._streamer.cancel();
-            state._streamer = null;
-          }
-
-          if (isJobViewActive()) {
-            const ensured = state.row?.isConnected
-              ? { row: state.row, id: state.id, sid: state.sid, tsid: state.tsid, aid: state.aid }
-              : ensureBackgroundRow(chatId);
-            if (ensured) {
-              state.row = ensured.row;
-              state.id = ensured.id;
-              state.sid = ensured.sid;
-              state.tsid = ensured.tsid;
-
-              const events = Array.isArray(currentState.events) ? currentState.events : [];
-              for (const event of events) {
-                const eventId = String(event?.id ?? "");
-                if (eventId && seenEventIds.has(eventId)) continue;
-                if (eventId) seenEventIds.add(eventId);
-
-                if (codingSession && event?.type === "tool_status") {
-                  appendToolStatusLine(state.tsid, event.tool || "TruX-Code", event.status || "", event.phase || "complete", event.details || null);
-                } else if (event?.type === "status") {
-                  setThinkingStatus(state.sid, event.status || event.text || "");
-                }
-              }
-
-              if (currentState.status !== "complete" && typeof currentState.liveText === "string" && (currentState.liveText !== lastLiveText || (!state._streamer && currentState.liveText))) {
-                const nextLiveText = currentState.liveText;
-                const bubble = getEl(state.id);
-                if (bubble) {
-                  bubble.classList.remove("thinking");
-                  if (!state._streamer) {
-                    state._streamer = createStreamRenderer(bubble);
-                    // Restore the saved prefix once after reopening, then append
-                    // only new text so an active response never redraws from scratch.
-                    state._streamer.setText(nextLiveText);
-                  } else if (nextLiveText.startsWith(lastLiveText)) {
-                    const delta = nextLiveText.slice(lastLiveText.length);
-                    if (delta) state._streamer.push(delta);
-                  } else {
-                    // A corrected snapshot can differ from the previous prefix.
-                    state._streamer.setText(nextLiveText);
-                  }
-                  lastLiveText = nextLiveText;
-                }
-              }
-            }
-          }
-
-          if (currentState.status === "stopped") {
-            if (state._streamer) {
-              state._streamer.cancel();
-              state._streamer = null;
-            }
-            try { state.controller.abort(); } catch {}
-
-            const stoppedSession = chatSessions[chatId];
-            if (stoppedSession && String(stoppedSession.activeBackgroundJobId || "") === key) {
-              delete stoppedSession.activeBackgroundJobId;
-              delete stoppedSession.backgroundJobSecret;
-              delete stoppedSession.backgroundStartedAt;
-              delete stoppedSession.backgroundJobMode;
-              saveChatSessions();
-            }
-            if (isJobViewActive()) {
-              markGenerationStopped(state.row, state.id, state.sid, state.tsid);
-              isGenerating = false;
-              activeAbortController = null;
-              generationStopRequested = false;
-              getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15-2-15 2z"/>';
-              getEl("actionBtn").classList.remove("stop");
-              handleInputChange();
-            }
-            return false;
-          }
-
-          if (currentState.status === "error") {
-            if (state._streamer) {
-              state._streamer.cancel();
-              state._streamer = null;
-            }
-            try { state.controller.abort(); } catch {}
-
-            await commitBackgroundResult(
-              chatId,
-              key,
-              String(currentState.error || "The background request failed."),
-              currentState.proposal || null,
-              Array.isArray(currentState.events) ? currentState.events : [],
-              Number(currentState.updatedAt || Date.now())
-            );
-            return false;
-          }
-
-          if (currentState.status === "complete") {
-            if (state._streamer) {
-              state._streamer.cancel();
-              state._streamer = null;
-            }
-            try { state.controller.abort(); } catch {}
-
-            const proposal = currentState.proposal || (currentState.commit ? { commit: currentState.commit } : null);
-            if (proposal && currentState.commit && !proposal.commit) proposal.commit = currentState.commit;
-            await commitBackgroundResult(
-              chatId,
-              key,
-              String(currentState.final || currentState.liveText || "").trim(),
-              proposal,
-              Array.isArray(currentState.events) ? currentState.events : [],
-              Number(currentState.updatedAt || Date.now())
-            );
-            return true;
-          }
-
-          await new Promise(resolve => setTimeout(resolve, 250));
-        }
-
-        return false;
-      })().finally(() => {
-        if (state._streamer) {
-          state._streamer.cancel();
-          state._streamer = null;
-        }
-        try { state.controller.abort(); } catch {}
-        backgroundJobWatchers.delete(key);
-      });
-
-      backgroundJobWatchers.set(key, state);
-      return state.promise;
-    }
-
-    async function runCodeBackgroundJob({ row, id, sid, tsid, aid, prompt, voice, requestBody, chatId, mode }) {
-      const targetChatId = chatId || currentChatId;
-      if (!targetChatId || !chatSessions[targetChatId]) throw new Error("The chat session is unavailable.");
-      const jobMode = ["chat", "coding", "deep-research"].includes(String(mode || requestBody?.mode || ""))
-        ? String(mode || requestBody?.mode)
-        : "coding";
-      const session = chatSessions[targetChatId];
-      const existingJob = String(session.activeBackgroundJobId || "");
-      if (existingJob) {
-        return watchBackgroundJob(targetChatId, existingJob, {
-          row, id, sid, tsid, aid,
-          jobSecret: session.backgroundJobSecret || ""
-        });
-      }
-
-      if (locallyStoppedBackgroundJobs.has(clientJobId)) {
-        if (jobSecret) await requestBackgroundJobStop(jobId, jobSecret);
-        if (String(session.activeBackgroundJobId || "") === jobId) {
-          delete session.activeBackgroundJobId;
-          delete session.backgroundJobSecret;
-          delete session.backgroundStartedAt;
-          delete session.backgroundJobMode;
-          saveChatSessions();
-        }
-        return false;
-      }
-
-      if (generationStopRequested || !isGenerating) {
-        markGenerationStopped(row, id, sid, tsid);
-        isGenerating = false;
-        activeAbortController = null;
-        generationStopRequested = false;
-        getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15-2-15 2z"/>';
-        getEl("actionBtn").classList.remove("stop");
-        handleInputChange();
-        return false;
-      }
-
-      const clientJobId = crypto.randomUUID
-        ? crypto.randomUUID()
-        : [...crypto.getRandomValues(new Uint8Array(24))].map(x => x.toString(16).padStart(2, "0")).join("");
-      const startedAt = Date.now();
-      session.activeBackgroundJobId = clientJobId;
-      session.backgroundJobSecret = "";
-      session.backgroundStartedAt = startedAt;
-      session.backgroundJobMode = jobMode;
-      if (row) {
-        row.dataset.backgroundJobId = clientJobId;
-        row._startedAt = startedAt;
-      }
-      saveChatSessions();
-      setThinkingStatus(sid, "Thinking");
-
-      const startOptions = {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + await auth.currentUser.getIdToken()
-        },
-        body: JSON.stringify({ ...requestBody, mode: jobMode, clientJobId })
-      };
-      let start;
-      try {
-        start = await fetch("/api/background/start", startOptions);
-      } catch (firstStartError) {
-        // Reuse the same id if the response was lost; the endpoint is idempotent.
-        try {
-          start = await fetch("/api/background/start", startOptions);
-        } catch {
-          return watchBackgroundJob(targetChatId, clientJobId, {
-            row, id, sid, tsid, aid, jobSecret: ""
-          });
-        }
-      }
-
-      const startData = await start.json().catch(() => ({}));
-      if (!start.ok) {
-        if (String(session.activeBackgroundJobId || "") === clientJobId) {
-          delete session.activeBackgroundJobId;
-          delete session.backgroundJobSecret;
-          delete session.backgroundStartedAt;
-          delete session.backgroundJobMode;
-          saveChatSessions();
-        }
-        throw new Error(startData.error || "Background task could not be started.");
-      }
-
-      const jobId = String(startData.jobId || clientJobId);
-      const jobSecret = String(startData.jobSecret || "");
-      session.activeBackgroundJobId = jobId;
-      session.backgroundJobSecret = jobSecret;
-      session.backgroundStartedAt = startedAt;
-      session.backgroundJobMode = jobMode;
-      if (row) row.dataset.backgroundJobId = jobId;
-      saveChatSessions();
-
-      if (generationStopRequested || !isGenerating) {
-        if (jobSecret) await requestBackgroundJobStop(jobId, jobSecret);
-        delete session.activeBackgroundJobId;
-        delete session.backgroundJobSecret;
-        delete session.backgroundStartedAt;
-        delete session.backgroundJobMode;
-        saveChatSessions();
-        markGenerationStopped(row, id, sid, tsid);
-        isGenerating = false;
-        activeAbortController = null;
-        generationStopRequested = false;
-        getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15-2-15 2z"/>';
-        getEl("actionBtn").classList.remove("stop");
-        handleInputChange();
-        return false;
-      }
-
-      return watchBackgroundJob(targetChatId, jobId, {
-        row, id, sid, tsid, aid, jobSecret
-      });
-    }
-
-    function resumePersistedBackgroundJobs() {
-      Object.keys(chatSessions).forEach(chatId => {
-        const jobId = String(chatSessions[chatId]?.activeBackgroundJobId || "");
-        if (!jobId) return;
-        watchBackgroundJob(chatId, jobId, { jobSecret: chatSessions[chatId]?.backgroundJobSecret || "" });
-      });
     }
 
     function normalizeAiActivity(text) {
@@ -8278,8 +7826,10 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       let voice = wasInputByVoice; wasInputByVoice = false;
 
       if(!currentChatId) { currentChatId = "chat_" + Date.now(); chatSessions[currentChatId] = { title: basePrompt ? basePrompt.slice(0, 32) : "Query", mode: workspaceMode, notebookId: notebookIdForNewChat(), messages: [] }; }
-      chatSessions[currentChatId].mode = workspaceMode;
-      chatSessions[currentChatId].messages.push({
+      const turnChatId = currentChatId;
+      const turnMode = workspaceMode;
+      chatSessions[turnChatId].mode = turnMode;
+      chatSessions[turnChatId].messages.push({
         role: "user",
         text: prompt,
         attachments: allAttachments.map(a => ({
@@ -8291,7 +7841,17 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           processedKey: a.processedKey || null
         }))
       });
-       const sentMessageIndex = chatSessions[currentChatId].messages.length - 1;
+      const sentMessageIndex = chatSessions[turnChatId].messages.length - 1;
+      const turnContext = {
+        turnId,
+        turnKey: "turn_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10),
+        chatId: turnChatId,
+        userMessageIndex: sentMessageIndex,
+        mode: turnMode,
+        latestText: "",
+        lastPersistAt: 0
+      };
+      activeTurnContext = turnContext;
       saveChatSessions();
 
       getEl("welcomeScreen").style.display = "none";
@@ -8349,7 +7909,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         advancedThinking: advancedThinkingLevel === "extended" || workspaceMode === "deep-research",
         thinkingLevel: advancedThinkingLevel,
         incognito: !!incognitoMode,
-        history: (chatSessions[currentChatId]?.messages || []).slice(0, -1).map(m => ({ role: m.role, text: m.text || "" })),
+        history: (chatSessions[turnChatId]?.messages || []).slice(0, sentMessageIndex).map(m => ({ role: m.role, text: m.text || "" })),
         image: img,
         attachments: allAttachments,
         systemInstruction: store.getItem("trux_custom_instructions") || "",
@@ -8364,26 +7924,10 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         notifyOnComplete: true
       };
 
-      // Signed-in text turns use durable jobs, so a closed app cannot discard the final answer.
-      const canRunDurably = !incognitoMode && !!auth?.currentUser &&
-        ["chat", "coding", "deep-research"].includes(String(workspaceMode)) &&
-        !(workspaceMode !== "coding" && (img || allAttachments.some(a => a?.dataUrl)));
-      if (canRunDurably) {
-        try {
-          await runCodeBackgroundJob({
-            row, id, aid, sid, tsid, prompt, voice,
-            requestBody,
-            chatId: currentChatId,
-            mode: workspaceMode
-          });
-          return;
-        } catch (backgroundError) {
-          console.warn("Durable TruX task could not start; continuing on the live stream:", backgroundError?.message || backgroundError);
-          setThinkingStatus(sid, "Continuing with the live connection…");
-        }
-      }
-
+      // Chat and TruX-Code share the same direct, cancellable Vertex stream.
+      // Closing the client aborts this request; partial text is checkpointed locally.
       while (true) {
+        if (turnId !== generationEpoch || generationStopRequested || !isGenerating) return;
         if (navigator.onLine === false) {
           await waitForInternet(sid);
           if (!isGenerating) return;
@@ -8468,6 +8012,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
             full += piece;
             sniffRoute();
             if (!routeSettled || imageRoute) return;
+            persistTurnDraft(turnContext, full);
             let s = ensureStreamer();
             if (s) {
               if (!s.received) s.setText(full);
@@ -8487,13 +8032,13 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
             if (fin && !imageRoute) {
               if (codingTurn && !finalizedEarly) {
                 finalizedEarly = true;
-                finalizeResponse(id, aid, fin, prompt, voice, activeStreamer, turnSources);
+                finalizeResponse(id, aid, fin, prompt, voice, activeStreamer, turnSources, turnContext);
                 activeStreamer = null;
                 try { rd.cancel(); } catch {}
               } else if (!codingTurn && !finalizedOnFinal) {
                 finalizedOnFinal = true;
                 if (!activeStreamer) dismissThinkingPanel(getEl(id)?.closest(".row"));
-                finalizeResponse(id, aid, fin, prompt, voice, activeStreamer, turnSources);
+                finalizeResponse(id, aid, fin, prompt, voice, activeStreamer, turnSources, turnContext);
                 activeStreamer = null;
               }
             }
@@ -8637,7 +8182,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
 
         if (!finalizedOnFinal) {
           let streamer = activeStreamer || ensureStreamer();
-          finalizeResponse(id, aid, text, prompt, voice, streamer, turnSources);
+          finalizeResponse(id, aid, text, prompt, voice, streamer, turnSources, turnContext);
         }
         if(githubProposal) {
           const session = chatSessions[currentChatId];
@@ -8656,6 +8201,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         } catch(e) {
           if (turnId !== generationEpoch) return;
           if (row._backgroundHandover) return;
+          persistTurnDraft(turnContext, full, true);
           // The authoritative answer has already been rendered; a late stream
           // close/error must not overwrite it with a false failure message.
           if (finalizedOnFinal) {
@@ -8907,100 +8453,29 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       markPromptMessageStopped(row);
     }
 
-    async function requestBackgroundJobStop(jobId, jobSecret = "") {
-      const id = String(jobId || "");
-      if(!id) return false;
-
-      const sendCancel = async (forceRefresh, attempt = 0) => {
-        const user = auth?.currentUser;
-        const secret = String(jobSecret || "");
-        if(!user && !secret) return false;
-
-        const headers = { "Content-Type":"application/json" };
-        let userId = "";
-        if(user){
-          try {
-            const token = await user.getIdToken(!!forceRefresh);
-            if(token) headers.Authorization = "Bearer " + token;
-            userId = String(user.uid || "");
-          } catch {
-            if(!secret) return false;
-          }
-        }
-
-        const response = await fetch("/api/background/cancel",{
-          method:"POST",
-          credentials:"same-origin",
-          headers,
-          body:JSON.stringify({jobId:id,userId,jobSecret:secret})
-        });
-        if (response.ok) return true;
-        if (response.status === 404 && attempt < 4) {
-          await new Promise(resolve => setTimeout(resolve, 250));
-          return sendCancel(forceRefresh, attempt + 1);
-        }
-        if (response.status === 401 && !forceRefresh && user) return sendCancel(true, attempt);
-        return false;
-      };
-
-      try {
-        return await sendCancel(false);
-      } catch {
-        return false;
-      }
-    }
-
     function handleActionButton() {
       if (sendPromptInFlight && !isGenerating) return;
       if (isGenerating) {
+        const context = activeTurnContext;
+        if (context) persistTurnDraft(context, context.latestText || "", true);
         generationStopRequested = true;
         generationEpoch += 1;
+        activeTurnContext = null;
 
-        const session = chatSessions[currentChatId];
-        const jobId = String(session?.activeBackgroundJobId || "");
-        const jobSecret = String(session?.backgroundJobSecret || "");
-        const watcher = jobId ? backgroundJobWatchers.get(jobId) : null;
-        if (jobId) locallyStoppedBackgroundJobs.add(jobId);
-
-        const container = getActiveChatContainer();
-        const assistantRows = Array.from(container?.querySelectorAll(".row.trux-row") || []);
-        const activeRow = (jobId && assistantRows.find(item => item.dataset.backgroundJobId === jobId))
-          || assistantRows[assistantRows.length - 1]
-          || null;
+        const assistantRows = Array.from(getActiveChatContainer()?.querySelectorAll(".row.trux-row") || []);
+        const activeRow = assistantRows[assistantRows.length - 1] || null;
         const bubble = activeRow?.querySelector(".bubble");
         const sid = activeRow?.querySelector(".status-msg")?.id || "";
         const tsid = activeRow?.querySelector(".thinking-tool-trace")?.id ||
           activeRow?.querySelector(".trux-thinking-details")?.id || "";
-
-        // Dispatch cancellation first; the existing UI state changes synchronously.
-        const cancelPromise = jobId ? requestBackgroundJobStop(jobId, jobSecret) : Promise.resolve(true);
 
         try { activeAbortController?.abort(); } catch {}
         if (activeStreamer) {
           try { activeStreamer.cancel(); } catch {}
           activeStreamer = null;
         }
-        if (watcher?._streamer) {
-          try { watcher._streamer.cancel(); } catch {}
-          watcher._streamer = null;
-        }
 
         markGenerationStopped(activeRow, bubble?.id || "", sid, tsid);
-
-        if (jobId) {
-          try { watcher?.controller?.abort(); } catch {}
-          if (session && String(session.activeBackgroundJobId || "") === jobId) {
-            delete session.activeBackgroundJobId;
-            delete session.backgroundJobSecret;
-            delete session.backgroundStartedAt;
-            delete session.backgroundJobMode;
-            saveChatSessions();
-          }
-          Promise.resolve(cancelPromise).then(ok => {
-            if (!ok) console.warn("The background stop request could not be confirmed.");
-          }).catch(error => console.warn("Background stop request failed:", error?.message || error));
-        }
-
         isGenerating = false;
         activeAbortController = null;
         getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
@@ -9010,6 +8485,12 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       }
       sendPrompt();
     }
+
+    addEventListener("pagehide", () => {
+      if (activeTurnContext) {
+        persistTurnDraft(activeTurnContext, activeTurnContext.latestText || "", true);
+      }
+    });
 
     async function sendPrompt() {
       if(sendPromptInFlight) return;
@@ -9483,29 +8964,28 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
 
     function loadChatSession(id) {
       if(!chatSessions[id]) return;
+      if (activeTurnContext) persistTurnDraft(activeTurnContext, activeTurnContext.latestText || "", true);
+      generationEpoch += 1;
+      activeTurnContext = null;
+      try { activeAbortController?.abort(); } catch {}
+      try { activeStreamer?.cancel(); } catch {}
+      activeStreamer = null;
+      isGenerating = false;
+      activeAbortController = null;
       document.body.classList.remove("notebook-open");
       incognitoMode = false;
-      activeAbortController?.abort();
-       activeStreamer?.cancel(); activeStreamer = null;
       currentChatId = id;
       generationStopRequested = false;
       setWorkspaceMode(chatSessions[id].mode || "chat", {reload:false,preserveSession:true});
-      isGenerating = !!chatSessions[id].activeBackgroundJobId;
-      if (isGenerating) {
-        getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>';
-        getEl("actionBtn").classList.add("stop");
-        getEl("actionBtn").classList.remove("ready");
-      } else {
-        getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
-        getEl("actionBtn").classList.remove("stop");
-      }
+      getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
+      getEl("actionBtn").classList.remove("stop");
       const welcome = getEl("welcomeScreen");
       if(welcome) welcome.style.display = "none";
       getEl("chatContainer").innerHTML = "";
       getEl("codeChatContainer").innerHTML = "";
       const cC = enterChatWorkspace();
        chatSessions[id].messages.forEach((m, index) => {
-         appendMessageRow(m.role === "user" ? "You" : "ChatTruX-AI", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image, false, m.sources, m.video, { messageIndex: index, stopped: m.role === "user" && m.stopped === true });
+         appendMessageRow(m.role === "user" ? "You" : "ChatTruX-AI", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image, false, m.sources, m.video, { messageIndex: index, stopped: m.role === "user" && m.stopped === true, incomplete: m.role === "trux" && m.incomplete === true });
          if (workspaceMode === "coding" && m.role === "trux" && Number.isFinite(Number(m.durationMs))) {
            const rows = getActiveChatContainer()?.querySelectorAll(".row.trux-row") || [];
            const restoredRow = rows[rows.length - 1];
@@ -9518,9 +8998,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
            if (host) renderGithubProposalCard(host, m.githubProposal);
          }
        });
-      if (chatSessions[id].activeBackgroundJobId) {
-        watchBackgroundJob(id, String(chatSessions[id].activeBackgroundJobId), { jobSecret: chatSessions[id].backgroundJobSecret || "" });
-      }
+      // Partial direct-request output is restored from local chat history; no worker is reattached.
       renderSidebar(); if(innerWidth <= 768) closeSidebar();
     }
     function deleteChat(id) {
