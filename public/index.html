@@ -5363,7 +5363,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       getEl("modalEmail").innerText = auth.currentUser.email || "";
       const ownerBadge=document.querySelector(".owner-profile-badge"); if(ownerBadge) ownerBadge.style.display=isTruxDeveloper(auth.currentUser) ? "inline-flex" : "none";
       getEl("profilePlanText").innerText = isTruxDeveloper(auth.currentUser) ? "Owner" : (currentPlanTier === "pro" ? "Pro" : "Core");
-      getEl("profileModelText").innerText = ({base:"Core 4.0",pro:"Pro 5.0",ultra:"TruX-Ultra 6.5"})[currentPlanTier] || "Core 4.0";
+      getEl("profileModelText").innerText = "Auto";
       getEl("profileLimitText").innerText = "Unlimited";
       getEl("profileModal").style.display = "flex";
     }
