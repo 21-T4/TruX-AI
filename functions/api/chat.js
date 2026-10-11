@@ -1088,14 +1088,13 @@ async function resolveStoredAttachments(request, env, attachments, userId, query
 }
 
 /* =========================================================
-   CONVERSATION CONTEXT COMPRESSION
-   Keep the latest 5 real messages verbatim. Older messages are
-   compressed by a lightweight Flash-Lite model into a compact
-   factual memory block before the main model receives the turn.
+   CONVERSATION HISTORY
+   Reuse the conversation already sent by the client. Do not make a
+   second, blocking model request just to summarize older messages.
    ========================================================= */
 
 const HISTORY_RECENT_LIMIT = 5;
-const HISTORY_SUMMARY_MODEL = 'gemini-3.5-flash-lite';
+const ACTIVITY_LABEL_MODEL = 'gemini-3.5-flash-lite';
 
 function normalizeHistoryMessages(history) {
   return (Array.isArray(history) ? history : [])
@@ -1113,83 +1112,21 @@ function extractGeminiText(response) {
     .trim();
 }
 
-async function summarizeOlderHistory(olderMessages, signal, env) {
-  if (!olderMessages.length) return '';
-
-  const transcript = olderMessages
-    .map((msg, index) => {
-      const speaker = msg.role === 'model' ? 'AI' : 'User';
-      return `[${index + 1}] ${speaker}: ${msg.text}`;
-    })
-    .join('\n\n')
-    .slice(-60000);
-
-  const response = await fetchVertexGemini({
-    model: HISTORY_SUMMARY_MODEL,
-    contents: [{
-      role: 'user',
-      parts: [{
-        text:
-          'Compress the older part of this conversation into a concise factual memory for another AI. ' +
-          'Preserve important user goals, decisions, requirements, preferences, technical facts, unresolved problems, ' +
-          'and relevant names/identifiers. Remove greetings, repetition, filler, and obsolete details. ' +
-          'Do not invent facts. Return plain text only, preferably under 900 tokens.\n\n' +
-          transcript
-      }]
-    }],
-    systemInstruction:
-      'You are a conversation-memory compressor. Keep only information that can materially improve the next response. ' +
-      'Do not answer the user request; summarize the conversation history.',
-    signal,
-    generationConfig: {
-      maxOutputTokens: 700,
-      temperature: 0.2
-    },
-    env
-  });
-
-  return extractGeminiText(response);
-}
-
 async function buildConversationHistory(history, signal, env) {
+  if (signal?.aborted) return [];
   const normalized = normalizeHistoryMessages(history);
   if (!normalized.length) return [];
 
-  const recent = normalized.slice(-HISTORY_RECENT_LIMIT);
-  const older = normalized.slice(0, -HISTORY_RECENT_LIMIT);
+  const result = normalized.map(msg => ({
+    role: msg.role,
+    parts: [{ text: msg.text }]
+  }));
 
-  let summary = '';
-  if (older.length) {
-    summary = await summarizeOlderHistory(older, signal, env);
-  }
-
-  const result = [];
-
-  // Gemini conversation turns need to begin with a user role. If the
-  // five-message window starts on an assistant reply, retain all five
-  // messages and add a tiny synthetic user context marker before them.
-  if (recent[0]?.role === 'model') {
-    result.push({
+  // Gemini history must begin with a user turn.
+  if (result[0]?.role === 'model') {
+    result.unshift({
       role: 'user',
-      parts: [{
-        text: summary
-          ? `[OLDER CONVERSATION SUMMARY]\n${summary}\n\n[RECENT HISTORY CONTINUES]`
-          : '[RECENT HISTORY CONTINUES]'
-      }]
-    });
-  } else if (summary) {
-    // Attach the compressed older context to the first real user turn so
-    // no extra conversational turn is inserted into the five-message window.
-    recent[0] = {
-      ...recent[0],
-      text: `[OLDER CONVERSATION SUMMARY]\n${summary}\n\n[USER MESSAGE]\n${recent[0].text}`
-    };
-  }
-
-  for (const msg of recent) {
-    result.push({
-      role: msg.role,
-      parts: [{ text: msg.text }]
+      parts: [{ text: '[Conversation history continues from earlier turns.]' }]
     });
   }
 
@@ -1511,7 +1448,7 @@ export async function onRequestPost(context) {
 
           try {
             const response = await fetchVertexGemini({
-              model: HISTORY_SUMMARY_MODEL,
+              model: ACTIVITY_LABEL_MODEL,
               contents: [{ role: 'user', parts: [{ text: prompt }] }],
               systemInstruction:
                 'You write short, accurate progress labels for a user interface. ' +
