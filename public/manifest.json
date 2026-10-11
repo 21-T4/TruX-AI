@@ -1,7 +1,7 @@
 {
-  "name": "TruX-AI",
-  "short_name": "TruX-AI",
-  "description": "Multi-Engine AI Assistant powered by TruX Technologies",
+  "name": "TruX-Omni",
+  "short_name": "TruX-Omni",
+  "description": "TruX-Omni — an all-in-one AI workspace for chat, deep reasoning, coding, and creation.",
   "id": "/",
   "start_url": "/",
   "display": "standalone",
