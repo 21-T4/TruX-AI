@@ -20,11 +20,6 @@ const routes = {
   "/api/plugins/disconnect": "./functions/api/plugins-disconnect.js",
   "/api/files/upload": "./functions/api/files-upload.js",
   "/api/files/process": "./functions/api/files-process.js",
-  "/api/background/start": "./functions/api/background/start.js",
-  "/api/background/status": "./functions/api/background/status.js",
-  "/api/background/update": "./functions/api/background/update.js",
-  "/api/background/cancel": "./functions/api/background/cancel.js",
-  "/api/background/execute": "./functions/api/background/execute.js",
   "/api/push/config": "./functions/api/push/config.js",
   "/api/push/register": "./functions/api/push/register.js",
   "/api/push/unregister": "./functions/api/push/unregister.js"
@@ -60,72 +55,6 @@ function forwardedOrigin(req) {
 function createRuntimeEnv(req) {
   const env = { ...process.env };
   if (!env.TRUX_APP_ORIGIN) env.TRUX_APP_ORIGIN = forwardedOrigin(req);
-  // Keep background work inside the Cloud Run service; avoid routing worker
-  // requests through the public app domain.
-  env.TRUX_BACKGROUND_ORIGIN = env.TRUX_BACKGROUND_ORIGIN || ('http://127.0.0.1:' + PORT);
-
-  /*
-   * Cloud Run cannot reliably keep a detached promise alive after the
-   * /api/background/start request finishes. Dispatch a second HTTP request
-   * to a dedicated worker endpoint instead. That request owns the long-running
-   * 20-minute job independently of the original browser request.
-   */
-  env.TRUX_BACKGROUND_QUEUE = {
-    async send(payload) {
-      const target = new URL("/api/background/execute", env.TRUX_BACKGROUND_ORIGIN);
-      const client = target.protocol === "https:" ? (await import("node:https")).default : (await import("node:http")).default;
-      const body = JSON.stringify(payload);
-
-      await new Promise((resolve, reject) => {
-        const req = client.request({
-          protocol: target.protocol,
-          hostname: target.hostname,
-          port: target.port || undefined,
-          path: target.pathname + target.search,
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Content-Length": Buffer.byteLength(body),
-            "X-TruX-Background-Secret": String(payload?.jobSecret || "")
-          }
-        }, res => {
-          let settled = false;
-          const settleResolve = () => {
-            if (settled) return;
-            settled = true;
-            resolve();
-          };
-          const settleReject = error => {
-            if (settled) return;
-            settled = true;
-            reject(error);
-          };
-
-          // /api/background/execute sends a tiny acknowledgement chunk
-          // immediately, then keeps this HTTP request open for the real job.
-          res.once("data", () => {
-            if (res.statusCode >= 400) {
-              settleReject(new Error("Background worker rejected the job (HTTP " + res.statusCode + ")."));
-            } else {
-              settleResolve();
-            }
-          });
-          res.once("end", () => {
-            if (res.statusCode >= 400) {
-              settleReject(new Error("Background worker rejected the job (HTTP " + res.statusCode + ")."));
-            } else {
-              settleResolve();
-            }
-          });
-          res.on("error", settleReject);
-        });
-
-        req.on("error", reject);
-        req.end(body);
-      });
-    }
-  };
-
   return env;
 }
 
