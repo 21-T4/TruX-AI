@@ -8245,16 +8245,37 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
           }
           persistTurnDraft(turnContext, full, true);
           if (isNetworkFailure(e) && isGenerating) {
+            // Do not silently issue a second full Vertex request after a broken
+            // stream; preserve the partial text and let the user explicitly resend.
             activeStreamer?.cancel();
             activeStreamer = null;
 
             const b = getEl(id);
-            if (b) b.classList.add("thinking");
+            if (b) {
+              b.classList.remove("thinking");
+              if (full.trim()) {
+                b.innerHTML = renderFormattedText(full, false);
+                scheduleTruxMath(b);
+              } else {
+                b.innerHTML = "Error: " + escapeHtml(e.message || "The connection was lost.");
+              }
+            }
 
-            await waitForInternet(sid);
-            if (!isGenerating) return;
-            setThinkingStatus(sid, "Connection restored — continuing…");
-            continue;
+            const session = chatSessions[turnContext.chatId];
+            const draft = session?.messages?.find(message => message?.draftTurnId === turnContext.turnKey);
+            if (draft) {
+              delete draft.draftTurnId;
+              draft.incomplete = true;
+              store.removeItem("trux_turn_draft_" + turnContext.chatId);
+              saveChatSessions();
+            }
+            isGenerating = false;
+            activeAbortController = null;
+            if (activeTurnContext === turnContext) activeTurnContext = null;
+            getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
+            getEl("actionBtn").classList.remove("stop");
+            handleInputChange();
+            return;
           }
 
           const failedRow = getEl(id)?.closest(".row");
@@ -8525,6 +8546,26 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       if (activeTurnContext) {
         persistTurnDraft(activeTurnContext, activeTurnContext.latestText || "", true);
       }
+      // Closing or navigating away aborts the one live request. No detached
+      // worker remains generating after the UI is gone.
+      if (isGenerating) {
+        generationEpoch += 1;
+        generationStopRequested = true;
+        activeTurnContext = null;
+        try { activeAbortController?.abort(); } catch {}
+        try { activeStreamer?.cancel(); } catch {}
+        activeAbortController = null;
+        activeStreamer = null;
+        isGenerating = false;
+      }
+    });
+    addEventListener("pageshow", () => {
+      generationStopRequested = false;
+      if (!isGenerating) {
+        getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
+        getEl("actionBtn").classList.remove("stop");
+      }
+      handleInputChange();
     });
 
     async function sendPrompt() {
