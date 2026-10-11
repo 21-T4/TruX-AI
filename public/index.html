@@ -6604,6 +6604,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
 
     function attachUserMessageActions(userRow, messageIndex, promptText) {
       if (!userRow) return;
+      userRow.classList.remove("user-actions-visible");
       userRow.querySelector(".user-message-actions")?.remove();
       userRow.querySelector(".user-stopped-actions")?.remove();
       const index = Number.isInteger(messageIndex) ? messageIndex : findStoppedMessageIndex(userRow, promptText);
