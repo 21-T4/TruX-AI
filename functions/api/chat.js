@@ -779,6 +779,66 @@ function getVertexModel(tier) {
   }
 }
 
+/*
+ * Chat-only automatic model router.
+ * Short, uncomplicated turns use Flash-Lite; normal requests use Flash;
+ * complex coding, deep reasoning, multi-stage work, and large attachments
+ * use Gemini 3.8 Flash. Dedicated TruX-Code and Deep Research stay pinned
+ * to their existing model path.
+ */
+function selectAutoChatModel({
+  message = '',
+  image = null,
+  attachments = [],
+  advancedThinking = false,
+  explicitExternalAction = false
+} = {}) {
+  const text = String(message || '').trim();
+  const words = text.match(/[A-Za-z0-9_]+(?:['’-][A-Za-z0-9_]+)*/g) || [];
+  const lower = text.toLowerCase();
+  const files = Array.isArray(attachments) ? attachments : [];
+  const attachmentTextLength = files.reduce(
+    (total, item) => Math.min(100000, total + String(item?.text || '').length),
+    0
+  );
+  const hasAttachments = !!image || files.some(item =>
+    !!(item?.dataUrl || item?.text || item?.objectKey)
+  );
+
+  const hasCodeSignal = /\b(?:code|coding|program|script|function|class|bug|debug|refactor|implement|build|compile|test|tests|api|endpoint|javascript|typescript|python|java|html|css|react|node|sql|regex|github|repository|repo|codebase|terminal|stack trace|exception|dependency|package)\b/i.test(lower);
+  const complexCoding = /\b(?:debug|debugging|refactor|architect|architecture|root cause|stack trace|race condition|security audit|migrate|migration|integrate|integration|optimise|optimize|performance|multi[- ]file|large codebase|repository|github|codebase|end[- ]to[- ]end|write tests|unit tests|comprehensive|full[- ]stack|production bug|dependency conflict)\b/i.test(lower);
+  const complexReasoning = /\b(?:step[- ]by[- ]step|multi[- ]step|deep dive|comprehensive|in[- ]depth|detailed walkthrough|prove|proof|derive|formal reasoning|root cause|trade[- ]offs?|critical analysis|causal analysis|decision matrix|optimisation|optimization|architecture|system design|evaluate alternatives|reason carefully|differential equations?|calculus|theorem|formal logic|underlying implications)\b/i.test(lower);
+  const reasoningSignal = /\b(?:reason(?:ing)?|analy[sz]e|analysis|evaluate|compare|contrast|justify|logic|implications|strategy|solve|calculate|derive|prove)\b/i.test(lower);
+  const multiStage = /\b(?:step[- ]by[- ]step|multi[- ]step|end[- ]to[- ]end|first.+then|then.+finally|multiple stages|several parts)\b/i.test(lower);
+  const actionCount = (lower.match(/\b(?:design|implement|fix|debug|refactor|test|deploy|migrate|integrate|analyze|analyse|compare|evaluate|explain|summarize|optimise|optimize|document)\b/g) || []).length;
+  const longPrompt = text.length >= 900 || words.length >= 125;
+
+  if (
+    explicitExternalAction ||
+    complexCoding ||
+    complexReasoning ||
+    (hasCodeSignal && (words.length >= 42 || actionCount >= 2 || multiStage)) ||
+    (reasoningSignal && (words.length >= 40 || advancedThinking || actionCount >= 2)) ||
+    multiStage ||
+    longPrompt ||
+    attachmentTextLength >= 12000 ||
+    (hasAttachments && words.length >= 50)
+  ) {
+    return 'gemini-3.8-flash';
+  }
+
+  const lightweight =
+    !hasAttachments &&
+    !advancedThinking &&
+    words.length <= 18 &&
+    text.length <= 140 &&
+    !hasCodeSignal &&
+    !reasoningSignal;
+
+  if (lightweight) return 'gemini-3.5-flash-lite';
+  return 'gemini-3.5-flash';
+}
+
 
 function getGroundingSources(groundingMetadata) {
   const chunks = groundingMetadata?.groundingChunks || [];
@@ -1050,7 +1110,7 @@ async function resolveStoredAttachments(request, env, attachments, userId, query
    ========================================================= */
 
 const HISTORY_RECENT_LIMIT = 5;
-const HISTORY_SUMMARY_MODEL = 'gemini-3.1-flash-lite';
+const HISTORY_SUMMARY_MODEL = 'gemini-3.5-flash-lite';
 
 function normalizeHistoryMessages(history) {
   return (Array.isArray(history) ? history : [])
@@ -1423,7 +1483,15 @@ export async function onRequestPost(context) {
 
     currentParts.push({ text: message || (image ? 'Analyze the provided image.' : 'Analyze the attached files.') });
 
-    const targetModel = getVertexModel(effectiveTier);
+    const targetModel = (codingMode || researchMode)
+      ? getVertexModel(effectiveTier)
+      : selectAutoChatModel({
+          message,
+          image,
+          attachments: effectiveAttachments,
+          advancedThinking: effectiveAdvancedThinking,
+          explicitExternalAction
+        });
 
     return createSseResponse(async ({ send, signal }) => {
       // Model-written labels describe real stages; show a visible Chat status
