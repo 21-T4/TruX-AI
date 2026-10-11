@@ -1519,23 +1519,14 @@ export async function onRequestPost(context) {
         return '';
       }
 
-      // A plain greeting doesn't need a costly summary request for older turns.
-      // Keep the recent context, while normal requests retain the shared
-      // five-message + compressed-older-history policy.
+      // Keep greetings lightweight; other turns pass the supplied history
+      // directly to the primary Vertex stream without a blocking status-model call.
       const isStandaloneGreeting = /^(?:hi|hello|hey|hiya|howdy|yo|good morning|good afternoon|good evening)[\s!.,?]*$/i
         .test(String(message || '').trim());
       const historyForTurn = isStandaloneGreeting && Array.isArray(history)
         ? history.slice(-HISTORY_RECENT_LIMIT)
         : history;
-      let formattedHistory = [];
-      if (Array.isArray(historyForTurn) && historyForTurn.length > HISTORY_RECENT_LIMIT) {
-        await emitAiActivity(
-          'compressing older conversation history',
-          'The conversation contains ' + historyForTurn.length + ' messages; summarizing older messages before the model response.'
-        );
-      }
-
-      formattedHistory = await buildConversationHistory(historyForTurn, signal, env);
+      const formattedHistory = await buildConversationHistory(historyForTurn, signal, env);
 
       const contents = [...formattedHistory, { role: 'user', parts: currentParts }];
       /* -------------------------------------------------
