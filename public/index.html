@@ -4015,11 +4015,12 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
 
 
   <style id="trux-native-mermaid-diagrams">
-    .trux-diagram{position:relative;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin:10px 0;padding:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;background:#151515!important;border:0!important;border-radius:0!important;box-shadow:none!important}
-    /* Keep the drawing canvas large instead of shrinking the whole diagram to the chat bubble width. */
-    .trux-diagram-stage{position:relative;width:max(100%, 1100px);min-width:1100px;min-height:320px;background:#151515!important}
-    .trux-diagram-svg{width:100%;max-width:none;background:#151515!important}
-    .trux-diagram-svg svg{display:block!important;width:100%!important;min-width:100%!important;max-width:none!important;height:auto!important;margin:0;background:#151515!important;overflow:visible}
+    .trux-diagram{position:relative;display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin:14px 0;padding:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;background:#151515!important;border:0!important;border-radius:0!important;box-shadow:none!important;-webkit-overflow-scrolling:touch}
+    /* Mermaid's SVG must have a genuinely large canvas; the chat bubble clips it to a swipeable viewport. */
+    .trux-diagram-stage{position:relative;display:block;width:max(100%, 1440px);min-width:1440px;min-height:460px;background:#151515!important}
+    .trux-diagram-svg{display:block;width:100%;min-width:0;max-width:none;background:#151515!important}
+    .trux-diagram-svg svg{display:block!important;width:100%!important;min-width:100%!important;min-height:460px!important;max-width:none!important;height:auto!important;margin:0;background:#151515!important;overflow:visible!important}
+    @media(max-width:768px){.trux-diagram-stage{width:max(100%, 1280px);min-width:1280px;min-height:460px}.trux-diagram-svg svg{min-height:460px!important}}
     .trux-diagram-cursor{position:absolute;left:0;top:0;z-index:2;display:block;width:24px;height:24px;max-width:24px;max-height:24px;margin:0;padding:0;object-fit:contain;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;filter:none!important;mix-blend-mode:normal!important;animation:none!important;opacity:1!important;pointer-events:none;user-select:none;-webkit-user-drag:none}
     .trux-diagram-cursor[hidden],.trux-diagram-source{display:none!important}
     .trux-diagram-error{margin:6px 0;color:var(--txt-3);font-size:13px}
@@ -6365,6 +6366,8 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     }
 
     let truxMermaidRenderSequence = 0;
+    let truxMermaidRenderQueue = Promise.resolve();
+    let truxMermaidFallbackPromise = null;
 
     function isTruxMermaidDiagram(lang, code) {
       const label=String(lang||"").trim().toLowerCase(), source=String(code||"").trim();
@@ -6383,6 +6386,32 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       if(root?.default && typeof root.default.render==="function") return root.default;
       if(root && typeof root.render==="function") return root;
       return null;
+    }
+    async function waitForTruxMermaidApi(element){
+      let api=getTruxMermaidApi();
+      if(api||!element?.isConnected)return api;
+      const primaryScript=document.querySelector('script[src*="mermaid.min.js"]');
+      let primaryFailed=false;
+      if(primaryScript)primaryScript.addEventListener("error",()=>{primaryFailed=true},{once:true});
+      const deadline=Date.now()+15000;
+      while(!api&&element.isConnected&&!primaryFailed&&Date.now()<deadline){
+        await new Promise(resolve=>window.setTimeout(resolve,100));
+        api=getTruxMermaidApi();
+      }
+      if(api||!element.isConnected)return api;
+      // The deferred jsDelivr bundle can fail or arrive after the app's inline script.
+      // Try a second CDN once rather than permanently failing every diagram in this turn.
+      if(!truxMermaidFallbackPromise){
+        truxMermaidFallbackPromise=new Promise(resolve=>{
+          const script=document.createElement("script");
+          script.src="https://unpkg.com/mermaid@11/dist/mermaid.min.js";
+          script.async=true;
+          script.onload=()=>resolve(getTruxMermaidApi());
+          script.onerror=()=>resolve(null);
+          document.head.appendChild(script);
+        });
+      }
+      return await truxMermaidFallbackPromise;
     }
     function truxSvgLength(shape){try{return typeof shape.getTotalLength==="function"?Math.max(0,shape.getTotalLength()):0}catch(_){return 0}}
     function truxSvgPointToStage(svg,stage,p){
@@ -6426,10 +6455,10 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       const stage=element.querySelector(".trux-diagram-stage"),cursor=element.querySelector(".trux-diagram-cursor");
       const source=sourceNode?sourceNode.textContent:"";
       try{
-        let mermaidApi=getTruxMermaidApi(),attempts=0;
-        while(!mermaidApi&&attempts<40&&element.isConnected){await new Promise(resolve=>window.setTimeout(resolve,100));mermaidApi=getTruxMermaidApi();attempts++}
+        const mermaidApi=await waitForTruxMermaidApi(element);
         if(!element.isConnected)return;
-        if(!mermaidApi||!source.trim())throw Error("Mermaid API/source unavailable");
+        if(!mermaidApi)throw Error("Mermaid renderer could not be loaded from either CDN");
+        if(!source.trim())throw Error("Mermaid source is empty");
         if(!window.__truxMermaidInitialized){
           mermaidApi.initialize({startOnLoad:false,securityLevel:"strict",theme:"base",themeVariables:{
             background:"#151515",primaryColor:"#151515",primaryTextColor:"#d8d8d8",primaryBorderColor:"#818181",
@@ -6437,21 +6466,42 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
             clusterBkg:"#151515",clusterBorder:"#515151",edgeLabelBackground:"#151515",
             noteBkgColor:"#151515",noteTextColor:"#d8d8d8",noteBorderColor:"#818181",
             textColor:"#d8d8d8",fontFamily:"Arial, sans-serif",fontSize:"20px"
-          },flowchart:{htmlLabels:false,useMaxWidth:false,curve:"basis",nodeSpacing:70,rankSpacing:85,diagramPadding:24}});
+          },flowchart:{htmlLabels:false,useMaxWidth:false,curve:"basis",nodeSpacing:100,rankSpacing:120,diagramPadding:36}});
           window.__truxMermaidInitialized=true;
         }
-        const result=await mermaidApi.render("trux-mermaid-"+(++truxMermaidRenderSequence),source);
+        // Mermaid keeps shared parser/render state; serialize renders so diagrams that
+        // arrive together during streaming cannot collide intermittently.
+        const renderJob=()=>mermaidApi.render("trux-mermaid-"+(++truxMermaidRenderSequence),source);
+        const renderPromise=truxMermaidRenderQueue.then(renderJob,renderJob);
+        truxMermaidRenderQueue=renderPromise.catch(()=>{});
+        const result=await renderPromise;
         if(!element.isConnected)return;if(!svgSlot||!stage||!cursor)throw Error("Diagram surface unavailable");
         svgSlot.innerHTML=result.svg;const svg=svgSlot.querySelector("svg");if(!svg)throw Error("Mermaid returned no SVG");
+        // Override Mermaid's generated max-width/width values; keep full-resolution content visible in the large stage.
+        svg.style.setProperty("width","100%","important");
+        svg.style.setProperty("min-width","100%","important");
+        svg.style.setProperty("max-width","none","important");
+        svg.style.setProperty("height","auto","important");
+        svg.style.setProperty("min-height","460px","important");
         svg.style.background="#151515";svg.style.backgroundColor="#151515";
         element.dataset.truxDiagramRendered="true";delete element.dataset.truxDiagramRendering;
         if(typeof result.bindFunctions==="function")result.bindFunctions(svgSlot);
         requestAnimationFrame(()=>{if(element.isConnected)animateTruxDiagramDrawing(stage,svg,cursor)});
       }catch(error){
-        if(!element.isConnected)return;delete element.dataset.truxDiagramRendering;element.dataset.truxDiagramFailed="true";
-        if(cursor)cursor.hidden=true;const errorNode=element.querySelector(".trux-diagram-error");
-        if(errorNode){errorNode.hidden=false;errorNode.textContent="This diagram couldn't be rendered."}
-        console.warn("TruX diagram render skipped:",error);
+        if(!element.isConnected)return;
+        delete element.dataset.truxDiagramRendering;
+        const retries=Number(element.dataset.truxDiagramRetry||0);
+        if(retries<2){
+          element.dataset.truxDiagramRetry=String(retries+1);
+          window.setTimeout(()=>renderTruxDiagramElement(element),300*(retries+1));
+          console.warn("TruX diagram render retry",retries+1,error);
+          return;
+        }
+        element.dataset.truxDiagramFailed="true";
+        if(cursor)cursor.hidden=true;
+        const errorNode=element.querySelector(".trux-diagram-error");
+        if(errorNode){errorNode.hidden=false;errorNode.textContent="This diagram couldn't be rendered after retrying."}
+        console.warn("TruX diagram render failed after retries:",error);
       }
     }
     function renderTruxDiagrams(root){
