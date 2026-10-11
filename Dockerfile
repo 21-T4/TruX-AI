@@ -10,7 +10,6 @@ RUN npm install --omit=dev
 COPY cloud-run-server.js ./cloud-run-server.js
 COPY public ./public
 COPY functions ./functions
-COPY workers ./workers
 
 EXPOSE 8080
 
