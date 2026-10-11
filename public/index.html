@@ -6755,6 +6755,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       "seed stitchTiles edgeMode lighting-color surfaceScale diffuseConstant specularConstant specularExponent " +
       "azimuth elevation xml:space role aria-label"
     ).split(/\s+/).map(x=>x.toLowerCase()));
+    const TRUX_SVG_TAG_NAMES = {clippath:"clipPath",lineargradient:"linearGradient",radialgradient:"radialGradient",fegaussianblur:"feGaussianBlur",feoffset:"feOffset",femerge:"feMerge",femergenode:"feMergeNode",fecolormatrix:"feColorMatrix",fecomponenttransfer:"feComponentTransfer",fefunca:"feFuncA",fefuncr:"feFuncR",fefuncg:"feFuncG",fefuncb:"feFuncB",feblend:"feBlend",feflood:"feFlood",fecomposite:"feComposite",fedropshadow:"feDropShadow"};
     function normalizeTruxSvgSource(raw){
       let source=String(raw||"").replace(/^\uFEFF/,"").replace(/\r\n?/g,"\n").trim();
       const fence=String.fromCharCode(96).repeat(3);
@@ -6781,7 +6782,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       if(++context.nodes>12000)throw new Error("SVG drawing has too many elements");
       const tag=String(sourceNode.localName||sourceNode.nodeName||"").toLowerCase();
       if(!TRUX_SVG_ELEMENTS.has(tag))return null;
-      const clean=document.createElementNS(context.namespace,tag);
+      const clean=document.createElementNS(context.namespace,TRUX_SVG_TAG_NAMES[tag]||tag);
       for(const attribute of Array.from(sourceNode.attributes||[])){
         const name=String(attribute.name||"");
         const lower=name.toLowerCase();
