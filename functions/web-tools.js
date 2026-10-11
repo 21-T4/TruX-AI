@@ -333,7 +333,8 @@ function getGroundingSources(groundingMetadata, maxSources = 10) {
     seen.add(web.uri);
     sources.push({
       title: String(web.title || web.domain || 'Web source'),
-      url: String(web.uri)
+      url: String(web.uri),
+      domain: String(web.domain || '')
     });
     if (sources.length >= maxSources) break;
   }
