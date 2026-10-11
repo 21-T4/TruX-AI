@@ -1192,6 +1192,7 @@
     }
     @media (prefers-reduced-motion:reduce){
       .thinking-status-line.compact,.thinking-status-line.full{animation:none!important}
+      .md-block.live{animation:none!important}
       .trux-thinking-spark::before{animation:truxThinkingOrbit 2s cubic-bezier(.22,.61,.36,1) 2s infinite!important}
       .trux-thinking-spark::after{animation:truxThinkingOrbitDot 2s cubic-bezier(.22,.61,.36,1) 2s infinite!important}
       .trux-thinking-spark svg{animation:truxThinkingStarTurn 2s cubic-bezier(.22,.61,.36,1) 2s infinite!important}
@@ -1204,17 +1205,7 @@
     .md-block.settled { animation: none; }
     .md-block.live { animation: blockFadeIn 0.24s var(--ease-out); }
     .md-block.live.single-line { display: block; }
-    @keyframes blockFadeIn { from { opacity: 0.35; } to { opacity: 1; } }
-    .stream-caret {
-      display: inline-block;
-      width: 7px; height: 1.02em;
-      margin-left: 2px;
-      vertical-align: -0.16em;
-      border-radius: 2px;
-      background: linear-gradient(180deg, var(--acc), var(--acc-2));
-      animation: caretPulse 1s var(--ease) infinite;
-    }
-    @keyframes caretPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.18; } }
+    @keyframes blockFadeIn { from { opacity: 0.72; transform: translateY(1px); filter: blur(0.2px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
     .stream-stopped {
       margin-top: 12px;
       font-size: 13px; color: var(--txt-4);
@@ -6839,17 +6830,11 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     }
 
     /* =====================================================================
-       PROGRESSIVE STREAM RENDERER (Gemini-feel, but fast)
+       PROGRESSIVE LINE-BATCH STREAM RENDERER
 
-       Previously the whole answer was buffered until the request finished and
-       only THEN revealed at 55ms per line — so a 40-line answer took an extra
-       2+ seconds after it had already arrived. Now:
-
-         • text is revealed as it arrives, paced on requestAnimationFrame
-         • the reveal rate catches up proportionally, so it never lags behind
-         • settled markdown blocks are rendered ONCE and never touched again,
-           so only the small trailing block is re-parsed each frame
-         • the trailing block carries a soft mask + caret so words materialise
+       Reveal complete display lines in small animation-frame batches. Markdown
+       blocks that are complete are committed once; only the active block is
+       refreshed. Each new line gets a subtle fade, with no synthetic cursor.
        ===================================================================== */
 
     function isNearBottom(el, slack) {
@@ -6881,12 +6866,13 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
     }
 
     function createStreamRenderer(bubble) {
+      /* Replace the existing progressive renderer in place; keep one stream host. */
       bubble.innerHTML = '<div class="md-stream"></div>';
-      let host = bubble.firstElementChild;
+      const host = bubble.firstElementChild;
 
-      let target = "";        // everything received so far
-      let shown = 0;          // how many characters are currently revealed
-      let settled = 0;        // number of blocks already committed to the DOM
+      let target = "";
+      let shown = 0;
+      let settled = 0;
       let liveEl = null;
       let liveHtml = "";
       let finished = false;
@@ -6894,8 +6880,73 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       let rafId = null;
       let doneCb = null;
 
+      const measureCanvas = document.createElement("canvas");
+      const measureContext = measureCanvas.getContext("2d");
+
+      /*
+       * Return the end of one complete display line. Explicit source newlines
+       * are respected; ordinary prose is wrapped using the bubble's measured
+       * width, with sentence boundaries as an early release for short lines.
+       * Nothing is revealed from the middle of a word unless the word itself
+       * is wider than the available line.
+       */
+      function nextLineEnd(text, start) {
+        if (start >= text.length) return -1;
+
+        const style = window.getComputedStyle(bubble);
+        if (measureContext) {
+          measureContext.font = style.font || (style.fontSize + " " + style.fontFamily);
+        }
+        const availableWidth = Math.max(80, (host.clientWidth || bubble.clientWidth || 360) - 10);
+        let lastWhitespace = -1;
+
+        for (let i = start; i < text.length; i++) {
+          const ch = text[i];
+          if (ch === "\n") return i + 1;
+
+          const sample = text.slice(start, i + 1).replace(/[*_~]/g, "");
+          const measuredWidth = measureContext
+            ? measureContext.measureText(sample).width
+            : sample.length * 8;
+
+          if (measuredWidth > availableWidth && i > start) {
+            if (lastWhitespace >= start) return lastWhitespace + 1;
+            return i;
+          }
+          if (/\s/.test(ch)) lastWhitespace = i;
+        }
+
+        /* Let a completed sentence appear even when it does not fill the row. */
+        const tail = text.slice(start);
+        const punctuation = /[.!?]\s+/.exec(tail);
+        const sentenceThreshold = Math.min(24, Math.floor(availableWidth / 8));
+        if (punctuation && punctuation.index >= sentenceThreshold) {
+          return start + punctuation.index + punctuation[0].length;
+        }
+        return -1;
+      }
+
+      function nextRevealOffset() {
+        let cursor = shown;
+        let end = shown;
+        let lines = 0;
+
+        /* At most two whole lines per animation frame keeps the reveal fluid. */
+        while (cursor < target.length && lines < 2) {
+          const boundary = nextLineEnd(target, cursor);
+          if (boundary <= cursor) break;
+          end = boundary;
+          cursor = boundary;
+          lines++;
+        }
+
+        /* At EOF, flush a short final line instead of waiting for a wrap. */
+        if (finished && end < target.length && lines < 2) end = target.length;
+        return end;
+      }
+
       function commitBlock(html, isLive) {
-        let el = document.createElement("div");
+        const el = document.createElement("div");
         el.className = "md-block" + (isLive ? " live" : "");
         el.innerHTML = html;
         host.appendChild(el);
@@ -6903,64 +6954,77 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       }
 
       function paint() {
-        let visible = target.slice(0, shown);
-        let blocks = splitStreamBlocks(visible);
-        if (!blocks.length) return;
+        const visible = target.slice(0, shown);
+        const blocks = splitStreamBlocks(visible);
+        if (!blocks.length) return false;
 
-        // Commit every block except the last one — those are final.
+        /* Commit complete Markdown blocks once; only the live tail is re-parsed. */
         while (settled < blocks.length - 1) {
-          if (liveEl) { host.removeChild(liveEl); liveEl = null; liveHtml = ""; }
-          let el = commitBlock(renderFormattedText(blocks[settled], false), false);
-          // let the fade-in play, then freeze it so it never re-animates
+          if (liveEl) {
+            if (liveEl.parentNode === host) host.removeChild(liveEl);
+            liveEl = null;
+            liveHtml = "";
+          }
+          const el = commitBlock(renderFormattedText(blocks[settled], false), false);
           setTimeout(() => el.classList.add("settled"), 400);
           settled++;
         }
 
-        // Re-render only the trailing, in-progress block.
-        let tail = blocks[blocks.length - 1];
-        let html = renderFormattedText(tail, !finished);
-        if (!finished) html += '<span class="stream-caret"></span>';
-
-        if (html === liveHtml) return;
+        const tail = blocks[blocks.length - 1];
+        const html = renderFormattedText(tail, !finished);
+        if (html === liveHtml) return false;
         liveHtml = html;
 
         if (!liveEl) liveEl = commitBlock(html, true);
         else liveEl.innerHTML = html;
 
         liveEl.classList.toggle("single-line", liveEl.offsetHeight < 46);
+        return true;
+      }
+
+      function replayFade(el) {
+        if (!el || !el.isConnected) return;
+        el.classList.remove("live");
+        void el.offsetWidth;
+        el.classList.add("live");
       }
 
       function tick() {
+        rafId = null;
         if (stopped) return;
         if (!bubble.isConnected) {
           stopped = true;
-          if (rafId !== null) cancelAnimationFrame(rafId);
-          rafId = null;
           return;
         }
 
-        const chatContainer = getActiveChatContainer();
-        let stick = isNearBottom(chatContainer);
-        let remaining = target.length - shown;
+        const container = getActiveChatContainer();
+        const stick = isNearBottom(container);
+        const nextShown = nextRevealOffset();
+        let advanced = false;
 
-        if (remaining > 0) {
-          // Render everything already received on the next frame; do not add a
-          // client-side reveal animation or make the UI lag behind the network.
-          shown = target.length;
-          paint();
-          if (stick) chatContainer.scrollTop = chatContainer.scrollHeight;
+        if (nextShown > shown) {
+          const previousLive = liveEl;
+          shown = nextShown;
+          advanced = paint();
+          if (advanced && liveEl && liveEl === previousLive) replayFade(liveEl);
+          if (stick) container.scrollTop = container.scrollHeight;
         }
 
         if (finished && shown >= target.length) {
-          // Final, authoritative render — no caret, no live mask.
+          /* Authoritative final Markdown render: no cursor or streaming residue. */
           host.innerHTML = renderFormattedText(target, false);
           scheduleTruxMath(host);
-          if (stick) chatContainer.scrollTop = chatContainer.scrollHeight;
-          rafId = null;
-          if (doneCb) { let cb = doneCb; doneCb = null; cb(); }
+          if (stick) container.scrollTop = container.scrollHeight;
+          if (doneCb) {
+            const callback = doneCb;
+            doneCb = null;
+            callback();
+          }
           return;
         }
 
+        /* Sleep until another network chunk arrives if no full line is ready. */
+        if (!advanced && !finished) return;
         rafId = requestAnimationFrame(tick);
       }
 
@@ -6969,21 +7033,26 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       }
 
       return {
-        push(chunk) { target += chunk; start(); },
-        setText(text) { target = text; start(); },
+        push(chunk) {
+          target += chunk;
+          start();
+        },
+        setText(text) {
+          target = String(text || "");
+          shown = Math.min(shown, target.length);
+          start();
+        },
         finish(cb) {
           finished = true;
           doneCb = cb || null;
-          if (rafId !== null) cancelAnimationFrame(rafId);
-          rafId = null;
-          if (!bubble.isConnected) { stopped = true; return; }
+          if (!bubble.isConnected) {
+            stopped = true;
+            if (rafId !== null) cancelAnimationFrame(rafId);
+            rafId = null;
+            return;
+          }
           stopped = false;
-          shown = target.length;
-          host.innerHTML = renderFormattedText(target, false);
-          scheduleTruxMath(host);
-          const container = getActiveChatContainer();
-          if (isNearBottom(container)) container.scrollTop = container.scrollHeight;
-          if (doneCb) { const callback = doneCb; doneCb = null; callback(); }
+          start();
         },
         cancel() {
           stopped = true;
@@ -6993,7 +7062,6 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         get received() { return target; }
       };
     }
-
     function formatCodexElapsed(ms) {
       const totalSeconds = Math.max(0, Math.floor(Number(ms || 0) / 1000));
       const hours = Math.floor(totalSeconds / 3600);
@@ -8142,6 +8210,21 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         
         let rd = res.body.getReader(), dec = new TextDecoder(), buf = "", full = "", fin = null;
         let streamDone = false, finalizedEarly = false, finalizedOnFinal = false;
+        let responseStartVibrated = false;
+        function vibrateWhenResponseStarts() {
+          if (responseStartVibrated) return;
+          responseStartVibrated = true;
+          try {
+            const touchDevice = navigator.maxTouchPoints > 0 ||
+              (window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
+            if (touchDevice && document.visibilityState === "visible" &&
+                typeof navigator.vibrate === "function") {
+              navigator.vibrate(10);
+            }
+          } catch (_) {
+            /* Haptics are optional; a missing device/browser API must not affect streaming. */
+          }
+        }
         let githubProposal = null;
         let toolInProgress = false;
         /* Web pages the model actually consulted when it ran a Google search. */
@@ -8199,6 +8282,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
             full += piece;
             sniffRoute();
             if (!routeSettled || imageRoute) return;
+            vibrateWhenResponseStarts();
             persistTurnDraft(turnContext, full);
             let s = ensureStreamer();
             if (s) {
@@ -8226,7 +8310,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
                 if (!activeStreamer && !codingTurn) dismissThinkingPanel(getEl(id)?.closest(".row"));
                 finalizeResponse(id, aid, fin, prompt, voice, activeStreamer, turnSources, turnContext);
                 /* Only mark complete after finalization succeeds. If it throws,
-                   the catch path must still reset the Stop control and cursor. */
+                   the catch path must still reset the Stop control and live renderer. */
                 finalizedOnFinal = true;
                 activeStreamer = null;
               }
@@ -8667,7 +8751,6 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
 
       if(bubble){
         const wasThinking = bubble.classList.contains("thinking");
-        bubble.querySelectorAll(".stream-caret").forEach(el => el.remove());
 
         if(wasThinking){
           bubble.classList.remove("thinking");
