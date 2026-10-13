@@ -1820,7 +1820,7 @@ export async function onRequestPost(context) {
           signal,
           env,
           holdTextUntilToolDecision: codingMode && modelTools.length > 0 && (explicitCodeWork || explicitWebRequest || explicitRepoRequest || explicitExternalAction),
-          generationConfig: getThinkingGenerationConfig(targetModel, effectiveThinkingLevel),
+          generationConfig: requestedOwnerModel !== 'auto' ? undefined : getThinkingGenerationConfig(targetModel, effectiveThinkingLevel),
         onText: async text => {
           const piece = String(text || '');
           if (!piece) return;
