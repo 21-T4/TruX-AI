@@ -4375,6 +4375,511 @@ body[data-media-mode="video"] .composer .hint {
   }
 }
 </style>
+<style id="trux-code-locked-model-and-completed-trace">
+  body.coding-workspace #modelPickerContainer {
+    display:none!important;
+    visibility:hidden!important;
+    pointer-events:none!important;
+  }
+  body.coding-workspace .trux-thinking-panel.completed .trux-thinking-spark::before,
+  body.coding-workspace .trux-thinking-panel.completed .trux-thinking-spark::after {
+    animation:none!important;
+    opacity:0!important;
+  }
+  body.coding-workspace .trux-thinking-panel.completed .trux-thinking-spark svg {
+    animation:none!important;
+    transform:scale(1)!important;
+  }
+  body.coding-workspace .trux-thinking-panel.completed .trux-thinking-toggle {
+    visibility:visible!important;
+    pointer-events:auto!important;
+    opacity:1!important;
+  }
+</style>
+<style id="trux-full-page-login-styles">
+    /* ---------- FULL PAGE SIGN IN ---------- */
+    .login-wall {
+      display: none;
+      position: fixed; inset: 0; z-index: 9000;
+      width: 100vw; height: 100dvh;
+      background: #09090b;
+      color: var(--txt);
+      flex-direction: column;
+      justify-content: space-between;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: clamp(16px, 3vw, 28px);
+    }
+    .login-wall.active {
+      display: flex;
+      animation: loginPageFadeIn 0.35s var(--ease-out);
+    }
+    @keyframes loginPageFadeIn { from { opacity: 0; transform: scale(0.99); } to { opacity: 1; transform: none; } }
+
+    .login-page-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .login-glow-orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.35; animation: loginOrbFloat 16s var(--ease) infinite; }
+    .login-glow-1 { width: 450px; height: 450px; background: rgba(109,131,255,0.25); top: -10%; left: 20%; }
+    .login-glow-2 { width: 400px; height: 400px; background: rgba(176,124,255,0.18); bottom: -10%; right: 15%; animation-delay: -5s; }
+    .login-glow-3 { width: 300px; height: 300px; background: rgba(213,185,106,0.15); top: 40%; left: 60%; animation-delay: -10s; }
+    .login-grid-pattern {
+      position: absolute; inset: 0;
+      background-image: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px);
+      background-size: 24px 24px;
+      opacity: 0.8;
+    }
+    @keyframes loginOrbFloat { 0%,100%{ transform: translate(0,0); } 50%{ transform: translate(30px, -25px); } }
+
+    .login-page-header {
+      position: relative; z-index: 2;
+      display: flex; align-items: center; justify-content: space-between;
+      width: min(1080px, 100%); margin: 0 auto;
+      padding: 8px 0;
+    }
+    .login-brand { display: flex; align-items: center; gap: 12px; }
+    .login-brand-logo { width: 38px; height: 38px; border-radius: 11px; border: 1px solid var(--line-2); box-shadow: 0 4px 18px rgba(0,0,0,0.4); }
+    .login-brand-title { font-family: var(--font-disp); font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -0.02em; }
+
+    .login-close-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 9px 16px; border-radius: 12px;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--line-2);
+      color: var(--txt-2); font-size: 13.5px; font-weight: 600;
+      transition: background 0.2s var(--ease), color 0.2s var(--ease), border-color 0.2s var(--ease);
+    }
+    .login-close-btn:hover { background: var(--bg-3); color: #fff; border-color: var(--line-3); }
+
+    .login-page-main {
+      position: relative; z-index: 2;
+      display: flex; align-items: center; justify-content: center;
+      flex: 1; padding: 32px 0;
+    }
+    .login-hero-card {
+      width: min(540px, 100%);
+      padding: clamp(28px, 5vw, 44px);
+      border-radius: 28px;
+      background: rgba(18, 18, 22, 0.75);
+      backdrop-filter: blur(24px) saturate(140%);
+      -webkit-backdrop-filter: blur(24px) saturate(140%);
+      border: 1px solid var(--line-2);
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+      text-align: center;
+      display: flex; flex-direction: column; align-items: center;
+    }
+
+    .login-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 14px; border-radius: 99px;
+      background: var(--acc-soft); border: 1px solid var(--acc-line);
+      color: var(--acc); font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
+      margin-bottom: 20px;
+    }
+    .login-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--acc); box-shadow: 0 0 10px var(--acc); }
+
+    .login-hero-title {
+      font-family: var(--font-disp);
+      font-size: clamp(28px, 4.5vw, 40px);
+      font-weight: 800;
+      line-height: 1.12;
+      letter-spacing: -0.035em;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+    .login-title-gradient {
+      background: linear-gradient(135deg, var(--txt) 0%, var(--acc) 60%, var(--acc-2) 100%);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+
+    .login-hero-sub {
+      font-size: 15px; line-height: 1.6; color: var(--txt-2);
+      max-width: 420px; margin-bottom: 28px;
+    }
+
+    .login-action-container { width: 100%; max-width: 380px; margin-bottom: 32px; }
+    .login-btn-google-full {
+      width: 100%; min-height: 50px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 12px;
+      border-radius: 14px;
+      background: #ffffff;
+      color: #0f0f12;
+      font-size: 15.5px; font-weight: 700;
+      box-shadow: 0 10px 28px rgba(255,255,255,0.15);
+      transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease), background-color 0.18s var(--ease);
+      cursor: pointer;
+    }
+    .login-btn-google-full:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(255,255,255,0.22); background: #f8f8f8; }
+    .login-btn-google-full:active { transform: translateY(0); }
+
+    .login-terms-note { margin-top: 10px; font-size: 11.5px; color: var(--txt-4); }
+
+    .login-features-grid {
+      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;
+      width: 100%; padding-top: 24px; border-top: 1px solid var(--line);
+      text-align: left;
+    }
+    .login-feature-item { display: flex; flex-direction: column; gap: 6px; }
+    .login-feature-icon { font-size: 18px; }
+    .login-feature-text b { display: block; font-size: 12px; font-weight: 650; color: var(--txt); }
+    .login-feature-text small { display: block; font-size: 10.5px; color: var(--txt-3); line-height: 1.35; margin-top: 2px; }
+
+    .login-page-footer {
+      position: relative; z-index: 2;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      font-family: var(--font-mono); font-size: 11px; color: var(--txt-4); letter-spacing: 0.06em;
+      padding-top: 12px;
+    }
+    .footer-dot { opacity: 0.5; }
+
+    @media (max-width: 600px) {
+      .login-features-grid { grid-template-columns: 1fr; gap: 14px; }
+      .login-feature-item { flex-direction: row; align-items: center; gap: 10px; }
+      .login-hero-card { padding: 24px 20px; border-radius: 22px; }
+    }
+</style>
+<style id="trux-floating-topbar-composer-styles">
+    /* ---------- FLOATING TOPBAR & FLOATING TYPING BAR WITH DULL GRADIENT MASKS ---------- */
+    .main {
+      position: relative !important;
+      display: flex !important;
+      flex-direction: column !important;
+      height: 100% !important;
+      overflow: hidden !important;
+      background: var(--bg) !important;
+    }
+
+    .topbar {
+      position: absolute !important;
+      top: 0 !important; left: 0 !important; right: 0 !important;
+      z-index: 500 !important;
+      height: 60px !important;
+      padding: 0 16px !important;
+      display: grid !important;
+      grid-template-columns: minmax(46px,1fr) auto minmax(46px,1fr) !important;
+      align-items: center !important;
+      background: linear-gradient(180deg, rgba(15,15,18,0.92) 0%, rgba(15,15,18,0.72) 65%, rgba(15,15,18,0) 100%) !important;
+      backdrop-filter: blur(12px) saturate(140%) !important;
+      -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
+      border-bottom: 0 !important;
+      pointer-events: auto !important;
+    }
+
+    .chat, .welcome, .notebook-workspace, .trux-code-v2 {
+      padding-top: 72px !important;
+      padding-bottom: 100px !important;
+    }
+
+    .composer {
+      position: absolute !important;
+      bottom: 0 !important; left: 0 !important; right: 0 !important;
+      z-index: 500 !important;
+      padding: 16px 18px calc(16px + var(--safe-b)) !important;
+      background: linear-gradient(0deg, rgba(15,15,18,0.96) 0%, rgba(15,15,18,0.80) 65%, rgba(15,15,18,0) 100%) !important;
+      backdrop-filter: blur(14px) saturate(140%) !important;
+      -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
+      border-top: 0 !important;
+      pointer-events: none !important;
+    }
+
+    .composer .compose, .composer .bar, .composer .composer-attachments, .composer button, .composer textarea, .composer input {
+      pointer-events: auto !important;
+    }
+
+    .bar {
+      border-radius: 999px !important;
+      background: rgba(28,28,34,0.88) !important;
+      border: 1px solid rgba(255,255,255,0.12) !important;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.5) !important;
+      backdrop-filter: blur(20px) !important;
+      -webkit-backdrop-filter: blur(20px) !important;
+      transition: all 0.22s var(--ease) !important;
+    }
+
+    .bar:focus-within {
+      border-color: var(--acc-line) !important;
+      background: rgba(34,34,42,0.95) !important;
+      box-shadow: 0 0 0 3px rgba(109,131,255,0.15), 0 16px 40px rgba(0,0,0,0.6) !important;
+    }
+</style>
+<style id="trux-reworked-thinking-bar-styles">
+    /* ---------- REWORKED SLEEK THINKING BAR ---------- */
+    .trux-thinking-panel {
+      position: relative !important;
+      display: inline-flex !important;
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      margin: 8px 0 14px 0 !important;
+      padding: 6px 14px !important;
+      border-radius: 14px !important;
+      background: rgba(255,255,255,0.035) !important;
+      border: 1px solid rgba(255,255,255,0.08) !important;
+      backdrop-filter: blur(10px) !important;
+      -webkit-backdrop-filter: blur(10px) !important;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2) !important;
+      contain: none !important;
+      pointer-events: auto !important;
+      transition: all 0.24s var(--ease) !important;
+    }
+
+    .trux-thinking-panel.completed {
+      background: rgba(255,255,255,0.018) !important;
+      border-color: rgba(255,255,255,0.05) !important;
+      box-shadow: none !important;
+    }
+
+    .trux-thinking-bar {
+      display: flex !important;
+      align-items: center !important;
+      gap: 10px !important;
+      width: 100% !important;
+    }
+
+    .trux-thinking-spark, .trux-thinking-chat-marker {
+      position: relative !important;
+      display: grid !important;
+      place-items: center !important;
+      width: 22px !important; height: 22px !important;
+      flex: 0 0 22px !important;
+      color: var(--acc) !important;
+    }
+
+    .trux-thinking-panel:not(.completed) .trux-thinking-spark svg,
+    .trux-thinking-panel:not(.completed) .trux-thinking-chat-marker svg {
+      animation: thinkingPulseGlow 2s infinite ease-in-out !important;
+    }
+
+    @keyframes thinkingPulseGlow {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 4px rgba(109,131,255,0.4)); opacity: 0.85; }
+      50% { transform: scale(1.15); filter: drop-shadow(0 0 10px rgba(176,124,255,0.8)); opacity: 1; }
+    }
+
+    .trux-thinking-copy {
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      font-size: 13.5px !important;
+      font-weight: 600 !important;
+      color: var(--txt) !important;
+    }
+
+    .trux-thinking-panel .status-msg {
+      display: flex !important;
+      align-items: center !important;
+      background: transparent !important;
+      border: 0 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      color: var(--txt-2) !important;
+      font-size: 13.5px !important;
+      font-weight: 550 !important;
+    }
+
+    .thinking-status-line.compact, .thinking-status-line.full {
+      color: var(--txt) !important;
+      background: none !important;
+      -webkit-background-clip: initial !important;
+      background-clip: initial !important;
+      -webkit-text-fill-color: initial !important;
+      animation: none !important;
+    }
+
+    .trux-thinking-elapsed {
+      font-family: var(--font-mono) !important;
+      font-size: 11px !important;
+      color: var(--txt-3) !important;
+      margin-left: 4px !important;
+    }
+
+    .trux-thinking-toggle {
+      width: 24px !important; height: 24px !important;
+      display: grid !important; place-items: center !important;
+      border-radius: 6px !important;
+      background: transparent !important;
+      border: 0 !important;
+      color: var(--txt-3) !important;
+      margin-left: 6px !important;
+      cursor: pointer !important;
+      transition: background 0.18s var(--ease), color 0.18s var(--ease) !important;
+    }
+
+    .trux-thinking-toggle:hover {
+      background: var(--bg-3) !important;
+      color: var(--txt) !important;
+    }
+
+    .trux-thinking-details {
+      margin-top: 8px !important;
+      padding-top: 8px !important;
+      border-top: 1px solid rgba(255,255,255,0.06) !important;
+      width: 100% !important;
+    }
+</style>
+<style id="trux-reworked-profile-settings-styles">
+    /* ---------- REWORKED SETTINGS & PROFILE MODALS ---------- */
+    #profileModal, #settingsModal {
+      padding: 0 !important;
+      background: rgba(0,0,0,0.85) !important;
+      backdrop-filter: blur(20px) !important;
+      -webkit-backdrop-filter: blur(20px) !important;
+    }
+
+    #profileModal .card {
+      width: min(640px, 94vw) !important;
+      max-height: min(88vh, 800px) !important;
+      margin: auto !important;
+      border-radius: 28px !important;
+      background: #111115 !important;
+      border: 1px solid rgba(255,255,255,0.12) !important;
+      box-shadow: 0 32px 90px rgba(0,0,0,0.8) !important;
+      padding: 28px !important;
+    }
+
+    .profile-meta-grid {
+      display: grid !important;
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      gap: 10px !important;
+      margin: 20px 0 !important;
+    }
+
+    .profile-meta-item {
+      padding: 14px !important;
+      border-radius: 16px !important;
+      background: rgba(255,255,255,0.035) !important;
+      border: 1px solid rgba(255,255,255,0.08) !important;
+      text-align: center !important;
+    }
+
+    .profile-option-list {
+      border-radius: 18px !important;
+      border: 1px solid rgba(255,255,255,0.08) !important;
+      background: rgba(255,255,255,0.02) !important;
+      overflow: hidden !important;
+    }
+
+    .profile-option-row {
+      min-height: 56px !important;
+      padding: 12px 16px !important;
+      border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+    }
+
+    #settingsModal .settings-page {
+      border-radius: 0 !important;
+      background: #09090c !important;
+    }
+
+    .settings-sidebar {
+      background: #0d0d12 !important;
+      border-right: 1px solid rgba(255,255,255,0.08) !important;
+    }
+
+    .settings-card {
+      border-radius: 20px !important;
+      background: rgba(255,255,255,0.025) !important;
+      border: 1px solid rgba(255,255,255,0.08) !important;
+      padding: 16px 20px !important;
+    }
+</style>
+<style id="trux-reworked-code-layout-styles">
+    /* ---------- REWORKED TRUX CODE IDE LAYOUT ---------- */
+    .trux-code-v2 {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      padding: 40px 20px !important;
+      text-align: center !important;
+    }
+
+    .trux-code-v2-inner {
+      width: min(720px, 100%) !important;
+      padding: 36px 32px !important;
+      border-radius: 28px !important;
+      background: rgba(18, 18, 24, 0.85) !important;
+      border: 1px solid rgba(109,131,255,0.2) !important;
+      backdrop-filter: blur(20px) !important;
+      -webkit-backdrop-filter: blur(20px) !important;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1) !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+    }
+
+    .trux-code-v2-mark {
+      width: 64px !important; height: 64px !important;
+      margin-bottom: 16px !important;
+      display: grid !important; place-items: center !important;
+      border-radius: 18px !important;
+      background: rgba(109,131,255,0.12) !important;
+      border: 1px solid rgba(109,131,255,0.3) !important;
+    }
+
+    .trux-code-logo { width: 36px !important; height: 36px !important; }
+
+    .trux-code-v2-kicker {
+      font-family: var(--font-mono) !important;
+      font-size: 11px !important; font-weight: 700 !important;
+      letter-spacing: 0.18em !important;
+      color: var(--acc) !important;
+      margin-bottom: 8px !important;
+    }
+
+    .trux-code-v2 h1 {
+      font-family: var(--font-disp) !important;
+      font-size: 32px !important; font-weight: 800 !important;
+      color: #fff !important;
+      letter-spacing: -0.03em !important;
+      margin-bottom: 8px !important;
+    }
+
+    .trux-code-v2 p {
+      font-size: 15px !important;
+      color: var(--txt-2) !important;
+      margin-bottom: 20px !important;
+    }
+
+    .trux-code-v2-status {
+      display: flex !important;
+      align-items: center !important;
+      gap: 12px !important;
+      padding: 8px 16px !important;
+      border-radius: 99px !important;
+      background: rgba(0,0,0,0.4) !important;
+      border: 1px solid rgba(255,255,255,0.08) !important;
+      font-family: var(--font-mono) !important;
+      font-size: 12px !important;
+    }
+
+    .trux-code-v2-ready i {
+      display: inline-block !important;
+      width: 7px !important; height: 7px !important;
+      border-radius: 50% !important;
+      background: #4ade80 !important;
+      box-shadow: 0 0 10px #4ade80 !important;
+      margin-right: 6px !important;
+    }
+</style>
+<style id="trux-app-smoothness-styles">
+    /* ---------- SMOOTHNESS POLISH & TRANSITIONS ---------- */
+    * {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body, .main, .sidebar, .chat, .composer, .bar, .card, .modal {
+      transition-property: background-color, border-color, color, transform, opacity;
+      transition-duration: 0.22s;
+      transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Hardware acceleration for scroll containers */
+    .chat, .history, .settings-main-scroll, .media-library-grid {
+      transform: translateZ(0);
+      will-change: scroll-position;
+      scroll-behavior: smooth;
+    }
+
+    /* Smoother button active state */
+    button:active {
+      transform: scale(0.97) !important;
+    }
+</style>
 </head>
 <body class="home-active" data-workspace-mode="chat">
 
@@ -4416,18 +4921,79 @@ body[data-media-mode="video"] .composer .hint {
 
   <!-- Sign-in only appears when the user tries to send a message or explicitly clicks sign in -->
   <div class="login-wall" id="loginWallModal">
-    <div class="login-wall-bg"><span></span><span></span><span></span></div>
-    <button class="login-wall-close" onclick="closeLoginWall()" title="Close">×</button>
-    <div class="login-box">
-      <div class="login-orb"><img src="/icon-grey.png" alt="TruX"></div>
-      <div class="mtitle">Welcome to TruX-Omni</div>
-      <div class="msub">Sign in to unlock your intelligent workspace — conversations, image generation, and memory, all in one place.</div>
-      <button class="login-btn-google" onclick="handleGoogleLogin()">
-        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
-        Sign in with Google
-      </button>
-      <div class="login-wall-footer">Powered by TruX-Omni</div>
+    <div class="login-page-bg">
+      <div class="login-glow-orb login-glow-1"></div>
+      <div class="login-glow-orb login-glow-2"></div>
+      <div class="login-glow-orb login-glow-3"></div>
+      <div class="login-grid-pattern"></div>
     </div>
+
+    <header class="login-page-header">
+      <div class="login-brand">
+        <img src="/icon-512.png" alt="TruX" class="login-brand-logo">
+        <span class="login-brand-title">TruX-Omni</span>
+      </div>
+      <button type="button" class="login-close-btn" onclick="closeLoginWall()" aria-label="Continue as Guest">
+        <span>Continue as Guest</span>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </header>
+
+    <main class="login-page-main">
+      <div class="login-hero-card">
+        <div class="login-badge">
+          <i class="login-badge-dot"></i>
+          <span>TRUX BACKEND ENGINE</span>
+        </div>
+
+        <h1 class="login-hero-title">
+          Next-Gen AI Workspace<br>
+          <span class="login-title-gradient">Powered by Vertex AI</span>
+        </h1>
+
+        <p class="login-hero-sub">
+          Deep thinking, code creation, image generation, and intelligent search — designed with high performance and privacy at the core.
+        </p>
+
+        <div class="login-action-container">
+          <button type="button" class="login-btn-google-full" onclick="handleGoogleLogin()">
+            <svg width="20" height="20" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+            <span>Sign in with Google</span>
+          </button>
+          <div class="login-terms-note">By signing in, you access synced chats and cloud backup.</div>
+        </div>
+
+        <div class="login-features-grid">
+          <div class="login-feature-item">
+            <div class="login-feature-icon">⚡</div>
+            <div class="login-feature-text">
+              <b>Vertex AI Backend</b>
+              <small>Lightning fast streaming responses</small>
+            </div>
+          </div>
+          <div class="login-feature-item">
+            <div class="login-feature-icon">💻</div>
+            <div class="login-feature-text">
+              <b>TruX-Code Agent</b>
+              <small>Automated coding & repo tools</small>
+            </div>
+          </div>
+          <div class="login-feature-item">
+            <div class="login-feature-icon">🔒</div>
+            <div class="login-feature-text">
+              <b>Private & Secure</b>
+              <small>Local-first encrypted storage</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="login-page-footer">
+      <span>TruX-AI Cloud Run Server</span>
+      <span class="footer-dot">•</span>
+      <span>Google Cloud Platform</span>
+    </footer>
   </div>
   
   <div class="shell">
@@ -5058,11 +5624,32 @@ body[data-media-mode="video"] .composer .hint {
       updateAllUsageUI();
     }
 
+
+    function restoreCachedUserUI() {
+      try {
+        const cached = store.json("trux_cached_user", null);
+        if (cached && cached.email) {
+          if (getEl("userName")) getEl("userName").innerText = cached.displayName || "User";
+          if (getEl("userEmail")) getEl("userEmail").innerText = cached.email || "";
+          if (getEl("userAvatar") && cached.photoURL) getEl("userAvatar").src = cached.photoURL;
+          document.body.classList.add("user-signed-in");
+        }
+      } catch (e) {}
+    }
+    restoreCachedUserUI();
+
     async function initFirebase() {
       const fallback = { apiKey: "AIzaSyAs_GDrzlBaucHfiff0Y6cA8GVHjFTA62Q", authDomain: "trux-ai.firebaseapp.com", projectId: "trux-ai", storageBucket: "trux-ai.firebasestorage.app", messagingSenderId: "59313097411", appId: "1:59313097411:web:32e4158bfb733fa7cfb076" };
       try { const r = await fetch("/api/firebase-config", { cache: "no-store" }); firebase.initializeApp(await r.json()); }
       catch { firebase.initializeApp(fallback); }
-      auth = firebase.auth(); provider = new firebase.auth.GoogleAuthProvider();
+      auth = firebase.auth();
+      provider = new firebase.auth.GoogleAuthProvider();
+      try {
+        await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+      } catch (e) {
+        console.warn("Auth persistence error:", e);
+      }
+
 
       try {
         firebaseMessaging = firebase.messaging();
@@ -5077,8 +5664,15 @@ body[data-media-mode="video"] .composer .hint {
       auth.onAuthStateChanged(u => {
         applyDeveloperIdentity(u);
         if(u) {
-          getEl("userName").innerText = u.displayName || "User";
-          getEl("userEmail").innerText = u.email || "";
+          store.setItem("trux_cached_user", JSON.stringify({
+            uid: u.uid,
+            email: u.email,
+            displayName: u.displayName,
+            photoURL: u.photoURL
+          }));
+          document.body.classList.add("user-signed-in");
+          if (getEl("userName")) getEl("userName").innerText = u.displayName || "User";
+          if (getEl("userEmail")) getEl("userEmail").innerText = u.email || "";
           applyStoredAvatar(u);
           closeLoginWall();
           updateNotificationButton();
@@ -5088,9 +5682,11 @@ body[data-media-mode="video"] .composer .hint {
           if("Notification" in window && Notification.permission === "granted") syncTruxNotificationsSilently();
           syncChatsToCloud(true);
         } else {
-          getEl("userName").innerText = "Guest User";
-          getEl("userEmail").innerText = "Tap to sign in";
-          getEl("userAvatar").src = "https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff";
+          store.removeItem("trux_cached_user");
+          document.body.classList.remove("user-signed-in");
+          if (getEl("userName")) getEl("userName").innerText = "Guest User";
+          if (getEl("userEmail")) getEl("userEmail").innerText = "Tap to sign in";
+          if (getEl("userAvatar")) getEl("userAvatar").src = "https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff";
         }
       });
     }
@@ -10731,26 +11327,6 @@ body.coding-workspace .trux-code-center-mark{
 
 
 
-<style id="trux-code-locked-model-and-completed-trace">
-  body.coding-workspace #modelPickerContainer {
-    display:none!important;
-    visibility:hidden!important;
-    pointer-events:none!important;
-  }
-  body.coding-workspace .trux-thinking-panel.completed .trux-thinking-spark::before,
-  body.coding-workspace .trux-thinking-panel.completed .trux-thinking-spark::after {
-    animation:none!important;
-    opacity:0!important;
-  }
-  body.coding-workspace .trux-thinking-panel.completed .trux-thinking-spark svg {
-    animation:none!important;
-    transform:scale(1)!important;
-  }
-  body.coding-workspace .trux-thinking-panel.completed .trux-thinking-toggle {
-    visibility:visible!important;
-    pointer-events:auto!important;
-    opacity:1!important;
-  }
-</style>
+
 </body>
 </html>
