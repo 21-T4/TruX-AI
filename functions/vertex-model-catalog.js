@@ -36,17 +36,40 @@ export async function listAvailableGeminiModels({ refresh = false } = {}) {
     let pagesRead = 0;
 
     do {
-      const url = new URL("https://aiplatform.googleapis.com/v1beta1/publishers/google/models");
-      url.searchParams.set("pageSize", "1000");
+      const baseUrl = "https://aiplatform.googleapis.com/v1beta1/publishers/google/models";
+      const url = new URL(baseUrl);
+      // Keep each page at a conservative size and request full metadata first.
+      url.searchParams.set("pageSize", "100");
       url.searchParams.set("view", "PUBLISHER_MODEL_VIEW_FULL");
       if (pageToken) url.searchParams.set("pageToken", pageToken);
 
-      const response = await fetch(url, {
+      const requestOptions = {
         method: "GET",
         headers: { Authorization: "Bearer " + accessToken }
-      });
+      };
+      let response = await fetch(url, requestOptions);
+
+      // Retry HTTP 400 with the documented default BASIC view and default page size.
+      // This avoids making model selection depend on optional catalog query parameters.
+      if (response.status === 400) {
+        const fallbackUrl = new URL(baseUrl);
+        if (pageToken) fallbackUrl.searchParams.set("pageToken", pageToken);
+        response = await fetch(fallbackUrl, requestOptions);
+      }
+
       if (!response.ok) {
-        throw new Error("Google Cloud Vertex AI model catalog returned HTTP " + response.status + ".");
+        const errorBody = await response.text().catch(() => "");
+        let detail = errorBody;
+        try {
+          const parsed = JSON.parse(errorBody);
+          detail = parsed?.error?.message || parsed?.message || errorBody;
+        } catch {}
+        detail = String(detail || "").trim().slice(0, 500);
+        throw new Error(
+          "Google Cloud Vertex AI model catalog returned HTTP " +
+          response.status +
+          (detail ? ": " + detail : ".")
+        );
       }
 
       const payload = await response.json();
