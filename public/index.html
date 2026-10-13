@@ -4535,183 +4535,6 @@ body[data-media-mode="video"] .composer .hint {
       .login-hero-card { padding: 24px 20px; border-radius: 22px; }
     }
 </style>
-<style id="trux-floating-topbar-composer-styles">
-    /* ---------- FLOATING TOPBAR & FLOATING TYPING BAR WITH DULL GRADIENT MASKS ---------- */
-    .main {
-      position: relative !important;
-      display: flex !important;
-      flex-direction: column !important;
-      height: 100% !important;
-      overflow: hidden !important;
-      background: var(--bg) !important;
-    }
-
-    .topbar {
-      position: absolute !important;
-      top: 0 !important; left: 0 !important; right: 0 !important;
-      z-index: 500 !important;
-      height: 60px !important;
-      padding: 0 16px !important;
-      display: grid !important;
-      grid-template-columns: minmax(46px,1fr) auto minmax(46px,1fr) !important;
-      align-items: center !important;
-      background: linear-gradient(180deg, rgba(15,15,18,0.92) 0%, rgba(15,15,18,0.72) 65%, rgba(15,15,18,0) 100%) !important;
-      backdrop-filter: blur(12px) saturate(140%) !important;
-      -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
-      border-bottom: 0 !important;
-      pointer-events: auto !important;
-    }
-
-    .chat, .welcome, .notebook-workspace, .trux-code-v2 {
-      padding-top: 72px !important;
-      padding-bottom: 100px !important;
-    }
-
-    .composer {
-      position: absolute !important;
-      bottom: 0 !important; left: 0 !important; right: 0 !important;
-      z-index: 500 !important;
-      padding: 16px 18px calc(16px + var(--safe-b)) !important;
-      background: linear-gradient(0deg, rgba(15,15,18,0.96) 0%, rgba(15,15,18,0.80) 65%, rgba(15,15,18,0) 100%) !important;
-      backdrop-filter: blur(14px) saturate(140%) !important;
-      -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
-      border-top: 0 !important;
-      pointer-events: none !important;
-    }
-
-    .composer .compose, .composer .bar, .composer .composer-attachments, .composer button, .composer textarea, .composer input {
-      pointer-events: auto !important;
-    }
-
-    .bar {
-      border-radius: 999px !important;
-      background: rgba(28,28,34,0.88) !important;
-      border: 1px solid rgba(255,255,255,0.12) !important;
-      box-shadow: 0 12px 32px rgba(0,0,0,0.5) !important;
-      backdrop-filter: blur(20px) !important;
-      -webkit-backdrop-filter: blur(20px) !important;
-      transition: all 0.22s var(--ease) !important;
-    }
-
-    .bar:focus-within {
-      border-color: var(--acc-line) !important;
-      background: rgba(34,34,42,0.95) !important;
-      box-shadow: 0 0 0 3px rgba(109,131,255,0.15), 0 16px 40px rgba(0,0,0,0.6) !important;
-    }
-</style>
-<style id="trux-reworked-thinking-bar-styles">
-    /* ---------- REWORKED SLEEK THINKING BAR ---------- */
-    .trux-thinking-panel {
-      position: relative !important;
-      display: inline-flex !important;
-      flex-direction: column !important;
-      align-items: flex-start !important;
-      margin: 8px 0 14px 0 !important;
-      padding: 6px 14px !important;
-      border-radius: 14px !important;
-      background: rgba(255,255,255,0.035) !important;
-      border: 1px solid rgba(255,255,255,0.08) !important;
-      backdrop-filter: blur(10px) !important;
-      -webkit-backdrop-filter: blur(10px) !important;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.2) !important;
-      contain: none !important;
-      pointer-events: auto !important;
-      transition: all 0.24s var(--ease) !important;
-    }
-
-    .trux-thinking-panel.completed {
-      background: rgba(255,255,255,0.018) !important;
-      border-color: rgba(255,255,255,0.05) !important;
-      box-shadow: none !important;
-    }
-
-    .trux-thinking-bar {
-      display: flex !important;
-      align-items: center !important;
-      gap: 10px !important;
-      width: 100% !important;
-    }
-
-    .trux-thinking-spark, .trux-thinking-chat-marker {
-      position: relative !important;
-      display: grid !important;
-      place-items: center !important;
-      width: 22px !important; height: 22px !important;
-      flex: 0 0 22px !important;
-      color: var(--acc) !important;
-    }
-
-    .trux-thinking-panel:not(.completed) .trux-thinking-spark svg,
-    .trux-thinking-panel:not(.completed) .trux-thinking-chat-marker svg {
-      animation: thinkingPulseGlow 2s infinite ease-in-out !important;
-    }
-
-    @keyframes thinkingPulseGlow {
-      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 4px rgba(109,131,255,0.4)); opacity: 0.85; }
-      50% { transform: scale(1.15); filter: drop-shadow(0 0 10px rgba(176,124,255,0.8)); opacity: 1; }
-    }
-
-    .trux-thinking-copy {
-      display: flex !important;
-      align-items: center !important;
-      gap: 8px !important;
-      font-size: 13.5px !important;
-      font-weight: 600 !important;
-      color: var(--txt) !important;
-    }
-
-    .trux-thinking-panel .status-msg {
-      display: flex !important;
-      align-items: center !important;
-      background: transparent !important;
-      border: 0 !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      color: var(--txt-2) !important;
-      font-size: 13.5px !important;
-      font-weight: 550 !important;
-    }
-
-    .thinking-status-line.compact, .thinking-status-line.full {
-      color: var(--txt) !important;
-      background: none !important;
-      -webkit-background-clip: initial !important;
-      background-clip: initial !important;
-      -webkit-text-fill-color: initial !important;
-      animation: none !important;
-    }
-
-    .trux-thinking-elapsed {
-      font-family: var(--font-mono) !important;
-      font-size: 11px !important;
-      color: var(--txt-3) !important;
-      margin-left: 4px !important;
-    }
-
-    .trux-thinking-toggle {
-      width: 24px !important; height: 24px !important;
-      display: grid !important; place-items: center !important;
-      border-radius: 6px !important;
-      background: transparent !important;
-      border: 0 !important;
-      color: var(--txt-3) !important;
-      margin-left: 6px !important;
-      cursor: pointer !important;
-      transition: background 0.18s var(--ease), color 0.18s var(--ease) !important;
-    }
-
-    .trux-thinking-toggle:hover {
-      background: var(--bg-3) !important;
-      color: var(--txt) !important;
-    }
-
-    .trux-thinking-details {
-      margin-top: 8px !important;
-      padding-top: 8px !important;
-      border-top: 1px solid rgba(255,255,255,0.06) !important;
-      width: 100% !important;
-    }
-</style>
 <style id="trux-reworked-profile-settings-styles">
     /* ---------- REWORKED SETTINGS & PROFILE MODALS ---------- */
     #profileModal, #settingsModal {
@@ -4878,6 +4701,50 @@ body[data-media-mode="video"] .composer .hint {
     /* Smoother button active state */
     button:active {
       transform: scale(0.97) !important;
+    }
+</style>
+<style id="trux-pure-alignment-fixes">
+    /* ---------- ACCURATE ALIGNMENT & METALLIC THINKING FIXES ---------- */
+    .bar {
+      grid-template-columns: auto auto 1fr auto !important;
+      align-items: center !important;
+    }
+
+    .bar > #attachBtn {
+      position: relative !important;
+      margin: 0 !important;
+    }
+
+    #modelDropdown {
+      position: fixed !important;
+      bottom: 84px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      z-index: 99999 !important;
+      width: min(340px, calc(100vw - 32px)) !important;
+    }
+
+    .trux-thinking-panel {
+      background: transparent !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+    }
+
+    .thinking-status-line.compact, .thinking-status-line.full {
+      font-size: 14.5px !important;
+      font-weight: 600 !important;
+      background: linear-gradient(90deg, #999999 0%, #ffffff 50%, #999999 100%) !important;
+      background-size: 200% 100% !important;
+      -webkit-background-clip: text !important;
+      background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      animation: metallicShineGlow 2.8s linear infinite !important;
+    }
+
+    @keyframes metallicShineGlow {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
     }
 </style>
 </head>
