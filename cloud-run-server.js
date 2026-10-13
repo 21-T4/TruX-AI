@@ -15,6 +15,7 @@ const routes = {
   "/api/chat/backup": "./functions/api/chat-backup.js",
   "/api/video": "./functions/api/video.js",
   "/api/firebase-config": "./functions/api/firebase-config.js",
+  "/api/models": "./functions/api/models.js",
   "/api/plugins": "./functions/api/plugins.js",
   "/api/plugins/connect": "./functions/api/plugins-connect.js",
   "/api/plugins/disconnect": "./functions/api/plugins-disconnect.js",

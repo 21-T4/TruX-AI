@@ -6,6 +6,7 @@ import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
 import { getMessaging } from 'firebase-admin/messaging';
 import { getCloudRunKv } from '../cloud-run-store.js';
 import { requireFirebaseUser } from '../firebase-auth.js';
+import { listAvailableGeminiModels } from '../vertex-model-catalog.js';
 import { getProcessedText } from '../gcs-store.js';
 import {
   listConnectedAccounts,
@@ -1233,6 +1234,7 @@ export async function onRequestPost(context) {
       systemInstruction,
       userId,
       userEmail,
+      ownerModel,
       developer,
       advancedThinking,
       thinkingLevel,
@@ -1502,15 +1504,36 @@ export async function onRequestPost(context) {
 
     currentParts.push({ text: message || (image ? 'Analyze the provided image.' : 'Analyze the attached files.') });
 
-    const targetModel = (codingMode || researchMode)
-      ? getVertexModel(effectiveTier)
-      : selectAutoChatModel({
-          message,
-          image,
-          attachments: effectiveAttachments,
-          advancedThinking: effectiveAdvancedThinking,
-          explicitExternalAction
-        });
+    let targetModel;
+    const requestedOwnerModel = developerAccount ? String(ownerModel || 'auto').trim() : 'auto';
+    if (requestedOwnerModel && requestedOwnerModel !== 'auto') {
+      let availableModels;
+      try {
+        availableModels = await listAvailableGeminiModels();
+      } catch {
+        return Response.json(
+          { error: 'Could not verify the selected Gemini model against Google Cloud Vertex AI.' },
+          { status: 503 }
+        );
+      }
+      if (!availableModels.some(model => model.id === requestedOwnerModel)) {
+        return Response.json(
+          { error: 'The selected Gemini model is not currently available in the Google Cloud catalog.' },
+          { status: 400 }
+        );
+      }
+      targetModel = requestedOwnerModel;
+    } else {
+      targetModel = (codingMode || researchMode)
+        ? getVertexModel(effectiveTier)
+        : selectAutoChatModel({
+            message,
+            image,
+            attachments: effectiveAttachments,
+            advancedThinking: effectiveAdvancedThinking,
+            explicitExternalAction
+          });
+    }
 
     return createSseResponse(async ({ send, signal }) => {
       // Show Thinking immediately. Later activity labels map real pipeline stages

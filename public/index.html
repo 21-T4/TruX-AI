@@ -4649,6 +4649,20 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
                 <div><b>Developer recognition enabled</b><span>This account is recognized as the TruX developer.</span><div class="developer-email" id="developerEmailText">ekagraavn2003@gmail.com</div></div>
               </div>
               <div class="settings-card">
+                <div class="sect">
+                  <h4>Gemini model selection</h4>
+                  <p class="mrow-sub" style="margin:-3px 0 12px">Choose from Google Cloud Vertex AI's currently listed Gemini models. Auto keeps automatic model routing.</p>
+                  <div class="mrow" style="border-bottom:0;padding-top:6px"><span>Selected model</span><b id="ownerModelStateText">Auto · automatic routing</b></div>
+                  <select id="ownerGeminiModelSelect" class="instr" style="height:44px" aria-label="Owner Gemini model" onchange="saveOwnerGeminiModel(this.value)">
+                    <option value="auto">Auto — automatic routing</option>
+                  </select>
+                  <div class="mrow" style="border-bottom:0;gap:12px;align-items:center">
+                    <button class="mbtn" type="button" onclick="loadOwnerGeminiModels(true)">Refresh available models</button>
+                    <span class="utxt" id="ownerGeminiModelStatus">Open Developer settings to load the catalog.</span>
+                  </div>
+                </div>
+              </div>
+              <div class="settings-card">
                 <div class="sect"><h4>Developer account</h4><div class="mrow" style="border-bottom:0"><span>Authorized identity</span><b style="color:#fff">ekagraavn2003@gmail.com</b></div></div>
                 <div class="sect"><h4>Workspace runtime</h4><div class="mrow" style="border-bottom:0"><span>Frontend math</span><span style="color:var(--txt-2)">KaTeX in browser</span></div><div class="mrow" style="border-bottom:0"><span>API runtime</span><span style="color:var(--txt-2)">Google Cloud Run (Node.js)</span></div></div>
               </div>
@@ -5036,6 +5050,68 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         const check = x.querySelector(".thinking-check");
         if(check) check.textContent = x.dataset.thinkingLevel === advancedThinkingLevel ? "✓" : "";
       });
+    }
+
+    async function loadOwnerGeminiModels(forceRefresh = false) {
+      if (!isTruxDeveloper(auth?.currentUser)) return;
+      const selector = getEl("ownerGeminiModelSelect");
+      const status = getEl("ownerGeminiModelStatus");
+      if (!selector) return;
+      const currentUser = auth.currentUser;
+      selector.disabled = true;
+      if (status) status.textContent = "Loading Gemini models…";
+      try {
+        const token = await currentUser.getIdToken();
+        const endpoint = "/api/models" + (forceRefresh ? "?refresh=1" : "");
+        const response = await fetch(endpoint, {
+          method: "GET",
+          cache: "no-store",
+          headers: { Authorization: "Bearer " + token }
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || "Could not load Google Cloud Gemini models.");
+        if (!isTruxDeveloper(auth?.currentUser) || auth.currentUser.uid !== currentUser.uid) return;
+
+        const models = Array.isArray(payload.models) ? payload.models : [];
+        const savedModel = store.getItem("trux_owner_gemini_model") || "auto";
+        selector.replaceChildren();
+        const autoOption = document.createElement("option");
+        autoOption.value = "auto";
+        autoOption.textContent = "Auto — automatic routing";
+        selector.appendChild(autoOption);
+        for (const model of models) {
+          if (!model || typeof model.id !== "string" || !model.id) continue;
+          const option = document.createElement("option");
+          option.value = model.id;
+          option.textContent = model.displayName ? model.displayName + " (" + model.id + ")" : model.id;
+          selector.appendChild(option);
+        }
+
+        const savedIsAvailable = Array.from(selector.options).some(option => option.value === savedModel);
+        selector.value = savedIsAvailable ? savedModel : "auto";
+        if (!savedIsAvailable && savedModel !== "auto") store.setItem("trux_owner_gemini_model", "auto");
+        selector.dataset.loaded = "true";
+        updateOwnerGeminiModelStatus();
+        if (status) status.textContent = models.length + " Gemini models loaded from Google Cloud.";
+      } catch (error) {
+        if (status) status.textContent = String(error?.message || "Gemini model catalog could not be loaded.");
+      } finally {
+        selector.disabled = false;
+      }
+    }
+
+    function saveOwnerGeminiModel(value) {
+      if (!isTruxDeveloper(auth?.currentUser)) return;
+      const selector = getEl("ownerGeminiModelSelect");
+      if (!selector || !Array.from(selector.options).some(option => option.value === value)) return;
+      store.setItem("trux_owner_gemini_model", value === "auto" ? "auto" : String(value));
+      updateOwnerGeminiModelStatus();
+    }
+
+    function updateOwnerGeminiModelStatus() {
+      const selected = store.getItem("trux_owner_gemini_model") || "auto";
+      const state = getEl("ownerModelStateText");
+      if (state) state.textContent = selected === "auto" ? "Auto · automatic routing" : selected;
     }
 
     function getActiveChatContainer() {
@@ -5465,6 +5541,9 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
       const scroller = document.querySelector(".settings-main-scroll");
       if (scroller) scroller.scrollTop = 0;
       const mobileSelect=getEl("settingsMobileSelect"); if(mobileSelect) mobileSelect.value=activeSection;
+      if (activeSection === "developer" && isTruxDeveloper(auth?.currentUser)) {
+        void loadOwnerGeminiModels(false);
+      }
     }
     function openSettingsModal(section) {
       updateAllUsageUI();
@@ -8816,7 +8895,6 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         openLoginWall();
         return;
       }
-      const authToken = await auth.currentUser.getIdToken();
 
       let promptInput = getEl("promptInput");
       let basePrompt = promptInput.value.trim();
@@ -8950,7 +9028,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         }, 1000);
       }
 
-      // TruX-Code is always pinned to Gemini 3.1 Pro Preview.
+      // TruX-Code defaults to Gemini 3.1 Pro Preview; owner overrides are validated server-side.
 
       const requestBody = {
         message: prompt,
@@ -9001,6 +9079,7 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
               new Promise(resolve => setTimeout(() => resolve(null), 900))
             ])
           : null,
+        ...(owner ? { ownerModel: store.getItem("trux_owner_gemini_model") || "auto" } : {}),
         notifyOnComplete: true
       };
 
@@ -9016,15 +9095,30 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
         activeAbortController = new AbortController();
         const requestController = activeAbortController;
         try {
+          const requestUser = auth?.currentUser;
+          if (!requestUser) throw Error("Your session ended. Sign in again to continue.");
           const chatHeaders = { "Content-Type": "application/json", "Accept": "text/event-stream" };
-          if (authToken) chatHeaders.Authorization = "Bearer " + authToken;
-          let res = await fetch("/api/chat", {
-          method: "POST",
-          cache: incognitoMode ? "no-store" : "default",
-          headers: chatHeaders,
-          signal: requestController.signal,
-          body: JSON.stringify(requestBody)
-        });
+          const requestToken = await requestUser.getIdToken();
+          if (requestToken) chatHeaders.Authorization = "Bearer " + requestToken;
+          const requestOptions = {
+            method: "POST",
+            cache: incognitoMode ? "no-store" : "default",
+            headers: chatHeaders,
+            signal: requestController.signal,
+            body: JSON.stringify(requestBody)
+          };
+          let res = await fetch("/api/chat", requestOptions);
+          if (res.status === 401 && auth?.currentUser?.uid === requestUser.uid) {
+            try {
+              const refreshedToken = await requestUser.getIdToken(true);
+              if (refreshedToken) {
+                chatHeaders.Authorization = "Bearer " + refreshedToken;
+                res = await fetch("/api/chat", requestOptions);
+              }
+            } catch (_) {
+              // Preserve the original 401 response if token refresh itself fails.
+            }
+          }
         if(!res.ok) {
           let errorPayload = await res.json().catch(() => ({}));
           const detail = errorPayload.detail || errorPayload.reply || errorPayload.error;
