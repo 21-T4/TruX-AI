@@ -4825,11 +4825,10 @@ body[data-media-mode="video"] .composer .hint {
     }
 </style>
 <style id="trux-icon-alignment-fixes">
-    /* ---------- INCOGNITO / MIC / ATTACH BUTTON ALIGNMENT ---------- */
+    /* Preserve the composer grid; align control contents without overriding responsive sizing. */
     .bar {
-      display: flex !important;
+      display: grid !important;
       align-items: center !important;
-      gap: 8px !important;
     }
 
     .bar > #attachBtn,
@@ -4841,15 +4840,10 @@ body[data-media-mode="video"] .composer .hint {
       display: inline-flex !important;
       align-items: center !important;
       justify-content: center !important;
-      width: 38px !important;
-      height: 38px !important;
-      min-width: 38px !important;
-      min-height: 38px !important;
+      box-sizing: border-box !important;
       margin: 0 !important;
       padding: 0 !important;
       border-radius: 999px !important;
-      flex: 0 0 38px !important;
-      box-sizing: border-box !important;
     }
 
     .bar > #attachBtn svg,
@@ -4941,24 +4935,16 @@ body[data-media-mode="video"] .composer .hint {
     }
 </style>
 <style id="trux-desktop-prompt-input-fix">
-    /* Fix textarea alignment inside bar across desktop/mobile */
+    /* Keep the prompt in the top grid row and let desktop/mobile rules own its size. */
     .bar {
       position: relative !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: space-between !important;
-      gap: 8px !important;
+      display: grid !important;
     }
 
-    .bar textarea#promptInput {
-      flex: 1 1 auto !important;
+    .bar > #promptInput {
       min-width: 0 !important;
-      height: 38px !important;
-      min-height: 38px !important;
-      padding: 6px 10px !important;
-      margin: 0 !important;
-      align-self: center !important;
-      line-height: 1.4 !important;
+      box-sizing: border-box !important;
+      align-self: stretch !important;
     }
 </style>
 </head>
