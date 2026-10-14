@@ -407,7 +407,7 @@
     .profile-info b { display: block; font-size: 13.5px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .profile-info small { display: block; font-size: 11.5px; color: var(--txt-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
 
-    /* PWA install control — always visible; prompt is enhanced when the browser supports it. */
+    /* Android APK download control — available from the sidebar. */
     .sidebar-install-wrap { display:block; margin-top:8px; }
     .sidebar-install {
       width:100%; min-height:38px; display:flex; align-items:center; justify-content:center; gap:8px;
@@ -5390,7 +5390,7 @@ body[data-media-mode="video"] .composer .hint {
       </div>
 
       <div class="sidebar-install-wrap">
-        <button type="button" class="sidebar-install" id="sidebarInstallBtn" onclick="installPWA()" aria-label="Install TruX-AI" title="Install TruX-AI">
+        <button type="button" class="sidebar-install" id="sidebarInstallBtn" onclick="downloadTruXAndroidApk()" aria-label="Download TruX-Omni for Android" title="Download TruX-Omni for Android">
           <svg viewBox="0 0 24 24"><path d="M12 3v11m0 0-4-4m4 4 4-4"/><path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/></svg>
         </button>
       </div>
@@ -5934,23 +5934,11 @@ body[data-media-mode="video"] .composer .hint {
     }, { passive: false });
 
     addEventListener("load", () => { try { if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js?v=20261004-5", { updateViaCache: "none" }).catch(() => {}); } catch (e) {} });
-    let deferredPrompt = null;
-    addEventListener("beforeinstallprompt", e => {
-      e.preventDefault(); deferredPrompt = e;
-      let b = getEl("sidebarInstallBtn"); if(b) b.style.display = "block";
-    });
-    async function installPWA() {
-      if(deferredPrompt) {
-        await deferredPrompt.prompt();
-        const choice = await deferredPrompt.userChoice.catch(() => null);
-        deferredPrompt = null;
-        if(choice?.outcome === "accepted") getEl("sidebarInstallBtn")?.classList.add("installed");
-        return;
-      }
-      if(window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true) {
-        return toast("TruX-AI is already installed.", "ok");
-      }
-      toast("Use your browser's Install app or Add to Home screen option.", "ok");
+    // Suppress the browser's PWA-install prompt: the sidebar download control now
+    // downloads the native Android APK instead.
+    addEventListener("beforeinstallprompt", event => event.preventDefault());
+    function downloadTruXAndroidApk() {
+      window.location.href = "https://trux-ai-workspace.trux.website/TruX-Omni-Android.apk";
     }
 
     /* ============ Auth: sign-in wall only shown on demand ============ */
