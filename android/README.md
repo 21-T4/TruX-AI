@@ -10,7 +10,7 @@ in this repository; the web app remains at
 ## Build
 
 The latest installable debug APK is published at
-https://github.com/21-T4/TruX-AI/releases/download/trux-android-latest/TruX-Omni-Android.apk.
+https://trux-ai-workspace.trux.website/TruX-Omni-Android.apk.
 The workflow **Build TruX-Omni Android** also keeps a downloadable Actions
 artifact as a backup. This APK is for direct testing, not a Play Store release.
 The build uses Android Gradle Plugin 8.9.2, Gradle 8.11.1, and Java 17.
