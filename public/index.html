@@ -5117,6 +5117,87 @@ body[data-media-mode="video"] .composer .hint {
     .context.trux-conversation-menu { width: min(258px, calc(100vw - 16px)); border-radius: 20px; }
   }
 </style>
+
+<style id="trux-composer-live-menu-fix">
+  /* Final composer layout: attachment, model, unframed dots, mic, action. */
+  .bar {
+    grid-template-columns: 40px minmax(0, 1fr) 40px 40px 48px !important;
+    grid-template-rows: auto 42px !important;
+    align-items: center !important;
+  }
+  .bar > #attachBtn {
+    grid-column: 1 !important; grid-row: 2 !important;
+    align-self: center !important; justify-self: center !important;
+  }
+  .bar > #modelPickerContainer {
+    grid-column: 2 !important; grid-row: 2 !important;
+    min-width: 0 !important; width: 100% !important;
+    align-self: center !important; justify-self: stretch !important;
+  }
+  .bar > #topbarMoreBtn {
+    grid-column: 3 !important; grid-row: 2 !important;
+    display: grid !important; position: relative !important;
+    flex: 0 0 40px !important; width: 40px !important; min-width: 40px !important;
+    height: 40px !important; min-height: 40px !important;
+    margin: 0 !important; padding: 0 !important;
+    border: 0 !important; border-radius: 0 !important;
+    background: transparent !important; box-shadow: none !important;
+    color: var(--txt-2) !important;
+    align-self: center !important; justify-self: center !important;
+  }
+  .bar > #topbarMoreBtn svg {
+    display: block !important; width: 21px !important; height: 21px !important;
+  }
+  .bar > #topbarMoreBtn:hover,
+  .bar > #topbarMoreBtn[aria-expanded="true"] {
+    border: 0 !important; background: transparent !important;
+    box-shadow: none !important; color: var(--txt) !important;
+  }
+  .bar > #voiceBtn {
+    grid-column: 4 !important; grid-row: 2 !important;
+    align-self: center !important; justify-self: center !important;
+  }
+  .bar > #promptInput {
+    grid-column: 1 / -1 !important; grid-row: 1 !important;
+    width: 100% !important; min-width: 0 !important;
+  }
+  .bar > #actionBtn {
+    grid-column: 5 !important; grid-row: 2 !important;
+    align-self: center !important; justify-self: end !important;
+  }
+  #actionBtn.live {
+    background: #ededed !important; color: #171717 !important;
+    border-color: transparent !important; box-shadow: none !important;
+  }
+  #actionBtn #btnIcon {
+    transform-origin: center;
+    transition: opacity .14s ease, transform .18s cubic-bezier(.2,.7,.2,1);
+  }
+  @media (max-width: 420px) {
+    .bar {
+      grid-template-columns: 34px minmax(0, 1fr) 34px 34px 42px !important;
+      grid-template-rows: auto 38px !important;
+      gap: 0 5px !important;
+    }
+    .bar > #attachBtn,
+    .bar > #topbarMoreBtn,
+    .bar > #voiceBtn {
+      width: 34px !important; min-width: 34px !important;
+      height: 34px !important; min-height: 34px !important;
+    }
+    .bar > #actionBtn {
+      width: 42px !important; min-width: 42px !important;
+      height: 42px !important; min-height: 42px !important;
+    }
+    body[data-media-mode="image"] .composer .bar,
+    body[data-media-mode="video"] .composer .bar {
+      grid-template-columns: 34px minmax(0, 1fr) 34px 34px 42px !important;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #actionBtn #btnIcon { transition: none !important; }
+  }
+</style>
 </head>
 <body class="home-active" data-workspace-mode="chat">
 
@@ -5338,9 +5419,7 @@ body[data-media-mode="video"] .composer .hint {
         </div>
 
         <div class="topbar-right">
-          <button type="button" class="top-btn topbar-more-btn" id="topbarMoreBtn" onclick="toggleTopbarMoreMenu(event)" title="More options" aria-label="More options" aria-haspopup="menu" aria-expanded="false">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
-          </button>
+
           <button type="button" class="top-profile-btn" id="topProfileBtn" onclick="handleAuthAction()" title="Profile" aria-label="Open profile">
             <img class="top-profile-avatar" id="topProfileAvatar" src="https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff" alt="" aria-hidden="true" referrerpolicy="no-referrer">
           </button>
@@ -5489,7 +5568,10 @@ body[data-media-mode="video"] .composer .hint {
               </div>
             </div>
 
-            <button class="icon-btn" id="voiceBtn" onclick="toggleVoiceInput()" title="Voice input" aria-label="Voice input">
+          <button type="button" class="top-btn topbar-more-btn composer-more-btn" id="topbarMoreBtn" onclick="toggleTopbarMoreMenu(event)" title="More options" aria-label="More options" aria-haspopup="menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
+          </button>
+                        <button class="icon-btn" id="voiceBtn" onclick="toggleVoiceInput()" title="Voice input" aria-label="Voice input">
               <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8"/></svg>
             </button>
             
@@ -5499,9 +5581,9 @@ body[data-media-mode="video"] .composer .hint {
             
             <textarea id="promptInput" rows="1" placeholder="Ask anything…" oninput="handleInputChange()"></textarea>
 
-            <button class="send-btn" id="actionBtn" onclick="handleActionButton()">
-              <svg id="btnIcon" viewBox="0 0 24 24" width="20" height="20">
-                <path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>
+            <button class="send-btn live" id="actionBtn" data-action-mode="live" onclick="handleActionButton()" title="Start Live assistant" aria-label="Start Live assistant">
+              <svg id="btnIcon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                <path d="M3 12h2l2-5 4 10 3-14 3 9h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </button>
           </div>
@@ -7122,21 +7204,48 @@ body[data-media-mode="video"] .composer .hint {
     }
     function quickPrompt(txt) { getEl("promptInput").value = txt; getEl("promptInput").focus(); handleInputChange(); }
     
-    function handleInputChange() { 
-      let p = getEl("promptInput"); 
+    function handleInputChange() {
+      const p = getEl("promptInput");
       const minComposerHeight = document.body.matches('body[data-media-mode="image"], body[data-media-mode="video"]') ? 60 : 44;
       p.style.setProperty("height", "auto", "important");
       p.style.setProperty("height", Math.max(minComposerHeight, Math.min(p.scrollHeight, 200)) + "px", "important");
       /* Keep the active-chat composer a pill even when text wraps. */
-      let bar = p.closest(".bar");
-      if(bar) bar?.classList.remove("multiline");
-      /* Send button only lights up when there is something to send. */
-      let btn = getEl("actionBtn");
-      if(btn && !isGenerating) btn.classList.toggle("ready", !!(p.value.trim() || selectedImageBase64 || pastedTextBlocks.length || fileAttachments.length));
+      const bar = p.closest(".bar");
+      if (bar) bar.classList.remove("multiline");
+
+      const btn = getEl("actionBtn");
+      const hasDraft = !!(p.value.trim() || selectedImageBase64 || pastedTextBlocks.length || fileAttachments.length);
+      if (btn && !isGenerating) {
+        const nextMode = hasDraft ? "send" : "live";
+        btn.classList.toggle("ready", hasDraft);
+        btn.classList.toggle("live", !hasDraft);
+        btn.title = hasDraft ? "Send message" : "Start Live assistant";
+        btn.setAttribute("aria-label", hasDraft ? "Send message" : "Start Live assistant");
+
+        if (btn.dataset.actionMode !== nextMode) {
+          btn.dataset.actionMode = nextMode;
+          const icon = getEl("btnIcon");
+          if (icon) {
+            const sendIcon = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
+            const liveIcon = '<path d="M3 12h2l2-5 4 10 3-14 3 9h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+            icon.style.opacity = "0";
+            icon.style.transform = nextMode === "send" ? "translateY(3px) scale(.78)" : "translateY(-3px) scale(.78)";
+            requestAnimationFrame(() => {
+              if (!btn.isConnected || btn.dataset.actionMode !== nextMode) return;
+              icon.innerHTML = nextMode === "send" ? sendIcon : liveIcon;
+              requestAnimationFrame(() => {
+                if (!btn.isConnected || btn.dataset.actionMode !== nextMode) return;
+                icon.style.opacity = "1";
+                icon.style.transform = "translateY(0) scale(1)";
+              });
+            });
+          }
+        }
+      }
       // Code is only auto-attached on PASTE now. Doing it while typing used to
       // swallow long normal messages into a “file” chip mid-sentence.
     }
-    
+
     /* =====================================================================
        ATTACH (“+”) MENU
        It is position:fixed and anchored in JS. Two things used to break it:
@@ -10845,7 +10954,30 @@ body[data-media-mode="video"] .composer .hint {
         handleInputChange();
         return;
       }
+      const promptInput = getEl("promptInput");
+      const hasContent = !!(promptInput?.value.trim() || selectedImageBase64 || pastedTextBlocks.length || fileAttachments.length);
+      if (!hasContent) {
+        startTruxLiveAssistant();
+        return;
+      }
       sendPrompt();
+    }
+
+    function startTruxLiveAssistant() {
+      const nativeAssistant = window.TruXNativeAssistant;
+      if (nativeAssistant && typeof nativeAssistant.startLiveSession === "function") {
+        try {
+          const result = nativeAssistant.startLiveSession();
+          if (result && typeof result.catch === "function") {
+            result.catch(() => toast("Could not start the Live assistant.", "err"));
+          }
+          return;
+        } catch (_) {
+          toast("Could not start the Live assistant.", "err");
+          return;
+        }
+      }
+      toast("Full-screen Live needs the native TruX Android app. This web app cannot share your whole device while minimized or register as Android’s assistant.", "err");
     }
 
     addEventListener("pagehide", () => {
