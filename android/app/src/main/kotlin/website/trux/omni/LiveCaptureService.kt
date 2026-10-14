@@ -1,5 +1,6 @@
 package website.trux.omni
 
+import android.app.Activity
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -80,7 +81,7 @@ class LiveCaptureService : Service() {
             @Suppress("DEPRECATION")
             intent?.getParcelableExtra(EXTRA_PROJECTION_DATA)
         }
-        if (firebaseToken.isBlank() || resultData == null || resultCode != RESULT_OK) {
+        if (firebaseToken.isBlank() || resultData == null || resultCode != Activity.RESULT_OK) {
             stopSelf()
             return START_NOT_STICKY
         }
@@ -352,7 +353,7 @@ class LiveCaptureService : Service() {
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
-            .addAction(Notification.Action.Builder(null, getString(R.string.live_stop), stopIntent).build())
+            .addAction(android.R.drawable.ic_media_pause, getString(R.string.live_stop), stopIntent)
             .build()
     }
 
