@@ -5034,6 +5034,89 @@ body[data-media-mode="video"] .composer .hint {
   }
 </style>
 
+<style id="trux-conversation-menu-ui">
+  .topbar-more-btn {
+    flex: 0 0 40px !important;
+    width: 40px !important; min-width: 40px !important;
+    height: 40px !important; min-height: 40px !important;
+    padding: 0 !important; margin: 0 !important;
+    border-radius: 50% !important;
+    border: 1px solid rgba(255,255,255,.10) !important;
+    background: transparent !important;
+    color: var(--txt-2) !important;
+  }
+  .topbar-more-btn svg { width: 22px !important; height: 22px !important; }
+  .topbar-more-btn:hover,
+  .topbar-more-btn[aria-expanded="true"] {
+    background: rgba(255,255,255,.07) !important;
+    border-color: rgba(255,255,255,.18) !important;
+    color: var(--txt) !important;
+  }
+  .context.trux-conversation-menu {
+    box-sizing: border-box;
+    width: 258px;
+    min-width: min(258px, calc(100vw - 16px));
+    max-width: calc(100vw - 16px);
+    max-height: min(78vh, 560px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 8px;
+    border-radius: 22px;
+    background: rgba(28,28,28,.985);
+    border: 1px solid rgba(255,255,255,.055);
+    box-shadow: 0 18px 54px rgba(0,0,0,.54);
+    scrollbar-width: thin;
+  }
+  .context.trux-conversation-menu .context-action {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 45px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    color: #e4e4e4;
+    font-size: 15px;
+    line-height: 1.25;
+    font-weight: 500;
+    text-align: left;
+    white-space: normal;
+    cursor: pointer;
+  }
+  .context.trux-conversation-menu .context-action:hover,
+  .context.trux-conversation-menu .context-action:focus-visible {
+    background: rgba(255,255,255,.07);
+    color: #fff;
+    outline: none;
+  }
+  .context.trux-conversation-menu .context-action svg {
+    display: block;
+    flex: 0 0 22px;
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .context.trux-conversation-menu .context-label { flex: 1; min-width: 0; }
+  .context.trux-conversation-menu .context-separator {
+    height: 1px;
+    margin: 6px 9px;
+    background: rgba(255,255,255,.075);
+  }
+  .context.trux-conversation-menu .del,
+  .context.trux-conversation-menu .del:hover { color: #ff7589; }
+  .context.trux-conversation-menu .del:hover { background: rgba(255,84,112,.10); }
+  @media (max-width: 420px) {
+    .topbar-right { gap: 5px !important; }
+    .topbar-more-btn { width: 36px !important; min-width: 36px !important; height: 36px !important; min-height: 36px !important; }
+    .topbar-more-btn svg { width: 21px !important; height: 21px !important; }
+    .context.trux-conversation-menu { width: min(258px, calc(100vw - 16px)); border-radius: 20px; }
+  }
+</style>
 </head>
 <body class="home-active" data-workspace-mode="chat">
 
@@ -5242,12 +5325,6 @@ body[data-media-mode="video"] .composer .hint {
           <button class="top-btn mobile-new" onclick="startNewChat()" title="New chat" aria-label="New chat">
             <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
           </button>
-          <button type="button" class="icon-btn incognito-btn" id="incognitoBtn" onclick="launchIncognitoChat()" title="New incognito chat" aria-label="Start new incognito chat">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 10.5h16"/><path d="m6 10.5 1.5-4h9l1.5 4"/>
-              <circle cx="8" cy="14.5" r="2.3"/><circle cx="16" cy="14.5" r="2.3"/><path d="M10.3 14.5h3.4"/>
-            </svg>
-          </button>
         </div>
 
         <div class="trux-mode-switch" id="truxModeSwitch" aria-label="Workspace mode">
@@ -5261,7 +5338,9 @@ body[data-media-mode="video"] .composer .hint {
         </div>
 
         <div class="topbar-right">
-
+          <button type="button" class="top-btn topbar-more-btn" id="topbarMoreBtn" onclick="toggleTopbarMoreMenu(event)" title="More options" aria-label="More options" aria-haspopup="menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
+          </button>
           <button type="button" class="top-profile-btn" id="topProfileBtn" onclick="handleAuthAction()" title="Profile" aria-label="Open profile">
             <img class="top-profile-avatar" id="topProfileAvatar" src="https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff" alt="" aria-hidden="true" referrerpolicy="no-referrer">
           </button>
@@ -5671,9 +5750,37 @@ body[data-media-mode="video"] .composer .hint {
     </div>
   </div>
 
-  <div class="context" id="contextMenu" role="menu" aria-label="Chat actions">
-    <div class="context-action" id="contextMenuMoveBtn" role="menuitem" tabindex="0">Move to notebook</div>
-    <div class="del" id="contextMenuDeleteBtn" role="menuitem" tabindex="0">Delete chat</div>
+  <div class="context trux-conversation-menu" id="contextMenu" role="menu" aria-label="Conversation actions">
+    <div class="context-action" id="contextMenuShareBtn" role="menuitem" tabindex="0">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4M8.7 13.3l6.6 4.4"/></svg><span class="context-label">Share conversation</span>
+    </div>
+    <div class="context-action" id="contextMenuPinBtn" role="menuitem" tabindex="0">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8l-1 5 3 3v2H6v-2l3-3-1-5Z"/><path d="M12 14v7"/></svg><span class="context-label">Pin</span>
+    </div>
+    <div class="context-action" id="contextMenuMoveBtn" role="menuitem" tabindex="0">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h8.5L18.5 9v10A1.5 1.5 0 0 1 17 20.5H5A1.5 1.5 0 0 1 3.5 19V6A1.5 1.5 0 0 1 5 4.5Z"/><path d="M13 4.5V9h5"/></svg><span class="context-label">Add to notebook</span>
+    </div>
+    <div class="context-action" id="contextMenuRemoveNotebookBtn" role="menuitem" tabindex="0" style="display:none">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h8.5L18.5 9v10A1.5 1.5 0 0 1 17 20.5H5A1.5 1.5 0 0 1 3.5 19V6A1.5 1.5 0 0 1 5 4.5Z"/><path d="m9 13 6 0"/></svg><span class="context-label">Remove from notebook</span>
+    </div>
+    <div class="context-action" id="contextMenuRenameBtn" role="menuitem" tabindex="0">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 4.3 4.3-.8L20 7.5 16.5 4 4 16.5Z"/><path d="m14.5 6 3.5 3.5"/></svg><span class="context-label">Rename</span>
+    </div>
+    <div class="context-separator" role="separator"></div>
+    <div class="context-action" id="contextMenuHelpBtn" role="menuitem" tabindex="0">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9a2.5 2.5 0 1 1 4.3 1.7c-1.3 1-1.9 1.5-1.9 3"/><path d="M12 17.4h.01"/></svg><span class="context-label">Help</span>
+    </div>
+    <div class="context-action" id="contextMenuFeedbackBtn" role="menuitem" tabindex="0">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h14A2.5 2.5 0 0 1 21.5 7v9a2.5 2.5 0 0 1-2.5 2.5H9l-5.5 3V7A2.5 2.5 0 0 1 5 4.5Z"/><path d="M12 8v4"/><path d="M12 15.5h.01"/></svg><span class="context-label">Feedback</span>
+    </div>
+    <div class="context-separator" role="separator"></div>
+    <div class="context-action" id="contextMenuIncognitoBtn" role="menuitem" tabindex="0">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5h16"/><path d="m6 10.5 1.5-4h9l1.5 4"/><circle cx="8" cy="14.5" r="2.3"/><circle cx="16" cy="14.5" r="2.3"/><path d="M10.3 14.5h3.4"/></svg><span class="context-label">New incognito chat</span>
+    </div>
+    <div class="context-separator" role="separator"></div>
+    <div class="del context-action" id="contextMenuDeleteBtn" role="menuitem" tabindex="0">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5M14 11v5"/></svg><span class="context-label">Delete</span>
+    </div>
   </div>
 
   <div class="modal" id="notebookMoveModal" role="dialog" aria-modal="true" aria-labelledby="notebookMoveTitle" aria-hidden="true" onclick="if(event.target===this) closeNotebookMoveModal()">
@@ -10832,7 +10939,7 @@ body[data-media-mode="video"] .composer .hint {
       let changed = false;
       Object.keys(chatSessions).forEach(id => {
         const chat = chatSessions[id];
-        if(!chat || chat.incognito) return;
+        if(!chat || chat.incognito || chat.notebookUnassigned) return;
         if(!chat.notebookId || !notebooks.some(n => n && n.id === chat.notebookId)) {
           chat.notebookId = fallbackId;
           changed = true;
@@ -10907,8 +11014,8 @@ body[data-media-mode="video"] .composer .hint {
       Object.keys(chatSessions).forEach(chatId => {
         const chat = chatSessions[chatId];
         if(!chat || chat.incognito || chat.notebookId !== id) return;
-        if(replacementId) chat.notebookId = replacementId;
-        else delete chat.notebookId;
+        if(replacementId) { chat.notebookId = replacementId; chat.notebookUnassigned = false; }
+        else { delete chat.notebookId; chat.notebookUnassigned = true; }
       });
       store.setItem(TRUX_NOTEBOOKS_KEY, JSON.stringify(notebooks));
       if(wasActive && replacementId) store.setItem("trux_active_notebook", replacementId);
@@ -11014,7 +11121,7 @@ body[data-media-mode="video"] .composer .hint {
           const more = document.createElement("button");
           more.type = "button";
           more.className = "hist-menu-btn notebook-chat-menu";
-          more.textContent = "⋯";
+          more.textContent = "⋮";
           more.setAttribute("aria-label", "Chat actions for " + (chat.title || "Untitled chat"));
           more.title = "Chat actions";
           more.onclick = e => {
@@ -11056,16 +11163,163 @@ body[data-media-mode="video"] .composer .hint {
       toast("New chat will be saved to " + notebook.title + ".", "ok");
     }
 
-    function showChatContextMenu(id, x, y) {
-      if(!chatSessions[id]) return;
-      contextMenuTargetId = id;
+    async function shareChatConversation(id) {
+      const chat = chatSessions[id];
+      if(!chat || chat.incognito) return;
+      const title = chat.title || "Untitled chat";
+      const transcript = (Array.isArray(chat.messages) ? chat.messages : []).map(message => {
+        const text = String(message?.text || "").trim();
+        if(!text) return "";
+        return (message.role === "user" ? "You" : "TruX-Omni") + ":\n" + text;
+      }).filter(Boolean).join("\n\n");
+      const shareText = "TruX-Omni conversation: " + title + "\n\n" + (transcript || "This conversation has no text messages yet.");
+      if(navigator.share) {
+        try {
+          await navigator.share({ title: title, text: shareText });
+          toast("Share sheet opened.", "ok");
+          return;
+        } catch(error) {
+          if(error?.name === "AbortError") return;
+        }
+      }
+      try {
+        if(!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+        await navigator.clipboard.writeText(shareText);
+        toast("Conversation copied. Paste it anywhere to share.", "ok");
+      } catch(error) {
+        prompt("Copy your conversation text to share it:", shareText);
+      }
+    }
+
+    function togglePinChat(id) {
+      const chat = chatSessions[id];
+      if(!chat || chat.incognito) return;
+      chat.pinned = !chat.pinned;
+      saveChatSessions();
+      renderSidebar();
+      if(document.body.classList.contains("notebook-open")) renderNotebookWorkspace(getActiveNotebookId());
+      toast(chat.pinned ? "Chat pinned to the top of Recent." : "Chat unpinned.", "ok");
+    }
+
+    function renameChat(id) {
+      const chat = chatSessions[id];
+      if(!chat || chat.incognito) return;
+      const nextTitle = prompt("Rename conversation", chat.title || "Untitled chat");
+      if(nextTitle === null) return;
+      const cleanTitle = String(nextTitle).trim().slice(0, 80);
+      if(!cleanTitle) return toast("Chat title cannot be empty.", "err");
+      chat.title = cleanTitle;
+      saveChatSessions();
+      renderSidebar();
+      if(document.body.classList.contains("notebook-open")) renderNotebookWorkspace(getActiveNotebookId());
+      toast("Conversation renamed.", "ok");
+    }
+
+    function removeChatFromNotebook(id) {
+      const chat = chatSessions[id];
+      if(!chat || chat.incognito || !chat.notebookId) return;
+      const notebook = getNotebooks().find(item => item && item.id === chat.notebookId);
+      delete chat.notebookId;
+      chat.notebookUnassigned = true;
+      saveChatSessions();
+      closeChatContextMenu();
+      renderSidebar();
+      if(document.body.classList.contains("notebook-open")) renderNotebookWorkspace(getActiveNotebookId());
+      toast('Removed "' + (chat.title || "Untitled chat") + '" from ' + (notebook?.title || "the notebook") + ". The chat is still in Recent.", "ok");
+    }
+
+    function openChatHelp() {
+      let modal = getEl("chatHelpModal");
+      if(!modal) {
+        modal = document.createElement("div");
+        modal.className = "modal";
+        modal.id = "chatHelpModal";
+        modal.setAttribute("role", "dialog");
+        modal.setAttribute("aria-modal", "true");
+        modal.setAttribute("aria-labelledby", "chatHelpTitle");
+        modal.innerHTML = '<div class="card" style="width:min(540px,100%);max-height:82vh;overflow:auto"><button class="close" type="button" onclick="closeChatHelp()" aria-label="Close help">×</button><div class="mtitle" id="chatHelpTitle">TruX-Omni Help</div><div class="msub">Quick guide to conversations and notebooks.</div><div style="display:grid;gap:14px;margin-top:18px;font-size:14px;line-height:1.55;color:var(--txt-2)"><div><b style="color:var(--txt)">Share conversation</b><br>Use your device share sheet, or copy the transcript to share it yourself.</div><div><b style="color:var(--txt)">Pin</b><br>Pinned chats appear in their own group at the top of Recent.</div><div><b style="color:var(--txt)">Notebooks</b><br>Add or move chats between notebooks. “Remove from notebook” keeps the chat in Recent without deleting it.</div><div><b style="color:var(--txt)">Incognito</b><br>Incognito chats stay in memory only and do not appear in saved chat history.</div></div><button type="button" class="mbtn" style="margin-top:20px" onclick="closeChatHelp()">Done</button></div>';
+        modal.addEventListener("click", event => { if(event.target === modal) closeChatHelp(); });
+        document.body.appendChild(modal);
+      }
+      modal.style.display = "flex";
+      modal.querySelector(".close")?.focus();
+    }
+
+    function closeChatHelp() {
+      const modal = getEl("chatHelpModal");
+      if(modal) modal.style.display = "none";
+    }
+
+    function openConversationFeedback(id) {
+      closeChatContextMenu();
+      openSettingsModal("general");
+      const field = getEl("feedbackInput");
+      const chat = id && chatSessions[id] && !chatSessions[id].incognito ? chatSessions[id] : null;
+      if(field && chat && !field.value.trim()) field.value = 'Feedback about "' + (chat.title || "Untitled chat") + '": ';
+      if(field) setTimeout(() => field.focus(), 80);
+    }
+
+    function closeChatContextMenu() {
+      const menu = getEl("contextMenu");
+      if(menu) menu.style.display = "none";
+      getEl("topbarMoreBtn")?.setAttribute("aria-expanded", "false");
+    }
+
+    function toggleTopbarMoreMenu(event) {
+      event?.preventDefault();
+      event?.stopPropagation();
+      const menu = getEl("contextMenu");
+      if(menu && menu.style.display === "block" && menu.dataset.source === "topbar") {
+        closeChatContextMenu();
+        return;
+      }
+      const onNonChatPage = document.body.classList.contains("home-active") ||
+        document.body.classList.contains("notebook-open") ||
+        document.body.hasAttribute("data-media-mode") ||
+        document.body.classList.contains("plugins-page-active");
+      showChatContextMenu(onNonChatPage ? null : currentChatId, 0, 0, "topbar");
+    }
+
+    function showChatContextMenu(id, x, y, source) {
+      source = source || "chat";
       const menu = getEl("contextMenu");
       if(!menu) return;
+      const candidate = id && chatSessions[id];
+      const chat = candidate && !candidate.incognito ? candidate : null;
+      if(source !== "topbar" && !chat) return;
+      contextMenuTargetId = chat ? id : null;
+      menu.dataset.source = source;
+
+      const hasChat = !!chat;
+      const hasNotebook = !!(chat && chat.notebookId && getNotebooks().some(notebook => notebook && notebook.id === chat.notebookId));
+      ["contextMenuShareBtn","contextMenuPinBtn","contextMenuMoveBtn","contextMenuRenameBtn","contextMenuDeleteBtn"].forEach(actionId => {
+        const action = getEl(actionId);
+        if(action) action.style.display = hasChat ? "flex" : "none";
+      });
+      const removeNotebook = getEl("contextMenuRemoveNotebookBtn");
+      if(removeNotebook) removeNotebook.style.display = hasNotebook ? "flex" : "none";
+      const pinLabel = getEl("contextMenuPinBtn")?.querySelector(".context-label");
+      if(pinLabel) pinLabel.textContent = chat?.pinned ? "Unpin" : "Pin";
+      const incognitoLabel = getEl("contextMenuIncognitoBtn")?.querySelector(".context-label");
+      if(incognitoLabel) incognitoLabel.textContent = source === "topbar" && incognitoMode ? "Exit incognito chat" : "New incognito chat";
+
       menu.style.display = "block";
-      const width = menu.offsetWidth || 190;
-      const height = menu.offsetHeight || 78;
-      menu.style.left = Math.max(8, Math.min(Number(x) || 8, innerWidth - width - 8)) + "px";
-      menu.style.top = Math.max(8, Math.min(Number(y) || 8, innerHeight - height - 8)) + "px";
+      const width = menu.offsetWidth || 258;
+      const height = menu.offsetHeight || 360;
+      let left = Number(x) || 8;
+      let top = Number(y) || 8;
+      if(source === "topbar") {
+        const button = getEl("topbarMoreBtn");
+        const rect = button?.getBoundingClientRect();
+        if(rect) {
+          left = rect.right - width;
+          top = rect.bottom + 7;
+          if(top + height > innerHeight - 8) top = rect.top - height - 7;
+        }
+      }
+      menu.style.left = Math.max(8, Math.min(left, innerWidth - width - 8)) + "px";
+      menu.style.top = Math.max(8, Math.min(top, innerHeight - Math.min(height, innerHeight - 16) - 8)) + "px";
+      getEl("topbarMoreBtn")?.setAttribute("aria-expanded", source === "topbar" ? "true" : "false");
     }
 
     function openMoveChatToNotebook(chatId) {
@@ -11137,6 +11391,7 @@ body[data-media-mode="video"] .composer .hint {
       if(!chat || chat.incognito || !notebook) return closeNotebookMoveModal();
       const previousNotebookId = chat.notebookId;
       chat.notebookId = notebook.id;
+      chat.notebookUnassigned = false;
       saveChatSessions();
       closeNotebookMoveModal();
       renderSidebar();
@@ -11164,9 +11419,12 @@ body[data-media-mode="video"] .composer .hint {
       }
 
       let lastLabel = null;
-      ids.sort((a, b) => chatBucket(a).rank - chatBucket(b).rank);
+      ids.sort((a, b) => {
+        const pinOrder = Number(!!chatSessions[b]?.pinned) - Number(!!chatSessions[a]?.pinned);
+        return pinOrder || chatBucket(a).rank - chatBucket(b).rank;
+      });
       ids.forEach(id => {
-        let label = chatBucket(id).label;
+        let label = chatSessions[id]?.pinned ? "Pinned" : chatBucket(id).label;
         if(label !== lastLabel) {
           let h = document.createElement("div"); h.className = "history-head"; h.textContent = label;
           hL.appendChild(h); lastLabel = label;
@@ -11300,17 +11558,40 @@ body[data-media-mode="video"] .composer .hint {
       if(notebookWasOpen) renderNotebookWorkspace(openNotebookId);
     }
 
-    getEl("contextMenuMoveBtn").onclick = () => {
-      const targetId = contextMenuTargetId;
-      getEl("contextMenu").style.display = "none";
-      if(targetId) openMoveChatToNotebook(targetId);
-    };
-    getEl("contextMenuMoveBtn").onkeydown = e => { if(e.key === "Enter" || e.key === " ") { e.preventDefault(); getEl("contextMenuMoveBtn").click(); } };
-    getEl("contextMenuDeleteBtn").onclick = () => { if(contextMenuTargetId) { deleteChat(contextMenuTargetId); contextMenuTargetId = null; getEl("contextMenu").style.display = "none"; } };
-    getEl("contextMenuDeleteBtn").onkeydown = e => { if(e.key === "Enter" || e.key === " ") { e.preventDefault(); getEl("contextMenuDeleteBtn").click(); } };
+    function bindContextMenuAction(id, handler) {
+      const item = getEl(id);
+      if(!item) return;
+      const activate = event => {
+        event?.preventDefault();
+        event?.stopPropagation();
+        const targetId = contextMenuTargetId;
+        closeChatContextMenu();
+        handler(targetId);
+      };
+      item.onclick = activate;
+      item.onkeydown = event => {
+        if(event.key === "Enter" || event.key === " ") activate(event);
+      };
+    }
+
+    bindContextMenuAction("contextMenuShareBtn", id => { if(id) void shareChatConversation(id); });
+    bindContextMenuAction("contextMenuPinBtn", id => { if(id) togglePinChat(id); });
+    bindContextMenuAction("contextMenuMoveBtn", id => { if(id) openMoveChatToNotebook(id); });
+    bindContextMenuAction("contextMenuRemoveNotebookBtn", id => { if(id) removeChatFromNotebook(id); });
+    bindContextMenuAction("contextMenuRenameBtn", id => { if(id) renameChat(id); });
+    bindContextMenuAction("contextMenuHelpBtn", () => openChatHelp());
+    bindContextMenuAction("contextMenuFeedbackBtn", id => openConversationFeedback(id));
+    bindContextMenuAction("contextMenuIncognitoBtn", () => {
+      if(incognitoMode) closeIncognitoChat();
+      else launchIncognitoChat();
+    });
+    bindContextMenuAction("contextMenuDeleteBtn", id => {
+      if(id) deleteChat(id);
+      contextMenuTargetId = null;
+    });
     
     addEventListener("click", e => {
-      let ctx = getEl("contextMenu"); if(ctx && !ctx.contains(e.target)) ctx.style.display = "none";
+      let ctx = getEl("contextMenu"); if(ctx && !ctx.contains(e.target)) closeChatContextMenu();
       let menu = getEl("attachmentMenu"); if(menu && !menu.contains(e.target) && !getEl("attachBtn").contains(e.target)) closeAttachmentMenu();
       let modelPicker = getEl("modelDropdown"), modelPickerBtn = getEl("modelPickerBtn"); if(modelPicker && modelPickerBtn && !modelPicker.contains(e.target) && !modelPickerBtn.contains(e.target)) closeModelDropdown();
     });
@@ -11330,7 +11611,7 @@ body[data-media-mode="video"] .composer .hint {
     getEl("pinnedModal")?.addEventListener("click", e => { if(e.target === getEl("pinnedModal")) closePinnedModal(); });
     getEl("loginWallModal")?.addEventListener("click", e => { if(e.target === getEl("loginWallModal")) closeLoginWall(); });
     
-    addEventListener("keydown", e => { if(e.key === "Escape") { closeMediaLibrary(); closeProfileModal(); closeSettingsModal(); closeSandboxModal(); closePinnedModal(); closeLoginWall(); getEl("contextMenu").style.display = "none"; closeSidebar(); closeModelDropdown(); closeAttachmentMenu(); } });
+    addEventListener("keydown", e => { if(e.key === "Escape") { closeMediaLibrary(); closeProfileModal(); closeSettingsModal(); closeSandboxModal(); closePinnedModal(); closeLoginWall(); closeChatContextMenu(); closeChatHelp(); closeSidebar(); closeModelDropdown(); closeAttachmentMenu(); } });
 
 
     /* SETTINGS / PROFILE EVENT DELEGATION */
