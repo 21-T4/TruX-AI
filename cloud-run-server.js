@@ -319,6 +319,8 @@ liveSocketServer.on("connection", socket => {
           model: "gemini-3.8-live",
           config: {
             responseModalities: ["AUDIO"],
+            inputAudioTranscription: {},
+            outputAudioTranscription: {},
             systemInstruction: "You are TruX Live, a helpful real-time voice assistant. Listen carefully to the user's speech and use provided screen frames only to answer their request. Speak naturally and concisely, ask clarifying questions when needed, and do not claim to have clicked, changed, or accessed anything you have not actually done. Respect user privacy."
           },
           callbacks: {
