@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TruX-Omni</string>
+    <string name="live_notification_title">TruX Live is active</string>
+    <string name="live_notification_text">Your screen and microphone are being shared with Gemini Live. Tap Stop to end sharing.</string>
+    <string name="live_stop">Stop Live</string>
+</resources>
