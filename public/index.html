@@ -5198,6 +5198,15 @@ body[data-media-mode="video"] .composer .hint {
     #actionBtn #btnIcon { transition: none !important; }
   }
 </style>
+
+<style id="trux-native-live-state-css">
+  #actionBtn.live-active {
+    background: #343033 !important;
+    border-color: rgba(255,110,130,.26) !important;
+    color: #ff9cab !important;
+    box-shadow: none !important;
+  }
+</style>
 </head>
 <body class="home-active" data-workspace-mode="chat">
 
@@ -5856,6 +5865,10 @@ body[data-media-mode="video"] .composer .hint {
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h14A2.5 2.5 0 0 1 21.5 7v9a2.5 2.5 0 0 1-2.5 2.5H9l-5.5 3V7A2.5 2.5 0 0 1 5 4.5Z"/><path d="M12 8v4"/><path d="M12 15.5h.01"/></svg><span class="context-label">Feedback</span>
     </div>
     <div class="context-separator" role="separator"></div>
+    <div class="context-action" id="contextMenuAndroidAssistantBtn" role="menuitem" tabindex="0" style="display:none" onclick="requestTruXAndroidAssistant()">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="6"/><path d="m9.5 12 1.7 1.7 3.5-3.8"/></svg><span class="context-label">Set TruX as Android assistant</span>
+    </div>
+    <div class="context-separator" id="contextMenuAssistantSeparator" role="separator" style="display:none"></div>
     <div class="context-action" id="contextMenuIncognitoBtn" role="menuitem" tabindex="0">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5h16"/><path d="m6 10.5 1.5-4h9l1.5 4"/><circle cx="8" cy="14.5" r="2.3"/><circle cx="16" cy="14.5" r="2.3"/><path d="M10.3 14.5h3.4"/></svg><span class="context-label">New incognito chat</span>
     </div>
@@ -7209,37 +7222,40 @@ body[data-media-mode="video"] .composer .hint {
       const minComposerHeight = document.body.matches('body[data-media-mode="image"], body[data-media-mode="video"]') ? 60 : 44;
       p.style.setProperty("height", "auto", "important");
       p.style.setProperty("height", Math.max(minComposerHeight, Math.min(p.scrollHeight, 200)) + "px", "important");
-      /* Keep the active-chat composer a pill even when text wraps. */
       const bar = p.closest(".bar");
       if (bar) bar.classList.remove("multiline");
 
       const btn = getEl("actionBtn");
       const hasDraft = !!(p.value.trim() || selectedImageBase64 || pastedTextBlocks.length || fileAttachments.length);
       if (btn && !isGenerating) {
-        const nextMode = hasDraft ? "send" : "live";
+        const liveActive = window.__truxLiveState === "live" || window.__truxLiveState === "connecting";
+        const nextMode = hasDraft ? "send" : (liveActive ? "live-stop" : "live");
         btn.classList.toggle("ready", hasDraft);
         btn.classList.toggle("live", !hasDraft);
-        btn.title = hasDraft ? "Send message" : "Start Live assistant";
-        btn.setAttribute("aria-label", hasDraft ? "Send message" : "Start Live assistant");
+        btn.classList.toggle("live-active", !hasDraft && liveActive);
+        btn.title = hasDraft ? "Send message" : (liveActive ? "Stop Live assistant" : "Start Live assistant");
+        btn.setAttribute("aria-label", btn.title);
 
-        if (btn.dataset.actionMode !== nextMode) {
+        const icon = getEl("btnIcon");
+        const iconMode = btn.dataset.actionMode;
+        if (icon && iconMode !== nextMode) {
           btn.dataset.actionMode = nextMode;
-          const icon = getEl("btnIcon");
-          if (icon) {
-            const sendIcon = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
-            const liveIcon = '<path d="M3 12h2l2-5 4 10 3-14 3 9h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
-            icon.style.opacity = "0";
-            icon.style.transform = nextMode === "send" ? "translateY(3px) scale(.78)" : "translateY(-3px) scale(.78)";
+          const icons = {
+            send: '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>',
+            live: '<path d="M3 12h2l2-5 4 10 3-14 3 9h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+            "live-stop": '<rect x="6.5" y="6.5" width="11" height="11" rx="2" fill="currentColor" stroke="none"/>'
+          };
+          icon.style.opacity = "0";
+          icon.style.transform = nextMode === "send" ? "translateY(3px) scale(.78)" : "translateY(-3px) scale(.78)";
+          requestAnimationFrame(() => {
+            if (!btn.isConnected || btn.dataset.actionMode !== nextMode) return;
+            icon.innerHTML = icons[nextMode];
             requestAnimationFrame(() => {
               if (!btn.isConnected || btn.dataset.actionMode !== nextMode) return;
-              icon.innerHTML = nextMode === "send" ? sendIcon : liveIcon;
-              requestAnimationFrame(() => {
-                if (!btn.isConnected || btn.dataset.actionMode !== nextMode) return;
-                icon.style.opacity = "1";
-                icon.style.transform = "translateY(0) scale(1)";
-              });
+              icon.style.opacity = "1";
+              icon.style.transform = "translateY(0) scale(1)";
             });
-          }
+          });
         }
       }
       // Code is only auto-attached on PASTE now. Doing it while typing used to
@@ -10967,18 +10983,47 @@ body[data-media-mode="video"] .composer .hint {
       const nativeAssistant = window.TruXNativeAssistant;
       if (nativeAssistant && typeof nativeAssistant.startLiveSession === "function") {
         try {
-          const result = nativeAssistant.startLiveSession();
-          if (result && typeof result.catch === "function") {
-            result.catch(() => toast("Could not start the Live assistant.", "err"));
+          if (typeof nativeAssistant.isLiveSessionActive === "function" && nativeAssistant.isLiveSessionActive()) {
+            nativeAssistant.stopLiveSession();
+            return;
           }
+          if (!auth?.currentUser) {
+            openLoginWall();
+            return;
+          }
+          auth.currentUser.getIdToken().then(token => {
+            if (!window.TruXNativeAssistant || !token) throw new Error("Authentication token unavailable");
+            window.TruXNativeAssistant.startLiveSession(token);
+          }).catch(() => toast("Could not authenticate or start Live. Please sign in again.", "err"));
           return;
         } catch (_) {
           toast("Could not start the Live assistant.", "err");
           return;
         }
       }
-      toast("Full-screen Live needs the native TruX Android app. This web app cannot share your whole device while minimized or register as Android’s assistant.", "err");
+      toast("Whole-screen Live needs the native TruX Android app. A browser tab cannot capture your other apps while minimized.", "err");
     }
+
+    function requestTruXAndroidAssistant() {
+      closeChatContextMenu();
+      const bridge = window.TruXNativeAssistant;
+      if (!bridge || typeof bridge.requestAssistantRole !== "function") {
+        toast("Install the native TruX Android app to enable Android assistant integration.", "err");
+        return;
+      }
+      try { bridge.requestAssistantRole(); }
+      catch (_) { toast("Android assistant setup could not be opened.", "err"); }
+    }
+
+    window.__truxLiveState = "idle";
+    window.onTruxLiveState = function (state) {
+      const nextState = typeof state === "string" ? state : String(state?.state || "idle");
+      window.__truxLiveState = nextState;
+      handleInputChange();
+      if (nextState === "live") toast("TruX Live is active. Screen and microphone sharing are on.", "ok");
+      else if (nextState === "stopped") toast("TruX Live stopped.", "");
+      else if (nextState === "error") toast("TruX Live could not connect. Check your network and sign-in.", "err");
+    };
 
     addEventListener("pagehide", () => {
       if (activeTurnContext) {
@@ -11000,7 +11045,6 @@ body[data-media-mode="video"] .composer .hint {
     addEventListener("pageshow", () => {
       generationStopRequested = false;
       if (!isGenerating) {
-        getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
         getEl("actionBtn").classList.remove("stop");
       }
       handleInputChange();
@@ -11434,6 +11478,11 @@ body[data-media-mode="video"] .composer .hint {
       if(pinLabel) pinLabel.textContent = chat?.pinned ? "Unpin" : "Pin";
       const incognitoLabel = getEl("contextMenuIncognitoBtn")?.querySelector(".context-label");
       if(incognitoLabel) incognitoLabel.textContent = source === "topbar" && incognitoMode ? "Exit incognito chat" : "New incognito chat";
+      const hasNativeAssistant = !!(window.TruXNativeAssistant && typeof window.TruXNativeAssistant.requestAssistantRole === "function");
+      const androidAssistantButton = getEl("contextMenuAndroidAssistantBtn");
+      const androidAssistantSeparator = getEl("contextMenuAssistantSeparator");
+      if(androidAssistantButton) androidAssistantButton.style.display = hasNativeAssistant ? "flex" : "none";
+      if(androidAssistantSeparator) androidAssistantSeparator.style.display = hasNativeAssistant ? "block" : "none";
 
       menu.style.display = "block";
       const width = menu.offsetWidth || 258;
