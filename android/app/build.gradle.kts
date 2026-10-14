@@ -7,7 +7,7 @@ val ciVersionCode = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
 
 android {
     namespace = "website.trux.omni"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "website.trux.omni"
