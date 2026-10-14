@@ -7,12 +7,27 @@ service, and an opt-in Android assistant role. The app and companion source are
 in this repository; the web app remains at
 `https://trux-ai-workspace.trux.website/`.
 
-## Build
+## Build and signing
 
-The latest installable debug APK is published at
-https://trux-ai-workspace.trux.website/TruX-Omni-Android.apk.
-The workflow **Build TruX-Omni Android** also keeps a downloadable Actions
-artifact as a backup. This APK is for direct testing, not a Play Store release.
+The workflow **Build TruX-Omni Android** builds a native installable release APK,
+verifies its Android signature, and publishes it at:
+https://trux-ai-workspace.trux.website/TruX-Omni-Android.apk
+
+The build artifact is also available from the workflow run for 30 days. This is
+a directly installable APK, not a PWA package or Play Store release.
+
+For a stable release signature that permits future APK upgrades, add these four
+GitHub Actions repository secrets before distributing releases:
+
+- `ANDROID_KEYSTORE_BASE64`: Base64-encoded permanent Android signing keystore
+- `ANDROID_KEYSTORE_PASSWORD`: keystore password
+- `ANDROID_KEY_ALIAS`: key alias
+- `ANDROID_KEY_PASSWORD`: key password
+
+Without those secrets, CI uses the generated Android debug certificate so the APK
+is still signed and testable, but that certificate is not stable between hosted
+runners. Do not treat that fallback as a production/update-compatible signing key.
+
 The build uses Android Gradle Plugin 8.9.2, Gradle 8.11.1, and Java 17.
 
 ## Live screen and microphone sharing
