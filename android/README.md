@@ -1,14 +1,18 @@
 # TruX-Omni Android shell
 
-This native Android wrapper loads the existing TruX-Omni workspace at
-`https://trux-ai-workspace.trux.website/`. It exposes a small JavaScript bridge
-for Live and the Android assistant-role request.
+The native Android companion launches the existing TruX-Omni workspace in the
+user's normal browser so Firebase/Google sign-in keeps working. Its native side
+handles explicit Android screen-sharing permission, the Live foreground
+service, and an opt-in Android assistant role. The app and companion source are
+in this repository; the web app remains at
+`https://trux-ai-workspace.trux.website/`.
 
 ## Build
 
-Open the `android` directory in Android Studio, or use the repository workflow
-**Build TruX-Omni Android** to produce a debug APK artifact. The APK from the
-workflow is an unsigned debug build for testing, not a Play Store release.
+Use the repository workflow **Build TruX-Omni Android** to produce a debug APK
+artifact. The workflow's APK is an unsigned debug build for testing, not a Play
+Store release. The build uses Android Gradle Plugin 8.9.2, Gradle 8.11.1, and
+Java 17.
 
 ## Live screen and microphone sharing
 
