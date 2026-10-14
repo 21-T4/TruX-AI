@@ -42,8 +42,7 @@ function mimeType(file) {
     ".svg": "image/svg+xml",
     ".webp": "image/webp",
     ".ico": "image/x-icon",
-    ".txt": "text/plain; charset=utf-8",
-    ".apk": "application/vnd.android.package-archive"
+    ".txt": "text/plain; charset=utf-8"
   }[ext] || "application/octet-stream";
 }
 
@@ -172,6 +171,7 @@ async function handleApi(req, res, route, pathname) {
 
 async function serveStatic(req, res) {
   const pathname = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
+  if (pathname.toLowerCase().endsWith(".apk")) { res.statusCode = 404; return res.end("Not Found"); }
   const relative = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
   const filePath = path.resolve(PUBLIC_DIR, relative);
 
@@ -189,16 +189,17 @@ async function serveStatic(req, res) {
        browser cache, or proxy. JS/CSS/image assets may remain cacheable. */
     const extension = path.extname(filePath).toLowerCase();
     const basename = path.basename(filePath).toLowerCase();
-    if (extension === ".apk") {
-      res.setHeader("Content-Disposition", 'attachment; filename="TruX-Omni-Android.apk"');
-      res.setHeader("X-Content-Type-Options", "nosniff");
-    }
     if (extension === ".html" || basename === "sw.js") {
       res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
       res.setHeader("Pragma", "no-cache");
       res.setHeader("Expires", "0");
     }
     if (req.method === "HEAD") return res.end();
+    if (extension === ".html" && basename === "index.html") {
+      const html = await fs.promises.readFile(filePath, "utf8");
+      const scriptTag = '<script src="/pwa-enhancements.js?v=20261014-1"></script>';
+      return res.end(html.includes(scriptTag) ? html : html.replace("</body>", scriptTag + "\n</body>"));
+    }
     fs.createReadStream(filePath).pipe(res);
   } catch {
     /* Missing assets must stay 404s. Returning index.html for a missing
