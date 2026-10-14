@@ -3208,14 +3208,14 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     }
   }
   </style><style id="trux-plus-alignment-fix">
-    /* Deterministic composer geometry for all workspaces. */
+    /* Deterministic composer geometry for all workspaces. Keep Incognito beside Voice. */
     .bar {
-      grid-template-columns: 39px 39px minmax(0, 1fr) 39px !important;
+      grid-template-columns: 39px minmax(0, 1fr) 39px 39px 39px !important;
       align-items: center !important;
     }
     .bar > #attachBtn {
       grid-column: 1 !important;
-      grid-row: 1 !important;
+      grid-row: 2 !important;
       width: 39px !important;
       min-width: 39px !important;
       height: 39px !important;
@@ -3229,9 +3229,30 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       position: relative !important;
       transform: none !important;
     }
-    .bar > #voiceBtn {
+    .bar > #modelPickerContainer {
       grid-column: 2 !important;
-      grid-row: 1 !important;
+      grid-row: 2 !important;
+      min-width: 0 !important;
+      width: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: flex-start !important;
+    }
+    .bar > #incognitoBtn {
+      grid-column: 3 !important;
+      grid-row: 2 !important;
+      width: 39px !important;
+      min-width: 39px !important;
+      height: 39px !important;
+      min-height: 39px !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      align-self: center !important;
+      justify-self: center !important;
+    }
+    .bar > #voiceBtn {
+      grid-column: 4 !important;
+      grid-row: 2 !important;
       width: 39px !important;
       min-width: 39px !important;
       height: 39px !important;
@@ -3242,7 +3263,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       justify-self: center !important;
     }
     .bar > #promptInput {
-      grid-column: 3 !important;
+      grid-column: 1 / -1 !important;
       grid-row: 1 !important;
       width: 100% !important;
       min-width: 0 !important;
@@ -3250,8 +3271,8 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       align-self: center !important;
     }
     .bar > #actionBtn {
-      grid-column: 4 !important;
-      grid-row: 1 !important;
+      grid-column: 5 !important;
+      grid-row: 2 !important;
       align-self: center !important;
       justify-self: center !important;
     }
@@ -3264,14 +3285,15 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
     }
     body[data-media-mode="image"] .composer .bar,
     body[data-media-mode="video"] .composer .bar {
-      grid-template-columns: 39px 39px minmax(0, 1fr) 39px !important;
+      grid-template-columns: 39px minmax(0, 1fr) 39px 39px 39px !important;
       align-items: center !important;
     }
     @media (max-width: 420px) {
       .bar {
-        grid-template-columns: 34px 34px minmax(0, 1fr) 34px !important;
+        grid-template-columns: 34px minmax(0, 1fr) 34px 34px 34px !important;
       }
       .bar > #attachBtn,
+      .bar > #incognitoBtn,
       .bar > #voiceBtn {
         width: 34px !important;
         min-width: 34px !important;
@@ -3280,7 +3302,7 @@ body[data-home-look="split"] .chip:hover{transform:translateX(-4px);box-shadow:0
       }
       body[data-media-mode="image"] .composer .bar,
       body[data-media-mode="video"] .composer .bar {
-        grid-template-columns: 34px 34px minmax(0, 1fr) 34px !important;
+        grid-template-columns: 34px minmax(0, 1fr) 34px 34px 34px !important;
       }
     }
   </style>
