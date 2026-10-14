@@ -221,7 +221,9 @@ async function serveStatic(req, res) {
       res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
       res.setHeader("Pragma", "no-cache");
       res.setHeader("Expires", "0");
-      return fs.createReadStream(indexPath).pipe(res);
+      const html = await fs.promises.readFile(indexPath, "utf8");
+      const scriptTag = '<script src="/pwa-enhancements.js?v=20261014-1"></script>';
+      return res.end(html.includes(scriptTag) ? html : html.replace("</body>", scriptTag + "\n</body>"));
     } catch {
       res.statusCode = 500;
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
