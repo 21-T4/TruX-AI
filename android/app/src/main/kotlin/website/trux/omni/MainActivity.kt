@@ -4,106 +4,89 @@ import android.Manifest
 import android.app.Activity
 import android.app.MediaProjectionManager
 import android.app.RoleManager
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.webkit.CookieManager
-import android.webkit.JavascriptInterface
-import android.webkit.WebChromeClient
-import android.webkit.WebView
-import android.webkit.WebViewClient
-import android.widget.FrameLayout
+import android.view.Gravity
+import android.widget.TextView
 import android.widget.Toast
 
 class MainActivity : Activity() {
-    private lateinit var webView: WebView
     private var pendingFirebaseToken: String? = null
-
-    private val liveStateReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            val state = intent?.getStringExtra(LiveCaptureService.EXTRA_STATE) ?: return
-            runOnUiThread {
-                if (::webView.isInitialized) {
-                    val encoded = org.json.JSONObject.quote(state)
-                    webView.evaluateJavascript("window.onTruxLiveState && window.onTruxLiveState($encoded)", null)
-                }
-            }
-        }
-    }
-
-    inner class TruXBridge {
-        @JavascriptInterface
-        fun startLiveSession(firebaseIdToken: String) {
-            runOnUiThread { beginLiveSession(firebaseIdToken) }
-        }
-
-        @JavascriptInterface
-        fun stopLiveSession() {
-            runOnUiThread {
-                startService(Intent(this@MainActivity, LiveCaptureService::class.java).setAction(LiveCaptureService.ACTION_STOP))
-            }
-        }
-
-        @JavascriptInterface
-        fun isLiveSessionActive(): Boolean = LiveCaptureService.isRunning
-
-        @JavascriptInterface
-        fun requestAssistantRole() {
-            runOnUiThread { requestAndroidAssistantRole() }
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.statusBarColor = android.graphics.Color.rgb(21, 21, 21)
         window.navigationBarColor = android.graphics.Color.rgb(21, 21, 21)
-
-        webView = WebView(this)
-        webView.setBackgroundColor(android.graphics.Color.rgb(21, 21, 21))
-        webView.settings.javaScriptEnabled = true
-        webView.settings.domStorageEnabled = true
-        webView.settings.mediaPlaybackRequiresUserGesture = false
-        webView.settings.allowFileAccess = false
-        webView.settings.allowContentAccess = false
-        webView.settings.javaScriptCanOpenWindowsAutomatically = false
-        CookieManager.getInstance().setAcceptCookie(true)
-        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
-        webView.addJavascriptInterface(TruXBridge(), "TruXNativeAssistant")
-        webView.webChromeClient = WebChromeClient()
-        webView.webViewClient = WebViewClient()
-        setContentView(FrameLayout(this).apply {
-            setBackgroundColor(android.graphics.Color.rgb(21, 21, 21))
-            addView(webView, FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            ))
-        })
-
-        val filter = IntentFilter(LiveCaptureService.ACTION_LIVE_STATE)
-        if (Build.VERSION.SDK_INT >= 33) {
-            registerReceiver(liveStateReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
-        } else {
-            @Suppress("DEPRECATION")
-            registerReceiver(liveStateReceiver, filter)
-        }
-        webView.loadUrl(APP_URL)
+        handleLaunchIntent(intent)
     }
 
-    private fun beginLiveSession(firebaseIdToken: String) {
-        if (firebaseIdToken.isBlank()) {
-            reportState("error")
-            Toast.makeText(this, "Sign in to TruX before starting Live.", Toast.LENGTH_LONG).show()
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleLaunchIntent(intent)
+    }
+
+    private fun handleLaunchIntent(launchIntent: Intent?) {
+        val uri: Uri? = launchIntent?.data
+        if (launchIntent?.action == Intent.ACTION_VIEW && uri?.scheme == NATIVE_SCHEME) {
+            when (uri.host) {
+                "live" -> {
+                    showStatus("TruX Live\n\nApprove Android's screen-sharing prompt to begin. The ongoing notification lets you stop sharing at any time.")
+                    val token = launchIntent.getStringExtra(EXTRA_DEEPLINK_FIREBASE_TOKEN)
+                        ?: uri.getQueryParameter("token")
+                    beginLiveSession(token.orEmpty())
+                }
+                "assistant" -> {
+                    showStatus("Choose whether TruX-Omni can be your Android assistant.")
+                    requestAndroidAssistantRole()
+                }
+                else -> launchWorkspaceInBrowser()
+            }
+            return
+        }
+
+        // Keep Google/Firebase sign-in in Chrome or the user's chosen browser.
+        // Embedded WebViews are not a supported way to run Google's OAuth flow.
+        launchWorkspaceInBrowser()
+    }
+
+    private fun showStatus(message: String) {
+        setContentView(TextView(this).apply {
+            text = message
+            textSize = 16f
+            setTextColor(android.graphics.Color.WHITE)
+            gravity = Gravity.CENTER
+            setPadding(28, 28, 28, 28)
+            setBackgroundColor(android.graphics.Color.rgb(21, 21, 21))
+        })
+    }
+
+    private fun launchWorkspaceInBrowser() {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(APP_URL)))
+        } catch (_: Exception) {
+            Toast.makeText(this, "Open TruX-Omni in your browser.", Toast.LENGTH_LONG).show()
+        } finally {
+            finish()
+        }
+    }
+
+    private fun beginLiveSession(firebaseToken: String) {
+        if (firebaseToken.isBlank()) {
+            Toast.makeText(this, "Sign in to TruX in your browser before starting Live.", Toast.LENGTH_LONG).show()
+            finish()
             return
         }
         if (LiveCaptureService.isRunning) {
             startService(Intent(this, LiveCaptureService::class.java).setAction(LiveCaptureService.ACTION_STOP))
+            finish()
             return
         }
-        pendingFirebaseToken = firebaseIdToken
+        pendingFirebaseToken = firebaseToken
 
         if (Build.VERSION.SDK_INT >= 33 &&
             checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -127,7 +110,7 @@ class MainActivity : Activity() {
         startActivityForResult(manager.createScreenCaptureIntent(), REQUEST_SCREEN_CAPTURE)
     }
 
-    @Deprecated("Android activity-result APIs are kept compatible with the native permission flow.")
+    @Deprecated("Android result callbacks keep the MediaProjection consent flow compatible with API 26+.")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
@@ -135,8 +118,8 @@ class MainActivity : Activity() {
                 val token = pendingFirebaseToken
                 pendingFirebaseToken = null
                 if (resultCode != RESULT_OK || data == null || token.isNullOrBlank()) {
-                    reportState("stopped")
                     Toast.makeText(this, "Screen sharing was not started.", Toast.LENGTH_SHORT).show()
+                    finish()
                     return
                 }
                 val serviceIntent = Intent(this, LiveCaptureService::class.java).apply {
@@ -146,17 +129,21 @@ class MainActivity : Activity() {
                 }
                 try {
                     if (Build.VERSION.SDK_INT >= 26) startForegroundService(serviceIntent) else startService(serviceIntent)
-                    reportState("connecting")
-                    // The OS consent dialog has completed and the foreground service now owns the capture.
-                    window.decorView.postDelayed({ moveTaskToBack(true) }, 350L)
+                    // Return to the browser task after Android has granted capture.
+                    window.decorView.postDelayed({ finish() }, 350L)
                 } catch (_: Exception) {
-                    reportState("error")
                     Toast.makeText(this, "Could not start TruX Live. Please try again.", Toast.LENGTH_LONG).show()
+                    finish()
                 }
             }
             REQUEST_ASSISTANT_ROLE -> {
-                val message = if (resultCode == RESULT_OK) "TruX is now selected as your Android assistant." else "Android assistant selection was not changed."
+                val message = if (resultCode == RESULT_OK) {
+                    "TruX is selected as your Android assistant."
+                } else {
+                    "Android assistant selection was not changed."
+                }
                 Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                finish()
             }
         }
     }
@@ -171,8 +158,8 @@ class MainActivity : Activity() {
                     requestScreenShareConsent()
                 } else {
                     pendingFirebaseToken = null
-                    reportState("error")
                     Toast.makeText(this, "Microphone permission is required for voice Live.", Toast.LENGTH_LONG).show()
+                    finish()
                 }
             }
         }
@@ -181,39 +168,28 @@ class MainActivity : Activity() {
     private fun requestAndroidAssistantRole() {
         if (Build.VERSION.SDK_INT < 29) {
             Toast.makeText(this, "Android assistant selection needs Android 10 or newer.", Toast.LENGTH_LONG).show()
+            finish()
             return
         }
         val roleManager = getSystemService(RoleManager::class.java)
         if (!roleManager.isRoleAvailable(RoleManager.ROLE_ASSISTANT)) {
             Toast.makeText(this, "This Android version does not expose the assistant role.", Toast.LENGTH_LONG).show()
+            finish()
             return
         }
         if (roleManager.isRoleHeld(RoleManager.ROLE_ASSISTANT)) {
             Toast.makeText(this, "TruX is already your selected Android assistant.", Toast.LENGTH_SHORT).show()
+            finish()
             return
         }
         @Suppress("DEPRECATION")
         startActivityForResult(roleManager.createRequestRoleIntent(RoleManager.ROLE_ASSISTANT), REQUEST_ASSISTANT_ROLE)
     }
 
-    private fun reportState(state: String) {
-        if (!::webView.isInitialized) return
-        val encoded = org.json.JSONObject.quote(state)
-        webView.evaluateJavascript("window.onTruxLiveState && window.onTruxLiveState($encoded)", null)
-    }
-
-    override fun onDestroy() {
-        try { unregisterReceiver(liveStateReceiver) } catch (_: Exception) {}
-        if (::webView.isInitialized) {
-            webView.removeJavascriptInterface("TruXNativeAssistant")
-            webView.stopLoading()
-            webView.destroy()
-        }
-        super.onDestroy()
-    }
-
     companion object {
         private const val APP_URL = "https://trux-ai-workspace.trux.website/"
+        private const val NATIVE_SCHEME = "truxnative"
+        const val EXTRA_DEEPLINK_FIREBASE_TOKEN = "trux_firebase_token"
         private const val REQUEST_NOTIFICATIONS = 8101
         private const val REQUEST_MICROPHONE = 8102
         private const val REQUEST_SCREEN_CAPTURE = 8103
