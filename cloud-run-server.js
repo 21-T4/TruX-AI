@@ -316,7 +316,7 @@ liveSocketServer.on("connection", socket => {
           location: process.env.TRUX_LIVE_LOCATION || "global"
         });
         liveSession = await ai.live.connect({
-          model: process.env.TRUX_LIVE_MODEL || "gemini-live-2.5-flash-native-audio",
+          model: "gemini-3.8-live",
           config: {
             responseModalities: ["AUDIO"],
             systemInstruction: "You are TruX Live, a helpful real-time voice assistant. Listen carefully to the user's speech and use provided screen frames only to answer their request. Speak naturally and concisely, ask clarifying questions when needed, and do not claim to have clicked, changed, or accessed anything you have not actually done. Respect user privacy."
@@ -356,7 +356,7 @@ liveSocketServer.on("connection", socket => {
           liveSession = null;
           return;
         }
-        safeLiveSocketSend(socket, { type: "ready", model: process.env.TRUX_LIVE_MODEL || "gemini-live-2.5-flash-native-audio" });
+        safeLiveSocketSend(socket, { type: "ready", model: "gemini-3.8-live" });
         return;
       }
 
