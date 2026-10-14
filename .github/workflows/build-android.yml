@@ -55,6 +55,10 @@ jobs:
 
       - name: Publish APK at the public TruX-Omni download URL
         run: |
+          # Anchor the generated binary on the current main branch. The build
+          # may have started before HTML/README commits landed on main.
+          git fetch origin main
+          git checkout -B trux-apk-publish origin/main
           cp android/app/build/outputs/apk/debug/app-debug.apk public/TruX-Omni-Android.apk
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
