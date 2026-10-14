@@ -61,7 +61,24 @@ jobs:
             } >> "$GITHUB_ENV"
             echo "::notice::Using the configured persistent Android release certificate."
           else
-            echo "::warning::No persistent signing key is configured. The APK will be signed with the generated debug certificate for testing only. Configure ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD as repository Actions secrets for update-compatible releases."
+            KEYSTORE_PATH="$RUNNER_TEMP/trux-omni-ci-release.jks"
+            KEY_PASSWORD="$(openssl rand -hex 24)"
+            keytool -genkeypair -noprompt \
+              -storetype JKS \
+              -keystore "$KEYSTORE_PATH" \
+              -storepass "$KEY_PASSWORD" \
+              -keypass "$KEY_PASSWORD" \
+              -alias "trux-omni-ci" \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=TruX-Omni, OU=Android, O=TruX-Technologies, C=IN"
+            test -s "$KEYSTORE_PATH"
+            {
+              echo "ANDROID_KEYSTORE_PATH=$KEYSTORE_PATH"
+              echo "ANDROID_KEYSTORE_PASSWORD=$KEY_PASSWORD"
+              echo "ANDROID_KEY_ALIAS=trux-omni-ci"
+              echo "ANDROID_KEY_PASSWORD=$KEY_PASSWORD"
+            } >> "$GITHUB_ENV"
+            echo "::warning::No persistent release key is configured. A temporary signing key was generated for this run. The APK is signed and installable, but future builds will require the same permanent keystore to upgrade this installation. Configure the four ANDROID_KEYSTORE_* secrets for stable releases."
           fi
 
       - name: Build native release APK
