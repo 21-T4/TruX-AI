@@ -9,20 +9,21 @@ on:
       - ".github/workflows/build-android.yml"
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: trux-android-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
+    name: Build and verify signed APK
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up Java
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -36,53 +37,105 @@ jobs:
         with:
           gradle-version: "8.11.1"
 
-      - name: Check Cloud Run server syntax
-        run: node --check cloud-run-server.js
+      - name: Configure persistent Android signing key when available
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          if [[ -n "$ANDROID_KEYSTORE_BASE64" ]]; then
+            if [[ -z "$ANDROID_KEYSTORE_PASSWORD" || -z "$ANDROID_KEY_ALIAS" || -z "$ANDROID_KEY_PASSWORD" ]]; then
+              echo "::error::ANDROID_KEYSTORE_BASE64 is set, but one or more signing secrets are missing."
+              exit 1
+            fi
+            KEYSTORE_PATH="$RUNNER_TEMP/trux-omni-release.jks"
+            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+            test -s "$KEYSTORE_PATH"
+            {
+              echo "ANDROID_KEYSTORE_PATH=$KEYSTORE_PATH"
+              echo "ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD"
+              echo "ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS"
+              echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD"
+            } >> "$GITHUB_ENV"
+            echo "::notice::Using the configured persistent Android release certificate."
+          else
+            echo "::warning::No persistent signing key is configured. The APK will be signed with the generated debug certificate for testing only. Configure ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD as repository Actions secrets for update-compatible releases."
+          fi
 
-      - name: Build debug APK
-        run: gradle -p android --no-daemon assembleDebug
+      - name: Build native release APK
+        run: gradle -p android --no-daemon --stacktrace assembleRelease
 
-      - name: Upload debug APK
+      - name: Verify signature and prepare download
+        shell: bash
+        run: |
+          APK="android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK"
+          APKSIGNER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          if [[ -z "$APKSIGNER" || ! -x "$APKSIGNER" ]]; then
+            echo "::error::Android apksigner was not found; refusing to publish an unverified APK."
+            exit 1
+          fi
+          "$APKSIGNER" verify --verbose --print-certs "$APK"
+          cp "$APK" "$RUNNER_TEMP/TruX-Omni-Android.apk"
+
+      - name: Upload signed APK build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: trux-omni-android-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: trux-omni-android-release
+          path: ${{ runner.temp }}/TruX-Omni-Android.apk
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
 
-      - name: Prepare named companion APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk TruX-Omni-Android.apk
+  publish:
+    name: Publish APK download
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
 
-      - name: Publish APK at the public TruX-Omni download URL
+      - name: Download verified APK
+        uses: actions/download-artifact@v4
+        with:
+          name: trux-omni-android-release
+          path: dist
+
+      - name: Publish APK at the public TruX-Omni app URL
+        shell: bash
         run: |
-          # Anchor the generated binary on the current main branch. The build
-          # may have started before HTML/README commits landed on main.
+          test -s "dist/TruX-Omni-Android.apk"
+          cp "dist/TruX-Omni-Android.apk" "$RUNNER_TEMP/TruX-Omni-Android.apk"
           git fetch origin main
           git checkout -B trux-apk-publish origin/main
-          cp android/app/build/outputs/apk/debug/app-debug.apk public/TruX-Omni-Android.apk
+          install -D "$RUNNER_TEMP/TruX-Omni-Android.apk" public/TruX-Omni-Android.apk
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add public/TruX-Omni-Android.apk
           if git diff --cached --quiet; then
-            echo "The companion APK has not changed."
+            echo "The published APK is already current."
           else
-            git commit -m "Publish TruX-Omni Android companion APK"
+            git commit -m "Publish signed TruX-Omni Android APK"
             git push origin HEAD:main
           fi
+          cp "$RUNNER_TEMP/TruX-Omni-Android.apk" TruX-Omni-Android.apk
 
-      - name: Publish companion APK download
-        uses: softprops/action-gh-release@v3
+      - name: Publish companion release asset
+        uses: softprops/action-gh-release@v3.0.3
         with:
           tag_name: trux-android-latest
           target_commitish: main
           name: TruX-Omni Android Companion (Latest)
           body: |
-            Installable TruX-Omni Android companion build from the main branch.
-            This debug APK is for direct testing and enables native Android Live screen sharing and assistant-role registration.
+            Native TruX-Omni Android APK. The APK signature is verified during build.
+            For update-compatible installs, the owner must configure the four persistent Android signing secrets in repository Actions settings.
           prerelease: true
           draft: false
           overwrite_files: true
           files: TruX-Omni-Android.apk
           fail_on_unmatched_files: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
