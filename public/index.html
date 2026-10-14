@@ -6086,12 +6086,52 @@ body[data-media-mode="video"] .composer .hint {
     function openLoginWall() { getEl("loginWallModal").classList.add("active"); }
     function closeLoginWall() { getEl("loginWallModal").classList.remove("active"); }
 
+    const TRUX_ANDROID_APK_URL = "https://github.com/21-T4/TruX-AI/releases/download/trux-android-latest/TruX-Omni-Android.apk";
+    const TRUX_ANDROID_BUILD_URL = "https://github.com/21-T4/TruX-AI/actions/workflows/build-android.yml";
+
+    function closeAndroidCompanionInstallDialog() {
+      getEl("androidCompanionInstallModal")?.classList.remove("active");
+    }
+
+    function showAndroidCompanionInstallDialog() {
+      let modal = getEl("androidCompanionInstallModal");
+      if (!modal) {
+        modal = document.createElement("div");
+        modal.className = "modal";
+        modal.id = "androidCompanionInstallModal";
+        modal.setAttribute("role", "dialog");
+        modal.setAttribute("aria-modal", "true");
+        modal.setAttribute("aria-labelledby", "androidCompanionInstallTitle");
+        modal.innerHTML = `
+          <div class="card" style="width:min(540px,100%);max-height:84vh;overflow:auto;text-align:left">
+            <button class="close" type="button" onclick="closeAndroidCompanionInstallDialog()" aria-label="Close">×</button>
+            <div class="mtitle" id="androidCompanionInstallTitle">Enable TruX Live on Android</div>
+            <div class="msub">A browser tab cannot keep sharing your whole screen after it is minimized. Install the native companion once; Android will then ask for screen-sharing permission whenever Live starts.</div>
+            <div style="display:grid;gap:11px;margin-top:18px;font-size:13px;line-height:1.55;color:var(--txt-2)">
+              <div><b style="color:var(--txt)">1. Download and install</b><br>Download the APK below and open it on your Android phone. Approve Android's installer prompt if asked.</div>
+              <div><b style="color:var(--txt)">2. Sign in</b><br>Open TruX-Omni and sign in to your usual account in your browser.</div>
+              <div><b style="color:var(--txt)">3. Start Live again</b><br>Tap Live and approve the microphone and screen-sharing prompts. Android's persistent notification lets you stop sharing at any time.</div>
+              <div style="font-size:12px;color:var(--txt-3)">To make TruX your system assistant, install the companion first, then choose <b>Set TruX as Android assistant</b> from the three-dot menu and confirm it in Android's system dialog.</div>
+            </div>
+            <a class="mbtn" href="${TRUX_ANDROID_APK_URL}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:center;text-decoration:none;width:100%;margin-top:20px">Download Android companion APK</a>
+            <a href="${TRUX_ANDROID_BUILD_URL}" target="_blank" rel="noopener noreferrer" style="display:block;margin-top:12px;text-align:center;color:var(--txt-3);font-size:12px;text-decoration:underline">Build status / backup download</a>
+            <button class="mbtn" type="button" onclick="closeAndroidCompanionInstallDialog()" style="width:100%;margin-top:10px">Not now</button>
+          </div>`;
+        modal.addEventListener("click", event => {
+          if (event.target === modal) closeAndroidCompanionInstallDialog();
+        });
+        document.body.appendChild(modal);
+      }
+      modal.classList.add("active");
+      modal.querySelector(".close")?.focus();
+    }
+
     try {
       const currentUrl = new URL(location.href);
       if (currentUrl.searchParams.get("truxNativeMissing") === "1") {
         currentUrl.searchParams.delete("truxNativeMissing");
         history.replaceState(history.state, "", currentUrl.toString());
-        setTimeout(() => toast("Install the TruX-Omni Android companion to enable Live screen sharing and Android assistant integration.", "err"), 800);
+        setTimeout(showAndroidCompanionInstallDialog, 350);
       }
     } catch {}
 
