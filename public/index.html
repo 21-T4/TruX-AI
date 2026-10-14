@@ -4969,6 +4969,70 @@ body[data-media-mode="video"] .composer .hint {
       align-self: stretch !important;
     }
 </style>
+
+<style id="trux-header-incognito-avatar-fix">
+  /* One shared header for Chat and TruX-Code: Incognito sits directly beside Profile. */
+  .topbar-right { gap: 8px !important; flex-shrink: 0 !important; min-width: max-content !important; }
+  .topbar-right > #incognitoBtn {
+    display: grid !important; place-items: center !important; flex: 0 0 40px !important;
+    width: 40px !important; min-width: 40px !important; height: 40px !important; min-height: 40px !important;
+    margin: 0 !important; padding: 0 !important; box-sizing: border-box !important;
+    border-radius: 50% !important; border: 1px solid rgba(255,255,255,.10) !important;
+    background: transparent !important; color: var(--txt-2) !important;
+    align-self: center !important; justify-self: center !important;
+  }
+  .topbar-right > #incognitoBtn svg { width: 21px !important; height: 21px !important; }
+  .topbar-right > #incognitoBtn:hover { background: rgba(255,255,255,.06) !important; border-color: rgba(255,255,255,.18) !important; }
+  .topbar-right > #topProfileBtn {
+    flex: 0 0 40px !important; width: 40px !important; min-width: 40px !important;
+    height: 40px !important; min-height: 40px !important; border-radius: 50% !important;
+    border: 1px solid rgba(255,255,255,.10) !important; padding: 0 !important;
+  }
+  #topProfileAvatar {
+    display: block !important; width: 30px !important; height: 30px !important;
+    flex: 0 0 30px !important; border-radius: 50% !important; object-fit: cover !important;
+    overflow: hidden !important; border: 1px solid var(--line-2) !important; background: var(--bg-2) !important;
+  }
+
+  /* Removing Incognito from the composer leaves four controls: attach, model, voice, send. */
+  .bar {
+    grid-template-columns: 40px minmax(0, 1fr) 40px 48px !important;
+  }
+  .bar > #attachBtn { grid-column: 1 !important; grid-row: 2 !important; }
+  .bar > #modelPickerContainer {
+    grid-column: 2 !important; grid-row: 2 !important; min-width: 0 !important;
+    width: 100% !important; display: flex !important; align-items: center !important;
+    justify-content: flex-start !important;
+  }
+  .bar > #voiceBtn { grid-column: 3 !important; grid-row: 2 !important; }
+  .bar > #promptInput {
+    grid-column: 1 / -1 !important; grid-row: 1 !important;
+    width: 100% !important; min-width: 0 !important; justify-self: stretch !important;
+  }
+  .bar > #actionBtn { grid-column: 4 !important; grid-row: 2 !important; }
+
+  body[data-media-mode="image"] .composer .bar,
+  body[data-media-mode="video"] .composer .bar {
+    grid-template-columns: 40px minmax(0, 1fr) 40px 48px !important;
+  }
+  @media (max-width: 520px) {
+    .trux-mode-switch {
+      max-width: calc(100vw - 170px) !important; min-width: 136px !important;
+    }
+  }
+  @media (max-width: 420px) {
+    .bar { grid-template-columns: 34px minmax(0, 1fr) 34px 42px !important; }
+    body[data-media-mode="image"] .composer .bar,
+    body[data-media-mode="video"] .composer .bar {
+      grid-template-columns: 34px minmax(0, 1fr) 34px 42px !important;
+    }
+    .bar > #attachBtn, .bar > #voiceBtn {
+      width: 34px !important; min-width: 34px !important; height: 34px !important; min-height: 34px !important;
+    }
+    .bar > #actionBtn { width: 42px !important; min-width: 42px !important; height: 42px !important; }
+  }
+</style>
+
 </head>
 <body class="home-active" data-workspace-mode="chat">
 
@@ -5190,8 +5254,14 @@ body[data-media-mode="video"] .composer .hint {
         </div>
 
         <div class="topbar-right">
+          <button type="button" class="icon-btn incognito-btn" id="incognitoBtn" onclick="launchIncognitoChat()" title="New incognito chat" aria-label="Start new incognito chat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 10.5h16"/><path d="m6 10.5 1.5-4h9l1.5 4"/>
+              <circle cx="8" cy="14.5" r="2.3"/><circle cx="16" cy="14.5" r="2.3"/><path d="M10.3 14.5h3.4"/>
+            </svg>
+          </button>
           <button type="button" class="top-profile-btn" id="topProfileBtn" onclick="handleAuthAction()" title="Profile" aria-label="Open profile">
-            <span class="top-profile-avatar" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.5 20c.6-3.4 2.8-5.2 6.5-5.2s5.9 1.8 6.5 5.2"></path></svg></span>
+            <img class="top-profile-avatar" id="topProfileAvatar" src="https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff" alt="" aria-hidden="true" referrerpolicy="no-referrer">
           </button>
         </div>
       </div>
@@ -5337,12 +5407,7 @@ body[data-media-mode="video"] .composer .hint {
                 </div>
               </div>
             </div>
-            <button type="button" class="icon-btn incognito-btn" id="incognitoBtn" onclick="launchIncognitoChat()" title="New incognito chat" aria-label="Start new incognito chat">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 10.5h16"/><path d="m6 10.5 1.5-4h9l1.5 4"/>
-                <circle cx="8" cy="14.5" r="2.3"/><circle cx="16" cy="14.5" r="2.3"/><path d="M10.3 14.5h3.4"/>
-              </svg>
-            </button>
+
             <button class="icon-btn" id="voiceBtn" onclick="toggleVoiceInput()" title="Voice input" aria-label="Voice input">
               <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8"/></svg>
             </button>
@@ -5705,7 +5770,7 @@ body[data-media-mode="video"] .composer .hint {
         if (cached && cached.email) {
           if (getEl("userName")) getEl("userName").innerText = cached.displayName || "User";
           if (getEl("userEmail")) getEl("userEmail").innerText = cached.email || "";
-          if (getEl("userAvatar") && cached.photoURL) getEl("userAvatar").src = cached.photoURL;
+          applyStoredAvatar(cached);
           document.body.classList.add("user-signed-in");
         }
       } catch (e) {}
@@ -5761,6 +5826,7 @@ body[data-media-mode="video"] .composer .hint {
           if (getEl("userName")) getEl("userName").innerText = "Guest User";
           if (getEl("userEmail")) getEl("userEmail").innerText = "Tap to sign in";
           if (getEl("userAvatar")) getEl("userAvatar").src = "https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff";
+          if (getEl("topProfileAvatar")) getEl("topProfileAvatar").src = "https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff";
         }
       });
     }
@@ -6148,6 +6214,7 @@ body[data-media-mode="video"] .composer .hint {
       const src=override || (user && user.photoURL) || "https://ui-avatars.com/api/?name=User&background=111111&color=fff";
       if(getEl("userAvatar")) getEl("userAvatar").src=src;
       if(getEl("modalAvatar")) getEl("modalAvatar").src=src;
+      if(getEl("topProfileAvatar")) getEl("topProfileAvatar").src=src;
     }
 
     function openAvatarPicker(){
