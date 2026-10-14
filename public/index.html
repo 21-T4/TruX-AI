@@ -4971,9 +4971,10 @@ body[data-media-mode="video"] .composer .hint {
 </style>
 
 <style id="trux-header-incognito-avatar-fix">
-  /* One shared header for Chat and TruX-Code: Incognito sits directly beside Profile. */
+  /* One shared header for Chat and TruX-Code: Incognito sits on the menu side, away from Profile. */
+  .topbar-left { gap: 8px !important; flex-shrink: 0 !important; min-width: max-content !important; }
   .topbar-right { gap: 8px !important; flex-shrink: 0 !important; min-width: max-content !important; }
-  .topbar-right > #incognitoBtn {
+  .topbar-left > #incognitoBtn {
     display: grid !important; place-items: center !important; flex: 0 0 40px !important;
     width: 40px !important; min-width: 40px !important; height: 40px !important; min-height: 40px !important;
     margin: 0 !important; padding: 0 !important; box-sizing: border-box !important;
@@ -4981,8 +4982,8 @@ body[data-media-mode="video"] .composer .hint {
     background: transparent !important; color: var(--txt-2) !important;
     align-self: center !important; justify-self: center !important;
   }
-  .topbar-right > #incognitoBtn svg { width: 21px !important; height: 21px !important; }
-  .topbar-right > #incognitoBtn:hover { background: rgba(255,255,255,.06) !important; border-color: rgba(255,255,255,.18) !important; }
+  .topbar-left > #incognitoBtn svg { width: 21px !important; height: 21px !important; }
+  .topbar-left > #incognitoBtn:hover { background: rgba(255,255,255,.06) !important; border-color: rgba(255,255,255,.18) !important; }
   .topbar-right > #topProfileBtn {
     flex: 0 0 40px !important; width: 40px !important; min-width: 40px !important;
     height: 40px !important; min-height: 40px !important; border-radius: 50% !important;
@@ -5241,6 +5242,12 @@ body[data-media-mode="video"] .composer .hint {
           <button class="top-btn mobile-new" onclick="startNewChat()" title="New chat" aria-label="New chat">
             <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
           </button>
+          <button type="button" class="icon-btn incognito-btn" id="incognitoBtn" onclick="launchIncognitoChat()" title="New incognito chat" aria-label="Start new incognito chat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 10.5h16"/><path d="m6 10.5 1.5-4h9l1.5 4"/>
+              <circle cx="8" cy="14.5" r="2.3"/><circle cx="16" cy="14.5" r="2.3"/><path d="M10.3 14.5h3.4"/>
+            </svg>
+          </button>
         </div>
 
         <div class="trux-mode-switch" id="truxModeSwitch" aria-label="Workspace mode">
@@ -5254,12 +5261,7 @@ body[data-media-mode="video"] .composer .hint {
         </div>
 
         <div class="topbar-right">
-          <button type="button" class="icon-btn incognito-btn" id="incognitoBtn" onclick="launchIncognitoChat()" title="New incognito chat" aria-label="Start new incognito chat">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 10.5h16"/><path d="m6 10.5 1.5-4h9l1.5 4"/>
-              <circle cx="8" cy="14.5" r="2.3"/><circle cx="16" cy="14.5" r="2.3"/><path d="M10.3 14.5h3.4"/>
-            </svg>
-          </button>
+
           <button type="button" class="top-profile-btn" id="topProfileBtn" onclick="handleAuthAction()" title="Profile" aria-label="Open profile">
             <img class="top-profile-avatar" id="topProfileAvatar" src="https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff" alt="" aria-hidden="true" referrerpolicy="no-referrer">
           </button>
