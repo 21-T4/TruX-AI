@@ -42,7 +42,8 @@ function mimeType(file) {
     ".svg": "image/svg+xml",
     ".webp": "image/webp",
     ".ico": "image/x-icon",
-    ".txt": "text/plain; charset=utf-8"
+    ".txt": "text/plain; charset=utf-8",
+    ".apk": "application/vnd.android.package-archive"
   }[ext] || "application/octet-stream";
 }
 
