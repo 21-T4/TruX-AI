@@ -108,7 +108,7 @@ async function getVertexAIClient() {
 
   if (!vertexAIClient || vertexAIClientConfigKey !== configKey) {
     vertexAIClient = new GoogleGenAI({
-      vertexai: true,
+      enterprise: true,
       project: projectId,
       location: 'global'
     });
