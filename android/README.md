@@ -9,10 +9,11 @@ in this repository; the web app remains at
 
 ## Build
 
-Use the repository workflow **Build TruX-Omni Android** to produce a debug APK
-artifact. The workflow's APK is an unsigned debug build for testing, not a Play
-Store release. The build uses Android Gradle Plugin 8.9.2, Gradle 8.11.1, and
-Java 17.
+The latest installable debug APK is published at
+https://github.com/21-T4/TruX-AI/releases/download/trux-android-latest/TruX-Omni-Android.apk.
+The workflow **Build TruX-Omni Android** also keeps a downloadable Actions
+artifact as a backup. This APK is for direct testing, not a Play Store release.
+The build uses Android Gradle Plugin 8.9.2, Gradle 8.11.1, and Java 17.
 
 ## Live screen and microphone sharing
 
