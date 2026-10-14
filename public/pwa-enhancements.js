@@ -152,7 +152,7 @@
         else if (record.target instanceof Element) scan(record.target.closest(".trux-diagram") || record.target);
       }
     });
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style"] });
+    observer.observe(document.body, { childList: true, subtree: true });
   }
 
   function installLiveUi() {
@@ -359,8 +359,10 @@
     const action = byId("actionBtn");
     if (action) {
       action.addEventListener("click", event => {
+        if (action.classList.contains("stop")) return;
         const draft = byId("promptInput");
-        if (!draft?.value.trim() && !(window.selectedImageBase64 || window.fileAttachments?.length || window.pastedTextBlocks?.length)) {
+        const hasDraft = !!(draft?.value.trim() || action.classList.contains("ready"));
+        if (!hasDraft) {
           event.preventDefault();
           event.stopImmediatePropagation();
           start();
