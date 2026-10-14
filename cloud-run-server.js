@@ -3,6 +3,9 @@ import fs from "node:fs";
 import { Readable } from "node:stream";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { GoogleGenAI } from "@google/genai";
+import { WebSocket, WebSocketServer } from "ws";
+import { requireFirebaseUser } from "./functions/firebase-auth.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -221,6 +224,173 @@ async function serveStatic(req, res) {
   }
 }
 
+
+/*
+ * Authenticated native Live bridge.
+ * Native clients must first send {"type":"auth","token":"Firebase ID token"}.
+ * Screen capture/audio only flow after the user has granted Android's OS dialogs.
+ */
+const liveSocketServer = new WebSocketServer({
+  noServer: true,
+  perMessageDeflate: false,
+  maxPayload: 2 * 1024 * 1024
+});
+
+let liveGoogleProjectPromise = null;
+async function getLiveGoogleProjectId() {
+  const fromEnv = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT;
+  if (fromEnv) return fromEnv;
+  if (!liveGoogleProjectPromise) {
+    liveGoogleProjectPromise = fetch("http://metadata.google.internal/computeMetadata/v1/project/project-id", {
+      headers: { "Metadata-Flavor": "Google" },
+      signal: AbortSignal.timeout(4000)
+    }).then(async response => {
+      if (!response.ok) throw new Error("Could not determine the Google Cloud project for Live.");
+      const projectId = (await response.text()).trim();
+      if (!projectId) throw new Error("Google Cloud project ID was empty.");
+      return projectId;
+    }).catch(error => {
+      liveGoogleProjectPromise = null;
+      throw error;
+    });
+  }
+  return liveGoogleProjectPromise;
+}
+
+function safeLiveSocketSend(socket, packet) {
+  if (socket.readyState !== WebSocket.OPEN) return false;
+  try { return socket.send(JSON.stringify(packet)), true; }
+  catch { return false; }
+}
+
+liveSocketServer.on("connection", socket => {
+  let isAuthenticated = false;
+  let isConnecting = false;
+  let liveSession = null;
+  let closed = false;
+  const authTimer = setTimeout(() => {
+    if (!isAuthenticated) {
+      safeLiveSocketSend(socket, { type: "error", message: "Live authentication timed out." });
+      socket.close(1008, "Authentication required");
+    }
+  }, 12000);
+
+  const closeLiveSession = () => {
+    if (closed) return;
+    closed = true;
+    clearTimeout(authTimer);
+    try { liveSession?.close(); } catch {}
+    liveSession = null;
+  };
+
+  socket.on("message", async (raw, isBinary) => {
+    try {
+      if (isBinary) throw new Error("Live expects JSON media packets.");
+      const packet = JSON.parse(raw.toString("utf8"));
+      if (!isAuthenticated) {
+        if (packet.type !== "auth" || typeof packet.token !== "string" || packet.token.length < 20) {
+          safeLiveSocketSend(socket, { type: "error", message: "Authenticate with a valid TruX account first." });
+          socket.close(1008, "Authentication required");
+          return;
+        }
+        // Reuse the app's existing Firebase ID-token verifier.
+        await requireFirebaseUser(new Request("https://trux-live.invalid/", {
+          headers: { authorization: "Bearer " + packet.token }
+        }));
+        isAuthenticated = true;
+        clearTimeout(authTimer);
+        if (closed || socket.readyState !== WebSocket.OPEN) return;
+        isConnecting = true;
+        safeLiveSocketSend(socket, { type: "connecting" });
+
+        const project = await getLiveGoogleProjectId();
+        if (closed || socket.readyState !== WebSocket.OPEN) return;
+        const ai = new GoogleGenAI({
+          vertexai: true,
+          project,
+          location: process.env.TRUX_LIVE_LOCATION || "global"
+        });
+        liveSession = await ai.live.connect({
+          model: process.env.TRUX_LIVE_MODEL || "gemini-live-2.5-flash-native-audio",
+          config: {
+            responseModalities: ["AUDIO"],
+            systemInstruction: "You are TruX Live, a helpful real-time voice assistant. Listen carefully to the user's speech and use provided screen frames only to answer their request. Speak naturally and concisely, ask clarifying questions when needed, and do not claim to have clicked, changed, or accessed anything you have not actually done. Respect user privacy."
+          },
+          callbacks: {
+            onmessage(message) {
+              if (closed || socket.readyState !== WebSocket.OPEN) return;
+              const serverContent = message?.serverContent || message?.server_content;
+              const parts = serverContent?.modelTurn?.parts || serverContent?.model_turn?.parts || [];
+              for (const part of parts) {
+                const inline = part?.inlineData || part?.inline_data;
+                if (inline?.data) safeLiveSocketSend(socket, {
+                  type: "audio",
+                  data: inline.data,
+                  mimeType: inline.mimeType || inline.mime_type || "audio/pcm;rate=24000"
+                });
+                if (part?.text) safeLiveSocketSend(socket, { type: "transcript", role: "assistant", text: part.text });
+              }
+              const inputTranscript = serverContent?.inputTranscription?.text || serverContent?.input_transcription?.text;
+              const outputTranscript = serverContent?.outputTranscription?.text || serverContent?.output_transcription?.text;
+              if (inputTranscript) safeLiveSocketSend(socket, { type: "transcript", role: "user", text: inputTranscript });
+              if (outputTranscript) safeLiveSocketSend(socket, { type: "transcript", role: "assistant", text: outputTranscript });
+              if (serverContent?.interrupted) safeLiveSocketSend(socket, { type: "interrupted" });
+              if (serverContent?.turnComplete || serverContent?.turn_complete) safeLiveSocketSend(socket, { type: "turnComplete" });
+            },
+            onerror(error) {
+              safeLiveSocketSend(socket, { type: "error", message: String(error?.message || "Gemini Live connection error.") });
+            },
+            onclose(event) {
+              safeLiveSocketSend(socket, { type: "ended", reason: String(event?.reason || "") });
+            }
+          }
+        });
+        isConnecting = false;
+        if (closed || socket.readyState !== WebSocket.OPEN) {
+          try { liveSession.close(); } catch {}
+          liveSession = null;
+          return;
+        }
+        safeLiveSocketSend(socket, { type: "ready", model: process.env.TRUX_LIVE_MODEL || "gemini-live-2.5-flash-native-audio" });
+        return;
+      }
+
+      if (!liveSession) {
+        if (isConnecting) return;
+        throw new Error("The Live session is not ready.");
+      }
+      if (packet.type === "audio" && typeof packet.data === "string") {
+        liveSession.sendRealtimeInput({
+          audio: { data: packet.data, mimeType: "audio/pcm;rate=16000" }
+        });
+      } else if (packet.type === "video" && typeof packet.data === "string") {
+        // Gemini Live accepts screen/video frames as individual images (up to 1 fps).
+        liveSession.sendRealtimeInput({
+          video: { data: packet.data, mimeType: "image/jpeg" }
+        });
+      } else if (packet.type === "text" && typeof packet.text === "string") {
+        liveSession.sendRealtimeInput({ text: packet.text.slice(0, 4000) });
+      } else if (packet.type === "stop") {
+        safeLiveSocketSend(socket, { type: "ended", reason: "User stopped Live." });
+        closeLiveSession();
+        try { socket.close(1000, "User stopped Live"); } catch {}
+      }
+    } catch (error) {
+      safeLiveSocketSend(socket, {
+        type: "error",
+        message: isAuthenticated ? String(error?.message || "Live session failed.") : "TruX could not verify your account. Please sign in again."
+      });
+      if (!isAuthenticated) {
+        try { socket.close(1008, "Authentication failed"); } catch {}
+      }
+    }
+  });
+
+  socket.on("close", closeLiveSession);
+  socket.on("error", closeLiveSession);
+});
+
+
 const server = http.createServer(async (req, res) => {
   const pathname = new URL(req.url, "http://localhost").pathname;
   if (pathname.startsWith("/api/")) {
@@ -239,6 +409,20 @@ const server = http.createServer(async (req, res) => {
 // service request lifetime; do not add a shorter Node-level request/socket limit.
 server.requestTimeout = 0;
 server.timeout = 0;
+
+
+server.on("upgrade", (req, socket, head) => {
+  let pathname = "/";
+  try { pathname = new URL(req.url || "/", "http://localhost").pathname; } catch {}
+  if (pathname !== "/api/live") {
+    socket.write("HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n");
+    socket.destroy();
+    return;
+  }
+  liveSocketServer.handleUpgrade(req, socket, head, client => {
+    liveSocketServer.emit("connection", client, req);
+  });
+});
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`TruX-AI Cloud Run server listening on ${PORT}`);
