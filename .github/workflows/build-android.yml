@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: trux-android-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -31,6 +35,9 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.11.1"
+
+      - name: Check Cloud Run server syntax
+        run: node --check cloud-run-server.js
 
       - name: Build debug APK
         run: gradle -p android --no-daemon assembleDebug
