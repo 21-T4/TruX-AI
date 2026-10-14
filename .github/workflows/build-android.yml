@@ -9,7 +9,7 @@ on:
       - ".github/workflows/build-android.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: trux-android-${{ github.ref }}
@@ -49,3 +49,21 @@ jobs:
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
+
+      - name: Prepare named companion APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk TruX-Omni-Android.apk
+
+      - name: Publish companion APK download
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: trux-android-latest
+          name: TruX-Omni Android Companion (Latest)
+          body: |
+            Installable TruX-Omni Android companion build from the main branch.
+            This debug APK is for direct testing and enables native Android Live screen sharing and assistant-role registration.
+          prerelease: true
+          draft: false
+          overwrite_files: true
+          files: TruX-Omni-Android.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
