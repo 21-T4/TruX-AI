@@ -189,6 +189,10 @@ async function serveStatic(req, res) {
        browser cache, or proxy. JS/CSS/image assets may remain cacheable. */
     const extension = path.extname(filePath).toLowerCase();
     const basename = path.basename(filePath).toLowerCase();
+    if (extension === ".apk") {
+      res.setHeader("Content-Disposition", 'attachment; filename="TruX-Omni-Android.apk"');
+      res.setHeader("X-Content-Type-Options", "nosniff");
+    }
     if (extension === ".html" || basename === "sw.js") {
       res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
       res.setHeader("Pragma", "no-cache");
