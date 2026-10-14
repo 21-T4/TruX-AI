@@ -6086,6 +6086,15 @@ body[data-media-mode="video"] .composer .hint {
     function openLoginWall() { getEl("loginWallModal").classList.add("active"); }
     function closeLoginWall() { getEl("loginWallModal").classList.remove("active"); }
 
+    try {
+      const currentUrl = new URL(location.href);
+      if (currentUrl.searchParams.get("truxNativeMissing") === "1") {
+        currentUrl.searchParams.delete("truxNativeMissing");
+        history.replaceState(history.state, "", currentUrl.toString());
+        setTimeout(() => toast("Install the TruX-Omni Android companion to enable Live screen sharing and Android assistant integration.", "err"), 800);
+      }
+    } catch {}
+
     function handleGoogleLogin() {
       if(!auth || isSigningIn) return;
       isSigningIn = true;
@@ -10979,6 +10988,18 @@ body[data-media-mode="video"] .composer .hint {
       sendPrompt();
     }
 
+    function openTruXNativeIntent(route, extraKey, extraValue) {
+      const fallbackUrl = new URL(location.href);
+      fallbackUrl.searchParams.set("truxNativeMissing", "1");
+      const extra = extraKey ? ";S." + extraKey + "=" + encodeURIComponent(String(extraValue || "")) : "";
+      const intentUrl = "intent://" + route +
+        "#Intent;scheme=truxnative;package=website.trux.omni" +
+        extra +
+        ";S.browser_fallback_url=" + encodeURIComponent(fallbackUrl.toString()) +
+        ";end";
+      location.href = intentUrl;
+    }
+
     function startTruxLiveAssistant() {
       const nativeAssistant = window.TruXNativeAssistant;
       if (nativeAssistant && typeof nativeAssistant.startLiveSession === "function") {
@@ -11001,18 +11022,36 @@ body[data-media-mode="video"] .composer .hint {
           return;
         }
       }
-      toast("Whole-screen Live needs the native TruX Android app. A browser tab cannot capture your other apps while minimized.", "err");
+
+      if (/Android/i.test(navigator.userAgent)) {
+        if (!auth?.currentUser) {
+          openLoginWall();
+          return;
+        }
+        auth.currentUser.getIdToken().then(token => {
+          if (!token) throw new Error("Authentication token unavailable");
+          // This explicit-package Android intent only delivers the token to the
+          // installed TruX companion. Chrome falls back to this page if absent.
+          openTruXNativeIntent("live", "trux_firebase_token", token);
+        }).catch(() => toast("Could not authenticate or start Live. Please sign in again.", "err"));
+        return;
+      }
+      toast("Whole-screen Live needs the native TruX Android companion. A browser tab alone cannot share your other apps while minimized.", "err");
     }
 
     function requestTruXAndroidAssistant() {
       closeChatContextMenu();
       const bridge = window.TruXNativeAssistant;
-      if (!bridge || typeof bridge.requestAssistantRole !== "function") {
-        toast("Install the native TruX Android app to enable Android assistant integration.", "err");
+      if (bridge && typeof bridge.requestAssistantRole === "function") {
+        try { bridge.requestAssistantRole(); }
+        catch (_) { toast("Android assistant setup could not be opened.", "err"); }
         return;
       }
-      try { bridge.requestAssistantRole(); }
-      catch (_) { toast("Android assistant setup could not be opened.", "err"); }
+      if (/Android/i.test(navigator.userAgent)) {
+        openTruXNativeIntent("assistant", "", "");
+        return;
+      }
+      toast("Install the native TruX Android companion to enable Android assistant integration.", "err");
     }
 
     window.__truxLiveState = "idle";
@@ -11478,7 +11517,7 @@ body[data-media-mode="video"] .composer .hint {
       if(pinLabel) pinLabel.textContent = chat?.pinned ? "Unpin" : "Pin";
       const incognitoLabel = getEl("contextMenuIncognitoBtn")?.querySelector(".context-label");
       if(incognitoLabel) incognitoLabel.textContent = source === "topbar" && incognitoMode ? "Exit incognito chat" : "New incognito chat";
-      const hasNativeAssistant = !!(window.TruXNativeAssistant && typeof window.TruXNativeAssistant.requestAssistantRole === "function");
+      const hasNativeAssistant = !!((window.TruXNativeAssistant && typeof window.TruXNativeAssistant.requestAssistantRole === "function") || /Android/i.test(navigator.userAgent));
       const androidAssistantButton = getEl("contextMenuAndroidAssistantBtn");
       const androidAssistantSeparator = getEl("contextMenuAssistantSeparator");
       if(androidAssistantButton) androidAssistantButton.style.display = hasNativeAssistant ? "flex" : "none";
