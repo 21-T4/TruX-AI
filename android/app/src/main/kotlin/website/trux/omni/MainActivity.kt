@@ -44,14 +44,13 @@ class MainActivity : Activity() {
                     showStatus("Choose whether TruX-Omni can be your Android assistant.")
                     requestAndroidAssistantRole()
                 }
-                else -> launchWorkspaceInBrowser()
+                else -> launchWorkspace()
             }
             return
         }
 
-        // Keep Google/Firebase sign-in in Chrome or the user's chosen browser.
-        // Embedded WebViews are not a supported way to run Google's OAuth flow.
-        launchWorkspaceInBrowser()
+        // Launch the complete workspace in the installed app shell; Google/Firebase sign-in remains in Chrome's supported browser context.
+        launchWorkspace()
     }
 
     private fun showStatus(message: String) {
@@ -65,11 +64,11 @@ class MainActivity : Activity() {
         })
     }
 
-    private fun launchWorkspaceInBrowser() {
+    private fun launchWorkspace() {
         try {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(APP_URL)))
+            startActivity(Intent(this, WorkspaceActivity::class.java))
         } catch (_: Exception) {
-            Toast.makeText(this, "Open TruX-Omni in your browser.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Open TruX-Omni in Chrome and try again.", Toast.LENGTH_LONG).show()
         } finally {
             finish()
         }
@@ -129,7 +128,7 @@ class MainActivity : Activity() {
                 }
                 try {
                     if (Build.VERSION.SDK_INT >= 26) startForegroundService(serviceIntent) else startService(serviceIntent)
-                    // Return to the browser task after Android has granted capture.
+                    // Return to the TruX workspace task after Android has granted capture.
                     window.decorView.postDelayed({ finish() }, 350L)
                 } catch (_: Exception) {
                     Toast.makeText(this, "Could not start TruX Live. Please try again.", Toast.LENGTH_LONG).show()
@@ -187,7 +186,6 @@ class MainActivity : Activity() {
     }
 
     companion object {
-        private const val APP_URL = "https://trux-ai-workspace.trux.website/"
         private const val NATIVE_SCHEME = "truxnative"
         const val EXTRA_DEEPLINK_FIREBASE_TOKEN = "trux_firebase_token"
         private const val REQUEST_NOTIFICATIONS = 8101

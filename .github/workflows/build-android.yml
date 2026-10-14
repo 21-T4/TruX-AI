@@ -19,25 +19,30 @@ jobs:
   build:
     name: Build and verify signed APK
     runs-on: ubuntu-latest
+    outputs:
+      stable_signing: ${{ steps.release.outputs.stable_signing }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "17"
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
+        with:
+          packages: "platform-tools platforms;android-35 build-tools;35.0.0"
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: "8.11.1"
 
-      - name: Configure persistent Android signing key when available
+      - name: Build, sign, and verify Android app
+        id: release
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -45,114 +50,138 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         shell: bash
         run: |
-          if [[ -n "$ANDROID_KEYSTORE_BASE64" ]]; then
-            if [[ -z "$ANDROID_KEYSTORE_PASSWORD" || -z "$ANDROID_KEY_ALIAS" || -z "$ANDROID_KEY_PASSWORD" ]]; then
-              echo "::error::ANDROID_KEYSTORE_BASE64 is set, but one or more signing secrets are missing."
+          set -euo pipefail
+          KEYSTORE_PATH="$RUNNER_TEMP/trux-omni-release.p12"
+          ANY_SIGNING_SECRET="$ANDROID_KEYSTORE_BASE64$ANDROID_KEYSTORE_PASSWORD$ANDROID_KEY_ALIAS$ANDROID_KEY_PASSWORD"
+
+          if [[ -n "$ANY_SIGNING_SECRET" ]]; then
+            if [[ -z "$ANDROID_KEYSTORE_BASE64" || -z "$ANDROID_KEYSTORE_PASSWORD" || -z "$ANDROID_KEY_ALIAS" || -z "$ANDROID_KEY_PASSWORD" ]]; then
+              echo "::error::All four ANDROID_KEYSTORE_* secrets must be configured together."
               exit 1
             fi
-            KEYSTORE_PATH="$RUNNER_TEMP/trux-omni-release.jks"
             printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
             test -s "$KEYSTORE_PATH"
-            {
-              echo "ANDROID_KEYSTORE_PATH=$KEYSTORE_PATH"
-              echo "ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD"
-              echo "ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS"
-              echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD"
-            } >> "$GITHUB_ENV"
+            STORE_PASSWORD="$ANDROID_KEYSTORE_PASSWORD"
+            KEY_PASSWORD="$ANDROID_KEY_PASSWORD"
+            KEY_ALIAS="$ANDROID_KEY_ALIAS"
+            STABLE_SIGNING=true
             echo "::notice::Using the configured persistent Android release certificate."
           else
-            KEYSTORE_PATH="$RUNNER_TEMP/trux-omni-ci-release.jks"
-            KEY_PASSWORD="$(openssl rand -hex 24)"
-            keytool -genkeypair -noprompt \
-              -storetype JKS \
-              -keystore "$KEYSTORE_PATH" \
-              -storepass "$KEY_PASSWORD" \
-              -keypass "$KEY_PASSWORD" \
-              -alias "trux-omni-ci" \
-              -keyalg RSA -keysize 2048 -validity 10000 \
-              -dname "CN=TruX-Omni, OU=Android, O=TruX-Technologies, C=IN"
-            test -s "$KEYSTORE_PATH"
-            {
-              echo "ANDROID_KEYSTORE_PATH=$KEYSTORE_PATH"
-              echo "ANDROID_KEYSTORE_PASSWORD=$KEY_PASSWORD"
-              echo "ANDROID_KEY_ALIAS=trux-omni-ci"
-              echo "ANDROID_KEY_PASSWORD=$KEY_PASSWORD"
-            } >> "$GITHUB_ENV"
-            echo "::warning::No persistent release key is configured. A temporary signing key was generated for this run. The APK is signed and installable, but future builds will require the same permanent keystore to upgrade this installation. Configure the four ANDROID_KEYSTORE_* secrets for stable releases."
+            STORE_PASSWORD="$(openssl rand -hex 32)"
+            KEY_PASSWORD="$STORE_PASSWORD"
+            KEY_ALIAS="trux-omni-ci"
+            keytool -genkeypair -noprompt -storetype PKCS12 -keystore "$KEYSTORE_PATH" -storepass "$STORE_PASSWORD" -keypass "$KEY_PASSWORD" -alias "$KEY_ALIAS" -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=TruX-Omni CI, OU=Android, O=TruX, C=IN"
+            STABLE_SIGNING=false
+            echo "::warning::No permanent release signing key is configured. This signed build is an Actions artifact only; it will not replace the public download or GitHub release."
           fi
 
-      - name: Build native release APK
-        run: gradle -p android --no-daemon --stacktrace assembleRelease
+          test -s "$KEYSTORE_PATH"
+          echo "::add-mask::$STORE_PASSWORD"
+          echo "::add-mask::$KEY_PASSWORD"
 
-      - name: Verify signature and prepare download
-        shell: bash
-        run: |
-          APK="android/app/build/outputs/apk/release/app-release.apk"
-          test -s "$APK"
-          APKSIGNER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          EXPECTED_CERT_SHA256="1BC46C7DCB1016914E608C4A112652D1CAF4720679CD6513B0BED842B4B953A3"
+          CERT_SHA256="$(keytool -list -v -keystore "$KEYSTORE_PATH" -storetype PKCS12 -storepass "$STORE_PASSWORD" -alias "$KEY_ALIAS" 2>/dev/null | awk -F': ' '/SHA256:/{print $2; exit}' | tr -d ':' | tr '[:lower:]' '[:upper:]')"
+          if [[ "$STABLE_SIGNING" == "true" && "$CERT_SHA256" != "$EXPECTED_CERT_SHA256" ]]; then
+            echo "::error::The configured signing key does not match the certificate associated with the TruX-Omni website."
+            exit 1
+          fi
+
+          gradle -p android --no-daemon --stacktrace assembleRelease
+
+          SDK_ROOT="$ANDROID_HOME"
+          if [[ -z "$SDK_ROOT" ]]; then SDK_ROOT="$ANDROID_SDK_ROOT"; fi
+          if [[ -z "$SDK_ROOT" ]]; then SDK_ROOT="/usr/local/lib/android/sdk"; fi
+          APKSIGNER="$(find "$SDK_ROOT/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
           if [[ -z "$APKSIGNER" || ! -x "$APKSIGNER" ]]; then
             echo "::error::Android apksigner was not found; refusing to publish an unverified APK."
             exit 1
           fi
-          "$APKSIGNER" verify --verbose --print-certs "$APK"
-          cp "$APK" "$RUNNER_TEMP/TruX-Omni-Android.apk"
 
-      - name: Upload signed APK build artifact
-        uses: actions/upload-artifact@v4
+          UNSIGNED_APK="android/app/build/outputs/apk/release/app-release-unsigned.apk"
+          if [[ ! -s "$UNSIGNED_APK" ]]; then
+            UNSIGNED_APK="android/app/build/outputs/apk/release/app-release.apk"
+          fi
+          if [[ ! -s "$UNSIGNED_APK" ]]; then
+            echo "::error::Gradle did not produce the expected release APK."
+            find android/app/build/outputs/apk -maxdepth 3 -type f -print || true
+            exit 1
+          fi
+
+          "$APKSIGNER" sign --ks "$KEYSTORE_PATH" --ks-key-alias "$KEY_ALIAS" --ks-pass "pass:$STORE_PASSWORD" --key-pass "pass:$KEY_PASSWORD" --out "$RUNNER_TEMP/TruX-Omni-Android.apk" "$UNSIGNED_APK"
+          "$APKSIGNER" verify --verbose --print-certs "$RUNNER_TEMP/TruX-Omni-Android.apk" | tee "$RUNNER_TEMP/TruX-Omni-Android-signature.txt"
+          (cd "$RUNNER_TEMP" && sha256sum "TruX-Omni-Android.apk" > "TruX-Omni-Android.apk.sha256")
+          echo "stable_signing=$STABLE_SIGNING" >> "$GITHUB_OUTPUT"
+
+      - name: Upload signed Android build artifact
+        uses: actions/upload-artifact@v6
         with:
           name: trux-omni-android-release
-          path: ${{ runner.temp }}/TruX-Omni-Android.apk
+          path: |
+            ${{ runner.temp }}/TruX-Omni-Android.apk
+            ${{ runner.temp }}/TruX-Omni-Android.apk.sha256
+            ${{ runner.temp }}/TruX-Omni-Android-signature.txt
           if-no-files-found: error
           retention-days: 30
 
   publish:
-    name: Publish APK download
+    name: Publish verified APK download
     needs: build
+    if: needs.build.outputs.stable_signing == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           persist-credentials: true
 
-      - name: Download verified APK
-        uses: actions/download-artifact@v4
+      - name: Download verified build
+        uses: actions/download-artifact@v6
         with:
           name: trux-omni-android-release
           path: dist
 
-      - name: Publish APK at the public TruX-Omni app URL
+      - name: Publish APK and verification files
         shell: bash
         run: |
+          set -euo pipefail
           test -s "dist/TruX-Omni-Android.apk"
           cp "dist/TruX-Omni-Android.apk" "$RUNNER_TEMP/TruX-Omni-Android.apk"
+          cp "dist/TruX-Omni-Android.apk.sha256" "$RUNNER_TEMP/TruX-Omni-Android.apk.sha256"
+          cp "dist/TruX-Omni-Android-signature.txt" "$RUNNER_TEMP/TruX-Omni-Android-signature.txt"
           git fetch origin main
           git checkout -B trux-apk-publish origin/main
           install -D "$RUNNER_TEMP/TruX-Omni-Android.apk" public/TruX-Omni-Android.apk
+          install -D "$RUNNER_TEMP/TruX-Omni-Android.apk.sha256" public/TruX-Omni-Android.apk.sha256
+          install -D "$RUNNER_TEMP/TruX-Omni-Android-signature.txt" public/TruX-Omni-Android-signature.txt
+          cp "$RUNNER_TEMP/TruX-Omni-Android.apk" TruX-Omni-Android.apk
+          cp "$RUNNER_TEMP/TruX-Omni-Android.apk.sha256" TruX-Omni-Android.apk.sha256
+          cp "$RUNNER_TEMP/TruX-Omni-Android-signature.txt" TruX-Omni-Android-signature.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/TruX-Omni-Android.apk
+          git add public/TruX-Omni-Android.apk public/TruX-Omni-Android.apk.sha256 public/TruX-Omni-Android-signature.txt
           if git diff --cached --quiet; then
-            echo "The published APK is already current."
+            echo "The published APK and verification files are already current."
           else
-            git commit -m "Publish signed TruX-Omni Android APK"
+            git commit -m "Publish verified TruX-Omni Android app"
             git push origin HEAD:main
           fi
-          cp "$RUNNER_TEMP/TruX-Omni-Android.apk" TruX-Omni-Android.apk
 
-      - name: Publish companion release asset
+      - name: Publish companion release assets
         uses: softprops/action-gh-release@v3.0.3
         with:
           tag_name: trux-android-latest
           target_commitish: main
-          name: TruX-Omni Android Companion (Latest)
+          name: TruX-Omni Android App (Latest)
           body: |
-            Native TruX-Omni Android APK. The APK signature is verified during build.
-            For update-compatible installs, the owner must configure the four persistent Android signing secrets in repository Actions settings.
+            TruX-Omni Android workspace. The APK is signed and its signature and SHA-256 checksum are available in the release assets.
+            Direct APK installation may still trigger Android/Play Protect sideload warnings; the APK is not a Google Play reviewed release.
           prerelease: true
           draft: false
           overwrite_files: true
-          files: TruX-Omni-Android.apk
+          files: |
+            TruX-Omni-Android.apk
+            TruX-Omni-Android.apk.sha256
+            TruX-Omni-Android-signature.txt
           fail_on_unmatched_files: true

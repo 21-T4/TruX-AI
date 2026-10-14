@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "website.trux.omni",
+      "sha256_cert_fingerprints": [
+        "1B:C4:6C:7D:CB:10:16:91:4E:60:8C:4A:11:26:52:D1:CA:F4:72:06:79:CD:65:13:B0:BE:D8:42:B4:B9:53:A3"
+      ]
+    }
+  }
+]
