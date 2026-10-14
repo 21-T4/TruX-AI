@@ -53,6 +53,7 @@ function isDeveloperEmail(email) {
 
 const IMAGE_LIMIT = 15;
 const VIDEO_MODEL = "veo-3.1-fast-generate-001";
+const TRUX_CODE_MODEL = 'gemini-4-argon';
 const VIDEO_MAX_POLL_MS = 20 * 60 * 1000;
 const PRO_TOKEN_LIMIT = 1000000;
 const CODING_TOKEN_LIMIT = 150000;
@@ -769,8 +770,8 @@ async function streamVertexGemini({
 /* =========================================================
    REQUEST-MODEL ROUTING
    Chat requests are routed by prompt complexity. The tier still
-   controls legacy account entitlements; dedicated TruX-Code and
-   Deep Research use their existing pinned model path. Image
+   controls legacy account entitlements; TruX-Code and Deep Research
+   use separate pinned model paths. Image
    generation always uses the dedicated image model under the hood.
    ========================================================= */
 
@@ -790,8 +791,8 @@ function getVertexModel(tier) {
  * Chat-only automatic model router.
  * Short, uncomplicated turns use Flash-Lite; normal requests use Gemini 3.6 Flash;
  * complex coding, deep reasoning, multi-stage work, and large attachments
- * use Gemini 3.8 Flash. Dedicated TruX-Code and Deep Research stay pinned
- * to their existing model path.
+ * use Gemini 3.8 Flash. Dedicated TruX-Code and Deep Research are routed
+ * separately from this chat-only model selector.
  */
 function selectAutoChatModel({
   message = '',
@@ -1277,8 +1278,8 @@ export async function onRequestPost(context) {
       explicitRepoRequest ||
       isConfirmedExternalFollowup(message, history);
     const explicitCodeWork = hasExplicitCodeWorkRequest(message);
-    // TruX-Code is pinned to Gemini 3.1 Pro Preview for every turn.
-    // This flag controls reasoning instructions and tool availability only.
+    // TruX-Code defaults to Gemini 4 Argon. An explicit owner-only model
+    // selection can override the default through the existing owner UI.
     const codingNeedsDeepWork =
       codingMode && (explicitCodeWork || explicitRepoRequest || explicitExternalAction);
     const effectiveTier =
@@ -1524,9 +1525,11 @@ export async function onRequestPost(context) {
       }
       targetModel = requestedOwnerModel;
     } else {
-      targetModel = (codingMode || researchMode)
-        ? getVertexModel(effectiveTier)
-        : selectAutoChatModel({
+      targetModel = codingMode
+        ? TRUX_CODE_MODEL
+        : researchMode
+          ? getVertexModel(effectiveTier)
+          : selectAutoChatModel({
             message,
             image,
             attachments: effectiveAttachments,
