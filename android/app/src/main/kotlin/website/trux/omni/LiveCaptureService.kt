@@ -75,11 +75,11 @@ class LiveCaptureService : Service() {
 
         val firebaseToken = intent?.getStringExtra(EXTRA_FIREBASE_TOKEN).orEmpty()
         val resultCode = intent?.getIntExtra(EXTRA_PROJECTION_RESULT_CODE, 0) ?: 0
-        val resultData = if (Build.VERSION.SDK_INT >= 33) {
+        val resultData: Intent? = if (Build.VERSION.SDK_INT >= 33) {
             intent?.getParcelableExtra(EXTRA_PROJECTION_DATA, Intent::class.java)
         } else {
             @Suppress("DEPRECATION")
-            intent?.getParcelableExtra(EXTRA_PROJECTION_DATA)
+            intent?.getParcelableExtra<Intent>(EXTRA_PROJECTION_DATA)
         }
         if (firebaseToken.isBlank() || resultData == null || resultCode != Activity.RESULT_OK) {
             stopSelf()
