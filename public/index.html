@@ -7297,6 +7297,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       isGenerating = false;
       activeTurnContext = null;
       generationStopRequested = false;
+      handleInputChange();
       pastedTextBlocks = [];
       fileAttachments = [];
       selectedImageBase64 = null;
@@ -7363,6 +7364,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       activeStreamer = null;
       isGenerating = false;
       generationStopRequested = false;
+      handleInputChange();
       document.body.classList.remove("scrolled");
       stopToolStatusTyping();
       getEl("chatContainer").innerHTML = ""; getEl("chatContainer").style.display = "none";
@@ -11323,7 +11325,8 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
               generationEpoch === ownedEpoch) {
             activeAbortController=null;
           }
-          getEl("actionBtn")?.classList.remove("stop");
+          // handleInputChange must see the stale Stop class so it can
+          // also force the icon back into the current idle/send mode.
           handleInputChange();
         }
       }
