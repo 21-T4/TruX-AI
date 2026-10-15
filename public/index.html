@@ -11303,13 +11303,29 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
     async function sendPrompt() {
       if(sendPromptInFlight) return;
       sendPromptInFlight=true;
+      // sendPromptImpl runs synchronously until its first await, so this
+      // captures the generation that this serialized send owns.
+      const sendPromise = sendPromptImpl();
+      const ownedEpoch = generationEpoch;
       try {
-        return await sendPromptImpl();
+        return await sendPromise;
       } finally {
         sendPromptInFlight=false;
-        // Some abort/invalidation paths return before reaching the stream
-        // finalizer. Reconcile the control only if no newer turn is active.
-        if (!isGenerating) handleInputChange();
+        // This wrapper is the terminal boundary for the request started by
+        // this send, including Chat, TruX-Code, image routing, and video.
+        // Some branches can return after the stream has ended without passing
+        // through finalizeResponse. Only repair state when this send still
+        // owns the epoch, or when it was already invalidated/stopped. Never
+        // clear a newer generation that has taken ownership.
+        if (generationEpoch === ownedEpoch || !isGenerating) {
+          isGenerating=false;
+          if (!activeAbortController || activeAbortController.signal?.aborted ||
+              generationEpoch === ownedEpoch) {
+            activeAbortController=null;
+          }
+          getEl("actionBtn")?.classList.remove("stop");
+          handleInputChange();
+        }
       }
     }
 
