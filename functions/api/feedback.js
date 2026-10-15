@@ -40,7 +40,7 @@ export async function onRequestPost({ request, env = {} }) {
   }
 
   const type = String(body?.type || "general-feedback");
-  const label = FEEDBACK_LABELS[type];
+  const label = Object.prototype.hasOwnProperty.call(FEEDBACK_LABELS, type) ? FEEDBACK_LABELS[type] : null;
   if (!label) {
     return Response.json({ error: "Choose a valid feedback type." }, { status: 400, headers: NO_STORE });
   }
