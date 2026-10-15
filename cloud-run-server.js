@@ -26,7 +26,8 @@ const routes = {
   "/api/files/process": "./functions/api/files-process.js",
   "/api/push/config": "./functions/api/push/config.js",
   "/api/push/register": "./functions/api/push/register.js",
-  "/api/push/unregister": "./functions/api/push/unregister.js"
+  "/api/push/unregister": "./functions/api/push/unregister.js",
+  "/api/feedback": "./functions/api/feedback.js"
 };
 
 function mimeType(file) {
