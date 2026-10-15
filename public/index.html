@@ -2576,10 +2576,10 @@ body.sidebar-open .topbar{filter:brightness(.78)}
 
 
 
-#profileModal{padding:0;background:rgba(0,0,0,.82);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
-#profileModal .card{width:100%;height:100%;max-height:none;max-width:none;overflow-y:auto;margin:0;padding:0;border:0;border-radius:0;background:linear-gradient(180deg,#09090b,#050506);box-shadow:none}
+#profileModal{padding:0!important;align-items:stretch!important;justify-content:stretch!important;background:#000!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+#profileModal .card{width:100vw;height:100dvh;max-height:none;max-width:none;overflow:hidden;margin:0;padding:0;border:0;border-radius:0;background:#000;box-shadow:none}
 #profileModal .card>.close{top:18px;right:22px;z-index:4;width:40px;height:40px;border-radius:12px;font-size:27px}
-#profileModal .card>div:first-of-type{padding:34px clamp(18px,6vw,80px) 20px!important;max-width:980px;margin:0 auto}
+#profileModal .card>#profileHomePage{padding:34px clamp(18px,6vw,80px) 30px!important;max-width:none!important;width:100%!important;margin:0!important;min-height:100dvh;background:#000!important}
 #profileModal .modal-avatar{width:82px;height:82px;border-radius:23px;margin:0;border:1px solid var(--line-2);box-shadow:0 18px 42px rgba(0,0,0,.35)}
 #profileModal .mtitle{font-family:var(--font-disp);font-size:clamp(28px,5vw,44px)}
 #profileModal .msub{font-size:15px;color:var(--txt-2)}
@@ -4091,14 +4091,19 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
     }
 
     #profileModal .card{
-      width: min(640px, 94vw) !important;
-      max-height: min(88vh, 800px) !important;
-      margin: auto !important;
-      border-radius: 28px !important;
-      background: #111115 !important;
-      border: 1px solid rgba(255,255,255,0.12) !important;
-      box-shadow: 0 32px 90px rgba(0,0,0,0.8) !important;
-      padding: 28px !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      height: 100dvh !important;
+      max-width: none !important;
+      max-height: none !important;
+      min-height: 0 !important;
+      margin: 0 !important;
+      border-radius: 0 !important;
+      background: #000 !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      overflow: hidden !important;
     }
 
     .profile-meta-grid{
@@ -4765,7 +4770,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       align-items: stretch !important;
       justify-content: stretch !important;
       padding: 0 !important;
-      background: #1b1c1e !important;
+      background: #000 !important;
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
     }
@@ -4779,7 +4784,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       min-height: 0 !important;
       border-radius: 0 !important;
       overflow: hidden !important;
-      background: #1b1c1e !important;
+      background: #000 !important;
       animation: settingsListIn 240ms cubic-bezier(.16,1,.3,1) both;
     }
     @keyframes settingsListIn {
@@ -4795,7 +4800,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       min-width: 0 !important;
       min-height: 0 !important;
       height: 100% !important;
-      background: #1b1c1e !important;
+      background: #000 !important;
     }
     #profileModal .settings-topbar{
       display: flex !important;
@@ -4806,7 +4811,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       height: auto !important;
       padding: calc(12px + env(safe-area-inset-top, 0px)) clamp(18px, 4.5vw, 38px) 8px !important;
       border: 0 !important;
-      background: #1b1c1e !important;
+      background: #000 !important;
       position: relative !important;
       z-index: 2;
     }
@@ -4845,7 +4850,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       overflow-x: hidden !important;
       overflow-y: auto !important;
       padding: 0 clamp(22px, 6vw, 54px) calc(34px + env(safe-area-inset-bottom, 0px)) !important;
-      background: #1b1c1e !important;
+      background: #000 !important;
       scrollbar-width: thin;
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
@@ -5026,10 +5031,36 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
     }
   
 
+    /* Full-bleed black profile and preferences: content scrolls inside the viewport, not inside a floating card. */
+    #profileModal{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;padding:0!important;align-items:stretch!important;justify-content:stretch!important;background:#000!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+    #profileModal .profile-upgrade-card{position:relative!important;display:block!important;width:100vw!important;height:100dvh!important;max-width:none!important;max-height:none!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#000!important}
+    #profileModal .profile-home-page{display:block;width:100%;height:100%;min-height:100dvh;max-width:none!important;margin:0!important;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:calc(26px + env(safe-area-inset-top,0px)) clamp(18px,6vw,80px) calc(30px + env(safe-area-inset-bottom,0px))!important;background:#000!important;animation:profileHomeIn .34s cubic-bezier(.16,1,.3,1) both}
+    #profileModal .profile-home-page>#profileHero,#profileModal .profile-home-page>.profile-list-group-title,#profileModal .profile-home-page>.profile-option-list,#profileModal .profile-home-page>#profileDetailView,#profileModal .profile-home-page>#profileActionsRow{width:min(900px,100%);max-width:900px;margin-left:auto!important;margin-right:auto!important}
+    #profileModal .profile-home-page>#profileHero{padding:24px 0 10px!important}
+    #profileModal .profile-list-group-title{margin-top:30px!important;padding:0 2px 10px!important;color:#a2a2a7!important;font-size:12px!important;letter-spacing:.01em!important;text-transform:none!important;font-family:var(--font-body)!important}
+    #profileModal .profile-option-list{border:1px solid rgba(255,255,255,.13)!important;border-radius:20px!important;background:#111!important;box-shadow:none!important}
+    #profileModal .profile-option-row{min-height:66px!important;background:#111!important;border-bottom-color:rgba(255,255,255,.09)!important;grid-template-columns:40px minmax(0,1fr) 16px!important;gap:12px!important;padding:12px 16px!important}
+    #profileModal .profile-option-row:hover{background:#1b1b1b!important}
+    #profileModal .profile-option-copy b{font-size:15px!important;font-weight:560!important}
+    #profileModal .profile-option-copy small{font-size:12px!important;color:#929297!important}
+    #profileModal .profile-option-icon{width:34px!important;height:34px!important;border-radius:50%!important;background:#1d1d1f!important;border:0!important}
+    #profileModal .profile-meta-grid,#profileModal .owner-profile-badge{display:none!important}
+    #profileModal .settings-page{background:#000!important}
+    #profileModal .settings-main,#profileModal .settings-topbar,#profileModal .settings-main-scroll{background:#000!important}
+    #profileModal .settings-topbar>.close{display:grid!important;position:absolute!important;right:clamp(18px,4.5vw,38px)!important;top:calc(12px + env(safe-area-inset-top,0px))!important;place-items:center!important;width:42px!important;height:42px!important;border-radius:50%!important;background:#252525!important;color:#fff!important;border:1px solid rgba(255,255,255,.15)!important;font-size:26px!important;z-index:5!important}
+    #profileModal .profile-detail-view{margin-top:16px!important;padding:0!important}
+    #profileModal .settings-content{width:min(900px,100%)!important;margin:0 auto!important}
+    #profileModal .settings-section-head h2{font-size:clamp(29px,5vw,38px)!important}
+    #profileModal .settings-card{background:#111!important;border-color:rgba(255,255,255,.12)!important;box-shadow:none!important}
+    #profileModal .settings-content .instr{background:#161616!important}
+    #profileModal .profile-option-list,#profileModal .profile-detail-view{animation:profileListIn .3s cubic-bezier(.16,1,.3,1) both}
+    @media(max-width:760px){#profileModal .profile-home-page{padding:calc(18px + env(safe-area-inset-top,0px)) 16px calc(28px + env(safe-area-inset-bottom,0px))!important}#profileModal .profile-option-row{min-height:62px!important;padding:10px 12px!important}#profileModal .profile-home-page>#profileHero{padding-top:12px!important}}
+    @media(prefers-reduced-motion:reduce){#profileModal .profile-home-page,#profileModal .profile-option-list,#profileModal .profile-detail-view{animation:none!important;transition:none!important}}
+
     /* Unified profile/settings surface: a single scroll container and navigation state. */
     #profileModal .profile-upgrade-card{position:relative!important;display:block!important;overflow:hidden!important;padding:0!important;background:#000!important}
     #profileModal .profile-home-page{display:block;width:100%;height:100%;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-bottom:calc(28px + env(safe-area-inset-bottom,0px));animation:profileHomeIn .34s cubic-bezier(.16,1,.3,1) both}
-    #profileModal .settings-page{display:none!important;position:absolute!important;inset:0!important;z-index:5!important;width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;overflow:hidden!important;background:#1b1c1e!important}
+    #profileModal .settings-page{display:none!important;position:absolute!important;inset:0!important;z-index:5!important;width:100%!important;height:100%!important;height:100dvh!important;min-height:0!important;max-height:none!important;overflow:hidden!important;background:#000!important}
     #profileModal[data-settings-view="section"] .settings-page{display:flex!important;animation:settingsPageIn .34s cubic-bezier(.16,1,.3,1) both}
     #profileModal[data-settings-view] .profile-home-page{display:none!important}
     #profileModal .settings-home-list{display:none!important}
@@ -5535,45 +5566,43 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         <div style="min-width:0">
           <div class="mtitle" id="modalName">User Name</div>
           <div class="msub" id="modalEmail">user@email.com</div>
-          <span class="owner-profile-badge">✦ Owner · Verified</span>
         </div>
       </div>
-      <div class="profile-meta-grid" id="profileMetaSummary">
-        <div class="profile-meta-item"><b id="profilePlanText">Core</b><small>Workspace</small></div>
-        <div class="profile-meta-item"><b id="profileModelText">Auto</b><small>Selected model</small></div>
-        <div class="profile-meta-item"><b id="profileLimitText">Unlimited</b><small>Core limit</small></div>
-      </div>
-      <div class="profile-list-group-title profile-options-label">Account & workspace</div>
+
+      <div class="profile-list-group-title profile-options-label">Profile &amp; account</div>
       <div class="profile-option-list" id="profileOptionList">
-        <button type="button" class="profile-option-row" data-profile-page="account"><span class="profile-option-icon account-icon">G</span><span class="profile-option-copy"><b>Manage your account</b><small>Open your connected Google account</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="workspace"><span class="profile-option-icon">▣</span><span class="profile-option-copy"><b>Workspace</b><small>View your current workspace and available tools</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="upgrade"><span class="profile-option-icon">✦</span><span class="profile-option-copy"><b>Upgrade plan</b><small>Review current usage and plan limits</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="usage"><span class="profile-option-icon">◔</span><span class="profile-option-copy"><b>Usage & limits</b><small>View Core, Pro and image usage</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="personalization"><span class="profile-option-icon">✦</span><span class="profile-option-copy"><b>Personalization</b><small>Instructions, home UI looks and location access</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="notifications"><span class="profile-option-icon">♧</span><span class="profile-option-copy"><b>Notifications</b><small>Response and generation alerts</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="memory"><span class="profile-option-icon">▤</span><span class="profile-option-copy"><b>Memory & data</b><small>Import or export your local TruX-Omni</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="avatar"><span class="profile-option-icon">◌</span><span class="profile-option-copy"><b>Avatar</b><small>Choose or reset your profile image</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="appearance"><span class="profile-option-icon">◐</span><span class="profile-option-copy"><b>Appearance</b><small>Choose the TruX home experience</small></span><span class="profile-option-chevron">›</span></button>
-
-        <button type="button" class="profile-option-row" data-profile-page="help"><span class="profile-option-icon">?</span><span class="profile-option-copy"><b>Help & privacy</b><small>Privacy controls and useful shortcuts</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row profile-owner-only" data-profile-page="developer"><span class="profile-option-icon">⌘</span><span class="profile-option-copy"><b>Developer workspace</b><small>Developer-only controls and identity</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="account"><span class="profile-option-icon account-icon">◎</span><span class="profile-option-copy"><b>Account details</b><small>Profile name, email, phone and age settings</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="workspace"><span class="profile-option-icon">▣</span><span class="profile-option-copy"><b>Workspace &amp; plan</b><small>Workspace information and usage limits</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="avatar"><span class="profile-option-icon">◌</span><span class="profile-option-copy"><b>Profile photo</b><small>Choose or reset your profile image</small></span><span class="profile-option-chevron">›</span></button>
       </div>
 
-      <div class="profile-list-group-title">Settings &amp; privacy</div>
-      <div class="profile-option-list" id="profileSettingsOptionList">
-        <button type="button" class="profile-option-row" data-profile-page="general"><span class="profile-option-icon">⚙</span><span class="profile-option-copy"><b>General</b><small>Core behavior and feedback preferences</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="voice"><span class="profile-option-icon">♫</span><span class="profile-option-copy"><b>Voice</b><small>Speech playback and reading speed</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="safety"><span class="profile-option-icon">◇</span><span class="profile-option-copy"><b>Safety &amp; wellbeing</b><small>Permission and safe-use guidance</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="parental"><span class="profile-option-icon">♡</span><span class="profile-option-copy"><b>Parental controls</b><small>Availability and device-level safety options</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="security"><span class="profile-option-icon">♢</span><span class="profile-option-copy"><b>Security &amp; login</b><small>Connected account security and sign-out</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="remote"><span class="profile-option-icon">⌘</span><span class="profile-option-copy"><b>Remote control</b><small>Availability and connection information</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="storage"><span class="profile-option-icon">▤</span><span class="profile-option-copy"><b>Storage</b><small>Export chats and manage saved workspace data</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="privacy"><span class="profile-option-icon">◈</span><span class="profile-option-copy"><b>Privacy center</b><small>Understand data use and available controls</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="dataControls"><span class="profile-option-icon">▥</span><span class="profile-option-copy"><b>Data controls</b><small>Export, import, reset settings, or clear chats</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="ads"><span class="profile-option-icon">◉</span><span class="profile-option-copy"><b>Ads controls</b><small>Advertising and personalization availability</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="reportbug"><span class="profile-option-icon">!</span><span class="profile-option-copy"><b>Report a bug</b><small>Send a bug report or product feedback</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="about"><span class="profile-option-icon">i</span><span class="profile-option-copy"><b>About TruX-Omni</b><small>Workspace information and help</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="plugins"><span class="profile-option-icon">⠿</span><span class="profile-option-copy"><b>Plugins</b><small>Connected services and available integrations</small></span><span class="profile-option-chevron">›</span></button>
+      <div class="profile-list-group-title">Preferences</div>
+      <div class="profile-option-list" id="profilePreferencesOptionList">
+        <button type="button" class="profile-option-row" data-profile-page="personalization"><span class="profile-option-icon">✦</span><span class="profile-option-copy"><b>Personalization</b><small>Response style, warmth, fast answers and location</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="memory"><span class="profile-option-icon">▤</span><span class="profile-option-copy"><b>Memory &amp; custom instructions</b><small>Saved preferences, nickname and occupation</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="appearance"><span class="profile-option-icon">◐</span><span class="profile-option-copy"><b>Appearance</b><small>Theme, accent colour and visual effects</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="voice"><span class="profile-option-icon">♫</span><span class="profile-option-copy"><b>Voice</b><small>Speech, dictation language and voice preferences</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="notifications"><span class="profile-option-icon">♧</span><span class="profile-option-copy"><b>Notifications</b><small>Choose which types of alerts are enabled</small></span><span class="profile-option-chevron">›</span></button>
+      </div>
+
+      <div class="profile-list-group-title">Privacy &amp; security</div>
+      <div class="profile-option-list" id="profilePrivacyOptionList">
+        <button type="button" class="profile-option-row" data-profile-page="privacy"><span class="profile-option-icon">◈</span><span class="profile-option-copy"><b>Privacy center</b><small>Review available privacy and data-use controls</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="dataControls"><span class="profile-option-icon">▥</span><span class="profile-option-copy"><b>Data controls</b><small>Export, import, archive and clear chat history</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="security"><span class="profile-option-icon">♢</span><span class="profile-option-copy"><b>Security &amp; login</b><small>Connected account and sign-in security</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="safety"><span class="profile-option-icon">◇</span><span class="profile-option-copy"><b>Safety &amp; wellbeing</b><small>Sensitive content and wellbeing options</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="remote"><span class="profile-option-icon">⌘</span><span class="profile-option-copy"><b>Remote control</b><small>Remote pairing and follow-up settings</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="storage"><span class="profile-option-icon">▤</span><span class="profile-option-copy"><b>Storage</b><small>Estimate local data, view archives and export</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="ads"><span class="profile-option-icon">◉</span><span class="profile-option-copy"><b>Ads controls</b><small>Advertising controls available in TruX</small></span><span class="profile-option-chevron">›</span></button>
+      </div>
+
+      <div class="profile-list-group-title">Help &amp; tools</div>
+      <div class="profile-option-list" id="profileHelpOptionList">
+        <button type="button" class="profile-option-row" data-profile-page="parental"><span class="profile-option-icon">♡</span><span class="profile-option-copy"><b>Parental controls</b><small>Safety and device-level options</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="plugins"><span class="profile-option-icon">⠿</span><span class="profile-option-copy"><b>Plugins</b><small>Connected services and integrations</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="reportbug"><span class="profile-option-icon">!</span><span class="profile-option-copy"><b>Report a bug &amp; feedback</b><small>Send a bug report or suggestion</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="about"><span class="profile-option-icon">i</span><span class="profile-option-copy"><b>About TruX-Omni</b><small>Help and workspace information</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row profile-owner-only" data-profile-page="developer"><span class="profile-option-icon">⌘</span><span class="profile-option-copy"><b>Developer workspace</b><small>Owner model selection and runtime</small></span><span class="profile-option-chevron">›</span></button>
       </div>
       <section class="profile-detail-view" id="profileDetailView" hidden>
         <button type="button" class="profile-detail-back" onclick="closeProfileOption()">‹ <span>Profile</span></button>
@@ -5584,7 +5613,6 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
 
       <div id="profileActionsRow" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
         <button class="mbtn" onclick="closeProfileModal();openPinnedInsightsModal()">Pinned insights</button>
-        <button class="mbtn" onclick="openSettingsModal(&quot;general&quot;)">Preferences</button>
         <button class="mbtn danger" onclick="confirmSignOut()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17l5-5-5-5M20 12H9M12 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6"/></svg>Sign out</button>
       </div>
     </div><!-- end profile home -->
@@ -5620,7 +5648,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
             <option value="personalization">Personalization</option><option value="notifications">Notifications</option>
             <option value="usage">Usage</option><option value="data">Data & tools</option><option value="developer">Developer</option>
           </select>
-          <button class="close" type="button" onclick="closeSettingsModal()" aria-label="Close settings">×</button>
+          <button class="close" type="button" onclick="closeProfileModal()" aria-label="Close profile and settings">×</button>
         </header>
 
         <div class="settings-main-scroll">
