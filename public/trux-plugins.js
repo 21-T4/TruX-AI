@@ -18,6 +18,7 @@
   ];
 
   let state = {plugins:[],group:'All',query:'',loading:false};
+  let workspacePlaceholder = null;
 
   function el(id){ return document.getElementById(id); }
   function esc(value){
@@ -190,6 +191,14 @@
     }
   }
   function open(){
+    const workspace = el('pluginsWorkspace');
+    if(workspace && workspace.parentNode !== document.body){
+      if(!workspacePlaceholder){
+        workspacePlaceholder = document.createComment('TruX Plugins workspace position');
+        workspace.parentNode.insertBefore(workspacePlaceholder, workspace);
+      }
+      document.body.appendChild(workspace);
+    }
     document.body.classList.add('plugins-page-active');
     if(typeof window.closeSidebar==='function') window.closeSidebar();
     if(typeof window.closeAttachmentMenu==='function') window.closeAttachmentMenu();
@@ -199,6 +208,12 @@
   }
   function close(){
     document.body.classList.remove('plugins-page-active');
+    const workspace = el('pluginsWorkspace');
+    if(workspace && workspacePlaceholder && workspacePlaceholder.parentNode){
+      workspacePlaceholder.parentNode.insertBefore(workspace, workspacePlaceholder);
+      workspacePlaceholder.parentNode.removeChild(workspacePlaceholder);
+      workspacePlaceholder = null;
+    }
     document.getElementById('pluginsSidebarButton')?.classList.remove('active');
     if(typeof window.renderSidebar==='function') window.renderSidebar();
   }
