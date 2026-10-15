@@ -7757,7 +7757,6 @@ body[data-media-mode="video"] .composer .hint {
         menu.style.transition = "opacity 230ms ease, transform 300ms cubic-bezier(.16,1,.3,1), visibility 230ms ease";
         if (distance >= 58) {
           closeAttachmentMenu();
-          menu.style.opacity = "0";
           menu.style.transform = "translateY(" + Math.min(distance, 180) + "px)";
           return;
         }
