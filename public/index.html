@@ -10510,6 +10510,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
 
         activeAbortController = new AbortController();
         const requestController = activeAbortController;
+        let streamIdleWatchdog = null;
         try {
           const requestUser = auth?.currentUser;
           if (!requestUser) throw Error("Your session ended. Sign in again to continue.");
@@ -10534,7 +10535,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         // Heartbeats keep the transport alive, but are not evidence that the model is progressing.
         // Recover only after a long period with no meaningful SSE event; there is no total-turn timeout.
         let lastStreamActivityAt = Date.now(), streamIdleTimedOut = false;
-        const streamIdleWatchdog = setInterval(() => {
+        streamIdleWatchdog = setInterval(() => {
           if (turnId !== generationEpoch || generationStopRequested || requestController.signal.aborted ||
               !isGenerating || finalizedEarly || finalizedOnFinal || streamDone) {
             clearInterval(streamIdleWatchdog);
