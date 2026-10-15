@@ -197,14 +197,10 @@
             '</button>' +
           '</header>' +
           '<nav class="trux-live-menu" id="truxPwaLiveMenu" hidden aria-label="Live options">' +
-            '<button type="button" id="truxPwaLiveMenuCamera">Turn camera on</button>' +
-            '<button type="button" id="truxPwaLiveMenuMic">Mute microphone</button>' +
+            '<button type="button" id="truxPwaLiveMenuCamera">Turn camera on</button>' +            '<button type="button" id="truxPwaLiveMenuMic">Mute microphone</button>' +
             '<button type="button" id="truxPwaLiveMenuTranscript">Show transcript</button>' +
           '</nav>' +
           '<main class="trux-live-stage">' +
-            '<div class="trux-live-orb-wrap" aria-hidden="true">' +
-              '<div class="trux-live-orb-halo"></div><div class="trux-live-orb" id="truxPwaLiveOrb"><span>✦</span></div>' +
-            '</div>' +
             '<h1 id="truxPwaLiveGreeting">Hi, let us get into it</h1>' +
             '<p id="truxPwaLiveStatus">Requesting microphone permission…</p>' +
             '<button type="button" id="truxPwaLiveRetry" class="trux-live-retry" hidden>Retry connection</button>' +
@@ -220,9 +216,7 @@
             '<button type="button" class="trux-live-control" id="truxPwaLiveScreen" aria-label="Share screen" aria-pressed="false" title="Share screen">' +
               '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2.5"/><path d="M8 21h8M12 17v4M12 13V7m-3 3 3-3 3 3"/></svg><span id="truxPwaLiveScreenLabel">Share</span>' +
             '</button>' +
-            '<div class="trux-live-center-pill" aria-hidden="true"><div class="trux-live-wave">' +
-              '<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>' +
-            '</div><span id="truxPwaLiveActivityText">Connecting</span></div>' +
+            '<div class="trux-live-center-pill" aria-hidden="true"><div class="trux-live-voice-color"></div><span id="truxPwaLiveActivityText">Mic on</span></div>' +
             '<button type="button" class="trux-live-control" id="truxPwaLiveMic" aria-label="Mute microphone" aria-pressed="false" title="Microphone">' +
               '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3M8.5 21h7"/></svg><span id="truxPwaLiveMicLabel">Mic on</span>' +
             '</button>' +
@@ -275,6 +269,11 @@
           '#truxPwaLivePanel .trux-live-control.trux-live-end:hover{background:#632e3a}' +
           '#truxPwaLivePanel .trux-live-center-pill{display:flex;flex:0 1 210px;min-width:88px;max-width:210px;height:76px;align-items:center;justify-content:center;flex-direction:column;gap:7px;overflow:hidden;border:1px solid rgba(203,216,255,.10);border-radius:999px;background:linear-gradient(180deg,#020307 0%,#050917 48%,#263868 77%,#dde6ff 100%);box-shadow:0 9px 28px rgba(4,10,38,.35),inset 0 1px 8px rgba(255,255,255,.05);color:#e8ecff}' +
           '#truxPwaLivePanel .trux-live-center-pill span{font-size:10px;line-height:1;color:#d8def3}' +
+          '#truxPwaLivePanel .trux-live-center-pill{position:relative;background:#03050c!important}' +
+          '#truxPwaLivePanel .trux-live-voice-color{position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:calc(var(--trux-live-level,0)*1.5);background:radial-gradient(ellipse at 50% 110%,rgba(74,118,255,calc(.25 + var(--trux-live-level,0)*.8)) 0%,rgba(41,75,190,calc(.15 + var(--trux-live-level,0)*.7)) 38%,rgba(6,12,38,0) 76%);transition:opacity .08s linear,background .08s linear}' +
+          '#truxPwaLivePanel .trux-live-center-pill span{position:relative;z-index:1}' +
+          '#truxPwaLivePanel .trux-live-wave,#truxPwaLivePanel .trux-live-orb-wrap{display:none!important}' +
+          '#truxPwaLivePanel .trux-live-stage h1:empty{display:none!important}' +
           '#truxPwaLivePanel .trux-live-wave{display:flex;align-items:center;justify-content:center;gap:3px;height:23px}' +
           '#truxPwaLivePanel .trux-live-wave i{display:block;width:3px;height:6px;border-radius:9px;background:#f1f4ff;opacity:.82;transform-origin:center;animation:truxLiveWave .8s ease-in-out infinite alternate}' +
           '#truxPwaLivePanel .trux-live-wave i:nth-child(2n){animation-delay:.12s}#truxPwaLivePanel .trux-live-wave i:nth-child(3n){animation-delay:.28s}#truxPwaLivePanel .trux-live-wave i:nth-child(4n){animation-delay:.4s}' +
@@ -356,6 +355,10 @@
     function transcript(role, text) {
       const value = String(text || "").trim();
       if (!value) return;
+      if (role === "user") {
+        const greeting = byId("truxPwaLiveGreeting");
+        if (greeting) greeting.textContent = "";
+      }
       const el = byId("truxPwaLiveTranscript");
       if (!el) return;
       const line = document.createElement("div");
@@ -397,8 +400,7 @@
         let power = 0;
         for (let i = 0; i < samples.length; i++) power += samples[i] * samples[i];
         const rms = Math.sqrt(power / Math.max(1, samples.length));
-        const level = muted ? 0 : Math.min(.8, rms * 3.2);
-        panel?.style.setProperty("--trux-live-level", level.toFixed(3));
+        const level = muted ? 0 : Math.min(.8, rms * 3.2);        panel?.style.setProperty("--trux-live-level", level.toFixed(3));
         panel?.classList.toggle("trux-live-user-speaking", level > .045);
         if (muted) return;
         const data = pcmBase64(samples, audioContext.sampleRate);
@@ -597,8 +599,7 @@
       } else if (nextState === "stopped") {
         setStatus("Live session closed");
         if (byId("truxPwaLiveRetry")) byId("truxPwaLiveRetry").hidden = true;
-      }
-      syncMenuLabels();
+      }      syncMenuLabels();
       if (typeof window.handleInputChange === "function") window.handleInputChange();
     }
 
