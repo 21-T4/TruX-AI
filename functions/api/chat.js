@@ -1450,7 +1450,8 @@ export async function onRequestPost(context) {
     const terminalInstruction = codingMode && explicitCodeWork
       ? `\\n\\n[TRUX-CODE TERMINAL]: You may use the built-in development terminal for local build, test, lint, and inspection commands. Use Composio for GitHub/external changes. Do not use the terminal for networking or credentials.`
       : '';
-    const liveSearchInstruction = !codingMode
+    const shouldUseGoogleSearch = !codingMode && (researchMode || explicitWebRequest);
+    const liveSearchInstruction = shouldUseGoogleSearch
       ? `\\n\\n[LIVE GOOGLE SEARCH]: Google Search grounding is available in this mode. Use it when the user asks about current/latest/today/recent information or when details may have changed since training, including software documentation, API behavior, versions, prices, schedules, regulations, and current events. For simple greetings and stable facts, answer directly when search would add no value. Base grounded claims on the retrieved results, but do not invent citations, and do not print raw source URLs merely as citations because the client shows linked source icons below the response.`
       : '';
     const modeWithPlugins = modeInstruction + pluginInstruction + terminalInstruction + liveSearchInstruction;
@@ -1712,7 +1713,7 @@ export async function onRequestPost(context) {
       if (codingMode) {
         modelTools.push({ functionDeclarations: TRUX_WEB_TOOL_DECLARATIONS });
       }
-      if (!codingMode) modelTools.push({ googleSearch: {} });
+      if (shouldUseGoogleSearch) modelTools.push({ googleSearch: {} });
 
       const agentContents = contents.slice();
       let finalResult = null;
