@@ -5712,26 +5712,8 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
 
             <section class="settings-section" data-settings-content="appearance">
               <div class="settings-section-head"><h2>Appearance</h2><p>Keep the interface calm, responsive, and easy on the eyes.</p></div>
-              <div class="settings-card">
-                <div class="mrow"><span>Ambient Glow</span><label class="toggle"><input id="neonGlowToggle" type="checkbox" checked onchange="toggleAmbientGlow(this)"><span class="slider"></span></label></div>
-              </div>
-              <div class="settings-card">
-                <div class="sect"><h4>Math rendering</h4><div class="mrow" style="border-bottom:0;padding-top:6px"><span>KaTeX 0.18.7</span><span class="badge"><i></i>Browser rendered</span></div></div>
-              </div>
-            </section>
+              <div class="settings-card"><div class="sect"><h4>Theme</h4><label class="profile-field-label" for="truxThemeSelect">App appearance</label><select id="truxThemeSelect" class="instr" onchange="applyTruxTheme(this.value)"><option value="dark">Dark</option><option value="light">Light</option><option value="oled">OLED black</option><option value="dracula">Dracula</option><option value="nord">Nord</option><option value="solarized">Solarized</option><option value="rose-pine">Rose Pine</option><option value="monokai">Monokai</option><option value="hacker">Hacker</option></select></div></div>
 
-            <section class="settings-section" data-settings-content="voice">
-              <div class="settings-section-head"><h2>Voice</h2><p>Control speech playback and answer reading speed.</p></div>
-              <div class="settings-card">
-                <div class="sect"><h4>Text-to-Speech Speed</h4><select id="ttsRateSelect" class="instr" style="height:44px" onchange="saveTTSRate(this.value)"><option value="0.8">0.8x · Slower</option><option value="1.0" selected>1.0x · Normal</option><option value="1.2">1.2x · Fast</option><option value="1.5">1.5x · Express</option></select></div>
-              </div>
-            </section>
-
-            <section class="settings-section" data-settings-content="personalization">
-              <div class="settings-section-head"><h2>Personalization</h2><p>Change how TruX looks, responds and uses device context.</p></div>
-              <div class="settings-card">
-                <div class="sect"><h4>System Instructions</h4><textarea id="customInstructions" class="instr" placeholder="How should TruX respond?"></textarea><button class="mbtn" onclick="saveCustomInstructions()">Save Instructions</button></div>
-              </div>
               <div class="settings-card">
                 <div class="sect"><h4>Home UI layout</h4>
                   <p class="mrow-sub" style="margin:-3px 0 12px">Default keeps the current TruX home. Every other preset changes the layout and visual language instead of only recoloring it.</p>
@@ -5754,13 +5736,45 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
                   <div class="setting-note">Saved on this device and restored automatically when TruX opens.</div>
                 </div>
               </div>
+
               <div class="settings-card">
-                <div class="sect"><h4>Location access</h4>
-                  <div class="mrow"><span><b>Let TruX use your location</b><small class="mrow-sub">Used for location-aware answers and research.</small></span><label class="toggle"><input id="locationAccessToggle" type="checkbox" onchange="toggleTruxLocationAccess(this.checked)"><span class="slider"></span></label></div>
-                  <div class="location-status" id="locationStatusText">Checking location permission…</div>
-                  <button class="mbtn" type="button" onclick="requestTruxLocation({interactive:true,force:true})">Refresh location access</button>
-                </div>
+                <div class="mrow"><span>Ambient Glow</span><label class="toggle"><input id="neonGlowToggle" type="checkbox" checked onchange="toggleAmbientGlow(this)"><span class="slider"></span></label></div>
               </div>
+              <div class="settings-card">
+                <div class="sect"><h4>Math rendering</h4><div class="mrow" style="border-bottom:0;padding-top:6px"><span>KaTeX 0.18.7</span><span class="badge"><i></i>Browser rendered</span></div></div>
+              </div>
+            </section>
+
+            <section class="settings-section" data-settings-content="voice">
+              <div class="settings-section-head"><h2>Voice</h2><p>Control speech playback and answer reading speed.</p></div>
+              <div class="settings-card">
+                <div class="sect"><h4>Text-to-Speech Speed</h4><select id="ttsRateSelect" class="instr" style="height:44px" onchange="saveTTSRate(this.value)"><option value="0.8">0.8x · Slower</option><option value="1.0" selected>1.0x · Normal</option><option value="1.2">1.2x · Fast</option><option value="1.5">1.5x · Express</option></select></div>
+              </div>
+              <div class="settings-card"><div class="sect"><h4>Speech and dictation</h4>
+                <label class="profile-field-label" for="truxSpeechVoiceSelect">Speech voice</label><select id="truxSpeechVoiceSelect" class="instr" onchange="saveSpeechVoice(this.value)"><option value="">System default</option></select>
+                <label class="profile-field-label" for="truxDictationLanguage">Dictation language</label><select id="truxDictationLanguage" class="instr" onchange="saveDictationLanguage(this.value)"><option value="auto">Auto-detect (device language)</option><option value="en-US">English (United States)</option><option value="en-GB">English (United Kingdom)</option><option value="hi-IN">Hindi</option><option value="fr-FR">French</option><option value="es-ES">Spanish</option><option value="de-DE">German</option><option value="ja-JP">Japanese</option></select>
+                <div class="mrow"><span><b>Save dictation history on this device</b><small class="mrow-sub">Off by default. Only final recognized phrases are saved, up to 30 entries.</small></span><label class="toggle"><input id="truxDictationHistoryToggle" type="checkbox" onchange="saveProfilePreference('dictation_history',this.checked)"><span class="slider"></span></label></div><button class="mbtn" type="button" onclick="showDictationHistory()">View dictation history</button>
+              </div></div>
+              <div class="settings-card"><div class="sect"><h4>Live voice options</h4><div class="mrow"><span>Live voice model</span><span class="utxt">Managed by TruX Live</span></div><div class="mrow"><span>Background conversations</span><span class="utxt">Not supported by this web workspace</span></div><div class="mrow"><span>Use as default assistant</span><span class="utxt">Set by your device, not by a web page</span></div></div></div>
+
+            </section>
+
+            <section class="settings-section" data-settings-content="personalization">
+              <div class="settings-section-head"><h2>Personalization</h2><p>Change how TruX looks, responds and uses device context.</p></div>
+              <div class="settings-card">
+                <div class="sect"><h4>System Instructions</h4><textarea id="customInstructions" class="instr" placeholder="How should TruX respond?"></textarea><button class="mbtn" onclick="saveCustomInstructions()">Save Instructions</button></div>
+              </div>
+              <div class="settings-card"><div class="sect"><h4>Response style</h4>
+                <label class="profile-field-label" for="truxBaseStyleSelect">Base style and tone</label><select id="truxBaseStyleSelect" class="instr" onchange="saveProfilePreference('base_style',this.value)"><option>Default</option><option>Concise</option><option>Professional</option><option>Friendly</option><option>Teacher</option><option>Analyst</option></select>
+                <div class="profile-setting-grid">
+                  <label class="profile-field-label">Warmth<select id="truxWarmthSelect" class="instr" onchange="saveProfilePreference('warmth',this.value)"><option>Default</option><option>Less</option><option>More</option></select></label>
+                  <label class="profile-field-label">Enthusiasm<select id="truxEnthusiasmSelect" class="instr" onchange="saveProfilePreference('enthusiasm',this.value)"><option>Default</option><option>Less</option><option>More</option></select></label>
+                  <label class="profile-field-label">Headers and lists<select id="truxFormattingSelect" class="instr" onchange="saveProfilePreference('formatting',this.value)"><option>Default</option><option>Use more</option><option>Use less</option></select></label>
+                  <label class="profile-field-label">Emoji<select id="truxEmojiSelect" class="instr" onchange="saveProfilePreference('emoji',this.value)"><option>Default</option><option>Less</option><option>More</option><option>None</option></select></label>
+                </div>
+                <div class="mrow"><span><b>Fast answers</b><small class="mrow-sub">Prefer quick, concise responses unless a task needs depth.</small></span><label class="toggle"><input id="truxFastAnswersToggle" type="checkbox" onchange="saveProfilePreference('fast_answers',this.checked)"><span class="slider"></span></label></div>
+              </div></div>
+
             </section>
 
             <section class="settings-section" data-settings-content="notifications">
@@ -5769,6 +5783,19 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
                 <div class="mrow"><span><b>Response notifications</b><small class="mrow-sub">Text, image and video completion alerts.</small></span><label class="toggle"><input id="notificationsToggle" type="checkbox" onchange="toggleTruxNotificationsSetting(this.checked)"><span class="slider"></span></label></div>
                 <div class="location-status" id="notificationStatusText">Checking notification permission…</div>
               </div>
+              <div class="settings-card"><div class="sect"><h4>Notification categories</h4><p class="mrow-sub">Saved on this device. TruX currently supports response-completion alerts; other category providers are not connected yet.</p>
+                <div class="mrow"><span>Codex</span><label class="toggle"><input id="notifCodex" type="checkbox" onchange="saveNotificationCategory('codex',this.checked)"><span class="slider"></span></label></div>
+                <div class="mrow"><span>Group chats</span><label class="toggle"><input id="notifGroupChats" type="checkbox" onchange="saveNotificationCategory('group_chats',this.checked)"><span class="slider"></span></label></div>
+                <div class="mrow"><span>Health</span><label class="toggle"><input id="notifHealth" type="checkbox" onchange="saveNotificationCategory('health',this.checked)"><span class="slider"></span></label></div>
+                <div class="mrow"><span>Library</span><label class="toggle"><input id="notifLibrary" type="checkbox" onchange="saveNotificationCategory('library',this.checked)"><span class="slider"></span></label></div>
+                <div class="mrow"><span>Marketing</span><label class="toggle"><input id="notifMarketing" type="checkbox" onchange="saveNotificationCategory('marketing',this.checked)"><span class="slider"></span></label></div>
+                <div class="mrow"><span>Personalized tips</span><label class="toggle"><input id="notifTips" type="checkbox" onchange="saveNotificationCategory('tips',this.checked)"><span class="slider"></span></label></div>
+                <div class="mrow"><span>Projects</span><label class="toggle"><input id="notifProjects" type="checkbox" onchange="saveNotificationCategory('projects',this.checked)"><span class="slider"></span></label></div>
+                <div class="mrow"><span>Responses</span><label class="toggle"><input id="notifResponses" type="checkbox" onchange="saveNotificationCategory('responses',this.checked)"><span class="slider"></span></label></div>
+                <div class="mrow"><span>Tasks</span><label class="toggle"><input id="notifTasks" type="checkbox" onchange="saveNotificationCategory('tasks',this.checked)"><span class="slider"></span></label></div>
+                <div class="mrow"><span>Usage</span><label class="toggle"><input id="notifUsage" type="checkbox" onchange="saveNotificationCategory('usage',this.checked)"><span class="slider"></span></label></div>
+              </div></div>
+
             </section>
 
             <section class="settings-section" data-settings-content="usage">
@@ -5782,6 +5809,14 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
 
             <section class="settings-section" data-settings-content="data">
               <div class="settings-section-head"><h2>Data & tools</h2><p>Manage local chats, import or export your workspace, and diagnose the API connection.</p></div>
+              <div class="settings-card"><div class="sect"><h4>Model and recording controls</h4>
+                <div class="mrow"><span><b>Improve the model for everyone</b><small class="mrow-sub">This TruX workspace does not expose a training-consent API.</small></span><label class="toggle"><input type="checkbox" disabled aria-label="Training control not available in TruX"><span class="slider"></span></label></div>
+                <div class="mrow"><span><b>Include audio recordings</b><small class="mrow-sub">TruX does not retain recordings for model training.</small></span><label class="toggle"><input type="checkbox" disabled aria-label="Audio recording control not available in TruX"><span class="slider"></span></label></div>
+                <div class="mrow"><span><b>Apps with access</b><small class="mrow-sub">Review connected services in Plugins. TruX does not sync your contacts.</small></span><button class="mbtn" type="button" onclick="openPluginsFromSettings()">Open plugins</button></div>
+              </div></div>
+              <div class="settings-card"><div class="sect"><h4>Chat history</h4><button class="mbtn" type="button" onclick="viewArchivedChats()">View archived chats</button><button class="mbtn" type="button" onclick="archiveAllHistory()">Archive chat history</button><button class="mbtn danger" type="button" onclick="clearAllHistory()">Clear chat history</button><div id="archivedChatsList" class="archived-chats-list" aria-live="polite"></div></div></div>
+              <div class="settings-card"><div class="sect"><h4>Export data</h4><button class="mbtn" type="button" onclick="exportTruxMemory()">Export workspace data</button><button class="mbtn" type="button" onclick="exportChatData()">Export chats only</button><button class="mbtn" type="button" onclick="importTruxMemory()">Import workspace data</button></div></div>
+
               <div class="settings-card">
                 <div class="sect"><h4>System & tools</h4><button class="mbtn" onclick="checkApiLatency()">Check API status</button><button class="mbtn" onclick="exportChatData()">Export chats</button><button class="mbtn" onclick="exportTruxMemory()">Export workspace memory</button><button class="mbtn" onclick="importTruxMemory()">Import workspace memory</button><button class="mbtn danger" onclick="resetAllSettings()">Reset settings</button><button class="mbtn danger" onclick="clearAllHistory()">Clear all chats</button></div>
               </div>
@@ -5812,6 +5847,41 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
                 <div class="sect"><h4>Workspace runtime</h4><div class="mrow" style="border-bottom:0"><span>Frontend math</span><span style="color:var(--txt-2)">KaTeX in browser</span></div><div class="mrow" style="border-bottom:0"><span>API runtime</span><span style="color:var(--txt-2)">Google Cloud Run (Node.js)</span></div></div>
               </div>
             </section>
+
+            <section class="settings-section" data-settings-content="memory"><div class="settings-section-head"><h2>Memory &amp; custom instructions</h2><p>Manage profile facts saved locally and used to personalize prompts.</p></div>
+              <div class="settings-card"><div class="mrow"><span><b>Enable memory</b><small class="mrow-sub">Use the profile details below to personalize responses.</small></span><label class="toggle"><input id="truxMemoryEnabledToggle" type="checkbox" onchange="saveProfilePreference('memory_enabled',this.checked)"><span class="slider"></span></label></div>
+                <div class="sect"><h4>Your nickname</h4><input id="truxMemoryNickname" class="instr" maxlength="80" placeholder="Nickname" oninput="saveProfileField(this,'nickname')"></div><div class="sect"><h4>Your occupation</h4><input id="truxMemoryOccupation" class="instr" maxlength="120" placeholder="Student, engineer, etc." oninput="saveProfileField(this,'occupation')"></div><div class="sect"><h4>More about you</h4><textarea id="truxMemoryAbout" class="instr" maxlength="3000" placeholder="Interests, preferences, and details you'd like TruX to remember." oninput="saveProfileField(this,'about')"></textarea></div>
+              </div><div class="settings-card"><div class="sect"><h4>Memory summary</h4><p class="mrow-sub">A summary of locally saved profile preferences, not an AI-generated history of every conversation.</p><button type="button" class="mbtn" onclick="refreshTruxMemorySummary()">Refresh memory summary</button><div id="truxMemorySummaryText" class="profile-info-panel">No profile details saved yet.</div></div></div>
+            </section>
+            <section class="settings-section" data-settings-content="account"><div class="settings-section-head"><h2>Account &amp; workspace</h2><p>Your signed-in identity and local account preferences.</p></div>
+              <div class="settings-card"><div class="sect"><h4>Profile name</h4><input id="truxAccountDisplayName" class="instr" maxlength="100" placeholder="Display name"><button type="button" class="mbtn" onclick="saveAccountProfile()">Save profile name</button></div><div class="mrow"><span>Email</span><b id="truxAccountEmailText">Not signed in</b></div><div class="mrow"><span>Phone number</span><b id="truxAccountPhoneText">Managed by sign-in provider</b></div>
+                <div class="sect"><h4>Age group</h4><select id="truxAccountAgeGroup" class="instr" onchange="saveProfilePreference('age_group',this.value)"><option value="">Prefer not to say</option><option value="teen">Teen</option><option value="adult">Adult</option></select><p class="mrow-sub">Stored on this device only; it does not change account verification.</p></div>
+              </div><div class="settings-card"><div class="sect"><h4>Workspace</h4><p id="truxWorkspaceSummary" class="mrow-sub">Personal TruX-Omni workspace</p><button type="button" class="mbtn" onclick="switchSettingsSection('usage')">Usage &amp; limits</button><button type="button" class="mbtn" onclick="confirmSignOut()">Log out</button></div></div>
+              <div class="settings-card"><div class="sect"><h4>Account deletion</h4><p class="mrow-sub">This TruX web app cannot securely delete your identity and all associated cloud data from this screen. Account identity is managed by the sign-in provider; contact support before requesting permanent deletion.</p><button type="button" class="mbtn danger" onclick="openProfileOption('reportbug')">Request account deletion help</button></div></div>
+            </section>
+            <section class="settings-section" data-settings-content="security"><div class="settings-section-head"><h2>Security &amp; login</h2><p>Sign-in security is managed by your authentication provider.</p></div>
+              <div class="settings-card"><div class="mrow"><span>Connected account</span><b id="truxSecurityEmailText">Not signed in</b></div><div class="mrow"><span>Security keys &amp; passkeys</span><span class="utxt">Managed by provider</span></div><div class="mrow"><span>Authenticator app</span><span class="utxt">Provider-managed</span></div><div class="mrow"><span>Text message MFA</span><span class="utxt">Provider-managed</span></div><div class="mrow"><span>Active sessions</span><span class="utxt">TruX cannot enumerate provider sessions</span></div><div class="detail-stack-actions"><button type="button" class="mbtn" onclick="window.open('https://myaccount.google.com/security','_blank','noopener')">Open sign-in security</button><button type="button" class="mbtn" onclick="confirmSignOut()">Log out here</button></div></div>
+              <div class="settings-card"><div class="sect"><h4>Advanced account security</h4><p class="mrow-sub">Passkeys, multi-factor authentication, and other-device session management must be changed through your identity provider.</p></div></div>
+            </section>
+            <section class="settings-section" data-settings-content="safety"><div class="settings-section-head"><h2>Safety &amp; wellbeing</h2><p>Adjust response guidance and optional focus reminders.</p></div>
+              <div class="settings-card"><div class="mrow"><span><b>Reduce sensitive content</b><small class="mrow-sub">Add an extra preference for cautious handling of sensitive requests.</small></span><label class="toggle"><input id="truxReduceSensitiveToggle" type="checkbox" onchange="saveProfilePreference('reduce_sensitive',this.checked)"><span class="slider"></span></label></div></div>
+              <div class="settings-card"><div class="sect"><h4>Time management</h4><div class="mrow"><span><b>Focus break reminder</b><small class="mrow-sub">Shows a reminder while TruX is open.</small></span><label class="toggle"><input id="truxFocusReminderToggle" type="checkbox" onchange="saveProfilePreference('focus_reminder',this.checked);applyTimeManagementSettings()"><span class="slider"></span></label></div><label class="profile-field-label" for="truxFocusInterval">Remind me after</label><select id="truxFocusInterval" class="instr" onchange="saveProfilePreference('focus_interval',this.value);applyTimeManagementSettings()"><option value="25">25 minutes</option><option value="45">45 minutes</option><option value="60">60 minutes</option><option value="90">90 minutes</option></select></div></div>
+            </section>
+            <section class="settings-section" data-settings-content="remote"><div class="settings-section-head"><h2>Remote control</h2><p>Remote pairing from the reference is not implemented by the current TruX web app.</p></div><div class="settings-card"><div class="sect"><h4>Connections</h4><p class="mrow-sub">QR pairing with a desktop client is unavailable here, so TruX will not generate a placeholder QR code.</p><button type="button" class="mbtn" disabled>Remote pairing unavailable</button></div></div><div class="settings-card"><div class="sect"><h4>Security</h4><p class="mrow-sub">Device-unlock and biometric protection for remote sessions require a native client and are not available in this PWA.</p></div></div></section>
+            <section class="settings-section" data-settings-content="storage"><div class="settings-section-head"><h2>Storage</h2><p>Estimates of locally stored chat data in this browser, not a browser quota report.</p></div><div class="settings-card"><div class="sect"><h4>Local workspace data</h4><div id="truxStorageSummary" class="profile-info-panel">Calculating local data…</div><button type="button" class="mbtn" onclick="updateTruxStorageSummary()">Refresh storage estimate</button></div></div><div class="settings-card"><div class="sect"><h4>Files &amp; images</h4><p class="mrow-sub">Image and file payloads stored in chat history are counted approximately; browser caches are excluded.</p></div></div></section>
+            <section class="settings-section" data-settings-content="privacy"><div class="settings-section-head"><h2>Privacy center</h2><p>Manage local data and understand which controls TruX can actually apply.</p></div>              <div class="settings-card">
+                <div class="sect"><h4>Location access</h4>
+                  <div class="mrow"><span><b>Let TruX use your location</b><small class="mrow-sub">Used for location-aware answers and research.</small></span><label class="toggle"><input id="locationAccessToggle" type="checkbox" onchange="toggleTruxLocationAccess(this.checked)"><span class="slider"></span></label></div>
+                  <div class="location-status" id="locationStatusText">Checking location permission…</div>
+                  <button class="mbtn" type="button" onclick="requestTruxLocation({interactive:true,force:true})">Refresh location access</button>
+                </div>
+              </div>
+
+              <div class="settings-card"><div class="mrow"><span><b>Improve the model for everyone</b><small class="mrow-sub">This app does not expose a training-consent control.</small></span><span class="utxt">Not available</span></div><div class="mrow"><span><b>Voice recording use</b><small class="mrow-sub">TruX does not retain recordings for model training.</small></span><span class="utxt">Not enabled</span></div><div class="mrow"><span><b>Apps with access</b><small class="mrow-sub">No contact syncing is implemented. Review connected tools before granting access.</small></span><button type="button" class="mbtn" onclick="openPluginsFromSettings()">Open plugins</button></div></div>
+              <div class="settings-card"><div class="sect"><h4>Export data</h4><button type="button" class="mbtn" onclick="exportTruxMemory()">Export workspace data</button><button type="button" class="mbtn" onclick="exportChatData()">Export chats</button></div></div>
+            </section>
+            <section class="settings-section" data-settings-content="ads"><div class="settings-section-head"><h2>Ads controls</h2><p>TruX currently does not serve ads or collect advertising-topic history.</p></div><div class="settings-card"><div class="mrow"><span>Ad history</span><span class="utxt">Not collected</span></div><div class="mrow"><span>Topics</span><span class="utxt">Not collected</span></div><div class="mrow"><span>Delete ad data</span><span class="utxt">No ad data stored</span></div><div class="mrow"><span>Personalize ads</span><span class="utxt">Ads are not enabled</span></div><div class="mrow"><span>Change plan to go ad-free</span><span class="utxt">No ads plan integration</span></div></div></section>
+            <section class="settings-section" data-settings-content="parental"><div class="settings-section-head"><h2>Parental controls</h2><p>TruX does not currently provide parent-linked account controls.</p></div><div class="settings-card"><div class="sect"><h4>Device-level controls</h4><p class="mrow-sub">Device or family-management services can provide restrictions. This page cannot create cross-account guardian links.</p></div></div></section>
           </div>
         </div>
       </section>
@@ -6588,7 +6658,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
     }
 
     function openProfileOption(key){
-      const settingsSections={usage:"usage",personalization:"personalization",notifications:"notifications",memory:"data",appearance:"appearance",general:"general",voice:"voice",dataControls:"data",developer:"developer"};
+      const settingsSections={usage:"usage",personalization:"personalization",notifications:"notifications",memory:"memory",appearance:"appearance",general:"general",voice:"voice",dataControls:"data",developer:"developer",account:"account",workspace:"account",upgrade:"usage",security:"security",safety:"safety",remote:"remote",storage:"storage",privacy:"privacy",ads:"ads",parental:"parental"};
       if(key==="plugins"){
         closeProfileOption();
         closeProfileModal();
