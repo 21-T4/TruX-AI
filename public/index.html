@@ -6565,6 +6565,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         activeStreamer?.cancel(); activeStreamer = null;
         isGenerating = false;
         generationStopRequested = false;
+        handleInputChange();
         if(typeof clearHomeGreetingTimers === "function") clearHomeGreetingTimers();
         document.body.classList.remove("scrolled");
         getEl("scrollDownBtn")?.classList.remove("visible");
@@ -7386,6 +7387,11 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       const btn = getEl("actionBtn");
       const hasDraft = !!(p.value.trim() || selectedImageBase64 || pastedTextBlocks.length || fileAttachments.length);
       if (btn && !isGenerating) {
+        // Idle is authoritative: a stale Stop class/icon must never survive a
+        // completed, cancelled, or invalidated generation.
+        const wasStopping = btn.classList.contains("stop");
+        btn.classList.remove("stop");
+        if (wasStopping) btn.dataset.actionMode = "";
         const liveActive = window.__truxLiveState === "live" || window.__truxLiveState === "connecting";
         const nextMode = hasDraft ? "send" : (liveActive ? "live-stop" : "live");
         btn.classList.toggle("ready", hasDraft);
@@ -11301,6 +11307,9 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         return await sendPromptImpl();
       } finally {
         sendPromptInFlight=false;
+        // Some abort/invalidation paths return before reaching the stream
+        // finalizer. Reconcile the control only if no newer turn is active.
+        if (!isGenerating) handleInputChange();
       }
     }
 
@@ -11933,6 +11942,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       activeStreamer = null;
       isGenerating = false;
       activeAbortController = null;
+      handleInputChange();
       document.body.classList.remove("notebook-open");
       incognitoMode = false;
       currentChatId = id;
