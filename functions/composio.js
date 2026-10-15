@@ -111,12 +111,6 @@ export async function resolveAllPluginToolkits(env) {
   }));
 }
 
-function authConfigCandidates(detail) {
-  return Array.isArray(detail?.auth_config_details)
-    ? detail.auth_config_details
-    : (Array.isArray(detail?.authConfigDetails) ? detail.authConfigDetails : []);
-}
-
 async function getManagedAuthConfig(env, toolkitSlug) {
   const query = new URLSearchParams({
     toolkit_slug: toolkitSlug,
@@ -371,10 +365,6 @@ function schemaFromInputParameters(input) {
     properties,
     ...(required.length ? { required } : {})
   };
-}
-
-function normalizeSchema(schema) {
-  return sanitizeGeminiSchema(schema);
 }
 
 export async function getComposioGeminiTools(env, enabledToolkitSlugs, queryText = '') {
