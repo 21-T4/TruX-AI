@@ -6616,7 +6616,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
     function resetAvatarOverride(){ store.removeItem("trux_avatar_override"); applyStoredAvatar(auth&&auth.currentUser); toast("Profile avatar reset.","ok"); }
 
     function exportTruxMemory(){
-      const payload={version:1,exportedAt:new Date().toISOString(),chats:chatSessions,pinnedInsights:pinnedInsights,customInstructions:store.getItem("trux_custom_instructions")||""};
+      const preferences={}; ["trux_custom_instructions","trux_theme","trux_profile_display_name","trux_age_group","trux_dictation_language","trux_speech_voice",...TRUX_PROFILE_PREFERENCES.map(k=>"trux_"+k),...TRUX_NOTIFICATION_CATEGORIES.map(k=>"trux_notification_cat_"+k)].forEach(k=>{const v=store.getItem(k);if(v!==null)preferences[k]=v;}); const payload={version:2,exportedAt:new Date().toISOString(),chats:chatSessions,pinnedInsights:pinnedInsights,customInstructions:store.getItem("trux_custom_instructions")||"",preferences};
       const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}), url=URL.createObjectURL(blob), a=document.createElement("a");
       a.href=url; a.download="trux-memory-export.json"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(url);},500);
     }
@@ -6630,6 +6630,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
           if(data && data.chats && typeof data.chats==="object"){ chatSessions=Object.assign({},chatSessions,data.chats); saveChatSessions(); }
           if(data && Array.isArray(data.pinnedInsights)){ pinnedInsights=Array.from(new Set(pinnedInsights.concat(data.pinnedInsights))); store.setItem("trux_pinned",JSON.stringify(pinnedInsights)); }
           if(data && typeof data.customInstructions==="string") store.setItem("trux_custom_instructions",data.customInstructions);
+          if(data && data.preferences && typeof data.preferences==="object") Object.entries(data.preferences).forEach(([key,value])=>{if(String(key).startsWith("trux_") && !/token|secret|key/i.test(key) && (typeof value==="string" || typeof value==="boolean")) store.setItem(key,String(value));});
           loadSettings(); renderSidebar(); toast("TruX memory imported.","ok");
         }catch(e){ toast("Could not import that memory file.","err"); }
       };
@@ -6984,6 +6985,172 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       updateFeedbackCounterUI();
     }
 
+
+    const TRUX_PROFILE_PREFERENCES = ["base_style","warmth","enthusiasm","formatting","emoji","fast_answers","memory_enabled","nickname","occupation","about","dictation_history","age_group","reduce_sensitive","focus_reminder","focus_interval"];
+    const TRUX_NOTIFICATION_CATEGORIES = ["codex","group_chats","health","library","marketing","tips","projects","responses","tasks","usage"];
+    let truxFocusReminderTimer = null;
+    function saveProfilePreference(key, value) {
+      if (typeof value === "boolean") store.setItem("trux_" + key, value ? "true" : "false");
+      else store.setItem("trux_" + key, String(value ?? ""));
+      if (key === "dictation_history" && !value) store.removeItem("trux_dictation_history_items");
+      if (["memory_enabled","base_style","warmth","enthusiasm","formatting","emoji","fast_answers","reduce_sensitive"].includes(key)) { try { refreshTruxMemorySummary(); } catch {} }
+    }
+    function saveProfileField(input, key) {
+      if (!input) return;
+      store.setItem("trux_" + key, input.value.slice(0, key === "about" ? 3000 : 120));
+      try { refreshTruxMemorySummary(); } catch {}
+    }
+    function applyTruxTheme(theme, persist) {
+      const allowed = new Set(["dark","light","oled","dracula","nord","solarized","rose-pine","monokai","hacker"]);
+      const next = allowed.has(String(theme || "")) ? String(theme) : "dark";
+      if (next === "dark") document.documentElement.removeAttribute("data-theme");
+      else document.documentElement.dataset.theme = next;
+      if (persist !== false) store.setItem("trux_theme", next);
+      const select = getEl("truxThemeSelect"); if (select) select.value = next;
+    }
+    function saveNotificationCategory(category, enabled) {
+      if (!TRUX_NOTIFICATION_CATEGORIES.includes(category)) return;
+      store.setItem("trux_notification_cat_" + category, enabled ? "true" : "false");
+    }
+    function saveDictationLanguage(language) {
+      const allowed = new Set(["auto","en-US","en-GB","hi-IN","fr-FR","es-ES","de-DE","ja-JP"]);
+      const next = allowed.has(language) ? language : "auto";
+      store.setItem("trux_dictation_language", next);
+      if (recognition) recognition.lang = next === "auto" ? (navigator.language || "en-US") : next;
+    }
+    function saveSpeechVoice(name) { store.setItem("trux_speech_voice", String(name || "")); }
+    function populateTruxSpeechVoices() {
+      const select = getEl("truxSpeechVoiceSelect");
+      if (!select || !("speechSynthesis" in window)) return;
+      const selected = store.getItem("trux_speech_voice") || "";
+      const voices = speechSynthesis.getVoices();
+      select.innerHTML = '<option value="">System default</option>';
+      voices.forEach(voice => {
+        const option = document.createElement("option");
+        option.value = voice.name;
+        option.textContent = voice.name + (voice.lang ? " · " + voice.lang : "");
+        select.appendChild(option);
+      });
+      select.value = voices.some(v => v.name === selected) ? selected : "";
+      if (!window.__truxVoiceOptionsBound) {
+        window.__truxVoiceOptionsBound = true;
+        speechSynthesis.addEventListener("voiceschanged", populateTruxSpeechVoices);
+      }
+    }
+    function saveAccountProfile() {
+      const input = getEl("truxAccountDisplayName"); if (!input) return;
+      const name = input.value.trim().slice(0,100);
+      if (!name) { toast("Enter a profile name first.", "err"); return; }
+      store.setItem("trux_profile_display_name", name);
+      const user = auth && auth.currentUser;
+      const update = user && typeof user.updateProfile === "function" ? user.updateProfile({displayName:name}) : Promise.resolve();
+      Promise.resolve(update).then(() => {
+        if (user) updateTruxProfileUI(user);
+        const modalName = getEl("modalName"); if (modalName) modalName.textContent = name;
+        toast("Profile name saved.", "ok");
+      }).catch(error => {
+        console.warn("Profile name saved locally; provider update was rejected.", error);
+        toast("Saved on this device. Your sign-in provider did not accept the profile update.", "err");
+      });
+    }
+    function refreshTruxMemorySummary() {
+      const host = getEl("truxMemorySummaryText"); if (!host) return;
+      if (store.getItem("trux_memory_enabled") === "false") { host.textContent = "Memory is off. Saved profile details are not added to TruX prompts."; return; }
+      const rows = [["Nickname",store.getItem("trux_nickname")],["Occupation",store.getItem("trux_occupation")],["More about you",store.getItem("trux_about")],["Response style",store.getItem("trux_base_style") && store.getItem("trux_base_style")!=="Default" ? store.getItem("trux_base_style") : ""]].filter(row=>row[1]);
+      host.textContent = rows.length ? rows.map(row=>row[0]+": "+row[1]).join("\n\n") : "No profile details saved yet.";
+    }
+    function loadSupplementarySettings() {
+      const values = {
+        truxBaseStyleSelect:["trux_base_style","Default"], truxWarmthSelect:["trux_warmth","Default"], truxEnthusiasmSelect:["trux_enthusiasm","Default"], truxFormattingSelect:["trux_formatting","Default"], truxEmojiSelect:["trux_emoji","Default"], truxThemeSelect:["trux_theme","dark"],
+        truxMemoryNickname:["trux_nickname",""], truxMemoryOccupation:["trux_occupation",""], truxMemoryAbout:["trux_about",""],
+        truxAccountDisplayName:["trux_profile_display_name",(auth && auth.currentUser && auth.currentUser.displayName)||""], truxAccountAgeGroup:["trux_age_group",""],
+        truxDictationLanguage:["trux_dictation_language","auto"], truxFocusInterval:["trux_focus_interval","45"]
+      };
+      Object.entries(values).forEach(([id,pair])=>{const el=getEl(id);if(el)el.value=store.getItem(pair[0])??pair[1];});
+      const checked = {
+        truxFastAnswersToggle:["trux_fast_answers",true], truxMemoryEnabledToggle:["trux_memory_enabled",true], truxDictationHistoryToggle:["trux_dictation_history",false], truxReduceSensitiveToggle:["trux_reduce_sensitive",false], truxFocusReminderToggle:["trux_focus_reminder",false]
+      };
+      Object.entries(checked).forEach(([id,pair])=>{const el=getEl(id);if(el)el.checked=store.getItem(pair[0])==null?pair[1]:store.getItem(pair[0])==="true";});
+      const user=auth&&auth.currentUser;
+      const email=getEl("truxAccountEmailText");if(email)email.textContent=user?.email||"Not signed in";
+      const securityEmail=getEl("truxSecurityEmailText");if(securityEmail)securityEmail.textContent=user?.email||"Not signed in";
+      const phone=getEl("truxAccountPhoneText");if(phone)phone.textContent=user?.phoneNumber||"Not provided by sign-in provider";
+      const workspace=getEl("truxWorkspaceSummary");if(workspace)workspace.textContent=(isTruxDeveloper(user)?"Owner workspace":currentPlanTier==="pro"?"Pro workspace":"Personal workspace")+" · TruX-Omni";
+      TRUX_NOTIFICATION_CATEGORIES.forEach(key=>{
+        const id="notif"+({codex:"Codex",group_chats:"GroupChats",health:"Health",library:"Library",marketing:"Marketing",tips:"Tips",projects:"Projects",responses:"Responses",tasks:"Tasks",usage:"Usage"}[key]||key);
+        const el=getEl(id);if(el)el.checked=store.getItem("trux_notification_cat_"+key)!=="false";
+      });
+      applyTruxTheme(store.getItem("trux_theme")||"dark",false);
+      populateTruxSpeechVoices();
+      try{refreshTruxMemorySummary();}catch{}
+      try{updateTruxStorageSummary();}catch{}
+    }
+    function getTruxSystemInstruction() {
+      const parts=[], custom=store.getItem("trux_custom_instructions")||"";
+      if(custom.trim())parts.push(custom.trim());
+      const style=store.getItem("trux_base_style")||"Default", warmth=store.getItem("trux_warmth")||"Default", enthusiasm=store.getItem("trux_enthusiasm")||"Default", formatting=store.getItem("trux_formatting")||"Default", emoji=store.getItem("trux_emoji")||"Default";
+      if(style!=="Default")parts.push("Response style preference: "+style+".");
+      if(warmth!=="Default")parts.push("Warmth preference: "+warmth+".");
+      if(enthusiasm!=="Default")parts.push("Enthusiasm preference: "+enthusiasm+".");
+      if(formatting!=="Default")parts.push("Formatting preference for headers and lists: "+formatting+".");
+      if(emoji!=="Default")parts.push("Emoji preference: "+emoji+".");
+      if(store.getItem("trux_fast_answers")!=="false")parts.push("Prefer fast, direct answers; add depth when the task requires it or the user asks.");
+      if(store.getItem("trux_memory_enabled")!=="false"){
+        const memory=[["Nickname",store.getItem("trux_nickname")],["Occupation",store.getItem("trux_occupation")],["User preferences",store.getItem("trux_about")]].filter(row=>row[1]).map(row=>row[0]+": "+row[1]);
+        if(memory.length)parts.push("User-provided profile preferences (use only when relevant):\n"+memory.join("\n"));
+      }
+      if(store.getItem("trux_reduce_sensitive")==="true")parts.push("Use extra care with sensitive topics: be measured, avoid unnecessary detail, and prioritize safe, constructive guidance.");
+      return parts.join("\n\n");
+    }
+    function storeDictationHistory(text) {
+      if(store.getItem("trux_dictation_history")!=="true"||!String(text||"").trim())return;
+      let rows=[];try{rows=JSON.parse(store.getItem("trux_dictation_history_items")||"[]");if(!Array.isArray(rows))rows=[];}catch{}
+      rows.unshift({text:String(text).trim().slice(0,1000),at:new Date().toISOString()});store.setItem("trux_dictation_history_items",JSON.stringify(rows.slice(0,30)));
+    }
+    function showDictationHistory() {
+      const host=getEl("truxDictationHistoryList");if(!host)return;host.replaceChildren();
+      let rows=[];try{rows=JSON.parse(store.getItem("trux_dictation_history_items")||"[]");if(!Array.isArray(rows))rows=[];}catch{}
+      const note=document.createElement("p");note.className="mrow-sub";note.textContent=store.getItem("trux_dictation_history")==="true"?"Saved locally on this device.":"History saving is off. Turn it on to keep future recognized phrases.";host.appendChild(note);
+      rows.forEach(row=>{const item=document.createElement("p");item.className="dictation-history-item";item.textContent=(row.at?new Date(row.at).toLocaleString()+" — ":"")+String(row.text||"");host.appendChild(item);});
+      if(rows.length){const clear=document.createElement("button");clear.type="button";clear.className="mbtn danger";clear.textContent="Delete dictation history";clear.onclick=()=>{store.removeItem("trux_dictation_history_items");showDictationHistory();};host.appendChild(clear);}
+    }
+    function applyTimeManagementSettings() {
+      if(truxFocusReminderTimer){clearTimeout(truxFocusReminderTimer);truxFocusReminderTimer=null;}
+      if(store.getItem("trux_focus_reminder")!=="true")return;
+      const minutes=Math.max(5,Math.min(180,Number(store.getItem("trux_focus_interval")||45)));
+      truxFocusReminderTimer=setTimeout(function tick(){if(!document.hidden)toast("Time for a short break. Stretch, rest your eyes, or step away briefly.","ok");applyTimeManagementSettings();},minutes*60000);
+    }
+    function openPluginsFromSettings() {
+      closeProfileModal();
+      if(typeof openPluginsPage==="function")openPluginsPage();else toast("Plugins are not available right now. Please refresh TruX.","err");
+    }
+    function updateTruxStorageSummary() {
+      const host=getEl("truxStorageSummary");if(!host)return;
+      let total=0,imageBytes=0,fileBytes=0,chats=0,archived=0;
+      try{total=new Blob([JSON.stringify(chatSessions||{})]).size;Object.values(chatSessions||{}).forEach(chat=>{if(!chat||chat.incognito)return;if(chat.archived)archived++;chats++;(chat.messages||[]).forEach(message=>{if(message?.image)imageBytes+=String(message.image).length;if(message?.file)fileBytes+=String(message.file).length;});});}catch{}
+      const fmt=n=>n<1024?n+" B":n<1048576?(n/1024).toFixed(1)+" KB":(n/1048576).toFixed(2)+" MB";
+      host.textContent="Approx. "+fmt(total)+" of chat data · "+chats+" chats · "+archived+" archived · image data "+fmt(imageBytes)+" · file data "+fmt(fileBytes)+". Browser caches are excluded.";
+    }
+    function viewArchivedChats() {
+      const host=getEl("archivedChatsList");if(!host)return;host.replaceChildren();
+      const rows=Object.entries(chatSessions||{}).filter(([id,chat])=>chat&&chat.archived&&!chat.incognito);
+      const title=document.createElement("p");title.className="mrow-sub";title.textContent=rows.length?"Archived conversations":"No archived chats.";host.appendChild(title);
+      rows.forEach(([id,chat])=>{const row=document.createElement("div");row.className="archived-chat-row";const label=document.createElement("span");label.textContent=chat.title||"Untitled chat";const restore=document.createElement("button");restore.type="button";restore.className="mbtn";restore.textContent="Restore";restore.onclick=()=>restoreArchivedChat(id);row.append(label,restore);host.appendChild(row);});
+      updateTruxStorageSummary();
+    }
+    function restoreArchivedChat(id) {
+      const chat=chatSessions&&chatSessions[id];if(!chat||!chat.archived)return;
+      chat.archived=false;saveChatSessions();renderSidebar();viewArchivedChats();toast("Chat restored to history.","ok");
+    }
+    function archiveAllHistory() {
+      const entries=Object.entries(chatSessions||{}).filter(([id,chat])=>chat&&!chat.incognito&&!chat.archived);
+      if(!entries.length){toast("There are no active chats to archive.");viewArchivedChats();return;}
+      if(!confirm("Archive all regular chat history? You can restore archived chats later."))return;
+      entries.forEach(([id,chat])=>{chat.archived=true;});saveChatSessions();
+      if(currentChatId&&chatSessions[currentChatId]?.archived){currentChatId=null;startNewChat();}
+      renderSidebar();viewArchivedChats();updateTruxStorageSummary();toast("Chat history archived.","ok");
+    }
+
     function saveTTSRate(val) { store.setItem("trux_tts_rate", val); }
     function saveCustomInstructions() { store.setItem("trux_custom_instructions", getEl("customInstructions").value.trim()); toast("System instructions saved.", "ok"); }
     function loadCustomInstructions() { let el = getEl("customInstructions"); if(el) el.value = store.getItem("trux_custom_instructions") || ""; }
@@ -6997,6 +7164,8 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       
       updateLocationSettingUI();
       updateNotificationSettingsUI();
+      loadSupplementarySettings();
+      applyTimeManagementSettings();
     }
 
     function exportChatData() {
@@ -7008,7 +7177,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       let t = performance.now();
       try { await fetch("/api/chat", { cache: "no-store" }); toast(`Backend reachable - ${Math.round(performance.now() - t)} ms`, "ok"); } catch { toast("Backend check failed.", "err"); }
     }
-    function resetAllSettings() { if(confirm("Reset all settings?")) { ["trux_custom_instructions","trux_auto_read","trux_ambient_glow","trux_tts_rate","trux_home_look","trux_location_enabled","trux_location_granted","trux_location_prompted","trux_avatar_override"].forEach(k => store.removeItem(k)); loadSettings(); } }
+    function resetAllSettings() { if(confirm("Reset all settings?")) { ["trux_custom_instructions","trux_auto_read","trux_ambient_glow","trux_tts_rate","trux_home_look","trux_location_enabled","trux_location_granted","trux_location_prompted","trux_avatar_override","trux_theme","trux_profile_display_name",...TRUX_PROFILE_PREFERENCES.map(k=>"trux_"+k),"trux_age_group","trux_dictation_language","trux_speech_voice","trux_dictation_history_items",...TRUX_NOTIFICATION_CATEGORIES.map(k=>"trux_notification_cat_"+k)].forEach(k => store.removeItem(k)); loadSettings(); } }
     function clearAllHistory() { if(confirm("Delete all local chats?")) { chatSessions = {}; store.removeItem("trux_chats"); startNewChat(); closeSettingsModal(); } }
 
     function handleAuthAction() {
@@ -7035,7 +7204,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
     }
     function switchSettingsSection(name) {
       if (String(name || "") === "home") { showSettingsHome(); return; }
-      const validSections = ["general","appearance","voice","personalization","notifications","usage","data","developer"];
+      const validSections = ["general","appearance","voice","personalization","notifications","usage","data","developer","memory","account","security","safety","remote","storage","privacy","ads","parental"];
       const requested = String(name || "general");
       const hasSection = validSections.includes(requested) &&
         Array.from(document.querySelectorAll("[data-settings-content]")).some(section => section.getAttribute("data-settings-content") === requested);
@@ -7768,9 +7937,9 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
 
     if("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
       let SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognition = new SR(); recognition.continuous = false; recognition.interimResults = true; recognition.lang = "en-US";
+      recognition = new SR(); recognition.continuous = false; recognition.interimResults = true; recognition.lang = store.getItem("trux_dictation_language") && store.getItem("trux_dictation_language") !== "auto" ? store.getItem("trux_dictation_language") : (navigator.language || "en-US");
       recognition.onstart = () => { isRecording = true; wasInputByVoice = true; getEl("voiceBtn").classList.add("recording"); };
-      recognition.onresult = e => { let t = ""; for(let i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript; getEl("promptInput").value = t; handleInputChange(); };
+      recognition.onresult = e => { let t = "", finalText = ""; for(let i = e.resultIndex; i < e.results.length; i++) { t += e.results[i][0].transcript; if(e.results[i].isFinal) finalText += e.results[i][0].transcript; } getEl("promptInput").value = t; if(finalText.trim()) storeDictationHistory(finalText); handleInputChange(); };
       recognition.onerror = stopVoiceInput; recognition.onend = stopVoiceInput;
     }
     function toggleVoiceInput() { if(!recognition) return toast("Speech recognition is not supported in this browser.", "err"); isRecording ? recognition.stop() : (wasInputByVoice = true, recognition.start()); }
@@ -8983,6 +9152,8 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       if(!("speechSynthesis" in window)) return; speechSynthesis.cancel();
       let ut = new SpeechSynthesisUtterance(t.replace(/```[\s\S]*?```/g,"Code file attached.").replace(/\*\*(.*?)\*\*/g,"$1").replace(/\*(.*?)\*/g,"$1").replace(/`/g,""));
       ut.rate = parseFloat(store.getItem("trux_tts_rate") || "1.0");
+      const preferredVoice = store.getItem("trux_speech_voice") || "";
+      if (preferredVoice) { const match = speechSynthesis.getVoices().find(voice => voice.name === preferredVoice); if (match) ut.voice = match; }
       speechSynthesis.speak(ut);
     }
     
@@ -10685,7 +10856,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         })(),
         image: img,
         attachments: allAttachments,
-        systemInstruction: store.getItem("trux_custom_instructions") || "",
+        systemInstruction: getTruxSystemInstruction(),
         userId: auth?.currentUser?.uid || null,
         userEmail: auth?.currentUser?.email || "",
         location: needsTurnLocation
