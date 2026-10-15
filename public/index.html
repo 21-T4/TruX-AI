@@ -11309,6 +11309,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       // captures the generation that this serialized send owns.
       const sendPromise = sendPromptImpl();
       const ownedEpoch = generationEpoch;
+      const ownedTurnContext = activeTurnContext;
       try {
         return await sendPromise;
       } finally {
@@ -11321,10 +11322,8 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         // clear a newer generation that has taken ownership.
         if (generationEpoch === ownedEpoch || !isGenerating) {
           isGenerating=false;
-          if (!activeAbortController || activeAbortController.signal?.aborted ||
-              generationEpoch === ownedEpoch) {
-            activeAbortController=null;
-          }
+          activeAbortController=null;
+          if (activeTurnContext === ownedTurnContext) activeTurnContext=null;
           // handleInputChange must see the stale Stop class so it can
           // also force the icon back into the current idle/send mode.
           handleInputChange();
