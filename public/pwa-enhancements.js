@@ -197,7 +197,8 @@
             '</button>' +
           '</header>' +
           '<nav class="trux-live-menu" id="truxPwaLiveMenu" hidden aria-label="Live options">' +
-            '<button type="button" id="truxPwaLiveMenuCamera">Turn camera on</button>' +            '<button type="button" id="truxPwaLiveMenuMic">Mute microphone</button>' +
+            '<button type="button" id="truxPwaLiveMenuCamera">Turn camera on</button>' +
+            '<button type="button" id="truxPwaLiveMenuMic">Mute microphone</button>' +
             '<button type="button" id="truxPwaLiveMenuTranscript">Show transcript</button>' +
           '</nav>' +
           '<main class="trux-live-stage">' +
@@ -243,13 +244,6 @@
           '#truxPwaLivePanel .trux-live-menu button{display:block;width:100%;padding:12px 13px;border:0;border-radius:9px;background:transparent;color:#e9e9ef;text-align:left;font:inherit;font-size:13px;cursor:pointer}' +
           '#truxPwaLivePanel .trux-live-menu button:hover{background:rgba(255,255,255,.08)}' +
           '#truxPwaLivePanel .trux-live-stage{position:relative;display:flex;flex:1;min-height:0;flex-direction:column;align-items:center;justify-content:center;padding:18px 0 24px;text-align:center}' +
-          '#truxPwaLivePanel .trux-live-orb-wrap{position:relative;display:grid;place-items:center;width:120px;height:120px;margin:0 0 28px;flex:0 0 auto}' +
-          '#truxPwaLivePanel .trux-live-orb-halo{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(116,151,255,.32),rgba(81,95,191,.10) 44%,transparent 72%);filter:blur(6px);transform:scale(calc(1 + var(--trux-live-level,0)*.4));transition:transform .09s linear}' +
-          '#truxPwaLivePanel .trux-live-orb{position:relative;display:grid;place-items:center;width:76px;height:76px;border-radius:50%;background:radial-gradient(circle at 32% 22%,#d9e5ff 0%,#8eb5ff 14%,#506ee7 38%,#343c9a 61%,#090d22 82%);box-shadow:0 0 28px rgba(84,122,255,.37),inset 0 1px 8px rgba(255,255,255,.34);transform:scale(calc(1 + var(--trux-live-level,0)*.12));transition:transform .09s linear}' +
-          '#truxPwaLivePanel .trux-live-orb:before{content:"";position:absolute;inset:-13px;border-radius:50%;border:1px solid rgba(165,190,255,.16);box-shadow:0 0 25px rgba(89,115,255,.08)}' +
-          '#truxPwaLivePanel .trux-live-orb span{font-size:32px;line-height:1;color:#f5f7ff;text-shadow:0 0 18px rgba(255,255,255,.7)}' +
-          '#truxPwaLivePanel.trux-live-connected .trux-live-orb{animation:truxLiveBreathe 3.2s ease-in-out infinite}' +
-          '#truxPwaLivePanel.trux-live-user-speaking .trux-live-orb{box-shadow:0 0 42px rgba(111,152,255,.7),inset 0 1px 8px rgba(255,255,255,.5)}' +
           '#truxPwaLivePanel .trux-live-stage h1{max-width:620px;margin:0 14px 10px;color:#eeeef4;font-size:clamp(28px,5.5vw,54px);font-weight:400;line-height:1.15;letter-spacing:-.035em}' +
           '#truxPwaLivePanel .trux-live-stage>p{max-width:min(540px,90vw);min-height:18px;margin:0;color:#a8adc1;font-size:13px;line-height:1.45;overflow-wrap:anywhere}' +
           '#truxPwaLivePanel .trux-live-retry{margin-top:20px;padding:11px 18px;border:1px solid rgba(205,215,255,.24);border-radius:999px;background:rgba(255,255,255,.08);color:#f5f5ff;font:inherit;font-size:13px;cursor:pointer}' +
@@ -270,17 +264,11 @@
           '#truxPwaLivePanel .trux-live-center-pill{display:flex;flex:0 1 210px;min-width:88px;max-width:210px;height:76px;align-items:center;justify-content:center;flex-direction:column;gap:7px;overflow:hidden;border:1px solid rgba(203,216,255,.10);border-radius:999px;background:linear-gradient(180deg,#020307 0%,#050917 48%,#263868 77%,#dde6ff 100%);box-shadow:0 9px 28px rgba(4,10,38,.35),inset 0 1px 8px rgba(255,255,255,.05);color:#e8ecff}' +
           '#truxPwaLivePanel .trux-live-center-pill span{font-size:10px;line-height:1;color:#d8def3}' +
           '#truxPwaLivePanel .trux-live-center-pill{position:relative;background:#03050c!important}' +
-          '#truxPwaLivePanel .trux-live-voice-color{position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:calc(var(--trux-live-level,0)*1.5);background:radial-gradient(ellipse at calc(35% + var(--trux-live-frequency,0)*30%) 110%,rgba(74,118,255,calc(var(--trux-live-level,0)*1.2)) 0%,rgba(41,75,190,calc(var(--trux-live-level,0)*.9)) calc(22% + var(--trux-live-frequency,0)*24%),rgba(6,12,38,0) 76%);transition:opacity .08s linear,background .08s linear}' +
+          '#truxPwaLivePanel .trux-live-voice-color{position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:var(--trux-live-level,0);background:radial-gradient(ellipse at var(--trux-live-tone,50%) 110%,rgba(74,118,255,.96) 0%,rgba(41,75,190,.74) 36%,rgba(6,12,38,0) 76%);transition:opacity .08s linear,background .08s linear}' +
           '#truxPwaLivePanel .trux-live-center-pill span{position:relative;z-index:1}' +
-          '#truxPwaLivePanel .trux-live-wave,#truxPwaLivePanel .trux-live-orb-wrap{display:none!important}' +
           '#truxPwaLivePanel .trux-live-stage h1:empty{display:none!important}' +
-          '#truxPwaLivePanel .trux-live-wave{display:flex;align-items:center;justify-content:center;gap:3px;height:23px}' +
-          '#truxPwaLivePanel .trux-live-wave i{display:block;width:3px;height:6px;border-radius:9px;background:#f1f4ff;opacity:.82;transform-origin:center;animation:truxLiveWave .8s ease-in-out infinite alternate}' +
-          '#truxPwaLivePanel .trux-live-wave i:nth-child(2n){animation-delay:.12s}#truxPwaLivePanel .trux-live-wave i:nth-child(3n){animation-delay:.28s}#truxPwaLivePanel .trux-live-wave i:nth-child(4n){animation-delay:.4s}' +
-          '#truxPwaLivePanel:not(.trux-live-connected) .trux-live-wave i{animation-play-state:paused;height:4px;opacity:.42}' +
-          '#truxPwaLivePanel.trux-live-user-speaking .trux-live-wave i{animation-duration:.34s}' +
-          '@keyframes truxLiveWave{from{height:4px}to{height:21px}}@keyframes truxLiveBreathe{0%,100%{filter:brightness(1);transform:scale(1)}50%{filter:brightness(1.15);transform:scale(1.04)}}' +
-          '@media(max-width:480px){#truxPwaLivePanel{padding-left:12px;padding-right:12px}#truxPwaLivePanel .trux-live-topbar{gap:10px}#truxPwaLivePanel .trux-live-top-button{width:42px;height:42px;flex-basis:42px}#truxPwaLivePanel .trux-live-brand b{font-size:14px}#truxPwaLivePanel .trux-live-brand span{font-size:10px}#truxPwaLivePanel .trux-live-orb-wrap{margin-bottom:23px;width:104px;height:104px}#truxPwaLivePanel .trux-live-orb{width:68px;height:68px}#truxPwaLivePanel .trux-live-stage h1{font-size:clamp(28px,8vw,42px)}#truxPwaLivePanel .trux-live-controls{gap:5px}#truxPwaLivePanel .trux-live-control{flex-basis:clamp(44px,12vw,58px);width:clamp(44px,12vw,58px);height:62px}#truxPwaLivePanel .trux-live-control svg{width:23px;height:23px}#truxPwaLivePanel .trux-live-control span{font-size:9px}#truxPwaLivePanel .trux-live-center-pill{flex:1 1 92px;min-width:72px;height:70px}#truxPwaLivePanel .trux-live-camera-preview{top:0;right:0;width:clamp(78px,21vw,110px);border-radius:12px}#truxPwaLivePanel .trux-live-transcript{max-height:24vh;padding:10px 12px}}' +
+          '#truxPwaLivePanel.trux-live-heard-user .trux-live-stage h1,#truxPwaLivePanel.trux-live-heard-user .trux-live-stage>p{display:none!important}' +
+          '@media(max-width:480px){#truxPwaLivePanel{padding-left:12px;padding-right:12px}#truxPwaLivePanel .trux-live-topbar{gap:10px}#truxPwaLivePanel .trux-live-top-button{width:42px;height:42px;flex-basis:42px}#truxPwaLivePanel .trux-live-brand b{font-size:14px}#truxPwaLivePanel .trux-live-brand span{font-size:10px}#truxPwaLivePanel .trux-live-stage h1{font-size:clamp(28px,8vw,42px)}#truxPwaLivePanel .trux-live-controls{gap:5px}#truxPwaLivePanel .trux-live-control{flex-basis:clamp(44px,12vw,58px);width:clamp(44px,12vw,58px);height:62px}#truxPwaLivePanel .trux-live-control svg{width:23px;height:23px}#truxPwaLivePanel .trux-live-control span{font-size:9px}#truxPwaLivePanel .trux-live-center-pill{flex:1 1 92px;min-width:72px;height:70px}#truxPwaLivePanel .trux-live-camera-preview{top:0;right:0;width:clamp(78px,21vw,110px);border-radius:12px}#truxPwaLivePanel .trux-live-transcript{max-height:24vh;padding:10px 12px}}' +
           '@media(prefers-reduced-motion:reduce){#truxPwaLivePanel *,#truxPwaLivePanel *:before{animation:none!important;transition:none!important}}';
         document.head.appendChild(style);
 
@@ -358,6 +346,7 @@
       if (role === "user") {
         const greeting = byId("truxPwaLiveGreeting");
         if (greeting) greeting.textContent = "";
+        panel?.classList.add("trux-live-heard-user");
       }
       const el = byId("truxPwaLiveTranscript");
       if (!el) return;
@@ -392,33 +381,50 @@
       if (!audioContext || !audioStream) throw new Error("Microphone stream is not ready.");
       const src = audioContext.createMediaStreamSource(audioStream);
       const proc = audioContext.createScriptProcessor(2048, 1, 1);
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = .72;
+      const frequencyData = new Uint8Array(analyser.frequencyBinCount);
       const gain = audioContext.createGain();
       gain.gain.value = 0;
       proc.onaudioprocess = event => {
-        if (socket !== forSocket || forSocket.readyState !== WebSocket.OPEN || forSocket.bufferedAmount > 1048576) return;
+        if (socket !== forSocket || forSocket.readyState !== WebSocket.OPEN) return;
         const samples = event.inputBuffer.getChannelData(0);
         let power = 0;
-        let crossings = 0;
-        let previous = samples[0] || 0;
-        for (let i = 0; i < samples.length; i++) {
-          const sample = samples[i] || 0;
-          power += sample * sample;
-          if ((previous <= 0 && sample > 0) || (previous >= 0 && sample < 0)) crossings++;
-          previous = sample;
-        }
+        for (let i = 0; i < samples.length; i++) power += samples[i] * samples[i];
         const rms = Math.sqrt(power / Math.max(1, samples.length));
-        const level = muted || rms < .008 ? 0 : Math.min(.8, rms * 3.2);
-        const frequency = level ? Math.min(1, (crossings * audioContext.sampleRate / (2 * samples.length)) / 2000) : 0;
+        const voiceActive = !muted && rms >= .014;
+        const level = voiceActive ? Math.min(.92, rms * 5.5) : 0;
+        let tone = 50;
+        if (voiceActive) {
+          analyser.getByteFrequencyData(frequencyData);
+          const maxBin = Math.min(24, frequencyData.length - 1);
+          let magnitude = 0;
+          let weightedFrequency = 0;
+          for (let i = 1; i <= maxBin; i++) {
+            magnitude += frequencyData[i];
+            weightedFrequency += i * frequencyData[i];
+          }
+          if (magnitude > 0 && maxBin > 1) {
+            const centroid = weightedFrequency / magnitude;
+            tone = Math.max(0, Math.min(100, ((centroid - 1) / (maxBin - 1)) * 100));
+          }
+          const greeting = byId("truxPwaLiveGreeting");
+          if (greeting) greeting.textContent = "";
+          panel?.classList.add("trux-live-heard-user");
+        }
         panel?.style.setProperty("--trux-live-level", level.toFixed(3));
-        panel?.style.setProperty("--trux-live-frequency", frequency.toFixed(3));        panel?.style.setProperty("--trux-live-level", level.toFixed(3));
-        panel?.classList.toggle("trux-live-user-speaking", level > .045);
-        if (muted) return;
+        panel?.style.setProperty("--trux-live-tone", tone.toFixed(1) + "%");
+        panel?.classList.toggle("trux-live-user-speaking", voiceActive);
+        if (muted || forSocket.bufferedAmount > 1048576) return;
         const data = pcmBase64(samples, audioContext.sampleRate);
         if (data) {
           try { forSocket.send(JSON.stringify({ type: "audio", data })); } catch {}
         }
       };
       src.connect(proc);
+      src.connect(analyser);
+      analyser.connect(gain);
       proc.connect(gain);
       gain.connect(audioContext.destination);
       sourceNode = src;
@@ -588,8 +594,9 @@
       for (const node of playback) { try { node.stop(); } catch {} }
       playback.clear();
       playbackAt = 0;
-      panel?.classList.remove("trux-live-connected", "trux-live-user-speaking", "trux-live-assistant-speaking");
+      panel?.classList.remove("trux-live-connected", "trux-live-user-speaking", "trux-live-assistant-speaking", "trux-live-heard-user");
       panel?.style.setProperty("--trux-live-level", "0");
+      panel?.style.setProperty("--trux-live-tone", "50%");
       const oldContext = audioContext;
       audioContext = null;
       if (oldContext && oldContext.state !== "closed") oldContext.close().catch(() => {});
@@ -609,7 +616,8 @@
       } else if (nextState === "stopped") {
         setStatus("Live session closed");
         if (byId("truxPwaLiveRetry")) byId("truxPwaLiveRetry").hidden = true;
-      }      syncMenuLabels();
+      }
+      syncMenuLabels();
       if (typeof window.handleInputChange === "function") window.handleInputChange();
     }
 
@@ -641,7 +649,9 @@
       byId("truxPwaLiveRetry").hidden = true;
       byId("truxPwaLiveGreeting").textContent = "Hi, let us get into it";
       panel.dataset.state = "connecting";
-      panel.classList.remove("trux-live-connected", "trux-live-user-speaking", "trux-live-assistant-speaking");
+      panel.classList.remove("trux-live-connected", "trux-live-user-speaking", "trux-live-assistant-speaking", "trux-live-heard-user");
+      panel.style.setProperty("--trux-live-level", "0");
+      panel.style.setProperty("--trux-live-tone", "50%");
       setStatus("Requesting microphone permission…");
       window.__truxLiveState = "connecting";
       isStarting = true;
