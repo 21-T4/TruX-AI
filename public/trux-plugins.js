@@ -39,6 +39,25 @@
   function headers(token){
     return {'Content-Type':'application/json','Authorization':'Bearer '+token};
   }
+  async function authenticatedFetch(url, options, user){
+    if(typeof truxAuthenticatedFetch === 'function'){
+      return truxAuthenticatedFetch(url, options || {}, user);
+    }
+    var init = options || {};
+    var target = user || (auth() && auth().currentUser);
+    if(!target) throw new Error('Sign in to continue.');
+    async function run(forceRefresh){
+      var token = await target.getIdToken(!!forceRefresh);
+      var requestHeaders = new Headers(init.headers || {});
+      requestHeaders.set('Authorization','Bearer '+token);
+      return fetch(url,Object.assign({},init,{headers:requestHeaders}));
+    }
+    var response = await run(false);
+    if(response.status===401 && auth() && auth().currentUser && auth().currentUser.uid===target.uid){
+      response = await run(true);
+    }
+    return response;
+  }
   function list(){
     return state.plugins.length ? state.plugins : FALLBACK.map(function(p){
       return Object.assign({},p,{configured:null,connected:false,enabled:false});
@@ -128,8 +147,7 @@
         notice('Sign in to connect plugins and give TruX permission to use them.',false);
         return;
       }
-      var token=await u.getIdToken();
-      var response=await fetch('/api/plugins',{headers:headers(token),cache:'no-store'});
+      var response=await authenticatedFetch('/api/plugins',{cache:'no-store'},u);
       var data=await response.json().catch(function(){return {};});
       if(!response.ok) throw new Error(data.error || 'Plugin catalog could not be loaded.');
       state.plugins=Array.isArray(data.plugins) ? data.plugins : [];
@@ -157,8 +175,7 @@
     if(button){button.disabled=true;button.textContent='Connecting…';button.setAttribute('aria-busy','true');}
     notice('Opening the secure Composio connection flow for '+plugin.name+'…',false);
     try{
-      var token=await a.currentUser.getIdToken();
-      var response=await fetch('/api/plugins/connect',{method:'POST',headers:headers(token),body:JSON.stringify({pluginId:pluginId})});
+      var response=await authenticatedFetch('/api/plugins/connect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pluginId:pluginId})},a.currentUser);
       var data=await response.json().catch(function(){return {};});
       if(!response.ok) throw new Error(data.error || 'Could not start the connection.');
       if(!data.redirectUrl) throw new Error('Composio did not return a connection URL.');
@@ -179,8 +196,7 @@
     if(button){button.disabled=true;button.textContent='Disconnecting…';button.setAttribute('aria-busy','true');}
     notice('Disconnecting '+plugin.name+'…',false);
     try{
-      var token=await a.currentUser.getIdToken();
-      var response=await fetch('/api/plugins/disconnect',{method:'POST',headers:headers(token),body:JSON.stringify({pluginId:pluginId})});
+      var response=await authenticatedFetch('/api/plugins/disconnect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pluginId:pluginId})},a.currentUser);
       var data=await response.json().catch(function(){return {};});
       if(!response.ok) throw new Error(data.error || 'Could not disconnect the plugin.');
       await load({silent:true});
