@@ -194,10 +194,13 @@ async function serveStatic(req, res) {
       res.setHeader("Pragma", "no-cache");
       res.setHeader("Expires", "0");
     }
+    if (basename === "pwa-enhancements.js") {
+      res.setHeader("Cache-Control", "no-cache, must-revalidate");
+    }
     if (req.method === "HEAD") return res.end();
     if (extension === ".html" && basename === "index.html") {
       const html = await fs.promises.readFile(filePath, "utf8");
-      const scriptTag = '<script src="/pwa-enhancements.js?v=20261015-1"></script>';
+      const scriptTag = '<script src="/pwa-enhancements.js?v=20261015-2"></script>';
       return res.end(html.includes(scriptTag) ? html : html.replace("</body>", scriptTag + "\n</body>"));
     }
     fs.createReadStream(filePath).pipe(res);
@@ -222,7 +225,7 @@ async function serveStatic(req, res) {
       res.setHeader("Pragma", "no-cache");
       res.setHeader("Expires", "0");
       const html = await fs.promises.readFile(indexPath, "utf8");
-      const scriptTag = '<script src="/pwa-enhancements.js?v=20261015-1"></script>';
+      const scriptTag = '<script src="/pwa-enhancements.js?v=20261015-2"></script>';
       return res.end(html.includes(scriptTag) ? html : html.replace("</body>", scriptTag + "\n</body>"));
     } catch {
       res.statusCode = 500;
