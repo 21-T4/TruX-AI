@@ -12,7 +12,7 @@ const FEEDBACK_LABELS = {
 };
 
 function cleanSingleLine(value, maxLength) {
-  return String(value ?? "").replace(/[\\r\\n\\t]+/g, " ").trim().slice(0, maxLength);
+  return String(value ?? "").replace(/[\r\n\t]+/g, " ").trim().slice(0, maxLength);
 }
 
 export async function onRequestPost({ request, env = {} }) {
@@ -87,7 +87,7 @@ export async function onRequestPost({ request, env = {} }) {
     to: [FEEDBACK_RECIPIENT],
     subject: "[TruX-Omni " + label + "] " + subject,
     text,
-    ...(accountEmail !== "Not provided" && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(accountEmail) ? { reply_to: accountEmail } : {})
+    ...(accountEmail !== "Not provided" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(accountEmail) ? { reply_to: accountEmail } : {})
   };
 
   try {
