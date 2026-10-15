@@ -1734,15 +1734,6 @@ export async function onRequestPost(context) {
         return out;
       }
 
-      function summarizeToolResult(value) {
-        if (value == null) return '';
-        const safe = redactToolDetail(value);
-        let rendered = '';
-        try { rendered = typeof safe === 'string' ? safe : JSON.stringify(safe); }
-        catch { rendered = String(safe); }
-        return rendered.length > 1800 ? rendered.slice(0, 1800) + '…' : rendered;
-      }
-
       function terminalSafePayload(value, depth = 0) {
         if (depth > 12) return '[nested payload omitted]';
         if (value == null || typeof value !== 'object') return value;
