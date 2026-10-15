@@ -5900,6 +5900,79 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
     }
     restoreCachedUserUI();
 
+    async function getTruxIdToken(user, forceRefresh = false) {
+      const target = user || auth?.currentUser;
+      if (!target) throw new Error("Sign in to continue.");
+      const token = await target.getIdToken(!!forceRefresh);
+      if (!token) throw new Error("Could not obtain your sign-in token. Please sign in again.");
+      if (auth?.currentUser && auth.currentUser.uid !== target.uid) {
+        throw new Error("Your account changed. Please retry the request.");
+      }
+      return token;
+    }
+
+    async function truxAuthenticatedFetch(input, init = {}, userOverride = null) {
+      const requestUser = userOverride || auth?.currentUser;
+      if (!requestUser) throw new Error("Sign in to continue.");
+      const makeInit = async forceRefresh => {
+        const headers = new Headers(init.headers || {});
+        headers.set("Authorization", "Bearer " + await getTruxIdToken(requestUser, forceRefresh));
+        return { ...init, headers };
+      };
+      let response = await fetch(input, await makeInit(false));
+      if (response.status === 401 && auth?.currentUser?.uid === requestUser.uid) {
+        response = await fetch(input, await makeInit(true));
+      }
+      return response;
+    }
+
+    function updateTruxProfileUI(user) {
+      const signedIn = !!user;
+      const fallbackAvatar = "https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff";
+      if (!signedIn) {
+        const nameEl = getEl("userName"); if (nameEl) nameEl.textContent = "Guest User";
+        const emailEl = getEl("userEmail"); if (emailEl) emailEl.textContent = "Tap to sign in";
+        ["userAvatar", "modalAvatar", "topProfileAvatar"].forEach(id => { const el = getEl(id); if (el) el.src = fallbackAvatar; });
+        const modalName = getEl("modalName"); if (modalName) modalName.textContent = "Guest User";
+        const modalEmail = getEl("modalEmail"); if (modalEmail) modalEmail.textContent = "";
+        try { store.removeItem("trux_cached_user"); } catch {}
+        return;
+      }
+      const cached = {
+        uid: user.uid,
+        email: user.email || "",
+        displayName: user.displayName || "",
+        photoURL: user.photoURL || ""
+      };
+      try { store.setItem("trux_cached_user", JSON.stringify(cached)); } catch {}
+      const nameEl = getEl("userName"); if (nameEl) nameEl.textContent = cached.displayName || "User";
+      const emailEl = getEl("userEmail"); if (emailEl) emailEl.textContent = cached.email;
+      const modalName = getEl("modalName"); if (modalName) modalName.textContent = cached.displayName || "User";
+      const modalEmail = getEl("modalEmail"); if (modalEmail) modalEmail.textContent = cached.email;
+      applyStoredAvatar(user);
+      const ownerBadge = document.querySelector(".owner-profile-badge");
+      if (ownerBadge) ownerBadge.style.display = isTruxDeveloper(user) ? "inline-flex" : "none";
+      if (currentProfileOption === "account" && getEl("profileDetailBody")) {
+        const data = profileDetailData("account");
+        if (getEl("profileDetailTitle")) getEl("profileDetailTitle").textContent = data.title;
+        if (getEl("profileDetailSubtitle")) getEl("profileDetailSubtitle").textContent = data.subtitle;
+        getEl("profileDetailBody").innerHTML = data.html;
+      }
+    }
+
+    async function refreshTruxProfileInfo(user = auth?.currentUser) {
+      if (!user) { updateTruxProfileUI(null); return; }
+      updateTruxProfileUI(user);
+      try {
+        await user.reload();
+        const current = auth?.currentUser;
+        if (!current || current.uid !== user.uid) return;
+        updateTruxProfileUI(current);
+      } catch (error) {
+        console.warn("TruX profile refresh deferred:", error?.message || error);
+      }
+    }
+
     async function initFirebase() {
       const fallback = { apiKey: "AIzaSyAs_GDrzlBaucHfiff0Y6cA8GVHjFTA62Q", authDomain: "trux-ai.firebaseapp.com", projectId: "trux-ai", storageBucket: "trux-ai.firebasestorage.app", messagingSenderId: "59313097411", appId: "1:59313097411:web:32e4158bfb733fa7cfb076" };
       try { const r = await fetch("/api/firebase-config", { cache: "no-store" }); firebase.initializeApp(await r.json()); }
@@ -5925,7 +5998,9 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       
       auth.onAuthStateChanged(u => {
         applyDeveloperIdentity(u);
+        updateTruxProfileUI(u);
         if(u) {
+          void refreshTruxProfileInfo(u);
           store.setItem("trux_cached_user", JSON.stringify({
             uid: u.uid,
             email: u.email,
@@ -5952,6 +6027,11 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
           if (getEl("topProfileAvatar")) getEl("topProfileAvatar").src = "https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff";
         }
       });
+      if (typeof auth.onIdTokenChanged === "function") {
+        auth.onIdTokenChanged(user => {
+          if (user && auth?.currentUser?.uid === user.uid) updateTruxProfileUI(user);
+        });
+      }
     }
 
 
@@ -5977,12 +6057,12 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         if(cfg?.vapidKey) options.vapidKey = cfg.vapidKey;
         const token = await firebaseMessaging.getToken(options);
         if(!token) return;
-        await fetch("/api/push/register",{
+        await truxAuthenticatedFetch("/api/push/register",{
           method:"POST",
           headers:{"Content-Type":"application/json"},
           credentials:"same-origin",
           body:JSON.stringify({userId:auth.currentUser.uid,token})
-        });
+        }, auth.currentUser);
         updateNotificationButton();
       } catch {}
     }
@@ -6246,13 +6326,11 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       selector.disabled = true;
       if (status) status.textContent = "Loading Gemini models…";
       try {
-        const token = await currentUser.getIdToken();
         const endpoint = "/api/models" + (forceRefresh ? "?refresh=1" : "");
-        const response = await fetch(endpoint, {
+        const response = await truxAuthenticatedFetch(endpoint, {
           method: "GET",
-          cache: "no-store",
-          headers: { Authorization: "Bearer " + token }
-        });
+          cache: "no-store"
+        }, currentUser);
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload.error || "Could not load Google Cloud Gemini models.");
         if (!isTruxDeveloper(auth?.currentUser) || auth.currentUser.uid !== currentUser.uid) return;
@@ -6656,27 +6734,17 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         button.textContent = "Sending…";
       }
       try {
-        let token = await user.getIdToken();
         const requestOptions = {
           method: "POST",
           cache: "no-store",
-          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ type, subject, message })
         };
         let response;
         try {
-          response = await fetch("/api/feedback", requestOptions);
+          response = await truxAuthenticatedFetch("/api/feedback", requestOptions, user);
         } catch {
           return openFeedbackEmailDraft({ type, subject, message, user });
-        }
-        if (response.status === 401 && auth?.currentUser?.uid === user.uid) {
-          try {
-            token = await user.getIdToken(true);
-            requestOptions.headers.Authorization = "Bearer " + token;
-            response = await fetch("/api/feedback", requestOptions);
-          } catch {
-            return openFeedbackEmailDraft({ type, subject, message, user });
-          }
         }
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
@@ -6783,14 +6851,15 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       if(!auth) return;
       if(!auth.currentUser) return openLoginWall();
       closeProfileOption();
-      applyStoredAvatar(auth.currentUser);
-      getEl("modalName").innerText = auth.currentUser.displayName || "User";
-      getEl("modalEmail").innerText = auth.currentUser.email || "";
-      const ownerBadge=document.querySelector(".owner-profile-badge"); if(ownerBadge) ownerBadge.style.display=isTruxDeveloper(auth.currentUser) ? "inline-flex" : "none";
-      getEl("profilePlanText").innerText = isTruxDeveloper(auth.currentUser) ? "Owner" : (currentPlanTier === "pro" ? "Pro" : "Core");
-      getEl("profileModelText").innerText = "Auto";
-      getEl("profileLimitText").innerText = "Unlimited";
-      getEl("profileModal").style.display = "flex";
+      const user = auth.currentUser;
+      updateTruxProfileUI(user);
+      const plan = getEl("profilePlanText");
+      if(plan) plan.innerText = isTruxDeveloper(user) ? "Owner" : (currentPlanTier === "pro" ? "Pro" : "Core");
+      const model = getEl("profileModelText"); if(model) model.innerText = "Auto";
+      const limit = getEl("profileLimitText"); if(limit) limit.innerText = "Unlimited";
+      const modal = getEl("profileModal");
+      if(modal) modal.style.display = "flex";
+      void refreshTruxProfileInfo(user);
     }
     function closeProfileModal() { getEl("profileModal").style.display = "none"; }
     function switchSettingsSection(name) {
@@ -6832,20 +6901,32 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       closeSettingsModal();
     }
     function openSettingsModal(section) {
-      updateAllUsageUI();
-      loadSettings();
-      updateLocationSettingUI();
-      updateNotificationSettingsUI();
       const modal = getEl("settingsModal");
-      if (!modal) return;
+      if (!modal) {
+        toast("Settings could not load. Please refresh TruX and try again.", "err");
+        return;
+      }
+      closeProfileModal();
       modal.style.display = "flex";
-      if (!section || section === "home") showSettingsHome();
-      else switchSettingsSection(section);
+      modal.setAttribute("aria-hidden", "false");
+      const requested = String(section || "home");
+      try {
+        if (requested === "home") showSettingsHome();
+        else switchSettingsSection(requested);
+      } catch (error) {
+        console.error("TruX Settings navigation failed:", error);
+        try { showSettingsHome(); } catch {}
+      }
+      try { updateAllUsageUI(); } catch (error) { console.warn("Settings usage refresh deferred:", error); }
+      try { loadSettings(); } catch (error) { console.warn("Settings preferences refresh deferred:", error); }
+      try { updateLocationSettingUI(); } catch (error) { console.warn("Settings location refresh deferred:", error); }
+      try { updateNotificationSettingsUI(); } catch (error) { console.warn("Settings notifications refresh deferred:", error); }
     }
     function closeSettingsModal() {
       const modal = getEl("settingsModal");
       if (!modal) return;
       modal.style.display = "none";
+      modal.setAttribute("aria-hidden", "true");
       modal.dataset.settingsView = "home";
     }
     function confirmSignOut() { auth?.signOut().then(() => { closeProfileModal(); }); }
@@ -7125,18 +7206,15 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       clearTimeout(cloudChatSyncTimer);
       const run = async () => {
         try {
-          const token = await auth.currentUser.getIdToken();
-          const response = await fetch("/api/chat/sync", {
+          const requestUser = auth.currentUser;
+          const response = await truxAuthenticatedFetch("/api/chat/sync", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": "Bearer " + token
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               chats: Object.fromEntries(Object.entries(chatSessions).filter(([_, chat]) => !chat?.incognito)),
               incognito: !!incognitoMode
             })
-          });
+          }, requestUser);
           if(!response.ok) console.warn("TruX cloud chat sync failed:", await response.text().catch(() => ""));
         } catch(e) {
           console.warn("TruX cloud chat sync unavailable:", e?.message || e);
@@ -7444,19 +7522,19 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
 
     async function ingestLargeFile(file) {
       if(!auth?.currentUser) { openLoginWall(); throw new Error("Sign in before uploading files."); }
-      const token = await auth.currentUser.getIdToken();
-      const uploadResponse = await fetch("/api/files/upload", {
+      const requestUser = auth.currentUser;
+      const uploadResponse = await truxAuthenticatedFetch("/api/files/upload", {
         method: "POST",
-        headers: { "Authorization": "Bearer " + token, "Content-Type": file.type || "application/octet-stream", "X-Trux-File-Name": encodeURIComponent(file.name) },
+        headers: { "Content-Type": file.type || "application/octet-stream", "X-Trux-File-Name": encodeURIComponent(file.name) },
         body: file
-      });
+      }, requestUser);
       const uploaded = await uploadResponse.json().catch(() => ({}));
       if(!uploadResponse.ok) throw new Error(uploaded.error || "File upload failed.");
-      const processResponse = await fetch("/api/files/process", {
+      const processResponse = await truxAuthenticatedFetch("/api/files/process", {
         method: "POST",
-        headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ objectKey: uploaded.objectKey, mimeType: uploaded.mimeType, name: uploaded.name })
-      });
+      }, requestUser);
       const processed = await processResponse.json().catch(() => ({}));
       if(!processResponse.ok) throw new Error(processed.error || "File processing failed.");
       return {
@@ -9571,15 +9649,13 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
 
       activeAbortController = new AbortController();
       try {
-        const imageToken = auth?.currentUser ? await auth.currentUser.getIdToken() : "";
-        const imageHeaders = { "Content-Type": "application/json" };
-        if (imageToken) imageHeaders.Authorization = "Bearer " + imageToken;
-        let res = await fetch("/api/chat", {
+        const imageUser = auth?.currentUser;
+        let res = await truxAuthenticatedFetch("/api/chat", {
           method: "POST",
-          headers: imageHeaders,
+          headers: { "Content-Type": "application/json" },
           signal: activeAbortController.signal,
-          body: JSON.stringify({ message: imagePrompt, tier: currentPlanTier, mode: "image", generateImage: true, userId: auth?.currentUser?.uid || null, userEmail: auth?.currentUser?.email || "" })
-        });
+          body: JSON.stringify({ message: imagePrompt, tier: currentPlanTier, mode: "image", generateImage: true, userId: imageUser?.uid || null, userEmail: imageUser?.email || "" })
+        }, imageUser);
         let payload = await res.json().catch(() => ({}));
 
         if(payload.imageLimitReached || !payload.imageGenerated || !payload.image?.dataUrl) {
@@ -9757,7 +9833,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       status.textContent = "Validating the reviewed changes against the current repository…";
 
       try {
-        const r = await fetch("/api/github/apply-edits", {
+        const r = await truxAuthenticatedFetch("/api/github/apply-edits", {
           method: "POST",
           credentials: "same-origin",
           headers: { "Content-Type": "application/json" },
@@ -9768,7 +9844,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
             message: proposal.commitMessage || "Update files with TruX-Code",
             confirmed: true
           })
-        });
+        }, auth?.currentUser);
         const d = await r.json().catch(() => ({}));
 
         if(!r.ok || d.ok !== true || d.applied !== true || d.verified !== true || !d.commit?.sha) {
@@ -10437,28 +10513,14 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         try {
           const requestUser = auth?.currentUser;
           if (!requestUser) throw Error("Your session ended. Sign in again to continue.");
-          const chatHeaders = { "Content-Type": "application/json", "Accept": "text/event-stream" };
-          const requestToken = await requestUser.getIdToken();
-          if (requestToken) chatHeaders.Authorization = "Bearer " + requestToken;
           const requestOptions = {
             method: "POST",
             cache: incognitoMode ? "no-store" : "default",
-            headers: chatHeaders,
+            headers: { "Content-Type": "application/json", "Accept": "text/event-stream" },
             signal: requestController.signal,
             body: JSON.stringify(requestBody)
           };
-          let res = await fetch("/api/chat", requestOptions);
-          if (res.status === 401 && auth?.currentUser?.uid === requestUser.uid) {
-            try {
-              const refreshedToken = await requestUser.getIdToken(true);
-              if (refreshedToken) {
-                chatHeaders.Authorization = "Bearer " + refreshedToken;
-                res = await fetch("/api/chat", requestOptions);
-              }
-            } catch (_) {
-              // Preserve the original 401 response if token refresh itself fails.
-            }
-          }
+          const res = await truxAuthenticatedFetch("/api/chat", requestOptions, requestUser);
         if(!res.ok) {
           let errorPayload = await res.json().catch(() => ({}));
           const detail = errorPayload.detail || errorPayload.reply || errorPayload.error;
@@ -10844,18 +10906,13 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       const timer=setInterval(()=>{ const el=getEl(sid); if(el) el.textContent="Generating video · "+formatCodexElapsed(Date.now()-row._startedAt); },1000);
 
       try {
-        const videoToken = auth?.currentUser ? await auth.currentUser.getIdToken() : "";
-        const videoHeaders={
-          "Content-Type":"application/json",
-          "Accept":"text/event-stream"
-        };
-        if(videoToken) videoHeaders.Authorization="Bearer "+videoToken;
-        const res=await fetch("/api/chat",{
+        const videoUser = auth?.currentUser;
+        const res=await truxAuthenticatedFetch("/api/chat",{
           method:"POST",
-          headers:videoHeaders,
+          headers:{"Content-Type":"application/json","Accept":"text/event-stream"},
           signal:activeAbortController.signal,
-          body:JSON.stringify({message:basePrompt,tier:currentPlanTier,mode:"video",userId:auth?.currentUser?.uid||null,userEmail:auth?.currentUser?.email||"",notifyOnComplete:true})
-        });
+          body:JSON.stringify({message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null,userEmail:videoUser?.email||"",notifyOnComplete:true})
+        }, videoUser);
         if(!res.ok){ const p=await res.json().catch(()=>({})); throw Error(p.error||p.reply||"Video generation failed."); }
         if(!res.body) throw Error("Video streaming body unavailable.");
         const reader=res.body.getReader(), decoder=new TextDecoder();
