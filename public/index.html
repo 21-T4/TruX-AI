@@ -5207,6 +5207,307 @@ body[data-media-mode="video"] .composer .hint {
     box-shadow: none !important;
   }
 </style>
+
+  <style id="trux-settings-list-and-motion-fixes">
+    /* Plugins owns the complete viewport instead of sharing the Code workspace. */
+    body.plugins-page-active #pluginsWorkspace {
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 100000 !important;
+      display: block !important;
+      box-sizing: border-box !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      height: 100dvh !important;
+      min-height: 0 !important;
+      margin: 0 !important;
+      padding: calc(22px + env(safe-area-inset-top, 0px)) clamp(16px, 4vw, 46px) calc(28px + env(safe-area-inset-bottom, 0px)) !important;
+      overflow-y: auto !important;
+      overscroll-behavior: contain;
+      background: var(--bg) !important;
+      isolation: isolate;
+    }
+    body.plugins-page-active .trux-code-v2,
+    body.plugins-page-active #truxCodeWorkspace,
+    body.plugins-page-active #codeChatContainer,
+    body.plugins-page-active .composer {
+      display: none !important;
+    }
+    body.plugins-page-active #pluginsWorkspace::before {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: radial-gradient(circle at 78% 4%, var(--acc-soft), transparent 35%);
+    }
+    body.plugins-page-active #pluginsWorkspace > .trux-plugins-page {
+      width: min(1320px, 100%);
+      max-width: 1320px;
+      margin: 0 auto;
+      min-height: 100%;
+    }
+
+    /* Settings home follows a single-column list/drill-in navigation like the reference. */
+    #settingsModal {
+      position: fixed !important;
+      inset: 0 !important;
+      align-items: stretch !important;
+      justify-content: stretch !important;
+      padding: 0 !important;
+      background: #1b1c1e !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+    #settingsModal .settings-page {
+      display: flex !important;
+      flex-direction: column !important;
+      position: relative;
+      width: 100% !important;
+      height: 100vh !important;
+      height: 100dvh !important;
+      min-height: 0 !important;
+      border-radius: 0 !important;
+      overflow: hidden !important;
+      background: #1b1c1e !important;
+      animation: settingsListIn 240ms cubic-bezier(.16,1,.3,1) both;
+    }
+    @keyframes settingsListIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    #settingsModal .settings-sidebar { display: none !important; }
+    #settingsModal .settings-main {
+      display: flex !important;
+      flex: 1 1 auto !important;
+      flex-direction: column !important;
+      width: 100% !important;
+      min-width: 0 !important;
+      min-height: 0 !important;
+      height: 100% !important;
+      background: #1b1c1e !important;
+    }
+    #settingsModal .settings-topbar {
+      display: flex !important;
+      flex: 0 0 auto !important;
+      align-items: center !important;
+      justify-content: flex-start !important;
+      min-height: calc(68px + env(safe-area-inset-top, 0px)) !important;
+      height: auto !important;
+      padding: calc(12px + env(safe-area-inset-top, 0px)) clamp(18px, 4.5vw, 38px) 8px !important;
+      border: 0 !important;
+      background: #1b1c1e !important;
+      position: relative !important;
+      z-index: 2;
+    }
+    #settingsModal .settings-title,
+    #settingsModal .settings-mobile-select,
+    #settingsModal .settings-topbar > .close { display: none !important; }
+    #settingsModal .settings-back-btn {
+      display: grid !important;
+      place-items: center !important;
+      width: 46px !important;
+      height: 46px !important;
+      padding: 0 !important;
+      flex: 0 0 46px !important;
+      border: 0 !important;
+      border-radius: 50% !important;
+      background: transparent !important;
+      color: #c6c8ca !important;
+      cursor: pointer;
+      transition: background 180ms ease, color 180ms ease, transform 240ms cubic-bezier(.16,1,.3,1) !important;
+    }
+    #settingsModal .settings-back-btn:hover { background: rgba(255,255,255,.07) !important; color: #fff !important; }
+    #settingsModal .settings-back-btn:active { transform: scale(.94); }
+    #settingsModal .settings-back-btn svg {
+      width: 28px !important;
+      height: 28px !important;
+      fill: none !important;
+      stroke: currentColor !important;
+      stroke-width: 1.8 !important;
+      stroke-linecap: round !important;
+      stroke-linejoin: round !important;
+    }
+    #settingsModal .settings-main-scroll {
+      display: block !important;
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
+      height: auto !important;
+      width: 100% !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+      padding: 0 clamp(22px, 6vw, 54px) calc(34px + env(safe-area-inset-bottom, 0px)) !important;
+      background: #1b1c1e !important;
+      scrollbar-width: thin;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+    #settingsModal[data-settings-view="home"] .settings-home-list { display: block !important; }
+    #settingsModal[data-settings-view="home"] .settings-content { display: none !important; }
+    #settingsModal[data-settings-view="section"] .settings-home-list { display: none !important; }
+    #settingsModal[data-settings-view="section"] .settings-content {
+      display: block !important;
+      width: min(900px, 100%);
+      margin: 0 auto;
+      padding: 20px 0 28px;
+    }
+    #settingsModal .settings-home-list {
+      display: none;
+      width: min(820px, 100%);
+      margin: 0 auto;
+      padding: 0 0 34px;
+      color: #e4e5e7;
+    }
+    #settingsModal .settings-home-heading {
+      margin: 46px 0 58px !important;
+      color: #e4e5e7 !important;
+      font-size: clamp(38px, 7.8vw, 64px) !important;
+      line-height: 1.08 !important;
+      font-weight: 400 !important;
+      letter-spacing: -.045em !important;
+    }
+    #settingsModal .settings-home-intro { display: none !important; }
+    #settingsModal .settings-home-options { display: flex; flex-direction: column; gap: 7px; }
+    #settingsModal .settings-home-row {
+      display: grid !important;
+      grid-template-columns: 34px minmax(0, 1fr) 18px !important;
+      align-items: center !important;
+      gap: clamp(18px, 4vw, 30px) !important;
+      width: 100% !important;
+      min-height: 89px !important;
+      margin: 0 !important;
+      padding: 15px 4px !important;
+      border: 0 !important;
+      border-radius: 11px !important;
+      background: transparent !important;
+      color: #e2e3e5 !important;
+      text-align: left !important;
+      cursor: pointer;
+      transition: background 190ms ease, transform 260ms cubic-bezier(.16,1,.3,1), color 190ms ease !important;
+    }
+    #settingsModal .settings-home-row:hover,
+    #settingsModal .settings-home-row:focus-visible {
+      background: rgba(255,255,255,.045) !important;
+      color: #fff !important;
+      outline: none;
+    }
+    #settingsModal .settings-home-row:active { transform: scale(.992); }
+    #settingsModal .settings-home-icon {
+      display: grid !important;
+      place-items: center !important;
+      width: 32px !important;
+      height: 32px !important;
+      color: #c6c8ca !important;
+    }
+    #settingsModal .settings-home-icon svg,
+    #settingsModal .settings-row-chevron {
+      display: block !important;
+      width: 27px !important;
+      height: 27px !important;
+      fill: none !important;
+      stroke: currentColor !important;
+      stroke-width: 1.8 !important;
+      stroke-linecap: round !important;
+      stroke-linejoin: round !important;
+    }
+    #settingsModal .settings-home-copy { min-width: 0; display: block; }
+    #settingsModal .settings-home-copy b {
+      display: block;
+      margin: 0;
+      color: inherit !important;
+      font-size: clamp(18px, 2.5vw, 22px) !important;
+      font-weight: 600 !important;
+      line-height: 1.3 !important;
+      letter-spacing: -.018em;
+    }
+    #settingsModal .settings-home-copy small {
+      display: block;
+      margin-top: 5px !important;
+      max-width: 610px;
+      color: #c3c5c7 !important;
+      font-size: clamp(15px, 2.1vw, 18px) !important;
+      font-weight: 400 !important;
+      line-height: 1.42 !important;
+      white-space: normal !important;
+    }
+    #settingsModal .settings-row-chevron {
+      width: 17px !important;
+      height: 17px !important;
+      opacity: .42;
+      stroke-width: 1.9 !important;
+      transition: transform 230ms cubic-bezier(.16,1,.3,1), opacity 180ms ease;
+    }
+    #settingsModal .settings-home-row:hover .settings-row-chevron { transform: translateX(3px); opacity: .9; }
+    #settingsModal .settings-home-developer { display: none !important; }
+    body.developer-mode #settingsModal .settings-home-developer { display: grid !important; }
+    #settingsModal .settings-section-head { margin: 12px 0 22px !important; }
+    #settingsModal .settings-section-head h2 { color: #ededee !important; font-size: clamp(28px, 5vw, 38px) !important; }
+    #settingsModal .settings-section-head p { color: #b4b6b8 !important; }
+    #settingsModal .settings-card {
+      background: rgba(255,255,255,.025) !important;
+      border: 1px solid rgba(255,255,255,.085) !important;
+      border-radius: 16px !important;
+      box-shadow: none !important;
+    }
+    #settingsModal .mrow { color: #e5e6e7; }
+    #settingsModal .mrow-sub,
+    #settingsModal .utxt,
+    #settingsModal .setting-note { color: #aeb0b3 !important; }
+    #settingsModal .settings-content .instr { background: #242527; color: #ededee; border-color: rgba(255,255,255,.1); }
+
+    /* The plus menu drops in smoothly, with a subtle downward trace on its top edge. */
+    #attachmentMenu {
+      position: fixed !important;
+      transform-origin: top left !important;
+      transition: opacity 230ms ease, transform 300ms cubic-bezier(.16,1,.3,1), visibility 230ms ease !important;
+    }
+    #attachmentMenu.open { animation: plusMenuDrop 300ms cubic-bezier(.16,1,.3,1) both; }
+    #attachmentMenu .plus-motion-line {
+      position: absolute;
+      top: -1px;
+      left: 18px;
+      z-index: 1;
+      width: 2px;
+      height: 18px;
+      border-radius: 999px;
+      pointer-events: none;
+      background: linear-gradient(180deg, transparent 0%, var(--acc) 55%, rgba(255,255,255,.9) 100%);
+      opacity: 0;
+    }
+    #attachmentMenu.open .plus-motion-line { animation: plusLineDrop 1.1s cubic-bezier(.22,.61,.36,1) infinite; }
+    #attachBtn svg { transition: transform 280ms cubic-bezier(.16,1,.3,1); }
+    #attachBtn.open svg { transform: rotate(45deg); }
+    @keyframes plusMenuDrop {
+      from { opacity: 0; transform: translateY(12px) scale(.985); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes plusLineDrop {
+      0% { opacity: 0; transform: translateY(-8px); }
+      18% { opacity: .9; }
+      100% { opacity: 0; transform: translateY(46px); }
+    }
+    @media (max-width: 760px) {
+      #settingsModal .settings-topbar { min-height: calc(64px + env(safe-area-inset-top, 0px)) !important; padding-left: 17px !important; }
+      #settingsModal .settings-main-scroll { padding-left: 25px !important; padding-right: 25px !important; }
+      #settingsModal .settings-home-heading { margin-top: 42px !important; margin-bottom: 51px !important; font-size: 42px !important; }
+      #settingsModal .settings-home-options { gap: 12px; }
+      #settingsModal .settings-home-row { grid-template-columns: 30px minmax(0, 1fr) 16px !important; gap: 22px !important; min-height: 88px !important; padding: 14px 0 !important; }
+      #settingsModal .settings-home-icon { width: 28px !important; height: 28px !important; }
+      #settingsModal .settings-home-icon svg { width: 26px !important; height: 26px !important; }
+      #settingsModal .settings-home-copy b { font-size: 19px !important; }
+      #settingsModal .settings-home-copy small { font-size: 16px !important; line-height: 1.42 !important; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #settingsModal .settings-page,
+      #settingsModal .settings-home-row,
+      #attachmentMenu,
+      #attachmentMenu.open,
+      #attachmentMenu .plus-motion-line,
+      #attachBtn svg {
+        animation: none !important;
+        transition-duration: .01ms !important;
+      }
+    }
+  </style>
+
 </head>
 <body class="home-active" data-workspace-mode="chat">
 
@@ -5539,6 +5840,7 @@ body[data-media-mode="video"] .composer .hint {
               <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
             </button>
             <div class="attach-menu trux-plus-menu" id="attachmentMenu" role="menu">
+              <span class="plus-motion-line" aria-hidden="true"></span>
               <div class="trux-plus-title">Workspace mode</div>
               <div class="trux-plus-grid">
                 <button type="button" class="trux-plus-item active" data-trux-menu-mode="chat" onclick="setWorkspaceMode('chat');closeAttachmentMenu()"><span>✦</span><span><b>Chat</b><small>General answers</small></span></button>
@@ -5691,19 +5993,69 @@ body[data-media-mode="video"] .composer .hint {
 
       <section class="settings-main">
         <header class="settings-topbar">
-          <div class="settings-title">
-            <div class="mtitle">Settings</div>
-            <div class="msub">Tune your TruX-Omni without leaving the app.</div>
+          <button type="button" class="settings-back-btn" id="settingsBackBtn" onclick="handleSettingsBack()" aria-label="Back">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          </button>
+          <div class="settings-title" aria-hidden="true">
+            <div class="mtitle" id="settingsPageTitle">Settings</div>
+            <div class="msub" id="settingsPageSubtitle">Your TruX workspace preferences.</div>
           </div>
           <select id="settingsMobileSelect" class="settings-mobile-select" aria-label="Settings section" onchange="switchSettingsSection(this.value)">
             <option value="general">General</option><option value="appearance">Appearance</option><option value="voice">Voice</option>
             <option value="personalization">Personalization</option><option value="notifications">Notifications</option>
-            <option value="usage">Usage</option><option value="data">Data & privacy</option><option value="developer">Developer</option>
+            <option value="usage">Usage</option><option value="data">Data & tools</option><option value="developer">Developer</option>
           </select>
           <button class="close" type="button" onclick="closeSettingsModal()" aria-label="Close settings">×</button>
         </header>
 
         <div class="settings-main-scroll">
+        <div class="settings-home-list" id="settingsHomeList" aria-label="Settings categories">
+          <h1 class="settings-home-heading">Settings</h1>
+          <p class="settings-home-intro">Manage your TruX workspace preferences.</p>
+          <div class="settings-home-options">
+            <button type="button" class="settings-home-row" data-settings-section="general">
+              <span class="settings-home-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1-1.6 1.6-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.1h-2.2v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-1.6-1.6.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H7v-2.2h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L8.3 7l1.6-1.6.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6v-.1h2.2v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.3 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.1v2.2h-.1a1.7 1.7 0 0 0-1.6 1 1.7 1.7 0 0 0 .5 1.8Z"/></svg></span>
+              <span class="settings-home-copy"><b>General</b><small>Core behavior and feedback</small></span>
+              <svg class="settings-row-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>
+            </button>
+            <button type="button" class="settings-home-row" data-settings-section="appearance">
+              <span class="settings-home-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16"/></svg></span>
+              <span class="settings-home-copy"><b>Appearance</b><small>Interface and ambient glow</small></span>
+              <svg class="settings-row-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>
+            </button>
+            <button type="button" class="settings-home-row" data-settings-section="voice">
+              <span class="settings-home-icon"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8"/></svg></span>
+              <span class="settings-home-copy"><b>Voice</b><small>Speech playback and answer reading speed</small></span>
+              <svg class="settings-row-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>
+            </button>
+            <button type="button" class="settings-home-row" data-settings-section="personalization">
+              <span class="settings-home-icon"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="8" cy="18" r="2"/></svg></span>
+              <span class="settings-home-copy"><b>Personalization</b><small>Response style, accent colour and location access</small></span>
+              <svg class="settings-row-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>
+            </button>
+            <button type="button" class="settings-home-row" data-settings-section="notifications">
+              <span class="settings-home-icon"><svg viewBox="0 0 24 24"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 8h18c0-1-3-1-3-8ZM10 21h4"/></svg></span>
+              <span class="settings-home-copy"><b>Notifications</b><small>Response completion alerts</small></span>
+              <svg class="settings-row-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>
+            </button>
+            <button type="button" class="settings-home-row" data-settings-section="usage">
+              <span class="settings-home-icon"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/></svg></span>
+              <span class="settings-home-copy"><b>Usage</b><small>Token and image-generation limits</small></span>
+              <svg class="settings-row-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>
+            </button>
+            <button type="button" class="settings-home-row" data-settings-section="data">
+              <span class="settings-home-icon"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 9h8M8 13h8M8 17h4"/></svg></span>
+              <span class="settings-home-copy"><b>Data &amp; tools</b><small>Exports, connection diagnostics and chat history</small></span>
+              <svg class="settings-row-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>
+            </button>
+            <button type="button" class="settings-home-row settings-home-developer" data-settings-section="developer">
+              <span class="settings-home-icon"><svg viewBox="0 0 24 24"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 4l-4 16"/></svg></span>
+              <span class="settings-home-copy"><b>Developer</b><small>Model selection and workspace runtime</small></span>
+              <svg class="settings-row-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>
+            </button>
+          </div>
+        </div>
+
           <div class="settings-content">
             <section class="settings-section active" data-settings-content="general">
               <div class="settings-section-head"><h2>General</h2><p>Core behavior and account-facing controls.</p></div>
@@ -6508,7 +6860,7 @@ body[data-media-mode="video"] .composer .hint {
     }
 
     function openProfileOption(key){
-      const settingsSections={usage:"usage",personalization:"personalization",notifications:"notifications",memory:"data",appearance:"appearance",settings:"general",developer:"developer"};
+      const settingsSections={usage:"usage",personalization:"personalization",notifications:"notifications",memory:"data",appearance:"appearance",settings:"home",developer:"developer"};
       if(Object.prototype.hasOwnProperty.call(settingsSections,key)){
         closeProfileModal();
         openSettingsModal(settingsSections[key]);
@@ -6778,11 +7130,14 @@ body[data-media-mode="video"] .composer .hint {
     }
     function closeProfileModal() { getEl("profileModal").style.display = "none"; }
     function switchSettingsSection(name) {
+      if (String(name || "") === "home") { showSettingsHome(); return; }
       const validSections = ["general","appearance","voice","personalization","notifications","usage","data","developer"];
       const requested = String(name || "general");
       const hasSection = validSections.includes(requested) &&
         Array.from(document.querySelectorAll("[data-settings-content]")).some(section => section.getAttribute("data-settings-content") === requested);
       const activeSection = hasSection ? requested : "general";
+      const settingsModal = getEl("settingsModal");
+      if (settingsModal) settingsModal.dataset.settingsView = "section";
       document.querySelectorAll("[data-settings-content]").forEach(section => {
         section.classList.toggle("active", section.getAttribute("data-settings-content") === activeSection);
       });
@@ -6796,15 +7151,39 @@ body[data-media-mode="video"] .composer .hint {
         void loadOwnerGeminiModels(false);
       }
     }
+    function showSettingsHome() {
+      const modal = getEl("settingsModal");
+      if (modal) modal.dataset.settingsView = "home";
+      const scroller = document.querySelector(".settings-main-scroll");
+      if (scroller) scroller.scrollTop = 0;
+      const mobileSelect = getEl("settingsMobileSelect");
+      if (mobileSelect) mobileSelect.value = "general";
+    }
+    function handleSettingsBack() {
+      const modal = getEl("settingsModal");
+      if (modal && modal.dataset.settingsView === "section") {
+        showSettingsHome();
+        return;
+      }
+      closeSettingsModal();
+    }
     function openSettingsModal(section) {
       updateAllUsageUI();
       loadSettings();
       updateLocationSettingUI();
       updateNotificationSettingsUI();
-      getEl("settingsModal").style.display = "flex";
-      switchSettingsSection(section || "general");
+      const modal = getEl("settingsModal");
+      if (!modal) return;
+      modal.style.display = "flex";
+      if (!section || section === "home") showSettingsHome();
+      else switchSettingsSection(section);
     }
-    function closeSettingsModal() { getEl("settingsModal").style.display = "none"; }
+    function closeSettingsModal() {
+      const modal = getEl("settingsModal");
+      if (!modal) return;
+      modal.style.display = "none";
+      modal.dataset.settingsView = "home";
+    }
     function confirmSignOut() { auth?.signOut().then(() => { closeProfileModal(); }); }
 
     function openCodeSandbox(codeId) {
