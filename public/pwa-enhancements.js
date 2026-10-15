@@ -270,7 +270,7 @@
           '#truxPwaLivePanel .trux-live-center-pill{display:flex;flex:0 1 210px;min-width:88px;max-width:210px;height:76px;align-items:center;justify-content:center;flex-direction:column;gap:7px;overflow:hidden;border:1px solid rgba(203,216,255,.10);border-radius:999px;background:linear-gradient(180deg,#020307 0%,#050917 48%,#263868 77%,#dde6ff 100%);box-shadow:0 9px 28px rgba(4,10,38,.35),inset 0 1px 8px rgba(255,255,255,.05);color:#e8ecff}' +
           '#truxPwaLivePanel .trux-live-center-pill span{font-size:10px;line-height:1;color:#d8def3}' +
           '#truxPwaLivePanel .trux-live-center-pill{position:relative;background:#03050c!important}' +
-          '#truxPwaLivePanel .trux-live-voice-color{position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:calc(var(--trux-live-level,0)*1.5);background:radial-gradient(ellipse at 50% 110%,rgba(74,118,255,calc(.25 + var(--trux-live-level,0)*.8)) 0%,rgba(41,75,190,calc(.15 + var(--trux-live-level,0)*.7)) 38%,rgba(6,12,38,0) 76%);transition:opacity .08s linear,background .08s linear}' +
+          '#truxPwaLivePanel .trux-live-voice-color{position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:calc(var(--trux-live-level,0)*1.5);background:radial-gradient(ellipse at calc(35% + var(--trux-live-frequency,0)*30%) 110%,rgba(74,118,255,calc(var(--trux-live-level,0)*1.2)) 0%,rgba(41,75,190,calc(var(--trux-live-level,0)*.9)) calc(22% + var(--trux-live-frequency,0)*24%),rgba(6,12,38,0) 76%);transition:opacity .08s linear,background .08s linear}' +
           '#truxPwaLivePanel .trux-live-center-pill span{position:relative;z-index:1}' +
           '#truxPwaLivePanel .trux-live-wave,#truxPwaLivePanel .trux-live-orb-wrap{display:none!important}' +
           '#truxPwaLivePanel .trux-live-stage h1:empty{display:none!important}' +
@@ -398,9 +398,19 @@
         if (socket !== forSocket || forSocket.readyState !== WebSocket.OPEN || forSocket.bufferedAmount > 1048576) return;
         const samples = event.inputBuffer.getChannelData(0);
         let power = 0;
-        for (let i = 0; i < samples.length; i++) power += samples[i] * samples[i];
+        let crossings = 0;
+        let previous = samples[0] || 0;
+        for (let i = 0; i < samples.length; i++) {
+          const sample = samples[i] || 0;
+          power += sample * sample;
+          if ((previous <= 0 && sample > 0) || (previous >= 0 && sample < 0)) crossings++;
+          previous = sample;
+        }
         const rms = Math.sqrt(power / Math.max(1, samples.length));
-        const level = muted ? 0 : Math.min(.8, rms * 3.2);        panel?.style.setProperty("--trux-live-level", level.toFixed(3));
+        const level = muted || rms < .008 ? 0 : Math.min(.8, rms * 3.2);
+        const frequency = level ? Math.min(1, (crossings * audioContext.sampleRate / (2 * samples.length)) / 2000) : 0;
+        panel?.style.setProperty("--trux-live-level", level.toFixed(3));
+        panel?.style.setProperty("--trux-live-frequency", frequency.toFixed(3));        panel?.style.setProperty("--trux-live-level", level.toFixed(3));
         panel?.classList.toggle("trux-live-user-speaking", level > .045);
         if (muted) return;
         const data = pcmBase64(samples, audioContext.sampleRate);
