@@ -9571,11 +9571,21 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       const resultSession = chatSessions[resultChatId];
       if (resultSession?.messages) {
         let responseMessage = turnContext
-          ? resultSession.messages.find(message => message?.draftTurnId === turnContext.turnKey)
+          ? resultSession.messages.find(message =>
+              message?.role === "trux" && message?.draftTurnId === turnContext.turnKey
+            )
           : null;
         if (!responseMessage) {
           responseMessage = { role: "trux", text };
-          resultSession.messages.push(responseMessage);
+          const userIndex = Number.isInteger(turnContext?.userMessageIndex)
+            ? turnContext.userMessageIndex
+            : -1;
+          const userMessage = userIndex >= 0 ? resultSession.messages[userIndex] : null;
+          const userPosition = userMessage?.role === "user"
+            ? resultSession.messages.indexOf(userMessage)
+            : -1;
+          if (userPosition >= 0) resultSession.messages.splice(userPosition + 1, 0, responseMessage);
+          else resultSession.messages.push(responseMessage);
         }
         responseMessage.role = "trux";
         responseMessage.text = text;
@@ -10372,6 +10382,21 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       closeAttachmentMenu();
       generationStopRequested = false;
       const turnId = ++generationEpoch;
+      // Every stream renderer belongs to one assistant bubble. Dispose of any
+      // stale renderer before this turn starts, so old answers cannot be reused.
+      if (activeStreamer) {
+        try { activeStreamer.cancel(); } catch (_) {}
+        activeStreamer = null;
+      }
+      let turnStreamer = null;
+      const clearTurnStreamer = (cancel = false) => {
+        const ownedStreamer = turnStreamer;
+        if (cancel && ownedStreamer) {
+          try { ownedStreamer.cancel(); } catch (_) {}
+        }
+        if (activeStreamer === ownedStreamer) activeStreamer = null;
+        turnStreamer = null;
+      };
       /* Dedicated TruX-Code transcript replaces its own landing surface for the active turn. */
       isGenerating = true; isScrolledUp = false;
       getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>'; getEl("actionBtn").classList.add("stop"); getEl("actionBtn").classList.remove("ready");
@@ -10602,19 +10627,24 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         // The renderer is created lazily on the very first token, so the
         // thinking indicator stays visible until real content exists.
         function ensureStreamer() {
-          if (activeStreamer) return activeStreamer;
+          if (turnStreamer) return turnStreamer;
+          if (finalizedEarly || finalizedOnFinal) return null;
           let bubble = getEl(id);
           if (!bubble) return null;
           const responseRow = bubble.closest(".row");
           if (!codingTurn) dismissThinkingPanel(responseRow);
           bubble.classList.remove("thinking");
-          activeStreamer = createStreamRenderer(bubble);
-          return activeStreamer;
+          turnStreamer = createStreamRenderer(bubble);
+          activeStreamer = turnStreamer;
+          return turnStreamer;
         }
 
         function ev(raw) {
           if (turnId !== generationEpoch || generationStopRequested || requestController.signal.aborted) return;
           if(!raw) return; let j; try { j = JSON.parse(raw); } catch { return; }
+          // Once a final payload has been accepted, late text frames must not
+          // create a new draft or mutate a completed answer.
+          if ((finalizedEarly || finalizedOnFinal) && (j.type === "chunk" || j.type === "final")) return;
           if (j.type !== "heartbeat") lastStreamActivityAt = Date.now();
           if(j.type === "progress") {
             return;
@@ -10646,16 +10676,16 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
             if (fin && !imageRoute) {
               if (codingTurn && !finalizedEarly) {
                 finalizedEarly = true;
-                finalizeResponse(id, aid, fin, prompt, voice, activeStreamer, turnSources, turnContext);
-                activeStreamer = null;
+                finalizeResponse(id, aid, fin, prompt, voice, turnStreamer, turnSources, turnContext);
+                if (activeStreamer === turnStreamer) activeStreamer = null;
                 try { rd.cancel(); } catch {}
               } else if (!codingTurn && !finalizedOnFinal) {
-                if (!activeStreamer && !codingTurn) dismissThinkingPanel(getEl(id)?.closest(".row"));
-                finalizeResponse(id, aid, fin, prompt, voice, activeStreamer, turnSources, turnContext);
+                if (!turnStreamer && !codingTurn) dismissThinkingPanel(getEl(id)?.closest(".row"));
+                finalizeResponse(id, aid, fin, prompt, voice, turnStreamer, turnSources, turnContext);
                 /* Only mark complete after finalization succeeds. If it throws,
                    the catch path must still reset the Stop control and live renderer. */
                 finalizedOnFinal = true;
-                activeStreamer = null;
+                if (activeStreamer === turnStreamer) activeStreamer = null;
               }
             }
           }
@@ -10673,9 +10703,9 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
             if (!finalizedEarly && !finalizedOnFinal && !imageRoute) {
               const completedText = String(fin !== null ? fin : full).trim();
               if (completedText) {
-                finalizeResponse(id, aid, completedText, prompt, voice, activeStreamer, turnSources, turnContext);
+                finalizeResponse(id, aid, completedText, prompt, voice, turnStreamer, turnSources, turnContext);
                 finalizedOnFinal = true;
-                activeStreamer = null;
+                if (activeStreamer === turnStreamer) activeStreamer = null;
               }
             }
           }
@@ -10816,7 +10846,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
            reusing the row that is already on screen. */
         if(imageRoute && !img) {
           let imagePrompt = routedImagePrompt || extractImageRoutePrompt(full, prompt) || prompt;
-          activeStreamer?.cancel(); activeStreamer = null;
+          clearTurnStreamer(true);
           activeAbortController = null;
           if(!isTruxDeveloper(auth?.currentUser) && getImageUsageData().count >= 15) {
             isGenerating = false;
@@ -10830,8 +10860,8 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         /* Defensive: never show the routing tag if it slipped into prose. */
         text = text.replace(/^[\s\u0060>*_]*\[\[?\s*IMAGE\s*\]\]?\s*/i, "").replace(/\[\[IMAGE\]\]/gi, "").replace(/^\[image\]\s*/i, "").trim();
 
-        if (!finalizedOnFinal) {
-          let streamer = activeStreamer || ensureStreamer();
+        if (!finalizedOnFinal && !finalizedEarly) {
+          let streamer = turnStreamer || ensureStreamer();
           finalizeResponse(id, aid, text, prompt, voice, streamer, turnSources, turnContext);
         }
         if(githubProposal) {
@@ -10846,7 +10876,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
           const host = bubble?.closest(".trux-response-stack") || bubble;
           if(host) renderGithubProposalCard(host, githubProposal);
         }
-        activeStreamer = null;
+        clearTurnStreamer(false);
         return;
         } catch(e) {
           clearInterval(streamIdleWatchdog);
@@ -10855,8 +10885,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
           if (streamIdleTimedOut) {
             // Preserve any partial answer, mark it incomplete, and always release the Stop control.
             persistTurnDraft(turnContext, full, true);
-            activeStreamer?.cancel();
-            activeStreamer = null;
+            clearTurnStreamer(true);
             const stalledRow = getEl(id)?.closest(".row");
             if (stalledRow?._elapsedTimer) clearInterval(stalledRow._elapsedTimer);
             hideToolStatus(tsid);
@@ -10896,8 +10925,8 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
           }
           // The authoritative answer has already been rendered; a late stream
           // close/error must not overwrite it or create a duplicate partial draft.
-          if (finalizedOnFinal) {
-            activeStreamer = null;
+          if (finalizedOnFinal || finalizedEarly) {
+            clearTurnStreamer(false);
             activeAbortController = null;
             return;
           }
@@ -10905,8 +10934,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
           if (isNetworkFailure(e) && isGenerating) {
             // Do not silently issue a second full Vertex request after a broken
             // stream; preserve the partial text and let the user explicitly resend.
-            activeStreamer?.cancel();
-            activeStreamer = null;
+            clearTurnStreamer(true);
 
             const b = getEl(id);
             if (b) {
@@ -10940,8 +10968,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
           const failedRow = getEl(id)?.closest(".row");
           if(failedRow?._elapsedTimer) clearInterval(failedRow._elapsedTimer);
           hideToolStatus(tsid);
-          activeStreamer?.cancel();
-          activeStreamer = null;
+          clearTurnStreamer(true);
           let b = getEl(id);
           if(b) {
             b.classList.remove("thinking");
