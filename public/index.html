@@ -10751,13 +10751,25 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         }
 
         while(1) {
-          if (turnId !== generationEpoch || generationStopRequested || requestController.signal.aborted) {
+          if (turnId !== generationEpoch || generationStopRequested) {
+            clearInterval(streamIdleWatchdog);
             try { await rd.cancel(); } catch {}
             return;
           }
-          let { value, done } = await rd.read();
-          if (turnId !== generationEpoch || generationStopRequested || requestController.signal.aborted) {
+          if (requestController.signal.aborted) {
             try { await rd.cancel(); } catch {}
+            if (streamIdleTimedOut) throw new Error("Response stream stalled.");
+            return;
+          }
+          let { value, done } = await rd.read();
+          if (turnId !== generationEpoch || generationStopRequested) {
+            clearInterval(streamIdleWatchdog);
+            try { await rd.cancel(); } catch {}
+            return;
+          }
+          if (requestController.signal.aborted) {
+            try { await rd.cancel(); } catch {}
+            if (streamIdleTimedOut) throw new Error("Response stream stalled.");
             return;
           }
           if(done) break;
