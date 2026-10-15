@@ -10531,6 +10531,20 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         
         let rd = res.body.getReader(), dec = new TextDecoder(), buf = "", full = "", fin = null;
         let streamDone = false, finalizedEarly = false, finalizedOnFinal = false;
+        // Heartbeats keep the transport alive, but are not evidence that the model is progressing.
+        // Recover only after a long period with no meaningful SSE event; there is no total-turn timeout.
+        let lastStreamActivityAt = Date.now(), streamIdleTimedOut = false;
+        const streamIdleWatchdog = setInterval(() => {
+          if (turnId !== generationEpoch || generationStopRequested || requestController.signal.aborted ||
+              !isGenerating || finalizedEarly || finalizedOnFinal || streamDone) {
+            clearInterval(streamIdleWatchdog);
+            return;
+          }
+          if (Date.now() - lastStreamActivityAt < 180000) return;
+          streamIdleTimedOut = true;
+          clearInterval(streamIdleWatchdog);
+          try { requestController.abort(); } catch (_) {}
+        }, 5000);
         let responseStartVibrated = false;
         function vibrateWhenResponseStarts() {
           if (responseStartVibrated) return;
@@ -10592,6 +10606,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         function ev(raw) {
           if (turnId !== generationEpoch || generationStopRequested || requestController.signal.aborted) return;
           if(!raw) return; let j; try { j = JSON.parse(raw); } catch { return; }
+          if (j.type !== "heartbeat") lastStreamActivityAt = Date.now();
           if(j.type === "progress") {
             return;
           }
@@ -10813,8 +10828,51 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         activeStreamer = null;
         return;
         } catch(e) {
+          clearInterval(streamIdleWatchdog);
           if (turnId !== generationEpoch) return;
           if (row._backgroundHandover) return;
+          if (streamIdleTimedOut) {
+            // Preserve any partial answer, mark it incomplete, and always release the Stop control.
+            persistTurnDraft(turnContext, full, true);
+            activeStreamer?.cancel();
+            activeStreamer = null;
+            const stalledRow = getEl(id)?.closest(".row");
+            if (stalledRow?._elapsedTimer) clearInterval(stalledRow._elapsedTimer);
+            hideToolStatus(tsid);
+            const bubble = getEl(id);
+            const partialText = String(full || "").trim();
+            if (bubble) {
+              bubble.classList.remove("thinking");
+              if (partialText) {
+                bubble.innerHTML = renderFormattedText(partialText, false);
+                renderTruxDiagrams(bubble);
+                scheduleTruxMath(bubble);
+              } else {
+                bubble.textContent = "No answer was received before the response stream stalled.";
+              }
+              const notice = document.createElement("div");
+              notice.className = "stream-stopped";
+              notice.textContent = partialText
+                ? "Response paused because the stream stopped responding. Retry to continue."
+                : "Generation stopped responding before returning an answer. Please retry.";
+              bubble.appendChild(notice);
+            }
+            const stalledSession = chatSessions[turnContext.chatId];
+            const stalledDraft = stalledSession?.messages?.find(message => message?.draftTurnId === turnContext.turnKey);
+            if (stalledDraft) {
+              delete stalledDraft.draftTurnId;
+              stalledDraft.incomplete = true;
+              store.removeItem("trux_turn_draft_" + turnContext.chatId);
+              saveChatSessions();
+            }
+            isGenerating = false;
+            activeAbortController = null;
+            if (activeTurnContext === turnContext) activeTurnContext = null;
+            getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
+            getEl("actionBtn").classList.remove("stop");
+            handleInputChange();
+            return;
+          }
           // The authoritative answer has already been rendered; a late stream
           // close/error must not overwrite it or create a duplicate partial draft.
           if (finalizedOnFinal) {
