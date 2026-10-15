@@ -337,6 +337,7 @@
     }
 
     function syncMenuLabels() {
+      if (!byId("truxPwaLiveCamera")) return;
       const isCamera = videoKind === "camera";
       const isScreen = videoKind === "screen";
       byId("truxPwaLiveCamera").setAttribute("aria-pressed", String(isCamera));
