@@ -2597,6 +2597,24 @@ body.sidebar-open .topbar{filter:brightness(.78)}
 .profile-detail-back{display:inline-flex;align-items:center;gap:7px;min-height:38px;padding:0 9px;border-radius:10px;color:var(--txt-3);font-size:13px;font-weight:600;border:1px solid transparent}.profile-detail-back:hover{color:#fff;background:var(--bg-3);border-color:var(--line)}
 .profile-detail-title{margin-top:18px;font-family:var(--font-disp);font-size:30px;letter-spacing:-.035em;color:#fff}.profile-detail-subtitle{margin-top:6px;color:var(--txt-3);font-size:13px;line-height:1.55}.profile-detail-body{margin-top:18px}.profile-detail-body .detail-callout{padding:17px;border-radius:16px;background:rgba(18,18,22,.82);border:1px solid var(--line)}.profile-detail-body .detail-callout+.detail-callout{margin-top:10px}.profile-detail-body .detail-callout h4{margin-bottom:7px;color:#fff;font-size:14px}.profile-detail-body .detail-callout p{color:var(--txt-3);font-size:13px;line-height:1.6}.detail-stack-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.detail-stack-actions .mbtn{width:auto;padding:0 13px;margin-top:0}
 .profile-detail-view[hidden]{display:none!important}
+.profile-detail-body .help-layout{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.profile-detail-body .help-panel{min-width:0;padding:16px;border-radius:16px;background:rgba(18,18,22,.82);border:1px solid var(--line)}
+.profile-detail-body .help-panel.help-wide{grid-column:1/-1}
+.profile-detail-body .help-panel h4{margin:0 0 8px;color:#fff;font-size:14px}
+.profile-detail-body .help-panel p,.profile-detail-body .help-panel li{color:var(--txt-3);font-size:12.5px;line-height:1.65}
+.profile-detail-body .help-panel p+p{margin-top:8px}
+.profile-detail-body .help-panel ul,.profile-detail-body .help-panel ol{padding-left:20px;margin:8px 0 0}
+.profile-detail-body .help-panel li+li{margin-top:5px}
+.profile-detail-body .help-form{display:grid;gap:11px;margin-top:14px}
+.profile-detail-body .help-form label{display:grid;gap:6px;color:var(--txt-2);font-size:12px;font-weight:600}
+.profile-detail-body .help-form input,.profile-detail-body .help-form select,.profile-detail-body .help-form textarea{width:100%;min-width:0;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg-2);color:var(--txt-1);font:inherit;font-size:13px;outline:none}
+.profile-detail-body .help-form textarea{resize:vertical;min-height:105px;line-height:1.55}
+.profile-detail-body .help-form input:focus,.profile-detail-body .help-form select:focus,.profile-detail-body .help-form textarea:focus{border-color:var(--line-2)}
+.profile-detail-body .help-submit{justify-self:start;width:auto;padding:0 16px}
+.profile-detail-body .help-submit:disabled{opacity:.6;cursor:wait}
+.profile-detail-body .help-footnote{margin:0;padding:0 4px;color:var(--txt-4);font-size:11px;line-height:1.5}
+#settingsModal .feedback-type-select,#settingsModal #feedbackSubject{width:100%;margin:8px 0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg-2);color:var(--txt-1);font:inherit;font-size:13px}
+@media(max-width:640px){.profile-detail-body .help-layout{grid-template-columns:1fr}.profile-detail-body .help-panel.help-wide{grid-column:auto}.profile-detail-body .help-panel{padding:13px}}
 .profile-meta-grid-large{max-width:900px;margin:0 auto 18px;padding:0 clamp(18px,6vw,80px)}
 .profile-actions-row{max-width:900px;margin:14px auto 40px;padding:0 clamp(18px,6vw,80px)}
 .media-library-grid{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable}
@@ -5624,7 +5642,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
                 <div class="mrow"><span>Auto Read Answers</span><label class="toggle"><input id="autoReadToggle" type="checkbox" onchange="store.setItem('trux_auto_read', this.checked ? 'true' : 'false')"><span class="slider"></span></label></div>
               </div>
               <div class="settings-card">
-                <div class="sect"><h4>Send Feedback & Bug Reports</h4><textarea id="feedbackInput" class="instr" placeholder="Tell us what can be improved…"></textarea><button class="mbtn" onclick="submitFeedback()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5 12 13l8-5.5"/><rect x="3.5" y="5" width="17" height="14" rx="2.5"/></svg>Submit feedback</button><div class="utxt" id="feedbackCounterText">Total Feedbacks Collected: 0 / 100</div></div>
+                <div class="sect"><h4>Send Feedback & Bug Reports</h4><p class="utxt">Bug reports and suggestions are emailed directly to the founder.</p><label for="feedbackType" class="feedback-label">Feedback type</label><select id="feedbackType" class="feedback-type-select"><option value="bug-report">Bug or issue report</option><option value="product-feedback">General feedback</option><option value="feature-request">Feature request</option><option value="general-feedback">Other</option></select><label for="feedbackSubject" class="feedback-label">Subject (optional)</label><input id="feedbackSubject" type="text" maxlength="160" placeholder="Short title"><textarea id="feedbackInput" class="instr" placeholder="Tell us what can be improved…"></textarea><button id="feedbackSubmitBtn" class="mbtn" type="button" onclick="submitFeedback()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5 12 13l8-5.5"/><rect x="3.5" y="5" width="17" height="14" rx="2.5"/></svg>Submit feedback</button><div class="utxt" id="feedbackCounterText">A success message appears only after the email is accepted for delivery.</div></div>
               </div>
             </section>
 
@@ -6409,7 +6427,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       const email=escapeHtml((auth&&auth.currentUser&&auth.currentUser.email)||"No account");
       if(key==="account") return {title:"Manage your account",subtitle:"Your connected sign-in and account controls.",html:'<div class="detail-callout"><h4>Connected account</h4><p>'+email+'</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="window.open(&#39;https://myaccount.google.com/&#39;,&#39;_blank&#39;,&#39;noopener&#39;)">Open Google Account</button></div></div>'};
       if(key==="avatar") return {title:"Avatar",subtitle:"Choose the image shown in your TruX profile.",html:'<div class="detail-callout"><h4>Profile image</h4><p>Choose a local image or reset to your connected Google photo.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="openAvatarPicker()">Choose image</button><button class="mbtn" type="button" onclick="resetAvatarOverride()">Reset avatar</button></div></div>'};
-      if(key==="help") return {title:"Help & privacy",subtitle:"Quick guidance and privacy controls.",html:'<div class="detail-callout"><h4>Location privacy</h4><p>Location access can be turned off at any time from Personalization.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption();closeProfileModal();openSettingsModal(&quot;personalization&quot;)">Location settings</button></div></div><div class="detail-callout"><h4>Quick help</h4><p>Use + for Coding, Deep Research, image generation, files, camera and photos. Use Library to revisit generated media.</p></div>'};
+      if(key==="help") return {title:"Help & privacy",subtitle:"Guides, troubleshooting, bug reports, and direct founder contact.",html:"<div class=\"help-layout\">\n  <section class=\"help-panel help-wide\">\n    <h4>Welcome to TruX-Omni</h4>\n    <p>This page explains the main workspaces, tools, settings, and ways to get help.</p>\n    <ul>\n      <li><b>Chat:</b> Ask questions, learn, brainstorm, write, and work through follow-up questions.</li>\n      <li><b>TruX-Code:</b> Use the coding workspace for code, debugging, and connected repository tasks. Review proposed changes before relying on them.</li>\n      <li><b>Image and Video:</b> Switch to the matching workspace and describe what you want to create.</li>\n      <li><b>TruX Live:</b> Start a live voice session when you want to speak naturally; allow camera or screen access only when you need it.</li>\n    </ul>\n  </section>\n  <section class=\"help-panel\">\n    <h4>Chat and model selection</h4>\n    <p>Choose Chat for everyday questions. The regular user model choice is <b>Auto</b>, which selects a suitable model for your request. Be specific about your goal, constraints, and preferred output, then ask follow-up questions to refine the result.</p>\n    <p>Thinking controls, when available, let you adjust how much reasoning to use.</p>\n  </section>\n  <section class=\"help-panel\">\n    <h4>The + tools menu</h4>\n    <p>Use the <b>+</b> menu to access tools such as coding, Deep Research, image generation, files, camera, and photos. Describe what you want done with an attachment so TruX knows how to use it.</p>\n    <p>Use the Library to revisit supported generated media and saved items.</p>\n  </section>\n  <section class=\"help-panel\">\n    <h4>Chats, notebooks, and Incognito</h4>\n    <p>Use the sidebar to switch between chats and notebooks. Move relevant conversations into a notebook to keep related work together. Use the Incognito option when you want a separate private-style session; check the current interface before assuming a conversation has been saved.</p>\n  </section>\n  <section class=\"help-panel\">\n    <h4>Settings and privacy</h4>\n    <p>Open your profile menu for Settings, Personalization, Notifications, usage information, and account options. Location access can be managed from Personalization. Only grant device permissions when a feature needs them.</p>\n    <div class=\"detail-stack-actions\"><button class=\"mbtn\" type=\"button\" onclick=\"closeProfileOption();closeProfileModal();openSettingsModal(&quot;personalization&quot;)\">Open Personalization</button></div>\n  </section>\n  <section class=\"help-panel\">\n    <h4>Troubleshooting</h4>\n    <ol>\n      <li>Check your internet connection and confirm you are signed in.</li>\n      <li>If a tool fails, retry once and note the exact error message.</li>\n      <li>For voice, camera, or screen features, check the browser permission for that feature.</li>\n      <li>If the issue continues, send a bug report below with the steps that caused it and what you expected to happen.</li>\n    </ol>\n  </section>\n  <section class=\"help-panel help-wide\" id=\"helpFeedbackSection\">\n    <h4>Feedback and bug reports</h4>\n    <p>Use this form to report a bug, describe an issue, suggest a feature, or share feedback. For bugs, include what you were doing, the steps to reproduce the issue, what happened, and what you expected instead. Please do not include passwords, API keys, or other secrets.</p>\n    <form class=\"help-form\" onsubmit=\"submitHelpFeedback(event)\">\n      <label>Feedback type\n        <select name=\"type\" required>\n          <option value=\"bug-report\">Report a bug or issue</option>\n          <option value=\"product-feedback\">General feedback</option>\n          <option value=\"feature-request\">Suggest a feature</option>\n          <option value=\"general-feedback\">Other</option>\n        </select>\n      </label>\n      <label>Subject (optional)\n        <input name=\"subject\" type=\"text\" maxlength=\"160\" placeholder=\"A short title for your feedback\">\n      </label>\n      <label>Details\n        <textarea name=\"message\" required minlength=\"8\" maxlength=\"12000\" rows=\"5\" placeholder=\"Describe the issue, steps to reproduce it, or your suggestion…\"></textarea>\n      </label>\n      <button class=\"mbtn help-submit\" type=\"submit\">Send feedback</button>\n    </form>\n  </section>\n  <section class=\"help-panel help-wide\" id=\"founderContactSection\">\n    <h4>Contact the founder directly</h4>\n    <p>Have a question, suggestion, or query for the founder? Type it here and submit it as a direct contact request. Replies use the email address associated with your signed-in account.</p>\n    <form class=\"help-form\" onsubmit=\"submitFounderQuery(event)\">\n      <label>Subject\n        <input name=\"subject\" type=\"text\" required maxlength=\"160\" placeholder=\"What is your query about?\">\n      </label>\n      <label>Your query\n        <textarea name=\"message\" required minlength=\"8\" maxlength=\"12000\" rows=\"4\" placeholder=\"Write your question or query to the founder…\"></textarea>\n      </label>\n      <button class=\"mbtn help-submit\" type=\"submit\">Email the founder</button>\n    </form>\n  </section>\n  <p class=\"help-footnote help-wide\">Feedback and founder queries require you to be signed in. Successful submissions are emailed to the TruX-Omni founder.</p>\n</div>"};
       return {title:"Profile",subtitle:"Choose a profile setting.",html:'<div class="detail-callout"><p>That option is not available for this account.</p></div>'};
     }
 
@@ -6563,28 +6581,74 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         window.refreshTruxCodeIntegrations();
       }
     }
-    function submitFeedback() {
-      let text = getEl("feedbackInput").value.trim();
-      if(!text) return toast("Please enter your feedback first.", "err");
-      
-      feedbackCount++;
-      store.setItem("trux_feedback_count", feedbackCount);
-      getEl("feedbackInput").value = "";
-      updateFeedbackCounterUI();
-
-      if(feedbackCount >= 100) {
-        toast("100th feedback reached - batch report dispatched to support.", "ok");
-        feedbackCount = 0;
-        store.setItem("trux_feedback_count", 0);
-        updateFeedbackCounterUI();
-      } else {
-        toast(`Thanks - feedback recorded (${feedbackCount}/100).`, "ok");
-      }
+    async function submitFeedback() {
+      const type = getEl("feedbackType")?.value || "general-feedback";
+      const subject = getEl("feedbackSubject")?.value?.trim() || "";
+      const message = getEl("feedbackInput")?.value?.trim() || "";
+      if (!message) return toast("Please describe your feedback or bug.", "err");
+      return sendTruxFeedback({ type, subject, message, button: getEl("feedbackSubmitBtn") });
     }
 
-    function updateFeedbackCounterUI() {
-      let el = getEl("feedbackCounterText");
-      if(el) el.innerText = `Total Feedbacks Collected: ${feedbackCount} / 100`;
+    async function submitHelpFeedback(event) {
+      event?.preventDefault();
+      const form = event?.currentTarget;
+      if (!form) return;
+      const type = form.querySelector('[name="type"]')?.value || "general-feedback";
+      const subject = form.querySelector('[name="subject"]')?.value?.trim() || "";
+      const message = form.querySelector('[name="message"]')?.value?.trim() || "";
+      if (message.length < 8) return toast("Please add a little more detail before sending.", "err");
+      return sendTruxFeedback({ type, subject, message, form, button: form.querySelector('[type="submit"]') });
+    }
+
+    async function submitFounderQuery(event) {
+      event?.preventDefault();
+      const form = event?.currentTarget;
+      if (!form) return;
+      const subject = form.querySelector('[name="subject"]')?.value?.trim() || "";
+      const message = form.querySelector('[name="message"]')?.value?.trim() || "";
+      if (subject.length < 2 || message.length < 8) return toast("Please add a subject and write your query.", "err");
+      return sendTruxFeedback({ type: "founder-query", subject, message, form, button: form.querySelector('[type="submit"]') });
+    }
+
+    async function sendTruxFeedback({ type, subject, message, form, button }) {
+      if (!auth?.currentUser) {
+        toast("Sign in to send feedback or contact the founder.", "err");
+        openLoginWall();
+        return false;
+      }
+      if (message.length > 12000) return toast("Your message is too long. Please shorten it.", "err");
+      const originalHtml = button?.innerHTML;
+      if (button) {
+        button.disabled = true;
+        button.textContent = "Sending…";
+      }
+      try {
+        const user = auth.currentUser;
+        const token = await user.getIdToken();
+        const response = await fetch("/api/feedback", {
+          method: "POST",
+          cache: "no-store",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+          body: JSON.stringify({ type, subject, message })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || payload.detail || "Feedback could not be sent. Please try again.");
+        if (form) form.reset();
+        else {
+          if (getEl("feedbackInput")) getEl("feedbackInput").value = "";
+          if (getEl("feedbackSubject")) getEl("feedbackSubject").value = "";
+        }
+        toast(payload.message || "Your message was emailed to the founder.", "ok");
+        return true;
+      } catch (error) {
+        toast(error?.message || "Feedback email could not be sent. Please try again.", "err");
+        return false;
+      } finally {
+        if (button) {
+          button.disabled = false;
+          if (originalHtml !== undefined) button.innerHTML = originalHtml;
+        }
+      }
     }
 
     function getProUsageData() {
