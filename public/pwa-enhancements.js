@@ -217,7 +217,7 @@
             '<button type="button" class="trux-live-control" id="truxPwaLiveScreen" aria-label="Share screen" aria-pressed="false" title="Share screen">' +
               '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2.5"/><path d="M8 21h8M12 17v4M12 13V7m-3 3 3-3 3 3"/></svg><span id="truxPwaLiveScreenLabel">Share</span>' +
             '</button>' +
-            '<div class="trux-live-center-pill" aria-hidden="true"><div class="trux-live-voice-color"></div><span id="truxPwaLiveActivityText">Mic on</span></div>' +
+            '<div class="trux-live-center-pill" aria-hidden="true"><div class="trux-live-voice-color"></div></div>' +
             '<button type="button" class="trux-live-control" id="truxPwaLiveMic" aria-label="Mute microphone" aria-pressed="false" title="Microphone">' +
               '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3M8.5 21h7"/></svg><span id="truxPwaLiveMicLabel">Mic on</span>' +
             '</button>' +
