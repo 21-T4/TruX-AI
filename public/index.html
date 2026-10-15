@@ -11539,11 +11539,19 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
 
     function openConversationFeedback(id) {
       closeChatContextMenu();
-      openSettingsModal("general");
-      const field = getEl("feedbackInput");
       const chat = id && chatSessions[id] && !chatSessions[id].incognito ? chatSessions[id] : null;
-      if(field && chat && !field.value.trim()) field.value = 'Feedback about "' + (chat.title || "Untitled chat") + '": ';
-      if(field) setTimeout(() => field.focus(), 80);
+      openChatHelp();
+      setTimeout(() => {
+        const body = getEl("profileDetailBody");
+        const section = body?.querySelector("#helpFeedbackSection");
+        if (!section) return;
+        const subjectField = section.querySelector('[name="subject"]');
+        if (chat && subjectField && !subjectField.value.trim()) {
+          subjectField.value = 'Feedback about "' + (chat.title || "Untitled chat") + '"';
+        }
+        section.scrollIntoView({ behavior: "smooth", block: "start" });
+        section.querySelector('[name="message"]')?.focus({ preventScroll: true });
+      }, 0);
     }
 
     function closeChatContextMenu() {
