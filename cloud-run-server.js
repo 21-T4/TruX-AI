@@ -197,7 +197,7 @@ async function serveStatic(req, res) {
     if (req.method === "HEAD") return res.end();
     if (extension === ".html" && basename === "index.html") {
       const html = await fs.promises.readFile(filePath, "utf8");
-      const scriptTag = '<script src="/pwa-enhancements.js?v=20261014-1"></script>';
+      const scriptTag = '<script src="/pwa-enhancements.js?v=20261015-1"></script>';
       return res.end(html.includes(scriptTag) ? html : html.replace("</body>", scriptTag + "\n</body>"));
     }
     fs.createReadStream(filePath).pipe(res);
@@ -222,7 +222,7 @@ async function serveStatic(req, res) {
       res.setHeader("Pragma", "no-cache");
       res.setHeader("Expires", "0");
       const html = await fs.promises.readFile(indexPath, "utf8");
-      const scriptTag = '<script src="/pwa-enhancements.js?v=20261014-1"></script>';
+      const scriptTag = '<script src="/pwa-enhancements.js?v=20261015-1"></script>';
       return res.end(html.includes(scriptTag) ? html : html.replace("</body>", scriptTag + "\n</body>"));
     } catch {
       res.statusCode = 500;
@@ -313,10 +313,17 @@ liveSocketServer.on("connection", socket => {
 
         const project = await getLiveGoogleProjectId();
         if (closed || socket.readyState !== WebSocket.OPEN) return;
+        const requestedLiveLocation = String(process.env.TRUX_LIVE_LOCATION || "us-central1").trim().toLowerCase();
+        const supportedLiveLocations = new Set(["us-central1", "us", "eu"]);
+        const liveLocation = supportedLiveLocations.has(requestedLiveLocation) ? requestedLiveLocation : "us-central1";
+        if (liveLocation !== requestedLiveLocation) {
+          console.warn("[TruX Live] Unsupported Live location configured; using us-central1 instead.");
+        }
+        console.log("[TruX Live] Opening gemini-3.8-live in Vertex location " + liveLocation + ".");
         const ai = new GoogleGenAI({
           vertexai: true,
           project,
-          location: process.env.TRUX_LIVE_LOCATION || "global"
+          location: liveLocation
         });
         liveSession = await ai.live.connect({
           model: "gemini-3.8-live",
@@ -348,6 +355,7 @@ liveSocketServer.on("connection", socket => {
               if (serverContent?.turnComplete || serverContent?.turn_complete) safeLiveSocketSend(socket, { type: "turnComplete" });
             },
             onerror(error) {
+              console.error("[TruX Live] Gemini session error:", error?.message || error);
               safeLiveSocketSend(socket, { type: "error", message: String(error?.message || "Gemini Live connection error.") });
             },
             onclose(event) {
@@ -386,6 +394,7 @@ liveSocketServer.on("connection", socket => {
         try { socket.close(1000, "User stopped Live"); } catch {}
       }
     } catch (error) {
+      console.error("[TruX Live] WebSocket handler failed:", error?.message || error);
       safeLiveSocketSend(socket, {
         type: "error",
         message: isAuthenticated ? String(error?.message || "Live session failed.") : "TruX could not verify your account. Please sign in again."
