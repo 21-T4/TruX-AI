@@ -501,7 +501,7 @@ function isExplicitRepoRequest(value) {
 function isExplicitWebRequest(value) {
   const text = String(value || '').trim();
   if (!text) return false;
-  return /(?:\bweb\b|\bwebsite\b|\binternet\b|\bonline\b|\bbrowse\b|\bbrowsing\b|search (?:the )?web|search online|open (?:this )?(?:url|page|website)|read (?:this )?(?:url|page|website)|fetch (?:this )?(?:url|page|website)|\bhttps?:\/\/|\bdocumentation\b|\bofficial docs\b|\brelease notes\b|\blatest version\b|\bcurrent version\b)/i.test(text);
+  return /(?:\bweb\b|\bwebsite\b|\binternet\b|\bonline\b|\bbrowse\b|\bbrowsing\b|search (?:the )?web|search online|open (?:this )?(?:url|page|website)|read (?:this )?(?:url|page|website)|fetch (?:this )?(?:url|page|website)|\bhttps?:\/\/|\bdocumentation\b|\bofficial docs\b|\brelease notes\b|\blatest version\b|\bcurrent version\b|\b(?:latest|current|today|tonight|recent|news|weather|stock price|share price|exchange rate|live score|as of now|right now|this week|this month)\b)/i.test(text);
 }
 
 function isExplicitExternalActionRequest(value) {
