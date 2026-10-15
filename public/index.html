@@ -2010,13 +2010,13 @@
     .trux-bubble .katex-display > .katex, .bubble .katex-display > .katex{ max-width: 100%; }
 
     /* Fullscreen settings, inspired by modern ChatGPT-style preferences. */
-    #settingsModal{
+    #profileModal{
       padding: 0;
       background: rgba(0,0,0,0.76);
       backdrop-filter: blur(16px) saturate(1.08);
       -webkit-backdrop-filter: blur(16px) saturate(1.08);
     }
-    #settingsModal .settings-page{
+    #profileModal .settings-page{
       position: relative;
       width: 100%;
       height: 100%;
@@ -2223,7 +2223,7 @@
     body.developer-mode .developer-badge{ display: inline-flex; }
 
     @media (max-width: 760px) {
-      #settingsModal .settings-page{ grid-template-columns: 1fr; }
+      #profileModal .settings-page{ grid-template-columns: 1fr; }
       .settings-sidebar{
         display: none;
       }
@@ -2295,16 +2295,16 @@
 .coding-workspace .composer{background:linear-gradient(135deg,rgba(20,22,42,.92),rgba(12,12,18,.96));border-color:rgba(134,149,255,.38)}
     /* Mobile settings and coding workspace reliability */
     @media (max-width: 760px){
-      #settingsModal { padding: 0; align-items: stretch; }
-      #settingsModal .settings-page { height: 100dvh; min-height: 100dvh; grid-template-columns: 1fr; overflow: hidden; }
-      #settingsModal .settings-sidebar { display: flex; flex-direction: row; overflow-x: auto; gap: 4px; padding: 8px 10px; border-right: 0; border-bottom: 1px solid var(--line); }
-      #settingsModal .settings-brand { display: none; }
-      #settingsModal .settings-nav { display: flex; gap: 4px; min-width: max-content; }
-      #settingsModal .settings-nav button { min-height: 38px; padding: 0 10px; white-space: nowrap; }
-      #settingsModal .settings-nav button svg { display: none; }
-      #settingsModal .settings-main-scroll { min-height: 0; padding: 20px 14px calc(28px + env(safe-area-inset-bottom)); overflow-y: auto; -webkit-overflow-scrolling: touch; }
-      #settingsModal .settings-topbar { position: sticky; top: 0; padding: 0 14px; }
-      #settingsModal .settings-section-head h2 { font-size: 25px; }
+      #profileModal { padding: 0; align-items: stretch; }
+      #profileModal .settings-page { height: 100dvh; min-height: 100dvh; grid-template-columns: 1fr; overflow: hidden; }
+      #profileModal .settings-sidebar { display: flex; flex-direction: row; overflow-x: auto; gap: 4px; padding: 8px 10px; border-right: 0; border-bottom: 1px solid var(--line); }
+      #profileModal .settings-brand { display: none; }
+      #profileModal .settings-nav { display: flex; gap: 4px; min-width: max-content; }
+      #profileModal .settings-nav button { min-height: 38px; padding: 0 10px; white-space: nowrap; }
+      #profileModal .settings-nav button svg { display: none; }
+      #profileModal .settings-main-scroll { min-height: 0; padding: 20px 14px calc(28px + env(safe-area-inset-bottom)); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+      #profileModal .settings-topbar { position: sticky; top: 0; padding: 0 14px; }
+      #profileModal .settings-section-head h2 { font-size: 25px; }
       .coding-workspace .topbar { grid-template-columns: 1fr auto 1fr; }
       .coding-workspace .trux-code-workspace { padding: 14px 12px 8px; }
       .coding-workspace #codeChatContainer { padding: 0 12px; }
@@ -2613,7 +2613,7 @@ body.sidebar-open .topbar{filter:brightness(.78)}
 .profile-detail-body .help-submit{justify-self:start;width:auto;padding:0 16px}
 .profile-detail-body .help-submit:disabled{opacity:.6;cursor:wait}
 .profile-detail-body .help-footnote{margin:0;padding:0 4px;color:var(--txt-4);font-size:11px;line-height:1.5}
-#settingsModal .feedback-type-select,#settingsModal #feedbackSubject{width:100%;margin:8px 0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg-2);color:var(--txt-1);font:inherit;font-size:13px}
+#profileModal .feedback-type-select,#profileModal #feedbackSubject{width:100%;margin:8px 0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg-2);color:var(--txt-1);font:inherit;font-size:13px}
 @media(max-width:640px){.profile-detail-body .help-layout{grid-template-columns:1fr}.profile-detail-body .help-panel.help-wide{grid-column:auto}.profile-detail-body .help-panel{padding:13px}}
 .profile-meta-grid-large{max-width:900px;margin:0 auto 18px;padding:0 clamp(18px,6vw,80px)}
 .profile-actions-row{max-width:900px;margin:14px auto 40px;padding:0 clamp(18px,6vw,80px)}
@@ -2629,7 +2629,7 @@ body[data-media-mode="image"] #imageWorkspace, body[data-media-mode="video"] #vi
 }
 @media(max-width:620px){
 }
-@media(max-width:760px){#profileModal .card>div:first-of-type{padding:22px 16px 16px!important}.profile-option-list{margin:0 12px}.profile-option-row{min-height:68px;padding:9px 12px;grid-template-columns:38px minmax(0,1fr) 18px;gap:10px}.profile-option-icon{width:33px;height:33px;border-radius:10px;font-size:15px}.profile-option-copy b{font-size:13.5px}.profile-option-copy small{font-size:10px}.profile-meta-grid-large, .profile-actions-row{padding:0 12px}.profile-detail-view{padding:0 12px}.settings-mobile-select{display:block}#settingsModal .settings-topbar{gap:10px;padding:0 12px}#settingsModal .settings-topbar .settings-title .msub{display:none}#settingsModal .settings-topbar .settings-title .mtitle{font-size:18px}#settingsModal .settings-topbar .close{position:static;flex:0 0 36px;width:36px;height:36px;margin:0}#settingsModal .settings-sidebar{display:none}.media-gen-workspace{width:calc(100% - 20px);margin:10px auto 6px;border-radius:22px;min-height:230px}.media-gen-inner{padding:30px 24px 32px}.media-gen-workspace h1{font-size:34px}}@media(max-width:470px){.consent-actions{grid-template-columns:1fr}}
+@media(max-width:760px){#profileModal .card>div:first-of-type{padding:22px 16px 16px!important}.profile-option-list{margin:0 12px}.profile-option-row{min-height:68px;padding:9px 12px;grid-template-columns:38px minmax(0,1fr) 18px;gap:10px}.profile-option-icon{width:33px;height:33px;border-radius:10px;font-size:15px}.profile-option-copy b{font-size:13.5px}.profile-option-copy small{font-size:10px}.profile-meta-grid-large, .profile-actions-row{padding:0 12px}.profile-detail-view{padding:0 12px}.settings-mobile-select{display:block}#profileModal .settings-topbar{gap:10px;padding:0 12px}#profileModal .settings-topbar .settings-title .msub{display:none}#profileModal .settings-topbar .settings-title .mtitle{font-size:18px}#profileModal .settings-topbar .close{position:static;flex:0 0 36px;width:36px;height:36px;margin:0}#profileModal .settings-sidebar{display:none}.media-gen-workspace{width:calc(100% - 20px);margin:10px auto 6px;border-radius:22px;min-height:230px}.media-gen-inner{padding:30px 24px 32px}.media-gen-workspace h1{font-size:34px}}@media(max-width:470px){.consent-actions{grid-template-columns:1fr}}
     .notebook-item{position:relative}
     .notebook-delete{width:30px;height:30px;flex:0 0 30px;margin-left:auto;display:grid;place-items:center;border-radius:8px;color:var(--txt-3);background:transparent;border:1px solid transparent;opacity:.7;transition:opacity .16s var(--ease),background .16s var(--ease),color .16s var(--ease),border-color .16s var(--ease)}
     .notebook-item:hover .notebook-delete, .notebook-delete:focus-visible{opacity:1}
@@ -4083,7 +4083,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
 
 
     /* ---------- REWORKED SETTINGS & PROFILE MODALS ---------- */
-    #profileModal, #settingsModal{
+    #profileModal, #profileModal{
       padding: 0 !important;
       background: rgba(0,0,0,0.85) !important;
       backdrop-filter: blur(20px) !important;
@@ -4129,7 +4129,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       border-bottom: 1px solid rgba(255,255,255,0.05) !important;
     }
 
-    #settingsModal .settings-page{
+    #profileModal .settings-page{
       border-radius: 0 !important;
       background: #09090c !important;
     }
@@ -4759,7 +4759,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
     }
 
     /* Settings home follows a single-column list/drill-in navigation like the reference. */
-    #settingsModal{
+    #profileModal{
       position: fixed !important;
       inset: 0 !important;
       align-items: stretch !important;
@@ -4769,7 +4769,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
     }
-    #settingsModal .settings-page{
+    #profileModal .settings-page{
       display: flex !important;
       flex-direction: column !important;
       position: relative;
@@ -4786,8 +4786,8 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       from{ opacity: 0; transform: translateY(5px); }
       to{ opacity: 1; transform: translateY(0); }
     }
-    #settingsModal .settings-sidebar{ display: none !important; }
-    #settingsModal .settings-main{
+    #profileModal .settings-sidebar{ display: none !important; }
+    #profileModal .settings-main{
       display: flex !important;
       flex: 1 1 auto !important;
       flex-direction: column !important;
@@ -4797,7 +4797,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       height: 100% !important;
       background: #1b1c1e !important;
     }
-    #settingsModal .settings-topbar{
+    #profileModal .settings-topbar{
       display: flex !important;
       flex: 0 0 auto !important;
       align-items: center !important;
@@ -4810,8 +4810,8 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       position: relative !important;
       z-index: 2;
     }
-    #settingsModal .settings-title, #settingsModal .settings-mobile-select, #settingsModal .settings-topbar > .close{ display: none !important; }
-    #settingsModal .settings-back-btn{
+    #profileModal .settings-title, #profileModal .settings-mobile-select, #profileModal .settings-topbar > .close{ display: none !important; }
+    #profileModal .settings-back-btn{
       display: grid !important;
       place-items: center !important;
       width: 46px !important;
@@ -4825,9 +4825,9 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       cursor: pointer;
       transition: background 180ms ease, color 180ms ease, transform 240ms cubic-bezier(.16,1,.3,1) !important;
     }
-    #settingsModal .settings-back-btn:hover{ background: rgba(255,255,255,.07) !important; color: #fff !important; }
-    #settingsModal .settings-back-btn:active{ transform: scale(.94); }
-    #settingsModal .settings-back-btn svg{
+    #profileModal .settings-back-btn:hover{ background: rgba(255,255,255,.07) !important; color: #fff !important; }
+    #profileModal .settings-back-btn:active{ transform: scale(.94); }
+    #profileModal .settings-back-btn svg{
       width: 28px !important;
       height: 28px !important;
       fill: none !important;
@@ -4836,7 +4836,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       stroke-linecap: round !important;
       stroke-linejoin: round !important;
     }
-    #settingsModal .settings-main-scroll{
+    #profileModal .settings-main-scroll{
       display: block !important;
       flex: 1 1 auto !important;
       min-height: 0 !important;
@@ -4850,23 +4850,23 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
     }
-    #settingsModal[data-settings-view="home"] .settings-home-list{ display: block !important; }
-    #settingsModal[data-settings-view="home"] .settings-content{ display: none !important; }
-    #settingsModal[data-settings-view="section"] .settings-home-list{ display: none !important; }
-    #settingsModal[data-settings-view="section"] .settings-content{
+    #profileModal[data-settings-view="home"] .settings-home-list{ display: block !important; }
+    #profileModal[data-settings-view="home"] .settings-content{ display: none !important; }
+    #profileModal[data-settings-view="section"] .settings-home-list{ display: none !important; }
+    #profileModal[data-settings-view="section"] .settings-content{
       display: block !important;
       width: min(900px, 100%);
       margin: 0 auto;
       padding: 20px 0 28px;
     }
-    #settingsModal .settings-home-list{
+    #profileModal .settings-home-list{
       display: none;
       width: min(820px, 100%);
       margin: 0 auto;
       padding: 0 0 34px;
       color: #e4e5e7;
     }
-    #settingsModal .settings-home-heading{
+    #profileModal .settings-home-heading{
       margin: 46px 0 58px !important;
       color: #e4e5e7 !important;
       font-size: clamp(38px, 7.8vw, 64px) !important;
@@ -4874,9 +4874,9 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       font-weight: 400 !important;
       letter-spacing: -.045em !important;
     }
-    #settingsModal .settings-home-intro{ display: none !important; }
-    #settingsModal .settings-home-options{ display: flex; flex-direction: column; gap: 7px; }
-    #settingsModal .settings-home-row{
+    #profileModal .settings-home-intro{ display: none !important; }
+    #profileModal .settings-home-options{ display: flex; flex-direction: column; gap: 7px; }
+    #profileModal .settings-home-row{
       display: grid !important;
       grid-template-columns: 34px minmax(0, 1fr) 18px !important;
       align-items: center !important;
@@ -4893,20 +4893,20 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       cursor: pointer;
       transition: background 190ms ease, transform 260ms cubic-bezier(.16,1,.3,1), color 190ms ease !important;
     }
-    #settingsModal .settings-home-row:hover, #settingsModal .settings-home-row:focus-visible{
+    #profileModal .settings-home-row:hover, #profileModal .settings-home-row:focus-visible{
       background: rgba(255,255,255,.045) !important;
       color: #fff !important;
       outline: none;
     }
-    #settingsModal .settings-home-row:active{ transform: scale(.992); }
-    #settingsModal .settings-home-icon{
+    #profileModal .settings-home-row:active{ transform: scale(.992); }
+    #profileModal .settings-home-icon{
       display: grid !important;
       place-items: center !important;
       width: 32px !important;
       height: 32px !important;
       color: #c6c8ca !important;
     }
-    #settingsModal .settings-home-icon svg, #settingsModal .settings-row-chevron{
+    #profileModal .settings-home-icon svg, #profileModal .settings-row-chevron{
       display: block !important;
       width: 27px !important;
       height: 27px !important;
@@ -4916,8 +4916,8 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       stroke-linecap: round !important;
       stroke-linejoin: round !important;
     }
-    #settingsModal .settings-home-copy{ min-width: 0; display: block; }
-    #settingsModal .settings-home-copy b{
+    #profileModal .settings-home-copy{ min-width: 0; display: block; }
+    #profileModal .settings-home-copy b{
       display: block;
       margin: 0;
       color: inherit !important;
@@ -4926,7 +4926,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       line-height: 1.3 !important;
       letter-spacing: -.018em;
     }
-    #settingsModal .settings-home-copy small{
+    #profileModal .settings-home-copy small{
       display: block;
       margin-top: 5px !important;
       max-width: 610px;
@@ -4936,28 +4936,28 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       line-height: 1.42 !important;
       white-space: normal !important;
     }
-    #settingsModal .settings-row-chevron{
+    #profileModal .settings-row-chevron{
       width: 17px !important;
       height: 17px !important;
       opacity: .42;
       stroke-width: 1.9 !important;
       transition: transform 230ms cubic-bezier(.16,1,.3,1), opacity 180ms ease;
     }
-    #settingsModal .settings-home-row:hover .settings-row-chevron{ transform: translateX(3px); opacity: .9; }
-    #settingsModal .settings-home-developer{ display: none !important; }
-    body.developer-mode #settingsModal .settings-home-developer{ display: grid !important; }
-    #settingsModal .settings-section-head{ margin: 12px 0 22px !important; }
-    #settingsModal .settings-section-head h2{ color: #ededee !important; font-size: clamp(28px, 5vw, 38px) !important; }
-    #settingsModal .settings-section-head p{ color: #b4b6b8 !important; }
-    #settingsModal .settings-card{
+    #profileModal .settings-home-row:hover .settings-row-chevron{ transform: translateX(3px); opacity: .9; }
+    #profileModal .settings-home-developer{ display: none !important; }
+    body.developer-mode #profileModal .settings-home-developer{ display: grid !important; }
+    #profileModal .settings-section-head{ margin: 12px 0 22px !important; }
+    #profileModal .settings-section-head h2{ color: #ededee !important; font-size: clamp(28px, 5vw, 38px) !important; }
+    #profileModal .settings-section-head p{ color: #b4b6b8 !important; }
+    #profileModal .settings-card{
       background: rgba(255,255,255,.025) !important;
       border: 1px solid rgba(255,255,255,.085) !important;
       border-radius: 16px !important;
       box-shadow: none !important;
     }
-    #settingsModal .mrow{ color: #e5e6e7; }
-    #settingsModal .mrow-sub, #settingsModal .utxt, #settingsModal .setting-note{ color: #aeb0b3 !important; }
-    #settingsModal .settings-content .instr{ background: #242527; color: #ededee; border-color: rgba(255,255,255,.1); }
+    #profileModal .mrow{ color: #e5e6e7; }
+    #profileModal .mrow-sub, #profileModal .utxt, #profileModal .setting-note{ color: #aeb0b3 !important; }
+    #profileModal .settings-content .instr{ background: #242527; color: #ededee; border-color: rgba(255,255,255,.1); }
 
     /* The plus menu has a horizontal grab handle; dragging it down dismisses it. */
     #attachmentMenu{
@@ -5008,23 +5008,42 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       to{ opacity: 1; transform: translateY(0) scale(1); }
     }
     @media (max-width: 760px) {
-      #settingsModal .settings-topbar{ min-height: calc(64px + env(safe-area-inset-top, 0px)) !important; padding-left: 17px !important; }
-      #settingsModal .settings-main-scroll{ padding-left: 25px !important; padding-right: 25px !important; }
-      #settingsModal .settings-home-heading{ margin-top: 42px !important; margin-bottom: 51px !important; font-size: 42px !important; }
-      #settingsModal .settings-home-options{ gap: 12px; }
-      #settingsModal .settings-home-row{ grid-template-columns: 30px minmax(0, 1fr) 16px !important; gap: 22px !important; min-height: 88px !important; padding: 14px 0 !important; }
-      #settingsModal .settings-home-icon{ width: 28px !important; height: 28px !important; }
-      #settingsModal .settings-home-icon svg{ width: 26px !important; height: 26px !important; }
-      #settingsModal .settings-home-copy b{ font-size: 19px !important; }
-      #settingsModal .settings-home-copy small{ font-size: 16px !important; line-height: 1.42 !important; }
+      #profileModal .settings-topbar{ min-height: calc(64px + env(safe-area-inset-top, 0px)) !important; padding-left: 17px !important; }
+      #profileModal .settings-main-scroll{ padding-left: 25px !important; padding-right: 25px !important; }
+      #profileModal .settings-home-heading{ margin-top: 42px !important; margin-bottom: 51px !important; font-size: 42px !important; }
+      #profileModal .settings-home-options{ gap: 12px; }
+      #profileModal .settings-home-row{ grid-template-columns: 30px minmax(0, 1fr) 16px !important; gap: 22px !important; min-height: 88px !important; padding: 14px 0 !important; }
+      #profileModal .settings-home-icon{ width: 28px !important; height: 28px !important; }
+      #profileModal .settings-home-icon svg{ width: 26px !important; height: 26px !important; }
+      #profileModal .settings-home-copy b{ font-size: 19px !important; }
+      #profileModal .settings-home-copy small{ font-size: 16px !important; line-height: 1.42 !important; }
     }
     @media (prefers-reduced-motion: reduce) {
-      #settingsModal .settings-page, #settingsModal .settings-home-row, #attachmentMenu, #attachmentMenu.open, #attachmentMenu .plus-menu-handle::before, #attachBtn svg{
+      #profileModal .settings-page, #profileModal .settings-home-row, #attachmentMenu, #attachmentMenu.open, #attachmentMenu .plus-menu-handle::before, #attachBtn svg{
         animation: none !important;
         transition-duration: .01ms !important;
       }
     }
   
+
+    /* Unified profile/settings surface: a single scroll container and navigation state. */
+    #profileModal .profile-upgrade-card{position:relative!important;display:block!important;overflow:hidden!important;padding:0!important;background:#000!important}
+    #profileModal .profile-home-page{display:block;width:100%;height:100%;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-bottom:calc(28px + env(safe-area-inset-bottom,0px));animation:profileHomeIn .34s cubic-bezier(.16,1,.3,1) both}
+    #profileModal .settings-page{display:none!important;position:absolute!important;inset:0!important;z-index:5!important;width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;overflow:hidden!important;background:#1b1c1e!important}
+    #profileModal[data-settings-view="section"] .settings-page{display:flex!important;animation:settingsPageIn .34s cubic-bezier(.16,1,.3,1) both}
+    #profileModal[data-settings-view] .profile-home-page{display:none!important}
+    #profileModal .settings-home-list{display:none!important}
+    #profileModal[data-settings-view="section"] .settings-content{display:block!important}
+    #profileModal .profile-option-row{transition:background .22s cubic-bezier(.16,1,.3,1),transform .25s cubic-bezier(.16,1,.3,1),border-color .22s ease}
+    #profileModal .profile-option-row:active{transform:scale(.992)}
+    #profileModal .profile-option-list{animation:profileListIn .36s cubic-bezier(.16,1,.3,1) both}
+    #profileModal .profile-detail-view{animation:profileDetailIn .3s cubic-bezier(.16,1,.3,1) both}
+    @keyframes profileHomeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes profileListIn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes profileDetailIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes settingsPageIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    @media(prefers-reduced-motion:reduce){#profileModal .profile-home-page,#profileModal .profile-option-list,#profileModal .profile-detail-view,#profileModal[data-settings-view="section"] .settings-page{animation:none!important;transition:none!important}}
+
 </style>
 
 
@@ -5507,10 +5526,11 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       <div class="media-library-grid" id="mediaLibraryGrid"></div>
     </div>
   </div>
-  <div class="modal" id="profileModal">
+  <div class="modal" id="profileModal" aria-label="Profile and settings">
     <div class="card profile-upgrade-card">
+      <div class="profile-home-page" id="profileHomePage">
       <button class="close" onclick="closeProfileModal()">×</button>
-      <div style="display:flex;align-items:center;gap:16px;padding-right:38px">
+      <div id="profileHero" style="display:flex;align-items:center;gap:16px;padding-right:38px">
         <img class="modal-avatar" id="modalAvatar">
         <div style="min-width:0">
           <div class="mtitle" id="modalName">User Name</div>
@@ -5518,7 +5538,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
           <span class="owner-profile-badge">✦ Owner · Verified</span>
         </div>
       </div>
-      <div class="profile-meta-grid">
+      <div class="profile-meta-grid" id="profileMetaSummary">
         <div class="profile-meta-item"><b id="profilePlanText">Core</b><small>Workspace</small></div>
         <div class="profile-meta-item"><b id="profileModelText">Auto</b><small>Selected model</small></div>
         <div class="profile-meta-item"><b id="profileLimitText">Unlimited</b><small>Core limit</small></div>
@@ -5532,9 +5552,25 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         <button type="button" class="profile-option-row" data-profile-page="memory"><span class="profile-option-icon">▤</span><span class="profile-option-copy"><b>Memory & data</b><small>Import or export your local TruX-Omni</small></span><span class="profile-option-chevron">›</span></button>
         <button type="button" class="profile-option-row" data-profile-page="avatar"><span class="profile-option-icon">◌</span><span class="profile-option-copy"><b>Avatar</b><small>Choose or reset your profile image</small></span><span class="profile-option-chevron">›</span></button>
         <button type="button" class="profile-option-row" data-profile-page="appearance"><span class="profile-option-icon">◐</span><span class="profile-option-copy"><b>Appearance</b><small>Choose the TruX home experience</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="settings"><span class="profile-option-icon">⚙</span><span class="profile-option-copy"><b>Settings</b><small>Open every detailed TruX setting</small></span><span class="profile-option-chevron">›</span></button>
+
         <button type="button" class="profile-option-row" data-profile-page="help"><span class="profile-option-icon">?</span><span class="profile-option-copy"><b>Help & privacy</b><small>Privacy controls and useful shortcuts</small></span><span class="profile-option-chevron">›</span></button>
         <button type="button" class="profile-option-row profile-owner-only" data-profile-page="developer"><span class="profile-option-icon">⌘</span><span class="profile-option-copy"><b>Developer workspace</b><small>Developer-only controls and identity</small></span><span class="profile-option-chevron">›</span></button>
+      </div>
+
+      <div class="profile-list-group-title">Settings &amp; privacy</div>
+      <div class="profile-option-list" id="profileSettingsOptionList">
+        <button type="button" class="profile-option-row" data-profile-page="general"><span class="profile-option-icon">⚙</span><span class="profile-option-copy"><b>General</b><small>Core behavior and feedback preferences</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="voice"><span class="profile-option-icon">♫</span><span class="profile-option-copy"><b>Voice</b><small>Speech playback and reading speed</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="safety"><span class="profile-option-icon">◇</span><span class="profile-option-copy"><b>Safety &amp; wellbeing</b><small>Permission and safe-use guidance</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="security"><span class="profile-option-icon">♢</span><span class="profile-option-copy"><b>Security &amp; login</b><small>Connected account security and sign-out</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="remote"><span class="profile-option-icon">⌘</span><span class="profile-option-copy"><b>Remote control</b><small>Availability and connection information</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="storage"><span class="profile-option-icon">▤</span><span class="profile-option-copy"><b>Storage</b><small>Export chats and manage saved workspace data</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="privacy"><span class="profile-option-icon">◈</span><span class="profile-option-copy"><b>Privacy center</b><small>Understand data use and available controls</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="dataControls"><span class="profile-option-icon">▥</span><span class="profile-option-copy"><b>Data controls</b><small>Export, import, reset settings, or clear chats</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="ads"><span class="profile-option-icon">◉</span><span class="profile-option-copy"><b>Ads controls</b><small>Advertising and personalization availability</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="reportbug"><span class="profile-option-icon">!</span><span class="profile-option-copy"><b>Report a bug</b><small>Send a bug report or product feedback</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="about"><span class="profile-option-icon">i</span><span class="profile-option-copy"><b>About TruX-Omni</b><small>Workspace information and help</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="plugins"><span class="profile-option-icon">⠿</span><span class="profile-option-copy"><b>Plugins</b><small>Connected services and available integrations</small></span><span class="profile-option-chevron">›</span></button>
       </div>
       <section class="profile-detail-view" id="profileDetailView" hidden>
         <button type="button" class="profile-detail-back" onclick="closeProfileOption()">‹ <span>Profile</span></button>
@@ -5543,16 +5579,13 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         <div class="profile-detail-body" id="profileDetailBody"></div>
       </section>
 
-      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <div id="profileActionsRow" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
         <button class="mbtn" onclick="closeProfileModal();openPinnedInsightsModal()">Pinned insights</button>
         <button class="mbtn" onclick="closeProfileModal();openSettingsModal()">Settings</button>
         <button class="mbtn danger" onclick="confirmSignOut()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17l5-5-5-5M20 12H9M12 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6"/></svg>Sign out</button>
       </div>
-    </div>
-  </div>
-
-  <div class="modal" id="settingsModal" aria-label="Settings">
-    <div class="settings-page">
+    </div><!-- end profile home -->
+<div class="settings-page">
       <aside class="settings-sidebar">
         <div class="settings-brand">
           <div><b>TruX settings</b><small>Personal workspace</small></div>
@@ -5752,9 +5785,10 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         </div>
       </section>
     </div>
+    </div>
   </div>
 
-  <div class="modal" id="sandboxModal">
+<div class="modal" id="sandboxModal">
     <div class="card" style="width: min(720px, 100%);">
       <button class="close" onclick="closeSandboxModal()">×</button>
       <div class="mtitle">Live Sandbox Renderer</div>
@@ -6505,31 +6539,56 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       const email=escapeHtml((auth&&auth.currentUser&&auth.currentUser.email)||"No account");
       if(key==="account") return {title:"Manage your account",subtitle:"Your connected sign-in and account controls.",html:'<div class="detail-callout"><h4>Connected account</h4><p>'+email+'</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="window.open(&#39;https://myaccount.google.com/&#39;,&#39;_blank&#39;,&#39;noopener&#39;)">Open Google Account</button></div></div>'};
       if(key==="avatar") return {title:"Avatar",subtitle:"Choose the image shown in your TruX profile.",html:'<div class="detail-callout"><h4>Profile image</h4><p>Choose a local image or reset to your connected Google photo.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="openAvatarPicker()">Choose image</button><button class="mbtn" type="button" onclick="resetAvatarOverride()">Reset avatar</button></div></div>'};
-      if(key==="help") return {title:"Help & privacy",subtitle:"Guides, troubleshooting, bug reports, and direct founder contact.",html:"<div class=\"help-layout\">\n  <section class=\"help-panel help-wide\">\n    <h4>Welcome to TruX-Omni</h4>\n    <p>This page explains the main workspaces, tools, settings, and ways to get help.</p>\n    <ul>\n      <li><b>Chat:</b> Ask questions, learn, brainstorm, write, and work through follow-up questions.</li>\n      <li><b>TruX-Code:</b> Use the coding workspace for code, debugging, and connected repository tasks. Review proposed changes before relying on them.</li>\n      <li><b>Image and Video:</b> Switch to the matching workspace and describe what you want to create.</li>\n      <li><b>TruX Live:</b> Start a live voice session when you want to speak naturally; allow camera or screen access only when you need it.</li>\n    </ul>\n  </section>\n  <section class=\"help-panel\">\n    <h4>Chat and model selection</h4>\n    <p>Choose Chat for everyday questions. The regular user model choice is <b>Auto</b>, which selects a suitable model for your request. Be specific about your goal, constraints, and preferred output, then ask follow-up questions to refine the result.</p>\n    <p>Thinking controls, when available, let you adjust how much reasoning to use.</p>\n  </section>\n  <section class=\"help-panel\">\n    <h4>The + tools menu</h4>\n    <p>Use the <b>+</b> menu to access tools such as coding, Deep Research, image generation, files, camera, and photos. Describe what you want done with an attachment so TruX knows how to use it.</p>\n    <p>Use the Library to revisit supported generated media and saved items.</p>\n  </section>\n  <section class=\"help-panel\">\n    <h4>Chats, notebooks, and Incognito</h4>\n    <p>Use the sidebar to switch between chats and notebooks. Move relevant conversations into a notebook to keep related work together. Use the Incognito option when you want a separate private-style session; check the current interface before assuming a conversation has been saved.</p>\n  </section>\n  <section class=\"help-panel\">\n    <h4>Settings and privacy</h4>\n    <p>Open your profile menu for Settings, Personalization, Notifications, usage information, and account options. Location access can be managed from Personalization. Only grant device permissions when a feature needs them.</p>\n    <div class=\"detail-stack-actions\"><button class=\"mbtn\" type=\"button\" onclick=\"closeProfileOption();closeProfileModal();openSettingsModal(&quot;personalization&quot;)\">Open Personalization</button></div>\n  </section>\n  <section class=\"help-panel\">\n    <h4>Troubleshooting</h4>\n    <ol>\n      <li>Check your internet connection and confirm you are signed in.</li>\n      <li>If a tool fails, retry once and note the exact error message.</li>\n      <li>For voice, camera, or screen features, check the browser permission for that feature.</li>\n      <li>If the issue continues, send a bug report below with the steps that caused it and what you expected to happen.</li>\n    </ol>\n  </section>\n  <section class=\"help-panel help-wide\" id=\"helpFeedbackSection\">\n    <h4>Feedback and bug reports</h4>\n    <p>Use this form to report a bug, describe an issue, suggest a feature, or share feedback. For bugs, include what you were doing, the steps to reproduce the issue, what happened, and what you expected instead. Please do not include passwords, API keys, or other secrets.</p>\n    <form class=\"help-form\" onsubmit=\"submitHelpFeedback(event)\">\n      <label>Feedback type\n        <select name=\"type\" required>\n          <option value=\"bug-report\">Report a bug or issue</option>\n          <option value=\"product-feedback\">General feedback</option>\n          <option value=\"feature-request\">Suggest a feature</option>\n          <option value=\"general-feedback\">Other</option>\n        </select>\n      </label>\n      <label>Subject (optional)\n        <input name=\"subject\" type=\"text\" maxlength=\"160\" placeholder=\"A short title for your feedback\">\n      </label>\n      <label>Details\n        <textarea name=\"message\" required minlength=\"8\" maxlength=\"12000\" rows=\"5\" placeholder=\"Describe the issue, steps to reproduce it, or your suggestion…\"></textarea>\n      </label>\n      <button class=\"mbtn help-submit\" type=\"submit\">Send feedback</button>\n    </form>\n  </section>\n  <section class=\"help-panel help-wide\" id=\"founderContactSection\">\n    <h4>Contact the founder directly</h4>\n    <p>Have a question, suggestion, or query for the founder? Type it here and submit it as a direct contact request. Replies use the email address associated with your signed-in account.</p>\n    <form class=\"help-form\" onsubmit=\"submitFounderQuery(event)\">\n      <label>Subject\n        <input name=\"subject\" type=\"text\" required maxlength=\"160\" placeholder=\"What is your query about?\">\n      </label>\n      <label>Your query\n        <textarea name=\"message\" required minlength=\"8\" maxlength=\"12000\" rows=\"4\" placeholder=\"Write your question or query to the founder…\"></textarea>\n      </label>\n      <button class=\"mbtn help-submit\" type=\"submit\">Email the founder</button>\n    </form>\n  </section>\n  <p class=\"help-footnote help-wide\">Feedback and founder queries require you to be signed in. Submissions are emailed to the TruX-Omni founder when server delivery is available. If email delivery fails, TruX opens your email app with the message prepared so you can send it manually.</p>\n</div>"};
+      if(key==="help") return {title:"Help & privacy",subtitle:"Guides, troubleshooting, bug reports, and direct founder contact.",html:"<div class=\"help-layout\">\n  <section class=\"help-panel help-wide\">\n    <h4>Welcome to TruX-Omni</h4>\n    <p>This page explains the main workspaces, tools, settings, and ways to get help.</p>\n    <ul>\n      <li><b>Chat:</b> Ask questions, learn, brainstorm, write, and work through follow-up questions.</li>\n      <li><b>TruX-Code:</b> Use the coding workspace for code, debugging, and connected repository tasks. Review proposed changes before relying on them.</li>\n      <li><b>Image and Video:</b> Switch to the matching workspace and describe what you want to create.</li>\n      <li><b>TruX Live:</b> Start a live voice session when you want to speak naturally; allow camera or screen access only when you need it.</li>\n    </ul>\n  </section>\n  <section class=\"help-panel\">\n    <h4>Chat and model selection</h4>\n    <p>Choose Chat for everyday questions. The regular user model choice is <b>Auto</b>, which selects a suitable model for your request. Be specific about your goal, constraints, and preferred output, then ask follow-up questions to refine the result.</p>\n    <p>Thinking controls, when available, let you adjust how much reasoning to use.</p>\n  </section>\n  <section class=\"help-panel\">\n    <h4>The + tools menu</h4>\n    <p>Use the <b>+</b> menu to access tools such as coding, Deep Research, image generation, files, camera, and photos. Describe what you want done with an attachment so TruX knows how to use it.</p>\n    <p>Use the Library to revisit supported generated media and saved items.</p>\n  </section>\n  <section class=\"help-panel\">\n    <h4>Chats, notebooks, and Incognito</h4>\n    <p>Use the sidebar to switch between chats and notebooks. Move relevant conversations into a notebook to keep related work together. Use the Incognito option when you want a separate private-style session; check the current interface before assuming a conversation has been saved.</p>\n  </section>\n  <section class=\"help-panel\">\n    <h4>Settings and privacy</h4>\n    <p>Open your profile menu for Settings, Personalization, Notifications, usage information, and account options. Location access can be managed from Personalization. Only grant device permissions when a feature needs them.</p>\n    <div class=\"detail-stack-actions\"><button class=\"mbtn\" type=\"button\" onclick=\"closeProfileOption();openSettingsModal(&quot;personalization&quot;)\">Open Personalization</button></div>\n  </section>\n  <section class=\"help-panel\">\n    <h4>Troubleshooting</h4>\n    <ol>\n      <li>Check your internet connection and confirm you are signed in.</li>\n      <li>If a tool fails, retry once and note the exact error message.</li>\n      <li>For voice, camera, or screen features, check the browser permission for that feature.</li>\n      <li>If the issue continues, send a bug report below with the steps that caused it and what you expected to happen.</li>\n    </ol>\n  </section>\n  <section class=\"help-panel help-wide\" id=\"helpFeedbackSection\">\n    <h4>Feedback and bug reports</h4>\n    <p>Use this form to report a bug, describe an issue, suggest a feature, or share feedback. For bugs, include what you were doing, the steps to reproduce the issue, what happened, and what you expected instead. Please do not include passwords, API keys, or other secrets.</p>\n    <form class=\"help-form\" onsubmit=\"submitHelpFeedback(event)\">\n      <label>Feedback type\n        <select name=\"type\" required>\n          <option value=\"bug-report\">Report a bug or issue</option>\n          <option value=\"product-feedback\">General feedback</option>\n          <option value=\"feature-request\">Suggest a feature</option>\n          <option value=\"general-feedback\">Other</option>\n        </select>\n      </label>\n      <label>Subject (optional)\n        <input name=\"subject\" type=\"text\" maxlength=\"160\" placeholder=\"A short title for your feedback\">\n      </label>\n      <label>Details\n        <textarea name=\"message\" required minlength=\"8\" maxlength=\"12000\" rows=\"5\" placeholder=\"Describe the issue, steps to reproduce it, or your suggestion…\"></textarea>\n      </label>\n      <button class=\"mbtn help-submit\" type=\"submit\">Send feedback</button>\n    </form>\n  </section>\n  <section class=\"help-panel help-wide\" id=\"founderContactSection\">\n    <h4>Contact the founder directly</h4>\n    <p>Have a question, suggestion, or query for the founder? Type it here and submit it as a direct contact request. Replies use the email address associated with your signed-in account.</p>\n    <form class=\"help-form\" onsubmit=\"submitFounderQuery(event)\">\n      <label>Subject\n        <input name=\"subject\" type=\"text\" required maxlength=\"160\" placeholder=\"What is your query about?\">\n      </label>\n      <label>Your query\n        <textarea name=\"message\" required minlength=\"8\" maxlength=\"12000\" rows=\"4\" placeholder=\"Write your question or query to the founder…\"></textarea>\n      </label>\n      <button class=\"mbtn help-submit\" type=\"submit\">Email the founder</button>\n    </form>\n  </section>\n  <p class=\"help-footnote help-wide\">Feedback and founder queries require you to be signed in. Submissions are emailed to the TruX-Omni founder when server delivery is available. If email delivery fails, TruX opens your email app with the message prepared so you can send it manually.</p>\n</div>"};
+
+      if(key==="workspace") return {title:"Workspace",subtitle:"Your current TruX-Omni plan and tools.",html:'<div class="detail-callout"><h4>Current workspace</h4><p>'+((currentPlanTier==="pro")?"Pro workspace":"Personal workspace")+'</p><p>Usage and model access are managed by your current plan.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="openSettingsModal(&quot;usage&quot;)">View usage &amp; limits</button><button class="mbtn" type="button" onclick="openSettingsModal(&quot;data&quot;)">Manage workspace data</button></div></div>'};
+      if(key==="safety") return {title:"Safety & wellbeing",subtitle:"Permission and safe-use guidance for this workspace.",html:'<div class="detail-callout"><h4>Device permissions</h4><p>Only grant location, microphone, camera, or notification permissions when you are using a feature that needs them. You can change location and notification settings below.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="openSettingsModal(&quot;personalization&quot;)">Location &amp; personalization</button><button class="mbtn" type="button" onclick="openSettingsModal(&quot;notifications&quot;)">Notification settings</button></div></div><div class="detail-callout"><h4>Content safeguards</h4><p>TruX does not currently expose a separate sensitive-content filter switch. Do not use this screen as a substitute for reviewing generated content.</p></div>'};
+      if(key==="security") return {title:"Security & login",subtitle:"Manage the account used to sign in to TruX.",html:'<div class="detail-callout"><h4>Connected account</h4><p>'+email+'</p><p>Account password, passkeys, and multi-factor authentication are managed by your sign-in provider.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="window.open(&#39;https://myaccount.google.com/security&#39;,&#39;_blank&#39;,&#39;noopener&#39;)">Open account security</button><button class="mbtn danger" type="button" onclick="confirmSignOut()">Sign out</button></div></div>'};
+      if(key==="remote") return {title:"Remote control",subtitle:"Control TruX from another device.",html:'<div class="detail-callout"><h4>Remote pairing is not available yet</h4><p>This TruX web app does not currently implement QR pairing or remote desktop control. No saved connections are being hidden here.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="closeProfileOption()">Back to profile</button></div></div>'};
+      if(key==="storage") return {title:"Storage",subtitle:"Manage chats and workspace data saved by TruX.",html:'<div class="detail-callout"><h4>Workspace data</h4><p>Export a copy of your chats before clearing history. Clearing chat history is destructive and requires confirmation.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="exportChatData()">Export chats</button><button class="mbtn" type="button" onclick="exportTruxMemory()">Export workspace memory</button><button class="mbtn danger" type="button" onclick="clearAllHistory()">Clear chat history</button></div></div>'};
+      if(key==="privacy") return {title:"Privacy center",subtitle:"Review the privacy controls available in TruX.",html:'<div class="detail-callout"><h4>Available controls</h4><p>Use Data controls to export or clear chats and to import or export workspace memory. Location access can be changed under Personalization. Incognito sessions are intended to stay separate from normal chat history.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="openSettingsModal(&quot;data&quot;)">Open data controls</button><button class="mbtn" type="button" onclick="openSettingsModal(&quot;personalization&quot;)">Open personalization</button></div></div>'};
+      if(key==="ads") return {title:"Ads controls",subtitle:"Advertising preferences for TruX-Omni.",html:'<div class="detail-callout"><h4>Ads are not currently enabled in TruX</h4><p>This app does not currently serve personalized ads or maintain an ads-topic history, so an ad personalization toggle would not change anything. Your chat and workspace controls are available separately.</p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="openSettingsModal(&quot;data&quot;)">Open data controls</button></div></div>'};
+      if(key==="about") return {title:"About TruX-Omni",subtitle:"Your AI workspace.",html:'<div class="detail-callout"><h4>TruX-Omni</h4><p>An AI workspace for chat, coding, image and video creation, and connected tools.</p><p>Application: <a href="https://trux-ai-workspace.trux.website/" target="_blank" rel="noopener noreferrer">trux-ai-workspace.trux.website</a></p><div class="detail-stack-actions"><button class="mbtn" type="button" onclick="openProfileOption(&quot;help&quot;)">Help &amp; feedback</button></div></div>'};
+      if(key==="reportbug") return profileDetailData("help");
       return {title:"Profile",subtitle:"Choose a profile setting.",html:'<div class="detail-callout"><p>That option is not available for this account.</p></div>'};
     }
 
     function openProfileOption(key){
-      const settingsSections={usage:"usage",personalization:"personalization",notifications:"notifications",memory:"data",appearance:"appearance",settings:"home",developer:"developer"};
-      if(Object.prototype.hasOwnProperty.call(settingsSections,key)){
+      const settingsSections={usage:"usage",personalization:"personalization",notifications:"notifications",memory:"data",appearance:"appearance",general:"general",voice:"voice",dataControls:"data",developer:"developer"};
+      if(key==="plugins"){
+        closeProfileOption();
         closeProfileModal();
+        if(typeof openPluginsPage==="function") openPluginsPage();
+        else toast("Plugins could not be opened. Please refresh TruX and try again.","err");
+        return;
+      }
+      if(Object.prototype.hasOwnProperty.call(settingsSections,key)){
+        closeProfileOption();
         openSettingsModal(settingsSections[key]);
         return;
       }
       currentProfileOption=key;
-      const home=getEl("profileOptionList"), label=document.querySelector(".profile-options-label"), detail=getEl("profileDetailView");
+      const detail=getEl("profileDetailView");
       const data=profileDetailData(key);
-      if(home) home.style.display="none";
-      if(label) label.style.display="none";
+      document.querySelectorAll("#profileModal .profile-option-list").forEach(el=>el.style.display="none");
+      document.querySelectorAll("#profileModal .profile-list-group-title").forEach(el=>el.style.display="none");
+      const hero=getEl("profileHero"), summary=getEl("profileMetaSummary"), actions=getEl("profileActionsRow");
+      if(hero) hero.style.display="none";
+      if(summary) summary.style.display="none";
+      if(actions) actions.style.display="none";
       if(detail){ detail.hidden=false; getEl("profileDetailTitle").textContent=data.title; getEl("profileDetailSubtitle").textContent=data.subtitle; getEl("profileDetailBody").innerHTML=data.html; }
       const scroller=getEl("profileModal"); if(scroller) scroller.scrollTop=0;
     }
 
     function closeProfileOption(){
       currentProfileOption=null;
-      const home=getEl("profileOptionList"), label=document.querySelector(".profile-options-label"), detail=getEl("profileDetailView");
-      if(home) home.style.display="";
-      if(label) label.style.display="";
+      document.querySelectorAll("#profileModal .profile-option-list").forEach(el=>el.style.display="");
+      document.querySelectorAll("#profileModal .profile-list-group-title").forEach(el=>el.style.display="");
+      const hero=getEl("profileHero"), summary=getEl("profileMetaSummary"), actions=getEl("profileActionsRow");
+      if(hero) hero.style.display="";
+      if(summary) summary.style.display="";
+      if(actions) actions.style.display="";
+      const detail=getEl("profileDetailView");
       if(detail) detail.hidden=true;
       const scroller=getEl("profileModal"); if(scroller) scroller.scrollTop=0;
     }
@@ -6859,10 +6918,17 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       const model = getEl("profileModelText"); if(model) model.innerText = "Auto";
       const limit = getEl("profileLimitText"); if(limit) limit.innerText = "Unlimited";
       const modal = getEl("profileModal");
-      if(modal) modal.style.display = "flex";
+      if(modal){ modal.removeAttribute("data-settings-view"); modal.style.display = "flex"; modal.setAttribute("aria-hidden","false"); }
       void refreshTruxProfileInfo(user);
     }
-    function closeProfileModal() { getEl("profileModal").style.display = "none"; }
+    function closeProfileModal() {
+      const modal=getEl("profileModal");
+      if(!modal) return;
+      modal.style.display="none";
+      modal.removeAttribute("data-settings-view");
+      modal.setAttribute("aria-hidden","true");
+      closeProfileOption();
+    }
     function switchSettingsSection(name) {
       if (String(name || "") === "home") { showSettingsHome(); return; }
       const validSections = ["general","appearance","voice","personalization","notifications","usage","data","developer"];
@@ -6870,7 +6936,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       const hasSection = validSections.includes(requested) &&
         Array.from(document.querySelectorAll("[data-settings-content]")).some(section => section.getAttribute("data-settings-content") === requested);
       const activeSection = hasSection ? requested : "general";
-      const settingsModal = getEl("settingsModal");
+      const settingsModal = getEl("profileModal");
       if (settingsModal) settingsModal.dataset.settingsView = "section";
       document.querySelectorAll("[data-settings-content]").forEach(section => {
         section.classList.toggle("active", section.getAttribute("data-settings-content") === activeSection);
@@ -6886,15 +6952,10 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       }
     }
     function showSettingsHome() {
-      const modal = getEl("settingsModal");
-      if (modal) modal.dataset.settingsView = "home";
-      const scroller = document.querySelector(".settings-main-scroll");
-      if (scroller) scroller.scrollTop = 0;
-      const mobileSelect = getEl("settingsMobileSelect");
-      if (mobileSelect) mobileSelect.value = "general";
+      closeSettingsModal();
     }
     function handleSettingsBack() {
-      const modal = getEl("settingsModal");
+      const modal = getEl("profileModal");
       if (modal && modal.dataset.settingsView === "section") {
         showSettingsHome();
         return;
@@ -6902,17 +6963,16 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       closeSettingsModal();
     }
     function openSettingsModal(section) {
-      const modal = getEl("settingsModal");
+      const modal = getEl("profileModal");
       if (!modal) {
         toast("Settings could not load. Please refresh TruX and try again.", "err");
         return;
       }
-      closeProfileModal();
       modal.style.display = "flex";
       modal.setAttribute("aria-hidden", "false");
       const requested = String(section || "home");
       try {
-        if (requested === "home") showSettingsHome();
+        if (requested === "home") closeSettingsModal();
         else switchSettingsSection(requested);
       } catch (error) {
         console.error("TruX Settings navigation failed:", error);
@@ -6924,11 +6984,13 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       try { updateNotificationSettingsUI(); } catch (error) { console.warn("Settings notifications refresh deferred:", error); }
     }
     function closeSettingsModal() {
-      const modal = getEl("settingsModal");
+      const modal = getEl("profileModal");
       if (!modal) return;
-      modal.style.display = "none";
-      modal.setAttribute("aria-hidden", "true");
-      modal.dataset.settingsView = "home";
+      modal.removeAttribute("data-settings-view");
+      modal.setAttribute("aria-hidden", "false");
+      const scroller = document.querySelector(".settings-main-scroll");
+      if (scroller) scroller.scrollTop = 0;
+      closeProfileOption();
     }
     function confirmSignOut() { auth?.signOut().then(() => { closeProfileModal(); }); }
 
@@ -12088,7 +12150,6 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
     });
 
     getEl("profileModal").addEventListener("click", e => { if(e.target === getEl("profileModal")) closeProfileModal(); });
-    getEl("settingsModal").addEventListener("click", e => { if(e.target === getEl("settingsModal")) closeSettingsModal(); });
     getEl("sandboxModal")?.addEventListener("click", e => { if(e.target === getEl("sandboxModal")) closeSandboxModal(); });
     getEl("pinnedModal")?.addEventListener("click", e => { if(e.target === getEl("pinnedModal")) closePinnedModal(); });
     getEl("loginWallModal")?.addEventListener("click", e => { if(e.target === getEl("loginWallModal")) closeLoginWall(); });
@@ -12097,7 +12158,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
 
 
     /* SETTINGS / PROFILE EVENT DELEGATION */
-    const settingsModalNode=getEl("settingsModal");
+    const settingsModalNode=getEl("profileModal");
     if(settingsModalNode){
       settingsModalNode.addEventListener("click",function(event){
         const nav=event.target && event.target.closest ? event.target.closest("[data-settings-section]") : null;
