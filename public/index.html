@@ -5053,6 +5053,17 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
     #profileModal .settings-section-head h2{font-size:clamp(29px,5vw,38px)!important}
     #profileModal .settings-card{background:#111!important;border-color:rgba(255,255,255,.12)!important;box-shadow:none!important}
     #profileModal .settings-content .instr{background:#161616!important}
+    #profileModal .profile-field-label{display:block;margin:10px 0 6px;color:var(--txt-2);font-size:13px;font-weight:550;line-height:1.4}
+    #profileModal .profile-setting-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:10px 0 14px}
+    #profileModal .profile-setting-grid .instr{margin:4px 0 0}
+    #profileModal .profile-info-panel{margin-top:12px;padding:13px 14px;border:1px solid var(--line-2);border-radius:12px;background:rgba(255,255,255,.035);color:var(--txt-2);font-size:13px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere}
+    #profileModal .archived-chats-list{display:grid;gap:8px;margin-top:12px}
+    #profileModal .archived-chat-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line);color:var(--txt-2);font-size:13px}
+    #profileModal .archived-chat-row .mbtn{flex:0 0 auto;width:auto;margin:0;padding:0 12px}
+    #profileModal .dictation-history-list{display:grid;gap:8px;margin-top:12px}
+    #profileModal .dictation-history-item{padding:9px 0;border-top:1px solid var(--line);font-size:13px;color:var(--txt-2);line-height:1.55;overflow-wrap:anywhere}
+    @media(max-width:520px){#profileModal .profile-setting-grid{grid-template-columns:1fr}}
+
     #profileModal .profile-option-list,#profileModal .profile-detail-view{animation:profileListIn .3s cubic-bezier(.16,1,.3,1) both}
     @media(max-width:760px){#profileModal .profile-home-page{padding:calc(18px + env(safe-area-inset-top,0px)) 16px calc(28px + env(safe-area-inset-bottom,0px))!important}#profileModal .profile-option-row{min-height:62px!important;padding:10px 12px!important}#profileModal .profile-home-page>#profileHero{padding-top:12px!important}}
     @media(prefers-reduced-motion:reduce){#profileModal .profile-home-page,#profileModal .profile-option-list,#profileModal .profile-detail-view{animation:none!important;transition:none!important}}
@@ -5573,6 +5584,8 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       <div class="profile-option-list" id="profileOptionList">
         <button type="button" class="profile-option-row" data-profile-page="account"><span class="profile-option-icon account-icon">◎</span><span class="profile-option-copy"><b>Account details</b><small>Profile name, email, phone and age settings</small></span><span class="profile-option-chevron">›</span></button>
         <button type="button" class="profile-option-row" data-profile-page="workspace"><span class="profile-option-icon">▣</span><span class="profile-option-copy"><b>Workspace &amp; plan</b><small>Workspace information and usage limits</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="usage"><span class="profile-option-icon">◔</span><span class="profile-option-copy"><b>Usage &amp; limits</b><small>View current usage allowances</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="upgrade"><span class="profile-option-icon">✦</span><span class="profile-option-copy"><b>Upgrade plan</b><small>Review plan options and current limits</small></span><span class="profile-option-chevron">›</span></button>
         <button type="button" class="profile-option-row" data-profile-page="avatar"><span class="profile-option-icon">◌</span><span class="profile-option-copy"><b>Profile photo</b><small>Choose or reset your profile image</small></span><span class="profile-option-chevron">›</span></button>
       </div>
 
@@ -5753,7 +5766,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
               <div class="settings-card"><div class="sect"><h4>Speech and dictation</h4>
                 <label class="profile-field-label" for="truxSpeechVoiceSelect">Speech voice</label><select id="truxSpeechVoiceSelect" class="instr" onchange="saveSpeechVoice(this.value)"><option value="">System default</option></select>
                 <label class="profile-field-label" for="truxDictationLanguage">Dictation language</label><select id="truxDictationLanguage" class="instr" onchange="saveDictationLanguage(this.value)"><option value="auto">Auto-detect (device language)</option><option value="en-US">English (United States)</option><option value="en-GB">English (United Kingdom)</option><option value="hi-IN">Hindi</option><option value="fr-FR">French</option><option value="es-ES">Spanish</option><option value="de-DE">German</option><option value="ja-JP">Japanese</option></select>
-                <div class="mrow"><span><b>Save dictation history on this device</b><small class="mrow-sub">Off by default. Only final recognized phrases are saved, up to 30 entries.</small></span><label class="toggle"><input id="truxDictationHistoryToggle" type="checkbox" onchange="saveProfilePreference('dictation_history',this.checked)"><span class="slider"></span></label></div><button class="mbtn" type="button" onclick="showDictationHistory()">View dictation history</button>
+                <div class="mrow"><span><b>Save dictation history on this device</b><small class="mrow-sub">Off by default. Only final recognized phrases are saved, up to 30 entries.</small></span><label class="toggle"><input id="truxDictationHistoryToggle" type="checkbox" onchange="saveProfilePreference('dictation_history',this.checked)"><span class="slider"></span></label></div><button class="mbtn" type="button" onclick="showDictationHistory()">View dictation history</button><div id="truxDictationHistoryList" class="dictation-history-list" aria-live="polite"></div>
               </div></div>
               <div class="settings-card"><div class="sect"><h4>Live voice options</h4><div class="mrow"><span>Live voice model</span><span class="utxt">Managed by TruX Live</span></div><div class="mrow"><span>Background conversations</span><span class="utxt">Not supported by this web workspace</span></div><div class="mrow"><span>Use as default assistant</span><span class="utxt">Set by your device, not by a web page</span></div></div></div>
 
@@ -5761,6 +5774,8 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
 
             <section class="settings-section" data-settings-content="personalization">
               <div class="settings-section-head"><h2>Personalization</h2><p>Change how TruX looks, responds and uses device context.</p></div>
+              <div class="settings-card"><div class="sect"><h4>Reference photos</h4><p class="mrow-sub">Persistent reference-photo conditioning is not implemented in this workspace. Attach a photo directly to an individual image request instead.</p><button class="mbtn" type="button" disabled>Persistent reference photos unavailable</button></div></div>
+
               <div class="settings-card">
                 <div class="sect"><h4>System Instructions</h4><textarea id="customInstructions" class="instr" placeholder="How should TruX respond?"></textarea><button class="mbtn" onclick="saveCustomInstructions()">Save Instructions</button></div>
               </div>
@@ -5877,7 +5892,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
                 </div>
               </div>
 
-              <div class="settings-card"><div class="mrow"><span><b>Improve the model for everyone</b><small class="mrow-sub">This app does not expose a training-consent control.</small></span><span class="utxt">Not available</span></div><div class="mrow"><span><b>Voice recording use</b><small class="mrow-sub">TruX does not retain recordings for model training.</small></span><span class="utxt">Not enabled</span></div><div class="mrow"><span><b>Apps with access</b><small class="mrow-sub">No contact syncing is implemented. Review connected tools before granting access.</small></span><button type="button" class="mbtn" onclick="openPluginsFromSettings()">Open plugins</button></div></div>
+              <div class="settings-card"><div class="mrow"><span><b>Apps with access</b><small class="mrow-sub">No contact syncing is implemented. Review connected tools before granting access.</small></span><button type="button" class="mbtn" onclick="openPluginsFromSettings()">Open plugins</button></div></div>
               <div class="settings-card"><div class="sect"><h4>Export data</h4><button type="button" class="mbtn" onclick="exportTruxMemory()">Export workspace data</button><button type="button" class="mbtn" onclick="exportChatData()">Export chats</button></div></div>
             </section>
             <section class="settings-section" data-settings-content="ads"><div class="settings-section-head"><h2>Ads controls</h2><p>TruX currently does not serve ads or collect advertising-topic history.</p></div><div class="settings-card"><div class="mrow"><span>Ad history</span><span class="utxt">Not collected</span></div><div class="mrow"><span>Topics</span><span class="utxt">Not collected</span></div><div class="mrow"><span>Delete ad data</span><span class="utxt">No ad data stored</span></div><div class="mrow"><span>Personalize ads</span><span class="utxt">Ads are not enabled</span></div><div class="mrow"><span>Change plan to go ad-free</span><span class="utxt">No ads plan integration</span></div></div></section>
