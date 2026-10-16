@@ -1223,6 +1223,41 @@ let truxHomePromptsCache = null;
 let truxHomePromptsCacheAt = 0;
 let truxHomePromptsInFlight = null;
 
+function parseTruxHomePromptText(rawText) {
+  let raw = String(rawText || '').trim();
+  if (!raw) return [];
+
+  raw = raw.replace(/^```(?:json|text)?s*/i, '').replace(/s*```$/i, '').trim();
+  try {
+    const parsed = JSON.parse(raw);
+    const list = Array.isArray(parsed) ? parsed : parsed?.prompts;
+    if (Array.isArray(list)) {
+      const values = list.map(value => String(value || '').trim());
+      const clean = [...new Set(values
+        .map(value => value.replace(/^s*(?:[-*•]|d+[.)])s*/, '').replace(/^["']|["']$/g, '').replace(/s+/g, ' ').trim())
+        .filter(value => value.length >= 8 && value.length <= 100))];
+      if (clean.length >= 3) return clean.slice(0, 3);
+    }
+  } catch {}
+
+  const lines = raw.split(/?
+/).map(line =>
+    line.replace(/^s*(?:[-*•]|d+[.)])s*/, '')
+      .replace(/^["']|["']$/g, '')
+      .replace(/s+/g, ' ')
+      .trim()
+  ).filter(line => line.length >= 8 && line.length <= 100);
+
+  const uniqueLines = [...new Set(lines)];
+  if (uniqueLines.length >= 3) return uniqueLines.slice(0, 3);
+
+  const sentences = raw.match(/[^.!?]+[.!?]?/g) || [];
+  const combined = [...new Set([...uniqueLines, ...sentences
+    .map(line => line.replace(/^s*(?:[-*•]|d+[.)])s*/, '').replace(/s+/g, ' ').trim())
+    .filter(line => line.length >= 8 && line.length <= 100)])];
+  return combined.slice(0, 3);
+}
+
 async function getTruxHomePrompts(env) {
   const now = Date.now();
   if (Array.isArray(truxHomePromptsCache) && now - truxHomePromptsCacheAt < 5 * 60 * 1000) {
@@ -1231,61 +1266,53 @@ async function getTruxHomePrompts(env) {
   if (truxHomePromptsInFlight) return truxHomePromptsInFlight;
 
   truxHomePromptsInFlight = (async () => {
-    const response = await fetchVertexGemini({
-      model: 'gemini-3.6-flash',
-      contents: [{
-        role: 'user',
-        parts: [{
-          text: [
-            'Create exactly three fresh, concise example questions for the blank home screen of a helpful AI workspace.',
-            'Make them varied across practical everyday help, learning or explanation, and creative thinking.',
-            'Each should sound like a natural thing a person might type, use 5 to 12 words, and avoid referring to personal details.',
-            'Avoid generic labels, numbering, markdown, emojis, and repeated ideas.',
-            'Return only valid JSON in this shape: {"prompts":["question one","question two","question three"]}.',
-            'Vary the ideas between generations. Date for variety: ' + new Date().toISOString().slice(0, 10) + '.'
-          ].join(' ')
-        }]
-      }],
-      systemInstruction: 'You write short, useful AI-home-screen prompt suggestions. Follow the requested JSON shape exactly. Do not add markdown fences or commentary.',
-      generationConfig: {
-        temperature: 0.9,
-        maxOutputTokens: 160,
-        responseMimeType: 'application/json'
-      },
-      env
-    });
+    const modelAttempts = ['gemini-3.5-flash-lite', 'gemini-3.6-flash'];
+    let lastError = null;
+    for (const model of modelAttempts) {
+      try {
+        const response = await fetchVertexGemini({
+          model,
+          contents: [{
+            role: 'user',
+            parts: [{
+              text: [
+                'Create exactly three fresh, concise example questions for the home screen of a helpful AI workspace.',
+                'Make them varied across practical everyday help, learning or explanation, and creative thinking.',
+                'Each should sound like a natural thing a person might type, use 5 to 12 words, and avoid referring to personal details.',
+                'Avoid generic labels, numbering, markdown, emojis, and repeated ideas.',
+                'Return three separate lines only, one question per line.',
+                'Vary the questions from earlier examples. Date: ' + new Date().toISOString().slice(0, 10) + '.'
+              ].join(' ')
+            }]
+          }],
+          systemInstruction: 'Write exactly three short, useful AI-home-screen prompt suggestions. Return one question on each line and no commentary, bullets, numbering, or markdown.',
+          generationConfig: {
+            temperature: 0.8,
+            maxOutputTokens: 160
+          },
+          env
+        });
 
-    const raw = String(
-      response?.text ||
-      response?.candidates?.[0]?.content?.parts
-        ?.filter(part => typeof part?.text === 'string' && part?.thought !== true)
-        .map(part => part.text)
-        .join('') ||
-      ''
-    ).trim();
-
-    let parsed;
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      const start = raw.indexOf('{');
-      const end = raw.lastIndexOf('}');
-      if (start < 0 || end <= start) throw new Error('Home prompt model returned invalid JSON.');
-      parsed = JSON.parse(raw.slice(start, end + 1));
+        const raw = String(
+          (typeof response?.text === 'string' ? response.text : '') ||
+          response?.candidates?.[0]?.content?.parts
+            ?.filter(part => typeof part?.text === 'string' && part?.thought !== true)
+            .map(part => part.text)
+            .join('') ||
+          ''
+        ).trim();
+        const prompts = parseTruxHomePromptText(raw);
+        if (prompts.length === 3) {
+          truxHomePromptsCache = prompts;
+          truxHomePromptsCacheAt = Date.now();
+          return prompts;
+        }
+        lastError = new Error('Home prompt model returned fewer than three usable suggestions.');
+      } catch (error) {
+        lastError = error;
+      }
     }
-
-    const candidates = Array.isArray(parsed) ? parsed : parsed?.prompts;
-    const prompts = Array.isArray(candidates)
-      ? [...new Set(candidates
-          .map(value => String(value || '').replace(/\s+/g, ' ').trim())
-          .filter(value => value.length >= 8 && value.length <= 100))]
-          .slice(0, 3)
-      : [];
-
-    if (prompts.length !== 3) throw new Error('Home prompt model returned fewer than three valid prompts.');
-    truxHomePromptsCache = prompts;
-    truxHomePromptsCacheAt = Date.now();
-    return prompts;
+    throw lastError || new Error('Home prompt generation failed.');
   })();
 
   try {
