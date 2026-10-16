@@ -1421,35 +1421,81 @@
 
     #attachBtn{ font-size: 21.5px; font-weight: 300; }
 
+    /* Single source of truth for the plus menu: touch bottom sheet, desktop floating panel. */
     .attach-menu{
-      position: fixed;
-      min-width: 186px;
-      padding: 6px;
-      border-radius: var(--r-md);
-      background: rgba(12,12,15,0.97);
-      backdrop-filter: blur(22px);
-      -webkit-backdrop-filter: blur(22px);
-      border: 1px solid var(--line-2);
-      box-shadow: 0 22px 54px rgba(0,0,0,0.7);
-      display: flex; flex-direction: column; gap: 2px;
-      opacity: 0; visibility: hidden;
-      transform: translateY(6px) scale(0.97);
-      transform-origin: bottom left;
-      z-index: 4000;
-      transition: opacity 0.18s var(--ease), transform 0.24s var(--ease-out), visibility 0.18s;
+      position: fixed; inset: auto 0 0; width: 100vw; min-width: 0; max-width: none;
+      height: min(60dvh, 560px); min-height: min(380px, 48dvh);
+      max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 18px);
+      box-sizing: border-box; padding: 8px 16px calc(18px + var(--safe-b));
+      display: flex; flex-direction: column; gap: 0; overflow-x: hidden; overflow-y: auto;
+      overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; scrollbar-width: none;
+      border: 1px solid rgba(255,255,255,.085); border-bottom: 0; border-radius: 25px 25px 0 0;
+      background: rgba(25,25,25,.98); background-image: none;
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); box-shadow: 0 -16px 48px rgba(0,0,0,.38);
+      opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(100%); transform-origin: bottom center;
+      z-index: 100000; transition: opacity 190ms ease, transform 280ms cubic-bezier(.16,1,.3,1), visibility 190ms ease;
+      will-change: transform;
     }
-    .attach-menu.open{ opacity: 1; visibility: visible; transform: none; }
+    .attach-menu::-webkit-scrollbar{ display: none; }
+    #attachmentMenu.open{ opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0); }
     .attach-menu button{
-      display: flex; align-items: center; gap: 10px;
-      padding: 9px 11px;
-      border-radius: 10px;
-      color: var(--txt-2);
-      font-size: 14px; font-weight: 550;
-      text-align: left;
-      transition: background 0.15s var(--ease), color 0.15s var(--ease);
+      display: flex; align-items: center; gap: 11px; padding: 10px 12px; border: 1px solid transparent;
+      border-radius: 12px; background: transparent; color: var(--txt-2); font-size: 13px; font-weight: 500;
+      text-align: left; flex: 0 0 auto;
+      transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
     }
-    .attach-menu button:hover, .attach-menu button:focus-visible{ background: var(--bg-3); color: #fff; }
-    .attach-menu svg{ width: 16px; height: 16px; flex: 0 0 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+    #attachmentMenu > button:not(.plus-menu-handle):not(.trux-plus-item){ width: 100%; min-height: 44px; flex-direction: row; }
+    #attachmentMenu > button:not(.plus-menu-handle):not(.trux-plus-item):hover,
+    #attachmentMenu > button:not(.plus-menu-handle):not(.trux-plus-item):focus-visible{ background: rgba(255,255,255,.065); color: #fff; outline: none; }
+    #attachmentMenu svg{ width: 17px; height: 17px; flex: 0 0 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+    #attachmentMenu .plus-menu-handle{
+      position: sticky; top: -8px; z-index: 2; display: flex; align-items: center; justify-content: center;
+      align-self: center; flex: 0 0 24px; width: 68px; min-width: 68px; height: 24px; margin: 0 auto 4px;
+      padding: 0; border: 0; border-radius: 999px; background: transparent; color: inherit; cursor: grab;
+      touch-action: pan-y; user-select: none; -webkit-user-select: none;
+    }
+    #attachmentMenu .plus-menu-handle::before{
+      content: ""; display: block; width: 38px; height: 4px; border-radius: 999px;
+      background: rgba(205,207,213,.68); transition: width 180ms ease, background 180ms ease;
+    }
+    #attachmentMenu .plus-menu-handle:hover::before,
+    #attachmentMenu .plus-menu-handle:focus-visible::before{ width: 44px; background: var(--txt); }
+    #attachmentMenu .plus-menu-handle:active{ cursor: grabbing; }
+    #attachBtn svg{ transition: transform 280ms cubic-bezier(.16,1,.3,1); }
+    #attachBtn.open svg{ transform: rotate(45deg); }
+    #attachmentMenu .trux-plus-title{
+      padding: 8px 9px 10px; color: var(--txt-4); font: 600 10px/1 var(--font-mono);
+      letter-spacing: .14em; text-transform: uppercase;
+    }
+    #attachmentMenu .trux-plus-grid{
+      display: flex; align-items: stretch; gap: 9px; margin: 0 -2px 5px; padding: 0 2px 7px;
+      overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none; scroll-snap-type: x proximity;
+    }
+    #attachmentMenu .trux-plus-grid::-webkit-scrollbar{ display: none; }
+    #attachmentMenu .trux-plus-item{
+      display: flex; flex: 0 0 88px; flex-direction: column; align-items: center; justify-content: center;
+      gap: 8px; min-width: 88px; min-height: 91px; padding: 12px 7px;
+      border: 1px solid rgba(255,255,255,.065); border-radius: 17px; background: #202020;
+      color: var(--txt-2); text-align: center; scroll-snap-align: start;
+    }
+    #attachmentMenu .trux-plus-item > span:first-child{ color: #d4d5d8; font-size: 19px; font-weight: 500; line-height: 1; }
+    #attachmentMenu .trux-plus-item > span:last-child{ min-width: 0; }
+    #attachmentMenu .trux-plus-item b{ display: block; font-size: 11.5px; font-weight: 600; line-height: 1.2; }
+    #attachmentMenu .trux-plus-item small{ display: block; margin-top: 3px; color: var(--txt-4); font-size: 9px; line-height: 1.25; }
+    #attachmentMenu .trux-plus-item:hover{ background: #282828; color: #fff; border-color: rgba(255,255,255,.12); }
+    #attachmentMenu .trux-plus-item.active{ background: var(--acc-soft); color: #fff; border-color: var(--acc-line); }
+    #attachmentMenu .trux-plus-item.active > span:first-child{ color: #cbd2ff; }
+    #attachmentMenu .trux-plus-sep{ height: 1px; min-height: 1px; background: rgba(255,255,255,.075); margin: 5px 2px 8px; }
+    @media (min-width: 769px){
+      #attachmentMenu{
+        left: 280px; right: auto; bottom: 84px; width: min(380px, calc(100vw - 304px));
+        height: min(68dvh, 620px); min-height: 0; max-height: calc(100dvh - 104px); padding: 10px 12px 12px;
+        border: 1px solid var(--line-2); border-radius: 20px; transform: translateY(12px) scale(.985);
+        transform-origin: bottom left; box-shadow: 0 20px 55px rgba(0,0,0,.56);
+      }
+      #attachmentMenu.open{ transform: translateY(0) scale(1); }
+    }
 
     textarea#promptInput{
       align-self: center;
@@ -1828,21 +1874,8 @@
     }
 
 
-    /* ============================================================
-       TRUX UI UPGRADE — additive layer; existing design remains intact
-       ============================================================ */
-    .trux-plus-menu{min-width:min(360px,calc(100vw - 24px));max-width:min(390px,calc(100vw - 24px));padding:8px}
-    #attachmentMenu{z-index:99999;pointer-events:none}
-    #attachmentMenu.open{pointer-events:auto}
-    .file-chip{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    /* Workspace metadata, owner-only controls and file-chip sizing. */    .file-chip{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .file-chip button{margin-left:auto;flex:0 0 auto}
-    .trux-plus-title{padding:8px 9px 6px;font:500 9px/1 var(--font-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--txt-4)}
-    .trux-plus-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
-    .trux-plus-item{display:flex;align-items:flex-start;gap:9px;padding:9px 10px;border-radius:11px;color:var(--txt-2);text-align:left;border:1px solid transparent}
-    .trux-plus-item:hover{background:var(--bg-3);color:#fff;border-color:var(--line)}
-    .trux-plus-item.active{background:var(--acc-soft);color:#fff;border-color:var(--acc-line)}
-    .trux-plus-item b{display:block;font-size:12px}.trux-plus-item small{display:block;margin-top:2px;color:var(--txt-4);font-size:10px;line-height:1.3}
-    .trux-plus-sep{height:1px;background:var(--line);margin:7px 2px}
     .trux-owner-only{display:none}.developer-mode .trux-owner-only{display:flex}
     .owner-profile-badge{display:none;margin:8px 0 0;width:max-content;align-items:center;gap:6px;padding:5px 8px;border-radius:7px;background:rgba(109,131,255,.12);border:1px solid rgba(109,131,255,.24);color:#bdc7ff;font:600 9px/1 var(--font-mono);letter-spacing:.08em;text-transform:uppercase}
     .developer-mode .owner-profile-badge{display:inline-flex}
@@ -1851,7 +1884,7 @@
     .profile-meta-item{padding:12px;border-radius:13px;background:var(--bg-2);border:1px solid var(--line)}
     .profile-meta-item b{display:block;color:#fff;font-size:14px}.profile-meta-item small{display:block;margin-top:3px;color:var(--txt-4);font-size:10.5px}
     @media (min-width:1100px) and (min-height:720px){body.home-active .chip{min-height:94px;padding:14px}body.home-active .composer{padding-top:4px;padding-bottom:10px}}
-    @media (max-width:760px){.trux-mode-btn{padding:0 8px;font-size:11px}.trux-plus-grid{grid-template-columns:1fr}.profile-meta-grid{grid-template-columns:1fr 1fr}}
+    @media (max-width:760px){.trux-mode-btn{padding:0 8px;font-size:11px}.profile-meta-grid{grid-template-columns:1fr 1fr}}
 
     /* ============================================================
        POLISH / SMOOTHNESS LAYER
@@ -2624,24 +2657,6 @@ body[data-media-mode="image"] #imageWorkspace, body[data-media-mode="video"] #vi
       .media-gen-short{ max-width: calc(100vw - 48px); }
     }
 
-    /* Plus-menu stability: the menu is viewport-anchored to the exact
-       position of the + button and stays inside the screen. */
-    #attachmentMenu{
-      position: fixed !important;
-      z-index: 99999 !important;
-      max-height: min(72dvh, 620px);
-      overflow-y: auto;
-      overflow-x: hidden;
-      overscroll-behavior: contain;
-    }
-    .trux-plus-menu{
-      min-width: min(360px, calc(100vw - 24px));
-      max-width: min(390px, calc(100vw - 24px));
-      box-sizing: border-box;
-    }
-
-
-
   /* Compact PWA install control: icon-only instead of a full-width card. */
   .sidebar-install-wrap{
     display:flex!important;
@@ -3134,18 +3149,6 @@ body.chat-session-active #welcomeScreen{display:none!important}
   font-size:10px!important;font-weight:600!important;
 }
 
-#attachmentMenu{
-  display:block!important;position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;
-  width:100vw!important;max-width:none!important;min-width:0!important;height:min(60dvh,560px)!important;
-  max-height:calc(100dvh - 38px)!important;padding:15px 18px calc(20px + var(--safe-b))!important;
-  border-radius:26px 26px 0 0!important;background:#1a1a1a!important;background-image:none!important;
-  border:1px solid rgba(255,255,255,.08)!important;border-bottom:0!important;
-  opacity:0!important;visibility:hidden!important;pointer-events:none!important;transform:translateY(100%)!important;
-  z-index:100000!important;box-shadow:0 -14px 40px rgba(0,0,0,.35)!important;
-}
-#attachmentMenu.open{opacity:1!important;visibility:visible!important;pointer-events:auto!important;transform:translateY(0)!important}
-#attachmentMenu .trux-plus-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:9px!important}
-#attachmentMenu .trux-plus-item{min-height:82px!important;background:#202020!important;border:1px solid rgba(255,255,255,.07)!important;box-shadow:none!important}
 .hint{color:#666!important}
 
 .sidebar{position:fixed!important;left:0!important;top:0!important;bottom:0!important;width:100vw!important;max-width:none!important;z-index:1200!important}
@@ -4213,26 +4216,6 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       margin: auto !important;
     }
 
-    /* Desktop Plus Popup Menu */
-    @media (min-width: 769px){
-      #attachmentMenu {
-        position: fixed !important;
-        bottom: 84px !important;
-        left: 280px !important;
-        z-index: 99999 !important;
-        width: 320px !important;
-        max-width: 320px !important;
-        border-radius: 16px !important;
-        background: rgba(18, 18, 22, 0.96) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        border: 1px solid var(--line-2) !important;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.7) !important;
-      }
-    }
-
-
-
     /* ---------- CLEAN METALLIC SHINE THINKING BAR WITH REST INTERVALS ---------- */
     .trux-thinking-panel{
       position: relative !important;
@@ -4773,54 +4756,6 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
     #profileModal .mrow-sub, #profileModal .utxt, #profileModal .setting-note{ color: #aeb0b3 !important; }
     #profileModal .settings-content .instr{ background: #242527; color: #ededee; border-color: rgba(255,255,255,.1); }
 
-    /* The plus menu has a horizontal grab handle; dragging it down dismisses it. */
-    #attachmentMenu{
-      position: fixed !important;
-      transform-origin: top left !important;
-      transition: opacity 230ms ease, transform 300ms cubic-bezier(.16,1,.3,1), visibility 230ms ease !important;
-      will-change: transform, opacity;
-    }
-    #attachmentMenu.open{ animation: plusMenuDrop 260ms cubic-bezier(.16,1,.3,1) both; }
-    #attachmentMenu .plus-menu-handle{
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      align-self: center !important;
-      flex: 0 0 22px !important;
-      width: 68px !important;
-      min-width: 68px !important;
-      height: 22px !important;
-      margin: -2px auto 5px !important;
-      padding: 0 !important;
-      border: 0 !important;
-      border-radius: 999px !important;
-      background: transparent !important;
-      cursor: grab !important;
-      touch-action: none !important;
-      user-select: none !important;
-      -webkit-user-select: none !important;
-      color: inherit !important;
-    }
-    #attachmentMenu .plus-menu-handle::before{
-      content: "";
-      display: block;
-      width: 38px;
-      height: 4px;
-      border-radius: 999px;
-      background: rgba(205,207,213,.68);
-      transition: width 180ms ease, background 180ms ease;
-    }
-    #attachmentMenu .plus-menu-handle:hover::before, #attachmentMenu .plus-menu-handle:focus-visible::before{
-      width: 44px;
-      background: var(--txt);
-    }
-    #attachmentMenu .plus-menu-handle:active{ cursor: grabbing !important; }
-    #attachBtn svg{ transition: transform 280ms cubic-bezier(.16,1,.3,1); }
-    #attachBtn.open svg{ transform: rotate(45deg); }
-    @keyframes plusMenuDrop {
-      from{ opacity: 0; transform: translateY(8px) scale(.99); }
-      to{ opacity: 1; transform: translateY(0) scale(1); }
-    }
     @media (max-width: 760px) {
       #profileModal .settings-topbar{ min-height: calc(64px + env(safe-area-inset-top, 0px)) !important; padding-left: 17px !important; }
       #profileModal .settings-main-scroll{ padding-left: 25px !important; padding-right: 25px !important; }
@@ -5232,7 +5167,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
             <button class="icon-btn" id="attachBtn" onclick="toggleAttachmentMenu(event)" title="Add photo" aria-label="Add photo" aria-haspopup="true" aria-expanded="false">
               <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
             </button>
-            <div class="attach-menu trux-plus-menu" id="attachmentMenu" role="menu">
+            <div class="attach-menu" id="attachmentMenu" role="menu" aria-label="Add to TruX">
               <button type="button" class="plus-menu-handle" id="plusMenuHandle" aria-label="Drag down to close the add menu" title="Drag down to close"></button>
               <div class="trux-plus-title">Workspace mode</div>
               <div class="trux-plus-grid">
@@ -7498,86 +7433,122 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
        the stacking order — so it was invisible and/or unclickable.
        ===================================================================== */
     function toggleAttachmentMenu(e) {
-      e?.preventDefault();
-      e?.stopPropagation();
+      e?.preventDefault(); e?.stopPropagation();
       const menu = getEl("attachmentMenu"), button = getEl("attachBtn");
       if (!menu || !button) return;
       if (menu.classList.contains("open")) return closeAttachmentMenu();
-
       closeModelDropdown();
-      menu.style.animation = "";
-      menu.style.transform = "";
-      menu.style.transition = "";
-      menu.classList.add("open");
-      button.classList.add("open");
-      button.setAttribute("aria-expanded", "true");
+      menu.style.removeProperty("animation"); menu.style.removeProperty("transform");
+      menu.style.removeProperty("opacity"); menu.style.removeProperty("transition"); menu.style.removeProperty("will-change");
+      menu.scrollTop = 0;
+      const modeRow = menu.querySelector(".trux-plus-grid");
+      if (modeRow) modeRow.scrollLeft = 0;
+      menu.classList.add("open"); button.classList.add("open"); button.setAttribute("aria-expanded", "true");
     }
 
     function closeAttachmentMenu() {
-      getEl("attachmentMenu")?.classList.remove("open");
-      getEl("attachBtn")?.classList.remove("open");
-      getEl("attachBtn")?.setAttribute("aria-expanded", "false");
+      const menu = getEl("attachmentMenu");
+      if (menu) {
+        menu.classList.remove("open");
+        menu.style.removeProperty("animation"); menu.style.removeProperty("transform");
+        menu.style.removeProperty("opacity"); menu.style.removeProperty("transition"); menu.style.removeProperty("will-change");
+      }
+      const button = getEl("attachBtn");
+      button?.classList.remove("open"); button?.setAttribute("aria-expanded", "false");
     }
 
-    (function bindPlusMenuDragHandle() {
-      const handle = getEl("plusMenuHandle");
-      const menu = getEl("attachmentMenu");
-      if (!handle || !menu || handle.dataset.dragBound === "true") return;
-      handle.dataset.dragBound = "true";
-      let drag = null;
+    (function bindPlusMenuGestures() {
+      const menu = getEl("attachmentMenu"), handle = getEl("plusMenuHandle"), button = getEl("attachBtn");
+      if (!menu || !handle || menu.dataset.gestureBound === "true") return;
+      menu.dataset.gestureBound = "true";
+      let gesture = null, suppressClickUntil = 0;
 
-      handle.addEventListener("pointerdown", event => {
-        if (!menu.classList.contains("open") || event.isPrimary === false ||
-            (typeof event.button === "number" && event.button !== 0)) return;
-        drag = { pointerId: event.pointerId, startY: event.clientY, delta: 0 };
-        menu.style.animation = "none";
-        menu.style.transition = "none";
-        try { handle.setPointerCapture(event.pointerId); } catch {}
-        event.preventDefault();
-      });
-
-      handle.addEventListener("pointermove", event => {
-        if (!drag || event.pointerId !== drag.pointerId) return;
-        drag.delta = Math.max(0, event.clientY - drag.startY);
-        if (drag.delta > 0) {
-          menu.style.transform = "translateY(" + drag.delta + "px)";
-          event.preventDefault();
+      function beginGesture(type, id, y, event) {
+        if (!menu.classList.contains("open") || gesture || event?.isPrimary === false ||
+            (type === "pointer" && typeof event?.button === "number" && event.button !== 0)) return;
+        gesture = {type,id,startY:y,lastY:y,startedAt:Date.now(),startScrollTop:menu.scrollTop,dragging:false};
+      }
+      function moveGesture(y, event) {
+        if (!gesture) return;
+        gesture.lastY = y;
+        const delta = y - gesture.startY;
+        if (!gesture.dragging) {
+          if (delta < 9 || gesture.startScrollTop > 1 || menu.scrollTop > 1) return;
+          gesture.dragging = true; menu.style.transition = "none"; menu.style.willChange = "transform, opacity";
+          if (gesture.type === "pointer") { try { menu.setPointerCapture(gesture.id); } catch {} }
         }
-      });
-
-      function finishDrag(event) {
-        if (!drag || (event && event.pointerId !== drag.pointerId)) return;
-        const distance = drag.delta;
-        drag = null;
-        menu.style.transition = "opacity 230ms ease, transform 300ms cubic-bezier(.16,1,.3,1), visibility 230ms ease";
-        if (distance >= 58) {
-          closeAttachmentMenu();
-          menu.style.transform = "translateY(" + Math.min(distance, 180) + "px)";
+        if (delta < 0) return;
+        if (event?.cancelable) event.preventDefault();
+        const distance = Math.max(0,delta);
+        menu.style.transform = "translateY(" + distance + "px)";
+        menu.style.opacity = String(Math.max(.28,1-distance/Math.max(360,menu.offsetHeight*1.35)));
+      }
+      function finishGesture(finalY, event) {
+        if (!gesture) return;
+        if (gesture.type === "pointer" && event && event.pointerId !== gesture.id) return;
+        if (typeof finalY === "number") gesture.lastY = finalY;
+        const current = gesture; gesture = null;
+        if (!current.dragging) return;
+        const delta = Math.max(0,current.lastY-current.startY);
+        const elapsed = Math.max(1,Date.now()-current.startedAt), velocity = delta/elapsed;
+        suppressClickUntil = Date.now()+450;
+        if (delta >= Math.max(72,menu.offsetHeight*.18) || (delta>26 && velocity>.62)) {
+          menu.style.transition = "transform 250ms cubic-bezier(.2,.75,.25,1), opacity 180ms ease, visibility 180ms ease";
+          menu.style.transform = "translateY("+Math.max(delta,menu.offsetHeight)+"px)";
+          menu.style.opacity = "0"; menu.classList.remove("open");
+          button?.classList.remove("open"); button?.setAttribute("aria-expanded","false");
+          window.setTimeout(() => {
+            if (!menu.classList.contains("open")) {
+              menu.style.removeProperty("transform"); menu.style.removeProperty("opacity");
+              menu.style.removeProperty("transition"); menu.style.removeProperty("will-change");
+            }
+          },320);
           return;
         }
-        if (distance > 6) {
-          menu.style.transform = "translateY(" + distance + "px)";
-          requestAnimationFrame(() => {
-            if (menu.classList.contains("open")) menu.style.transform = "translateY(0)";
-          });
-          setTimeout(() => {
-            if (menu.classList.contains("open")) menu.style.transform = "";
-            menu.style.transition = "";
-            menu.style.animation = "";
-          }, 320);
-          return;
-        }
-        closeAttachmentMenu();
+        menu.style.transition = "transform 230ms cubic-bezier(.16,1,.3,1), opacity 180ms ease";
+        menu.style.transform = "translateY(0)"; menu.style.opacity = "1";
+        window.setTimeout(() => {
+          if (menu.classList.contains("open")) { menu.style.removeProperty("transform"); menu.style.removeProperty("opacity"); }
+          menu.style.removeProperty("transition"); menu.style.removeProperty("will-change");
+        },270);
       }
 
-      handle.addEventListener("pointerup", finishDrag);
-      handle.addEventListener("pointercancel", finishDrag);
-      handle.addEventListener("lostpointercapture", event => {
-        if (drag && event.pointerId === drag.pointerId) finishDrag(event);
+      /* Touch scrolling stays native/momentum-based; down-drag works anywhere at scrollTop 0. */
+      menu.addEventListener("touchstart", event => {
+        if (event.touches.length!==1) { gesture=null; return; }
+        beginGesture("touch",0,event.touches[0].clientY,event);
+      },{passive:true});
+      menu.addEventListener("touchmove", event => {
+        if (!gesture || gesture.type!=="touch" || event.touches.length!==1) return;
+        moveGesture(event.touches[0].clientY,event);
+      },{passive:false});
+      menu.addEventListener("touchend", event => {
+        if (!gesture || gesture.type!=="touch") return;
+        finishGesture(event.changedTouches?.[0]?.clientY,event);
+      },{passive:true});
+      menu.addEventListener("touchcancel", event => {
+        if (gesture?.type==="touch") finishGesture(undefined,event);
+      },{passive:true});
+
+      /* Mouse/pen drag behavior for desktop without sacrificing button clicks. */
+      menu.addEventListener("pointerdown", event => {
+        if (event.pointerType==="touch") return;
+        beginGesture("pointer",event.pointerId,event.clientY,event);
       });
+      menu.addEventListener("pointermove", event => {
+        if (!gesture || gesture.type!=="pointer" || event.pointerId!==gesture.id) return;
+        moveGesture(event.clientY,event);
+      });
+      menu.addEventListener("pointerup", event => { if (gesture?.type==="pointer") finishGesture(event.clientY,event); });
+      menu.addEventListener("pointercancel", event => { if (gesture?.type==="pointer") finishGesture(undefined,event); });
+      menu.addEventListener("lostpointercapture", event => { if (gesture?.type==="pointer") finishGesture(undefined,event); });
+      menu.addEventListener("click", event => {
+        if (Date.now()>=suppressClickUntil) return;
+        suppressClickUntil=0; event.preventDefault(); event.stopImmediatePropagation();
+      },true);
       handle.addEventListener("click", event => {
         event.preventDefault();
-        if (!drag) closeAttachmentMenu();
+        if (Date.now()>=suppressClickUntil) closeAttachmentMenu();
       });
     })();
 
