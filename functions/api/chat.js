@@ -1227,24 +1227,26 @@ function parseTruxHomePromptText(rawText) {
   let raw = String(rawText || '').trim();
   if (!raw) return [];
 
-  raw = raw.replace(/^```(?:json|text)?s*/i, '').replace(/s*```$/i, '').trim();
+  raw = raw.replace(/^\x60{3}(?:json|text)?\s*/i, '').replace(/\s*\x60{3}$/i, '').trim();
   try {
     const parsed = JSON.parse(raw);
     const list = Array.isArray(parsed) ? parsed : parsed?.prompts;
     if (Array.isArray(list)) {
-      const values = list.map(value => String(value || '').trim());
-      const clean = [...new Set(values
-        .map(value => value.replace(/^s*(?:[-*•]|d+[.)])s*/, '').replace(/^["']|["']$/g, '').replace(/s+/g, ' ').trim())
-        .filter(value => value.length >= 8 && value.length <= 100))];
+      const clean = [...new Set(list.map(value =>
+        String(value || '')
+          .replace(/^\s*(?:[-*•]|\d+[.)])\s*/, '')
+          .replace(/^["'“”]+|["'“”]+$/g, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+      ).filter(value => value.length >= 8 && value.length <= 100))];
       if (clean.length >= 3) return clean.slice(0, 3);
     }
   } catch {}
 
-  const lines = raw.split(/?
-/).map(line =>
-    line.replace(/^s*(?:[-*•]|d+[.)])s*/, '')
-      .replace(/^["']|["']$/g, '')
-      .replace(/s+/g, ' ')
+  const lines = raw.split(/\r?\n/).map(line =>
+    line.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, '')
+      .replace(/^["'“”]+|["'“”]+$/g, '')
+      .replace(/\s+/g, ' ')
       .trim()
   ).filter(line => line.length >= 8 && line.length <= 100);
 
@@ -1253,7 +1255,7 @@ function parseTruxHomePromptText(rawText) {
 
   const sentences = raw.match(/[^.!?]+[.!?]?/g) || [];
   const combined = [...new Set([...uniqueLines, ...sentences
-    .map(line => line.replace(/^s*(?:[-*•]|d+[.)])s*/, '').replace(/s+/g, ' ').trim())
+    .map(line => line.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, '').replace(/\s+/g, ' ').trim())
     .filter(line => line.length >= 8 && line.length <= 100)])];
   return combined.slice(0, 3);
 }
@@ -1293,15 +1295,12 @@ async function getTruxHomePrompts(env) {
           env
         });
 
-        const raw = String(
-          (typeof response?.text === 'string' ? response.text : '') ||
-          response?.candidates?.[0]?.content?.parts
-            ?.filter(part => typeof part?.text === 'string' && part?.thought !== true)
-            .map(part => part.text)
-            .join('') ||
-          ''
-        ).trim();
-        const prompts = parseTruxHomePromptText(raw);
+        const directText = typeof response?.text === 'string' ? response.text : '';
+        const partsText = response?.candidates?.[0]?.content?.parts
+          ?.filter(part => typeof part?.text === 'string' && part?.thought !== true)
+          .map(part => part.text)
+          .join('') || '';
+        const prompts = parseTruxHomePromptText(directText || partsText);
         if (prompts.length === 3) {
           truxHomePromptsCache = prompts;
           truxHomePromptsCacheAt = Date.now();
