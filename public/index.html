@@ -2262,7 +2262,7 @@
 
     /* ============================================================
        REFERENCE VISUAL REFRESH
-       Warm charcoal palette + larger editorial typography.
+       Pure black + cool blue palette with editorial typography.
        Keeps functionality/layout intact and only changes the visual
        language of the existing UI.
        ============================================================ */
@@ -3046,7 +3046,7 @@ body.plugins-page-active #welcomeScreen, body.plugins-page-active #chatContainer
 .trux-home-sequence-text.is-visible{opacity:1!important;transform:none!important}
 .trux-home-sequence-text.is-replacing{opacity:0!important;transform:translateY(-4px)!important}
 .trux-home-prompts{
-  position:absolute;left:50%;bottom:clamp(8px,5vh,40px);transform:translateX(-50%);
+  position:absolute;left:50%;bottom:clamp(24px,6vh,64px);transform:translateX(-50%);
   width:min(620px,calc(100% - 36px));display:flex;flex-direction:column;gap:3px;
   pointer-events:auto!important;
 }
@@ -3067,7 +3067,7 @@ body.plugins-page-active #welcomeScreen, body.plugins-page-active #chatContainer
 @media(max-width:600px){
   .trux-home-sequence{padding:0 20px 96px!important}
   .trux-home-sequence-text{font-size:clamp(28px,7vw,38px)!important}
-  .trux-home-prompts{width:calc(100% - 30px);bottom:clamp(7px,2vh,18px);gap:0}
+  .trux-home-prompts{width:calc(100% - 30px);bottom:clamp(24px,6vh,56px);gap:0}
   .trux-home-prompt{gap:12px;padding:7px 5px;font-size:15px!important}
 }
 @media(max-height:650px){
@@ -3365,7 +3365,7 @@ body.chat-session-active:not(.coding-workspace) #codeChatContainer{display:none!
 
 
 
-/* Chat home: only the new minimal intro/logo surface is allowed. */
+/* Chat home: a single text-first welcome surface; no centered logo or duplicate layer. */
 body.chat-session-active #welcomeScreen, body.coding-workspace #welcomeScreen, body.plugins-page-active #welcomeScreen, body[data-media-mode] #welcomeScreen{
   display:none!important;visibility:hidden!important;pointer-events:none!important;
 }
