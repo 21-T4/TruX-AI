@@ -19,7 +19,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
   <link rel="apple-touch-icon" href="/icon-192.png">
-  <meta name="theme-color" content="#151515">
+  <meta name="theme-color" content="#000000">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2267,23 +2267,23 @@
        language of the existing UI.
        ============================================================ */
     :root{
-      --bg:        #171717;
-      --bg-1:      #1a1a1a;
-      --bg-2:      #1f1f1f;
-      --bg-3:      #252525;
-      --bg-4:      #2c2c2c;
-      --line:      rgba(238,235,228,0.10);
-      --line-2:    rgba(238,235,228,0.16);
-      --line-3:    rgba(238,235,228,0.24);
-      --txt:       #f2efe8;
-      --txt-2:     #b8b4ad;
-      --txt-3:     #8e8b85;
-      --txt-4:     #67645f;
-      --acc:       #d5b96a;
-      --acc-2:     #b99355;
-      --acc-3:     #7d612e;
-      --acc-soft:  rgba(213,185,106,0.14);
-      --acc-line:  rgba(213,185,106,0.42);
+      --bg:        #000000;
+      --bg-1:      #080a0d;
+      --bg-2:      #101318;
+      --bg-3:      #191d24;
+      --bg-4:      #252b34;
+      --line:      rgba(233,242,255,0.10);
+      --line-2:    rgba(233,242,255,0.16);
+      --line-3:    rgba(233,242,255,0.24);
+      --txt:       #f4f7fb;
+      --txt-2:     #bdc8d6;
+      --txt-3:     #929eae;
+      --txt-4:     #697586;
+      --acc:       #80c9ff;
+      --acc-2:     #4f9fff;
+      --acc-3:     #24578c;
+      --acc-soft:  rgba(95,178,255,0.14);
+      --acc-line:  rgba(95,178,255,0.42);
       --font-body: 'Anthropic Serif', Georgia, 'Times New Roman', serif;
       --font-disp: 'Anthropic Serif', Georgia, 'Times New Roman', serif;
     }
@@ -2295,18 +2295,14 @@
       font-weight: 500;
     }
 
-    .bg::before{
-      background: radial-gradient(ellipse at 50% 0%, rgba(213,185,106,0.07), rgba(23,23,23,0) 64%);
-      filter: blur(38px);
+    .bg::before, .bg::after{
+      background:none!important;
+      filter:none!important;
     }
-    .bg::after{
-      background:
-        radial-gradient(ellipse 70% 42% at 50% 118%, rgba(213,185,106,0.055), rgba(23,23,23,0) 62%),
-        radial-gradient(ellipse 40% 30% at 8% 12%, rgba(242,239,232,0.025), rgba(23,23,23,0) 70%);
-    }
+    html, body{background:#000000!important;}
 
     .sidebar{ background: var(--bg-1); border-right-color: var(--line); }
-    .topbar{ background: rgba(23,23,23,0.86); }
+    .topbar{ background: rgba(0,0,0,0.92); }
 
     .user-bubble{
       background: var(--bg-3);
@@ -2325,7 +2321,7 @@
       letter-spacing: -0.012em;
     }
     .trux-bubble p{ margin-bottom: 17px; }
-    .trux-bubble b, .trux-bubble strong{ color: #faf7ef; font-weight: 700; }
+    .trux-bubble b, .trux-bubble strong{ color: #f5f9ff; font-weight: 700; }
 
     .trux-bubble h1, .trux-bubble h2, .trux-bubble h3, .trux-bubble h4{
       font-family: var(--font-disp);
@@ -2335,22 +2331,22 @@
     .trux-bubble h3{ font-size: 22px; }
     .trux-bubble h4{ font-size: 19px; }
     .brand-x{
-      background: linear-gradient(140deg, #eee9df 0%, var(--acc) 55%, var(--acc-2) 100%);
+      background: linear-gradient(140deg, #f5f9ff 0%, var(--acc) 55%, var(--acc-2) 100%);
       -webkit-background-clip: text;
       background-clip: text;
-      text-shadow: 0 0 46px rgba(213,185,106,0.22);
+      text-shadow: 0 0 46px rgba(95,178,255,0.22);
     }
     .cycling-text{ color: var(--txt); font-weight: 700; }
 
     .bar{
       background: #212121;
       border-color: var(--line-2);
-      box-shadow: 0 1px 0 rgba(242,239,232,0.045) inset, 0 22px 52px rgba(0,0,0,0.38);
+      box-shadow: 0 1px 0 rgba(233,242,255,0.045) inset, 0 22px 52px rgba(0,0,0,0.38);
     }
     .bar:focus-within{
       background: #282828;
       border-color: var(--acc-line);
-      box-shadow: 0 0 0 3px rgba(213,185,106,0.10), 0 18px 44px rgba(0,0,0,0.34);
+      box-shadow: 0 0 0 3px rgba(95,178,255,0.10), 0 18px 44px rgba(0,0,0,0.34);
     }
 
     textarea#promptInput{
@@ -2359,7 +2355,7 @@
       font-size: 19px;
       line-height: 1.5;
     }
-    textarea::placeholder{ color: #94918b; opacity: 1; }
+    textarea::placeholder{ color: #8d99aa; opacity: 1; }
 
     .composer{
       background: linear-gradient(180deg, rgba(23,23,23,0) 0%, var(--bg) 34%);
@@ -2372,8 +2368,8 @@
     }
     .send-btn.ready{
       background: linear-gradient(135deg, var(--acc), var(--acc-2));
-      color: #201b11;
-      box-shadow: 0 4px 18px rgba(213,185,106,0.22);
+      color: #07131e;
+      box-shadow: 0 4px 18px rgba(95,178,255,0.22);
     }
 
     .hint{ color: var(--txt-4); }
@@ -2399,11 +2395,11 @@
 
     .badge i{
       background: var(--acc);
-      box-shadow: 0 0 9px rgba(213,185,106,0.65);
+      box-shadow: 0 0 9px rgba(95,178,255,0.65);
     }
     .hist.active::before{ background: linear-gradient(180deg, var(--acc), var(--acc-2)); }
 
-    ::selection{ background: rgba(213,185,106,0.22); color: #fffdf7; }
+    ::selection{ background: rgba(95,178,255,0.22); color: #fffdf7; }
     body.chat-session-active .main{
       min-height: 0;
       height: 100%;
@@ -2582,7 +2578,7 @@ body[data-media-mode="image"] #imageWorkspace, body[data-media-mode="video"] #vi
     /* ============================================================
        APPEARANCE PRESETS + ACCENT PALETTE
        ============================================================ */
-    body[data-accent="blue"]{--acc:#6d8cff;--acc-2:#91b8ff;--acc-3:#3955c7;--acc-soft:rgba(109,140,255,.14);--acc-line:rgba(120,150,255,.42)}
+    body[data-accent="blue"]{--acc:#80c9ff;--acc-2:#b0e1ff;--acc-3:#3b83d1;--acc-soft:rgba(128,201,255,.14);--acc-line:rgba(128,201,255,.42)}
     body[data-accent="cyan"]{--acc:#20d7ff;--acc-2:#79efff;--acc-3:#0090b0;--acc-soft:rgba(32,215,255,.13);--acc-line:rgba(32,215,255,.38)}
     body[data-accent="purple"]{--acc:#9a6cff;--acc-2:#c7a9ff;--acc-3:#6140cf;--acc-soft:rgba(154,108,255,.14);--acc-line:rgba(172,135,255,.42)}
     body[data-accent="pink"]{--acc:#ff5fb3;--acc-2:#ff9fd1;--acc-3:#c53d80;--acc-soft:rgba(255,95,179,.13);--acc-line:rgba(255,120,195,.38)}
@@ -2944,7 +2940,7 @@ body[data-media-mode="image"] #imageWorkspace, body[data-media-mode="video"] #vi
 html, body{
   width:100%!important;height:100%!important;min-width:0!important;
   margin:0!important;padding:0!important;overflow:hidden!important;
-  background:#151515!important;background-image:none!important;
+  background:#000000!important;background-image:none!important;
 }
 body{
   color:#d8d8d8!important;
@@ -2958,7 +2954,7 @@ body{
   position:relative!important;display:flex!important;flex-direction:column!important;
   width:100vw!important;height:100dvh!important;max-width:none!important;
   min-width:0!important;margin:0!important;padding:0!important;
-  overflow:hidden!important;background:#151515!important;background-image:none!important;
+  overflow:hidden!important;background:#000000!important;background-image:none!important;
 }
 .topbar{
   position:relative!important;z-index:100!important;
@@ -2966,7 +2962,7 @@ body{
   min-width:0!important;display:grid!important;
   grid-template-columns:minmax(46px,1fr) auto minmax(46px,1fr)!important;
   align-items:center!important;margin:0!important;padding:0 14px!important;
-  background:#151515!important;background-image:none!important;
+  background:#000000!important;background-image:none!important;
   border:0!important;box-shadow:none!important;backdrop-filter:none!important;
 }
 .topbar-left{justify-self:start!important;display:flex!important;align-items:center!important;gap:7px!important}
@@ -3013,16 +3009,81 @@ body.plugins-page-active #welcomeScreen, body.plugins-page-active #chatContainer
 .trux-home-v2{
   position:relative!important;flex:1 1 auto!important;min-height:0!important;
   width:100%!important;display:flex!important;align-items:center!important;justify-content:center!important;
-  overflow:hidden!important;background:#151515!important;
+  overflow:hidden!important;background:#000000!important;color:#f4f7fb!important;isolation:isolate!important;
 }
 .trux-home-v2::before{
-  content:"";position:absolute;inset:0;pointer-events:none;background:#151515!important;
+  content:"";position:absolute;inset:-24% -16%;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 72% 48% at 50% 88%,rgba(64,139,255,.34) 0%,rgba(43,95,220,.20) 36%,rgba(0,0,0,0) 72%),
+    radial-gradient(ellipse 45% 30% at 18% 72%,rgba(80,190,255,.13) 0%,rgba(0,0,0,0) 70%);
+  filter:blur(34px);opacity:0;transform:translate3d(0,22px,0) scale(.94);
+  will-change:opacity,transform;
+}
+.trux-home-v2.is-blue-wave::before{
+  animation:truxHomeBlueWave 8.8s cubic-bezier(.22,.61,.36,1) both!important;
+}
+@keyframes truxHomeBlueWave{
+  0%{opacity:0;transform:translate3d(0,26px,0) scale(.93) rotate(-2deg)}
+  18%{opacity:.9;transform:translate3d(0,4px,0) scale(1) rotate(0)}
+  48%{opacity:.72;transform:translate3d(0,-7px,0) scale(1.06) rotate(1.5deg)}
+  76%{opacity:.32;transform:translate3d(0,-2px,0) scale(1.02) rotate(-1deg)}
+  100%{opacity:0;transform:translate3d(0,-12px,0) scale(1.08) rotate(0)}
+}
+.trux-home-content{position:absolute;inset:0;z-index:1;pointer-events:none!important}
+.trux-home-sequence{
+  position:absolute!important;inset:0!important;display:flex!important;align-items:center!important;justify-content:center!important;
+  padding:0 22px 78px!important;pointer-events:none!important;
+}
+.trux-home-sequence-text{
+  width:min(840px,100%);margin:0!important;padding:0!important;
+  color:#eef4fb!important;font-family:var(--font-disp)!important;
+  font-size:clamp(29px,4.8vw,46px)!important;font-weight:500!important;
+  line-height:1.22!important;letter-spacing:-.042em!important;text-align:center!important;
+  white-space:normal!important;overflow-wrap:anywhere!important;
+  opacity:0!important;transform:translateY(5px)!important;
+  transition:opacity .24s ease,transform .24s ease!important;
+}
+.trux-home-sequence-text.is-visible{opacity:1!important;transform:none!important}
+.trux-home-sequence-text.is-replacing{opacity:0!important;transform:translateY(-4px)!important}
+.trux-home-prompts{
+  position:absolute;left:50%;bottom:clamp(8px,5vh,40px);transform:translateX(-50%);
+  width:min(620px,calc(100% - 36px));display:flex;flex-direction:column;gap:3px;
+  pointer-events:auto!important;
+}
+.trux-home-prompts[hidden]{display:none!important}
+.trux-home-prompt{
+  width:100%;display:flex;align-items:center;gap:15px;padding:9px 8px;
+  border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;
+  color:#cbd3df!important;text-align:left!important;font:400 clamp(15px,2.1vw,18px)/1.5 var(--font-body)!important;
+  cursor:pointer;transition:color .2s ease,transform .2s ease!important;
+}
+.trux-home-prompt:hover{color:#f4f9ff!important;transform:translateX(3px)}
+.trux-home-prompt:focus-visible{outline:1px solid rgba(95,178,255,.65);outline-offset:2px;border-radius:6px!important}
+.trux-home-prompt-mark{
+  display:inline-grid;place-items:center;flex:0 0 18px;width:18px;
+  color:#80c9ff;font:400 19px/1 Arial,sans-serif;opacity:.92;
+}
+.trux-home-prompt-label{min-width:0;overflow-wrap:anywhere}
+@media(max-width:600px){
+  .trux-home-sequence{padding:0 20px 96px!important}
+  .trux-home-sequence-text{font-size:clamp(28px,7vw,38px)!important}
+  .trux-home-prompts{width:calc(100% - 30px);bottom:clamp(7px,2vh,18px);gap:0}
+  .trux-home-prompt{gap:12px;padding:7px 5px;font-size:15px!important}
+}
+@media(max-height:650px){
+  .trux-home-sequence{padding-bottom:140px!important}
+  .trux-home-prompts{bottom:4px;gap:0}
+  .trux-home-prompt{padding-top:5px;padding-bottom:5px;font-size:14px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  .trux-home-v2.is-blue-wave::before{animation:none!important;opacity:0!important}
+  .trux-home-sequence-text{transition:none!important}
 }
 
 .trux-code-v2{
   position:relative!important;flex:1 1 auto!important;min-height:0!important;width:100%!important;
   display:none;align-items:center!important;justify-content:center!important;overflow:hidden!important;
-  background:#151515!important;color:#d8d8d8!important;
+  background:#000000!important;color:#d8d8d8!important;
 }
 .trux-code-v2-inner{
   width:min(760px,calc(100% - 36px));text-align:center;
@@ -3070,7 +3131,7 @@ body.chat-session-active #welcomeScreen{display:none!important}
 .composer{
   position:relative!important;z-index:200!important;flex:0 0 auto!important;
   width:100%!important;min-width:0!important;margin:0!important;padding:8px 18px calc(18px + var(--safe-b))!important;
-  background:#151515!important;background-image:none!important;border:0!important;box-shadow:none!important;overflow:visible!important;
+  background:#000000!important;background-image:none!important;border:0!important;box-shadow:none!important;overflow:visible!important;
 }
 .compose{width:min(740px,100%)!important;max-width:740px!important;min-width:0!important;margin:0 auto!important}
 .bar{
@@ -3272,61 +3333,6 @@ body.chat-session-active:not(.coding-workspace) #codeChatContainer{display:none!
 
 
 
-/* Exact TruX startup sequence: Hello 2s -> I am TruX 2s -> icon-grey. */
-.trux-home-v2{
-  background:#151515!important;
-  background-image:none!important;
-  isolation:isolate!important;
-}
-.trux-home-v2::before{display:none!important}
-.trux-home-sequence{
-  position:absolute!important;
-  inset:0!important;
-  display:grid!important;
-  place-items:center!important;
-  pointer-events:none!important;
-  z-index:2!important;
-}
-.trux-home-sequence-text{
-  margin:0!important;
-  padding:0!important;
-  color:#9a9a9a!important;
-  font-family:var(--font-disp)!important;
-  font-size:clamp(28px,5vw,44px)!important;
-  font-weight:600!important;
-  line-height:1!important;
-  letter-spacing:-.045em!important;
-  text-align:center!important;
-  white-space:nowrap!important;
-  opacity:0!important;
-  transform:translateY(4px)!important;
-  transition:opacity .22s ease,transform .22s ease!important;
-}
-.trux-home-sequence-text.is-visible{opacity:1!important;transform:none!important}
-.trux-home-sequence-text.is-replacing{opacity:0!important;transform:translateY(-3px)!important}
-.trux-home-logo{
-  position:absolute!important;
-  inset:0!important;
-  width:min(108px,18vw)!important;
-  height:min(108px,18vw)!important;
-  max-width:108px!important;
-  max-height:108px!important;
-  margin:auto!important;
-  display:block!important;
-  object-fit:contain!important;
-  background:transparent!important;
-  border:0!important;
-  border-radius:0!important;
-  box-shadow:none!important;
-  filter:none!important;
-  animation:none!important;
-  transform:none!important;
-  opacity:1!important;
-}
-.trux-home-logo[hidden]{display:none!important}
-
-
-
 /* Restore the small blue decorative lines flanking the selected model name. */
 #modelPickerBtn{
   position:relative!important;
@@ -3341,7 +3347,7 @@ body.chat-session-active:not(.coding-workspace) #codeChatContainer{display:none!
   width:13px!important;
   height:1px!important;
   margin:0!important;
-  background:#6d83ff!important;
+  background:#80c9ff!important;
   opacity:.9!important;
   transform:translateY(-50%)!important;
   pointer-events:none!important;
@@ -3442,10 +3448,7 @@ body.coding-workspace #truxCodeWorkspace.code-workspace-dismissed{
 
 
 
-/* Keep the provided logo exactly as authored.
-   Its #151515 image background already matches the workspace surface.
-   No blending, glow, ring, or extra visual layer is applied. */
-.trux-home-logo, .trux-code-logo{
+.trux-code-logo{
   mix-blend-mode:normal!important;
   filter:none!important;
   box-shadow:none!important;
@@ -3460,16 +3463,7 @@ body.coding-workspace #truxCodeWorkspace.code-workspace-dismissed{
   box-shadow:none!important;
   filter:none!important;
 }
-/* Chat intro is the only Chat home surface; it is not a second legacy UI. */
-.trux-home-v2{
-  display:flex!important;
-  background:#151515!important;
-  border:0!important;
-}
-.trux-home-v2::before{display:none!important}
-.trux-home-logo, .trux-code-logo{
-  mix-blend-mode:normal!important;
-}
+.trux-code-logo{mix-blend-mode:normal!important;}
 
 /* Coding landing: fade out as soon as a coding session begins. */
 .trux-code-v2{
@@ -3491,14 +3485,7 @@ body.coding-workspace #truxCodeWorkspace.code-workspace-dismissed{
   padding-top:0!important;
 }
 
-/* The Chat logo must be visible on the actual Chat home, not buried under old
-   hiding rules. */
-body.home-active #welcomeScreen .trux-home-logo[hidden]{
-  display:none!important;
-}
-body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
-  display:block!important;
-}
+/* The home screen intentionally has no centered logo. */
 
 
 
@@ -3508,23 +3495,23 @@ body.home-active #welcomeScreen .trux-home-logo:not([hidden]){
 
 
 
-    .trux-diagram{position:relative;display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin:14px 0;padding:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;background:#151515!important;border:0!important;border-radius:0!important;box-shadow:none!important;-webkit-overflow-scrolling:touch}
+    .trux-diagram{position:relative;display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin:14px 0;padding:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;background:#000000!important;border:0!important;border-radius:0!important;box-shadow:none!important;-webkit-overflow-scrolling:touch}
     /* Mermaid's SVG must have a genuinely large canvas; the chat bubble clips it to a swipeable viewport. */
-    .trux-diagram-stage{position:relative;display:block;width:max(100%, 1440px);min-width:1440px;min-height:460px;background:#151515!important}
-    .trux-diagram-svg{display:block;width:100%;min-width:0;max-width:none;background:#151515!important}
-    .trux-diagram-svg svg{display:block!important;width:100%!important;min-width:100%!important;min-height:460px!important;max-width:none!important;height:auto!important;margin:0;background:#151515!important;overflow:visible!important}
+    .trux-diagram-stage{position:relative;display:block;width:max(100%, 1440px);min-width:1440px;min-height:460px;background:#000000!important}
+    .trux-diagram-svg{display:block;width:100%;min-width:0;max-width:none;background:#000000!important}
+    .trux-diagram-svg svg{display:block!important;width:100%!important;min-width:100%!important;min-height:460px!important;max-width:none!important;height:auto!important;margin:0;background:#000000!important;overflow:visible!important}
     @media(max-width:768px){.trux-diagram-stage{width:max(100%, 1280px);min-width:1280px;min-height:460px}.trux-diagram-svg svg{min-height:460px!important}}
     .trux-diagram-cursor{position:absolute;left:0;top:0;z-index:2;display:block;width:24px;height:24px;max-width:24px;max-height:24px;margin:0;padding:0;object-fit:contain;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;filter:none!important;mix-blend-mode:normal!important;animation:none!important;opacity:1!important;pointer-events:none;user-select:none;-webkit-user-drag:none}
     .trux-diagram-cursor[hidden], .trux-diagram-source{display:none!important}
-    .trux-diagram-toolbar{position:sticky;left:0;display:flex;justify-content:flex-end;gap:8px;padding:8px 10px 0;z-index:3;background:#151515}
+    .trux-diagram-toolbar{position:sticky;left:0;display:flex;justify-content:flex-end;gap:8px;padding:8px 10px 0;z-index:3;background:#000000}
     .trux-diagram-toolbar button{font:12px/1.2 Arial,sans-serif;color:#bdbdbd;background:transparent;border:1px solid #414141;border-radius:7px;padding:7px 10px;cursor:pointer}
     .trux-diagram-toolbar button:hover{color:#fff;border-color:#777}
-    .trux-diagram-editor{position:relative;min-width:280px;margin:10px 0 4px;padding:0 10px 10px;background:#151515}
+    .trux-diagram-editor{position:relative;min-width:280px;margin:10px 0 4px;padding:0 10px 10px;background:#000000}
     .trux-diagram-editor[hidden]{display:none!important}
     .trux-diagram-editor textarea{display:block;width:100%;min-height:210px;resize:vertical;padding:12px;color:#dedede;background:#191919;border:1px solid #444;border-radius:8px;font:13px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre;tab-size:2;user-select:text!important;-webkit-user-select:text!important;-webkit-touch-callout:default!important}
     .trux-diagram-editor-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
     .trux-diagram-editor-actions button{font:12px/1.2 Arial,sans-serif;color:#d6d6d6;background:#222;border:1px solid #444;border-radius:7px;padding:8px 11px;cursor:pointer}
-    .trux-diagram-editor-actions button[data-trux-diagram-apply]{background:#dedede;color:#151515;border-color:#dedede}
+    .trux-diagram-editor-actions button[data-trux-diagram-apply]{background:#dedede;color:#000000;border-color:#dedede}
     .trux-diagram-error{margin:6px 0;color:var(--txt-3);font-size:13px}
   
 
@@ -3881,7 +3868,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
     .login-divider:before,.login-divider:after{content:"";height:1px;flex:1;background:var(--line-2)}
     .login-form{display:grid;gap:11px}
     .login-form label{display:grid;gap:6px;color:var(--txt-2);font-size:12px;font-weight:550}
-    .login-form input{width:100%;height:43px;padding:0 12px;border:1px solid var(--line-2);border-radius:11px;background:#151515;color:var(--txt);font:inherit;font-size:14px;outline:none}
+    .login-form input{width:100%;height:43px;padding:0 12px;border:1px solid var(--line-2);border-radius:11px;background:#000000;color:var(--txt);font:inherit;font-size:14px;outline:none}
     .login-form input:focus{border-color:rgba(255,255,255,.38);box-shadow:0 0 0 3px rgba(255,255,255,.04)}
     .login-email-submit{width:100%;height:44px;border-radius:11px;background:#f4f4f4;color:#111;font-size:13px;font-weight:650}
     .login-email-options{display:flex;justify-content:space-between;gap:12px;margin-top:1px}
@@ -5138,10 +5125,12 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       </section>
 
       <section id="welcomeScreen" class="trux-home-v2" aria-label="TruX home">
-        <div class="trux-home-sequence" aria-live="polite">
-          <div class="trux-home-sequence-text" id="truxHomeSequenceText">Hello</div>
+        <div class="trux-home-content">
+          <div class="trux-home-sequence" aria-live="polite">
+            <h1 class="trux-home-sequence-text" id="truxHomeSequenceText">Hello</h1>
+          </div>
+          <div class="trux-home-prompts" id="truxHomePrompts" aria-label="Suggested prompts" hidden></div>
         </div>
-        <img id="truxHomeLogo" class="trux-home-logo" src="/icon-grey.png" alt="TruX" decoding="async" fetchpriority="high" hidden>
       </section>
 
       <div class="chat" id="chatContainer"></div>
@@ -10222,21 +10211,88 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
     }
 
     let truxHomeGreetingTimers = [];
+    let truxHomePromptRequest = null;
+    let truxHomePromptLastLoadedAt = 0;
+    let truxHomeBlueWaveInterval = null;
+
     function clearHomeGreetingTimers() {
       truxHomeGreetingTimers.forEach(id => clearTimeout(id));
       truxHomeGreetingTimers = [];
     }
+
+    function renderHomePrompts(prompts) {
+      const panel = getEl("truxHomePrompts");
+      if (!panel || !Array.isArray(prompts) || prompts.length !== 3) return;
+      panel.replaceChildren();
+      prompts.forEach(prompt => {
+        const cleanPrompt = String(prompt || "").trim();
+        if (!cleanPrompt) return;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "trux-home-prompt";
+        const mark = document.createElement("span");
+        mark.className = "trux-home-prompt-mark";
+        mark.setAttribute("aria-hidden", "true");
+        mark.textContent = "↗";
+        const label = document.createElement("span");
+        label.className = "trux-home-prompt-label";
+        label.textContent = cleanPrompt;
+        button.append(mark, label);
+        button.addEventListener("click", () => quickPrompt(cleanPrompt));
+        panel.appendChild(button);
+      });
+      if (panel.children.length === 3) panel.hidden = false;
+    }
+
+    async function loadHomePrompts() {
+      if (!document.body.classList.contains("home-active")) return;
+      if (truxHomePromptRequest) return truxHomePromptRequest;
+      if (truxHomePromptLastLoadedAt && Date.now() - truxHomePromptLastLoadedAt < 4 * 60 * 1000) return;
+      const panel = getEl("truxHomePrompts");
+      if (!panel) return;
+
+      truxHomePromptRequest = (async () => {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          cache: "no-store",
+          body: JSON.stringify({ mode: "home-prompts" })
+        });
+        if (!response.ok) throw new Error("Home prompt generation unavailable.");
+        const payload = await response.json().catch(() => ({}));
+        if (!document.body.classList.contains("home-active")) return;
+        if (!Array.isArray(payload.prompts) || payload.prompts.length !== 3) return;
+        renderHomePrompts(payload.prompts);
+        if (panel.children.length === 3) truxHomePromptLastLoadedAt = Date.now();
+      })().catch(error => {
+        console.debug("TruX home prompts unavailable:", error?.message || error);
+      }).finally(() => {
+        truxHomePromptRequest = null;
+      });
+      return truxHomePromptRequest;
+    }
+
+    function startHomeBlueWaveCycle() {
+      if (truxHomeBlueWaveInterval) return;
+      truxHomeBlueWaveInterval = setInterval(() => {
+        if (!document.body.classList.contains("home-active")) return;
+        const home = getEl("welcomeScreen");
+        if (!home) return;
+        home.classList.remove("is-blue-wave");
+        void home.offsetWidth;
+        home.classList.add("is-blue-wave");
+        setTimeout(() => home.classList.remove("is-blue-wave"), 9000);
+      }, 300000);
+    }
+
     function startHomeGreetingPulse() {
       clearHomeGreetingTimers();
       const text = getEl("truxHomeSequenceText");
-      const logo = getEl("truxHomeLogo");
-      if (!text || !logo) return;
+      if (!text) return;
 
       text.hidden = false;
       text.textContent = "Hello";
-      text.classList.remove("is-visible","is-replacing");
-      logo.hidden = true;
-
+      text.classList.remove("is-visible", "is-replacing");
       requestAnimationFrame(() => {
         if (document.body.classList.contains("home-active")) text.classList.add("is-visible");
       });
@@ -10255,8 +10311,8 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
           text.textContent = "I am TruX";
           text.classList.remove("is-replacing");
           text.classList.add("is-visible");
-        }, 220);
-      }, 2000);
+        }, 180);
+      }, 1500);
 
       schedule(() => {
         if (!document.body.classList.contains("home-active")) return;
@@ -10264,11 +10320,14 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         text.classList.add("is-replacing");
         schedule(() => {
           if (!document.body.classList.contains("home-active")) return;
-          text.hidden = true;
-          logo.hidden = false;
+          text.textContent = "What can I help you?";
           text.classList.remove("is-replacing");
-        }, 220);
-      }, 4000);
+          text.classList.add("is-visible");
+        }, 180);
+      }, 3000);
+
+      startHomeBlueWaveCycle();
+      schedule(() => { void loadHomePrompts(); }, 450);
     }
 
     const TRUX_CODE_IDLE_LINES = [
