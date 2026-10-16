@@ -1760,95 +1760,6 @@
     @keyframes toastIn { from{ opacity: 0; transform: translateY(-12px) scale(0.98); } to{ opacity: 1; transform: none; } }
     @keyframes toastOut { to{ opacity: 0; transform: translateY(-6px) scale(0.98); } }
 
-    /* ---------- login wall ---------- */
-    .login-wall{
-      display: none;
-      position: fixed; inset: 0; z-index: 6500;
-      background: rgba(0,0,0,0.86);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      padding: 20px;
-      overflow: hidden;
-    }
-    .login-wall.active{ display: grid; place-items: center; animation: fadeIn 0.26s var(--ease); }
-    .login-wall-bg{ position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
-    .login-wall-bg span{
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(70px);
-      opacity: 0.4;
-      animation: float 18s var(--ease) infinite;
-    }
-    .login-wall-bg span:nth-child(1){ width: 320px; height: 320px; background: rgba(109,131,255,0.30); top: -8%; left: 8%; }
-    .login-wall-bg span:nth-child(2){ width: 260px; height: 260px; background: rgba(176,124,255,0.20); bottom: 4%; right: 10%; animation-delay: -6s; }
-    .login-wall-bg span:nth-child(3){ width: 200px; height: 200px; background: rgba(47,58,192,0.30); top: 44%; left: 46%; animation-delay: -12s; }
-    @keyframes float { 0%, 100%{ transform: translate(0,0); } 33%{ transform: translate(26px,-22px); } 66%{ transform: translate(-20px,18px); } }
-
-    .login-wall-close{
-      position: absolute; top: 18px; right: 18px;
-      width: 37px; height: 37px;
-      display: grid; place-items: center;
-      border-radius: 10px;
-      background: rgba(19,19,23,0.8);
-      border: 1px solid var(--line-2);
-      color: var(--txt-2);
-      font-size: 19.5px; line-height: 1;
-      z-index: 2;
-      transition: background 0.18s var(--ease), color 0.18s var(--ease);
-    }
-    .login-wall-close:hover{ background: var(--bg-4); color: #fff; }
-
-    .login-box{
-      position: relative; z-index: 1;
-      width: min(400px, 100%);
-      padding: 32px 28px 26px;
-      border-radius: var(--r-xl);
-      background: rgba(10,10,13,0.9);
-      border: 1px solid var(--line-2);
-      box-shadow: 0 40px 100px rgba(0,0,0,0.8);
-      text-align: center;
-      animation: loginPop 0.4s var(--ease-out);
-    }
-    .login-orb{
-      width: 56px; height: 56px;
-      margin: 0 auto 18px;
-      display: grid; place-items: center;
-      border-radius: 17px;
-      background: linear-gradient(150deg, #23233a, #0c0c12);
-      border: 1px solid var(--line-2);
-      font-family: var(--font-disp);
-      font-size: 26px; font-weight: 800;
-      background-clip: padding-box;
-      position: relative;
-      color: transparent;
-    }
-    .login-orb::after{
-      content: "X";
-      position: absolute; inset: 0;
-      display: grid; place-items: center;
-      background: linear-gradient(120deg, var(--acc), var(--acc-2));
-      -webkit-background-clip: text; background-clip: text; color: transparent;
-    }
-    .login-box .mtitle{ padding-right: 0; font-size: 23.5px; }
-    .login-box .msub{ margin: 9px auto 22px; max-width: 320px; }
-
-    .login-btn-google{
-      width: 100%; height: 46px;
-      display: flex; align-items: center; justify-content: center; gap: 10px;
-      border-radius: 13px;
-      background: #fff;
-      color: #111;
-      font-size: 15px; font-weight: 700;
-      transition: transform 0.16s var(--ease), box-shadow 0.24s var(--ease);
-    }
-    .login-btn-google:hover{ transform: translateY(-1px); box-shadow: 0 12px 30px rgba(255,255,255,0.12); }
-    .login-wall-footer{
-      margin-top: 18px;
-      font-family: var(--font-mono);
-      font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
-      color: var(--txt-4);
-    }
-
     /* ============================================================
        RESPONSIVE
        ============================================================ */
@@ -3942,146 +3853,44 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
 
 
 
-    /* ---------- FULL PAGE SIGN IN ---------- */
-    .login-wall{
-      display: none;
-      position: fixed; inset: 0; z-index: 9000;
-      width: 100vw; height: 100dvh;
-      background: #09090b;
-      color: var(--txt);
-      flex-direction: column;
-      justify-content: space-between;
-      overflow-y: auto;
-      overflow-x: hidden;
-      padding: clamp(16px, 3vw, 28px);
-    }
-    .login-wall.active{
-      display: flex;
-      animation: loginPageFadeIn 0.35s var(--ease-out);
-    }
-    @keyframes loginPageFadeIn { from{ opacity: 0; transform: scale(0.99); } to{ opacity: 1; transform: none; } }
-
-    .login-page-bg{ position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
-    .login-glow-orb{ position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.35; animation: loginOrbFloat 16s var(--ease) infinite; }
-    .login-glow-1{ width: 450px; height: 450px; background: rgba(109,131,255,0.25); top: -10%; left: 20%; }
-    .login-glow-2{ width: 400px; height: 400px; background: rgba(176,124,255,0.18); bottom: -10%; right: 15%; animation-delay: -5s; }
-    .login-glow-3{ width: 300px; height: 300px; background: rgba(213,185,106,0.15); top: 40%; left: 60%; animation-delay: -10s; }
-    .login-grid-pattern{
-      position: absolute; inset: 0;
-      background-image: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px);
-      background-size: 24px 24px;
-      opacity: 0.8;
-    }
-    @keyframes loginOrbFloat { 0%, 100%{ transform: translate(0,0); } 50%{ transform: translate(30px, -25px); } }
-
-    .login-page-header{
-      position: relative; z-index: 2;
-      display: flex; align-items: center; justify-content: space-between;
-      width: min(1080px, 100%); margin: 0 auto;
-      padding: 8px 0;
-    }
-    .login-brand{ display: flex; align-items: center; gap: 12px; }
-    .login-brand-logo{ width: 38px; height: 38px; border-radius: 11px; border: 1px solid var(--line-2); box-shadow: 0 4px 18px rgba(0,0,0,0.4); }
-    .login-brand-title{ font-family: var(--font-disp); font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -0.02em; }
-
-    .login-close-btn{
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 9px 16px; border-radius: 12px;
-      background: rgba(255,255,255,0.05); border: 1px solid var(--line-2);
-      color: var(--txt-2); font-size: 13.5px; font-weight: 600;
-      transition: background 0.2s var(--ease), color 0.2s var(--ease), border-color 0.2s var(--ease);
-    }
-    .login-close-btn:hover{ background: var(--bg-3); color: #fff; border-color: var(--line-3); }
-
-    .login-page-main{
-      position: relative; z-index: 2;
-      display: flex; align-items: center; justify-content: center;
-      flex: 1; padding: 32px 0;
-    }
-    .login-hero-card{
-      width: min(540px, 100%);
-      padding: clamp(28px, 5vw, 44px);
-      border-radius: 28px;
-      background: rgba(18, 18, 22, 0.75);
-      backdrop-filter: blur(24px) saturate(140%);
-      -webkit-backdrop-filter: blur(24px) saturate(140%);
-      border: 1px solid var(--line-2);
-      box-shadow: 0 32px 80px rgba(0,0,0,0.6);
-      text-align: center;
-      display: flex; flex-direction: column; align-items: center;
-    }
-
-    .login-badge{
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 6px 14px; border-radius: 99px;
-      background: var(--acc-soft); border: 1px solid var(--acc-line);
-      color: var(--acc); font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
-      margin-bottom: 20px;
-    }
-    .login-badge-dot{ width: 6px; height: 6px; border-radius: 50%; background: var(--acc); box-shadow: 0 0 10px var(--acc); }
-
-    .login-hero-title{
-      font-family: var(--font-disp);
-      font-size: clamp(28px, 4.5vw, 40px);
-      font-weight: 800;
-      line-height: 1.12;
-      letter-spacing: -0.035em;
-      color: #fff;
-      margin-bottom: 12px;
-    }
-    .login-title-gradient{
-      background: linear-gradient(135deg, var(--txt) 0%, var(--acc) 60%, var(--acc-2) 100%);
-      -webkit-background-clip: text; background-clip: text; color: transparent;
-    }
-
-    .login-hero-sub{
-      font-size: 15px; line-height: 1.6; color: var(--txt-2);
-      max-width: 420px; margin-bottom: 28px;
-    }
-
-    .login-action-container{ width: 100%; max-width: 380px; margin-bottom: 32px; }
-    .login-btn-google-full{
-      width: 100%; min-height: 50px;
-      display: inline-flex; align-items: center; justify-content: center; gap: 12px;
-      border-radius: 14px;
-      background: #ffffff;
-      color: #0f0f12;
-      font-size: 15.5px; font-weight: 700;
-      box-shadow: 0 10px 28px rgba(255,255,255,0.15);
-      transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease), background-color 0.18s var(--ease);
-      cursor: pointer;
-    }
-    .login-btn-google-full:hover{ transform: translateY(-2px); box-shadow: 0 14px 36px rgba(255,255,255,0.22); background: #f8f8f8; }
-    .login-btn-google-full:active{ transform: translateY(0); }
-
-    .login-terms-note{ margin-top: 10px; font-size: 11.5px; color: var(--txt-4); }
-
-    .login-features-grid{
-      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;
-      width: 100%; padding-top: 24px; border-top: 1px solid var(--line);
-      text-align: left;
-    }
-    .login-feature-item{ display: flex; flex-direction: column; gap: 6px; }
-    .login-feature-icon{ font-size: 18px; }
-    .login-feature-text b{ display: block; font-size: 12px; font-weight: 650; color: var(--txt); }
-    .login-feature-text small{ display: block; font-size: 10.5px; color: var(--txt-3); line-height: 1.35; margin-top: 2px; }
-
-    .login-page-footer{
-      position: relative; z-index: 2;
-      display: flex; align-items: center; justify-content: center; gap: 10px;
-      font-family: var(--font-mono); font-size: 11px; color: var(--txt-4); letter-spacing: 0.06em;
-      padding-top: 12px;
-    }
-    .footer-dot{ opacity: 0.5; }
-
-    @media (max-width: 600px) {
-      .login-features-grid{ grid-template-columns: 1fr; gap: 14px; }
-      .login-feature-item{ flex-direction: row; align-items: center; gap: 10px; }
-      .login-hero-card{ padding: 24px 20px; border-radius: 22px; }
-    }
-
-
-
+    /* ---------- Compact Firebase sign-in sheet ---------- */
+    .login-wall{display:none;position:fixed;inset:0;z-index:9000;width:100vw;height:100dvh;padding:18px;align-items:center;justify-content:center;overflow:auto;background:rgba(0,0,0,.78);color:var(--txt);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+    .login-wall.active{display:flex;animation:fadeIn .2s var(--ease)}
+    .login-page-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+    .login-glow-orb{position:absolute;border-radius:50%;filter:blur(90px);opacity:.22}
+    .login-glow-1{width:330px;height:330px;background:#5268ff;top:-140px;left:-90px}
+    .login-glow-2{width:300px;height:300px;background:#7b5ac7;right:-100px;bottom:-120px}
+    .login-page-header{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));left:18px;right:18px;z-index:2;display:flex;justify-content:flex-end}
+    .login-close-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 12px;border-radius:12px;border:1px solid var(--line-2);background:#121212;color:var(--txt-2);font-size:12px}
+    .login-page-main{position:relative;z-index:1;width:100%;display:flex;justify-content:center;align-items:center;padding:42px 0 16px}
+    .login-hero-card{position:relative;width:min(390px,100%);padding:28px 24px 22px;border:1px solid rgba(255,255,255,.12);border-radius:24px;background:#0b0b0c;box-shadow:0 30px 90px rgba(0,0,0,.48);text-align:left}
+    .login-brand{display:flex;align-items:center;gap:10px;margin-bottom:25px}
+    .login-brand-logo{width:36px;height:36px;object-fit:cover;border-radius:11px}
+    .login-brand-title{font-size:17px;font-weight:650;color:#fff}
+    .login-hero-title{margin:0 0 7px;color:#f7f7f7;font:650 clamp(25px,6vw,31px)/1.12 var(--font-disp);letter-spacing:-.035em}
+    .login-title-gradient{color:var(--txt-2)}
+    .login-hero-sub{margin:0 0 22px;color:var(--txt-3);font-size:13px;line-height:1.55}
+    .login-action-container{width:100%;margin:0}
+    .login-btn-google-full{width:100%;min-height:48px;display:flex;align-items:center;justify-content:center;gap:11px;border-radius:13px;background:#fff;color:#111;font-size:14px;font-weight:650;transition:background .16s,transform .16s;cursor:pointer}
+    .login-btn-google-full:hover{background:#f2f2f2;transform:translateY(-1px)}
+    .login-btn-google-full:active{transform:none}
+    .login-divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--txt-4);font-size:11px}
+    .login-divider:before,.login-divider:after{content:"";height:1px;flex:1;background:var(--line-2)}
+    .login-form{display:grid;gap:11px}
+    .login-form label{display:grid;gap:6px;color:var(--txt-2);font-size:12px;font-weight:550}
+    .login-form input{width:100%;height:43px;padding:0 12px;border:1px solid var(--line-2);border-radius:11px;background:#151515;color:var(--txt);font:inherit;font-size:14px;outline:none}
+    .login-form input:focus{border-color:rgba(255,255,255,.38);box-shadow:0 0 0 3px rgba(255,255,255,.04)}
+    .login-email-submit{width:100%;height:44px;border-radius:11px;background:#f4f4f4;color:#111;font-size:13px;font-weight:650}
+    .login-email-options{display:flex;justify-content:space-between;gap:12px;margin-top:1px}
+    .login-email-options button{padding:4px 0;color:var(--txt-2);font-size:12px}
+    .login-email-options button:hover{color:#fff}
+    .login-auth-message{margin:0;padding:10px 11px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:#171717;color:#e4e4e4;font-size:12px;line-height:1.45}
+    .login-guest-btn{width:100%;margin-top:16px;padding:10px;border-radius:11px;color:var(--txt-2);font-size:12px}
+    .login-guest-btn:hover{background:rgba(255,255,255,.05);color:#fff}
+    .login-terms-note{margin-top:12px;color:var(--txt-4);font-size:10.5px;line-height:1.5;text-align:center}
+    .login-page-footer{display:none}
+    .login-form button:disabled,.login-btn-google-full:disabled{opacity:.55;cursor:wait}
+    @media(max-width:420px){.login-hero-card{padding:24px 18px 18px;border-radius:20px}.login-page-header{right:14px}.login-page-main{padding-top:38px}}
     /* ---------- REWORKED SETTINGS & PROFILE MODALS ---------- */
     #profileModal, #profileModal{
       padding: 0 !important;
@@ -5187,83 +4996,27 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
   <div class="bg" id="bg"><div class="bg-orb"></div></div>
   <div class="colorful-bg"></div>
 
-  <!-- Sign-in only appears when the user tries to send a message or explicitly clicks sign in -->
-  <div class="login-wall" id="loginWallModal">
-    <div class="login-page-bg">
-      <div class="login-glow-orb login-glow-1"></div>
-      <div class="login-glow-orb login-glow-2"></div>
-      <div class="login-glow-orb login-glow-3"></div>
-      <div class="login-grid-pattern"></div>
-    </div>
-
-    <header class="login-page-header">
-      <div class="login-brand">
-        <img src="/icon-512.png" alt="TruX" class="login-brand-logo">
-        <span class="login-brand-title">TruX-Omni</span>
-      </div>
-      <button type="button" class="login-close-btn" onclick="closeLoginWall()" aria-label="Continue as Guest">
-        <span>Continue as Guest</span>
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-      </button>
-    </header>
-
-    <main class="login-page-main">
-      <div class="login-hero-card">
-        <div class="login-badge">
-          <i class="login-badge-dot"></i>
-          <span>TRUX BACKEND ENGINE</span>
-        </div>
-
-        <h1 class="login-hero-title">
-          Next-Gen AI Workspace<br>
-          <span class="login-title-gradient">Powered by Vertex AI</span>
-        </h1>
-
-        <p class="login-hero-sub">
-          Deep thinking, code creation, image generation, and intelligent search — designed with high performance and privacy at the core.
-        </p>
-
-        <div class="login-action-container">
-          <button type="button" class="login-btn-google-full" onclick="handleGoogleLogin()">
-            <svg width="20" height="20" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
-            <span>Sign in with Google</span>
-          </button>
-          <div class="login-terms-note">By signing in, you access synced chats and cloud backup.</div>
-        </div>
-
-        <div class="login-features-grid">
-          <div class="login-feature-item">
-            <div class="login-feature-icon">⚡</div>
-            <div class="login-feature-text">
-              <b>Vertex AI Backend</b>
-              <small>Lightning fast streaming responses</small>
-            </div>
-          </div>
-          <div class="login-feature-item">
-            <div class="login-feature-icon">💻</div>
-            <div class="login-feature-text">
-              <b>TruX-Code Agent</b>
-              <small>Automated coding & repo tools</small>
-            </div>
-          </div>
-          <div class="login-feature-item">
-            <div class="login-feature-icon">🔒</div>
-            <div class="login-feature-text">
-              <b>Private & Secure</b>
-              <small>Local-first encrypted storage</small>
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-
-    <footer class="login-page-footer">
-      <span>TruX-AI Cloud Run Server</span>
-      <span class="footer-dot">•</span>
-      <span>Google Cloud Platform</span>
-    </footer>
+  <!-- Firebase sign-in is shown only for account/chat actions. -->
+  <div class="login-wall" id="loginWallModal" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+    <div class="login-page-bg" aria-hidden="true"><div class="login-glow-orb login-glow-1"></div><div class="login-glow-orb login-glow-2"></div></div>
+    <header class="login-page-header"><button type="button" class="login-close-btn" onclick="closeLoginWall()" aria-label="Close sign-in and continue as guest">Continue as guest</button></header>
+    <main class="login-page-main"><div class="login-hero-card">
+      <div class="login-brand"><img src="/icon-512.png" alt="" class="login-brand-logo" decoding="async"><span class="login-brand-title">TruX-Omni</span></div>
+      <h1 class="login-hero-title" id="loginTitle">Sign in</h1><p class="login-hero-sub">Sign in to chat and sync your workspace.</p>
+      <div class="login-action-container"><button type="button" class="login-btn-google-full" id="loginGoogleBtn" onclick="handleGoogleLogin()">
+        <svg width="19" height="19" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg><span>Sign in with Google</span>
+      </button></div>
+      <div class="login-divider">or use email</div>
+      <form id="loginEmailForm" class="login-form" onsubmit="handleEmailPasswordAuth(event, false)">
+        <label for="loginEmail">Email<input id="loginEmail" name="email" type="email" autocomplete="email" maxlength="254" placeholder="you@example.com" required></label>
+        <label for="loginPassword">Password<input id="loginPassword" name="password" type="password" autocomplete="current-password" minlength="6" maxlength="128" placeholder="Your password" required></label>
+        <div id="loginAuthError" class="login-auth-message" role="status" aria-live="polite" hidden></div>
+        <button class="login-email-submit" id="loginEmailSubmit" type="submit">Sign in with email</button>
+        <div class="login-email-options"><button type="button" onclick="handleEmailPasswordAuth(event, true)">Create account</button><button type="button" onclick="handlePasswordReset()">Forgot password?</button></div>
+      </form>
+      <p class="login-terms-note">Signing in is required to send prompts and sync chats. Authentication is handled by Firebase.</p>
+    </div></main>
   </div>
-  
   <div class="shell">
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
@@ -5571,81 +5324,37 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
   <div class="modal" id="profileModal" aria-label="Profile and settings">
     <div class="card profile-upgrade-card">
       <div class="profile-home-page" id="profileHomePage">
-      <button class="close" onclick="closeProfileModal()">×</button>
-      <div id="profileHero" style="display:flex;align-items:center;gap:16px;padding-right:38px">
-        <img class="modal-avatar" id="modalAvatar">
-        <div style="min-width:0">
-          <div class="mtitle" id="modalName">User Name</div>
-          <div class="msub" id="modalEmail">user@email.com</div>
-        </div>
+      <button class="close" type="button" onclick="closeProfileModal()" aria-label="Close profile and settings">×</button>
+      <div id="profileHero" style="display:flex;align-items:center;gap:14px;padding:30px 0 22px;padding-right:42px">
+        <img class="modal-avatar" id="modalAvatar" alt="" referrerpolicy="no-referrer">
+        <div style="min-width:0"><div class="mtitle" id="modalName">User Name</div><div class="msub" id="modalEmail">user@email.com</div><div style="margin-top:6px;color:var(--txt-3);font-size:12px">Your workspace</div></div>
       </div>
-
-      <div class="profile-list-group-title profile-options-label">Profile &amp; account</div>
-      <div class="profile-option-list" id="profileOptionList">
-        <button type="button" class="profile-option-row" data-profile-page="account"><span class="profile-option-icon account-icon">◎</span><span class="profile-option-copy"><b>Account details</b><small>Profile name, email, phone and age settings</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="workspace"><span class="profile-option-icon">▣</span><span class="profile-option-copy"><b>Workspace &amp; plan</b><small>Workspace information and usage limits</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="usage"><span class="profile-option-icon">◔</span><span class="profile-option-copy"><b>Usage &amp; limits</b><small>View current usage allowances</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="upgrade"><span class="profile-option-icon">✦</span><span class="profile-option-copy"><b>Upgrade plan</b><small>Review plan options and current limits</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="avatar"><span class="profile-option-icon">◌</span><span class="profile-option-copy"><b>Profile photo</b><small>Choose or reset your profile image</small></span><span class="profile-option-chevron">›</span></button>
+      <div class="profile-list-group-title">Workspace</div><div class="profile-option-list">
+        <button type="button" class="profile-option-row" data-settings-section="general"><span class="profile-option-icon">⌘</span><span class="profile-option-copy"><b>Workspace defaults</b><small>Core behavior and feedback</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-settings-section="usage"><span class="profile-option-icon">◔</span><span class="profile-option-copy"><b>Usage &amp; plan</b><small>Usage allowances and workspace limits</small></span><span class="profile-option-chevron">›</span></button>
       </div>
-
-      <div class="profile-list-group-title">Preferences</div>
-      <div class="profile-option-list" id="profilePreferencesOptionList">
-        <button type="button" class="profile-option-row" data-profile-page="personalization"><span class="profile-option-icon">✦</span><span class="profile-option-copy"><b>Personalization</b><small>Response style, warmth, fast answers and location</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="memory"><span class="profile-option-icon">▤</span><span class="profile-option-copy"><b>Memory &amp; custom instructions</b><small>Saved preferences, nickname and occupation</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="appearance"><span class="profile-option-icon">◐</span><span class="profile-option-copy"><b>Appearance</b><small>Theme, accent colour and visual effects</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="voice"><span class="profile-option-icon">♫</span><span class="profile-option-copy"><b>Voice</b><small>Speech, dictation language and voice preferences</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="notifications"><span class="profile-option-icon">♧</span><span class="profile-option-copy"><b>Notifications</b><small>Choose which types of alerts are enabled</small></span><span class="profile-option-chevron">›</span></button>
+      <div class="profile-list-group-title">Personalize</div><div class="profile-option-list">
+        <button type="button" class="profile-option-row" data-settings-section="appearance"><span class="profile-option-icon">◐</span><span class="profile-option-copy"><b>Appearance</b><small>Theme, accent and visual effects</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-settings-section="personalization"><span class="profile-option-icon">✦</span><span class="profile-option-copy"><b>Responses &amp; memory</b><small>Instructions, tone and saved preferences</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-settings-section="voice"><span class="profile-option-icon">♫</span><span class="profile-option-copy"><b>Voice &amp; notifications</b><small>Speech, dictation and alerts</small></span><span class="profile-option-chevron">›</span></button>
       </div>
-
-      <div class="profile-list-group-title">Privacy &amp; security</div>
-      <div class="profile-option-list" id="profilePrivacyOptionList">
-        <button type="button" class="profile-option-row" data-profile-page="privacy"><span class="profile-option-icon">◈</span><span class="profile-option-copy"><b>Privacy center</b><small>Review available privacy and data-use controls</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="dataControls"><span class="profile-option-icon">▥</span><span class="profile-option-copy"><b>Data controls</b><small>Export, import, archive and clear chat history</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="security"><span class="profile-option-icon">♢</span><span class="profile-option-copy"><b>Security &amp; login</b><small>Connected account and sign-in security</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="safety"><span class="profile-option-icon">◇</span><span class="profile-option-copy"><b>Safety &amp; wellbeing</b><small>Sensitive content and wellbeing options</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="remote"><span class="profile-option-icon">⌘</span><span class="profile-option-copy"><b>Remote control</b><small>Remote pairing and follow-up settings</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="storage"><span class="profile-option-icon">▤</span><span class="profile-option-copy"><b>Storage</b><small>Estimate local data, view archives and export</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="ads"><span class="profile-option-icon">◉</span><span class="profile-option-copy"><b>Ads controls</b><small>Advertising controls available in TruX</small></span><span class="profile-option-chevron">›</span></button>
+      <div class="profile-list-group-title">Account &amp; data</div><div class="profile-option-list">
+        <button type="button" class="profile-option-row" data-settings-section="account"><span class="profile-option-icon">◎</span><span class="profile-option-copy"><b>Account &amp; security</b><small>Profile details and sign-in settings</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-settings-section="data"><span class="profile-option-icon">▤</span><span class="profile-option-copy"><b>Data &amp; privacy</b><small>Chats, exports, location and connected tools</small></span><span class="profile-option-chevron">›</span></button>
       </div>
-
-      <div class="profile-list-group-title">Help &amp; tools</div>
-      <div class="profile-option-list" id="profileHelpOptionList">
-        <button type="button" class="profile-option-row" data-profile-page="parental"><span class="profile-option-icon">♡</span><span class="profile-option-copy"><b>Parental controls</b><small>Safety and device-level options</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="plugins"><span class="profile-option-icon">⠿</span><span class="profile-option-copy"><b>Plugins</b><small>Connected services and integrations</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="reportbug"><span class="profile-option-icon">!</span><span class="profile-option-copy"><b>Report a bug &amp; feedback</b><small>Send a bug report or suggestion</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="about"><span class="profile-option-icon">i</span><span class="profile-option-copy"><b>About TruX-Omni</b><small>Help and workspace information</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row profile-owner-only" data-profile-page="developer"><span class="profile-option-icon">⌘</span><span class="profile-option-copy"><b>Developer workspace</b><small>Owner model selection and runtime</small></span><span class="profile-option-chevron">›</span></button>
+      <div class="profile-list-group-title">Tools &amp; support</div><div class="profile-option-list">
+        <button type="button" class="profile-option-row" data-profile-page="plugins"><span class="profile-option-icon">⠿</span><span class="profile-option-copy"><b>Plugins &amp; integrations</b><small>Connect external workspace tools</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="help"><span class="profile-option-icon">?</span><span class="profile-option-copy"><b>Help &amp; feedback</b><small>Get help or send a bug report</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row profile-owner-only" data-settings-section="developer"><span class="profile-option-icon">⌘</span><span class="profile-option-copy"><b>Developer workspace</b><small>Owner-only model controls</small></span><span class="profile-option-chevron">›</span></button>
       </div>
-      <section class="profile-detail-view" id="profileDetailView" hidden>
-        <button type="button" class="profile-detail-back" onclick="closeProfileOption()">‹ <span>Profile</span></button>
-        <div class="profile-detail-title" id="profileDetailTitle">Details</div>
-        <div class="profile-detail-subtitle" id="profileDetailSubtitle"></div>
-        <div class="profile-detail-body" id="profileDetailBody"></div>
-      </section>
-
-      <div id="profileActionsRow" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-        <button class="mbtn" onclick="closeProfileModal();openPinnedInsightsModal()">Pinned insights</button>
-        <button class="mbtn danger" onclick="confirmSignOut()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17l5-5-5-5M20 12H9M12 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6"/></svg>Sign out</button>
+      <section class="profile-detail-view" id="profileDetailView" hidden><button type="button" class="profile-detail-back" onclick="closeProfileOption()">‹ <span>Profile</span></button><div class="profile-detail-title" id="profileDetailTitle">Details</div><div class="profile-detail-subtitle" id="profileDetailSubtitle"></div><div class="profile-detail-body" id="profileDetailBody"></div></section>
+      <div id="profileActionsRow" style="display:flex;gap:8px;margin-top:18px;margin-bottom:24px;flex-wrap:wrap">
+        <button class="mbtn" type="button" onclick="closeProfileModal();openPinnedInsightsModal()">Pinned insights</button>
+        <button class="mbtn danger" type="button" onclick="confirmSignOut()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17l5-5-5-5M20 12H9M12 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6"/></svg>Sign out</button>
       </div>
     </div><!-- end profile home -->
 <div class="settings-page">
-      <aside class="settings-sidebar">
-        <div class="settings-brand">
-          <div><b>TruX settings</b><small>Personal workspace</small></div>
-        </div>
-        <nav class="settings-nav" aria-label="Settings sections">
-          <button type="button" class="active" data-settings-section="general"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.6 1.6-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.1h-2.2v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-1.6-1.6.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H7v-2.2h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1L9.9 6l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6v-.1h2.2v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3L18.2 6l1.6 1.6-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.1v2.2H21a1.7 1.7 0 0 0-1.6 1Z"/></svg>General</button>
-          <button type="button" data-settings-section="appearance"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16"/></svg>Appearance</button>
-          <button type="button" data-settings-section="voice"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8"/></svg>Voice</button>
-          <button type="button" data-settings-section="personalization"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v13H4z"/><path d="M8 9h8M8 13h5"/></svg>Personalization</button>
-          <button type="button" data-settings-section="notifications"><svg viewBox="0 0 24 24"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 8h18c0 7-1 8-3 8Z"/><path d="M10 21h4"/></svg>Notifications</button>
-          <button type="button" data-settings-section="usage"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/></svg>Usage</button>
-          <button type="button" data-settings-section="data"><svg viewBox="0 0 24 24"><path d="M4 7.5h16M5.5 7.5v11h13v-11M8 4.5h8"/><path d="M9 11v4M12 11v4M15 11v4"/></svg>Data & tools</button>
-          <button type="button" class="developer-nav" data-settings-section="developer"><svg viewBox="0 0 24 24"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 4l-4 16"/></svg>Developer</button>
-        </nav>
-        <button type="button" class="settings-close" onclick="closeSettingsModal()"><svg viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/><path d="M9 12h11"/></svg>Back to chat</button>
-      </aside>
+      
 
       <section class="settings-main">
         <header class="settings-topbar">
@@ -5656,64 +5365,12 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
             <div class="mtitle" id="settingsPageTitle">Settings</div>
             <div class="msub" id="settingsPageSubtitle">Your TruX workspace preferences.</div>
           </div>
-          <select id="settingsMobileSelect" class="settings-mobile-select" aria-label="Settings section" onchange="switchSettingsSection(this.value)">
-            <option value="general">General</option><option value="appearance">Appearance</option><option value="voice">Voice</option>
-            <option value="personalization">Personalization</option><option value="notifications">Notifications</option>
-            <option value="usage">Usage</option><option value="data">Data & tools</option><option value="developer">Developer</option>
-          </select>
-          <button class="close" type="button" onclick="closeProfileModal()" aria-label="Close profile and settings">×</button>
+<button class="close" type="button" onclick="closeProfileModal()" aria-label="Close profile and settings">×</button>
         </header>
 
         <div class="settings-main-scroll">
-        <div class="settings-home-list" id="settingsHomeList" aria-label="Settings categories">
-          <h1 class="settings-home-heading">Settings</h1>
-          <p class="settings-home-intro">Manage your TruX workspace preferences.</p>
-          <div class="settings-home-options">
-            <button type="button" class="settings-home-row" data-settings-section="general">
-              <span class="settings-home-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1-1.6 1.6-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.1h-2.2v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-1.6-1.6.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H7v-2.2h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L8.3 7l1.6-1.6.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6v-.1h2.2v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.3 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.1v2.2h-.1a1.7 1.7 0 0 0-1.6 1 1.7 1.7 0 0 0 .5 1.8Z"/></svg></span>
-              <span class="settings-home-copy"><b>General</b><small>Core behavior and feedback</small></span>
-              <svg class="settings-row-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>
-            </button>
-            <button type="button" class="settings-home-row" data-settings-section="appearance">
-              <span class="settings-home-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16"/></svg></span>
-              <span class="settings-home-copy"><b>Appearance</b><small>Interface and ambient glow</small></span>
-              <svg class="settings-row-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>
-            </button>
-            <button type="button" class="settings-home-row" data-settings-section="voice">
-              <span class="settings-home-icon"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8"/></svg></span>
-              <span class="settings-home-copy"><b>Voice</b><small>Speech playback and answer reading speed</small></span>
-              <svg class="settings-row-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>
-            </button>
-            <button type="button" class="settings-home-row" data-settings-section="personalization">
-              <span class="settings-home-icon"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="8" cy="18" r="2"/></svg></span>
-              <span class="settings-home-copy"><b>Personalization</b><small>Response style, accent colour and location access</small></span>
-              <svg class="settings-row-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>
-            </button>
-            <button type="button" class="settings-home-row" data-settings-section="notifications">
-              <span class="settings-home-icon"><svg viewBox="0 0 24 24"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 8h18c0-1-3-1-3-8ZM10 21h4"/></svg></span>
-              <span class="settings-home-copy"><b>Notifications</b><small>Response completion alerts</small></span>
-              <svg class="settings-row-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>
-            </button>
-            <button type="button" class="settings-home-row" data-settings-section="usage">
-              <span class="settings-home-icon"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/></svg></span>
-              <span class="settings-home-copy"><b>Usage</b><small>Token and image-generation limits</small></span>
-              <svg class="settings-row-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>
-            </button>
-            <button type="button" class="settings-home-row" data-settings-section="data">
-              <span class="settings-home-icon"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 9h8M8 13h8M8 17h4"/></svg></span>
-              <span class="settings-home-copy"><b>Data &amp; tools</b><small>Exports, connection diagnostics and chat history</small></span>
-              <svg class="settings-row-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>
-            </button>
-            <button type="button" class="settings-home-row settings-home-developer" data-settings-section="developer">
-              <span class="settings-home-icon"><svg viewBox="0 0 24 24"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 4l-4 16"/></svg></span>
-              <span class="settings-home-copy"><b>Developer</b><small>Model selection and workspace runtime</small></span>
-              <svg class="settings-row-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>
-            </button>
-          </div>
-        </div>
-
-          <div class="settings-content">
-            <section class="settings-section active" data-settings-content="general">
+        <div class="settings-content">
+          <section class="settings-section active" data-settings-content="general">
               <div class="settings-section-head"><h2>General</h2><p>Core behavior and account-facing controls.</p></div>
               <div class="settings-card">
                 <div class="mrow"><span>Auto Read Answers</span><label class="toggle"><input id="autoReadToggle" type="checkbox" onchange="store.setItem('trux_auto_read', this.checked ? 'true' : 'false')"><span class="slider"></span></label></div>
@@ -5723,7 +5380,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
               </div>
             </section>
 
-            <section class="settings-section" data-settings-content="appearance">
+          <section class="settings-section" data-settings-content="appearance">
               <div class="settings-section-head"><h2>Appearance</h2><p>Keep the interface calm, responsive, and easy on the eyes.</p></div>
               <div class="settings-card"><div class="sect"><h4>Theme</h4><label class="profile-field-label" for="truxThemeSelect">App appearance</label><select id="truxThemeSelect" class="instr" onchange="applyTruxTheme(this.value)"><option value="dark">Dark</option><option value="light">Light</option><option value="oled">OLED black</option><option value="dracula">Dracula</option><option value="nord">Nord</option><option value="solarized">Solarized</option><option value="rose-pine">Rose Pine</option><option value="monokai">Monokai</option><option value="hacker">Hacker</option></select></div></div>
 
@@ -5754,12 +5411,12 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
                 <div class="mrow"><span>Ambient Glow</span><label class="toggle"><input id="neonGlowToggle" type="checkbox" checked onchange="toggleAmbientGlow(this)"><span class="slider"></span></label></div>
               </div>
               <div class="settings-card">
-                <div class="sect"><h4>Math rendering</h4><div class="mrow" style="border-bottom:0;padding-top:6px"><span>KaTeX 0.18.7</span><span class="badge"><i></i>Browser rendered</span></div></div>
+                
               </div>
             </section>
 
-            <section class="settings-section" data-settings-content="voice">
-              <div class="settings-section-head"><h2>Voice</h2><p>Control speech playback and answer reading speed.</p></div>
+          <section class="settings-section" data-settings-content="voice">
+              <div class="settings-section-head"><h2>Voice &amp; notifications</h2><p>Speech, dictation, and the alerts this device can actually show.</p></div>
               <div class="settings-card">
                 <div class="sect"><h4>Text-to-Speech Speed</h4><select id="ttsRateSelect" class="instr" style="height:44px" onchange="saveTTSRate(this.value)"><option value="0.8">0.8x · Slower</option><option value="1.0" selected>1.0x · Normal</option><option value="1.2">1.2x · Fast</option><option value="1.5">1.5x · Express</option></select></div>
               </div>
@@ -5770,12 +5427,14 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
               </div></div>
               <div class="settings-card"><div class="sect"><h4>Live voice options</h4><div class="mrow"><span>Live voice model</span><span class="utxt">Managed by TruX Live</span></div><div class="mrow"><span>Background conversations</span><span class="utxt">Not supported by this web workspace</span></div><div class="mrow"><span>Use as default assistant</span><span class="utxt">Set by your device, not by a web page</span></div></div></div>
 
-            </section>
+            
+<div class="settings-card">
+                <div class="mrow"><span><b>Response notifications</b><small class="mrow-sub">Text, image and video completion alerts.</small></span><label class="toggle"><input id="notificationsToggle" type="checkbox" onchange="toggleTruxNotificationsSetting(this.checked)"><span class="slider"></span></label></div>
+                <div class="location-status" id="notificationStatusText">Checking notification permission…</div>
+              </div></section>
 
-            <section class="settings-section" data-settings-content="personalization">
-              <div class="settings-section-head"><h2>Personalization</h2><p>Change how TruX looks, responds and uses device context.</p></div>
-              <div class="settings-card"><div class="sect"><h4>Reference photos</h4><p class="mrow-sub">Persistent reference-photo conditioning is not implemented in this workspace. Attach a photo directly to an individual image request instead.</p><button class="mbtn" type="button" disabled>Persistent reference photos unavailable</button></div></div>
-
+          <section class="settings-section" data-settings-content="personalization">
+              <div class="settings-section-head"><h2>Personalization</h2><p>Shape how TruX responds and manage saved preferences in one place.</p></div>
               <div class="settings-card">
                 <div class="sect"><h4>System Instructions</h4><textarea id="customInstructions" class="instr" placeholder="How should TruX respond?"></textarea><button class="mbtn" onclick="saveCustomInstructions()">Save Instructions</button></div>
               </div>
@@ -5790,30 +5449,14 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
                 <div class="mrow"><span><b>Fast answers</b><small class="mrow-sub">Prefer quick, concise responses unless a task needs depth.</small></span><label class="toggle"><input id="truxFastAnswersToggle" type="checkbox" onchange="saveProfilePreference('fast_answers',this.checked)"><span class="slider"></span></label></div>
               </div></div>
 
-            </section>
+            
+<div class="settings-card"><div class="mrow"><span><b>Enable memory</b><small class="mrow-sub">Use the profile details below to personalize responses.</small></span><label class="toggle"><input id="truxMemoryEnabledToggle" type="checkbox" onchange="saveProfilePreference('memory_enabled',this.checked)"><span class="slider"></span></label></div>
+                <div class="sect"><h4>Your nickname</h4><input id="truxMemoryNickname" class="instr" maxlength="80" placeholder="Nickname" oninput="saveProfileField(this,'nickname')"></div><div class="sect"><h4>Your occupation</h4><input id="truxMemoryOccupation" class="instr" maxlength="120" placeholder="Student, engineer, etc." oninput="saveProfileField(this,'occupation')"></div><div class="sect"><h4>More about you</h4><textarea id="truxMemoryAbout" class="instr" maxlength="3000" placeholder="Interests, preferences, and details you'd like TruX to remember." oninput="saveProfileField(this,'about')"></textarea></div>
+              </div><div class="settings-card"><div class="sect"><h4>Memory summary</h4><p class="mrow-sub">A summary of locally saved profile preferences, not an AI-generated history of every conversation.</p><button type="button" class="mbtn" onclick="refreshTruxMemorySummary()">Refresh memory summary</button><div id="truxMemorySummaryText" class="profile-info-panel">No profile details saved yet.</div></div></div>
+<div class="settings-card"><div class="mrow"><span><b>Reduce sensitive content</b><small class="mrow-sub">Add an extra preference for cautious handling of sensitive requests.</small></span><label class="toggle"><input id="truxReduceSensitiveToggle" type="checkbox" onchange="saveProfilePreference('reduce_sensitive',this.checked)"><span class="slider"></span></label></div></div>
+              <div class="settings-card"><div class="sect"><h4>Time management</h4><div class="mrow"><span><b>Focus break reminder</b><small class="mrow-sub">Shows a reminder while TruX is open.</small></span><label class="toggle"><input id="truxFocusReminderToggle" type="checkbox" onchange="saveProfilePreference('focus_reminder',this.checked);applyTimeManagementSettings()"><span class="slider"></span></label></div><label class="profile-field-label" for="truxFocusInterval">Remind me after</label><select id="truxFocusInterval" class="instr" onchange="saveProfilePreference('focus_interval',this.value);applyTimeManagementSettings()"><option value="25">25 minutes</option><option value="45">45 minutes</option><option value="60">60 minutes</option><option value="90">90 minutes</option></select></div></div></section>
 
-            <section class="settings-section" data-settings-content="notifications">
-              <div class="settings-section-head"><h2>Notifications</h2><p>Let TruX alert this device when work finishes.</p></div>
-              <div class="settings-card">
-                <div class="mrow"><span><b>Response notifications</b><small class="mrow-sub">Text, image and video completion alerts.</small></span><label class="toggle"><input id="notificationsToggle" type="checkbox" onchange="toggleTruxNotificationsSetting(this.checked)"><span class="slider"></span></label></div>
-                <div class="location-status" id="notificationStatusText">Checking notification permission…</div>
-              </div>
-              <div class="settings-card"><div class="sect"><h4>Notification categories</h4><p class="mrow-sub">Saved on this device. TruX currently supports response-completion alerts; other category providers are not connected yet.</p>
-                <div class="mrow"><span>Codex</span><label class="toggle"><input id="notifCodex" type="checkbox" onchange="saveNotificationCategory('codex',this.checked)"><span class="slider"></span></label></div>
-                <div class="mrow"><span>Group chats</span><label class="toggle"><input id="notifGroupChats" type="checkbox" onchange="saveNotificationCategory('group_chats',this.checked)"><span class="slider"></span></label></div>
-                <div class="mrow"><span>Health</span><label class="toggle"><input id="notifHealth" type="checkbox" onchange="saveNotificationCategory('health',this.checked)"><span class="slider"></span></label></div>
-                <div class="mrow"><span>Library</span><label class="toggle"><input id="notifLibrary" type="checkbox" onchange="saveNotificationCategory('library',this.checked)"><span class="slider"></span></label></div>
-                <div class="mrow"><span>Marketing</span><label class="toggle"><input id="notifMarketing" type="checkbox" onchange="saveNotificationCategory('marketing',this.checked)"><span class="slider"></span></label></div>
-                <div class="mrow"><span>Personalized tips</span><label class="toggle"><input id="notifTips" type="checkbox" onchange="saveNotificationCategory('tips',this.checked)"><span class="slider"></span></label></div>
-                <div class="mrow"><span>Projects</span><label class="toggle"><input id="notifProjects" type="checkbox" onchange="saveNotificationCategory('projects',this.checked)"><span class="slider"></span></label></div>
-                <div class="mrow"><span>Responses</span><label class="toggle"><input id="notifResponses" type="checkbox" onchange="saveNotificationCategory('responses',this.checked)"><span class="slider"></span></label></div>
-                <div class="mrow"><span>Tasks</span><label class="toggle"><input id="notifTasks" type="checkbox" onchange="saveNotificationCategory('tasks',this.checked)"><span class="slider"></span></label></div>
-                <div class="mrow"><span>Usage</span><label class="toggle"><input id="notifUsage" type="checkbox" onchange="saveNotificationCategory('usage',this.checked)"><span class="slider"></span></label></div>
-              </div></div>
-
-            </section>
-
-            <section class="settings-section" data-settings-content="usage">
+          <section class="settings-section" data-settings-content="usage">
               <div class="settings-section-head"><h2>Usage</h2><p>Core 4.0 is unlimited. Pro 5.0 has a 1,000,000-token monthly allowance. Owner access is unlimited.</p></div>
               <div class="settings-card">
                 <div class="sect"><h4>Core 4.0 Monthly Usage</h4><div class="usage"><i id="coreUsageBarFill"></i></div><div class="utxt" id="coreUsageText">Unlimited</div></div>
@@ -5822,22 +5465,37 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
               </div>
             </section>
 
-            <section class="settings-section" data-settings-content="data">
-              <div class="settings-section-head"><h2>Data & tools</h2><p>Manage local chats, import or export your workspace, and diagnose the API connection.</p></div>
-              <div class="settings-card"><div class="sect"><h4>Model and recording controls</h4>
-                <div class="mrow"><span><b>Improve the model for everyone</b><small class="mrow-sub">This TruX workspace does not expose a training-consent API.</small></span><label class="toggle"><input type="checkbox" disabled aria-label="Training control not available in TruX"><span class="slider"></span></label></div>
-                <div class="mrow"><span><b>Include audio recordings</b><small class="mrow-sub">TruX does not retain recordings for model training.</small></span><label class="toggle"><input type="checkbox" disabled aria-label="Audio recording control not available in TruX"><span class="slider"></span></label></div>
+          <section class="settings-section" data-settings-content="data">
+              <div class="settings-section-head"><h2>Data &amp; privacy</h2><p>Manage chat history, exports, storage, location access, and connected tools.</p></div>
+              <div class="settings-card"><div class="sect"><h4>Connected tools</h4>
+                
+                
                 <div class="mrow"><span><b>Apps with access</b><small class="mrow-sub">Review connected services in Plugins. TruX does not sync your contacts.</small></span><button class="mbtn" type="button" onclick="openPluginsFromSettings()">Open plugins</button></div>
               </div></div>
               <div class="settings-card"><div class="sect"><h4>Chat history</h4><button class="mbtn" type="button" onclick="viewArchivedChats()">View archived chats</button><button class="mbtn" type="button" onclick="archiveAllHistory()">Archive chat history</button><button class="mbtn danger" type="button" onclick="clearAllHistory()">Clear chat history</button><div id="archivedChatsList" class="archived-chats-list" aria-live="polite"></div></div></div>
               <div class="settings-card"><div class="sect"><h4>Export data</h4><button class="mbtn" type="button" onclick="exportTruxMemory()">Export workspace data</button><button class="mbtn" type="button" onclick="exportChatData()">Export chats only</button><button class="mbtn" type="button" onclick="importTruxMemory()">Import workspace data</button></div></div>
-
-              <div class="settings-card">
-                <div class="sect"><h4>System & tools</h4><button class="mbtn" onclick="checkApiLatency()">Check API status</button><button class="mbtn" onclick="exportChatData()">Export chats</button><button class="mbtn" onclick="exportTruxMemory()">Export workspace memory</button><button class="mbtn" onclick="importTruxMemory()">Import workspace memory</button><button class="mbtn danger" onclick="resetAllSettings()">Reset settings</button><button class="mbtn danger" onclick="clearAllHistory()">Clear all chats</button></div>
+            
+<div class="settings-card"><div class="sect"><h4>Local workspace data</h4><div id="truxStorageSummary" class="profile-info-panel">Calculating local data…</div><button type="button" class="mbtn" onclick="updateTruxStorageSummary()">Refresh storage estimate</button></div></div><div class="settings-card"><div class="sect"><h4>Files &amp; images</h4><p class="mrow-sub">Image and file payloads stored in chat history are counted approximately; browser caches are excluded.</p></div></div>
+<div class="settings-card">
+                <div class="sect"><h4>Location access</h4>
+                  <div class="mrow"><span><b>Let TruX use your location</b><small class="mrow-sub">Used for location-aware answers and research.</small></span><label class="toggle"><input id="locationAccessToggle" type="checkbox" onchange="toggleTruxLocationAccess(this.checked)"><span class="slider"></span></label></div>
+                  <div class="location-status" id="locationStatusText">Checking location permission…</div>
+                  <button class="mbtn" type="button" onclick="requestTruxLocation({interactive:true,force:true})">Refresh location access</button>
+                </div>
               </div>
-            </section>
+<div class="settings-card"><div class="sect"><h4>Workspace tools</h4><button class="mbtn" type="button" onclick="checkApiLatency()">Check API status</button><button class="mbtn danger" type="button" onclick="resetAllSettings()">Reset settings</button></div></div></section>
 
-            <section class="settings-section" data-settings-content="developer">
+          <section class="settings-section" data-settings-content="account"><div class="settings-section-head"><h2>Account &amp; security</h2><p>Manage your profile, identity, and sign-in security.</p></div>
+              <div class="settings-card"><div class="sect"><h4>Profile name</h4><input id="truxAccountDisplayName" class="instr" maxlength="100" placeholder="Display name"><button type="button" class="mbtn" onclick="saveAccountProfile()">Save profile name</button></div><div class="mrow"><span>Email</span><b id="truxAccountEmailText">Not signed in</b></div><div class="mrow"><span>Phone number</span><b id="truxAccountPhoneText">Managed by sign-in provider</b></div>
+                <div class="sect"><h4>Age group</h4><select id="truxAccountAgeGroup" class="instr" onchange="saveProfilePreference('age_group',this.value)"><option value="">Prefer not to say</option><option value="teen">Teen</option><option value="adult">Adult</option></select><p class="mrow-sub">Stored on this device only; it does not change account verification.</p></div>
+              </div><div class="settings-card"><div class="sect"><h4>Workspace</h4><p id="truxWorkspaceSummary" class="mrow-sub">Personal TruX-Omni workspace</p><button type="button" class="mbtn" onclick="switchSettingsSection('usage')">Usage &amp; limits</button><button type="button" class="mbtn" onclick="confirmSignOut()">Log out</button></div></div>
+              <div class="settings-card"><div class="sect"><h4>Profile photo</h4><p class="mrow-sub">Choose an image for your workspace or reset it to the photo from your sign-in provider.</p><button type="button" class="mbtn" onclick="openAvatarPicker()">Choose photo</button><button type="button" class="mbtn" onclick="resetAvatarOverride()">Reset photo</button></div></div>
+<div class="settings-card"><div class="sect"><h4>Account deletion</h4><p class="mrow-sub">This TruX web app cannot securely delete your identity and all associated cloud data from this screen. Account identity is managed by the sign-in provider; contact support before requesting permanent deletion.</p><button type="button" class="mbtn danger" onclick="openProfileOption('reportbug')">Request account deletion help</button></div></div>
+            
+<div class="settings-card"><div class="mrow"><span>Connected account</span><b id="truxSecurityEmailText">Not signed in</b></div><div class="mrow"><span>Security keys &amp; passkeys</span><span class="utxt">Managed by provider</span></div><div class="mrow"><span>Authenticator app</span><span class="utxt">Provider-managed</span></div><div class="mrow"><span>Text message MFA</span><span class="utxt">Provider-managed</span></div><div class="mrow"><span>Active sessions</span><span class="utxt">TruX cannot enumerate provider sessions</span></div><div class="detail-stack-actions"><button type="button" class="mbtn" onclick="window.open('https://myaccount.google.com/security','_blank','noopener')">Open sign-in security</button></div></div>
+              <div class="settings-card"><div class="sect"><h4>Advanced account security</h4><p class="mrow-sub">Passkeys, multi-factor authentication, and other-device session management must be changed through your identity provider.</p></div></div></section>
+
+          <section class="settings-section" data-settings-content="developer">
               <div class="settings-section-head"><h2>Developer</h2><p>Developer-specific identity and workspace state.</p></div>
               <div class="developer-banner">
                 <div class="developer-icon">&lt;/&gt;</div>
@@ -5859,45 +5517,10 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
               </div>
               <div class="settings-card">
                 <div class="sect"><h4>Developer account</h4><div class="mrow" style="border-bottom:0"><span>Authorized identity</span><b style="color:#fff">ekagraavn2003@gmail.com</b></div></div>
-                <div class="sect"><h4>Workspace runtime</h4><div class="mrow" style="border-bottom:0"><span>Frontend math</span><span style="color:var(--txt-2)">KaTeX in browser</span></div><div class="mrow" style="border-bottom:0"><span>API runtime</span><span style="color:var(--txt-2)">Google Cloud Run (Node.js)</span></div></div>
+                
               </div>
             </section>
 
-            <section class="settings-section" data-settings-content="memory"><div class="settings-section-head"><h2>Memory &amp; custom instructions</h2><p>Manage profile facts saved locally and used to personalize prompts.</p></div>
-              <div class="settings-card"><div class="mrow"><span><b>Enable memory</b><small class="mrow-sub">Use the profile details below to personalize responses.</small></span><label class="toggle"><input id="truxMemoryEnabledToggle" type="checkbox" onchange="saveProfilePreference('memory_enabled',this.checked)"><span class="slider"></span></label></div>
-                <div class="sect"><h4>Your nickname</h4><input id="truxMemoryNickname" class="instr" maxlength="80" placeholder="Nickname" oninput="saveProfileField(this,'nickname')"></div><div class="sect"><h4>Your occupation</h4><input id="truxMemoryOccupation" class="instr" maxlength="120" placeholder="Student, engineer, etc." oninput="saveProfileField(this,'occupation')"></div><div class="sect"><h4>More about you</h4><textarea id="truxMemoryAbout" class="instr" maxlength="3000" placeholder="Interests, preferences, and details you'd like TruX to remember." oninput="saveProfileField(this,'about')"></textarea></div>
-              </div><div class="settings-card"><div class="sect"><h4>Memory summary</h4><p class="mrow-sub">A summary of locally saved profile preferences, not an AI-generated history of every conversation.</p><button type="button" class="mbtn" onclick="refreshTruxMemorySummary()">Refresh memory summary</button><div id="truxMemorySummaryText" class="profile-info-panel">No profile details saved yet.</div></div></div>
-            </section>
-            <section class="settings-section" data-settings-content="account"><div class="settings-section-head"><h2>Account &amp; workspace</h2><p>Your signed-in identity and local account preferences.</p></div>
-              <div class="settings-card"><div class="sect"><h4>Profile name</h4><input id="truxAccountDisplayName" class="instr" maxlength="100" placeholder="Display name"><button type="button" class="mbtn" onclick="saveAccountProfile()">Save profile name</button></div><div class="mrow"><span>Email</span><b id="truxAccountEmailText">Not signed in</b></div><div class="mrow"><span>Phone number</span><b id="truxAccountPhoneText">Managed by sign-in provider</b></div>
-                <div class="sect"><h4>Age group</h4><select id="truxAccountAgeGroup" class="instr" onchange="saveProfilePreference('age_group',this.value)"><option value="">Prefer not to say</option><option value="teen">Teen</option><option value="adult">Adult</option></select><p class="mrow-sub">Stored on this device only; it does not change account verification.</p></div>
-              </div><div class="settings-card"><div class="sect"><h4>Workspace</h4><p id="truxWorkspaceSummary" class="mrow-sub">Personal TruX-Omni workspace</p><button type="button" class="mbtn" onclick="switchSettingsSection('usage')">Usage &amp; limits</button><button type="button" class="mbtn" onclick="confirmSignOut()">Log out</button></div></div>
-              <div class="settings-card"><div class="sect"><h4>Account deletion</h4><p class="mrow-sub">This TruX web app cannot securely delete your identity and all associated cloud data from this screen. Account identity is managed by the sign-in provider; contact support before requesting permanent deletion.</p><button type="button" class="mbtn danger" onclick="openProfileOption('reportbug')">Request account deletion help</button></div></div>
-            </section>
-            <section class="settings-section" data-settings-content="security"><div class="settings-section-head"><h2>Security &amp; login</h2><p>Sign-in security is managed by your authentication provider.</p></div>
-              <div class="settings-card"><div class="mrow"><span>Connected account</span><b id="truxSecurityEmailText">Not signed in</b></div><div class="mrow"><span>Security keys &amp; passkeys</span><span class="utxt">Managed by provider</span></div><div class="mrow"><span>Authenticator app</span><span class="utxt">Provider-managed</span></div><div class="mrow"><span>Text message MFA</span><span class="utxt">Provider-managed</span></div><div class="mrow"><span>Active sessions</span><span class="utxt">TruX cannot enumerate provider sessions</span></div><div class="detail-stack-actions"><button type="button" class="mbtn" onclick="window.open('https://myaccount.google.com/security','_blank','noopener')">Open sign-in security</button><button type="button" class="mbtn" onclick="confirmSignOut()">Log out here</button></div></div>
-              <div class="settings-card"><div class="sect"><h4>Advanced account security</h4><p class="mrow-sub">Passkeys, multi-factor authentication, and other-device session management must be changed through your identity provider.</p></div></div>
-            </section>
-            <section class="settings-section" data-settings-content="safety"><div class="settings-section-head"><h2>Safety &amp; wellbeing</h2><p>Adjust response guidance and optional focus reminders.</p></div>
-              <div class="settings-card"><div class="mrow"><span><b>Reduce sensitive content</b><small class="mrow-sub">Add an extra preference for cautious handling of sensitive requests.</small></span><label class="toggle"><input id="truxReduceSensitiveToggle" type="checkbox" onchange="saveProfilePreference('reduce_sensitive',this.checked)"><span class="slider"></span></label></div></div>
-              <div class="settings-card"><div class="sect"><h4>Time management</h4><div class="mrow"><span><b>Focus break reminder</b><small class="mrow-sub">Shows a reminder while TruX is open.</small></span><label class="toggle"><input id="truxFocusReminderToggle" type="checkbox" onchange="saveProfilePreference('focus_reminder',this.checked);applyTimeManagementSettings()"><span class="slider"></span></label></div><label class="profile-field-label" for="truxFocusInterval">Remind me after</label><select id="truxFocusInterval" class="instr" onchange="saveProfilePreference('focus_interval',this.value);applyTimeManagementSettings()"><option value="25">25 minutes</option><option value="45">45 minutes</option><option value="60">60 minutes</option><option value="90">90 minutes</option></select></div></div>
-            </section>
-            <section class="settings-section" data-settings-content="remote"><div class="settings-section-head"><h2>Remote control</h2><p>These options are shown for completeness, but remote pairing requires a connected desktop client that this TruX web workspace does not currently include.</p></div><div class="settings-card"><div class="sect"><h4>Connections</h4><p class="mrow-sub">No saved connections. Pairing requires a connected desktop client and cannot work from this PWA by itself.</p><button type="button" class="mbtn" disabled>Add connection · unavailable</button></div></div>
-              <div class="settings-card"><div class="sect"><h4>Composer</h4><label class="profile-field-label" for="truxFollowupBehavior">Follow-up behavior</label><select id="truxFollowupBehavior" class="instr" disabled aria-label="Follow-up behavior unavailable until remote pairing is implemented"><option selected>Queue</option><option>Send immediately</option></select><p class="mrow-sub">Remote follow-up queuing is not implemented in this web app.</p><button type="button" class="mbtn" disabled>Add Remote shortcut · unavailable</button></div></div><div class="settings-card"><div class="sect"><h4>Security</h4><div class="mrow"><span><b>Require device unlock</b><small class="mrow-sub">Requires an implemented remote session and device-level authentication.</small></span><label class="toggle"><input type="checkbox" disabled aria-label="Device unlock unavailable until remote control is implemented"><span class="slider"></span></label></div><p class="mrow-sub">Device-unlock and biometric protection are not available in the current PWA.</p></div></div></section>
-            <section class="settings-section" data-settings-content="storage"><div class="settings-section-head"><h2>Storage</h2><p>Estimates of locally stored chat data in this browser, not a browser quota report.</p></div><div class="settings-card"><div class="sect"><h4>Local workspace data</h4><div id="truxStorageSummary" class="profile-info-panel">Calculating local data…</div><button type="button" class="mbtn" onclick="updateTruxStorageSummary()">Refresh storage estimate</button></div></div><div class="settings-card"><div class="sect"><h4>Files &amp; images</h4><p class="mrow-sub">Image and file payloads stored in chat history are counted approximately; browser caches are excluded.</p></div></div></section>
-            <section class="settings-section" data-settings-content="privacy"><div class="settings-section-head"><h2>Privacy center</h2><p>Manage local data and understand which controls TruX can actually apply.</p></div>              <div class="settings-card">
-                <div class="sect"><h4>Location access</h4>
-                  <div class="mrow"><span><b>Let TruX use your location</b><small class="mrow-sub">Used for location-aware answers and research.</small></span><label class="toggle"><input id="locationAccessToggle" type="checkbox" onchange="toggleTruxLocationAccess(this.checked)"><span class="slider"></span></label></div>
-                  <div class="location-status" id="locationStatusText">Checking location permission…</div>
-                  <button class="mbtn" type="button" onclick="requestTruxLocation({interactive:true,force:true})">Refresh location access</button>
-                </div>
-              </div>
-
-              <div class="settings-card"><div class="mrow"><span><b>Apps with access</b><small class="mrow-sub">No contact syncing is implemented. Review connected tools before granting access.</small></span><button type="button" class="mbtn" onclick="openPluginsFromSettings()">Open plugins</button></div></div>
-              <div class="settings-card"><div class="sect"><h4>Export data</h4><button type="button" class="mbtn" onclick="exportTruxMemory()">Export workspace data</button><button type="button" class="mbtn" onclick="exportChatData()">Export chats</button></div></div>
-            </section>
-            <section class="settings-section" data-settings-content="ads"><div class="settings-section-head"><h2>Ads controls</h2><p>TruX currently does not serve ads or collect advertising-topic history.</p></div><div class="settings-card"><div class="mrow"><span>Ad history</span><span class="utxt">Not collected</span></div><div class="mrow"><span>Topics</span><span class="utxt">Not collected</span></div><div class="mrow"><span>Delete ad data</span><span class="utxt">No ad data stored</span></div><div class="mrow"><span>Personalize ads</span><span class="utxt">Ads are not enabled</span></div><div class="mrow"><span>Change plan to go ad-free</span><span class="utxt">No ads plan integration</span></div></div></section>
-            <section class="settings-section" data-settings-content="parental"><div class="settings-section-head"><h2>Parental controls</h2><p>TruX does not currently provide parent-linked account controls.</p></div><div class="settings-card"><div class="sect"><h4>Device-level controls</h4><p class="mrow-sub">Device or family-management services can provide restrictions. This page cannot create cross-account guardian links.</p></div></div></section>
           </div>
         </div>
       </section>
@@ -6025,6 +5648,34 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
 
     /* ============ Auth: sign-in wall only shown on demand ============ */
     let auth = null, provider = null, isSigningIn = false, firebaseMessaging = null, pushMessageBound = false;
+    let truxAuthStateReady = false;
+    let resolveTruxAuthStateReady;
+    const TRUX_AUTH_NOT_READY = {};
+    const truxAuthStateReadyPromise = new Promise(resolve => { resolveTruxAuthStateReady = resolve; });
+    function markTruxAuthStateReady(user) {
+      if (truxAuthStateReady) return;
+      truxAuthStateReady = true;
+      resolveTruxAuthStateReady(user || null);
+    }
+    async function waitForTruxAuthState(timeoutMs = 6500) {
+      if (truxAuthStateReady) return auth?.currentUser || null;
+      let timeoutId;
+      const result = await Promise.race([
+        truxAuthStateReadyPromise,
+        new Promise(resolve => { timeoutId = setTimeout(() => resolve(TRUX_AUTH_NOT_READY), timeoutMs); })
+      ]);
+      if (timeoutId) clearTimeout(timeoutId);
+      if (result === TRUX_AUTH_NOT_READY && !truxAuthStateReady) return undefined;
+      return auth?.currentUser || result || null;
+    }
+    function setLoginAuthMessage(message, isError = true) {
+      const node = getEl("loginAuthError");
+      if (!node) return;
+      node.textContent = String(message || "");
+      node.hidden = !message;
+      node.style.borderColor = isError ? "rgba(255,110,110,.28)" : "rgba(125,220,165,.28)";
+      node.style.color = isError ? "#ffb5b5" : "#b7f3ca";
+    }
     const TRUX_DEVELOPER_EMAIL = "ekagraavn2003@gmail.com";
     function isTruxDeveloper(user) {
       return !!user && String(user.email || "").trim().toLowerCase() === TRUX_DEVELOPER_EMAIL;
@@ -6111,23 +5762,23 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       }
     }
 
-    async function refreshTruxProfileInfo(user = auth?.currentUser) {
-      if (!user) { updateTruxProfileUI(null); return; }
-      updateTruxProfileUI(user);
-      try {
-        await user.reload();
-        const current = auth?.currentUser;
-        if (!current || current.uid !== user.uid) return;
-        updateTruxProfileUI(current);
-      } catch (error) {
-        console.warn("TruX profile refresh deferred:", error?.message || error);
-      }
+    function refreshTruxProfileInfo(user = auth?.currentUser) {
+      // Firebase Auth already supplies immediate profile fields; auth changes refresh this UI.
+      updateTruxProfileUI(user || null);
     }
 
     async function initFirebase() {
       const fallback = { apiKey: "AIzaSyAs_GDrzlBaucHfiff0Y6cA8GVHjFTA62Q", authDomain: "trux-ai.firebaseapp.com", projectId: "trux-ai", storageBucket: "trux-ai.firebasestorage.app", messagingSenderId: "59313097411", appId: "1:59313097411:web:32e4158bfb733fa7cfb076" };
-      try { const r = await fetch("/api/firebase-config", { cache: "no-store" }); firebase.initializeApp(await r.json()); }
-      catch { firebase.initializeApp(fallback); }
+      try {
+        const response = await fetch("/api/firebase-config", { cache: "no-store" });
+        if (!response.ok) throw new Error("Firebase config endpoint returned " + response.status);
+        const config = await response.json();
+        if (!config || !config.apiKey || !config.projectId || !config.authDomain) throw new Error("Firebase configuration is incomplete");
+        firebase.initializeApp(config);
+      } catch (error) {
+        console.warn("Using configured Firebase fallback:", error?.message || error);
+        firebase.initializeApp(fallback);
+      }
       auth = firebase.auth();
       provider = new firebase.auth.GoogleAuthProvider();
       try {
@@ -6148,6 +5799,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       } catch {}
       
       auth.onAuthStateChanged(u => {
+        markTruxAuthStateReady(u);
         applyDeveloperIdentity(u);
         updateTruxProfileUI(u);
         if(u) {
@@ -6286,11 +5938,70 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
     } catch {}
 
     function handleGoogleLogin() {
-      if(!auth || isSigningIn) return;
-      isSigningIn = true;
+      if (!auth || isSigningIn) { setLoginAuthMessage("Sign-in is still initializing. Please try again."); return; }
+      isSigningIn = true; setLoginAuthMessage("");
+      const button = getEl("loginGoogleBtn"); if (button) button.disabled = true;
       auth.signInWithPopup(provider)
-        .catch(e => toast("Login failed: " + e.message, "err"))
-        .finally(() => { isSigningIn = false; });
+        .then(() => { setLoginAuthMessage(""); closeLoginWall(); })
+        .catch(error => {
+          const code = String(error?.code || "");
+          if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") setLoginAuthMessage("Sign-in was cancelled.", false);
+          else if (code === "auth/unauthorized-domain") setLoginAuthMessage("This app domain is not authorized in Firebase Authentication.");
+          else setLoginAuthMessage("Google sign-in failed. Please try again or use email and password.");
+        })
+        .finally(() => { isSigningIn = false; if (button) button.disabled = false; });
+    }
+
+    async function handleEmailPasswordAuth(event, createAccount = false) {
+      if (event && typeof event.preventDefault === "function") event.preventDefault();
+      if (!auth || isSigningIn) { setLoginAuthMessage("Sign-in is still initializing. Please try again."); return; }
+      const email = String(getEl("loginEmail")?.value || "").trim();
+      const password = String(getEl("loginPassword")?.value || "");
+      if (!email || !password) { setLoginAuthMessage("Enter your email and password."); return; }
+      if (createAccount && password.length < 6) { setLoginAuthMessage("Choose a password with at least 6 characters."); return; }
+      isSigningIn = true; setLoginAuthMessage("");
+      const controls = Array.from(getEl("loginEmailForm")?.querySelectorAll("button,input") || []);
+      const googleButton = getEl("loginGoogleBtn");
+      controls.forEach(control => { control.disabled = true; });
+      if (googleButton) googleButton.disabled = true;
+      try {
+        if (createAccount) await auth.createUserWithEmailAndPassword(email, password);
+        else await auth.signInWithEmailAndPassword(email, password);
+        if (getEl("loginPassword")) getEl("loginPassword").value = "";
+        setLoginAuthMessage(""); closeLoginWall();
+      } catch (error) {
+        const code = String(error?.code || "");
+        let message = "Sign-in failed. Check your details and try again.";
+        if (code === "auth/invalid-email") message = "Enter a valid email address.";
+        else if (code === "auth/invalid-credential" || code === "auth/user-not-found" || code === "auth/wrong-password") message = "That email and password do not match.";
+        else if (code === "auth/email-already-in-use") message = "An account already uses this email. Sign in instead.";
+        else if (code === "auth/weak-password") message = "Choose a stronger password with at least 6 characters.";
+        else if (code === "auth/operation-not-allowed") message = "Email/password sign-in is not enabled in Firebase Authentication.";
+        else if (code === "auth/too-many-requests") message = "Too many attempts. Please wait a little and try again.";
+        else if (code === "auth/network-request-failed") message = "Network error. Check your connection and try again.";
+        setLoginAuthMessage(message);
+      } finally {
+        isSigningIn = false; controls.forEach(control => { control.disabled = false; });
+        if (googleButton) googleButton.disabled = false;
+      }
+    }
+
+    async function handlePasswordReset() {
+      if (!auth || isSigningIn) { setLoginAuthMessage("Sign-in is still initializing. Please try again."); return; }
+      const email = String(getEl("loginEmail")?.value || "").trim();
+      if (!email) { setLoginAuthMessage("Enter your email above, then choose Forgot password."); getEl("loginEmail")?.focus(); return; }
+      setLoginAuthMessage("");
+      try {
+        await auth.sendPasswordResetEmail(email);
+        setLoginAuthMessage("Password reset email sent. Check your inbox.", false);
+      } catch (error) {
+        const code = String(error?.code || "");
+        const message = code === "auth/invalid-email" ? "Enter a valid email address."
+          : code === "auth/user-not-found" ? "No account was found for that email."
+          : code === "auth/operation-not-allowed" ? "Email/password sign-in is not enabled in Firebase Authentication."
+          : "Could not send a reset email. Please try again.";
+        setLoginAuthMessage(message);
+      }
     }
 
     /* =====================================================================
@@ -6542,7 +6253,11 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
     }
     applyTruxAccent(store.getItem("trux_accent") || "blue", false);
     
-    void initFirebase().catch(() => {});
+    void initFirebase().catch(error => {
+      console.warn("TruX Firebase initialization failed:", error?.message || error);
+      markTruxAuthStateReady(null);
+      updateTruxProfileUI(null);
+    });
 
     function updateLocationSettingUI() {
       const toggle=getEl("locationAccessToggle"), status=getEl("locationStatusText");
@@ -6675,7 +6390,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
     }
 
     function openProfileOption(key){
-      const settingsSections={usage:"usage",personalization:"personalization",notifications:"notifications",memory:"memory",appearance:"appearance",general:"general",voice:"voice",dataControls:"data",developer:"developer",account:"account",workspace:"account",upgrade:"usage",security:"security",safety:"safety",remote:"remote",storage:"storage",privacy:"privacy",ads:"ads",parental:"parental"};
+      const settingsSections={usage:"usage",personalization:"personalization",notifications:"voice",memory:"personalization",appearance:"appearance",general:"general",voice:"voice",dataControls:"data",developer:"developer",account:"account",workspace:"account",upgrade:"usage",security:"account",safety:"personalization",remote:"data",storage:"data",privacy:"data",ads:"data",parental:"personalization",avatar:"account"};
       if(key==="plugins"){
         closeProfileOption();
         closeProfileModal();
@@ -7196,9 +6911,15 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
     function resetAllSettings() { if(confirm("Reset all settings?")) { ["trux_custom_instructions","trux_auto_read","trux_ambient_glow","trux_tts_rate","trux_home_look","trux_location_enabled","trux_location_granted","trux_location_prompted","trux_avatar_override","trux_theme","trux_profile_display_name",...TRUX_PROFILE_PREFERENCES.map(k=>"trux_"+k),"trux_age_group","trux_dictation_language","trux_speech_voice","trux_dictation_history_items",...TRUX_NOTIFICATION_CATEGORIES.map(k=>"trux_notification_cat_"+k)].forEach(k => store.removeItem(k)); loadSettings(); } }
     function clearAllHistory() { if(confirm("Delete all local chats?")) { chatSessions = {}; store.removeItem("trux_chats"); startNewChat(); closeSettingsModal(); } }
 
-    function handleAuthAction() {
-      if(!auth) return;
-      if(!auth.currentUser) return openLoginWall();
+    async function handleAuthAction() {
+      if (!truxAuthStateReady) {
+        const restoredUser = await waitForTruxAuthState();
+        if (restoredUser === undefined && !truxAuthStateReady) {
+          toast("Your sign-in session is still loading. Please try again.", "err");
+          return;
+        }
+      }
+      if (!auth?.currentUser) return openLoginWall();
       closeProfileOption();
       const user = auth.currentUser;
       updateTruxProfileUI(user);
@@ -7220,7 +6941,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
     }
     function switchSettingsSection(name) {
       if (String(name || "") === "home") { showSettingsHome(); return; }
-      const validSections = ["general","appearance","voice","personalization","notifications","usage","data","developer","memory","account","security","safety","remote","storage","privacy","ads","parental"];
+      const validSections = ["general","appearance","voice","personalization","usage","data","account","developer"];
       const requested = String(name || "general");
       const hasSection = validSections.includes(requested) &&
         Array.from(document.querySelectorAll("[data-settings-content]")).some(section => section.getAttribute("data-settings-content") === requested);
@@ -10677,11 +10398,15 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       try {
         if (typeof navigator.vibrate === "function") navigator.vibrate(0);
       } catch (_) {}
-      // Sign-in wall appears only when the person actually tries to send a message.
-      if(!auth?.currentUser) {
-        openLoginWall();
-        return;
+      // Wait for Firebase to restore a saved session before showing sign-in.
+      if (!truxAuthStateReady) {
+        const restoredUser = await waitForTruxAuthState();
+        if (restoredUser === undefined && !truxAuthStateReady) {
+          toast("Still restoring your sign-in session. Please try sending again.", "err");
+          return;
+        }
       }
+      if (!auth?.currentUser) { openLoginWall(); return; }
 
       let promptInput = getEl("promptInput");
       let basePrompt = promptInput.value.trim();
