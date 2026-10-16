@@ -1485,7 +1485,7 @@
     #attachmentMenu .trux-plus-item small{ display: block; margin-top: 3px; color: var(--txt-4); font-size: 9px; line-height: 1.25; }
     #attachmentMenu .trux-plus-item:hover{ background: #282828; color: #fff; border-color: rgba(255,255,255,.12); }
     #attachmentMenu .trux-plus-item.active{ background: var(--acc-soft); color: #fff; border-color: var(--acc-line); }
-    #attachmentMenu .trux-plus-item.active > span:first-child{ color: #cbd2ff; }
+    #attachmentMenu .trux-plus-item.active > span:first-child{ color: #80c9ff; }
     #attachmentMenu .trux-plus-sep{ height: 1px; min-height: 1px; background: rgba(255,255,255,.075); margin: 5px 2px 8px; }
     @media (min-width: 769px){
       #attachmentMenu{
@@ -2493,7 +2493,7 @@
 .notebook-item b{font-size:16px;font-weight:560}.recent-section{margin-top:33px}
 .history{display:flex!important;flex-direction:column!important;gap:4px!important;overflow:visible!important;padding:0 0 20px!important;margin:0!important;min-height:0!important}
 .history-head{font-size:10px!important;padding:14px 17px 7px!important}.hist{min-height:54px;display:flex;align-items:center;padding:0 17px!important;border-radius:15px!important;font-size:16px!important;color:var(--txt-2)!important}
-.hist.active{background:rgba(255,255,255,.055)!important;color:#fff!important}.hist.active::before{left:4px!important;width:2px!important}.empty{padding:16px 17px!important;font-size:14px!important}
+.hist.active{background:rgba(74,144,226,.12)!important;color:#f4f9ff!important}.hist.active::before{left:4px!important;width:2px!important}.empty{padding:16px 17px!important;font-size:14px!important}
 .profile{flex:0 0 auto;min-height:72px;margin-top:8px;padding:8px 12px 8px 10px!important;border-radius:18px!important;background:rgba(16,16,20,.92)!important;border:1px solid var(--line)!important;box-shadow:0 -8px 30px rgba(0,0,0,.18)}
 .avatar{width:48px!important;height:48px!important;border-radius:13px!important;flex-basis:48px!important}.profile-info b{font-size:16px!important}.profile-info small{font-size:12px!important}
 .profile-chevron{width:22px;height:22px;fill:none;stroke:var(--txt-4);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -3180,7 +3180,7 @@ body.chat-session-active #welcomeScreen{display:none!important}
   padding:9px 10px!important;border-radius:12px!important;color:#d5d5d5!important;background:transparent!important;
   border:1px solid transparent!important;text-align:left!important
 }
-#modelDropdown .model-item:hover, #modelDropdown .model-item.active{background:#252525!important;border-color:rgba(255,255,255,.07)!important;color:#fff!important}
+#modelDropdown .model-item:hover, #modelDropdown .model-item.active{background:rgba(74,144,226,.12)!important;border-color:rgba(128,201,255,.32)!important;color:#f4f9ff!important}
 #modelDropdown .thinking-choice-wrap{margin-top:7px!important;padding:10px 8px 8px!important;border-top:1px solid rgba(255,255,255,.08)!important}
 #modelDropdown .thinking-choice{
   width:100%!important;min-height:40px!important;padding:8px 9px!important;display:flex!important;
@@ -3307,7 +3307,7 @@ body.incognito-mode .topbar{grid-template-columns:minmax(46px,1fr) auto minmax(4
   align-items:start!important;gap:10px!important;padding:10px!important;border-radius:12px!important;color:#d5d5d5!important;
   background:transparent!important;border:1px solid transparent!important;text-align:left!important;overflow:hidden!important;
 }
-#modelDropdown .model-item:hover, #modelDropdown .model-item.active{background:#252525!important;border-color:rgba(255,255,255,.07)!important;color:#fff!important}
+#modelDropdown .model-item:hover, #modelDropdown .model-item.active{background:rgba(74,144,226,.12)!important;border-color:rgba(128,201,255,.32)!important;color:#f4f9ff!important}
 #modelDropdown .model-icon{width:30px!important;height:30px!important;margin-top:1px!important}
 #modelDropdown .model-info{min-width:0!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:3px!important;overflow:hidden!important;padding:1px 0!important}
 #modelDropdown .model-info b{display:block!important;width:100%!important;font-size:14px!important;line-height:1.2!important;white-space:normal!important}
@@ -10213,6 +10213,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
     let truxHomeGreetingTimers = [];
     let truxHomePromptRequest = null;
     let truxHomePromptLastLoadedAt = 0;
+    let truxHomePromptRetryCount = 0;
     let truxHomeBlueWaveInterval = null;
 
     function clearHomeGreetingTimers() {
@@ -10263,11 +10264,19 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         if (!document.body.classList.contains("home-active")) return;
         if (!Array.isArray(payload.prompts) || payload.prompts.length !== 3) return;
         renderHomePrompts(payload.prompts);
-        if (panel.children.length === 3) truxHomePromptLastLoadedAt = Date.now();
+        if (panel.children.length === 3) {
+          truxHomePromptLastLoadedAt = Date.now();
+          truxHomePromptRetryCount = 0;
+        }
       })().catch(error => {
         console.debug("TruX home prompts unavailable:", error?.message || error);
-        if (document.body.classList.contains("home-active") && !truxHomePromptLastLoadedAt) {
-          const retryDelay = 1200;
+        if (
+          document.body.classList.contains("home-active") &&
+          !truxHomePromptLastLoadedAt &&
+          truxHomePromptRetryCount < 2
+        ) {
+          truxHomePromptRetryCount += 1;
+          const retryDelay = 1200 * truxHomePromptRetryCount;
           const timer = setTimeout(() => {
             if (document.body.classList.contains("home-active")) void loadHomePrompts();
           }, retryDelay);
