@@ -5385,10 +5385,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
               <div class="settings-card"><div class="sect"><h4>Theme</h4><label class="profile-field-label" for="truxThemeSelect">App appearance</label><select id="truxThemeSelect" class="instr" onchange="applyTruxTheme(this.value)"><option value="dark">Dark</option><option value="light">Light</option><option value="oled">OLED black</option><option value="dracula">Dracula</option><option value="nord">Nord</option><option value="solarized">Solarized</option><option value="rose-pine">Rose Pine</option><option value="monokai">Monokai</option><option value="hacker">Hacker</option></select></div></div>
 
               <div class="settings-card">
-                <div class="sect"><h4>Home UI layout</h4>
-                  <p class="mrow-sub" style="margin:-3px 0 12px">Default keeps the current TruX home. Every other preset changes the layout and visual language instead of only recoloring it.</p>
-                  <div class="home-ui-fixed-note">Standard TruX home surface</div>
-                  <div class="accent-palette">
+                <div class="sect"><div class="accent-palette">
                     <h4>Accent colour</h4>
                     <div class="accent-options">
                       <button type="button" class="accent-option" data-accent-option="blue" onclick="applyTruxAccent(&quot;blue&quot;)" aria-label="Blue"><i></i></button>
@@ -5410,9 +5407,6 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
               <div class="settings-card">
                 <div class="mrow"><span>Ambient Glow</span><label class="toggle"><input id="neonGlowToggle" type="checkbox" checked onchange="toggleAmbientGlow(this)"><span class="slider"></span></label></div>
               </div>
-              <div class="settings-card">
-                
-              </div>
             </section>
 
           <section class="settings-section" data-settings-content="voice">
@@ -5425,10 +5419,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
                 <label class="profile-field-label" for="truxDictationLanguage">Dictation language</label><select id="truxDictationLanguage" class="instr" onchange="saveDictationLanguage(this.value)"><option value="auto">Auto-detect (device language)</option><option value="en-US">English (United States)</option><option value="en-GB">English (United Kingdom)</option><option value="hi-IN">Hindi</option><option value="fr-FR">French</option><option value="es-ES">Spanish</option><option value="de-DE">German</option><option value="ja-JP">Japanese</option></select>
                 <div class="mrow"><span><b>Save dictation history on this device</b><small class="mrow-sub">Off by default. Only final recognized phrases are saved, up to 30 entries.</small></span><label class="toggle"><input id="truxDictationHistoryToggle" type="checkbox" onchange="saveProfilePreference('dictation_history',this.checked)"><span class="slider"></span></label></div><button class="mbtn" type="button" onclick="showDictationHistory()">View dictation history</button><div id="truxDictationHistoryList" class="dictation-history-list" aria-live="polite"></div>
               </div></div>
-              <div class="settings-card"><div class="sect"><h4>Live voice options</h4><div class="mrow"><span>Live voice model</span><span class="utxt">Managed by TruX Live</span></div><div class="mrow"><span>Background conversations</span><span class="utxt">Not supported by this web workspace</span></div><div class="mrow"><span>Use as default assistant</span><span class="utxt">Set by your device, not by a web page</span></div></div></div>
-
-            
-<div class="settings-card">
+              <div class="settings-card">
                 <div class="mrow"><span><b>Response notifications</b><small class="mrow-sub">Text, image and video completion alerts.</small></span><label class="toggle"><input id="notificationsToggle" type="checkbox" onchange="toggleTruxNotificationsSetting(this.checked)"><span class="slider"></span></label></div>
                 <div class="location-status" id="notificationStatusText">Checking notification permission…</div>
               </div></section>
