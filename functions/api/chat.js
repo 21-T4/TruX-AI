@@ -1216,6 +1216,86 @@ async function buildConversationHistory(history, signal, env, options = {}) {
 }
 
 /* =========================================================
+   LOW-COST HOME PROMPT SUGGESTIONS
+   Generated independently of normal chat streaming and cached briefly.
+   ========================================================= */
+let truxHomePromptsCache = null;
+let truxHomePromptsCacheAt = 0;
+let truxHomePromptsInFlight = null;
+
+async function getTruxHomePrompts(env) {
+  const now = Date.now();
+  if (Array.isArray(truxHomePromptsCache) && now - truxHomePromptsCacheAt < 5 * 60 * 1000) {
+    return truxHomePromptsCache;
+  }
+  if (truxHomePromptsInFlight) return truxHomePromptsInFlight;
+
+  truxHomePromptsInFlight = (async () => {
+    const response = await fetchVertexGemini({
+      model: 'gemini-3.6-flash',
+      contents: [{
+        role: 'user',
+        parts: [{
+          text: [
+            'Create exactly three fresh, concise example questions for the blank home screen of a helpful AI workspace.',
+            'Make them varied across practical everyday help, learning or explanation, and creative thinking.',
+            'Each should sound like a natural thing a person might type, use 5 to 12 words, and avoid referring to personal details.',
+            'Avoid generic labels, numbering, markdown, emojis, and repeated ideas.',
+            'Return only valid JSON in this shape: {"prompts":["question one","question two","question three"]}.',
+            'Vary the ideas between generations. Date for variety: ' + new Date().toISOString().slice(0, 10) + '.'
+          ].join(' ')
+        }]
+      }],
+      systemInstruction: 'You write short, useful AI-home-screen prompt suggestions. Follow the requested JSON shape exactly. Do not add markdown fences or commentary.',
+      generationConfig: {
+        temperature: 0.9,
+        maxOutputTokens: 160,
+        responseMimeType: 'application/json'
+      },
+      env
+    });
+
+    const raw = String(
+      response?.text ||
+      response?.candidates?.[0]?.content?.parts
+        ?.filter(part => typeof part?.text === 'string' && part?.thought !== true)
+        .map(part => part.text)
+        .join('') ||
+      ''
+    ).trim();
+
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      const start = raw.indexOf('{');
+      const end = raw.lastIndexOf('}');
+      if (start < 0 || end <= start) throw new Error('Home prompt model returned invalid JSON.');
+      parsed = JSON.parse(raw.slice(start, end + 1));
+    }
+
+    const candidates = Array.isArray(parsed) ? parsed : parsed?.prompts;
+    const prompts = Array.isArray(candidates)
+      ? [...new Set(candidates
+          .map(value => String(value || '').replace(/\s+/g, ' ').trim())
+          .filter(value => value.length >= 8 && value.length <= 100))]
+          .slice(0, 3)
+      : [];
+
+    if (prompts.length !== 3) throw new Error('Home prompt model returned fewer than three valid prompts.');
+    truxHomePromptsCache = prompts;
+    truxHomePromptsCacheAt = Date.now();
+    return prompts;
+  })();
+
+  try {
+    return await truxHomePromptsInFlight;
+  } finally {
+    truxHomePromptsInFlight = null;
+  }
+}
+
+/* =========================================================
    MAIN POST HANDLER
    ========================================================= */
 
@@ -1245,6 +1325,21 @@ export async function onRequestPost(context) {
       githubBranch,
       notifyOnComplete = true
     } = body;
+
+    if (mode === 'home-prompts') {
+      try {
+        const prompts = await getTruxHomePrompts(env);
+        return Response.json({ prompts }, {
+          headers: { 'Cache-Control': 'no-store' }
+        });
+      } catch (error) {
+        console.warn('TruX home prompt generation failed:', error?.message || error);
+        return Response.json({ prompts: [] }, {
+          status: 503,
+          headers: { 'Cache-Control': 'no-store' }
+        });
+      }
+    }
 
     /*
      * Authentication is intentionally NOT enforced here.
