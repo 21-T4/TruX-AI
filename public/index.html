@@ -3016,18 +3016,18 @@ body.plugins-page-active #welcomeScreen, body.plugins-page-active #chatContainer
   background:
     radial-gradient(ellipse 72% 48% at 50% 88%,rgba(64,139,255,.34) 0%,rgba(43,95,220,.20) 36%,rgba(0,0,0,0) 72%),
     radial-gradient(ellipse 45% 30% at 18% 72%,rgba(80,190,255,.13) 0%,rgba(0,0,0,0) 70%);
-  filter:blur(34px);opacity:0;transform:translate3d(0,22px,0) scale(.94);
+  filter:blur(34px);opacity:.22;transform:translate3d(0,22px,0) scale(.94);
   will-change:opacity,transform;
 }
 .trux-home-v2.is-blue-wave::before{
   animation:truxHomeBlueWave 8.8s cubic-bezier(.22,.61,.36,1) both!important;
 }
 @keyframes truxHomeBlueWave{
-  0%{opacity:0;transform:translate3d(0,26px,0) scale(.93) rotate(-2deg)}
-  18%{opacity:.9;transform:translate3d(0,4px,0) scale(1) rotate(0)}
-  48%{opacity:.72;transform:translate3d(0,-7px,0) scale(1.06) rotate(1.5deg)}
-  76%{opacity:.32;transform:translate3d(0,-2px,0) scale(1.02) rotate(-1deg)}
-  100%{opacity:0;transform:translate3d(0,-12px,0) scale(1.08) rotate(0)}
+  0%{opacity:.22;transform:translate3d(0,24px,0) scale(.94) rotate(-2deg)}
+  18%{opacity:.78;transform:translate3d(0,4px,0) scale(1) rotate(0)}
+  48%{opacity:.64;transform:translate3d(0,-7px,0) scale(1.06) rotate(1.5deg)}
+  76%{opacity:.38;transform:translate3d(0,-2px,0) scale(1.02) rotate(-1deg)}
+  100%{opacity:.22;transform:translate3d(0,-12px,0) scale(1.08) rotate(0)}
 }
 .trux-home-content{position:absolute;inset:0;z-index:1;pointer-events:none!important}
 .trux-home-sequence{
@@ -3076,7 +3076,7 @@ body.plugins-page-active #welcomeScreen, body.plugins-page-active #chatContainer
   .trux-home-prompt{padding-top:5px;padding-bottom:5px;font-size:14px!important}
 }
 @media(prefers-reduced-motion:reduce){
-  .trux-home-v2.is-blue-wave::before{animation:none!important;opacity:0!important}
+  .trux-home-v2.is-blue-wave::before{animation:none!important;opacity:.22!important}
   .trux-home-sequence-text{transition:none!important}
 }
 
@@ -6166,7 +6166,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       document.querySelectorAll("[data-accent-option]").forEach(function(el){ el.classList.toggle("active", el.dataset.accentOption === next); });
       if(persist !== false) store.setItem("trux_accent", next);
     }
-    applyTruxAccent(store.getItem("trux_accent") || "blue", false);
+    applyTruxAccent(store.getItem("trux_accent") === "yellow" ? "blue" : (store.getItem("trux_accent") || "blue"), false);
     
     void initFirebase().catch(error => {
       console.warn("TruX Firebase initialization failed:", error?.message || error);
@@ -10266,6 +10266,13 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         if (panel.children.length === 3) truxHomePromptLastLoadedAt = Date.now();
       })().catch(error => {
         console.debug("TruX home prompts unavailable:", error?.message || error);
+        if (document.body.classList.contains("home-active") && !truxHomePromptLastLoadedAt) {
+          const retryDelay = 1200;
+          const timer = setTimeout(() => {
+            if (document.body.classList.contains("home-active")) void loadHomePrompts();
+          }, retryDelay);
+          truxHomeGreetingTimers.push(timer);
+        }
       }).finally(() => {
         truxHomePromptRequest = null;
       });
@@ -10327,7 +10334,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       }, 3000);
 
       startHomeBlueWaveCycle();
-      schedule(() => { void loadHomePrompts(); }, 450);
+      void loadHomePrompts();
     }
 
     const TRUX_CODE_IDLE_LINES = [
