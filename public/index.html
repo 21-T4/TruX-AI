@@ -3271,7 +3271,7 @@ body.chat-session-active:not(.coding-workspace) #codeChatContainer{display:none!
 .trux-home-content{position:absolute;inset:0;z-index:1;pointer-events:none!important}
 .trux-home-sequence{
   position:absolute!important;inset:0!important;display:flex!important;align-items:center!important;justify-content:center!important;
-  padding:0 22px 78px!important;pointer-events:none!important;
+  padding:0 22px 150px!important;pointer-events:none!important;
 }
 .trux-home-sequence-text{
   width:min(840px,100%);margin:0!important;padding:0!important;
@@ -3285,15 +3285,15 @@ body.chat-session-active:not(.coding-workspace) #codeChatContainer{display:none!
 .trux-home-sequence-text.is-visible{opacity:1!important;transform:none!important}
 .trux-home-sequence-text.is-replacing{opacity:0!important;transform:translateY(-4px)!important}
 .trux-home-prompts{
-  position:absolute;left:50%;bottom:clamp(24px,6vh,64px);transform:translateX(-50%);
-  width:min(620px,calc(100% - 36px));display:flex;flex-direction:column;gap:3px;
+  position:absolute;left:50%;bottom:clamp(16px,3vh,28px);transform:translateX(-50%);
+  width:min(540px,calc(100% - 44px));display:flex;flex-direction:column;gap:2px;
   pointer-events:auto!important;
 }
 .trux-home-prompts[hidden]{display:none!important}
 .trux-home-prompt{
-  width:100%;display:flex;align-items:center;gap:15px;padding:9px 8px;
+  width:100%;display:flex;align-items:center;gap:12px;padding:7px 8px;
   border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;
-  color:#d2d2d2!important;text-align:left!important;font:400 clamp(17px,2.5vw,20px)/1.5 var(--font-body)!important;
+  color:#d2d2d2!important;text-align:left!important;font:400 clamp(15px,1.9vw,17px)/1.35 var(--font-body)!important;
   cursor:pointer;transition:color .2s ease,transform .2s ease!important;
 }
 .trux-home-prompt:hover{color:#ffffff!important;transform:translateX(3px)}
@@ -3304,15 +3304,15 @@ body.chat-session-active:not(.coding-workspace) #codeChatContainer{display:none!
 }
 .trux-home-prompt-label{min-width:0;overflow-wrap:anywhere}
 @media(max-width:600px){
-  .trux-home-sequence{padding:0 20px 96px!important}
+  .trux-home-sequence{padding:0 20px 150px!important}
   .trux-home-sequence-text{font-size:clamp(34px,8.4vw,44px)!important}
-  .trux-home-prompts{width:calc(100% - 30px);bottom:clamp(24px,6vh,56px);gap:0}
-  .trux-home-prompt{gap:12px;padding:9px 5px;font-size:18px!important}
+  .trux-home-prompts{width:calc(100% - 44px);bottom:clamp(16px,3vh,26px);gap:2px}
+  .trux-home-prompt{gap:10px;padding:7px 5px;font-size:15px!important}
 }
 @media(max-height:650px){
-  .trux-home-sequence{padding-bottom:140px!important}
-  .trux-home-prompts{bottom:4px;gap:0}
-  .trux-home-prompt{padding-top:6px;padding-bottom:6px;font-size:17px!important}
+  .trux-home-sequence{padding-bottom:158px!important}
+  .trux-home-prompts{bottom:8px;gap:0}
+  .trux-home-prompt{padding-top:5px;padding-bottom:5px;font-size:14px!important}
 }
 @media(prefers-reduced-motion:reduce){
   .trux-home-sequence-text{transition:none!important}
@@ -5140,9 +5140,9 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
             <h1 class="trux-home-sequence-text is-visible" id="truxHomeSequenceText">Hello</h1>
           </div>
           <div class="trux-home-prompts" id="truxHomePrompts" aria-label="Suggested prompts">
-            <button class="trux-home-prompt" type="button" onclick="quickPrompt('Can you explain a difficult concept simply?')"><span class="trux-home-prompt-mark" aria-hidden="true">↗</span><span class="trux-home-prompt-label">Can you explain a difficult concept simply?</span></button>
-            <button class="trux-home-prompt" type="button" onclick="quickPrompt('How can I organize my tasks this week?')"><span class="trux-home-prompt-mark" aria-hidden="true">↗</span><span class="trux-home-prompt-label">How can I organize my tasks this week?</span></button>
-            <button class="trux-home-prompt" type="button" onclick="quickPrompt('What are some creative ideas for a new project?')"><span class="trux-home-prompt-mark" aria-hidden="true">↗</span><span class="trux-home-prompt-label">What are some creative ideas for a new project?</span></button>
+            <button class="trux-home-prompt" type="button" onclick="quickPrompt('Plan meals from my pantry')"><span class="trux-home-prompt-mark" aria-hidden="true">↗</span><span class="trux-home-prompt-label">Plan meals from my pantry</span></button>
+            <button class="trux-home-prompt" type="button" onclick="quickPrompt('Explain quantum computing simply')"><span class="trux-home-prompt-mark" aria-hidden="true">↗</span><span class="trux-home-prompt-label">Explain quantum computing simply</span></button>
+            <button class="trux-home-prompt" type="button" onclick="quickPrompt('Name a community garden')"><span class="trux-home-prompt-mark" aria-hidden="true">↗</span><span class="trux-home-prompt-label">Name a community garden</span></button>
           </div>
         </div>
       </section>
