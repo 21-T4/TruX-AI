@@ -2949,6 +2949,15 @@ body{
   min-width:0!important;margin:0!important;padding:0!important;
   overflow:hidden!important;background:#000000!important;background-image:none!important;
 }
+/* One page background supplies the low blue glow behind the floating composer.
+   Keep it on .main so there is no separate backdrop under the typing bar. */
+body.home-active:not(.chat-session-active):not(.coding-workspace):not([data-media-mode]):not(.plugins-page-active) .main{
+  background-color:#000000!important;
+  background-image:
+    radial-gradient(ellipse 118% 76% at 50% 104%,rgba(34,78,208,.60) 0%,rgba(20,48,150,.42) 35%,rgba(8,22,70,.22) 61%,rgba(0,0,0,0) 86%),
+    radial-gradient(ellipse 72% 44% at 8% 98%,rgba(34,92,204,.24) 0%,rgba(0,0,0,0) 76%),
+    radial-gradient(ellipse 72% 44% at 92% 98%,rgba(34,92,204,.24) 0%,rgba(0,0,0,0) 76%)!important;
+}
 .topbar{
   position:relative!important;z-index:100!important;
   flex:0 0 60px!important;width:100%!important;height:60px!important;
@@ -3002,15 +3011,8 @@ body.plugins-page-active #welcomeScreen, body.plugins-page-active #chatContainer
 .trux-home-v2{
   position:relative!important;flex:1 1 auto!important;min-height:0!important;
   width:100%!important;display:flex!important;align-items:center!important;justify-content:center!important;
-  overflow:hidden!important;background:#000000!important;color:#f2f2f2!important;isolation:isolate!important;
-}
-.trux-home-v2::before{
-  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
-  background:
-    radial-gradient(ellipse 118% 60% at 50% 48%,rgba(34,78,208,.32) 0%,rgba(20,48,150,.20) 35%,rgba(8,22,70,.08) 58%,rgba(0,0,0,0) 84%),
-    radial-gradient(ellipse 72% 28% at 8% 68%,rgba(34,92,204,.12) 0%,rgba(0,0,0,0) 76%),
-    radial-gradient(ellipse 72% 28% at 92% 68%,rgba(34,92,204,.12) 0%,rgba(0,0,0,0) 76%);
-  opacity:.9;filter:blur(34px);transform:none;
+  overflow:hidden!important;background:transparent!important;background-image:none!important;
+  color:#f2f2f2!important;isolation:isolate!important;
 }
 
 .trux-code-v2{
