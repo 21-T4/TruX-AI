@@ -4931,7 +4931,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
               var greeting = document.getElementById("truxHomeSequenceText");
               if(greeting) {
                 greeting.hidden = false;
-                greeting.textContent = "How can I help you";
+                greeting.textContent = "How can I help you?";
                 greeting.classList.remove("is-replacing");
                 greeting.classList.add("is-visible");
               }
@@ -10360,7 +10360,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         text.classList.add("is-replacing");
         schedule(() => {
           if (!document.body.classList.contains("home-active")) return;
-          text.textContent = "What can I help you with?";
+          text.textContent = "How can I help you?";
           text.classList.remove("is-replacing");
           text.classList.add("is-visible");
         }, 180);
