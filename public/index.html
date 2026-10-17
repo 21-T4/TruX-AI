@@ -3007,10 +3007,10 @@ body.plugins-page-active #welcomeScreen, body.plugins-page-active #chatContainer
 .trux-home-v2::before{
   content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
   background:
-    radial-gradient(ellipse 118% 76% at 50% 104%,rgba(34,78,208,.60) 0%,rgba(20,48,150,.42) 35%,rgba(8,22,70,.22) 61%,rgba(0,0,0,0) 86%),
-    radial-gradient(ellipse 72% 44% at 8% 98%,rgba(34,92,204,.24) 0%,rgba(0,0,0,0) 76%),
-    radial-gradient(ellipse 72% 44% at 92% 98%,rgba(34,92,204,.24) 0%,rgba(0,0,0,0) 76%);
-  opacity:.98;filter:blur(34px);transform:translate3d(0,0,0);
+    radial-gradient(ellipse 118% 60% at 50% 48%,rgba(34,78,208,.32) 0%,rgba(20,48,150,.20) 35%,rgba(8,22,70,.08) 58%,rgba(0,0,0,0) 84%),
+    radial-gradient(ellipse 72% 28% at 8% 68%,rgba(34,92,204,.12) 0%,rgba(0,0,0,0) 76%),
+    radial-gradient(ellipse 72% 28% at 92% 68%,rgba(34,92,204,.12) 0%,rgba(0,0,0,0) 76%);
+  opacity:.9;filter:blur(34px);transform:none;
 }
 
 .trux-code-v2{
@@ -3064,7 +3064,7 @@ body.chat-session-active #welcomeScreen{display:none!important}
 .composer{
   position:relative!important;z-index:200!important;flex:0 0 auto!important;
   width:100%!important;min-width:0!important;margin:0!important;padding:8px 18px calc(18px + var(--safe-b))!important;
-  background:#000000!important;background-image:none!important;border:0!important;box-shadow:none!important;overflow:visible!important;
+  background:transparent!important;background-image:none!important;border:0!important;box-shadow:none!important;overflow:visible!important;
 }
 .compose{width:min(740px,100%)!important;max-width:740px!important;min-width:0!important;margin:0 auto!important}
 .bar{
@@ -3266,17 +3266,6 @@ body.chat-session-active:not(.coding-workspace) #codeChatContainer{display:none!
 
 
 
-/* Home-only blue atmosphere. Existing control styling is otherwise unchanged. */
-.trux-home-v2.is-blue-wave::before{
-  animation:truxHomeBlueWave 8.8s cubic-bezier(.22,.61,.36,1) both!important;
-}
-@keyframes truxHomeBlueWave{
-  0%{opacity:.72;transform:translate3d(0,10px,0) scale(.96)}
-  22%{opacity:.95;transform:translate3d(0,-2px,0) scale(1.01)}
-  52%{opacity:.82;transform:translate3d(0,-8px,0) scale(1.05)}
-  78%{opacity:.74;transform:translate3d(0,-2px,0) scale(1.02)}
-  100%{opacity:.72;transform:translate3d(0,0,0) scale(1)}
-}
 .trux-home-content{position:absolute;inset:0;z-index:1;pointer-events:none!important}
 .trux-home-sequence{
   position:absolute!important;inset:0!important;display:flex!important;align-items:center!important;justify-content:center!important;
@@ -3324,15 +3313,7 @@ body.chat-session-active:not(.coding-workspace) #codeChatContainer{display:none!
   .trux-home-prompt{padding-top:5px;padding-bottom:5px;font-size:14px!important}
 }
 @media(prefers-reduced-motion:reduce){
-  .trux-home-v2.is-blue-wave::before{animation:none!important;opacity:.72!important}
   .trux-home-sequence-text{transition:none!important}
-}
-body.home-active:not(.chat-session-active):not(.coding-workspace):not([data-media-mode]):not(.plugins-page-active) .composer{
-  background:
-    radial-gradient(ellipse 125% 220% at 50% -12%,rgba(34,78,208,.42) 0%,rgba(20,48,150,.28) 39%,rgba(8,22,70,.12) 64%,rgba(0,0,0,0) 86%),
-    radial-gradient(ellipse 82% 165% at 0% 4%,rgba(34,92,204,.20) 0%,rgba(0,0,0,0) 72%),
-    radial-gradient(ellipse 82% 165% at 100% 4%,rgba(34,92,204,.20) 0%,rgba(0,0,0,0) 72%),
-    linear-gradient(180deg,rgba(0,0,0,0) 0%,#000000 78%)!important;
 }
 /* Restore the small blue decorative lines flanking the selected model name. */
 #modelPickerBtn{
@@ -5123,9 +5104,13 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       <section id="welcomeScreen" class="trux-home-v2" aria-label="TruX home">
         <div class="trux-home-content">
           <div class="trux-home-sequence" aria-live="polite">
-            <h1 class="trux-home-sequence-text" id="truxHomeSequenceText">Hello</h1>
+            <h1 class="trux-home-sequence-text is-visible" id="truxHomeSequenceText">Hello</h1>
           </div>
-          <div class="trux-home-prompts" id="truxHomePrompts" aria-label="Suggested prompts" hidden></div>
+          <div class="trux-home-prompts" id="truxHomePrompts" aria-label="Suggested prompts">
+            <button class="trux-home-prompt" type="button" onclick="quickPrompt('Can you explain a difficult concept simply?')"><span class="trux-home-prompt-mark" aria-hidden="true">↗</span><span class="trux-home-prompt-label">Can you explain a difficult concept simply?</span></button>
+            <button class="trux-home-prompt" type="button" onclick="quickPrompt('How can I organize my tasks this week?')"><span class="trux-home-prompt-mark" aria-hidden="true">↗</span><span class="trux-home-prompt-label">How can I organize my tasks this week?</span></button>
+            <button class="trux-home-prompt" type="button" onclick="quickPrompt('What are some creative ideas for a new project?')"><span class="trux-home-prompt-mark" aria-hidden="true">↗</span><span class="trux-home-prompt-label">What are some creative ideas for a new project?</span></button>
+          </div>
         </div>
       </section>
 
@@ -10210,8 +10195,6 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
     let truxHomePromptRequest = null;
     let truxHomePromptLastLoadedAt = 0;
     let truxHomePromptRetryCount = 0;
-    let truxHomeBlueWaveInterval = null;
-
     function clearHomeGreetingTimers() {
       truxHomeGreetingTimers.forEach(id => clearTimeout(id));
       truxHomeGreetingTimers = [];
@@ -10219,11 +10202,13 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
 
     function renderHomePrompts(prompts) {
       const panel = getEl("truxHomePrompts");
-      if (!panel || !Array.isArray(prompts) || prompts.length !== 3) return;
-      panel.replaceChildren();
-      prompts.forEach(prompt => {
-        const cleanPrompt = String(prompt || "").trim();
-        if (!cleanPrompt) return;
+      if (!panel || !Array.isArray(prompts)) return false;
+      const cleanPrompts = [...new Set(prompts
+        .map(prompt => String(prompt || "").replace(/\s+/g, " ").trim())
+        .filter(prompt => prompt.length >= 8 && prompt.length <= 100))];
+      if (cleanPrompts.length !== 3) return false;
+
+      const buttons = cleanPrompts.map(cleanPrompt => {
         const button = document.createElement("button");
         button.type = "button";
         button.className = "trux-home-prompt";
@@ -10236,9 +10221,11 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         label.textContent = cleanPrompt;
         button.append(mark, label);
         button.addEventListener("click", () => quickPrompt(cleanPrompt));
-        panel.appendChild(button);
+        return button;
       });
-      if (panel.children.length === 3) panel.hidden = false;
+      panel.replaceChildren(...buttons);
+      panel.hidden = false;
+      return true;
     }
 
     async function loadHomePrompts() {
@@ -10258,8 +10245,9 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         if (!response.ok) throw new Error("Home prompt generation unavailable.");
         const payload = await response.json().catch(() => ({}));
         if (!document.body.classList.contains("home-active")) return;
-        if (!Array.isArray(payload.prompts) || payload.prompts.length !== 3) return;
-        renderHomePrompts(payload.prompts);
+        if (!Array.isArray(payload.prompts) || payload.prompts.length !== 3 || !renderHomePrompts(payload.prompts)) {
+          throw new Error("Home prompts response did not contain three usable suggestions.");
+        }
         if (panel.children.length === 3) {
           truxHomePromptLastLoadedAt = Date.now();
           truxHomePromptRetryCount = 0;
@@ -10282,19 +10270,6 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         truxHomePromptRequest = null;
       });
       return truxHomePromptRequest;
-    }
-
-    function startHomeBlueWaveCycle() {
-      if (truxHomeBlueWaveInterval) return;
-      truxHomeBlueWaveInterval = setInterval(() => {
-        if (!document.body.classList.contains("home-active")) return;
-        const home = getEl("welcomeScreen");
-        if (!home) return;
-        home.classList.remove("is-blue-wave");
-        void home.offsetWidth;
-        home.classList.add("is-blue-wave");
-        setTimeout(() => home.classList.remove("is-blue-wave"), 9000);
-      }, 300000);
     }
 
     function startHomeGreetingPulse() {
@@ -10338,7 +10313,6 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         }, 180);
       }, 3000);
 
-      startHomeBlueWaveCycle();
       void loadHomePrompts();
     }
 
@@ -12243,7 +12217,6 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       updateAllUsageUI();
       handleInputChange();
       setWorkspaceMode(startupWorkspaceMode, {reload:false,preserveSession:false});
-      startHomeGreetingPulse();
       startTruxCodeIdlePulse();
     } catch (startupError) {
       window.__truxRecoverBoot(startupError);
