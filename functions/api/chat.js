@@ -1223,6 +1223,12 @@ let truxHomePromptsCache = null;
 let truxHomePromptsCacheAt = 0;
 let truxHomePromptsInFlight = null;
 
+function isCompactTruxHomePrompt(value) {
+  const prompt = String(value || '').trim();
+  const wordCount = prompt ? prompt.split(/\s+/).length : 0;
+  return prompt.length >= 8 && prompt.length <= 54 && wordCount >= 3 && wordCount <= 7;
+}
+
 function parseTruxHomePromptText(rawText) {
   let raw = String(rawText || '').trim();
   if (!raw) return [];
@@ -1238,7 +1244,7 @@ function parseTruxHomePromptText(rawText) {
           .replace(/^["'“”]+|["'“”]+$/g, '')
           .replace(/\s+/g, ' ')
           .trim()
-      ).filter(value => value.length >= 8 && value.length <= 100))];
+      ).filter(isCompactTruxHomePrompt))];
       if (clean.length >= 3) return clean.slice(0, 3);
     }
   } catch {}
@@ -1248,7 +1254,7 @@ function parseTruxHomePromptText(rawText) {
       .replace(/^["'“”]+|["'“”]+$/g, '')
       .replace(/\s+/g, ' ')
       .trim()
-  ).filter(line => line.length >= 8 && line.length <= 100);
+  ).filter(isCompactTruxHomePrompt);
 
   const uniqueLines = [...new Set(lines)];
   if (uniqueLines.length >= 3) return uniqueLines.slice(0, 3);
@@ -1256,7 +1262,7 @@ function parseTruxHomePromptText(rawText) {
   const sentences = raw.match(/[^.!?]+[.!?]?/g) || [];
   const combined = [...new Set([...uniqueLines, ...sentences
     .map(line => line.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, '').replace(/\s+/g, ' ').trim())
-    .filter(line => line.length >= 8 && line.length <= 100)])];
+    .filter(isCompactTruxHomePrompt)])];
   return combined.slice(0, 3);
 }
 
@@ -1278,16 +1284,16 @@ async function getTruxHomePrompts(env) {
             role: 'user',
             parts: [{
               text: [
-                'Create exactly three fresh, concise example questions for the home screen of a helpful AI workspace.',
-                'Make them varied across practical everyday help, learning or explanation, and creative thinking.',
-                'Each should sound like a natural thing a person might type, use 5 to 12 words, and avoid referring to personal details.',
-                'Avoid generic labels, numbering, markdown, emojis, and repeated ideas.',
-                'Return three separate lines only, one question per line.',
-                'Vary the questions from earlier examples. Date: ' + new Date().toISOString().slice(0, 10) + '.'
+                'Create exactly three very short, natural example prompts for an AI workspace home screen.',
+                'Each prompt must be 3 to 6 words and no more than 44 characters.',
+                'Cover everyday help, learning or explanation, and creative ideas; one category per prompt.',
+                'Prefer compact phrasing such as "Plan meals from my pantry" or "Explain quantum computing simply".',
+                'Avoid long setups, multi-part requests, personal assumptions, numbering, markdown, and emojis.',
+                'Return exactly three distinct lines, one prompt per line. Vary them from earlier examples. Date: ' + new Date().toISOString().slice(0, 10) + '.'
               ].join(' ')
             }]
           }],
-          systemInstruction: 'Write exactly three short, useful AI-home-screen prompt suggestions. Return one question on each line and no commentary, bullets, numbering, or markdown.',
+          systemInstruction: 'Write exactly three home-screen prompt suggestions. Each must be 3–6 words and at most 44 characters. Keep each to one simple idea with no long setup. Return one prompt per line, no commentary, bullets, numbering, or markdown.',
           generationConfig: {
             temperature: 0.8,
             maxOutputTokens: 160
