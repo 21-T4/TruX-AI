@@ -3283,7 +3283,7 @@ body.chat-session-active:not(.coding-workspace) #codeChatContainer{display:none!
 .trux-home-content{position:absolute;inset:0;z-index:1;pointer-events:none!important}
 .trux-home-sequence{
   position:absolute!important;inset:0!important;display:flex!important;align-items:center!important;justify-content:center!important;
-  padding:0 22px 150px!important;pointer-events:none!important;
+  padding:0 22px!important;pointer-events:none!important;
 }
 .trux-home-sequence-text{
   width:min(840px,100%);margin:0!important;padding:0!important;
@@ -3316,13 +3316,13 @@ body.chat-session-active:not(.coding-workspace) #codeChatContainer{display:none!
 }
 .trux-home-prompt-label{min-width:0;overflow-wrap:anywhere}
 @media(max-width:600px){
-  .trux-home-sequence{padding:0 20px 150px!important}
+  .trux-home-sequence{padding:0 20px!important}
   .trux-home-sequence-text{font-size:clamp(34px,8.4vw,44px)!important}
   .trux-home-prompts{width:calc(100% - 44px);bottom:clamp(16px,3vh,26px);gap:2px}
   .trux-home-prompt{gap:10px;padding:7px 5px;font-size:15px!important}
 }
 @media(max-height:650px){
-  .trux-home-sequence{padding-bottom:158px!important}
+  .trux-home-sequence{padding-bottom:0!important}
   .trux-home-prompts{bottom:8px;gap:0}
   .trux-home-prompt{padding-top:5px;padding-bottom:5px;font-size:14px!important}
 }
@@ -3380,7 +3380,7 @@ body.home-exiting #welcomeScreen{
   flex:none!important;margin:0!important;
   display:flex!important;visibility:visible!important;
   opacity:1!important;pointer-events:none!important;z-index:150!important;
-  transition:opacity .78s var(--ease-out),transform .78s var(--ease-out)!important;
+  transition:opacity 1s var(--ease-out),transform 1s var(--ease-out)!important;
   will-change:opacity,transform;
 }
 body.home-exiting.home-exiting-fade #welcomeScreen{
@@ -4931,7 +4931,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
               var greeting = document.getElementById("truxHomeSequenceText");
               if(greeting) {
                 greeting.hidden = false;
-                greeting.textContent = "What can I help you with?";
+                greeting.textContent = "How can I help you";
                 greeting.classList.remove("is-replacing");
                 greeting.classList.add("is-visible");
               }
@@ -12093,8 +12093,14 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         welcomeForExit.style.setProperty("--trux-home-exit-height", rect.height + "px");
         welcomeForExit.style.removeProperty("opacity");
         welcomeForExit.style.removeProperty("transform");
+        // Resolve the visible exit state first, then begin the fade on the next
+        // paint. A single RAF can coalesce both class changes before paint,
+        // making the prompts and home glow appear to vanish instantly.
+        void welcomeForExit.offsetWidth;
         requestAnimationFrame(() => {
-          if (body.classList.contains("home-exiting")) body.classList.add("home-exiting-fade");
+          requestAnimationFrame(() => {
+            if (body.classList.contains("home-exiting")) body.classList.add("home-exiting-fade");
+          });
         });
         window.__truxHomeExitTimer = setTimeout(() => {
           const returnedHome = body.classList.contains("home-active");
