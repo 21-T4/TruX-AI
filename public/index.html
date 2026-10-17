@@ -3276,7 +3276,7 @@ body.chat-session-active:not(.coding-workspace) #codeChatContainer{display:none!
 .trux-home-sequence-text{
   width:min(840px,100%);margin:0!important;padding:0!important;
   color:#f1f1f1!important;font-family:var(--font-disp)!important;
-  font-size:clamp(29px,4.8vw,46px)!important;font-weight:500!important;
+  font-size:clamp(34px,4.8vw,50px)!important;font-weight:500!important;
   line-height:1.22!important;letter-spacing:-.042em!important;text-align:center!important;
   white-space:normal!important;overflow-wrap:anywhere!important;
   opacity:0!important;transform:translateY(5px)!important;
@@ -3293,7 +3293,7 @@ body.chat-session-active:not(.coding-workspace) #codeChatContainer{display:none!
 .trux-home-prompt{
   width:100%;display:flex;align-items:center;gap:15px;padding:9px 8px;
   border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;
-  color:#d2d2d2!important;text-align:left!important;font:400 clamp(15px,2.1vw,18px)/1.5 var(--font-body)!important;
+  color:#d2d2d2!important;text-align:left!important;font:400 clamp(17px,2.5vw,20px)/1.5 var(--font-body)!important;
   cursor:pointer;transition:color .2s ease,transform .2s ease!important;
 }
 .trux-home-prompt:hover{color:#ffffff!important;transform:translateX(3px)}
@@ -3305,14 +3305,14 @@ body.chat-session-active:not(.coding-workspace) #codeChatContainer{display:none!
 .trux-home-prompt-label{min-width:0;overflow-wrap:anywhere}
 @media(max-width:600px){
   .trux-home-sequence{padding:0 20px 96px!important}
-  .trux-home-sequence-text{font-size:clamp(28px,7vw,38px)!important}
+  .trux-home-sequence-text{font-size:clamp(34px,8.4vw,44px)!important}
   .trux-home-prompts{width:calc(100% - 30px);bottom:clamp(24px,6vh,56px);gap:0}
-  .trux-home-prompt{gap:12px;padding:7px 5px;font-size:15px!important}
+  .trux-home-prompt{gap:12px;padding:9px 5px;font-size:18px!important}
 }
 @media(max-height:650px){
   .trux-home-sequence{padding-bottom:140px!important}
   .trux-home-prompts{bottom:4px;gap:0}
-  .trux-home-prompt{padding-top:5px;padding-bottom:5px;font-size:14px!important}
+  .trux-home-prompt{padding-top:6px;padding-bottom:6px;font-size:17px!important}
 }
 @media(prefers-reduced-motion:reduce){
   .trux-home-sequence-text{transition:none!important}
@@ -4883,6 +4883,37 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       var code=document.getElementById("codeChatContainer");
       if(chat) chat.style.display="none";
       if(code) code.style.display="none";
+
+      /* A recovered first boot must also initialize the home sequence and
+         generated suggestions. Otherwise the static "Hello" fallback remains
+         forever until the user switches workspaces. */
+      if(!window.__truxHomeRecoveryScheduled) {
+        window.__truxHomeRecoveryScheduled = true;
+        var resumeHome = function() {
+          window.__truxHomeRecoveryScheduled = false;
+          if(!document.body || !document.body.classList.contains("home-active")) return;
+          try {
+            if(typeof window.startHomeGreetingPulse === "function") {
+              window.startHomeGreetingPulse();
+            } else if(typeof startHomeGreetingPulse === "function") {
+              startHomeGreetingPulse();
+            } else {
+              var greeting = document.getElementById("truxHomeSequenceText");
+              if(greeting) {
+                greeting.hidden = false;
+                greeting.textContent = "What can I help you?";
+                greeting.classList.remove("is-replacing");
+                greeting.classList.add("is-visible");
+              }
+              if(typeof loadHomePrompts === "function") void loadHomePrompts();
+            }
+          } catch(homeError) {
+            console.error("TruX home recovery failed:",homeError);
+          }
+        };
+        if(typeof requestAnimationFrame === "function") requestAnimationFrame(resumeHome);
+        else setTimeout(resumeHome,0);
+      }
     } catch(e) {
       console.error("TruX startup recovery failed:",e);
     }
