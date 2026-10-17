@@ -2948,16 +2948,28 @@ body{
   width:100vw!important;height:100dvh!important;max-width:none!important;
   min-width:0!important;margin:0!important;padding:0!important;
   overflow:hidden!important;background:#000000!important;background-image:none!important;
+  isolation:isolate!important;
 }
-/* One page background supplies the low blue glow behind the floating composer.
-   Keep it on .main so there is no separate backdrop under the typing bar. */
-body.home-active:not(.chat-session-active):not(.coding-workspace):not([data-media-mode]):not(.plugins-page-active) .main{
-  background-color:#000000!important;
-  background-image:
+/* Keep one page-sized glow surface and animate its opacity. Swapping
+   background-image off on home exit caused the blue glow to disappear instantly. */
+.main::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  background:
     radial-gradient(ellipse 118% 76% at 50% 104%,rgba(34,78,208,.60) 0%,rgba(20,48,150,.42) 35%,rgba(8,22,70,.22) 61%,rgba(0,0,0,0) 86%),
     radial-gradient(ellipse 72% 44% at 8% 98%,rgba(34,92,204,.24) 0%,rgba(0,0,0,0) 76%),
-    radial-gradient(ellipse 72% 44% at 92% 98%,rgba(34,92,204,.24) 0%,rgba(0,0,0,0) 76%)!important;
+    radial-gradient(ellipse 72% 44% at 92% 98%,rgba(34,92,204,.24) 0%,rgba(0,0,0,0) 76%);
+  opacity:0;
+  transition:opacity 1.45s cubic-bezier(.22,.61,.36,1);
 }
+body.home-active:not(.chat-session-active):not(.coding-workspace):not([data-media-mode]):not(.plugins-page-active) .main::before{
+  opacity:1;
+}
+body.home-exiting:not(.home-exiting-fade) .main::before{opacity:1!important}
+body.home-exiting.home-exiting-fade .main::before{opacity:0!important}
 .topbar{
   position:relative!important;z-index:100!important;
   flex:0 0 60px!important;width:100%!important;height:60px!important;
@@ -2996,7 +3008,7 @@ body.home-active:not(.chat-session-active):not(.coding-workspace):not([data-medi
 body.home-active:not(.coding-workspace):not([data-media-mode="image"]):not([data-media-mode="video"]):not(.plugins-page-active) #welcomeScreen{
   display:flex!important;
 }
-body:not(.home-active) #welcomeScreen{display:none!important}
+body:not(.home-active):not(.home-exiting) #welcomeScreen{display:none!important}
 body.home-active #imageWorkspace, body.home-active #videoWorkspace, body.home-active #truxCodeWorkspace, body.home-active #chatContainer, body.home-active #codeChatContainer{display:none!important}
 body.coding-workspace #welcomeScreen, body.coding-workspace #imageWorkspace, body.coding-workspace #videoWorkspace, body.coding-workspace #chatContainer{display:none!important}
 body:not(.coding-workspace) #codeChatContainer{display:none!important}
@@ -3061,7 +3073,7 @@ body.plugins-page-active #welcomeScreen, body.plugins-page-active #chatContainer
 
 .chat{min-width:0!important}
 body.chat-session-active #chatContainer{display:block!important;flex:1 1 auto!important;min-height:0!important;overflow:auto!important}
-body.chat-session-active #welcomeScreen{display:none!important}
+body.chat-session-active:not(.home-exiting) #welcomeScreen{display:none!important}
 
 .composer{
   position:relative!important;z-index:200!important;flex:0 0 auto!important;
@@ -3277,7 +3289,7 @@ body.chat-session-active:not(.coding-workspace) #codeChatContainer{display:none!
   width:min(840px,100%);margin:0!important;padding:0!important;
   color:#f1f1f1!important;font-family:var(--font-disp)!important;
   font-size:clamp(34px,4.8vw,50px)!important;font-weight:500!important;
-  line-height:1.22!important;letter-spacing:-.042em!important;text-align:center!important;
+  line-height:1.22!important;letter-spacing:-.018em!important;word-spacing:.015em!important;text-align:center!important;
   white-space:normal!important;overflow-wrap:anywhere!important;
   opacity:0!important;transform:translateY(5px)!important;
   transition:opacity .24s ease,transform .24s ease!important;
@@ -3350,11 +3362,29 @@ body.chat-session-active:not(.coding-workspace) #codeChatContainer{display:none!
 
 
 /* Chat home: only the new minimal intro/logo surface is allowed. */
-body.chat-session-active #welcomeScreen, body.coding-workspace #welcomeScreen, body.plugins-page-active #welcomeScreen, body[data-media-mode] #welcomeScreen{
+body.chat-session-active:not(.home-exiting) #welcomeScreen, body.coding-workspace #welcomeScreen, body.plugins-page-active #welcomeScreen, body[data-media-mode] #welcomeScreen{
   display:none!important;visibility:hidden!important;pointer-events:none!important;
 }
 body.home-active #welcomeScreen{
   display:flex!important;visibility:visible!important;pointer-events:auto!important;
+}
+
+/* Hold the current home panel at its original screen coordinates for the exit
+   animation; it no longer participates in the flex layout while chat appears. */
+body.home-exiting #welcomeScreen{
+  position:fixed!important;
+  top:var(--trux-home-exit-top,60px)!important;
+  left:var(--trux-home-exit-left,0px)!important;
+  width:var(--trux-home-exit-width,100vw)!important;
+  height:var(--trux-home-exit-height,calc(100dvh - 60px))!important;
+  flex:none!important;margin:0!important;
+  display:flex!important;visibility:visible!important;
+  opacity:1!important;pointer-events:none!important;z-index:150!important;
+  transition:opacity .78s var(--ease-out),transform .78s var(--ease-out)!important;
+  will-change:opacity,transform;
+}
+body.home-exiting.home-exiting-fade #welcomeScreen{
+  opacity:0!important;transform:translateY(-6px)!important;
 }
 
 /* Hard visual separation: never show the opposite workspace container. */
@@ -4901,7 +4931,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
               var greeting = document.getElementById("truxHomeSequenceText");
               if(greeting) {
                 greeting.hidden = false;
-                greeting.textContent = "What can I help you?";
+                greeting.textContent = "What can I help you with?";
                 greeting.classList.remove("is-replacing");
                 greeting.classList.add("is-visible");
               }
@@ -10330,7 +10360,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         text.classList.add("is-replacing");
         schedule(() => {
           if (!document.body.classList.contains("home-active")) return;
-          text.textContent = "What can I help you?";
+          text.textContent = "What can I help you with?";
           text.classList.remove("is-replacing");
           text.classList.add("is-visible");
         }, 180);
@@ -12049,10 +12079,44 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
     }
     function enterChatWorkspace() {
       const codingSession = workspaceMode === "coding";
-      document.body.classList.remove("home-active");
-      document.body.classList.toggle("chat-session-active", !codingSession);
-      document.body.classList.toggle("coding-workspace", codingSession);
-      document.body.removeAttribute("data-media-mode");
+      const body = document.body;
+      const welcomeForExit = getEl("welcomeScreen");
+      const leavingHome = body.classList.contains("home-active") && !codingSession && !!welcomeForExit;
+      if (leavingHome) {
+        const rect = welcomeForExit.getBoundingClientRect();
+        if (window.__truxHomeExitTimer) clearTimeout(window.__truxHomeExitTimer);
+        body.classList.remove("home-exiting-fade");
+        body.classList.add("home-exiting");
+        welcomeForExit.style.setProperty("--trux-home-exit-left", rect.left + "px");
+        welcomeForExit.style.setProperty("--trux-home-exit-top", rect.top + "px");
+        welcomeForExit.style.setProperty("--trux-home-exit-width", rect.width + "px");
+        welcomeForExit.style.setProperty("--trux-home-exit-height", rect.height + "px");
+        welcomeForExit.style.removeProperty("opacity");
+        welcomeForExit.style.removeProperty("transform");
+        requestAnimationFrame(() => {
+          if (body.classList.contains("home-exiting")) body.classList.add("home-exiting-fade");
+        });
+        window.__truxHomeExitTimer = setTimeout(() => {
+          const returnedHome = body.classList.contains("home-active");
+          body.classList.remove("home-exiting", "home-exiting-fade");
+          [
+            "--trux-home-exit-left",
+            "--trux-home-exit-top",
+            "--trux-home-exit-width",
+            "--trux-home-exit-height"
+          ].forEach(property => welcomeForExit.style.removeProperty(property));
+          welcomeForExit.style.removeProperty("opacity");
+          welcomeForExit.style.removeProperty("transform");
+          if (returnedHome) welcomeForExit.style.removeProperty("display");
+          else welcomeForExit.style.setProperty("display", "none");
+          window.__truxHomeExitTimer = null;
+        }, 1050);
+      }
+
+      body.classList.remove("home-active");
+      body.classList.toggle("chat-session-active", !codingSession);
+      body.classList.toggle("coding-workspace", codingSession);
+      body.removeAttribute("data-media-mode");
 
       const welcome = getEl("welcomeScreen");
       if (welcome) welcome.style.display = "none";
