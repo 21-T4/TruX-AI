@@ -6344,7 +6344,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       options = options || {};
       const nextMode = mode || "chat";
       const previousMode = workspaceMode;
-      const modeChanged = nextMode !== previousMode || !!document.body.dataset.mediaMode;
+      const modeChanged = nextMode !== previousMode || !!document.body.dataset.mediaMode || options.forceReset === true;
       const preserveSession = options.preserveSession === true;
 
       closeAttachmentMenu(); closeModelDropdown();
@@ -6377,7 +6377,6 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
         if(chatView) { chatView.style.display = "none"; chatView.innerHTML = ""; }
         if(codeView) { codeView.style.display = "none"; codeView.innerHTML = ""; }
         getEl("truxCodeWorkspace")?.classList.add("code-workspace-dismissed");
-        getEl("welcomeScreen")?.style.setProperty("display", "none", "important");
         void document.body.offsetHeight;
       }
 
@@ -6396,7 +6395,13 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       document.body.classList.toggle("home-active", !isCoding && !isMedia && !currentChatId);
 
       const welcome = getEl("welcomeScreen");
-      if(welcome) welcome.style.display = (!isCoding && !isMedia && !currentChatId) ? "flex" : "none";
+      if(welcome) {
+        // Workspace classes are the single source of truth for home visibility.
+        // Clear inline values left by older navigation paths before CSS applies.
+        welcome.style.removeProperty("display");
+        welcome.style.removeProperty("visibility");
+        welcome.style.removeProperty("pointer-events");
+      }
 
       const chatView = getEl("chatContainer");
       const codeView = getEl("codeChatContainer");
@@ -7322,28 +7327,13 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       closeSidebar();
       closeAttachmentMenu();
       closeModelDropdown();
-      document.body.classList.add("home-active");
-      document.body.classList.remove("chat-session-active");
-      document.body.removeAttribute("data-media-mode");
-      workspaceMode="chat";
-      if (activeTurnContext) persistTurnDraft(activeTurnContext, activeTurnContext.latestText || "", true);
-      generationEpoch += 1;
-      activeTurnContext = null;
-      try { activeAbortController?.abort(); } catch {}
-      try { activeStreamer?.cancel(); } catch {}
-      activeStreamer = null;
-      isGenerating = false;
-      generationStopRequested = false;
-      handleInputChange();
-      document.body.classList.remove("scrolled");
-      stopToolStatusTyping();
-      getEl("chatContainer").innerHTML = ""; getEl("chatContainer").style.display = "none";
-      getEl("codeChatContainer").innerHTML = ""; getEl("codeChatContainer").style.display = "none";
-      getEl("truxCodeWorkspace")?.classList.remove("code-workspace-dismissed");
-      getEl("welcomeScreen").style.display = "flex"; currentChatId = null; renderSidebar();
-      startHomeGreetingPulse();
-      pastedTextBlocks = []; fileAttachments = []; renderFileChips();
-      isScrolledUp = false; getEl("scrollDownBtn").classList.remove("visible");
+
+      // Use the same state transition as the Chat/TruX-Code switch so a new
+      // Chat always clears coding-workspace and restores the normal home UI.
+      setWorkspaceMode("chat", {reload:false,preserveSession:false,forceReset:true});
+
+      isScrolledUp = false;
+      getEl("scrollDownBtn")?.classList.remove("visible");
       document.body.classList.remove("scrolled");
     }
     function quickPrompt(txt) { getEl("promptInput").value = txt; getEl("promptInput").focus(); handleInputChange(); }
