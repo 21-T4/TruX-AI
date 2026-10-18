@@ -916,16 +916,11 @@
 
       const codeHome = getEl("truxCodeWorkspace");
       if(isCoding) {
-        if(!currentChatId) {
-          codeHome?.classList.remove("code-workspace-dismissed");
-          codeHome?.style.removeProperty("display");
-          codeHome?.style.removeProperty("opacity");
-          codeHome?.style.removeProperty("transform");
-        } else {
-          codeHome?.classList.add("code-workspace-dismissed");
-          codeHome?.style.setProperty("display","none","important");
-        }
-        // Repository selection is no longer part of TruX-Code; external access is provided by Composio plugins.
+        // Code remains a persistent workspace while the transcript updates inside it.
+        codeHome?.classList.remove("code-workspace-dismissed");
+        codeHome?.style.removeProperty("display");
+        codeHome?.style.removeProperty("opacity");
+        codeHome?.style.removeProperty("transform");
       } else {
         codeHome?.classList.add("code-workspace-dismissed");
       }
