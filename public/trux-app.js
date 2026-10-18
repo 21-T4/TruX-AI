@@ -6769,10 +6769,29 @@
       });
     }
     function openSubscriptionPage() {
-      truxSubscriptionReturnState = { mode: workspaceMode, chatId: currentChatId };
+      // Capture the active workspace once, so repeated taps cannot overwrite
+      // the destination used by the page's Back action.
+      if (!document.body.classList.contains("subscription-page-active")) {
+        truxSubscriptionReturnState = { mode: workspaceMode, chatId: currentChatId };
+      }
+
       closeAttachmentMenu(); closeModelDropdown(); closeChatContextMenu();
+
+      // Plans is a standalone screen, not an overlay on top of Chat/Code.
+      // Clear mode-specific visibility flags while keeping workspaceMode and
+      // currentChatId untouched; closeSubscriptionPage restores them via
+      // setWorkspaceMode() using the saved state above.
+      document.body.classList.remove(
+        "home-active",
+        "chat-session-active",
+        "coding-workspace",
+        "plugins-page-active",
+        "notebook-open",
+        "scrolled"
+      );
+      document.body.removeAttribute("data-media-mode");
       document.body.classList.add("subscription-page-active");
-      document.body.classList.remove("plugins-page-active", "notebook-open");
+
       getEl("subscriptionWorkspace")?.scrollTo({ top: 0, behavior: "instant" });
       refreshSubscriptionPage();
     }
