@@ -332,19 +332,34 @@
         </div>
       </section>
 
-            <section id="truxCodeWorkspace" class="trux-code-v2" aria-label="TruX-Code workspace">
-  <div class="trux-code-v2-inner">
-    <div class="trux-code-v2-kicker">TRUX CODE WORKSPACE</div>
-    <h1>Interactive Coding Workspace</h1>
-    <p id="truxCodePulseText">Connected to Vertex AI backend & Composio tool plugins.</p>
-    <div class="trux-code-v2-status">
-      <span id="truxCodeReadyState" class="trux-code-v2-ready"><i></i><span>ACTIVE WORKSPACE</span></span>
-      <span id="codePluginStatus" class="trux-code-v2-plugins"><i></i><span>Plugins Active</span></span>
-      <button type="button" class="trux-code-v2-plugin-btn" data-open-plugins>Manage Plugins</button>
-    </div>
-    <div id="truxCodeIntegrationItems" class="trux-code-v2-integrations"></div>
-  </div>
-</section>
+      <section id="truxCodeWorkspace" class="trux-code-v2" aria-label="TruX-Code workspace">
+        <aside class="trux-code-rail" aria-label="Code workspace navigation">
+          <div class="trux-code-rail-brand"><span class="trux-code-rail-mark">⌘</span><span>TRUX CODE</span></div>
+          <button type="button" class="trux-code-rail-new" onclick="quickPrompt('Help me build ')"><span>+</span> New task</button>
+          <div class="trux-code-rail-section">WORKSPACE</div>
+          <button type="button" class="trux-code-rail-item active"><span>⌘</span><span>Current session</span></button>
+          <button type="button" class="trux-code-rail-item" onclick="quickPrompt('Review this code: ')"><span>◌</span><span>Review</span></button>
+          <button type="button" class="trux-code-rail-item" onclick="quickPrompt('Plan the implementation for ')"><span>◇</span><span>Plan</span></button>
+          <div class="trux-code-rail-bottom">
+            <span id="truxCodeReadyState" class="trux-code-v2-ready"><i></i><span>Systems ready</span></span>
+            <button type="button" class="trux-code-rail-plugins" data-open-plugins>Manage plugins</button>
+          </div>
+        </aside>
+        <div class="trux-code-desk">
+          <header class="trux-code-toolbar">
+            <div><span class="trux-code-kicker">WORKSPACE</span><strong>Build with TruX</strong></div>
+            <div class="trux-code-toolbar-actions"><span id="codePluginStatus" class="trux-code-v2-plugins"><i></i><span>Plugins active</span></span><button type="button" data-open-plugins aria-label="Open plugins">⌘</button></div>
+          </header>
+          <div class="trux-code-stage">
+            <div class="trux-code-stage-head"><span>ASSISTANT SESSION</span><span id="truxCodePulseText">Ready for your next build.</span></div>
+            <div class="chat" id="codeChatContainer" aria-live="polite"></div>
+          </div>
+          <footer class="trux-code-context">
+            <div class="trux-code-context-copy"><span>CONNECTED TOOLS</span><small>Bring your integrations into the task when needed.</small></div>
+            <div id="truxCodeIntegrationItems" class="trux-code-v2-integrations"></div>
+          </footer>
+        </div>
+      </section>
 
       <section class="trux-plugins-workspace" id="pluginsWorkspace" aria-label="TruX Plugins">
         <div class="trux-plugins-page">
@@ -393,7 +408,7 @@
       </section>
 
       <div class="chat" id="chatContainer"></div>
-      <div class="chat" id="codeChatContainer"></div>
+      
       <section class="notebook-workspace" id="notebookWorkspace" aria-label="Notebook contents"></section>
 
       <section class="composer">
