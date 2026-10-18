@@ -6756,3 +6756,44 @@
       document.body?.classList.remove("trux-boot-recovered");
     }
   
+
+    let truxSubscriptionReturnState = null;
+    function refreshSubscriptionPage() {
+      const activePlan = currentPlanTier === "pro" ? "pro" : "base";
+      document.querySelectorAll("[data-subscription-plan]").forEach(card => {
+        const isCurrent = card.getAttribute("data-subscription-plan") === activePlan;
+        card.classList.toggle("current", isCurrent);
+        const button = card.querySelector(".subscription-plan-action");
+        if (button && card.getAttribute("data-subscription-plan") === "base") button.textContent = isCurrent ? "Current plan" : "Choose Base";
+        if (button && card.getAttribute("data-subscription-plan") === "pro") button.textContent = isCurrent ? "Current plan" : "Request Pro access";
+      });
+    }
+    function openSubscriptionPage() {
+      truxSubscriptionReturnState = { mode: workspaceMode, chatId: currentChatId };
+      closeAttachmentMenu(); closeModelDropdown(); closeChatContextMenu();
+      document.body.classList.add("subscription-page-active");
+      document.body.classList.remove("plugins-page-active", "notebook-open");
+      getEl("subscriptionWorkspace")?.scrollTo({ top: 0, behavior: "instant" });
+      refreshSubscriptionPage();
+    }
+    function closeSubscriptionPage() {
+      const state = truxSubscriptionReturnState || { mode: "chat", chatId: currentChatId };
+      document.body.classList.remove("subscription-page-active");
+      currentChatId = state.chatId || currentChatId;
+      setWorkspaceMode(state.mode || "chat", { reload: false, preserveSession: true });
+      truxSubscriptionReturnState = null;
+    }
+    function selectSubscriptionPlan(plan) {
+      if (plan === "base" && currentPlanTier === "base") return toast("You are already on the Base plan.");
+      if (plan === "pro" && currentPlanTier === "pro") return toast("You already have Pro access.");
+      toast(plan === "pro" ? "Pro checkout is not connected yet. Contact support to request access." : "Plan selection is managed through your TruX account.");
+    }
+    function openSubscriptionSupport() {
+      toast("Subscription support is being prepared. Please use Help & feedback to contact the TruX team.");
+    }
+    function syncFloatingChromeFade() {
+      const container = getActiveChatContainer();
+      const amount = container ? Math.min(1, Math.max(0, container.scrollTop / 140)) : 0;
+      document.body.style.setProperty("--trux-chrome-fade", String(amount));
+    }
+    ["chatContainer", "codeChatContainer"].forEach(id => getEl(id)?.addEventListener("scroll", syncFloatingChromeFade, { passive: true }));
