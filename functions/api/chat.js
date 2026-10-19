@@ -573,14 +573,11 @@ async function streamVertexGemini({
   toolConfig,
   onText,
   onThought,
-  onStatus,
   holdTextUntilToolDecision = false,
   generationConfig,
   signal,
   env
 }) {
-  void onStatus;
-
   const client = await getVertexAIClient();
   const config = {};
 
@@ -1580,7 +1577,9 @@ export async function onRequestPost(context) {
     }
 
     return createSseResponse(async ({ send, signal }) => {
-      // The activity line is driven by model-authored milestones and actual tool events.
+      // Chat retains a neutral waiting indicator; TruX-Code reports actual tool
+      // operations and optional model-authored milestones instead of canned stages.
+      if (!codingMode) send({ type: 'status', status: 'Thinking' });
       let firstTextAt = 0;
       let streamedChunkCount = 0;
       let streamedCharCount = 0;
@@ -1766,12 +1765,7 @@ export async function onRequestPost(context) {
           // Send answer content immediately without parallel status-model calls.
           send({ type: 'chunk', text: piece });
         },
-        onStatus: async status => {
-          send({ type: 'status', status });
-        }
         });
-
-        // Activity labels are non-blocking; never delay answer completion for them.
 
         lastModelResult = result;
 
