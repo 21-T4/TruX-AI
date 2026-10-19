@@ -2214,7 +2214,6 @@ export async function onRequestPost(context) {
         }
 
         finalResult = result;
-        break;        finalResult = result;
         break;
       }
 
