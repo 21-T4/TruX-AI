@@ -867,7 +867,6 @@
         generationEpoch += 1;
         activeTurnContext = null;
         activeAbortController?.abort();
-        stopToolStatusTyping();
         activeStreamer?.cancel(); activeStreamer = null;
         isGenerating = false;
         generationStopRequested = false;
@@ -1814,7 +1813,6 @@
       closeSidebar();
       closeAttachmentMenu();
       closeModelDropdown();
-      stopToolStatusTyping();
 
       document.body.classList.remove("plugins-page-active","coding-workspace","home-active");
       document.body.classList.add("chat-session-active","incognito-mode");
@@ -3958,6 +3956,8 @@
       const stack = responseRow?.querySelector(".trux-response-stack");
       const bubble = responseRow?.querySelector(".trux-bubble");
       if (!stack || !bubble || stack.querySelector(".trux-thinking-panel")) return;
+      const steps = Array.isArray(message?.toolEvents) ? message.toolEvents : [];
+      if (!steps.length) return;
       const thid = "restored_th_" + Date.now() + "_" + Math.random().toString(36).slice(2);
       const tsid = "restored_ts_" + Date.now() + "_" + Math.random().toString(36).slice(2);
       const panel = document.createElement("div");
@@ -3968,7 +3968,7 @@
         '<div class="trux-thinking-bar">' +
           '<span class="trux-thinking-spark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 1.5C13.45 7.95 16.05 10.55 22.5 12C16.05 13.45 13.45 16.05 12 22.5C10.55 16.05 7.95 12 1.5 12C7.95 10.55 10.55 7.95 12 1.5Z"/></svg></span>' +
           '<div class="trux-thinking-copy"><span class="status-msg" role="status" aria-live="polite"><span class="thinking-status-line compact"></span><span class="thinking-status-line full"></span></span></div>' +
-          '<button type="button" class="trux-thinking-toggle" aria-expanded="false" aria-label="Show executed steps" title="Show executed steps"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>' +
+          '<button type="button" class="trux-thinking-toggle" hidden aria-expanded="false" aria-label="Show executed steps" title="Show executed steps"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>' +
         '</div>' +
         '<div class="trux-thinking-details" id="' + tsid + '" hidden></div>';
       const summary = "Worked for this response";
@@ -3980,27 +3980,16 @@
       stack.insertBefore(panel, bubble);
       const toggle = panel.querySelector(".trux-thinking-toggle");
       if (toggle) toggle.onclick = () => toggleThinkingDetails(thid);
-      const steps = Array.isArray(message?.toolEvents) ? message.toolEvents : [];
       for (const event of steps) {
         if (event?.type === "tool_status") {
           appendToolStatusLine(tsid, event.tool || "TruX-Code", event.status || "", event.phase || "complete", event.details || null);
-        } else if (event?.type === "status" && (event.status || event.text)) {
-          const details = getEl(tsid);
-          if (details) {
-            const item = document.createElement("div");
-            item.className = "thinking-status-step";
-            item.textContent = String(event.status || event.text || "");
-            details.appendChild(item);
-          }
+        } else if ((event?.type === "ai_step" || event?.type === "status") && (event.status || event.text)) {
+          appendThinkingHistory(panel, event.status || event.text);
         }
       }
       const details = getEl(tsid);
-      if (details && !details.children.length) {
-        const item = document.createElement("div");
-        item.className = "thinking-status-step";
-        item.textContent = "Response completed";
-        details.appendChild(item);
-      }
+      const toggleAfterRestore = panel.querySelector(".trux-thinking-toggle");
+      if (toggleAfterRestore) toggleAfterRestore.hidden = !details?.children.length;
     }
 
     function persistTurnDraft(context, text, force = false) {
@@ -4089,12 +4078,7 @@
             item.classList.add("completed");
           });
           const details = panel.querySelector(".trux-thinking-details");
-          if (details && !details.children.length) {
-            const item = document.createElement("div");
-            item.className = "thinking-status-step";
-            item.textContent = "Response completed";
-            details.appendChild(item);
-          }
+          if (toggle && details) toggle.hidden = !details.children.length;
         }
       }
 
@@ -4139,7 +4123,7 @@
         else delete responseMessage.sources;
         if (codingTurn) {
           responseMessage.durationMs = durationMs;
-          responseMessage.toolEvents = Array.isArray(turnContext?.toolEvents) ? turnContext.toolEvents.slice(-100) : [];
+          responseMessage.toolEvents = Array.isArray(turnContext?.toolEvents) ? turnContext.toolEvents : [];
         }
         if (turnContext) store.removeItem("trux_turn_draft_" + resultChatId);
         saveChatSessions();
@@ -4430,7 +4414,6 @@
       }
     }
 
-    function stopToolStatusTyping() {}
     function appendToolStatusLine(toolId, tool, detail, phase = "complete", details = null) {
       const wrap = getEl(toolId);
       if (!wrap) return;
@@ -4484,7 +4467,10 @@
       status.classList.toggle("failed", phase !== "start" && !succeeded);
       status.textContent = phase === "start" ? "(running…)" : (succeeded ? "(success)" : "(failed)");
 
-      wrap.closest(".trux-thinking-panel")?.classList.add("has-tools");
+      const panel = wrap.closest(".trux-thinking-panel");
+      panel?.classList.add("has-tools");
+      const toggle = panel?.querySelector(".trux-thinking-toggle");
+      if (toggle) toggle.hidden = false;
 
       const container = getActiveChatContainer();
       if (phase === "start" && container && isNearBottom(container, 140)) {
@@ -4494,8 +4480,7 @@
       }
     }
 
-    function hideToolStatus(toolId) {
-      stopToolStatusTyping();
+    function settleThinkingDetails(toolId) {
       const wrap = getEl(toolId);
       if(!wrap) return;
       wrap.querySelectorAll(".thinking-tool-item.active").forEach(item => item.classList.remove("active"));
@@ -4552,6 +4537,8 @@
       item.dataset.activity = text;
       item.textContent = text;
       details.appendChild(item);
+      const toggle = panel.querySelector(".trux-thinking-toggle");
+      if (toggle) toggle.hidden = false;
     }
 
     function toggleThinkingDetails(panelId) {
@@ -5134,7 +5121,7 @@
             <span class="trux-thinking-spark trux-thinking-chat-spark" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 1.5C13.45 7.95 16.05 10.55 22.5 12C16.05 13.45 13.45 16.05 12 22.5C10.55 16.05 7.95 13.45 1.5 12C7.95 10.55 10.55 7.95 12 1.5Z"/></svg></span>
             <div class="trux-thinking-copy"><span class="status-msg" id="${sid}" role="status" aria-live="polite"><span class="thinking-status-line compact"></span><span class="thinking-status-line full"></span></span></div>
 
-            <button type="button" class="trux-thinking-toggle" onclick="toggleThinkingDetails('${thid}')" aria-expanded="false" aria-label="Expand AI activity" title="Expand AI activity"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>
+            <button type="button" class="trux-thinking-toggle" hidden onclick="toggleThinkingDetails('${thid}')" aria-expanded="false" aria-label="Expand AI activity" title="Expand AI activity"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>
           </div>
           <div class="trux-thinking-details" id="${tsid}" hidden></div>
         </div>`;
@@ -5147,10 +5134,6 @@
 
       chatContainer.appendChild(row);
       chatContainer.scrollTop = chatContainer.scrollHeight;
-
-      // Keep the Chat activity line populated immediately while the first
-      // model-written status is being prepared by the streaming endpoint.
-      setThinkingStatus(sid, "Thinking");
 
       row._startedAt = codingTurn ? Date.now() : 0;
 
@@ -5372,10 +5355,23 @@
               const activityStatus = normalizeAiActivity(j.status || "");
               const placeholder = /^(?:thinking|working|processing)(?:[ .…]*)?$/i.test(activityStatus);
               if (activityStatus && !placeholder) {
+                appendThinkingHistory(getEl(thid), activityStatus);
                 const events = turnContext.toolEvents || (turnContext.toolEvents = []);
                 if (!events.some(event => event.type === "status" && event.status === activityStatus)) {
                   events.push({ type: "status", status: activityStatus });
-                  if (events.length > 100) events.splice(0, events.length - 100);
+                }
+              }
+            }
+          }
+          else if(j.type === "ai_step") {
+            if (codingTurn && turnContext) {
+              const activityStatus = normalizeAiActivity(j.status || j.text || "");
+              if (activityStatus) {
+                setThinkingStatus(sid, activityStatus);
+                appendThinkingHistory(getEl(thid), activityStatus);
+                const events = turnContext.toolEvents || (turnContext.toolEvents = []);
+                if (!events.some(event => event.type === "ai_step" && event.status === activityStatus)) {
+                  events.push({ type: "ai_step", status: activityStatus });
                 }
               }
             }
@@ -5403,6 +5399,7 @@
           }
           else if(j.type === "tool_status") {
             const phase = j.phase || "complete";
+            if (codingTurn) setThinkingStatus(sid, j.status || j.tool || "");
             appendToolStatusLine(tsid, j.tool, j.status, phase, j.details || null);
             if (codingTurn && turnContext) {
               const safeDetails = {};
@@ -5417,7 +5414,6 @@
                 phase: String(phase).slice(0, 24),
                 ...(Object.keys(safeDetails).length ? { details: safeDetails } : {})
               });
-              if (events.length > 100) events.splice(0, events.length - 100);
             }
             if(phase === "start") {
               toolInProgress = true;
@@ -5594,7 +5590,7 @@
             persistTurnDraft(turnContext, full, true);
             clearTurnStreamer(true);
             const stalledRow = getEl(id)?.closest(".row");
-            hideToolStatus(tsid);
+            settleThinkingDetails(tsid);
             const bubble = getEl(id);
             const partialText = String(full || "").trim();
             if (bubble) {
@@ -5672,7 +5668,7 @@
           }
 
           const failedRow = getEl(id)?.closest(".row");
-          hideToolStatus(tsid);
+          settleThinkingDetails(tsid);
           clearTurnStreamer(true);
           let b = getEl(id);
           if(b) {
@@ -5865,7 +5861,7 @@
     function closeMediaLibrary(){ getEl("mediaLibraryModal")?.classList.remove("open"); }
 
     function markGenerationStopped(row, id, sid, tsid) {
-      hideToolStatus(tsid);
+      settleThinkingDetails(tsid);
       dismissThinkingPanel(row);
 
       const bubble = getEl(id);
@@ -5907,8 +5903,7 @@
         const activeRow = assistantRows[assistantRows.length - 1] || null;
         const bubble = activeRow?.querySelector(".bubble");
         const sid = activeRow?.querySelector(".status-msg")?.id || "";
-        const tsid = activeRow?.querySelector(".thinking-tool-trace")?.id ||
-          activeRow?.querySelector(".trux-thinking-details")?.id || "";
+        const tsid = activeRow?.querySelector(".trux-thinking-details")?.id || "";
 
         try { activeAbortController?.abort(); } catch {}
         if (activeStreamer) {
