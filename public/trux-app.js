@@ -850,7 +850,14 @@
       options = options || {};
       const nextMode = mode || "chat";
       const previousMode = workspaceMode;
-      const modeChanged = nextMode !== previousMode || !!document.body.dataset.mediaMode || options.forceReset === true;
+      // Plans is a standalone page. Any explicit workspace switch must leave it
+      // first, even when the selected mode matches the previously saved mode.
+      const leavingSubscriptionPage = document.body.classList.contains("subscription-page-active");
+      if(leavingSubscriptionPage) {
+        document.body.classList.remove("subscription-page-active");
+        truxSubscriptionReturnState = null;
+      }
+      const modeChanged = leavingSubscriptionPage || nextMode !== previousMode || !!document.body.dataset.mediaMode || options.forceReset === true;
       const preserveSession = options.preserveSession === true;
 
       closeAttachmentMenu(); closeModelDropdown();
@@ -882,7 +889,6 @@
         const codeView = getEl("codeChatContainer");
         if(chatView) { chatView.style.display = "none"; chatView.innerHTML = ""; }
         if(codeView) { codeView.style.display = "none"; codeView.innerHTML = ""; }
-        getEl("truxCodeWorkspace")?.classList.add("code-workspace-dismissed");
         void document.body.offsetHeight;
       }
 
@@ -914,15 +920,13 @@
       if(chatView) chatView.style.display = isCoding ? "none" : (currentChatId ? "block" : "none");
       if(codeView) codeView.style.display = isCoding ? "block" : "none";
 
+      // Reset any stale inline state. Workspace-mode CSS controls visibility;
+      // the transcript lives inside this same element.
       const codeHome = getEl("truxCodeWorkspace");
-      if(isCoding) {
-        // Code remains a persistent workspace while the transcript updates inside it.
-        codeHome?.classList.remove("code-workspace-dismissed");
-        codeHome?.style.removeProperty("display");
-        codeHome?.style.removeProperty("opacity");
-        codeHome?.style.removeProperty("transform");
-      } else {
-        codeHome?.classList.add("code-workspace-dismissed");
+      if(codeHome) {
+        codeHome.style.removeProperty("display");
+        codeHome.style.removeProperty("opacity");
+        codeHome.style.removeProperty("transform");
       }
 
       // Rehydrate the same chat only for internal/history navigation.
@@ -1792,7 +1796,6 @@
       const code = getEl("codeChatContainer");
       if (chat) { chat.innerHTML = ""; chat.style.display = "block"; }
       if (code) { code.innerHTML = ""; code.style.display = "none"; }
-      getEl("truxCodeWorkspace")?.classList.add("code-workspace-dismissed");
       getEl("welcomeScreen")?.style.setProperty("display","none","important");
 
       const input = getEl("promptInput");
@@ -4134,7 +4137,6 @@
       let imagePrompt = opts.imagePrompt || basePrompt;
       enterChatWorkspace();
       document.body.removeAttribute("data-media-mode");
-      if(workspaceMode === "coding") { const codeHome = getEl("truxCodeWorkspace"); codeHome?.classList.add("code-workspace-dismissed"); codeHome?.style.setProperty("display", "none", "important"); }
       isGenerating = true; isScrolledUp = false;
       getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>'; getEl("actionBtn").classList.add("stop"); getEl("actionBtn").classList.remove("ready");
 
@@ -6573,16 +6575,13 @@
       });
 
       if (codingSession) {
+        // #truxCodeWorkspace contains #codeChatContainer; keep this parent
+        // visible while the assistant row is appended and streamed.
         const codeHome = getEl("truxCodeWorkspace");
         if (codeHome) {
-          codeHome.classList.add("code-workspace-dismissed");
-          codeHome.style.setProperty("opacity","0","important");
-          codeHome.style.setProperty("transform","translateY(-8px)","important");
-          setTimeout(() => {
-            if (document.body.classList.contains("coding-workspace") && currentChatId && codeHome) {
-              codeHome.style.setProperty("display","none","important");
-            }
-          }, 220);
+          codeHome.style.removeProperty("display");
+          codeHome.style.removeProperty("opacity");
+          codeHome.style.removeProperty("transform");
         }
       }
 
