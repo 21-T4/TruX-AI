@@ -92,66 +92,99 @@ async function deleteChunkVersion(ref, version, count) {
   await commitDeletes(refs);
 }
 
+function hashBuffer(buffer) {
+  return crypto.createHash('sha256').update(buffer).digest('hex');
+}
+
 async function writeChat(uid, chatId, chat, options = {}) {
   const id = String(chatId || '');
   if (!id || id.length > 512 || !isPersistableChat(chat)) return false;
 
   const ref = chatDocument(uid, id);
-  const previousSnapshot = await ref.get();
-  const previous = previousSnapshot.exists ? previousSnapshot.data() : null;
-  const payload = await gzip(Buffer.from(JSON.stringify(chat), 'utf8'), { level: 6 });
+  const raw = Buffer.from(JSON.stringify(chat), 'utf8');
+  if (raw.length > MAX_REQUEST_BYTES) {
+    throw Object.assign(new Error('A single chat is too large for one safe sync request.'), { status: 413 });
+  }
+  const payload = await gzip(raw, { level: 6 });
   const savedAt = String(options.savedAt || new Date().toISOString());
   const base = {
-    schemaVersion: 3,
+    schemaVersion: 4,
     userId: uid,
     chatId: id,
     savedAt,
     payloadBytes: payload.length
   };
 
-  let nextVersion = null;
-  let nextCount = 0;
-  if (payload.length <= INLINE_PAYLOAD_LIMIT) {
-    await ref.set({ ...base, storageMode: 'inline', payload });
-  } else {
-    nextVersion = crypto.randomUUID();
-    nextCount = Math.ceil(payload.length / CHUNK_BYTES);
-    try {
-      let batch = firestore().batch();
-      let batchOperations = 0;
-      for (let start = 0, index = 0; start < payload.length; start += CHUNK_BYTES, index++) {
-        const end = Math.min(start + CHUNK_BYTES, payload.length);
-        batch.set(ref.collection('parts').doc(nextVersion + '_' + index), {
-          storageVersion: nextVersion,
-          index,
-          data: Buffer.from(payload.subarray(start, end))
-        });
-        batchOperations++;
-        if (batchOperations >= BATCH_LIMIT) {
-          await batch.commit();
-          batch = firestore().batch();
-          batchOperations = 0;
+  // Large chats are content-addressed per chunk. When a streamed response only
+  // changes the final compressed blocks, unchanged chunks are reused instead of
+  // being written again. One Firestore transaction switches the parent record
+  // and updates chunk references atomically, so refreshes never see half a chat.
+  const result = await firestore().runTransaction(async transaction => {
+    const previousSnapshot = await transaction.get(ref);
+    const previous = previousSnapshot.exists ? previousSnapshot.data() : null;
+    const legacyVersion = previous?.storageMode === 'chunks' ? String(previous.storageVersion || '') : '';
+    const legacyCount = previous?.storageMode === 'chunks' ? Math.max(0, Number(previous.chunkCount) || 0) : 0;
+
+    if (payload.length <= INLINE_PAYLOAD_LIMIT) {
+      transaction.set(ref, { ...base, storageMode: 'inline', payload });
+      if (previous?.storageMode === 'chunks-v2') {
+        for (const hash of new Set(Array.isArray(previous.chunkHashes) ? previous.chunkHashes : [])) {
+          if (/^[a-f0-9]{64}$/.test(String(hash))) transaction.delete(ref.collection('parts').doc(String(hash)));
+        }
+      } else if (legacyVersion && legacyCount <= BATCH_LIMIT - 1) {
+        for (let index = 0; index < legacyCount; index++) {
+          transaction.delete(ref.collection('parts').doc(legacyVersion + '_' + index));
         }
       }
-      if (batchOperations) await batch.commit();
-      await ref.set({
-        ...base,
-        storageMode: 'chunks',
-        storageVersion: nextVersion,
-        chunkCount: nextCount
-      });
-    } catch (error) {
-      try { await deleteChunkVersion(ref, nextVersion, nextCount); } catch {}
-      throw error;
+      return { legacyVersion: legacyCount > BATCH_LIMIT - 1 ? legacyVersion : '', legacyCount };
     }
-  }
 
-  // The parent is written only after all new parts are committed. Old parts
-  // are removed afterward, so an interrupted write never points at partial data.
-  if (previous?.storageMode === 'chunks' && previous.storageVersion &&
-      previous.storageVersion !== nextVersion) {
+    const pieces = [];
+    for (let start = 0; start < payload.length; start += CHUNK_BYTES) {
+      pieces.push(payload.subarray(start, Math.min(start + CHUNK_BYTES, payload.length)));
+    }
+    const hashes = pieces.map(hashBuffer);
+    const nextHashes = new Set(hashes);
+    const previousHashes = new Set(
+      previous?.storageMode === 'chunks-v2' && Array.isArray(previous.chunkHashes)
+        ? previous.chunkHashes.map(String)
+        : []
+    );
+
+    for (let index = 0; index < pieces.length; index++) {
+      const hash = hashes[index];
+      if (previousHashes.has(hash)) continue;
+      transaction.set(ref.collection('parts').doc(hash), {
+        storageMode: 'chunks-v2',
+        sha256: hash,
+        data: Buffer.from(pieces[index])
+      });
+    }
+
+    transaction.set(ref, {
+      ...base,
+      storageMode: 'chunks-v2',
+      chunkCount: hashes.length,
+      chunkHashes: hashes
+    });
+
+    if (previous?.storageMode === 'chunks-v2') {
+      for (const hash of previousHashes) {
+        if (!nextHashes.has(hash) && /^[a-f0-9]{64}$/.test(hash)) {
+          transaction.delete(ref.collection('parts').doc(hash));
+        }
+      }
+    } else if (legacyVersion && legacyCount <= BATCH_LIMIT - 1) {
+      for (let index = 0; index < legacyCount; index++) {
+        transaction.delete(ref.collection('parts').doc(legacyVersion + '_' + index));
+      }
+    }
+    return { legacyVersion: legacyCount > BATCH_LIMIT - 1 ? legacyVersion : '', legacyCount };
+  });
+
+  if (result.legacyVersion) {
     try {
-      await deleteChunkVersion(ref, previous.storageVersion, previous.chunkCount);
+      await deleteChunkVersion(ref, result.legacyVersion, result.legacyCount);
     } catch (error) {
       console.warn('[chat-sync] Old Firestore chat parts need cleanup:', String(error?.message || error));
     }
@@ -166,20 +199,44 @@ async function readChatDocument(snapshot, uid) {
   if (!chatId) return null;
 
   let payload;
-  if (record.storageMode === 'chunks') {
+  if (record.storageMode === 'chunks-v2') {
+    const hashes = Array.isArray(record.chunkHashes) ? record.chunkHashes.map(String) : [];
+    if (!hashes.length || hashes.length > 10000 || hashes.some(hash => !/^[a-f0-9]{64}$/.test(hash))) {
+      throw new Error('Stored chat chunk metadata is invalid.');
+    }
+    const uniqueHashes = [...new Set(hashes)];
+    const snapshots = await Promise.all(uniqueHashes.map(hash => snapshot.ref.collection('parts').doc(hash).get()));
+    const buffersByHash = new Map();
+    for (let index = 0; index < snapshots.length; index++) {
+      const partSnapshot = snapshots[index];
+      const hash = uniqueHashes[index];
+      if (!partSnapshot.exists) {
+        throw Object.assign(new Error('A stored chat part is missing.'), { missingChatPart: true });
+      }
+      const part = partSnapshot.data();
+      const bytes = bufferFromFirestore(part?.data);
+      if (part?.sha256 !== hash || hashBuffer(bytes) !== hash) {
+        throw new Error('Stored chat part failed integrity validation.');
+      }
+      buffersByHash.set(hash, bytes);
+    }
+    payload = Buffer.concat(hashes.map(hash => buffersByHash.get(hash)));
+  } else if (record.storageMode === 'chunks') {
+    // Backward compatibility for Firestore records created by the previous
+    // storage format. They are converted to content-addressed parts on next save.
     const version = String(record.storageVersion || '');
     const count = Number(record.chunkCount);
     if (!version || !Number.isSafeInteger(count) || count < 1 || count > 10000) {
       throw new Error('Stored chat chunk metadata is invalid.');
     }
     const refs = [];
-    for (let i = 0; i < count; i++) refs.push(snapshot.ref.collection('parts').doc(version + '_' + i));
+    for (let index = 0; index < count; index++) refs.push(snapshot.ref.collection('parts').doc(version + '_' + index));
     const parts = await Promise.all(refs.map(ref => ref.get()));
     const buffers = [];
-    for (let i = 0; i < parts.length; i++) {
-      if (!parts[i].exists) throw Object.assign(new Error('A stored chat part is missing.'), { missingChatPart: true });
-      const part = parts[i].data();
-      if (part?.storageVersion !== version || Number(part?.index) !== i) {
+    for (let index = 0; index < parts.length; index++) {
+      if (!parts[index].exists) throw Object.assign(new Error('A stored chat part is missing.'), { missingChatPart: true });
+      const part = parts[index].data();
+      if (part?.storageVersion !== version || Number(part?.index) !== index) {
         throw new Error('Stored chat part metadata does not match.');
       }
       buffers.push(bufferFromFirestore(part.data));
@@ -372,19 +429,23 @@ export async function onRequestGet({ request, env }) {
   const user = await requireFirebaseUser(request, env);
   const uid = user.uid;
   const manifestRef = accountManifest(uid);
-  let migrationPending = false;
-  let migrationImported = 0;
 
   let docs = await chatCollection(uid).get();
-  const manifest = await manifestRef.get();
+  let manifest = await manifestRef.get();
   if (!manifest.exists || manifest.data()?.bucketMigrationComplete !== true) {
     try {
-      const migrated = await migrateBucketChatHistory(env, uid, docs);
-      migrationImported = migrated.imported || 0;
+      await migrateBucketChatHistory(env, uid, docs);
       docs = await chatCollection(uid).get();
+      manifest = await manifestRef.get();
     } catch (error) {
-      migrationPending = true;
+      // An empty successful response causes the client to discard its fallback
+      // state. Fail closed instead: the existing chat data stays untouched and
+      // the client retries the read/migration after a transient problem.
       console.warn('[chat-sync] Legacy chat migration remains pending:', String(error?.message || error));
+      return jsonResponse({
+        ok: false,
+        error: 'Chat history migration could not be completed. Existing bucket data was preserved; retrying is safe.'
+      }, 503);
     }
   }
 
@@ -413,16 +474,15 @@ export async function onRequestGet({ request, env }) {
     }
   }
 
+  const migrationComplete = manifest.exists && manifest.data()?.bucketMigrationComplete === true;
   return jsonResponse({
     ok: true,
-    found: docs.size > 0,
+    found: docs.size > 0 || migrationComplete,
     userId: uid,
     savedAt,
     latestChatId,
     unreadableRecords,
     missingRecords,
-    migrationPending,
-    migrationImported,
     chats
   });
 }
