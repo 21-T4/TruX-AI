@@ -224,8 +224,22 @@
           updateNotificationSettingsUI();
           maybeAskForLocation();
           if("Notification" in window && Notification.permission === "granted") syncTruxNotificationsSilently();
-          syncChatsToCloud(true);
+          void loadChatsFromCloud(u);
         } else {
+          cloudChatLoadGeneration += 1;
+          cloudChatsReady = false;
+          cloudChatsOwnerUid = null;
+          chatSessions = {};
+          cloudChatSyncedFingerprints.clear();
+          pendingDeletedCloudChatIds.clear();
+          clearTimeout(cloudChatSyncTimer);
+          currentChatId = null;
+          getEl("chatContainer")?.replaceChildren();
+          getEl("codeChatContainer")?.replaceChildren();
+          getEl("welcomeScreen")?.style.setProperty("display", "block", "important");
+          document.body.classList.remove("chat-session-active", "coding-workspace");
+          document.body.classList.add("home-active");
+          renderSidebar();
           store.removeItem("trux_cached_user");
           document.body.classList.remove("user-signed-in");
           if (getEl("userName")) getEl("userName").innerText = "Guest User";
@@ -448,9 +462,18 @@
       };
     })();
 
+    let legacyCachedChats = store.json("trux_chats", {});
+    let legacyCachedChatsUid = store.json("trux_cached_user", null)?.uid || null;
+    let cloudChatsReady = false;
+    let cloudChatsOwnerUid = null;
+    let cloudChatLoadGeneration = 0;
+    const cloudChatSyncedFingerprints = new Map();
+    const pendingDeletedCloudChatIds = new Set();
+    let cloudChatSyncChain = Promise.resolve();
+
     let currentPlanTier = "base",
         workspaceMode = "chat",
-        chatSessions = store.json("trux_chats", {}),
+        chatSessions = {},
         pinnedInsights = store.json("trux_pinned", []),
         feedbackCount = Number(store.getItem("trux_feedback_count")) || 0,
         currentChatId = null,
@@ -864,6 +887,7 @@
 
       if(modeChanged) {
         if (activeTurnContext) persistTurnDraft(activeTurnContext, activeTurnContext.latestText || "", true);
+        if(currentChatId && isPersistableChatSession(chatSessions[currentChatId])) void syncChatsToCloud(true);
         generationEpoch += 1;
         activeTurnContext = null;
         activeAbortController?.abort();
@@ -1272,7 +1296,7 @@
       let total=0,imageBytes=0,fileBytes=0,chats=0,archived=0;
       try{total=new Blob([JSON.stringify(chatSessions||{})]).size;Object.values(chatSessions||{}).forEach(chat=>{if(!chat||chat.incognito)return;if(chat.archived)archived++;chats++;(chat.messages||[]).forEach(message=>{if(message?.image)imageBytes+=String(message.image).length;if(message?.file)fileBytes+=String(message.file).length;});});}catch{}
       const fmt=n=>n<1024?n+" B":n<1048576?(n/1024).toFixed(1)+" KB":(n/1048576).toFixed(2)+" MB";
-      host.textContent="Approx. "+fmt(total)+" of chat data · "+chats+" chats · "+archived+" archived · image data "+fmt(imageBytes)+" · file data "+fmt(fileBytes)+". Browser caches are excluded.";
+      host.textContent=cloudChatsReady ? "Account cloud history (loaded from the bucket): approx. "+fmt(total)+" · "+chats+" chats · "+archived+" archived · image data "+fmt(imageBytes)+" · file data "+fmt(fileBytes)+". Chat history is not persisted in device storage." : "Sign in to load account chat history from Cloud Storage.";
     }
     function viewArchivedChats() {
       const host=getEl("archivedChatsList");if(!host)return;host.replaceChildren();
@@ -1321,7 +1345,41 @@
       try { await fetch("/api/chat", { cache: "no-store" }); toast(`Backend reachable - ${Math.round(performance.now() - t)} ms`, "ok"); } catch { toast("Backend check failed.", "err"); }
     }
     function resetAllSettings() { if(confirm("Reset all settings?")) { ["trux_custom_instructions","trux_auto_read","trux_ambient_glow","trux_tts_rate","trux_home_look","trux_location_enabled","trux_location_granted","trux_location_prompted","trux_avatar_override","trux_theme","trux_profile_display_name",...TRUX_PROFILE_PREFERENCES.map(k=>"trux_"+k),"trux_age_group","trux_dictation_language","trux_speech_voice","trux_dictation_history_items",...TRUX_NOTIFICATION_CATEGORIES.map(k=>"trux_notification_cat_"+k)].forEach(k => store.removeItem(k)); loadSettings(); } }
-    function clearAllHistory() { if(confirm("Delete all local chats?")) { chatSessions = {}; store.removeItem("trux_chats"); startNewChat(); closeSettingsModal(); } }
+    async function clearAllHistory() {
+      if(!confirm("Delete all chats saved to this TruX account? This cannot be undone.")) return;
+      cloudChatLoadGeneration += 1;
+      clearTimeout(cloudChatSyncTimer);
+      const user = auth?.currentUser;
+      chatSessions = {};
+      cloudChatSyncedFingerprints.clear();
+      pendingDeletedCloudChatIds.clear();
+      currentChatId = null;
+      cloudChatsReady = !!user && cloudChatsOwnerUid === user.uid;
+      startNewChat();
+      closeSettingsModal();
+      if(!user) {
+        toast("Sign in to clear account chat history.", "err");
+        return;
+      }
+      const uid = user.uid;
+      const task = cloudChatSyncChain.catch(() => {}).then(async () => {
+        if(!auth?.currentUser || auth.currentUser.uid !== uid) return false;
+        const response = await truxAuthenticatedFetch("/api/chat/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+          body: JSON.stringify({ action: "clear" })
+        }, user);
+        if(!response.ok) throw new Error(await response.text().catch(() => "Cloud history could not be cleared."));
+        return true;
+      }).catch(error => {
+        console.warn("Could not clear account cloud chat history:", error?.message || error);
+        return false;
+      });
+      cloudChatSyncChain = task.then(() => undefined, () => undefined);
+      const cleared = await task;
+      if(cleared) toast("Account chat history cleared.", "ok");
+      else toast("Cloud history could not be cleared. Please retry.", "err");
+    }
 
     async function handleAuthAction() {
       if (!truxAuthStateReady) {
@@ -1711,71 +1769,142 @@
         } catch (e) { /* ignore */ }
       }, 120);
     }
-    async function syncChatsToCloud(immediate = false) {
-      if(!auth?.currentUser) return;
-      clearTimeout(cloudChatSyncTimer);
-      const run = async () => {
-        try {
-          const requestUser = auth.currentUser;
-          const response = await truxAuthenticatedFetch("/api/chat/sync", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chats: Object.fromEntries(Object.entries(chatSessions).filter(([_, chat]) => !chat?.incognito)),
-              incognito: !!incognitoMode
-            })
-          }, requestUser);
-          if(!response.ok) console.warn("TruX cloud chat sync failed:", await response.text().catch(() => ""));
-        } catch(e) {
-          console.warn("TruX cloud chat sync unavailable:", e?.message || e);
-        }
-      };
-      if(immediate) return run();
-      cloudChatSyncTimer = setTimeout(run, 1400);
+
+    function isPersistableChatSession(chat) {
+      return !!chat && typeof chat === "object" && !Array.isArray(chat) && chat.incognito !== true;
     }
+
+    async function loadChatsFromCloud(user) {
+      if(!user?.uid) return false;
+      const uid = String(user.uid);
+      const generation = ++cloudChatLoadGeneration;
+      cloudChatsReady = false;
+      cloudChatsOwnerUid = uid;
+      chatSessions = {};
+      cloudChatSyncedFingerprints.clear();
+      pendingDeletedCloudChatIds.clear();
+      clearTimeout(cloudChatSyncTimer);
+      currentChatId = null;
+      getEl("chatContainer")?.replaceChildren();
+      getEl("codeChatContainer")?.replaceChildren();
+      getEl("welcomeScreen")?.style.setProperty("display", "block", "important");
+      document.body.classList.remove("chat-session-active", "coding-workspace");
+      document.body.classList.add("home-active");
+      renderSidebar();
+
+      try {
+        const response = await truxAuthenticatedFetch("/api/chat/sync", {
+          method: "GET",
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache, no-store", "Pragma": "no-cache" }
+        }, user);
+        if(!response.ok) throw new Error(await response.text().catch(() => "Cloud chat history could not be loaded."));
+        const result = await response.json();
+        if(generation !== cloudChatLoadGeneration || auth?.currentUser?.uid !== uid) return false;
+
+        const remoteChats = result?.chats && typeof result.chats === "object" && !Array.isArray(result.chats)
+          ? result.chats
+          : {};
+        if(result?.found !== true && legacyCachedChatsUid === uid &&
+           legacyCachedChats && typeof legacyCachedChats === "object" && !Array.isArray(legacyCachedChats)) {
+          chatSessions = Object.fromEntries(Object.entries(legacyCachedChats).filter(([_, chat]) => isPersistableChatSession(chat)));
+          cloudChatsReady = true;
+          renderSidebar();
+          const migrated = await syncChatsToCloud(true);
+          if(!migrated && Object.keys(chatSessions).length) {
+            toast("Existing chats are loaded, but cloud migration failed. Check your connection and try again.", "err");
+            return false;
+          }
+        } else {
+          chatSessions = Object.fromEntries(Object.entries(remoteChats).filter(([_, chat]) => isPersistableChatSession(chat)));
+          cloudChatSyncedFingerprints.clear();
+          Object.entries(chatSessions).forEach(([id, chat]) => cloudChatSyncedFingerprints.set(id, JSON.stringify(chat)));
+          cloudChatsReady = true;
+        }
+
+        store.removeItem("trux_chats");
+        legacyCachedChats = {};
+        legacyCachedChatsUid = null;
+        renderSidebar();
+        updateTruxStorageSummary();
+        return true;
+      } catch(error) {
+        if(generation === cloudChatLoadGeneration && auth?.currentUser?.uid === uid) {
+          cloudChatsReady = false;
+          chatSessions = {};
+          cloudChatSyncedFingerprints.clear();
+          renderSidebar();
+          console.warn("TruX could not load account chat history from Cloud Storage:", error?.message || error);
+          toast("Cloud chat history could not be loaded. Device-cached chats were not used.", "err");
+        }
+        return false;
+      }
+    }
+
+    async function syncChatsToCloud(immediate = false) {
+      const currentUser = auth?.currentUser;
+      if(!currentUser || !cloudChatsReady || cloudChatsOwnerUid !== currentUser.uid) return false;
+      clearTimeout(cloudChatSyncTimer);
+
+      const run = () => {
+        const requestUser = auth?.currentUser;
+        if(!requestUser || requestUser.uid !== cloudChatsOwnerUid) return Promise.resolve(false);
+        const uid = requestUser.uid;
+        const task = cloudChatSyncChain.catch(() => {}).then(async () => {
+          if(!auth?.currentUser || auth.currentUser.uid !== uid || !cloudChatsReady || cloudChatsOwnerUid !== uid) return false;
+
+          const changed = [];
+          for(const [id, chat] of Object.entries(chatSessions)) {
+            if(!isPersistableChatSession(chat)) continue;
+            const serialized = JSON.stringify(chat);
+            if(cloudChatSyncedFingerprints.get(id) !== serialized) changed.push({ id, serialized });
+          }
+          const deleted = Array.from(pendingDeletedCloudChatIds).filter(id => !Object.prototype.hasOwnProperty.call(chatSessions, id));
+          if(!changed.length && !deleted.length) return true;
+
+          for(const item of changed) {
+            if(!auth?.currentUser || auth.currentUser.uid !== uid) return false;
+            const response = await truxAuthenticatedFetch("/api/chat/sync", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+              body: JSON.stringify({ chatId: item.id, chat: JSON.parse(item.serialized) })
+            }, requestUser);
+            if(!response.ok) throw new Error(await response.text().catch(() => "Chat sync failed."));
+            if(JSON.stringify(chatSessions[item.id]) === item.serialized) {
+              cloudChatSyncedFingerprints.set(item.id, item.serialized);
+            }
+          }
+
+          for(const id of deleted) {
+            if(!auth?.currentUser || auth.currentUser.uid !== uid) return false;
+            const response = await truxAuthenticatedFetch("/api/chat/sync", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+              body: JSON.stringify({ action: "delete", chatId: id })
+            }, requestUser);
+            if(!response.ok) throw new Error(await response.text().catch(() => "Chat deletion could not be synced."));
+            pendingDeletedCloudChatIds.delete(id);
+            cloudChatSyncedFingerprints.delete(id);
+          }
+          return true;
+        }).catch(error => {
+          console.warn("TruX account chat sync failed:", error?.message || error);
+          return false;
+        });
+        cloudChatSyncChain = task.then(() => undefined, () => undefined);
+        return task;
+      };
+
+      if(immediate) return run();
+      return new Promise(resolve => {
+        cloudChatSyncTimer = setTimeout(() => { void run().then(resolve); }, 1400);
+      });
+    }
+
     function saveChatSessions() {
       if(incognitoMode || (currentChatId && chatSessions[currentChatId]?.incognito)) return;
       queueSidebarSync();
-      try {
-        store.setItem("trux_chats", JSON.stringify(chatSessions));
-        syncChatsToCloud();
-        return;
-      } catch (e) {
-        // Quota exceeded — most likely because old chats are carrying large
-        // base64 image data URLs. Strip images from every chat except the
-        // one currently open, then retry.
-        Object.keys(chatSessions).forEach(id => {
-          if (id === currentChatId) return;
-          (chatSessions[id].messages || []).forEach(m => {
-            if (m.image) m.image = null;
-          });
-        });
-        try {
-          store.setItem("trux_chats", JSON.stringify(chatSessions));
-          syncChatsToCloud();
-          return;
-        } catch (e2) {
-          // Still too big — drop the oldest chats one at a time until it fits.
-          let ids = Object.keys(chatSessions);
-          for (let i = 0; i < ids.length; i++) {
-            let oldestId = ids[i];
-            if (oldestId === currentChatId) continue;
-            delete chatSessions[oldestId];
-            try {
-              store.setItem("trux_chats", JSON.stringify(chatSessions));
-              syncChatsToCloud();
-              return;
-            } catch (e3) { /* keep pruning */ }
-          }
-          // Last resort — keep only the current chat.
-          try {
-            let keep = currentChatId && chatSessions[currentChatId] ? { [currentChatId]: chatSessions[currentChatId] } : {};
-            chatSessions = keep;
-            store.setItem("trux_chats", JSON.stringify(chatSessions));
-            syncChatsToCloud();
-          } catch { /* give up silently, chat still works in-memory */ }
-        }
-      }
+      void syncChatsToCloud();
     }
 
     function launchIncognitoChat() {
@@ -4014,41 +4143,18 @@
       draft.text = value;
       draft.incomplete = true;
 
-      // Store only the active turn's draft locally, rather than serializing all chats
-      // and large attachments several times per second. Never cloud-sync each chunk.
-      try {
-        store.setItem("trux_turn_draft_" + context.chatId, JSON.stringify({
-          turnKey: context.turnKey,
-          userMessageIndex: context.userMessageIndex,
-          text: value
-        }));
-      } catch {}
+      // Keep the active response in memory and periodically persist it to the account's
+      // cloud chat object. Device-local drafts never override the cloud snapshot.
+      if(force || now - Number(context.lastCloudPersistAt || 0) >= 2500) {
+        context.lastCloudPersistAt = now;
+        void syncChatsToCloud(!!force);
+      }
     }
 
     function restorePersistedTurnDraft(chatId) {
-      const session = chatSessions[chatId];
-      if (!session?.messages || session.incognito) return;
-      const saved = store.json("trux_turn_draft_" + chatId, null);
-      if (!saved || !String(saved.text || "")) return;
-
-      const turnKey = String(saved.turnKey || "");
-      let draft = turnKey
-        ? session.messages.find(message => message?.role === "trux" && message.draftTurnId === turnKey)
-        : null;
-      if (!draft) {
-        const userIndex = Number(saved.userMessageIndex);
-        if (!Number.isInteger(userIndex) || userIndex < 0 || session.messages[userIndex]?.role !== "user") return;
-        draft = {
-          role: "trux",
-          text: String(saved.text),
-          incomplete: true,
-          ...(turnKey ? { draftTurnId: turnKey } : {})
-        };
-        session.messages.splice(userIndex + 1, 0, draft);
-      } else {
-        draft.text = String(saved.text);
-        draft.incomplete = true;
-      }
+      // Any saved partial response is already part of the account cloud snapshot.
+      // Remove a legacy local draft without ever reading it back into chat history.
+      store.removeItem("trux_turn_draft_" + chatId);
     }
 
     function finalizeResponse(id, aid, text, prompt, voice, streamer, sources, turnContext = null) {
@@ -6721,6 +6827,7 @@
     function loadChatSession(id) {
       if(!chatSessions[id]) return;
       if (activeTurnContext) persistTurnDraft(activeTurnContext, activeTurnContext.latestText || "", true);
+      if(currentChatId && isPersistableChatSession(chatSessions[currentChatId])) void syncChatsToCloud(true);
       generationEpoch += 1;
       activeTurnContext = null;
       try { activeAbortController?.abort(); } catch {}
@@ -6763,8 +6870,11 @@
       if(!confirm("Delete this chat?")) return;
       const notebookWasOpen = document.body.classList.contains("notebook-open");
       const openNotebookId = getActiveNotebookId();
+      const deletedChat = chatSessions[id];
       delete chatSessions[id];
       store.removeItem("trux_turn_draft_" + id);
+      if(deletedChat && !deletedChat.incognito && auth?.currentUser) pendingDeletedCloudChatIds.add(id);
+      cloudChatSyncedFingerprints.delete(id);
       saveChatSessions();
       if(currentChatId === id) {
         if(notebookWasOpen) {
