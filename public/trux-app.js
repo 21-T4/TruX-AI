@@ -1777,19 +1777,25 @@
     async function loadChatsFromCloud(user) {
       if(!user?.uid) return false;
       const uid = String(user.uid);
+      const sameAccount = cloudChatsOwnerUid === uid;
       const generation = ++cloudChatLoadGeneration;
+
+      // Keep this account's in-memory state while refreshing it. Clearing it before
+      // the read succeeds made a transient Storage/auth error look like data loss.
       cloudChatsReady = false;
       cloudChatsOwnerUid = uid;
-      chatSessions = {};
-      cloudChatSyncedFingerprints.clear();
-      pendingDeletedCloudChatIds.clear();
+      if(!sameAccount) {
+        chatSessions = {};
+        cloudChatSyncedFingerprints.clear();
+        pendingDeletedCloudChatIds.clear();
+        currentChatId = null;
+        getEl("chatContainer")?.replaceChildren();
+        getEl("codeChatContainer")?.replaceChildren();
+        getEl("welcomeScreen")?.style.setProperty("display", "block", "important");
+        document.body.classList.remove("chat-session-active", "coding-workspace");
+        document.body.classList.add("home-active");
+      }
       clearTimeout(cloudChatSyncTimer);
-      currentChatId = null;
-      getEl("chatContainer")?.replaceChildren();
-      getEl("codeChatContainer")?.replaceChildren();
-      getEl("welcomeScreen")?.style.setProperty("display", "block", "important");
-      document.body.classList.remove("chat-session-active", "coding-workspace");
-      document.body.classList.add("home-active");
       renderSidebar();
 
       try {
@@ -1798,44 +1804,91 @@
           cache: "no-store",
           headers: { "Cache-Control": "no-cache, no-store", "Pragma": "no-cache" }
         }, user);
-        if(!response.ok) throw new Error(await response.text().catch(() => "Cloud chat history could not be loaded."));
+        if(!response.ok) {
+          const detail = await response.text().catch(() => "");
+          throw new Error(detail || "Cloud chat history could not be loaded (HTTP " + response.status + ").");
+        }
         const result = await response.json();
+        if(result?.ok !== true || !result.chats || typeof result.chats !== "object" || Array.isArray(result.chats)) {
+          throw new Error("Cloud chat history returned an invalid response.");
+        }
         if(generation !== cloudChatLoadGeneration || auth?.currentUser?.uid !== uid) return false;
 
-        const remoteChats = result?.chats && typeof result.chats === "object" && !Array.isArray(result.chats)
-          ? result.chats
-          : {};
-        if(result?.found !== true && legacyCachedChatsUid === uid &&
-           legacyCachedChats && typeof legacyCachedChats === "object" && !Array.isArray(legacyCachedChats)) {
-          chatSessions = Object.fromEntries(Object.entries(legacyCachedChats).filter(([_, chat]) => isPersistableChatSession(chat)));
-          cloudChatsReady = true;
-          renderSidebar();
-          const migrated = await syncChatsToCloud(true);
-          if(!migrated && Object.keys(chatSessions).length) {
-            toast("Existing chats are loaded, but cloud migration failed. Check your connection and try again.", "err");
-            return false;
+        const remoteChats = Object.fromEntries(
+          Object.entries(result.chats).filter(([_, chat]) => isPersistableChatSession(chat))
+        );
+
+        // Preserve edits/new chats made while the network read was in flight.
+        // Only local records that differ from their last confirmed cloud version
+        // can override a remote record. Cloud remains authoritative otherwise.
+        const localUnsynced = new Map();
+        for(const [id, chat] of Object.entries(chatSessions)) {
+          if(!isPersistableChatSession(chat) || pendingDeletedCloudChatIds.has(id)) continue;
+          const serialized = JSON.stringify(chat);
+          if(cloudChatSyncedFingerprints.get(id) !== serialized) {
+            localUnsynced.set(id, chat);
           }
-        } else {
-          chatSessions = Object.fromEntries(Object.entries(remoteChats).filter(([_, chat]) => isPersistableChatSession(chat)));
-          cloudChatSyncedFingerprints.clear();
-          Object.entries(chatSessions).forEach(([id, chat]) => cloudChatSyncedFingerprints.set(id, JSON.stringify(chat)));
-          cloudChatsReady = true;
+        }
+
+        const nextChats = { ...remoteChats };
+        let legacyMigrationNeeded = false;
+        if(result.found !== true &&
+           legacyCachedChatsUid === uid &&
+           legacyCachedChats && typeof legacyCachedChats === "object" &&
+           !Array.isArray(legacyCachedChats)) {
+          for(const [id, chat] of Object.entries(legacyCachedChats)) {
+            if(isPersistableChatSession(chat) &&
+               !Object.prototype.hasOwnProperty.call(nextChats, id) &&
+               !pendingDeletedCloudChatIds.has(id)) {
+              nextChats[id] = chat;
+              legacyMigrationNeeded = true;
+            }
+          }
+        }
+        for(const [id, chat] of localUnsynced) nextChats[id] = chat;
+        for(const id of pendingDeletedCloudChatIds) delete nextChats[id];
+
+        chatSessions = Object.fromEntries(
+          Object.entries(nextChats).filter(([_, chat]) => isPersistableChatSession(chat))
+        );
+
+        cloudChatSyncedFingerprints.clear();
+        for(const [id, chat] of Object.entries(remoteChats)) {
+          if(!pendingDeletedCloudChatIds.has(id)) {
+            cloudChatSyncedFingerprints.set(id, JSON.stringify(chat));
+          }
+        }
+        // Locally changed/new records intentionally keep the previous fingerprint
+        // (or no fingerprint) so the normal sync path uploads them after load.
+        cloudChatsReady = true;
+        renderSidebar();
+        updateTruxStorageSummary();
+
+        const needsSync = legacyMigrationNeeded ||
+          Array.from(localUnsynced.keys()).some(id =>
+            JSON.stringify(chatSessions[id]) !== cloudChatSyncedFingerprints.get(id)
+          ) ||
+          pendingDeletedCloudChatIds.size > 0;
+        if(needsSync) {
+          const saved = await syncChatsToCloud(true);
+          if(!saved) {
+            toast("Your chats are shown, but cloud sync is still pending. Keep TruX open and check your connection.", "err");
+            return true;
+          }
         }
 
         store.removeItem("trux_chats");
         legacyCachedChats = {};
         legacyCachedChatsUid = null;
-        renderSidebar();
-        updateTruxStorageSummary();
         return true;
       } catch(error) {
         if(generation === cloudChatLoadGeneration && auth?.currentUser?.uid === uid) {
+          // Never replace available in-memory history with an empty list on a
+          // transient cloud read failure.
           cloudChatsReady = false;
-          chatSessions = {};
-          cloudChatSyncedFingerprints.clear();
           renderSidebar();
           console.warn("TruX could not load account chat history from Cloud Storage:", error?.message || error);
-          toast("Cloud chat history could not be loaded. Device-cached chats were not used.", "err");
+          toast("Cloud chat history could not be refreshed. Existing chats were preserved; please retry.", "err");
         }
         return false;
       }
@@ -1869,7 +1922,10 @@
               headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
               body: JSON.stringify({ chatId: item.id, chat: JSON.parse(item.serialized) })
             }, requestUser);
-            if(!response.ok) throw new Error(await response.text().catch(() => "Chat sync failed."));
+            const result = await response.json().catch(() => null);
+            if(!response.ok || result?.ok !== true || Number(result?.saved || 0) < 1) {
+              throw new Error(result?.error || "Cloud chat save was not confirmed.");
+            }
             if(JSON.stringify(chatSessions[item.id]) === item.serialized) {
               cloudChatSyncedFingerprints.set(item.id, item.serialized);
             }
@@ -1882,7 +1938,10 @@
               headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
               body: JSON.stringify({ action: "delete", chatId: id })
             }, requestUser);
-            if(!response.ok) throw new Error(await response.text().catch(() => "Chat deletion could not be synced."));
+            const result = await response.json().catch(() => null);
+            if(!response.ok || result?.ok !== true) {
+              throw new Error(result?.error || "Cloud chat deletion was not confirmed.");
+            }
             pendingDeletedCloudChatIds.delete(id);
             cloudChatSyncedFingerprints.delete(id);
           }
@@ -1897,7 +1956,42 @@
 
       if(immediate) return run();
       return new Promise(resolve => {
-        cloudChatSyncTimer = setTimeout(() => { void run().then(resolve); }, 1400);
+        cloudChatSyncTimer = setTimeout(() => { void run().then(resolve); }, 250);
+      });
+    }
+
+    // Send one small keepalive write on page exit for changes still waiting in the
+    // debounce queue. Larger payloads are already uploaded incrementally while active.
+    function flushSmallChatChangesOnPageHide() {
+      const user = auth?.currentUser;
+      if(!user || !cloudChatsReady || cloudChatsOwnerUid !== user.uid || incognitoMode) return;
+      const changedChats = {};
+      for(const [id, chat] of Object.entries(chatSessions)) {
+        if(!isPersistableChatSession(chat)) continue;
+        const serialized = JSON.stringify(chat);
+        if(cloudChatSyncedFingerprints.get(id) !== serialized) changedChats[id] = chat;
+      }
+      const deletedChatIds = Array.from(pendingDeletedCloudChatIds)
+        .filter(id => !Object.prototype.hasOwnProperty.call(chatSessions, id));
+      if(!Object.keys(changedChats).length && !deletedChatIds.length) return;
+
+      const body = JSON.stringify({ chats: changedChats, deletedChatIds });
+      if(new TextEncoder().encode(body).byteLength > 60 * 1024) return;
+      void getTruxIdToken(user).then(token => {
+        if(auth?.currentUser?.uid !== user.uid) return;
+        return fetch("/api/chat/sync", {
+          method: "POST",
+          keepalive: true,
+          cache: "no-store",
+          headers: {
+            "Authorization": "Bearer " + token,
+            "Content-Type": "application/json",
+            "Cache-Control": "no-store"
+          },
+          body
+        });
+      }).catch(error => {
+        console.warn("Final keepalive chat sync could not be started:", error?.message || error);
       });
     }
 
@@ -6057,6 +6151,7 @@
     };
 
     addEventListener("pagehide", () => {
+      flushSmallChatChangesOnPageHide();
       if (activeTurnContext) {
         persistTurnDraft(activeTurnContext, activeTurnContext.latestText || "", true);
       }
