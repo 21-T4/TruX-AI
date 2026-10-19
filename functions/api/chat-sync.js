@@ -77,6 +77,13 @@ function accountBackupMatches(name, uid) {
   return parts[2] === uid || parts[2] === uid + '.json.gz';
 }
 
+function backupAccountUid(name) {
+  const parts = String(name || '').split('/');
+  if (parts[0] !== 'chat-backups' || parts.length < 3) return null;
+  const owner = parts[2];
+  return owner.endsWith('.json.gz') ? (owner.slice(0, -8) || null) : (owner || null);
+}
+
 function bufferFromFirestore(value) {
   if (Buffer.isBuffer(value)) return value;
   if (value instanceof Uint8Array) return Buffer.from(value);
