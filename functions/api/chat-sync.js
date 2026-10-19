@@ -128,8 +128,28 @@ export async function onRequestGet({ request, env }) {
 
   const chats = {};
   let savedAt = null;
+  let unreadableRecords = 0;
   for (const file of files) {
-    const record = await readGzipJson(env, file.name);
+    let record;
+    try {
+      record = await readGzipJson(env, file.name);
+    } catch (error) {
+      // A stale listing can race a delete. Skip missing objects and isolate a
+      // malformed gzip/JSON record; neither should hide every other chat.
+      const code = error?.code;
+      const missing = Number(code) === 404 || code === 'ENOENT';
+      const corrupt = error instanceof SyntaxError ||
+        code === 'Z_DATA_ERROR' || code === 'Z_BUF_ERROR' ||
+        /unexpected end of file|incorrect header check|invalid distance|invalid stored block|unexpected token/i.test(String(error?.message || ''));
+      if (missing || corrupt) {
+        unreadableRecords++;
+        console.warn('[chat-sync] Skipping unreadable chat object:', file.name, String(error?.message || error));
+        continue;
+      }
+      // Authentication, permission, and bucket outages must not masquerade as
+      // an empty history. Let the request fail so the client can retain history.
+      throw error;
+    }
     if (!isObject(record) || (record.userId && record.userId !== uid)) continue;
     const chatId = String(record.chatId || '');
     if (!chatId || !isPersistableChat(record.chat)) continue;
@@ -154,6 +174,7 @@ export async function onRequestGet({ request, env }) {
     found,
     userId: uid,
     savedAt,
+    unreadableRecords,
     chats
   });
 }
