@@ -1435,9 +1435,11 @@
           '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
           '<style>html,body{margin:0;min-height:100%;}body{box-sizing:border-box;padding:12px;font:13px/1.45 system-ui,sans-serif;color:#202124;background:#fff}#trux-code-console{margin-top:12px;padding:8px;white-space:pre-wrap;overflow-wrap:anywhere;border-radius:8px;background:#f1f2f4;color:#41444b;font:12px/1.5 ui-monospace,monospace}#trux-code-console:empty{display:none}</style></head><body>',
           '<pre id="trux-code-console" aria-live="polite"></pre>',
-          '<script>(function(){var out=document.getElementById("trux-code-console");var fmt=function(v){try{return typeof v==="string"?v:JSON.stringify(v)}catch(e){return String(v)}};["log","info","warn","error"].forEach(function(key){var native=console[key].bind(console);console[key]=function(){native.apply(console,arguments);var line=Array.from(arguments).map(fmt).join(" ");out.textContent+=(out.textContent?"\\n":"")+line;};});window.addEventListener("error",function(e){out.textContent+=(out.textContent?"\\n":"")+"Error: "+String(e.message||"Script failed");});})();\\n',
+          '<script>(function(){var out=document.getElementById("trux-code-console");var fmt=function(v){try{return typeof v==="string"?v:JSON.stringify(v)}catch(e){return String(v)}};["log","info","warn","error"].forEach(function(key){var native=console[key].bind(console);console[key]=function(){native.apply(console,arguments);var line=Array.from(arguments).map(fmt).join(" ");out.textContent+=(out.textContent?"\\n":"")+line;};});window.addEventListener("error",function(e){out.textContent+=(out.textContent?"\\n":"")+"Error: "+String(e.message||"Script failed");});})();', 
+          String.fromCharCode(10),
           safeScript,
-          '\\n<\\/script></body></html>'
+          String.fromCharCode(10),
+          '</' + 'script></body></html>'
         ].join("");
       } else {
         // Full HTML previews execute inside the same restricted iframe.
