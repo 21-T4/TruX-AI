@@ -367,7 +367,24 @@ async function migrateBucketChatHistory(env, uid, existingDocs, inventory = null
         listLegacyObjects(env, accountBucketPrefix(uid)),
         listLegacyObjects(env, 'chat-backups/')
       ]);
-  const knownIds = new Set(existingDocs.docs.map(doc => String(doc.data()?.chatId || '')).filter(Boolean));
+  const knownIds = new Set();
+  const savedAtById = new Map();
+  for (const doc of existingDocs.docs) {
+    const data = doc.data() || {};
+    const id = String(data.chatId || '');
+    if (!id) continue;
+    knownIds.add(id);
+    savedAtById.set(id, String(data.savedAt || ''));
+  }
+  const shouldImport = (id, savedAt) => {
+    if (!knownIds.has(id)) return true;
+    const incoming = String(savedAt || '');
+    return !!incoming && incoming > String(savedAtById.get(id) || '');
+  };
+  const markImported = (id, savedAt) => {
+    knownIds.add(id);
+    savedAtById.set(id, String(savedAt || ''));
+  };
   const liveChatFiles = sourceFiles.filter(file => String(file.name).startsWith(accountBucketPrefix(uid) + 'chats/'));
   const legacyFile = sourceFiles.find(file => file.name === accountBucketPrefix(uid) + 'current.json.gz');
   const hasLiveChatStorage = liveChatFiles.length > 0 || !!legacyFile;
@@ -381,9 +398,10 @@ async function migrateBucketChatHistory(env, uid, existingDocs, inventory = null
       throw new Error('An existing account chat record is invalid; its bucket object was preserved.');
     }
     const id = String(record.chatId);
-    if (!knownIds.has(id)) {
-      await writeChat(uid, id, record.chat, { savedAt: record.savedAt });
-      knownIds.add(id);
+    const recordSavedAt = String(record.savedAt || '');
+    if (shouldImport(id, recordSavedAt)) {
+      await writeChat(uid, id, record.chat, { savedAt: recordSavedAt });
+      markImported(id, recordSavedAt);
       imported++;
     }
   }
@@ -395,9 +413,10 @@ async function migrateBucketChatHistory(env, uid, existingDocs, inventory = null
     }
     for (const [rawId, chat] of Object.entries(legacy.chats)) {
       const id = String(rawId || '');
-      if (id && !knownIds.has(id) && isPersistableChat(chat)) {
-        await writeChat(uid, id, chat, { savedAt: legacy.savedAt });
-        knownIds.add(id);
+      const recordSavedAt = String(legacy.savedAt || '');
+      if (id && isPersistableChat(chat) && shouldImport(id, recordSavedAt)) {
+        await writeChat(uid, id, chat, { savedAt: recordSavedAt });
+        markImported(id, recordSavedAt);
         imported++;
       }
     }
@@ -573,20 +592,24 @@ export async function onRequestGet({ request, env }) {
 
   let docs = await chatCollection(uid).get();
   let manifest = await manifestRef.get();
+  let migrationPending = false;
   if (!manifest.exists || manifest.data()?.bucketMigrationComplete !== true) {
     try {
       await migrateBucketChatHistory(env, uid, docs);
       docs = await chatCollection(uid).get();
       manifest = await manifestRef.get();
     } catch (error) {
-      // An empty successful response causes the client to discard its fallback
-      // state. Fail closed instead: the existing chat data stays untouched and
-      // the client retries the read/migration after a transient problem.
+      // Legacy bucket access must not hide conversations already committed to
+      // Firestore. Only fail the read when Firestore is empty too, because in that
+      // case the bucket may be the only remaining copy of the account history.
+      migrationPending = true;
       console.warn('[chat-sync] Legacy chat migration remains pending:', String(error?.message || error));
-      return jsonResponse({
-        ok: false,
-        error: 'Chat history migration could not be completed. Existing bucket data was preserved; retrying is safe.'
-      }, 503);
+      if (docs.size === 0) {
+        return jsonResponse({
+          ok: false,
+          error: 'Chat history migration could not be completed. Existing bucket data was preserved; retrying is safe.'
+        }, 503);
+      }
     }
   }
 
@@ -637,6 +660,7 @@ export async function onRequestGet({ request, env }) {
   return jsonResponse({
     ok: true,
     found: docs.size > 0 || migrationComplete,
+    migrationPending,
     userId: uid,
     savedAt,
     latestChatId,
@@ -703,9 +727,18 @@ export async function onRequestPost({ request, env }) {
   // POST safe for direct callers too, without ever writing new chats to GCS.
   const manifestRef = accountManifest(uid);
   const manifest = await manifestRef.get();
-  if (!manifest.exists || manifest.data()?.bucketMigrationComplete !== true) {
-    const existing = await chatCollection(uid).get();
-    await migrateBucketChatHistory(env, uid, existing);
+  let bucketMigrationComplete = manifest.exists && manifest.data()?.bucketMigrationComplete === true;
+  if (!bucketMigrationComplete) {
+    try {
+      const existing = await chatCollection(uid).get();
+      await migrateBucketChatHistory(env, uid, existing);
+      bucketMigrationComplete = true;
+    } catch (error) {
+      // Firestore writes remain available if the retired legacy bucket is
+      // unavailable. Leave the migration marker unset so recovery can retry.
+      console.warn('[chat-sync] Legacy migration deferred; continuing with Firestore save:',
+        String(error?.message || error));
+    }
   }
 
   const chats = body?.chats;
@@ -742,12 +775,13 @@ export async function onRequestPost({ request, env }) {
     await deleteChatWithData(ref);
   }
 
-  await manifestRef.set({
+  const manifestUpdate = {
     schemaVersion: 1,
     userId: uid,
-    bucketMigrationComplete: true,
     lastChatWriteAt: new Date().toISOString()
-  }, { merge: true });
+  };
+  if (bucketMigrationComplete) manifestUpdate.bucketMigrationComplete = true;
+  await manifestRef.set(manifestUpdate, { merge: true });
 
   return jsonResponse({
     ok: true,
