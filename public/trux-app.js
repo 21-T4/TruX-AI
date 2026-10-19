@@ -1417,9 +1417,32 @@
     }
     function confirmSignOut() { auth?.signOut().then(() => { closeProfileModal(); }); }
 
-    function openCodeSandbox(codeId) {
-      let codeText = getEl(codeId)?.value || "";
-      getEl("sandboxFrame").srcdoc = codeText;
+    function openCodeSandbox(codeId, extension) {
+      const source = getEl(codeId);
+      const frame = getEl("sandboxFrame");
+      const codeText = source?.value || "";
+      if (!source || !frame) return;
+
+      // Preview runs in an opaque-origin iframe: scripts can run, but they
+      // cannot read the parent app's DOM, Firebase session, or local storage.
+      frame.setAttribute("sandbox", "allow-scripts");
+      const ext = String(extension || source.dataset.extension || "html").toLowerCase();
+      if (ext === "js") {
+        // A bare JS code block is not an HTML document. Wrap it so the Run
+        // button truly executes it and surfaces console output/runtime errors.
+        const safeScript = codeText.replace(/<\/script/gi, "<\\/script");
+        frame.srcdoc = [
+          '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
+          '<style>html,body{margin:0;min-height:100%;}body{box-sizing:border-box;padding:12px;font:13px/1.45 system-ui,sans-serif;color:#202124;background:#fff}#trux-code-console{margin-top:12px;padding:8px;white-space:pre-wrap;overflow-wrap:anywhere;border-radius:8px;background:#f1f2f4;color:#41444b;font:12px/1.5 ui-monospace,monospace}#trux-code-console:empty{display:none}</style></head><body>',
+          '<pre id="trux-code-console" aria-live="polite"></pre>',
+          '<script>(function(){var out=document.getElementById("trux-code-console");var fmt=function(v){try{return typeof v==="string"?v:JSON.stringify(v)}catch(e){return String(v)}};["log","info","warn","error"].forEach(function(key){var native=console[key].bind(console);console[key]=function(){native.apply(console,arguments);var line=Array.from(arguments).map(fmt).join(" ");out.textContent+=(out.textContent?"\\n":"")+line;};});window.addEventListener("error",function(e){out.textContent+=(out.textContent?"\\n":"")+"Error: "+String(e.message||"Script failed");});})();\\n',
+          safeScript,
+          '\\n<\\/script></body></html>'
+        ].join("");
+      } else {
+        // Full HTML previews execute inside the same restricted iframe.
+        frame.srcdoc = codeText;
+      }
       getEl("sandboxModal").style.display = "flex";
     }
     function closeSandboxModal() { getEl("sandboxModal").style.display = "none"; }
@@ -2207,7 +2230,7 @@
         `<span class="code-file-icon">&lt;/&gt;</span><div class="code-file-meta"><b>${escapeHtml(filename)}</b>` +
         `<small>${escapeHtml(displayLang.toUpperCase())} · ${lineCount} Lines</small></div></div>` +
         `<div class="code-actions">` +
-        (runnable ? `<button type="button" onclick="openCodeSandbox('${id}')"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5-11-6.5Z"/></svg>Run</button>` : ``) +
+        (runnable ? `<button type="button" onclick="openCodeSandbox('${id}','${extension}')"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5-11-6.5Z"/></svg>Run</button>` : ``) +
         `<button type="button" onclick="copyCodeToClipboard(this,'${id}')">Copy</button>` +
         `<button type="button" onclick="downloadCode('${id}','${filename}')">Download</button>` +
         `</div></div>` + body +
