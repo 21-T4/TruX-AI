@@ -959,8 +959,13 @@
       if(workspaceMode === "chat" && !currentChatId && !isMedia) {
         startHomeGreetingPulse();
       }
-      if(isCoding && typeof window.refreshTruxCodeIntegrations === "function"){
-        window.refreshTruxCodeIntegrations();
+      if(isCoding) {
+        startTruxCodeIdlePulse();
+      } else {
+        if(truxCodeIdleTimer) clearInterval(truxCodeIdleTimer);
+        if(truxCodeGreetingSwapTimer) clearTimeout(truxCodeGreetingSwapTimer);
+        truxCodeIdleTimer = null;
+        truxCodeGreetingSwapTimer = null;
       }
     }
     async function submitFeedback() {
@@ -1858,12 +1863,14 @@
         const wasStopping = btn.classList.contains("stop");
         btn.classList.remove("stop");
         if (wasStopping) btn.dataset.actionMode = "";
+        const isCodeWorkspace = workspaceMode === "coding";
         const liveActive = window.__truxLiveState === "live" || window.__truxLiveState === "connecting";
-        const nextMode = hasDraft ? "send" : (liveActive ? "live-stop" : "live");
+        const nextMode = hasDraft ? "send" : (isCodeWorkspace ? "code-idle" : (liveActive ? "live-stop" : "live"));
         btn.classList.toggle("ready", hasDraft);
-        btn.classList.toggle("live", !hasDraft);
-        btn.classList.toggle("live-active", !hasDraft && liveActive);
-        btn.title = hasDraft ? "Send message" : (liveActive ? "Stop Live assistant" : "Start Live assistant");
+        btn.classList.toggle("live", !hasDraft && !isCodeWorkspace);
+        btn.classList.toggle("live-active", !hasDraft && !isCodeWorkspace && liveActive);
+        btn.classList.toggle("code-idle", isCodeWorkspace && !hasDraft);
+        btn.title = hasDraft ? "Send message" : (isCodeWorkspace ? "Enter a coding task" : (liveActive ? "Stop Live assistant" : "Start Live assistant"));
         btn.setAttribute("aria-label", btn.title);
 
         const icon = getEl("btnIcon");
@@ -1872,6 +1879,7 @@
           btn.dataset.actionMode = nextMode;
           const icons = {
             send: '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>',
+            "code-idle": '<path d="M12 19V5M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
             live: '<path d="M3 12h2l2-5 4 10 3-14 3 9h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
             "live-stop": '<rect x="6.5" y="6.5" width="11" height="11" rx="2" fill="currentColor" stroke="none"/>'
           };
@@ -4812,27 +4820,48 @@
     }
 
     const TRUX_CODE_IDLE_LINES = [
-      "Ready to shape the next change.",
-      "Bring the bug; trace the path.",
-      "Turn the idea into working code.",
-      "Make the change. Keep the context.",
-      "Ready when the next task is."
+      "Hello",
+      "What should we build today?",
+      "Let's build something useful."
     ];
     let truxCodeIdleIndex = 0;
     let truxCodeIdleTimer = null;
+    let truxCodeGreetingSwapTimer = null;
     function startTruxCodeIdlePulse() {
-      const pulse = () => {
-        const el = getEl("truxCodePulseText");
-        if (!el || !document.body.classList.contains("coding-workspace") || document.body.classList.contains("chat-session-active")) return;
-        const next = TRUX_CODE_IDLE_LINES[truxCodeIdleIndex++ % TRUX_CODE_IDLE_LINES.length];
-        el.classList.remove("trux-code-pulse-change");
-        void el.offsetWidth;
-        el.textContent = next;
-        el.classList.add("trux-code-pulse-change");
-      };
       if (truxCodeIdleTimer) clearInterval(truxCodeIdleTimer);
-      truxCodeIdleTimer = setInterval(pulse, 2600);
-      pulse();
+      if (truxCodeGreetingSwapTimer) clearTimeout(truxCodeGreetingSwapTimer);
+      truxCodeIdleTimer = null;
+      truxCodeGreetingSwapTimer = null;
+      const transcript = getEl("codeChatContainer");
+      const el = getEl("truxCodeGreeting");
+      if (!el || !document.body.classList.contains("coding-workspace") ||
+          currentChatId || (transcript && transcript.children.length)) return;
+      const pulse = () => {
+        if (!el.isConnected || !document.body.classList.contains("coding-workspace") ||
+            currentChatId || (transcript && transcript.children.length)) {
+          if (truxCodeIdleTimer) clearInterval(truxCodeIdleTimer);
+          if (truxCodeGreetingSwapTimer) clearTimeout(truxCodeGreetingSwapTimer);
+          truxCodeIdleTimer = null;
+          truxCodeGreetingSwapTimer = null;
+          return;
+        }
+        const next = TRUX_CODE_IDLE_LINES[truxCodeIdleIndex++ % TRUX_CODE_IDLE_LINES.length];
+        el.classList.remove("is-visible");
+        el.classList.add("is-replacing");
+        truxCodeGreetingSwapTimer = setTimeout(() => {
+          if (!el.isConnected || !document.body.classList.contains("coding-workspace") ||
+              currentChatId || (transcript && transcript.children.length)) return;
+          el.textContent = next;
+          el.classList.remove("is-replacing");
+          el.classList.add("is-visible");
+          truxCodeGreetingSwapTimer = null;
+        }, 180);
+      };
+      truxCodeIdleIndex = 1;
+      el.textContent = TRUX_CODE_IDLE_LINES[0];
+      el.classList.remove("is-replacing");
+      el.classList.add("is-visible");
+      truxCodeIdleTimer = setInterval(pulse, 3200);
     }
 
     function formatThinkingClock(ms) {
@@ -5800,6 +5829,8 @@
       const promptInput = getEl("promptInput");
       const hasContent = !!(promptInput?.value.trim() || selectedImageBase64 || pastedTextBlocks.length || fileAttachments.length);
       if (!hasContent) {
+        // TruX-Code is an ask-and-build workspace, never a Live entry point.
+        if (workspaceMode === "coding") return;
         startTruxLiveAssistant();
         return;
       }
