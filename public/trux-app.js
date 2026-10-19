@@ -4110,7 +4110,10 @@
         delete responseMessage.draftTurnId;
         if (cleanSources.length) responseMessage.sources = cleanSources;
         else delete responseMessage.sources;
-        if (codingTurn) responseMessage.durationMs = durationMs;
+        if (codingTurn) {
+          responseMessage.durationMs = durationMs;
+          responseMessage.toolEvents = Array.isArray(turnContext?.toolEvents) ? turnContext.toolEvents.slice(-100) : [];
+        }
         if (turnContext) store.removeItem("trux_turn_draft_" + resultChatId);
         saveChatSessions();
       }
@@ -5037,7 +5040,8 @@
         userMessageIndex: sentMessageIndex,
         mode: turnMode,
         latestText: "",
-        lastPersistAt: 0
+        lastPersistAt: 0,
+        toolEvents: []
       };
       activeTurnContext = turnContext;
       saveChatSessions();
@@ -5293,6 +5297,17 @@
           }
           else if(j.type === "status") {
             setThinkingStatus(sid, j.status || "");
+            if (codingTurn && turnContext) {
+              const activityStatus = normalizeAiActivity(j.status || "");
+              const placeholder = /^(?:thinking|working|processing)(?:[ .…]*)?$/i.test(activityStatus);
+              if (activityStatus && !placeholder) {
+                const events = turnContext.toolEvents || (turnContext.toolEvents = []);
+                if (!events.some(event => event.type === "status" && event.status === activityStatus)) {
+                  events.push({ type: "status", status: activityStatus });
+                  if (events.length > 100) events.splice(0, events.length - 100);
+                }
+              }
+            }
           }
           else if(j.type === "terminal") {
             const responseRow = getEl(id)?.closest(".row");
@@ -5314,6 +5329,21 @@
           else if(j.type === "tool_status") {
             const phase = j.phase || "complete";
             appendToolStatusLine(tsid, j.tool, j.status, phase, j.details || null);
+            if (codingTurn && turnContext) {
+              const safeDetails = {};
+              if (j.details?.id) safeDetails.id = String(j.details.id).slice(0, 120);
+              if (j.details?.target) safeDetails.target = String(j.details.target).slice(0, 180);
+              if (typeof j.details?.ok === "boolean") safeDetails.ok = j.details.ok;
+              const events = turnContext.toolEvents || (turnContext.toolEvents = []);
+              events.push({
+                type: "tool_status",
+                tool: String(j.tool || "TruX-Code").slice(0, 120),
+                status: String(j.status || "").slice(0, 240),
+                phase: String(phase).slice(0, 24),
+                ...(Object.keys(safeDetails).length ? { details: safeDetails } : {})
+              });
+              if (events.length > 100) events.splice(0, events.length - 100);
+            }
             if(phase === "start") {
               toolInProgress = true;
             } else {
