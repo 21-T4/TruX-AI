@@ -4337,7 +4337,12 @@
           responseMessage.toolEvents = Array.isArray(turnContext?.toolEvents) ? turnContext.toolEvents : [];
         }
         if (turnContext) store.removeItem("trux_turn_draft_" + resultChatId);
-        saveChatSessions();
+        queueSidebarSync();
+        void syncChatsToCloud(true).then(saved => {
+          if(!saved && auth?.currentUser?.uid === cloudChatsOwnerUid) {
+            toast("This reply is visible, but its cloud save was not confirmed. Keep TruX open and retry before leaving.", "err");
+          }
+        });
       }
       if(b) attachSources(b.closest(".row"), cleanSources);
 
