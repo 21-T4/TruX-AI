@@ -1,4 +1,4 @@
-const CACHE_NAME = 'trux-ai-v18';
+const CACHE_NAME = 'trux-ai-v19';
 
 try {
   importScripts(
