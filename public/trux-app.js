@@ -6863,7 +6863,7 @@
            if (host) renderGithubProposalCard(host, m.githubProposal);
          }
        });
-      // Partial direct-request output is restored from local chat history; no worker is reattached.
+      // Partial direct-request output is restored from the account's cloud history; no worker is reattached.
       renderSidebar(); if(innerWidth <= 768) closeSidebar(); else setSidebarOpen(true);
     }
     function deleteChat(id) {
