@@ -1967,7 +1967,7 @@ export async function onRequestPost(context) {
                   }
 
                   callResult = {
-                    success: newDeclarations.length > 0,
+                    success: true,
                     query: discoveryQuery,
                     availableActions: newDeclarations.map(tool => ({
                       name: tool.name,
