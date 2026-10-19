@@ -4668,8 +4668,8 @@ body.coding-workspace .composer{border-top:1px solid rgba(176,188,255,.14);backg
 :root{--trux-chrome-fade:0}
 .composer,.compose{border:0!important;background:transparent!important;box-shadow:none!important}
 .composer{position:relative!important;padding-top:18px!important;background:linear-gradient(to top,var(--bg) 8%,rgba(0,0,0,.76) 44%,transparent 100%)!important}
-.bar{border:1px solid var(--line-2)!important;border-radius:999px!important;background:var(--bg-3)!important;box-shadow:0 1px 0 rgba(255,255,255,.055) inset,0 15px 38px rgba(0,0,0,.48)!important;transition:border-color .24s var(--ease),box-shadow .24s var(--ease),background .24s var(--ease)!important}.bar.multiline{border-radius:26px!important}
-.bar:focus-within{border:1px solid var(--acc-line)!important;background:var(--bg-4)!important;box-shadow:0 0 0 3px rgba(109,131,255,.10),0 15px 38px rgba(0,0,0,.52)!important}
+.bar{border:1px solid rgba(255,255,255,.17)!important;border-radius:999px!important;background:rgba(22,22,27,.78)!important;backdrop-filter:blur(18px) saturate(125%)!important;-webkit-backdrop-filter:blur(18px) saturate(125%)!important;box-shadow:0 1px 0 rgba(255,255,255,.07) inset,0 12px 32px rgba(0,0,0,.34)!important;transition:border-color .24s var(--ease),box-shadow .24s var(--ease),background .24s var(--ease)!important}.bar.multiline{border-radius:26px!important}
+.bar:focus-within{border:1px solid var(--acc-line)!important;background:rgba(29,29,36,.88)!important;box-shadow:0 0 0 3px rgba(109,131,255,.11),0 13px 34px rgba(0,0,0,.38)!important}
 #promptInput,textarea#promptInput{background:transparent!important;box-shadow:none!important}
 .bar .icon-btn,.bar .send-btn,.bar .model-picker-btn,.bar .composer-more-btn{background:transparent!important;box-shadow:none!important}
 body[data-workspace-mode="chat"] .bar{--trux-input-accent:#dededb}
