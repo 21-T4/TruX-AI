@@ -537,13 +537,22 @@ function hasExplicitCodeWorkRequest(value) {
   const text = String(value || '').trim();
   if (!text) return false;
 
-  // Requests to run, test, open, or visually inspect an app must activate the
-  // existing terminal workflow, not fall back to prose.
-  const asksToExecuteOrPreview =
-    /\b(?:run|execute|launch|start|restart|preview|render|open|test|verify|inspect|check|exercise|click|interact|screenshot|show|see|load)\b[\s\S]{0,140}\b(?:apps?|applications?|websites?|sites?|web\s*apps?|ui|user\s*interface|functionality|browsers?|pages?|servers?|projects?|workspaces?|terminal|commands?|screenshots?|tests?|build|dev\s*server)\b/i.test(text) ||
-    /\b(?:apps?|applications?|websites?|sites?|web\s*apps?|ui|user\s*interface|functionality|browsers?|pages?|servers?|projects?|workspaces?|terminal|commands?|screenshots?|tests?|build|dev\s*server)\b[\s\S]{0,140}\b(?:run|execute|launch|start|restart|preview|render|open|test|verify|inspect|check|exercise|click|interact|screenshot|show|see|load)\b/i.test(text);
+  // Rendered-UI language should activate the browser tool even without
+  // developer jargon ("get the live UI from a website", "look at this page").
+  const asksForRenderedWebsiteUI =
+    /\b(?:live|rendered|actual|visual|browser)\b[\s\S]{0,70}\b(?:ui|user\s*interface|website|site|web\s*app|page|screen|layout|appearance)\b/i.test(text) ||
+    /\b(?:ui|user\s*interface|layout|appearance|look\s+and\s+feel|screenshot|screen)\b[\s\S]{0,100}\b(?:website|site|web\s*app|page|url)\b/i.test(text);
 
-  return asksToExecuteOrPreview ||
+  // Requests to run, test, open, or visually inspect an app must activate the
+  // existing terminal/browser workflow, not fall back to prose.
+  const executionActions = /\b(?:run|execute|launch|start|restart|preview|render|open|test|verify|inspect|check|exercise|click|interact|screenshot|show|see|view|look|capture|display|observe|get|load)\b/i;
+  const executionTargets = /\b(?:apps?|applications?|websites?|sites?|web\s*apps?|ui|user\s*interface|functionality|browsers?|pages?|servers?|projects?|workspaces?|terminal|commands?|screenshots?|tests?|build|dev\s*server|url|layout|appearance|visual\s+output)\b/i;
+  const asksToExecuteOrPreview =
+    (executionActions.test(text) && executionTargets.test(text) &&
+      (/\b(?:run|execute|launch|start|restart|preview|render|open|test|verify|inspect|check|exercise|click|interact|screenshot|show|see|view|look|capture|display|observe|get|load)\b[\s\S]{0,160}\b(?:apps?|applications?|websites?|sites?|web\s*apps?|ui|user\s*interface|functionality|browsers?|pages?|servers?|projects?|workspaces?|terminal|commands?|screenshots?|tests?|build|dev\s*server|url|layout|appearance|visual\s+output)\b/i.test(text) ||
+       /\b(?:apps?|applications?|websites?|sites?|web\s*apps?|ui|user\s*interface|functionality|browsers?|pages?|servers?|projects?|workspaces?|terminal|commands?|screenshots?|tests?|build|dev\s*server|url|layout|appearance|visual\s+output)\b[\s\S]{0,160}\b(?:run|execute|launch|start|restart|preview|render|open|test|verify|inspect|check|exercise|click|interact|screenshot|show|see|view|look|capture|display|observe|get|load)\b/i.test(text)));
+
+  return asksForRenderedWebsiteUI || asksToExecuteOrPreview ||
     /\b(?:code|coding|program|script|function|class|bug|debug|error|fix|refactor|implement|edit|modify|build|compile|test|tests|api|endpoint|javascript|typescript|python|java|html|css|react|node|sql|regex)\b/i.test(text);
 }
 
