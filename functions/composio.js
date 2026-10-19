@@ -425,17 +425,23 @@ export async function getComposioGeminiTools(env, enabledToolkitSlugs, queryText
       }
     }),
     ...(exactToolSlugs.size
-      ? [composioRequest(
-          env,
-          '/tools?' +
-            new URLSearchParams({
-              toolkit_slug: slugs.join(','),
-              toolkit_versions: 'latest',
-              include_deprecated: 'false',
-              tool_slugs: [...exactToolSlugs].join(','),
-              limit: String(exactToolSlugs.size)
-            }).toString()
-        )]
+      ? [...exactToolSlugs].map(async toolSlug => {
+          // Resolve exact actions independently: one removed/renamed Composio
+          // slug must not prevent every valid GitHub read/write tool loading.
+          const params = new URLSearchParams({
+            toolkit_slug: slugs.join(','),
+            toolkit_versions: 'latest',
+            include_deprecated: 'false',
+            tool_slugs: toolSlug,
+            limit: '1'
+          });
+          try {
+            return await composioRequest(env, '/tools?' + params.toString());
+          } catch (error) {
+            if ([400, 404].includes(Number(error?.status))) return null;
+            throw error;
+          }
+        })
       : [])
   ]);
 
