@@ -8,7 +8,10 @@ let firestoreRetryAfter = 0;
 
 function getFirestoreInstance() {
   if (firestoreInstance) return firestoreInstance;
-  const app = getApps()[0] || initializeApp({ credential: applicationDefault() });
+  // Keep this Firestore adapter in the same Firebase project as Auth and the
+  // browser app; Cloud Run's hosting project is not necessarily that project.
+  const projectId = String(process.env.FIREBASE_PROJECT_ID || 'trux-ai').trim();
+  const app = getApps()[0] || initializeApp({ credential: applicationDefault(), projectId });
   firestoreInstance = getFirestore(app);
   return firestoreInstance;
 }
