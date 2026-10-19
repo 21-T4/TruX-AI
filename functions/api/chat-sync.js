@@ -117,16 +117,23 @@ async function writeChat(uid, chatId, chat, options = {}) {
     nextVersion = crypto.randomUUID();
     nextCount = Math.ceil(payload.length / CHUNK_BYTES);
     try {
+      let batch = firestore().batch();
+      let batchOperations = 0;
       for (let start = 0, index = 0; start < payload.length; start += CHUNK_BYTES, index++) {
-        const batch = firestore().batch();
         const end = Math.min(start + CHUNK_BYTES, payload.length);
         batch.set(ref.collection('parts').doc(nextVersion + '_' + index), {
           storageVersion: nextVersion,
           index,
           data: Buffer.from(payload.subarray(start, end))
         });
-        await batch.commit();
+        batchOperations++;
+        if (batchOperations >= BATCH_LIMIT) {
+          await batch.commit();
+          batch = firestore().batch();
+          batchOperations = 0;
+        }
       }
+      if (batchOperations) await batch.commit();
       await ref.set({
         ...base,
         storageMode: 'chunks',
