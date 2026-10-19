@@ -415,24 +415,65 @@
         <div class="subscription-page-head">
           <button type="button" class="subscription-back" onclick="closeSubscriptionPage()" aria-label="Back to workspace">← <span>Workspace</span></button>
           <div class="subscription-page-label">TRUX MEMBERSHIP</div>
-          <h1>Choose the workspace that fits your flow.</h1>
-          <p>Simple plans for everyday conversations and focused creation. Your current plan is clearly marked below.</p>
+          <h1>Plans built for every level of work.</h1>
+          <p>Auto model selection is included with every plan. Compare the upcoming chat, TruX-Code, image, and video allowances below.</p>
+        </div>
+        <div class="subscription-launch-note" role="note" aria-label="Plan implementation date">
+          <strong>Effective December 1, 2026</strong>
+          <span>These prices, limits, and plan benefits will be implemented from this date.</span>
         </div>
         <div class="subscription-plan-grid">
           <article class="subscription-plan" data-subscription-plan="base">
             <div class="subscription-plan-top"><span>PERSONAL</span><strong>Free</strong></div>
-            <h2>Base</h2><p>For everyday questions, writing, and chat.</p>
-            <ul><li>Chat with automatic routing</li><li>Standard creation tools</li><li>Personal workspace history</li></ul>
+            <h2>Free</h2><p>Everyday chat and creative essentials.</p>
+            <ul>
+              <li>Auto model selection</li>
+              <li>1,000,000 chat tokens per day across all models</li>
+              <li>200,000 TruX-Code tokens per month, including thinking tokens</li>
+              <li>5 images per day</li>
+              <li>Video generation not included</li>
+            </ul>
             <button type="button" class="subscription-plan-action" onclick="selectSubscriptionPlan('base')">Current plan</button>
           </article>
+          <article class="subscription-plan" data-subscription-plan="plus">
+            <div class="subscription-plan-top"><span>MORE CAPACITY</span><strong>₹250/month</strong></div>
+            <h2>Plus</h2><p>More room for chat, coding, and creation.</p>
+            <ul>
+              <li>Auto model selection</li>
+              <li>2× chat usage — 2,000,000 tokens per day across all models</li>
+              <li>2× TruX-Code usage — 400,000 tokens per month, including thinking tokens</li>
+              <li>10 images per day</li>
+              <li>1 video per day</li>
+            </ul>
+            <button type="button" class="subscription-plan-action" onclick="selectSubscriptionPlan('plus')">Coming Dec 1, 2026</button>
+          </article>
           <article class="subscription-plan subscription-plan-featured" data-subscription-plan="pro">
-            <div class="subscription-plan-top"><span>FOR BUILDERS</span><strong>Pro</strong></div>
-            <h2>Pro</h2><p>More capacity for deep thinking, code, and creative work.</p>
-            <ul><li>Expanded workspace allowances</li><li>Priority advanced models</li><li>Extended TruX Code sessions</li></ul>
-            <button type="button" class="subscription-plan-action" onclick="selectSubscriptionPlan('pro')">Request Pro access</button>
+            <div class="subscription-plan-top"><span>FOR POWER USERS</span><strong>₹1,000/month</strong></div>
+            <h2>Pro</h2><p>Higher limits for demanding daily work.</p>
+            <ul>
+              <li>Auto model selection</li>
+              <li>4× chat usage — 4,000,000 tokens per day across all models</li>
+              <li>4× TruX-Code usage — 800,000 tokens per month, including thinking tokens</li>
+              <li>20 images per day</li>
+              <li>10 videos per day</li>
+            </ul>
+            <button type="button" class="subscription-plan-action" onclick="selectSubscriptionPlan('pro')">Coming Dec 1, 2026</button>
+          </article>
+          <article class="subscription-plan subscription-plan-featured" data-subscription-plan="edge">
+            <div class="subscription-plan-top"><span>FLAGSHIP ACCESS</span><strong>₹3,000/month</strong></div>
+            <h2>TruX AI Edge</h2><p>Our highest-capacity plan, built for early access.</p>
+            <ul>
+              <li>Auto model selection with flagship model access</li>
+              <li>6× chat usage — 6,000,000 tokens per day across all models</li>
+              <li>6× TruX-Code usage — 1,200,000 tokens per month, including thinking tokens</li>
+              <li>Expanded model choices and new models first</li>
+              <li>30 images per day</li>
+              <li>20 videos per day</li>
+            </ul>
+            <button type="button" class="subscription-plan-action" onclick="selectSubscriptionPlan('edge')">Coming Dec 1, 2026</button>
           </article>
         </div>
-        <div class="subscription-footnote"><span>Secure checkout is not enabled yet.</span><button type="button" onclick="openSubscriptionSupport()">Contact TruX support</button></div>
+        <div class="subscription-footnote"><span>New prices and limits begin December 1, 2026. Secure checkout is not enabled yet.</span><button type="button" onclick="openSubscriptionSupport()">Contact TruX support</button></div>
       </section>
 
       <section class="notebook-workspace" id="notebookWorkspace" aria-label="Notebook contents"></section>
