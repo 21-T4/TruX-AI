@@ -1916,17 +1916,24 @@
             JSON.stringify(chatSessions[id]) !== cloudChatSyncedFingerprints.get(id)
           ) ||
           pendingDeletedCloudChatIds.size > 0;
+        let legacyCacheSyncConfirmed = false;
         if(needsSync) {
           const saved = await syncChatsToCloud(true);
           if(!saved) {
             toast("Your chats are shown, but cloud sync is still pending. Keep TruX open and check your connection.", "err");
             return true;
           }
+          legacyCacheSyncConfirmed = legacyMigrationNeeded;
         }
 
-        store.removeItem("trux_chats");
-        legacyCachedChats = {};
-        legacyCachedChatsUid = null;
+        // Do not erase a recoverable legacy cache while the server reports that
+        // its old bucket migration is still pending. The cache is cleared only
+        // after migration completes or those legacy chats were confirmed in Firestore.
+        if(result.migrationPending !== true || legacyCacheSyncConfirmed) {
+          store.removeItem("trux_chats");
+          legacyCachedChats = {};
+          legacyCachedChatsUid = null;
+        }
 
         // The conversation body was always cleared at startup, even after its
         // messages loaded successfully from Cloud Storage. Restore the last
@@ -1949,7 +1956,7 @@
           // transient cloud read failure.
           cloudChatsReady = false;
           renderSidebar();
-          console.warn("TruX could not load account chat history from Cloud Storage:", error?.message || error);
+          console.warn("TruX could not load account chat history from Firestore:", error?.message || error);
           if(!isRetry) {
             toast("Cloud chat history could not be refreshed. Existing chats were preserved; retrying automatically.", "err");
           }
