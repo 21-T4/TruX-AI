@@ -1826,7 +1826,7 @@
           if(!isPersistableChatSession(chat) || pendingDeletedCloudChatIds.has(id)) continue;
           const serialized = JSON.stringify(chat);
           if(cloudChatSyncedFingerprints.get(id) !== serialized ||
-             (sameAccount && result.found !== true)) {
+             (sameAccount && (result.found !== true || Number(result.unreadableRecords || 0) > 0))) {
             // If an account with a previously loaded history suddenly looks
             // completely uninitialized in the bucket, do not treat that empty
             // response as proof that its known chats should be discarded.
@@ -1867,6 +1867,13 @@
         cloudChatsReady = true;
         renderSidebar();
         updateTruxStorageSummary();
+        if(Number(result.unreadableRecords || 0) > 0) {
+          toast(
+            "Restored the readable chats. " + Number(result.unreadableRecords) +
+            " stored record(s) could not be read; their cloud objects were preserved for recovery.",
+            "err"
+          );
+        }
 
         const needsSync = legacyMigrationNeeded ||
           Array.from(localUnsynced.keys()).some(id =>
