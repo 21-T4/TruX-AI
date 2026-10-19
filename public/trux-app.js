@@ -5331,8 +5331,8 @@
         
         let rd = res.body.getReader(), dec = new TextDecoder(), buf = "", full = "", fin = null;
         let streamDone = false, finalizedEarly = false, finalizedOnFinal = false;
-        // Heartbeats keep the transport alive, but are not evidence that the model is progressing.
-        // Recover only after a long period with no meaningful SSE event; there is no total-turn timeout.
+        // This watchdog measures transport liveness, not model progress.
+        // Every SSE frame, including keepalive heartbeats, refreshes activity; there is no total-turn timeout.
         let lastStreamActivityAt = Date.now(), streamIdleTimedOut = false;
         streamIdleWatchdog = setInterval(() => {
           if (turnId !== generationEpoch || generationStopRequested || requestController.signal.aborted ||
@@ -5411,7 +5411,7 @@
           // Once a final payload has been accepted, late text frames must not
           // create a new draft or mutate a completed answer.
           if ((finalizedEarly || finalizedOnFinal) && (j.type === "chunk" || j.type === "final")) return;
-          if (j.type !== "heartbeat") lastStreamActivityAt = Date.now();
+          lastStreamActivityAt = Date.now();
           if(j.type === "progress") {
             return;
           }
