@@ -398,12 +398,35 @@ async function migrateBucketChatHistory(env, uid, existingDocs) {
   return { complete: true, imported, backupRecoveryUsed: backupRecovery.found };
 }
 
-async function deleteChatWithData(ref, data) {
-  // Remove the visible record first. If part cleanup is interrupted, leftovers
-  // are orphaned and cannot cause the deleted chat to reappear.
-  await ref.delete();
-  if (data?.storageMode === 'chunks') {
-    try { await deleteChunkVersion(ref, data.storageVersion, data.chunkCount); }
+async function deleteChatWithData(ref) {
+  // Serialize a delete with concurrent saves to this chat. Parent and current
+  // chunk references change atomically, so a stale cleanup cannot break a new save.
+  let oldChunkVersion = '';
+  let oldChunkCount = 0;
+  await firestore().runTransaction(async transaction => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists) return;
+    const data = snapshot.data() || {};
+    transaction.delete(ref);
+
+    if (data.storageMode === 'chunks-v2') {
+      for (const hash of new Set(Array.isArray(data.chunkHashes) ? data.chunkHashes.map(String) : [])) {
+        if (/^[a-f0-9]{64}$/.test(hash)) transaction.delete(ref.collection('parts').doc(hash));
+      }
+    } else if (data.storageMode === 'chunks' && data.storageVersion) {
+      oldChunkVersion = String(data.storageVersion);
+      oldChunkCount = Math.max(0, Number(data.chunkCount) || 0);
+      if (oldChunkCount <= BATCH_LIMIT - 1) {
+        for (let index = 0; index < oldChunkCount; index++) {
+          transaction.delete(ref.collection('parts').doc(oldChunkVersion + '_' + index));
+        }
+        oldChunkVersion = '';
+      }
+    }
+  });
+
+  if (oldChunkVersion) {
+    try { await deleteChunkVersion(ref, oldChunkVersion, oldChunkCount); }
     catch (error) {
       console.warn('[chat-sync] Deleted chat left orphaned parts:', String(error?.message || error));
     }
@@ -416,9 +439,15 @@ async function deleteAllFirestoreChats(uid) {
   for (const doc of snapshot.docs) {
     const data = doc.data();
     deletes.push(doc.ref);
-    if (data?.storageMode === 'chunks' && data.storageVersion) {
+    if (data?.storageMode === 'chunks-v2') {
+      for (const hash of new Set(Array.isArray(data.chunkHashes) ? data.chunkHashes.map(String) : [])) {
+        if (/^[a-f0-9]{64}$/.test(hash)) deletes.push(doc.ref.collection('parts').doc(hash));
+      }
+    } else if (data?.storageMode === 'chunks' && data.storageVersion) {
       const count = Math.min(Number(data.chunkCount) || 0, 10000);
-      for (let i = 0; i < count; i++) deletes.push(doc.ref.collection('parts').doc(data.storageVersion + '_' + i));
+      for (let index = 0; index < count; index++) {
+        deletes.push(doc.ref.collection('parts').doc(data.storageVersion + '_' + index));
+      }
     }
   }
   await commitDeletes(deletes);
@@ -575,9 +604,7 @@ export async function onRequestPost({ request, env }) {
   }
   for (const id of idsToDelete) {
     const ref = chatDocument(uid, id);
-    const snapshot = await ref.get();
-    if (snapshot.exists) await deleteChatWithData(ref, snapshot.data());
-    else await ref.delete().catch(() => {});
+    await deleteChatWithData(ref);
   }
 
   await manifestRef.set({
