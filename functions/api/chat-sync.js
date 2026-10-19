@@ -481,6 +481,88 @@ async function deleteAllFirestoreChats(uid) {
   return snapshot.size;
 }
 
+export async function migrateAllBucketChats(env) {
+  const migrationRef = firestore().collection('_system').doc('chatHistoryGcsMigrationV1');
+  const previous = await migrationRef.get();
+  if (previous.exists && previous.data()?.complete === true) {
+    return { complete: true, alreadyCompleted: true, accountsMigrated: 0, chatsImported: 0 };
+  }
+
+  const [sourceFiles, backupFiles] = await Promise.all([
+    listLegacyObjects(env, 'chat-state/'),
+    listLegacyObjects(env, 'chat-backups/')
+  ]);
+  const inventory = { sourceFiles, backupFiles };
+  const accountIds = new Set();
+
+  for (const file of sourceFiles) {
+    const match = String(file.name || '').match(/^chat-state\/([^/]+)\//);
+    if (match) accountIds.add(match[1]);
+  }
+  for (const file of backupFiles) {
+    const uid = backupAccountUid(file.name);
+    if (uid) accountIds.add(uid);
+  }
+
+  let accountsMigrated = 0;
+  let chatsImported = 0;
+  for (const uid of [...accountIds].sort()) {
+    const manifestRef = accountManifest(uid);
+    const manifestSnapshot = await manifestRef.get();
+    const alreadyMigrated = manifestSnapshot.exists &&
+      manifestSnapshot.data()?.bucketMigrationComplete === true;
+    const accountObjects = sourceFiles.filter(file => String(file.name).startsWith(accountBucketPrefix(uid)));
+    const hasBackupObjects = backupFiles.some(file => accountBackupMatches(file.name, uid));
+
+    if (alreadyMigrated) {
+      // A previously completed account is cleanup-only: never re-import its
+      // older copies, which could otherwise resurrect a deleted conversation.
+      if (accountObjects.length || hasBackupObjects ||
+          manifestSnapshot.data()?.legacyCleanupPending === true) {
+        const removed = await removeAccountBucketChatData(env, uid, accountObjects, backupFiles);
+        await manifestRef.set({
+          legacyCleanupPending: false,
+          cleanupCompletedAt: new Date().toISOString(),
+          cleanupSourceObjectsDeleted: removed.sourceObjectsDeleted,
+          cleanupBackupObjectsDeleted: removed.backupObjectsDeleted
+        }, { merge: true });
+      }
+      continue;
+    }
+
+    const existingDocs = await chatCollection(uid).get();
+    const result = await migrateBucketChatHistory(env, uid, existingDocs, inventory);
+    accountsMigrated++;
+    chatsImported += Number(result.imported || 0);
+  }
+
+  const [remainingSources, remainingBackups] = await Promise.all([
+    listLegacyObjects(env, 'chat-state/'),
+    listLegacyObjects(env, 'chat-backups/')
+  ]);
+  if (remainingSources.length || remainingBackups.length) {
+    throw new Error('Legacy chat objects remain. The global migration marker was not completed.');
+  }
+
+  await migrationRef.set({
+    schemaVersion: 1,
+    complete: true,
+    accountsSeen: accountIds.size,
+    accountsMigrated,
+    chatsImported,
+    legacyObjectsRemaining: 0,
+    completedAt: new Date().toISOString()
+  });
+  return {
+    complete: true,
+    alreadyCompleted: false,
+    accountsSeen: accountIds.size,
+    accountsMigrated,
+    chatsImported,
+    legacyObjectsRemaining: 0
+  };
+}
+
 export async function onRequestGet({ request, env }) {
   const user = await requireFirebaseUser(request, env);
   const uid = user.uid;
