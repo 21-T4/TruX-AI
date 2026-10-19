@@ -1927,6 +1927,21 @@
         store.removeItem("trux_chats");
         legacyCachedChats = {};
         legacyCachedChatsUid = null;
+
+        // The conversation body was always cleared at startup, even after its
+        // messages loaded successfully from Cloud Storage. Restore the last
+        // active conversation without keeping message content on this device.
+        if(!currentChatId) {
+          const activeKey = "trux_last_active_chat_id:" + uid;
+          const suppressKey = "trux_suppress_latest_chat_restore:" + uid;
+          const rememberedId = store.getItem(activeKey);
+          const suppressLatest = store.getItem(suppressKey) === "1";
+          const latestId = result.latestChatId;
+          const restoreId = (rememberedId && chatSessions[rememberedId])
+            ? rememberedId
+            : (!suppressLatest && latestId && chatSessions[latestId] ? latestId : null);
+          if(restoreId) loadChatSession(restoreId);
+        }
         return true;
       } catch(error) {
         if(generation === cloudChatLoadGeneration && auth?.currentUser?.uid === uid) {
@@ -2056,6 +2071,11 @@
 
     function saveChatSessions() {
       if(incognitoMode || (currentChatId && chatSessions[currentChatId]?.incognito)) return;
+      const user = auth?.currentUser;
+      if(user && currentChatId && isPersistableChatSession(chatSessions[currentChatId])) {
+        store.setItem("trux_last_active_chat_id:" + user.uid, currentChatId);
+        store.removeItem("trux_suppress_latest_chat_restore:" + user.uid);
+      }
       queueSidebarSync();
       void syncChatsToCloud();
     }
@@ -2136,6 +2156,11 @@
 
     function startNewChat() {
       if(currentChatId && chatSessions[currentChatId]?.incognito) delete chatSessions[currentChatId];
+      const user = auth?.currentUser;
+      if(user) {
+        store.removeItem("trux_last_active_chat_id:" + user.uid);
+        store.setItem("trux_suppress_latest_chat_restore:" + user.uid, "1");
+      }
       incognitoMode = false;
       document.body.classList.remove("plugins-page-active","incognito-mode","notebook-open");
       closeSidebar();
@@ -6939,6 +6964,10 @@
       document.body.classList.remove("notebook-open");
       incognitoMode = false;
       currentChatId = id;
+      if(auth?.currentUser) {
+        store.setItem("trux_last_active_chat_id:" + auth.currentUser.uid, id);
+        store.removeItem("trux_suppress_latest_chat_restore:" + auth.currentUser.uid);
+      }
       restorePersistedTurnDraft(id);
       generationStopRequested = false;
       setWorkspaceMode(chatSessions[id].mode || "chat", {reload:false,preserveSession:true});
