@@ -1299,7 +1299,7 @@
       let total=0,imageBytes=0,fileBytes=0,chats=0,archived=0;
       try{total=new Blob([JSON.stringify(chatSessions||{})]).size;Object.values(chatSessions||{}).forEach(chat=>{if(!chat||chat.incognito)return;if(chat.archived)archived++;chats++;(chat.messages||[]).forEach(message=>{if(message?.image)imageBytes+=String(message.image).length;if(message?.file)fileBytes+=String(message.file).length;});});}catch{}
       const fmt=n=>n<1024?n+" B":n<1048576?(n/1024).toFixed(1)+" KB":(n/1048576).toFixed(2)+" MB";
-      host.textContent=cloudChatsReady ? "Account cloud history (loaded from the bucket): approx. "+fmt(total)+" · "+chats+" chats · "+archived+" archived · image data "+fmt(imageBytes)+" · file data "+fmt(fileBytes)+". Chat history is not persisted in device storage." : "Sign in to load account chat history from Cloud Storage.";
+      host.textContent=cloudChatsReady ? "Account chat history (Firestore): approx. "+fmt(total)+" · "+chats+" chats · "+archived+" archived · image data "+fmt(imageBytes)+" · file data "+fmt(fileBytes)+". Conversation content is stored in your account, not device storage." : "Sign in to load account chat history from Firestore.";
     }
     function viewArchivedChats() {
       const host=getEl("archivedChatsList");if(!host)return;host.replaceChildren();
