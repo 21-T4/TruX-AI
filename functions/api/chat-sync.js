@@ -341,17 +341,22 @@ async function readLatestBackupChats(env, uid, backupFiles, knownIds) {
   return { found: true, imported };
 }
 
-async function migrateBucketChatHistory(env, uid, existingDocs) {
+async function migrateBucketChatHistory(env, uid, existingDocs, inventory = null) {
   const manifestRef = accountManifest(uid);
   const manifestSnapshot = await manifestRef.get();
   if (manifestSnapshot.exists && manifestSnapshot.data()?.bucketMigrationComplete === true) {
     return { complete: true, imported: 0 };
   }
 
-  const [sourceFiles, allBackupFiles] = await Promise.all([
-    listLegacyObjects(env, accountBucketPrefix(uid)),
-    listLegacyObjects(env, 'chat-backups/')
-  ]);
+  const [sourceFiles, allBackupFiles] = inventory
+    ? [
+        inventory.sourceFiles.filter(file => String(file.name).startsWith(accountBucketPrefix(uid))),
+        inventory.backupFiles
+      ]
+    : await Promise.all([
+        listLegacyObjects(env, accountBucketPrefix(uid)),
+        listLegacyObjects(env, 'chat-backups/')
+      ]);
   const knownIds = new Set(existingDocs.docs.map(doc => String(doc.data()?.chatId || '')).filter(Boolean));
   const liveChatFiles = sourceFiles.filter(file => String(file.name).startsWith(accountBucketPrefix(uid) + 'chats/'));
   const legacyFile = sourceFiles.find(file => file.name === accountBucketPrefix(uid) + 'current.json.gz');
