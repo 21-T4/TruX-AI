@@ -395,7 +395,8 @@ async function migrateBucketChatHistory(env, uid, existingDocs) {
     importedChats: imported,
     legacySourceObjectsDeleted: removed.sourceObjectsDeleted,
     legacyBackupObjectsDeleted: removed.backupObjectsDeleted,
-    backupRecoveryUsed: backupRecovery.found
+    backupRecoveryUsed: backupRecovery.found,
+    legacyCleanupPending: false
   });
   return { complete: true, imported, backupRecoveryUsed: backupRecovery.found };
 }
@@ -480,6 +481,24 @@ export async function onRequestGet({ request, env }) {
     }
   }
 
+  // A clear operation records its tombstone before bucket cleanup. Retry that
+  // cleanup on later reads without importing old data or blocking Firestore reads.
+  if (manifest.exists && manifest.data()?.bucketMigrationComplete === true &&
+      manifest.data()?.legacyCleanupPending === true) {
+    try {
+      const removed = await removeAccountBucketChatData(env, uid);
+      await manifestRef.set({
+        legacyCleanupPending: false,
+        cleanupCompletedAt: new Date().toISOString(),
+        cleanupSourceObjectsDeleted: removed.sourceObjectsDeleted,
+        cleanupBackupObjectsDeleted: removed.backupObjectsDeleted
+      }, { merge: true });
+      manifest = await manifestRef.get();
+    } catch (error) {
+      console.warn('[chat-sync] Legacy bucket cleanup will be retried:', String(error?.message || error));
+    }
+  }
+
   const chats = {};
   let savedAt = null;
   let latestChatId = null;
@@ -544,6 +563,7 @@ export async function onRequestPost({ request, env }) {
       schemaVersion: 1,
       userId: uid,
       bucketMigrationComplete: true,
+      legacyCleanupPending: true,
       clearedAt: new Date().toISOString()
     });
     let legacyCleanupPending = false;
@@ -556,6 +576,10 @@ export async function onRequestPost({ request, env }) {
       console.warn('[chat-sync] Firestore was cleared, but legacy bucket cleanup is pending:',
         String(error?.message || error));
     }
+    await manifestRef.set({
+      legacyCleanupPending,
+      cleanupCompletedAt: legacyCleanupPending ? null : new Date().toISOString()
+    }, { merge: true });
     return jsonResponse({
       ok: true,
       cleared: true,
