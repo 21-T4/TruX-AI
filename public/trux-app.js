@@ -1353,6 +1353,9 @@
       chatSessions = {};
       cloudChatSyncedFingerprints.clear();
       pendingDeletedCloudChatIds.clear();
+      store.removeItem("trux_chats");
+      legacyCachedChats = {};
+      legacyCachedChatsUid = null;
       currentChatId = null;
       cloudChatsReady = !!user && cloudChatsOwnerUid === user.uid;
       startNewChat();
@@ -1836,8 +1839,11 @@
 
         const nextChats = { ...remoteChats };
         let legacyMigrationNeeded = false;
-        if(result.found !== true &&
-           legacyCachedChatsUid === uid &&
+        // One-time migration/recovery: older app versions stored chats in the
+        // browser. Preserve those records if the account bucket has no matching
+        // record, even when a stale/empty manifest exists. After a confirmed
+        // cloud upload the legacy cache is removed; normal loads remain bucket-only.
+        if(legacyCachedChatsUid === uid &&
            legacyCachedChats && typeof legacyCachedChats === "object" &&
            !Array.isArray(legacyCachedChats)) {
           for(const [id, chat] of Object.entries(legacyCachedChats)) {
