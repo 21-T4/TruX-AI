@@ -129,6 +129,7 @@ export async function onRequestGet({ request, env }) {
   const chats = {};
   let savedAt = null;
   let unreadableRecords = 0;
+  let missingRecords = 0;
   for (const file of files) {
     let record;
     try {
@@ -142,7 +143,8 @@ export async function onRequestGet({ request, env }) {
         code === 'Z_DATA_ERROR' || code === 'Z_BUF_ERROR' ||
         /unexpected end of file|incorrect header check|invalid distance|invalid stored block|unexpected token/i.test(String(error?.message || ''));
       if (missing || corrupt) {
-        unreadableRecords++;
+        if (missing) missingRecords++;
+        else unreadableRecords++;
         console.warn('[chat-sync] Skipping unreadable chat object:', file.name, String(error?.message || error));
         continue;
       }
@@ -175,6 +177,7 @@ export async function onRequestGet({ request, env }) {
     userId: uid,
     savedAt,
     unreadableRecords,
+    missingRecords,
     chats
   });
 }
