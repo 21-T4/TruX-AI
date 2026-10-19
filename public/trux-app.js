@@ -3927,7 +3927,6 @@
       const stack = responseRow?.querySelector(".trux-response-stack");
       const bubble = responseRow?.querySelector(".trux-bubble");
       if (!stack || !bubble || stack.querySelector(".trux-thinking-panel")) return;
-      const durationMs = Math.max(0, Number(message?.durationMs || 0));
       const thid = "restored_th_" + Date.now() + "_" + Math.random().toString(36).slice(2);
       const tsid = "restored_ts_" + Date.now() + "_" + Math.random().toString(36).slice(2);
       const panel = document.createElement("div");
@@ -3941,7 +3940,7 @@
           '<button type="button" class="trux-thinking-toggle" aria-expanded="false" aria-label="Show executed steps" title="Show executed steps"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>' +
         '</div>' +
         '<div class="trux-thinking-details" id="' + tsid + '" hidden></div>';
-      const summary = durationMs > 0 ? "Worked for " + formatCodexElapsed(durationMs) : "Work completed";
+      const summary = "Worked for this response";
       panel.querySelectorAll(".thinking-status-line").forEach(line => {
         line.textContent = summary;
         line.title = summary;
@@ -4036,9 +4035,6 @@
       let b = getEl(id);
       const responseRow = b?.closest(".row");
       const codingTurn = (turnContext?.mode || workspaceMode) === "coding";
-      const durationMs = responseRow?._startedAt
-        ? Math.max(0, Date.now() - responseRow._startedAt)
-        : 0;
 
       if (codingTurn && responseRow) {
         const panel = responseRow.querySelector(".trux-thinking-panel");
@@ -4046,7 +4042,7 @@
           panel.classList.add("completed");
           panel.removeAttribute("data-thinking-visible");
           panel.setAttribute("aria-label", "Executed steps");
-          const summary = durationMs > 0 ? "Worked for " + formatCodexElapsed(durationMs) : "Work completed";
+          const summary = "Worked for this response";
           panel.querySelectorAll(".thinking-status-line").forEach(line => {
             line.textContent = summary;
             line.title = summary;
