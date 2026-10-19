@@ -5309,7 +5309,6 @@
 
         activeAbortController = new AbortController();
         const requestController = activeAbortController;
-        let streamIdleWatchdog = null;
         try {
           const requestUser = auth?.currentUser;
           if (!requestUser) throw Error("Your session ended. Sign in again to continue.");
@@ -5331,20 +5330,8 @@
         
         let rd = res.body.getReader(), dec = new TextDecoder(), buf = "", full = "", fin = null;
         let streamDone = false, finalizedEarly = false, finalizedOnFinal = false;
-        // This watchdog measures transport liveness, not model progress.
-        // Every SSE frame, including keepalive heartbeats, refreshes activity; there is no total-turn timeout.
-        let lastStreamActivityAt = Date.now(), streamIdleTimedOut = false;
-        streamIdleWatchdog = setInterval(() => {
-          if (turnId !== generationEpoch || generationStopRequested || requestController.signal.aborted ||
-              !isGenerating || finalizedEarly || finalizedOnFinal || streamDone) {
-            clearInterval(streamIdleWatchdog);
-            return;
-          }
-          if (Date.now() - lastStreamActivityAt < 180000) return;
-          streamIdleTimedOut = true;
-          clearInterval(streamIdleWatchdog);
-          try { requestController.abort(); } catch (_) {}
-        }, 5000);
+        // SSE heartbeats keep long-running tool work connected. There is no client-side
+        // inactivity timeout; Cloud Run's configured request lifetime is the outer boundary.
         let responseStartVibrated = false;
         function vibrateWhenResponseStarts() {
           if (responseStartVibrated) return;
@@ -5411,7 +5398,6 @@
           // Once a final payload has been accepted, late text frames must not
           // create a new draft or mutate a completed answer.
           if ((finalizedEarly || finalizedOnFinal) && (j.type === "chunk" || j.type === "final")) return;
-          lastStreamActivityAt = Date.now();
           if(j.type === "progress") {
             return;
           }
@@ -5600,24 +5586,20 @@
 
         while(1) {
           if (turnId !== generationEpoch || generationStopRequested) {
-            clearInterval(streamIdleWatchdog);
             try { await rd.cancel(); } catch {}
             return;
           }
           if (requestController.signal.aborted) {
             try { await rd.cancel(); } catch {}
-            if (streamIdleTimedOut) throw new Error("Response stream stalled.");
             return;
           }
           let { value, done } = await rd.read();
           if (turnId !== generationEpoch || generationStopRequested) {
-            clearInterval(streamIdleWatchdog);
             try { await rd.cancel(); } catch {}
             return;
           }
           if (requestController.signal.aborted) {
             try { await rd.cancel(); } catch {}
-            if (streamIdleTimedOut) throw new Error("Response stream stalled.");
             return;
           }
           if(done) break;
@@ -5688,49 +5670,8 @@
         clearTurnStreamer(false);
         return;
         } catch(e) {
-          clearInterval(streamIdleWatchdog);
           if (turnId !== generationEpoch) return;
           if (row._backgroundHandover) return;
-          if (streamIdleTimedOut) {
-            // Preserve any partial answer, mark it incomplete, and always release the Stop control.
-            persistTurnDraft(turnContext, full, true);
-            clearTurnStreamer(true);
-            const stalledRow = getEl(id)?.closest(".row");
-            settleThinkingDetails(tsid);
-            const bubble = getEl(id);
-            const partialText = String(full || "").trim();
-            if (bubble) {
-              bubble.classList.remove("thinking");
-              if (partialText) {
-                bubble.innerHTML = renderFormattedText(partialText, false);
-                renderTruxDiagrams(bubble);
-                scheduleTruxMath(bubble);
-              } else {
-                bubble.textContent = "No answer was received before the response stream stalled.";
-              }
-              const notice = document.createElement("div");
-              notice.className = "stream-stopped";
-              notice.textContent = partialText
-                ? "Response paused because the stream stopped responding. Retry to continue."
-                : "Generation stopped responding before returning an answer. Please retry.";
-              bubble.appendChild(notice);
-            }
-            const stalledSession = chatSessions[turnContext.chatId];
-            const stalledDraft = stalledSession?.messages?.find(message => message?.draftTurnId === turnContext.turnKey);
-            if (stalledDraft) {
-              delete stalledDraft.draftTurnId;
-              stalledDraft.incomplete = true;
-              store.removeItem("trux_turn_draft_" + turnContext.chatId);
-              saveChatSessions();
-            }
-            isGenerating = false;
-            activeAbortController = null;
-            if (activeTurnContext === turnContext) activeTurnContext = null;
-            getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
-            getEl("actionBtn").classList.remove("stop");
-            handleInputChange();
-            return;
-          }
           // The authoritative answer has already been rendered; a late stream
           // close/error must not overwrite it or create a duplicate partial draft.
           if (finalizedOnFinal || finalizedEarly) {
