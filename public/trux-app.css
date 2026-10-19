@@ -885,24 +885,98 @@
       animation: pulseDot 1.4s var(--ease) infinite;
     }
 
-    /* Chat activity — self-contained metallic status control. */
-    .trux-thinking-panel{position:relative;width:fit-content;max-width:min(100%,760px);margin:4px 0 10px;color:var(--txt);contain:layout}
+    /* Chat activity — one shared, boxless TruX-Code-style indicator. */
+    .trux-thinking-panel{
+      position:relative;width:fit-content;max-width:min(100%,760px);
+      margin:4px 0 10px;color:var(--txt);contain:layout;
+    }
     .trux-thinking-panel.thinking-dismissed{display:none!important}
-    .trux-thinking-bar{position:relative;display:flex;align-items:center;gap:9px;min-height:38px;max-width:100%;padding:7px 11px 7px 8px;overflow:hidden;isolation:isolate;border:1px solid rgba(255,255,255,.16);border-radius:999px;background:linear-gradient(115deg,rgba(255,255,255,.12),transparent 28%,rgba(255,255,255,.055) 53%,transparent 72%),linear-gradient(180deg,rgba(45,45,48,.94),rgba(18,18,20,.94));box-shadow:inset 0 1px 0 rgba(255,255,255,.16),inset 0 -1px 0 rgba(0,0,0,.45),0 9px 28px rgba(0,0,0,.16)}
-    .trux-thinking-bar::before{content:"";position:absolute;z-index:-1;inset:0;opacity:.9;background:linear-gradient(105deg,transparent 24%,rgba(255,255,255,.03) 39%,rgba(255,255,255,.62) 49%,rgba(255,255,255,.06) 58%,transparent 72%);background-size:220% 100%;animation:truxMetallicSweep 3.8s cubic-bezier(.4,0,.2,1) infinite;pointer-events:none}
-    .trux-thinking-spark{position:relative;z-index:1;display:grid;place-items:center;flex:0 0 22px;width:22px;height:22px;color:#f1f0e9;filter:drop-shadow(0 0 7px rgba(255,255,255,.28))}
-    .trux-thinking-spark::before{content:"";position:absolute;inset:0;border:1px solid rgba(255,255,255,.38);border-radius:50%;box-shadow:0 0 0 3px rgba(255,255,255,.035),inset 0 0 8px rgba(255,255,255,.11);animation:truxThinkingHalo 1.8s ease-in-out infinite}
-    .trux-thinking-spark svg{width:14px;height:14px;fill:currentColor;animation:truxThinkingStar 2.4s cubic-bezier(.22,.61,.36,1) infinite}
+    .trux-thinking-bar{
+      position:relative;display:flex;align-items:center;gap:9px;
+      min-height:28px;max-width:100%;padding:0;overflow:visible;
+      border:0;border-radius:0;background:transparent;box-shadow:none;isolation:auto;
+    }
+    .trux-thinking-bar::before{content:none}
+    .trux-thinking-spark{
+      position:relative;z-index:1;display:grid;place-items:center;
+      flex:0 0 16px;width:16px;height:16px;color:#d8d8d4;
+      filter:drop-shadow(0 0 5px rgba(220,228,255,.16));
+    }
+    .trux-thinking-spark::before{content:none}
+    .trux-thinking-spark svg{
+      width:13px;height:13px;fill:currentColor;
+      animation:truxThinkingStar 3.6s ease-in-out infinite;
+    }
     .trux-thinking-copy{position:relative;flex:1 1 auto;min-width:0;display:flex;align-items:center}
-    .trux-thinking-panel .status-msg{display:block;min-width:0;max-width:100%;padding:0;margin:0;overflow:hidden;border:0;background:transparent;color:transparent;font:650 13px/1.35 var(--font-body);letter-spacing:.005em;white-space:nowrap;text-overflow:ellipsis}
+    .trux-thinking-panel .status-msg{
+      display:block;min-width:0;max-width:100%;padding:0;margin:0;overflow:visible;
+      border:0;background:transparent;color:transparent;
+      font:500 14px/1.5 var(--font-body);letter-spacing:0;white-space:nowrap;
+    }
     .thinking-status-line{display:none}
-    .thinking-status-line.compact,.thinking-status-line.full{background:linear-gradient(100deg,#89867f 0%,#c6c2b9 38%,#fffef9 49%,#d2cec5 58%,#89867f 100%);background-size:230% 100%;background-position:100% 50%;background-repeat:no-repeat;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:truxMetallicText 3.8s cubic-bezier(.4,0,.2,1) infinite}
-    .thinking-status-line.compact{display:inline-block}.thinking-status-line.full{display:none}.trux-thinking-panel.expanded .thinking-status-line.compact{display:none}.trux-thinking-panel.expanded .thinking-status-line.full{display:inline-block;white-space:normal;overflow-wrap:anywhere}
-    .trux-thinking-toggle{position:relative;z-index:1;display:grid!important;place-items:center;flex:0 0 22px;width:22px;height:22px;padding:0;margin-left:1px;border:0;border-radius:50%;background:rgba(255,255,255,.055);color:#c9c6bf;cursor:pointer;transition:background .2s var(--ease),color .2s var(--ease),transform .2s var(--ease)}
-    .trux-thinking-toggle:hover{background:rgba(255,255,255,.12);color:#fff;transform:translateY(-1px)}.trux-thinking-toggle svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .28s var(--ease-out)}.trux-thinking-panel.expanded .trux-thinking-toggle svg{transform:rotate(180deg)}
-    .trux-thinking-details{width:min(760px,100%);max-width:100%;min-width:0;box-sizing:border-box;flex:0 0 auto;display:flex;flex-direction:column;gap:5px;max-height:300px;margin:7px 0 0 12px;padding:7px 0 7px 14px;overflow:auto;border-left:1px solid rgba(255,255,255,.14);counter-reset:trux-thinking-step}.trux-thinking-panel.expanded .trux-thinking-details{width:100%;align-self:stretch}.trux-thinking-details[hidden]{display:none!important}.thinking-status-step,.thinking-tool-item{position:relative;display:block;padding:1px 0;color:var(--txt-3);font:500 13px/1.5 var(--font-body);overflow-wrap:anywhere}.thinking-status-step{counter-increment:trux-thinking-step;padding:2px 0 2px 28px}.thinking-status-step::before{content:counter(trux-thinking-step);position:absolute;left:0;top:3px;display:grid;place-items:center;width:18px;height:18px;border:1px solid rgba(255,255,255,.15);border-radius:50%;color:var(--txt-2);font-size:10px;line-height:1}.thinking-tool-item.active{color:var(--txt-2)}.thinking-tool-head,.thinking-tool-status{display:block;color:inherit}.thinking-tool-status{margin-top:1px;font-size:11px}
-    @keyframes truxMetallicSweep{0%,18%{background-position:120% 50%}58%,100%{background-position:-120% 50%}}@keyframes truxMetallicText{0%,18%{background-position:115% 50%}58%,100%{background-position:-115% 50%}}@keyframes truxThinkingHalo{0%,100%{transform:scale(.88);opacity:.42}50%{transform:scale(1);opacity:1}}@keyframes truxThinkingStar{0%,100%{transform:rotate(0deg) scale(.9)}50%{transform:rotate(90deg) scale(1.06)}}
-    @media (prefers-reduced-motion:reduce){.trux-thinking-bar::before,.thinking-status-line.compact,.thinking-status-line.full,.trux-thinking-spark::before,.trux-thinking-spark svg{animation:none!important}}@media (max-width:700px){.trux-thinking-panel{max-width:100%}.trux-thinking-bar{min-height:36px;padding:7px 10px 7px 8px}.trux-thinking-panel .status-msg{font-size:12.5px}}
+    .thinking-status-line.compact,.thinking-status-line.full{
+      background:linear-gradient(105deg,#777873 0%,#c8c9c5 28%,#fff 47%,#bfc3c9 56%,#85878b 76%,#dededb 100%);
+      background-size:220% 100%;background-position:115% 50%;background-repeat:no-repeat;
+      -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+      animation:truxMetallicText 4.2s cubic-bezier(.4,0,.2,1) infinite;
+    }
+    .thinking-status-line.compact{display:inline-block}
+    .thinking-status-line.full{display:none}
+    .trux-thinking-panel.expanded .thinking-status-line.compact{display:none}
+    .trux-thinking-panel.expanded .thinking-status-line.full{
+      display:inline-block;white-space:normal;overflow-wrap:anywhere;
+    }
+    .trux-thinking-toggle{
+      position:relative;z-index:1;display:grid!important;place-items:center;
+      flex:0 0 20px;width:20px;height:20px;padding:0;margin-left:1px;
+      border:0;border-radius:4px;background:transparent;color:#898b8f;cursor:pointer;
+      opacity:.78;transition:color .2s var(--ease),opacity .2s var(--ease),transform .2s var(--ease);
+    }
+    .trux-thinking-toggle:hover{background:transparent;color:#f3f4f6;opacity:1;transform:translateY(1px)}
+    .trux-thinking-toggle svg{
+      width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;
+      stroke-linecap:round;stroke-linejoin:round;
+      transition:transform .28s var(--ease-out);
+    }
+    .trux-thinking-panel.expanded .trux-thinking-toggle svg{transform:rotate(180deg)}
+    .trux-thinking-details{
+      width:min(760px,100%);max-width:100%;min-width:0;box-sizing:border-box;
+      flex:0 0 auto;display:flex;flex-direction:column;gap:6px;max-height:300px;
+      margin:5px 0 2px 7px;padding:5px 0 5px 17px;overflow:auto;
+      border-left:1px solid rgba(205,211,224,.2);counter-reset:trux-thinking-step;
+    }
+    .trux-thinking-panel.expanded .trux-thinking-details{width:100%;align-self:stretch}
+    .trux-thinking-details[hidden]{display:none!important}
+    .thinking-status-step,.thinking-tool-item{
+      position:relative;display:block;padding:1px 0;color:var(--txt-3);
+      font:400 13px/1.55 var(--font-body);overflow-wrap:anywhere;
+    }
+    .thinking-status-step{counter-increment:trux-thinking-step;padding:2px 0 2px 27px}
+    .thinking-status-step::before{
+      content:counter(trux-thinking-step);position:absolute;left:0;top:4px;
+      display:grid;place-items:center;width:17px;height:17px;
+      border:1px solid rgba(215,220,232,.22);border-radius:50%;
+      color:#b9bcc4;font:500 10px/1 var(--font-body);
+    }
+    .thinking-tool-item.active{color:var(--txt-2)}
+    .thinking-tool-head,.thinking-tool-status{display:block;color:inherit}
+    .thinking-tool-status{margin-top:1px;font-size:11px}
+    @keyframes truxMetallicText{
+      0%,18%{background-position:115% 50%}
+      62%,100%{background-position:-115% 50%}
+    }
+    @keyframes truxThinkingStar{
+      0%,100%{transform:rotate(0deg) scale(.96);opacity:.8}
+      50%{transform:rotate(12deg) scale(1.04);opacity:1}
+    }
+    @media (prefers-reduced-motion:reduce){
+      .thinking-status-line.compact,.thinking-status-line.full,.trux-thinking-spark svg{animation:none!important}
+    }
+    @media (max-width:700px){
+      .trux-thinking-panel{max-width:100%}
+      .trux-thinking-bar{min-height:26px;gap:8px}
+      .trux-thinking-panel .status-msg{font-size:13px}
+    }
 
 
     /* ---------- streaming ---------- */
