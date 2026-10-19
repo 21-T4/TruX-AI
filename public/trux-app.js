@@ -6759,13 +6759,17 @@
 
     let truxSubscriptionReturnState = null;
     function refreshSubscriptionPage() {
-      const activePlan = currentPlanTier === "pro" ? "pro" : "base";
+      const supportedTiers = ["base", "plus", "pro", "edge"];
+      const activePlan = supportedTiers.includes(currentPlanTier) ? currentPlanTier : "base";
       document.querySelectorAll("[data-subscription-plan]").forEach(card => {
-        const isCurrent = card.getAttribute("data-subscription-plan") === activePlan;
+        const tier = card.getAttribute("data-subscription-plan");
+        const isCurrent = tier === activePlan;
         card.classList.toggle("current", isCurrent);
         const button = card.querySelector(".subscription-plan-action");
-        if (button && card.getAttribute("data-subscription-plan") === "base") button.textContent = isCurrent ? "Current plan" : "Choose Base";
-        if (button && card.getAttribute("data-subscription-plan") === "pro") button.textContent = isCurrent ? "Current plan" : "Request Pro access";
+        if (!button) return;
+        if (tier === "base") button.textContent = isCurrent ? "Current plan" : "Choose Free";
+        else if (tier === "pro" && isCurrent) button.textContent = "Current plan";
+        else button.textContent = "Coming Dec 1, 2026";
       });
     }
     function openSubscriptionPage() {
@@ -6803,9 +6807,17 @@
       truxSubscriptionReturnState = null;
     }
     function selectSubscriptionPlan(plan) {
-      if (plan === "base" && currentPlanTier === "base") return toast("You are already on the Base plan.");
-      if (plan === "pro" && currentPlanTier === "pro") return toast("You already have Pro access.");
-      toast(plan === "pro" ? "Pro checkout is not connected yet. Contact support to request access." : "Plan selection is managed through your TruX account.");
+      const planNames = { base: "Free", plus: "Plus", pro: "Pro", edge: "TruX AI Edge" };
+      if (!Object.prototype.hasOwnProperty.call(planNames, plan)) {
+        return toast("That plan is not available.");
+      }
+      if (plan === currentPlanTier) {
+        return toast("You already have " + planNames[plan] + " access. Updated pricing and limits take effect December 1, 2026.");
+      }
+      if (plan !== "base") {
+        return toast(planNames[plan] + " pricing and updated limits are scheduled for December 1, 2026. Plan changes are not active yet.");
+      }
+      toast("Plan selection is managed through your TruX account.");
     }
     function openSubscriptionSupport() {
       toast("Subscription support is being prepared. Please use Help & feedback to contact the TruX team.");
