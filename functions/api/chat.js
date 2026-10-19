@@ -608,6 +608,7 @@ async function streamVertexGemini({
   let bufferedText = '';
   let groundingMetadata = null;
   let accumulatedText = '';
+  let finishReason = '';
 
   try {
     const stream = await client.models.generateContentStream({
@@ -618,6 +619,7 @@ async function streamVertexGemini({
 
     for await (const chunk of stream) {
       const candidate = chunk?.candidates?.[0];
+      if (candidate?.finishReason) finishReason = String(candidate.finishReason);
 
       if (candidate?.groundingMetadata) {
         const incomingGrounding = candidate.groundingMetadata;
@@ -697,7 +699,8 @@ async function streamVertexGemini({
     functionCallContent: functionContentParts.length
       ? { role: 'model', parts: functionContentParts }
       : null,
-    groundingMetadata
+    groundingMetadata,
+    finishReason
   };
 }
 
@@ -1689,6 +1692,9 @@ export async function onRequestPost(context) {
       let finalResult = null;
       let lastModelResult = null;
       let generationStopped = false;
+      // If the provider ends one generation at its output-token boundary,
+      // retain the emitted segment so the same TruX-Code response can continue.
+      let codingContinuationText = '';
 
       function redactToolDetail(value, depth = 0) {
         if (depth > 3) return '[…]';
@@ -2205,6 +2211,29 @@ export async function onRequestPost(context) {
           continue;
         }
 
+        const finishReason = String(result?.finishReason || '').toUpperCase();
+        if (codingMode && finishReason === 'MAX_TOKENS' && !signal?.aborted) {
+          const segment = String(result?.text || '');
+          // Continue only after an actual provider output-limit signal. This is
+          // not triggered by normal STOPs and does not impose a continuation cap.
+          if (segment) {
+            codingContinuationText += segment;
+            agentContents.push({ role: 'model', parts: [{ text: segment }] });
+            agentContents.push({
+              role: 'user',
+              parts: [{
+                text: 'Continue the response from exactly where it ended. Do not repeat text already provided. Complete the original request naturally, using the same format and constraints.'
+              }]
+            });
+            console.info('[trux-code] continuing output after provider token boundary', JSON.stringify({
+              model: targetModel,
+              continuationChars: codingContinuationText.length,
+              modelRound: agentRound
+            }));
+            continue;
+          }
+        }
+
         finalResult = result;
         break;
       }
@@ -2270,6 +2299,11 @@ export async function onRequestPost(context) {
       }
 
       let finalText = String(finalResult?.text || '').trim();
+      if (codingMode && codingContinuationText) {
+        // The client treats the final event as authoritative, so include every
+        // prior token-boundary continuation in that final payload as well.
+        finalText = (codingContinuationText + finalText).trim();
+      }
       if (!finalText && completedComposioActions.length && !signal?.aborted) {
         finalText = completedComposioActions.map(action => {
           const output = String(action.output || '').trim();
