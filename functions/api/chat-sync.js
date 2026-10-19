@@ -1,18 +1,19 @@
 import { requireFirebaseUser } from '../firebase-auth.js';
-import {
-  downloadBuffer,
-  getBucket,
-  listObjects,
-  objectExists,
-  saveGzipJson,
-  sha256
-} from '../gcs-store.js';
-import { gunzip as gunzipCallback } from 'node:zlib';
+import { getFirestore } from 'firebase-admin/firestore';
+import crypto from 'node:crypto';
+import { gzip as gzipCallback, gunzip as gunzipCallback } from 'node:zlib';
 import { promisify } from 'node:util';
+import { downloadBuffer, getBucket, listObjects } from '../gcs-store.js';
 
+const gzip = promisify(gzipCallback);
 const gunzip = promisify(gunzipCallback);
-const MANIFEST_FILE = 'manifest.json.gz';
-const LEGACY_FILE = 'current.json.gz';
+
+// Keep enough headroom below Firestore's 1 MiB document limit for document
+// metadata. Large conversations are compressed and split into bounded parts.
+const INLINE_PAYLOAD_LIMIT = 700 * 1024;
+const CHUNK_BYTES = 700 * 1024;
+const MAX_REQUEST_BYTES = 32 * 1024 * 1024;
+const BATCH_LIMIT = 400;
 const NO_STORE = {
   'Content-Type': 'application/json; charset=utf-8',
   'Cache-Control': 'private, no-store, no-cache, max-age=0, must-revalidate',
@@ -22,26 +23,7 @@ const NO_STORE = {
 };
 
 function jsonResponse(body, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: NO_STORE
-  });
-}
-
-function accountPrefix(uid) {
-  return `chat-state/${uid}/`;
-}
-
-function manifestKey(uid) {
-  return accountPrefix(uid) + MANIFEST_FILE;
-}
-
-function legacyKey(uid) {
-  return accountPrefix(uid) + LEGACY_FILE;
-}
-
-function chatObjectKey(uid, chatId) {
-  return accountPrefix(uid) + 'chats/' + sha256(String(chatId)) + '.json.gz';
+  return new Response(JSON.stringify(body), { status, headers: NO_STORE });
 }
 
 function isObject(value) {
@@ -52,140 +34,388 @@ function isPersistableChat(chat) {
   return isObject(chat) && chat.incognito !== true;
 }
 
+function firestore() {
+  // requireFirebaseUser initializes the Firebase Admin default app first.
+  return getFirestore();
+}
+
+function chatCollection(uid) {
+  return firestore().collection('users').doc(uid).collection('chats');
+}
+
+function accountManifest(uid) {
+  return firestore().collection('users').doc(uid).collection('chatState').doc('manifest');
+}
+
+function chatDocumentId(chatId) {
+  return crypto.createHash('sha256').update(String(chatId)).digest('hex');
+}
+
+function chatDocument(uid, chatId) {
+  return chatCollection(uid).doc(chatDocumentId(chatId));
+}
+
+function accountBucketPrefix(uid) {
+  return 'chat-state/' + uid + '/';
+}
+
+function accountBackupMatches(name, uid) {
+  const parts = String(name || '').split('/');
+  if (parts[0] !== 'chat-backups' || parts.length < 3) return false;
+  return parts[2] === uid || parts[2] === uid + '.json.gz';
+}
+
+function bufferFromFirestore(value) {
+  if (Buffer.isBuffer(value)) return value;
+  if (value instanceof Uint8Array) return Buffer.from(value);
+  if (value && typeof value.toUint8Array === 'function') {
+    return Buffer.from(value.toUint8Array());
+  }
+  throw new Error('Stored chat payload is missing or invalid.');
+}
+
+async function commitDeletes(refs) {
+  for (let start = 0; start < refs.length; start += BATCH_LIMIT) {
+    const batch = firestore().batch();
+    for (const ref of refs.slice(start, start + BATCH_LIMIT)) batch.delete(ref);
+    await batch.commit();
+  }
+}
+
+async function deleteChunkVersion(ref, version, count) {
+  if (!version || !Number.isSafeInteger(Number(count)) || Number(count) < 1) return;
+  const safeCount = Math.min(Number(count), 10000);
+  const refs = [];
+  for (let i = 0; i < safeCount; i++) {
+    refs.push(ref.collection('parts').doc(version + '_' + i));
+  }
+  await commitDeletes(refs);
+}
+
+async function writeChat(uid, chatId, chat, options = {}) {
+  const id = String(chatId || '');
+  if (!id || id.length > 512 || !isPersistableChat(chat)) return false;
+
+  const ref = chatDocument(uid, id);
+  const previousSnapshot = await ref.get();
+  const previous = previousSnapshot.exists ? previousSnapshot.data() : null;
+  const payload = await gzip(Buffer.from(JSON.stringify(chat), 'utf8'), { level: 6 });
+  const savedAt = String(options.savedAt || new Date().toISOString());
+  const base = {
+    schemaVersion: 3,
+    userId: uid,
+    chatId: id,
+    savedAt,
+    payloadBytes: payload.length
+  };
+
+  let nextVersion = null;
+  let nextCount = 0;
+  if (payload.length <= INLINE_PAYLOAD_LIMIT) {
+    await ref.set({ ...base, storageMode: 'inline', payload });
+  } else {
+    nextVersion = crypto.randomUUID();
+    nextCount = Math.ceil(payload.length / CHUNK_BYTES);
+    try {
+      for (let start = 0, index = 0; start < payload.length; start += CHUNK_BYTES, index++) {
+        const batch = firestore().batch();
+        const end = Math.min(start + CHUNK_BYTES, payload.length);
+        batch.set(ref.collection('parts').doc(nextVersion + '_' + index), {
+          storageVersion: nextVersion,
+          index,
+          data: Buffer.from(payload.subarray(start, end))
+        });
+        await batch.commit();
+      }
+      await ref.set({
+        ...base,
+        storageMode: 'chunks',
+        storageVersion: nextVersion,
+        chunkCount: nextCount
+      });
+    } catch (error) {
+      try { await deleteChunkVersion(ref, nextVersion, nextCount); } catch {}
+      throw error;
+    }
+  }
+
+  // The parent is written only after all new parts are committed. Old parts
+  // are removed afterward, so an interrupted write never points at partial data.
+  if (previous?.storageMode === 'chunks' && previous.storageVersion &&
+      previous.storageVersion !== nextVersion) {
+    try {
+      await deleteChunkVersion(ref, previous.storageVersion, previous.chunkCount);
+    } catch (error) {
+      console.warn('[chat-sync] Old Firestore chat parts need cleanup:', String(error?.message || error));
+    }
+  }
+  return true;
+}
+
+async function readChatDocument(snapshot, uid) {
+  const record = snapshot.data();
+  if (!isObject(record) || (record.userId && record.userId !== uid)) return null;
+  const chatId = String(record.chatId || '');
+  if (!chatId) return null;
+
+  let payload;
+  if (record.storageMode === 'chunks') {
+    const version = String(record.storageVersion || '');
+    const count = Number(record.chunkCount);
+    if (!version || !Number.isSafeInteger(count) || count < 1 || count > 10000) {
+      throw new Error('Stored chat chunk metadata is invalid.');
+    }
+    const refs = [];
+    for (let i = 0; i < count; i++) refs.push(snapshot.ref.collection('parts').doc(version + '_' + i));
+    const parts = await Promise.all(refs.map(ref => ref.get()));
+    const buffers = [];
+    for (let i = 0; i < parts.length; i++) {
+      if (!parts[i].exists) throw Object.assign(new Error('A stored chat part is missing.'), { missingChatPart: true });
+      const part = parts[i].data();
+      if (part?.storageVersion !== version || Number(part?.index) !== i) {
+        throw new Error('Stored chat part metadata does not match.');
+      }
+      buffers.push(bufferFromFirestore(part.data));
+    }
+    payload = Buffer.concat(buffers);
+  } else {
+    payload = bufferFromFirestore(record.payload);
+  }
+
+  const expanded = await gunzip(payload);
+  const chat = JSON.parse(expanded.toString('utf8'));
+  if (!isPersistableChat(chat)) return null;
+  return { chatId, chat, savedAt: String(record.savedAt || '') };
+}
+
 async function readGzipJson(env, objectKey) {
-  // The Cloud Storage Node client can transparently decompress objects whose
-  // metadata says Content-Encoding: gzip. Parse that response first; if the
-  // stored bytes remain compressed (or older metadata prevents transcoding),
-  // fall back to an explicit gunzip.
+  // GCS may transparently decompress objects carrying Content-Encoding: gzip.
   const downloaded = await downloadBuffer(env, objectKey);
   try {
     return JSON.parse(downloaded.toString('utf8'));
   } catch {
-    const expanded = await gunzip(downloaded);
-    return JSON.parse(expanded.toString('utf8'));
+    return JSON.parse((await gunzip(downloaded)).toString('utf8'));
   }
 }
 
-async function writeChat(env, uid, chatId, chat) {
-  const id = String(chatId || '');
-  if (!id || id.length > 512 || !isPersistableChat(chat)) return false;
-  await saveGzipJson(env, chatObjectKey(uid, id), {
-    schemaVersion: 2,
-    userId: uid,
-    chatId: id,
-    savedAt: new Date().toISOString(),
-    chat
-  });
-  return true;
+function validLegacySnapshot(value, uid) {
+  return isObject(value) && (!value.userId || value.userId === uid) && isObject(value.chats);
 }
 
-async function writeManifest(env, uid) {
-  await saveGzipJson(env, manifestKey(uid), {
-    schemaVersion: 2,
-    userId: uid,
-    initialized: true,
-    savedAt: new Date().toISOString()
-  });
-}
-
-async function deleteChatObject(env, uid, chatId) {
-  const id = String(chatId || '');
-  if (!id || id.length > 512) return false;
-  await getBucket(env).file(chatObjectKey(uid, id)).delete({ ignoreNotFound: true });
-  return true;
-}
-
-async function migrateLegacySnapshot(env, uid, currentChats) {
-  const oldKey = legacyKey(uid);
-  if (!(await objectExists(env, oldKey))) return { found: false, savedAt: null };
-
-  const legacy = await readGzipJson(env, oldKey);
-  if (!isObject(legacy) || (legacy.userId && legacy.userId !== uid) || !isObject(legacy.chats)) {
-    throw new Error('The legacy cloud chat snapshot is invalid or belongs to another account.');
+async function removeAccountBucketChatData(env, uid, files = null, backups = null) {
+  const sourceFiles = files || await listObjects(env, accountBucketPrefix(uid));
+  const backupFiles = backups || await listObjects(env, 'chat-backups/');
+  const ownedBackups = backupFiles.filter(file => accountBackupMatches(file.name, uid));
+  const refs = sourceFiles.map(file => getBucket(env).file(file.name))
+    .concat(ownedBackups.map(file => getBucket(env).file(file.name)));
+  for (let start = 0; start < refs.length; start += 100) {
+    await Promise.all(refs.slice(start, start + 100).map(ref => ref.delete({ ignoreNotFound: true })));
   }
+  return { sourceObjectsDeleted: sourceFiles.length, backupObjectsDeleted: ownedBackups.length };
+}
 
-  for (const [chatId, chat] of Object.entries(legacy.chats)) {
-    if (!isPersistableChat(chat)) continue;
-    if (!Object.prototype.hasOwnProperty.call(currentChats, chatId)) {
-      await writeChat(env, uid, chatId, chat);
-      currentChats[chatId] = chat;
+async function readLatestBackupChats(env, uid, backupFiles, knownIds) {
+  const owned = backupFiles.filter(file => accountBackupMatches(file.name, uid));
+  if (!owned.length) return { found: false, imported: 0 };
+
+  // Use one consistent backup date only. Combining historical snapshots could
+  // resurrect conversations that the account owner intentionally deleted.
+  const latestDate = owned.map(file => String(file.name).split('/')[1] || '')
+    .filter(Boolean).sort().at(-1);
+  if (!latestDate) return { found: false, imported: 0 };
+
+  const latest = owned.filter(file => String(file.name).split('/')[1] === latestDate);
+  const chatFiles = latest.filter(file => {
+    const parts = String(file.name).split('/');
+    return parts[2] === uid && parts[3] === 'chats' && parts[4];
+  });
+  let imported = 0;
+  for (const file of chatFiles) {
+    const record = await readGzipJson(env, file.name);
+    if (!isObject(record) || (record.userId && record.userId !== uid) ||
+        !record.chatId || !isPersistableChat(record.chat)) {
+      throw new Error('A recent account chat backup is invalid; it was preserved.');
+    }
+    const id = String(record.chatId);
+    if (!knownIds.has(id)) {
+      await writeChat(uid, id, record.chat, { savedAt: record.savedAt });
+      knownIds.add(id);
+      imported++;
     }
   }
 
-  await getBucket(env).file(oldKey).delete({ ignoreNotFound: true });
-  return { found: true, savedAt: legacy.savedAt || null };
+  const legacyName = 'chat-backups/' + latestDate + '/' + uid + '.json.gz';
+  const legacyFile = latest.find(file => file.name === legacyName);
+  if (legacyFile) {
+    const legacy = await readGzipJson(env, legacyName);
+    if (!validLegacySnapshot(legacy, uid)) {
+      throw new Error('The recent account chat backup snapshot is invalid; it was preserved.');
+    }
+    for (const [rawId, chat] of Object.entries(legacy.chats)) {
+      const id = String(rawId || '');
+      if (id && !knownIds.has(id) && isPersistableChat(chat)) {
+        await writeChat(uid, id, chat, { savedAt: legacy.savedAt });
+        knownIds.add(id);
+        imported++;
+      }
+    }
+  }
+  return { found: true, imported };
+}
+
+async function migrateBucketChatHistory(env, uid, existingDocs) {
+  const manifestRef = accountManifest(uid);
+  const manifestSnapshot = await manifestRef.get();
+  if (manifestSnapshot.exists && manifestSnapshot.data()?.bucketMigrationComplete === true) {
+    return { complete: true, imported: 0 };
+  }
+
+  const [sourceFiles, allBackupFiles] = await Promise.all([
+    listObjects(env, accountBucketPrefix(uid)),
+    listObjects(env, 'chat-backups/')
+  ]);
+  const knownIds = new Set(existingDocs.docs.map(doc => String(doc.data()?.chatId || '')).filter(Boolean));
+  const liveChatFiles = sourceFiles.filter(file => String(file.name).startsWith(accountBucketPrefix(uid) + 'chats/'));
+  const legacyFile = sourceFiles.find(file => file.name === accountBucketPrefix(uid) + 'current.json.gz');
+  const hasLiveChatStorage = liveChatFiles.length > 0 || !!legacyFile;
+  let imported = 0;
+
+  // Prefer the live per-chat objects over an older all-chats snapshot.
+  for (const file of liveChatFiles) {
+    const record = await readGzipJson(env, file.name);
+    if (!isObject(record) || (record.userId && record.userId !== uid) ||
+        !record.chatId || !isPersistableChat(record.chat)) {
+      throw new Error('An existing account chat record is invalid; its bucket object was preserved.');
+    }
+    const id = String(record.chatId);
+    if (!knownIds.has(id)) {
+      await writeChat(uid, id, record.chat, { savedAt: record.savedAt });
+      knownIds.add(id);
+      imported++;
+    }
+  }
+
+  if (legacyFile) {
+    const legacy = await readGzipJson(env, legacyFile.name);
+    if (!validLegacySnapshot(legacy, uid)) {
+      throw new Error('The existing account chat snapshot is invalid; its bucket object was preserved.');
+    }
+    for (const [rawId, chat] of Object.entries(legacy.chats)) {
+      const id = String(rawId || '');
+      if (id && !knownIds.has(id) && isPersistableChat(chat)) {
+        await writeChat(uid, id, chat, { savedAt: legacy.savedAt });
+        knownIds.add(id);
+        imported++;
+      }
+    }
+  }
+
+  // Recover from the most recent backup only if both Firestore and the live
+  // bucket chat area are empty. This avoids resurrecting older deleted chats.
+  let backupRecovery = { found: false, imported: 0 };
+  if (!hasLiveChatStorage && knownIds.size === 0) {
+    backupRecovery = await readLatestBackupChats(env, uid, allBackupFiles, knownIds);
+    imported += backupRecovery.imported;
+  }
+
+  // Data has been committed to Firestore before any legacy source is removed.
+  // If cleanup fails, leave the migration marker unset so the next read retries.
+  const removed = await removeAccountBucketChatData(env, uid, sourceFiles, allBackupFiles);
+  await manifestRef.set({
+    schemaVersion: 1,
+    userId: uid,
+    bucketMigrationComplete: true,
+    migrationCompletedAt: new Date().toISOString(),
+    importedChats: imported,
+    legacySourceObjectsDeleted: removed.sourceObjectsDeleted,
+    legacyBackupObjectsDeleted: removed.backupObjectsDeleted,
+    backupRecoveryUsed: backupRecovery.found
+  });
+  return { complete: true, imported, backupRecoveryUsed: backupRecovery.found };
+}
+
+async function deleteChatWithData(ref, data) {
+  // Remove the visible record first. If part cleanup is interrupted, leftovers
+  // are orphaned and cannot cause the deleted chat to reappear.
+  await ref.delete();
+  if (data?.storageMode === 'chunks') {
+    try { await deleteChunkVersion(ref, data.storageVersion, data.chunkCount); }
+    catch (error) {
+      console.warn('[chat-sync] Deleted chat left orphaned parts:', String(error?.message || error));
+    }
+  }
+}
+
+async function deleteAllFirestoreChats(uid) {
+  const snapshot = await chatCollection(uid).get();
+  const deletes = [];
+  for (const doc of snapshot.docs) {
+    const data = doc.data();
+    deletes.push(doc.ref);
+    if (data?.storageMode === 'chunks' && data.storageVersion) {
+      const count = Math.min(Number(data.chunkCount) || 0, 10000);
+      for (let i = 0; i < count; i++) deletes.push(doc.ref.collection('parts').doc(data.storageVersion + '_' + i));
+    }
+  }
+  await commitDeletes(deletes);
+  return snapshot.size;
 }
 
 export async function onRequestGet({ request, env }) {
   const user = await requireFirebaseUser(request, env);
   const uid = user.uid;
-  const prefix = accountPrefix(uid);
-  const [files, hasManifest, hasLegacy] = await Promise.all([
-    listObjects(env, prefix + 'chats/'),
-    objectExists(env, manifestKey(uid)),
-    objectExists(env, legacyKey(uid))
-  ]);
+  const manifestRef = accountManifest(uid);
+  let migrationPending = false;
+  let migrationImported = 0;
+
+  let docs = await chatCollection(uid).get();
+  const manifest = await manifestRef.get();
+  if (!manifest.exists || manifest.data()?.bucketMigrationComplete !== true) {
+    try {
+      const migrated = await migrateBucketChatHistory(env, uid, docs);
+      migrationImported = migrated.imported || 0;
+      docs = await chatCollection(uid).get();
+    } catch (error) {
+      migrationPending = true;
+      console.warn('[chat-sync] Legacy chat migration remains pending:', String(error?.message || error));
+    }
+  }
 
   const chats = {};
   let savedAt = null;
   let latestChatId = null;
-  let latestChatSavedAt = "";
+  let latestChatSavedAt = '';
   let unreadableRecords = 0;
   let missingRecords = 0;
-  for (const file of files) {
-    let record;
+
+  for (const snapshot of docs.docs) {
     try {
-      record = await readGzipJson(env, file.name);
-    } catch (error) {
-      // A stale listing can race a delete. Skip missing objects and isolate a
-      // malformed gzip/JSON record; neither should hide every other chat.
-      const code = error?.code;
-      const missing = Number(code) === 404 || code === 'ENOENT';
-      const corrupt = error instanceof SyntaxError ||
-        code === 'Z_DATA_ERROR' || code === 'Z_BUF_ERROR' ||
-        /unexpected end of file|incorrect header check|invalid distance|invalid stored block|unexpected token/i.test(String(error?.message || ''));
-      if (missing || corrupt) {
-        if (missing) missingRecords++;
-        else unreadableRecords++;
-        console.warn('[chat-sync] Skipping unreadable chat object:', file.name, String(error?.message || error));
-        continue;
+      const record = await readChatDocument(snapshot, uid);
+      if (!record) continue;
+      chats[record.chatId] = record.chat;
+      if (record.savedAt && (!savedAt || record.savedAt > savedAt)) savedAt = record.savedAt;
+      if (record.savedAt && (!latestChatSavedAt || record.savedAt > latestChatSavedAt)) {
+        latestChatSavedAt = record.savedAt;
+        latestChatId = record.chatId;
       }
-      // Authentication, permission, and bucket outages must not masquerade as
-      // an empty history. Let the request fail so the client can retain history.
-      throw error;
-    }
-    if (!isObject(record) || (record.userId && record.userId !== uid)) continue;
-    const chatId = String(record.chatId || '');
-    if (!chatId || !isPersistableChat(record.chat)) continue;
-    chats[chatId] = record.chat;
-    const recordSavedAt = String(record.savedAt || "");
-    if (recordSavedAt && (!savedAt || recordSavedAt > savedAt)) savedAt = recordSavedAt;
-    if (recordSavedAt && (!latestChatSavedAt || recordSavedAt > latestChatSavedAt)) {
-      latestChatSavedAt = recordSavedAt;
-      latestChatId = chatId;
+    } catch (error) {
+      if (error?.missingChatPart) missingRecords++;
+      else unreadableRecords++;
+      console.warn('[chat-sync] Keeping an unreadable Firestore chat record for recovery:', snapshot.id,
+        String(error?.message || error));
     }
   }
-
-  let legacyFound = false;
-  if (hasLegacy) {
-    const legacyResult = await migrateLegacySnapshot(env, uid, chats);
-    legacyFound = legacyResult.found;
-    if (legacyResult.savedAt && (!savedAt || String(legacyResult.savedAt) > savedAt)) {
-      savedAt = String(legacyResult.savedAt);
-    }
-  }
-
-  const found = hasManifest || files.length > 0 || legacyFound;
-  if (found && !hasManifest) await writeManifest(env, uid);
 
   return jsonResponse({
     ok: true,
-    found,
+    found: docs.size > 0,
     userId: uid,
     savedAt,
     latestChatId,
     unreadableRecords,
     missingRecords,
+    migrationPending,
+    migrationImported,
     chats
   });
 }
@@ -196,7 +426,7 @@ export async function onRequestPost({ request, env }) {
   let body;
   try {
     const raw = await request.text();
-    if (Buffer.byteLength(raw, 'utf8') > 32 * 1024 * 1024) {
+    if (Buffer.byteLength(raw, 'utf8') > MAX_REQUEST_BYTES) {
       return jsonResponse({ error: 'A single chat sync request is too large.' }, 413);
     }
     body = JSON.parse(raw || '{}');
@@ -208,11 +438,43 @@ export async function onRequestPost({ request, env }) {
   if (body?.incognito === true) return jsonResponse({ ok: true, skipped: true });
 
   if (body?.action === 'clear') {
-    const [files] = await getBucket(env).getFiles({ prefix: accountPrefix(uid) + 'chats/' });
-    await Promise.all(files.map(file => file.delete({ ignoreNotFound: true })));
-    await getBucket(env).file(legacyKey(uid)).delete({ ignoreNotFound: true });
-    await writeManifest(env, uid);
-    return jsonResponse({ ok: true, cleared: true, savedAt: new Date().toISOString() });
+    const deleted = await deleteAllFirestoreChats(uid);
+    const manifestRef = accountManifest(uid);
+    // Persist the tombstone before attempting legacy cleanup, so old bucket
+    // copies can never be re-imported after the owner clears their history.
+    await manifestRef.set({
+      schemaVersion: 1,
+      userId: uid,
+      bucketMigrationComplete: true,
+      clearedAt: new Date().toISOString()
+    });
+    let legacyCleanupPending = false;
+    let legacyObjectsDeleted = 0;
+    try {
+      const removed = await removeAccountBucketChatData(env, uid);
+      legacyObjectsDeleted = removed.sourceObjectsDeleted + removed.backupObjectsDeleted;
+    } catch (error) {
+      legacyCleanupPending = true;
+      console.warn('[chat-sync] Firestore was cleared, but legacy bucket cleanup is pending:',
+        String(error?.message || error));
+    }
+    return jsonResponse({
+      ok: true,
+      cleared: true,
+      deleted,
+      legacyObjectsDeleted,
+      legacyCleanupPending,
+      savedAt: new Date().toISOString()
+    });
+  }
+
+  // Normally the signed-in startup GET performs this one-time migration. Keep
+  // POST safe for direct callers too, without ever writing new chats to GCS.
+  const manifestRef = accountManifest(uid);
+  const manifest = await manifestRef.get();
+  if (!manifest.exists || manifest.data()?.bucketMigrationComplete !== true) {
+    const existing = await chatCollection(uid).get();
+    await migrateBucketChatHistory(env, uid, existing);
   }
 
   const chats = body?.chats;
@@ -221,33 +483,48 @@ export async function onRequestPost({ request, env }) {
   }
 
   let saved = 0;
+  const savedIds = new Set();
   if (typeof body?.chatId === 'string' && body.chatId && isPersistableChat(body.chat)) {
-    if (await writeChat(env, uid, body.chatId, body.chat)) saved++;
+    if (await writeChat(uid, body.chatId, body.chat)) {
+      saved++;
+      savedIds.add(body.chatId);
+    }
   }
-
   if (isObject(chats)) {
     for (const [chatId, chat] of Object.entries(chats)) {
-      if (await writeChat(env, uid, chatId, chat)) saved++;
+      if (await writeChat(uid, chatId, chat)) {
+        saved++;
+        savedIds.add(chatId);
+      }
     }
   }
 
-  const deletedIds = Array.isArray(body?.deletedChatIds) ? body.deletedChatIds : [];
+  const deletedIds = Array.isArray(body?.deletedChatIds) ? body.deletedChatIds.slice() : [];
   if (body?.action === 'delete' && typeof body.chatId === 'string') deletedIds.push(body.chatId);
   const idsToDelete = new Set(deletedIds.map(id => String(id || '')).filter(Boolean));
+  for (const id of savedIds) idsToDelete.delete(id);
   if (isObject(chats)) {
     for (const id of Object.keys(chats)) idsToDelete.delete(id);
   }
-  if (typeof body?.chatId === 'string' && isPersistableChat(body.chat)) idsToDelete.delete(body.chatId);
-  for (const id of idsToDelete) await deleteChatObject(env, uid, id);
-
-  if (saved > 0 || idsToDelete.size > 0 || body?.action === 'delete') {
-    await writeManifest(env, uid);
+  for (const id of idsToDelete) {
+    const ref = chatDocument(uid, id);
+    const snapshot = await ref.get();
+    if (snapshot.exists) await deleteChatWithData(ref, snapshot.data());
+    else await ref.delete().catch(() => {});
   }
+
+  await manifestRef.set({
+    schemaVersion: 1,
+    userId: uid,
+    bucketMigrationComplete: true,
+    lastChatWriteAt: new Date().toISOString()
+  }, { merge: true });
 
   return jsonResponse({
     ok: true,
     saved,
     deleted: idsToDelete.size,
-    savedAt: new Date().toISOString()
+    savedAt: new Date().toISOString(),
+    storage: 'firestore'
   });
 }
