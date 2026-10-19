@@ -239,8 +239,8 @@ export function pluginDetailForResolved(resolved, connectedAccounts) {
       : null)
     : null;
   const connected = !!actualSlug && !!matchingAccount;
-  // Connected apps are immediately available to the agent. The explicit-user
-  // request gate in chat.js is what prevents unsolicited plugin calls.
+  // A connected app may be offered to the agent for contextual discovery.
+  // The model decides whether an action is useful and must respect user intent.
   const enabled = connected;
   return {
     id: plugin.id,
@@ -381,80 +381,28 @@ export async function getComposioGeminiTools(env, enabledToolkitSlugs, queryText
   });
 
   const requested = String(queryText || '').replace(/\s+/g, ' ').trim().slice(0, 600);
-  const queries = [];
+  // The agent supplies the goal for discovery. Do not force a preset action
+  // list or append integration-specific commands behind the model's back.
+  if (!requested) return { declarations: [], metadata: new Map() };
 
-  if (requested) queries.push(requested);
-
-  const exactToolSlugs = new Set();
-
-  if (slugs.some(slug => slug.toLowerCase() === 'github')) {
-    // Search is useful for discovery, but search ranking can omit GitHub's
-    // write actions. Always load the core coding/write tools explicitly.
-    [
-      'GITHUB_GET_THE_AUTHENTICATED_USER',
-      'GITHUB_CREATE_OR_UPDATE_FILE_CONTENTS',
-      'GITHUB_COMMIT_MULTIPLE_FILES',
-      'GITHUB_CREATE_A_COMMIT',
-      'GITHUB_CREATE_BRANCH',
-      'GITHUB_CREATE_A_PULL_REQUEST',
-      'GITHUB_UPDATE_A_REFERENCE',
-      'GITHUB_DELETE_A_FILE'
-    ].forEach(toolSlug => exactToolSlugs.add(toolSlug));
-
-    queries.push(
-      'get the authenticated GitHub user and username',
-      'search repository code files',
-      'read repository file contents',
-      'update edit create delete repository files',
-      'commit push branch pull request repository'
-    );
+  const params = new URLSearchParams(baseParams);
+  params.set('query', requested);
+  let payload;
+  try {
+    payload = await composioRequest(env, '/tools?' + params.toString());
+  } catch (error) {
+    if (error?.status) payload = null;
+    else throw error;
   }
-
-  const uniqueQueries = [...new Set(queries)];
-
-  const payloads = await Promise.all([
-    ...uniqueQueries.map(async query => {
-      const params = new URLSearchParams(baseParams);
-      if (query) params.set('query', query);
-
-      try {
-        return await composioRequest(env, '/tools?' + params.toString());
-      } catch (error) {
-        if (query && error?.status) return null;
-        throw error;
-      }
-    }),
-    ...(exactToolSlugs.size
-      ? [...exactToolSlugs].map(async toolSlug => {
-          // Resolve exact actions independently: one removed/renamed Composio
-          // slug must not prevent every valid GitHub read/write tool loading.
-          const params = new URLSearchParams({
-            toolkit_slug: slugs.join(','),
-            toolkit_versions: 'latest',
-            include_deprecated: 'false',
-            tool_slugs: toolSlug,
-            limit: '1'
-          });
-          try {
-            return await composioRequest(env, '/tools?' + params.toString());
-          } catch (error) {
-            if ([400, 404].includes(Number(error?.status))) return null;
-            throw error;
-          }
-        })
-      : [])
-  ]);
 
   const items = [];
   const seenItems = new Set();
 
-  for (const payload of payloads) {
-    for (const item of Array.isArray(payload?.items) ? payload.items : []) {
-      const slug = String(item?.slug || item?.name || '').trim();
-      if (!slug || seenItems.has(slug)) continue;
-      seenItems.add(slug);
-      items.push(item);
-    }
+  for (const item of Array.isArray(payload?.items) ? payload.items : []) {
+    const slug = String(item?.slug || item?.name || '').trim();
+    if (!slug || seenItems.has(slug)) continue;
+    seenItems.add(slug);
+    items.push(item);
   }
 
   const declarations = [];
