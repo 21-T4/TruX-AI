@@ -1,4 +1,5 @@
 import { requireFirebaseUser } from '../firebase-auth.js';
+import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import crypto from 'node:crypto';
 import { gzip as gzipCallback, gunzip as gunzipCallback } from 'node:zlib';
@@ -35,8 +36,10 @@ function isPersistableChat(chat) {
 }
 
 function firestore() {
-  // requireFirebaseUser initializes the Firebase Admin default app first.
-  return getFirestore();
+  // Authenticated chat requests initialize this app via firebase-auth.js, while
+  // the secret-protected one-time migration route can run without a user token.
+  const app = getApps()[0] || initializeApp({ credential: applicationDefault() });
+  return getFirestore(app);
 }
 
 function chatCollection(uid) {
