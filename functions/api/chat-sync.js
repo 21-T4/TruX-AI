@@ -53,9 +53,17 @@ function isPersistableChat(chat) {
 }
 
 async function readGzipJson(env, objectKey) {
-  const compressed = await downloadBuffer(env, objectKey);
-  const expanded = await gunzip(compressed);
-  return JSON.parse(expanded.toString('utf8'));
+  // The Cloud Storage Node client can transparently decompress objects whose
+  // metadata says Content-Encoding: gzip. Parse that response first; if the
+  // stored bytes remain compressed (or older metadata prevents transcoding),
+  // fall back to an explicit gunzip.
+  const downloaded = await downloadBuffer(env, objectKey);
+  try {
+    return JSON.parse(downloaded.toString('utf8'));
+  } catch {
+    const expanded = await gunzip(downloaded);
+    return JSON.parse(expanded.toString('utf8'));
+  }
 }
 
 async function writeChat(env, uid, chatId, chat) {
