@@ -2814,45 +2814,11 @@ body.plugins-page-active #welcomeScreen, body.plugins-page-active #chatContainer
   color:#f2f2f2!important;isolation:isolate!important;
 }
 
-.trux-code-v2{
-  position:relative!important;flex:1 1 auto!important;min-height:0!important;width:100%!important;
-  display:none;align-items:center!important;justify-content:center!important;overflow:hidden!important;
-  background:#000000!important;color:#d8d8d8!important;
-}
-.trux-code-v2-inner{
-  width:min(760px,calc(100% - 36px));text-align:center;
-  display:flex;flex-direction:column;align-items:center;
-}
-.trux-code-v2-mark{width:92px;height:92px;margin-bottom:18px}
-.trux-code-v2-mark svg{width:100%;height:100%;display:block}
-.trux-code-v2-kicker{
-  font:700 10px/1 var(--font-mono);letter-spacing:.22em;color:#676767;margin-bottom:10px
-}
-.trux-code-v2 h1{
-  margin:0;color:#ededed;font-size:clamp(30px,5vw,46px);font-weight:600;letter-spacing:-.035em
-}
-.trux-code-v2 p{
-  margin:10px 0 0;max-width:560px;color:#747474;font-size:13px;line-height:1.55
-}
-.trux-code-v2-meta{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-top:20px;color:#626262;font-size:11px}
-.trux-code-v2-meta span{white-space:nowrap}
-.trux-code-v2-status{
-  margin-top:28px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
-  color:#777;font-size:11px
-}
-.trux-code-v2-ready, .trux-code-v2-plugins{display:inline-flex;align-items:center;gap:6px}
-.trux-code-v2-ready i, .trux-code-v2-plugins i{
-  width:6px;height:6px;border-radius:50%;background:#777;display:block
-}
-.trux-code-v2-plugins{color:#686868}
-.trux-code-v2-plugin-btn{
-  height:30px;padding:0 11px;border-radius:9px;border:1px solid rgba(255,255,255,.08);
-  background:#1c1c1c;color:#b8b8b8;font-size:11px;font-weight:650
-}
-.trux-code-v2-plugin-btn:hover{background:#242424;color:#fff}
-.trux-code-v2-integrations{min-height:20px;margin-top:11px;color:#5c5c5c;font-size:10px}
-.trux-code-v2-integrations:empty{display:none}
-.trux-code-v2-empty{color:#5c5c5c}
+.trux-code-workspace{position:relative;display:none;min-width:0;min-height:0;flex:1 1 auto;width:100%;overflow:hidden;background:#000;color:#eee}
+.trux-code-home{position:absolute;inset:0;z-index:2;display:none;align-items:center;justify-content:center;text-align:center;padding:24px 22px 52px;pointer-events:none}
+.trux-code-home-title{max-width:min(700px,calc(100vw - 42px));margin:0;color:#f0f0f0;font:500 clamp(30px,5vw,46px)/1.16 var(--font-disp);letter-spacing:-.04em;text-wrap:balance;opacity:1;transform:translateY(0);transition:opacity .2s var(--ease),transform .2s var(--ease)}
+.trux-code-home-title.is-replacing{opacity:0;transform:translateY(5px)}
+.trux-code-home-title.is-visible{opacity:1;transform:translateY(0)}
 .trux-sr-only{
   position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;
   overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important
@@ -2924,26 +2890,6 @@ body.chat-session-active:not(.home-exiting) #welcomeScreen{display:none!importan
 #modelDropdown .thinking-choice:hover, #modelDropdown .thinking-choice.active{background:#292929!important;color:#fff!important}
 
 /* TruX-Code integration logos: compact, never allowed to expand from image intrinsic size. */
-.trux-code-v2-integrations{
-  display:flex!important;align-items:center!important;justify-content:center!important;
-  flex-wrap:wrap!important;gap:7px!important;min-height:24px!important;
-}
-.trux-code-integration-app{
-  display:inline-flex!important;align-items:center!important;gap:6px!important;
-  max-width:150px!important;height:28px!important;padding:0 8px!important;
-  border:1px solid rgba(255,255,255,.065)!important;border-radius:9px!important;
-  background:#1b1b1b!important;color:#686868!important;font-size:10px!important;
-  overflow:hidden!important;
-}
-.trux-code-integration-app img{
-  width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;
-  max-width:16px!important;max-height:16px!important;object-fit:contain!important;display:block!important;flex:0 0 16px!important;
-}
-.trux-code-integration-app b{
-  min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
-  font-size:10px!important;font-weight:600!important;
-}
-
 .hint{color:#666!important}
 
 .sidebar{position:fixed!important;left:0!important;top:0!important;bottom:0!important;width:100vw!important;max-width:none!important;z-index:1200!important}
@@ -2962,10 +2908,6 @@ body.chat-session-active:not(.home-exiting) #welcomeScreen{display:none!importan
   #modelPickerBtn{min-width:102px!important;height:40px!important;padding:0 10px!important}
   #modelDropdown{left:50%!important;transform:translateX(-50%)!important;max-width:calc(100vw - 20px)!important}
   
-  .trux-code-v2-inner{width:min(680px,calc(100% - 28px))}
-  .trux-code-v2-mark{width:74px;height:74px;margin-bottom:14px}
-  .trux-code-v2 h1{font-size:28px}
-  .trux-code-v2-meta{gap:10px;font-size:10px}
 }
   .home-ui-fixed-note{color:#727272;font-size:12px;line-height:1.4}
 
@@ -3161,36 +3103,6 @@ body.home-exiting.home-exiting-fade #welcomeScreen{
   opacity:0!important;transform:translateY(-6px)!important;
 }
 
-/* TruX-Code landing: real icon-grey asset + exact title. */
-.trux-code-v2-mark{
-  position:relative!important;width:104px!important;height:104px!important;
-  margin:0 0 22px!important;display:grid!important;place-items:center!important;
-  background:transparent!important;border:0!important;box-shadow:none!important;
-}
-.trux-code-logo{
-  width:104px!important;height:104px!important;display:block!important;
-  object-fit:contain!important;background:transparent!important;border:0!important;
-  border-radius:0!important;box-shadow:none!important;animation:none!important;filter:none!important;
-}
-.trux-code-v2-mark::after{
-  content:""!important;position:absolute!important;inset:-11px!important;border-radius:50%!important;
-  border:1px solid transparent!important;border-top-color:rgba(255,255,255,.72)!important;
-  border-right-color:rgba(255,255,255,.18)!important;opacity:0!important;
-  pointer-events:none!important;transform:rotate(-35deg)!important;
-  animation:truxCodeRingEveryFive 5s cubic-bezier(.22,.61,.36,1) infinite!important;
-}
-@keyframes truxCodeRingEveryFive{
-  0%, 7%{opacity:0;transform:rotate(-35deg)}
-  10%{opacity:.72;transform:rotate(15deg)}
-  28%{opacity:.38;transform:rotate(190deg)}
-  40%{opacity:.10;transform:rotate(325deg)}
-  43%, 100%{opacity:0;transform:rotate(325deg)}
-}
-.trux-code-v2-kicker, .trux-code-v2-meta{display:none!important}
-.trux-code-v2 h1{font-size:clamp(30px,5vw,44px)!important;letter-spacing:-.04em!important}
-.trux-code-v2 p{margin-top:8px!important;color:#777!important}
-
-/* Model dropdown: remove the mobile 50% positioning conflict and clamp to viewport. */
 #modelDropdown{
   left:auto!important;right:auto!important;transform:none!important;
   width:min(360px,calc(100vw - 20px))!important;
@@ -3224,18 +3136,6 @@ body.home-exiting.home-exiting-fade #welcomeScreen{
 }
 
 
-
-.trux-code-logo{mix-blend-mode:normal!important;filter:none!important;box-shadow:none!important;background:transparent!important;}
-.trux-code-v2-mark::before, .trux-code-v2-mark::after{
-  content:none!important;
-  display:none!important;
-  animation:none!important;
-  background:none!important;
-  border:0!important;
-  box-shadow:none!important;
-  filter:none!important;
-}
-.trux-code-logo{mix-blend-mode:normal!important;}
 
 /* The home screen intentionally has no centered logo. */
 
@@ -3704,85 +3604,6 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
 
 
 
-    /* ---------- REWORKED TRUX CODE IDE LAYOUT ---------- */
-    .trux-code-v2{
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      padding: 40px 20px !important;
-      text-align: center !important;
-    }
-
-    .trux-code-v2-inner{
-      width: min(720px, 100%) !important;
-      padding: 36px 32px !important;
-      border-radius: 28px !important;
-      background: rgba(18, 18, 24, 0.85) !important;
-      border: 1px solid rgba(109,131,255,0.2) !important;
-      backdrop-filter: blur(20px) !important;
-      -webkit-backdrop-filter: blur(20px) !important;
-      box-shadow: 0 24px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1) !important;
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: center !important;
-    }
-
-    .trux-code-v2-mark{
-      width: 64px !important; height: 64px !important;
-      margin-bottom: 16px !important;
-      display: grid !important; place-items: center !important;
-      border-radius: 18px !important;
-      background: rgba(109,131,255,0.12) !important;
-      border: 1px solid rgba(109,131,255,0.3) !important;
-    }
-
-    .trux-code-logo{ width: 36px !important; height: 36px !important; }
-
-    .trux-code-v2-kicker{
-      font-family: var(--font-mono) !important;
-      font-size: 11px !important; font-weight: 700 !important;
-      letter-spacing: 0.18em !important;
-      color: var(--acc) !important;
-      margin-bottom: 8px !important;
-    }
-
-    .trux-code-v2 h1{
-      font-family: var(--font-disp) !important;
-      font-size: 32px !important; font-weight: 800 !important;
-      color: #fff !important;
-      letter-spacing: -0.03em !important;
-      margin-bottom: 8px !important;
-    }
-
-    .trux-code-v2 p{
-      font-size: 15px !important;
-      color: var(--txt-2) !important;
-      margin-bottom: 20px !important;
-    }
-
-    .trux-code-v2-status{
-      display: flex !important;
-      align-items: center !important;
-      gap: 12px !important;
-      padding: 8px 16px !important;
-      border-radius: 99px !important;
-      background: rgba(0,0,0,0.4) !important;
-      border: 1px solid rgba(255,255,255,0.08) !important;
-      font-family: var(--font-mono) !important;
-      font-size: 12px !important;
-    }
-
-    .trux-code-v2-ready i{
-      display: inline-block !important;
-      width: 7px !important; height: 7px !important;
-      border-radius: 50% !important;
-      background: #4ade80 !important;
-      box-shadow: 0 0 10px #4ade80 !important;
-      margin-right: 6px !important;
-    }
-
-
-
     /* ---------- SMOOTHNESS POLISH & TRANSITIONS ---------- */
     *{
       -webkit-font-smoothing: antialiased;
@@ -3808,17 +3629,6 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
     }
 
 
-
-    /* ---------- ACCURATE ALIGNMENT & METALLIC THINKING FIXES ---------- */
-    .bar{
-      grid-template-columns: auto auto 1fr auto !important;
-      align-items: center !important;
-    }
-
-    .bar > #attachBtn{
-      position: relative !important;
-      margin: 0 !important;
-    }
 
     #modelDropdown{
       position: fixed !important;
@@ -4278,7 +4088,7 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
       background: var(--bg) !important;
       isolation: isolate;
     }
-    body.plugins-page-active .trux-code-v2, body.plugins-page-active #truxCodeWorkspace, body.plugins-page-active #codeChatContainer, body.plugins-page-active .composer{
+    body.plugins-page-active #truxCodeWorkspace, body.plugins-page-active #codeChatContainer, body.plugins-page-active .composer{
       display: none !important;
     }
     body.plugins-page-active #pluginsWorkspace::before{
@@ -4581,50 +4391,40 @@ body.home-active #chatContainer,body.home-active #codeChatContainer,body.home-ac
 body:not(.coding-workspace) #truxCodeWorkspace,body:not(.coding-workspace) #codeChatContainer{display:none!important;visibility:hidden!important;pointer-events:none!important}
 body.coding-workspace #welcomeScreen,body.coding-workspace #chatContainer,body.coding-workspace #imageWorkspace,body.coding-workspace #videoWorkspace{display:none!important;visibility:hidden!important;pointer-events:none!important}
 body.coding-workspace #truxCodeWorkspace{
-  display:block!important;visibility:visible!important;pointer-events:auto!important;
-  flex:1 1 0!important;min-height:0!important;height:auto!important;min-width:0!important;width:100%!important;
-  margin:0!important;padding:0!important;overflow:hidden!important;
-  background:radial-gradient(900px 500px at 62% -150px,rgba(121,137,255,.10),transparent 64%),#090a0e!important;
+  position:relative!important;display:flex!important;flex:1 1 auto!important;flex-direction:column!important;
+  min-height:0!important;min-width:0!important;width:100%!important;margin:0!important;padding:0!important;
+  overflow:hidden!important;isolation:isolate!important;
+  background:radial-gradient(ellipse 780px 310px at 50% 100%,rgba(38,68,218,.29),transparent 70%),radial-gradient(ellipse 450px 230px at 50% 105%,rgba(54,100,255,.18),transparent 72%),#000!important;
 }
-body.coding-workspace .trux-code-rail{display:none!important}
-body.coding-workspace .trux-code-desk{display:grid;grid-template-rows:auto minmax(0,1fr) auto;width:100%;height:100%;min-width:0;min-height:0;overflow:hidden}
-body.coding-workspace .trux-code-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:58px;padding:0 clamp(16px,3vw,28px);border-bottom:1px solid rgba(255,255,255,.08);background:rgba(12,13,18,.66)}
-.trux-code-toolbar>div:first-child{display:flex;align-items:baseline;gap:12px;min-width:0}
-.trux-code-kicker{color:#7e88af;font:700 10px/1 var(--font-mono);letter-spacing:.14em}
-.trux-code-toolbar strong{color:#f1f2f7;font:600 15px/1 var(--font-body)}
-.trux-code-toolbar-actions{display:flex;align-items:center;gap:12px;min-width:0}
-.trux-code-toolbar-actions button{display:grid;place-items:center;width:30px;height:30px;flex:0 0 30px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.04);color:#c8cfff}
-.trux-code-toolbar-actions button:hover{background:rgba(255,255,255,.1);color:#fff}
-.trux-code-stage{display:flex;flex-direction:column;width:100%;height:100%;min-width:0;min-height:0;overflow:hidden}
-.trux-code-stage-head{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:36px;padding:0 clamp(16px,3vw,28px);border-bottom:1px solid rgba(255,255,255,.06);color:#73798b;font:600 10px/1 var(--font-mono);letter-spacing:.08em}
-.trux-code-stage-head span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#979daf;letter-spacing:0;font-family:var(--font-body);font-weight:500}
-body.coding-workspace #codeChatContainer{display:block!important;visibility:visible!important;pointer-events:auto!important;flex:1 1 auto!important;min-height:0!important;min-width:0!important;width:100%!important;height:100%!important;max-width:100%!important;margin:0!important;padding:24px clamp(16px,4vw,48px)!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain;background:linear-gradient(90deg,rgba(255,255,255,.014) 1px,transparent 1px) 0 0/54px 54px,linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px) 0 0/54px 54px}
-body.coding-workspace #codeChatContainer:empty::before{content:"Describe the feature, bug, or codebase change you want to make.";display:block;max-width:540px;margin:12vh auto;color:#777e94;font:500 clamp(18px,2vw,24px)/1.45 var(--font-disp);text-align:center}
-body.coding-workspace .trux-response-stack{width:min(900px,100%)}
-body.coding-workspace .trux-thinking-panel{margin-top:14px}
+body.coding-workspace #codeChatContainer{
+  position:relative!important;z-index:1!important;display:block!important;flex:1 1 auto!important;
+  min-height:0!important;min-width:0!important;width:100%!important;max-width:100%!important;
+  margin:0!important;padding:24px clamp(16px,4vw,48px)!important;
+  overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain!important;
+  background:transparent!important;
+}
+body.coding-workspace #codeChatContainer:empty{display:none!important}
+body.coding-workspace #codeChatContainer:empty + #truxCodeHome{display:flex!important}
+body.coding-workspace #codeChatContainer:not(:empty) + #truxCodeHome{display:none!important}
+body.coding-workspace #codeChatContainer .trux-response-stack{width:min(900px,100%);margin-inline:auto}
+body.coding-workspace #codeChatContainer .trux-thinking-panel{margin-top:14px}
+body.coding-workspace .trux-thinking-panel.trux-code-thinking .trux-thinking-elapsed{display:none!important}
+body.coding-workspace .trux-thinking-panel.trux-code-thinking .trux-thinking-bar{min-height:0;padding:0;gap:9px;overflow:visible;border:0;border-radius:0;background:transparent;box-shadow:none}
+body.coding-workspace .trux-thinking-panel.trux-code-thinking .trux-thinking-bar::before{display:none}
+body.coding-workspace .trux-thinking-panel.trux-code-thinking .trux-thinking-spark{width:18px;height:18px;flex-basis:18px;color:#d9d7d0;filter:drop-shadow(0 0 6px rgba(255,255,255,.2))}
+body.coding-workspace .trux-thinking-panel.trux-code-thinking .trux-thinking-spark::before{inset:1px;border-color:rgba(255,255,255,.25);box-shadow:none}
+body.coding-workspace .trux-thinking-panel.trux-code-thinking .trux-thinking-spark svg{width:12px;height:12px}
+body.coding-workspace .trux-thinking-panel.trux-code-thinking .status-msg{font-size:14px;line-height:1.45}
+body.coding-workspace .trux-thinking-panel.trux-code-thinking .thinking-status-line.compact,body.coding-workspace .trux-thinking-panel.trux-code-thinking .thinking-status-line.full{background:linear-gradient(100deg,#85827b 0%,#b8b5ad 37%,#fffef9 50%,#c7c3ba 62%,#85827b 100%);background-size:240% 100%;animation:truxMetallicText 3.4s cubic-bezier(.4,0,.2,1) infinite}
 body.coding-workspace .trux-terminal-window{border:1px solid rgba(190,198,255,.14)!important;border-radius:14px!important;background:rgba(11,12,16,.84)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 14px 36px rgba(0,0,0,.2)!important}
-.trux-thinking-panel.trux-code-thinking .trux-thinking-elapsed{display:block!important;margin:0 0 5px 2px;color:var(--txt-3);font:600 11px/1 var(--font-mono);letter-spacing:.06em;font-variant-numeric:tabular-nums}
-.trux-thinking-panel.trux-chat-thinking{margin:5px 0 11px}
-.trux-thinking-panel.trux-chat-thinking .trux-thinking-bar{min-height:0;padding:0;gap:8px;overflow:visible;border:0;border-radius:0;background:transparent;box-shadow:none}
-.trux-thinking-panel.trux-chat-thinking .trux-thinking-bar::before{display:none}
-.trux-thinking-panel.trux-chat-thinking .trux-thinking-spark{width:18px;height:18px;flex-basis:18px;color:#d9d7d0;filter:drop-shadow(0 0 6px rgba(255,255,255,.2))}
-.trux-thinking-panel.trux-chat-thinking .trux-thinking-spark::before{inset:1px;border-color:rgba(255,255,255,.25);box-shadow:none}
-.trux-thinking-panel.trux-chat-thinking .trux-thinking-spark svg{width:12px;height:12px}
-.trux-thinking-panel.trux-chat-thinking .status-msg{font-size:14px;line-height:1.45}
-.trux-thinking-panel.trux-chat-thinking .thinking-status-line.compact,.trux-thinking-panel.trux-chat-thinking .thinking-status-line.full{background:linear-gradient(100deg,#85827b 0%,#b8b5ad 37%,#fffef9 50%,#c7c3ba 62%,#85827b 100%);background-size:240% 100%;animation:truxMetallicText 3.4s cubic-bezier(.4,0,.2,1) infinite}
-.trux-thinking-panel.trux-chat-thinking .trux-thinking-details{margin-top:6px}
-.trux-code-context{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:56px;padding:10px clamp(16px,3vw,28px);border-top:1px solid rgba(255,255,255,.08);background:rgba(9,10,14,.86)}
-.trux-code-context-copy{display:flex;flex-direction:column;gap:4px;min-width:0}
-.trux-code-context-copy span{color:#7d8498;font:700 9px/1 var(--font-mono);letter-spacing:.13em}
-.trux-code-context-copy small{color:#a1a6b6;font:500 11px/1.3 var(--font-body)}
-.trux-code-context .trux-code-v2-integrations{display:flex!important;min-width:0;max-width:55%;margin:0!important;justify-content:flex-end!important}
 body.plugins-page-active #truxCodeWorkspace,body.plugins-page-active #codeChatContainer{display:none!important}
 body.chat-session-active:not(.coding-workspace) #chatContainer{display:block!important;visibility:visible!important;pointer-events:auto!important}
 body.chat-session-active:not(.coding-workspace) #codeChatContainer{display:none!important}
-@media(max-width:860px){.trux-code-toolbar{min-height:54px;padding:0 16px}.trux-code-stage-head{padding:0 16px}.trux-code-context{padding:10px 16px}.trux-code-context-copy{display:none}.trux-code-context .trux-code-v2-integrations{max-width:100%;justify-content:flex-start!important}body.coding-workspace #codeChatContainer{padding:22px 16px!important}}
+@media(max-width:860px){body.coding-workspace #codeChatContainer{padding:22px 16px!important}}
+@media(prefers-reduced-motion:reduce){.trux-code-home-title{transition:none!important}}
+@media(max-width:380px){body.coding-workspace .trux-code-home-title{font-size:28px!important}}
 
-
-/* Floating composer and navigation chrome. */
+/* Floating composer and navigation chrome. *//* Floating composer and navigation chrome. */
 :root{--trux-chrome-fade:0}
 .composer,.compose{border:0!important;background:transparent!important;box-shadow:none!important}
 .composer{position:relative!important;padding-top:18px!important;background:linear-gradient(to top,var(--bg) 8%,rgba(0,0,0,.76) 44%,transparent 100%)!important}
@@ -4633,12 +4433,28 @@ body.chat-session-active:not(.coding-workspace) #codeChatContainer{display:none!
 #promptInput,textarea#promptInput{background:transparent!important;box-shadow:none!important}
 .bar .icon-btn,.bar .send-btn,.bar .model-picker-btn,.bar .composer-more-btn{background:transparent!important;box-shadow:none!important}
 body[data-workspace-mode="chat"] .bar{--trux-input-accent:#dededb}
-body[data-workspace-mode="coding"] .bar{--trux-input-accent:#b9c4ff}
+body[data-workspace-mode="coding"] .bar{
+  --trux-input-accent:#f0f2ff;
+  grid-template-columns:44px minmax(0,1fr) 42px 48px!important;
+  grid-template-rows:minmax(0,1fr)!important;align-items:center!important;gap:0 7px!important;
+  min-height:78px!important;height:auto!important;padding:10px 12px!important;border-radius:999px!important;
+  background:rgba(24,24,28,.9)!important;border-color:rgba(255,255,255,.16)!important;
+  box-shadow:0 0 42px rgba(45,72,220,.23),0 1px 0 rgba(255,255,255,.08) inset!important;
+}
+body.coding-workspace .bar > #attachBtn{grid-column:1!important;grid-row:1!important;align-self:center!important;justify-self:center!important;width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;display:grid!important;place-items:center!important}
+body.coding-workspace .bar > #promptInput{grid-column:2!important;grid-row:1!important;width:100%!important;min-width:0!important;min-height:44px!important;max-height:130px!important;height:auto!important;padding:6px 8px!important;align-self:center!important;font-family:var(--font-body)!important;font-size:19px!important;line-height:1.35!important;letter-spacing:-.02em!important}
+body.coding-workspace .bar > #voiceBtn{grid-column:3!important;grid-row:1!important;width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important;align-self:center!important;justify-self:center!important}
+body.coding-workspace .bar > #actionBtn{grid-column:4!important;grid-row:1!important;width:48px!important;height:48px!important;min-width:48px!important;min-height:48px!important;justify-self:end!important;align-self:center!important;border:1px solid rgba(160,178,255,.3)!important;border-radius:50%!important;background:#2d48bc!important;color:#fff!important;box-shadow:0 0 18px rgba(45,72,220,.18)!important}
+body.coding-workspace #actionBtn.code-idle{opacity:.78!important}
+body.coding-workspace #actionBtn.ready,body.coding-workspace #actionBtn.stop{opacity:1!important}
+body.coding-workspace #modelPickerContainer,body.coding-workspace .bar > #topbarMoreBtn,body.coding-workspace .bar > #incognitoBtn{display:none!important;visibility:hidden!important;pointer-events:none!important}
+@media(max-width:700px){body.coding-workspace .bar{grid-template-columns:40px minmax(0,1fr) 38px 44px!important;gap:0 4px!important;min-height:70px!important;padding:8px 9px!important}body.coding-workspace .bar > #attachBtn{width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important}body.coding-workspace .bar > #promptInput{font-size:17px!important;padding:5px 5px!important}body.coding-workspace .bar > #voiceBtn{width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important}body.coding-workspace .bar > #actionBtn{width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important}}
+@media(max-width:380px){body.coding-workspace .bar > #promptInput{font-size:15px!important}}
 body[data-media-mode="video"] .bar{--trux-input-accent:#e0bcff}
 body[data-media-mode="image"] .bar{--trux-input-accent:#b3f0dc}
 .bar #promptInput{color:var(--trux-input-accent)!important}
 .bar #promptInput::placeholder{color:color-mix(in srgb,var(--trux-input-accent) 58%,transparent)!important}
-body[data-workspace-mode="coding"] .bar #promptInput{font-family:var(--font-mono)!important;font-size:14px!important}
+
 .topbar{border:0!important;background:linear-gradient(to bottom,var(--bg) 0%,rgba(0,0,0,.74) 45%,transparent 100%)!important;box-shadow:none!important;opacity:calc(1 - var(--trux-chrome-fade) * .72);transition:opacity .22s var(--ease)}
 .topbar-left,.topbar-right,.model-picker-container{background:transparent!important;box-shadow:none!important}
 .topbar .top-btn,.topbar .top-profile-btn,.topbar .model-picker-btn{background:transparent!important;border-color:transparent!important;box-shadow:none!important}
