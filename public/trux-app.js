@@ -226,6 +226,9 @@
           if("Notification" in window && Notification.permission === "granted") syncTruxNotificationsSilently();
           void loadChatsFromCloud(u);
         } else {
+          clearTimeout(cloudChatRetryTimer);
+          cloudChatRetryTimer = null;
+          cloudChatRetryDelayMs = 1500;
           cloudChatLoadGeneration += 1;
           cloudChatsReady = false;
           cloudChatsOwnerUid = null;
@@ -1763,6 +1766,8 @@
 
     let sidebarSyncTimer = null;
     let cloudChatSyncTimer = null;
+    let cloudChatRetryTimer = null;
+    let cloudChatRetryDelayMs = 1500;
     function queueSidebarSync() {
       clearTimeout(sidebarSyncTimer);
       sidebarSyncTimer = setTimeout(() => {
@@ -1775,6 +1780,21 @@
 
     function isPersistableChatSession(chat) {
       return !!chat && typeof chat === "object" && !Array.isArray(chat) && chat.incognito !== true;
+    }
+
+    function scheduleCloudChatRetry(uid) {
+      if(cloudChatRetryTimer || !uid) return;
+      const delay = cloudChatRetryDelayMs;
+      cloudChatRetryDelayMs = Math.min(30000, cloudChatRetryDelayMs * 2);
+      cloudChatRetryTimer = setTimeout(() => {
+        cloudChatRetryTimer = null;
+        if(auth?.currentUser?.uid !== uid || cloudChatsOwnerUid !== uid || !cloudChatsReady) return;
+        if(navigator.onLine === false) {
+          scheduleCloudChatRetry(uid);
+          return;
+        }
+        void syncChatsToCloud(true);
+      }, delay);
     }
 
     async function loadChatsFromCloud(user) {
@@ -1930,7 +1950,12 @@
             if(cloudChatSyncedFingerprints.get(id) !== serialized) changed.push({ id, serialized });
           }
           const deleted = Array.from(pendingDeletedCloudChatIds).filter(id => !Object.prototype.hasOwnProperty.call(chatSessions, id));
-          if(!changed.length && !deleted.length) return true;
+          if(!changed.length && !deleted.length) {
+            cloudChatRetryDelayMs = 1500;
+            clearTimeout(cloudChatRetryTimer);
+            cloudChatRetryTimer = null;
+            return true;
+          }
 
           for(const item of changed) {
             if(!auth?.currentUser || auth.currentUser.uid !== uid) return false;
@@ -1962,9 +1987,13 @@
             pendingDeletedCloudChatIds.delete(id);
             cloudChatSyncedFingerprints.delete(id);
           }
+          cloudChatRetryDelayMs = 1500;
+          clearTimeout(cloudChatRetryTimer);
+          cloudChatRetryTimer = null;
           return true;
         }).catch(error => {
           console.warn("TruX account chat sync failed:", error?.message || error);
+          scheduleCloudChatRetry(uid);
           return false;
         });
         cloudChatSyncChain = task.then(() => undefined, () => undefined);
