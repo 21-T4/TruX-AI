@@ -151,9 +151,11 @@ async function writeChat(uid, chatId, chat, options = {}) {
         : []
     );
 
+    const writtenHashes = new Set();
     for (let index = 0; index < pieces.length; index++) {
       const hash = hashes[index];
-      if (previousHashes.has(hash)) continue;
+      if (previousHashes.has(hash) || writtenHashes.has(hash)) continue;
+      writtenHashes.add(hash);
       transaction.set(ref.collection('parts').doc(hash), {
         storageMode: 'chunks-v2',
         sha256: hash,
