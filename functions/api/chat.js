@@ -404,9 +404,10 @@ async function sendFcmNotification(userIdentifier, env, title, body, data = {}) 
   if (!validTokens.length) return;
 
   try {
+    const projectId = String(env.FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID || 'trux-ai').trim();
     const app = getApps()[0] || initializeApp({
       credential: applicationDefault(),
-      projectId: undefined
+      projectId
     });
 
     const response = await getMessaging(app).sendEachForMulticast({
