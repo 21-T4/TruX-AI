@@ -174,8 +174,8 @@ const TERMINAL_BLOCKED_BINARIES = new Set([
 const TRUX_TERMINAL_TOOL = {
   name: TERMINAL_TOOL_NAME,
   description:
-    'Run one local development command in the TruX-Code terminal for build, test, lint, or code inspection. ' +
-    'Use Composio for GitHub and external-service changes. Do not use this terminal for networking, credentials, or Git push.',
+    'Guarded local development command runner for build, test, lint, and workspace inspection. Consider it when local execution would materially help; choose based on the task rather than fixed wording. ' +
+    'Connected integrations may provide other routes for external-service work. Network access, credentials, and Git push are not permitted in this terminal.',
   parameters: {
     type: 'object',
     properties: {
