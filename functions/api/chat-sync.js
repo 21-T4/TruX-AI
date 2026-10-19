@@ -128,6 +128,8 @@ export async function onRequestGet({ request, env }) {
 
   const chats = {};
   let savedAt = null;
+  let latestChatId = null;
+  let latestChatSavedAt = "";
   let unreadableRecords = 0;
   let missingRecords = 0;
   for (const file of files) {
@@ -156,7 +158,12 @@ export async function onRequestGet({ request, env }) {
     const chatId = String(record.chatId || '');
     if (!chatId || !isPersistableChat(record.chat)) continue;
     chats[chatId] = record.chat;
-    if (record.savedAt && (!savedAt || String(record.savedAt) > savedAt)) savedAt = String(record.savedAt);
+    const recordSavedAt = String(record.savedAt || "");
+    if (recordSavedAt && (!savedAt || recordSavedAt > savedAt)) savedAt = recordSavedAt;
+    if (recordSavedAt && (!latestChatSavedAt || recordSavedAt > latestChatSavedAt)) {
+      latestChatSavedAt = recordSavedAt;
+      latestChatId = chatId;
+    }
   }
 
   let legacyFound = false;
@@ -176,6 +183,7 @@ export async function onRequestGet({ request, env }) {
     found,
     userId: uid,
     savedAt,
+    latestChatId,
     unreadableRecords,
     missingRecords,
     chats
