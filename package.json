@@ -17,6 +17,7 @@
     "pdf-parse": "^2.4.5",
     "unzipper": "^0.12.5",
     "firebase-admin": "^14.5.0",
-    "ws": "^8.18.3"
+    "ws": "^8.18.3",
+    "playwright-core": "^1.55.0"
   }
 }
