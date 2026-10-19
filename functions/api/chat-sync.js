@@ -59,6 +59,18 @@ function accountBucketPrefix(uid) {
   return 'chat-state/' + uid + '/';
 }
 
+async function listLegacyObjects(env, prefix) {
+  try {
+    return await listObjects(env, prefix);
+  } catch (error) {
+    // A bucket removed after migration is an empty legacy source, not a reason
+    // to make Firestore-backed chats unavailable. Permission and outage errors
+    // still fail closed so they cannot be mistaken for empty history.
+    if (Number(error?.code) === 404 || error?.code === 'ENOENT') return [];
+    throw error;
+  }
+}
+
 function accountBackupMatches(name, uid) {
   const parts = String(name || '').split('/');
   if (parts[0] !== 'chat-backups' || parts.length < 3) return false;
@@ -269,8 +281,8 @@ function validLegacySnapshot(value, uid) {
 }
 
 async function removeAccountBucketChatData(env, uid, files = null, backups = null) {
-  const sourceFiles = files || await listObjects(env, accountBucketPrefix(uid));
-  const backupFiles = backups || await listObjects(env, 'chat-backups/');
+  const sourceFiles = files || await listLegacyObjects(env, accountBucketPrefix(uid));
+  const backupFiles = backups || await listLegacyObjects(env, 'chat-backups/');
   const ownedBackups = backupFiles.filter(file => accountBackupMatches(file.name, uid));
   const refs = sourceFiles.map(file => getBucket(env).file(file.name))
     .concat(ownedBackups.map(file => getBucket(env).file(file.name)));
@@ -337,8 +349,8 @@ async function migrateBucketChatHistory(env, uid, existingDocs) {
   }
 
   const [sourceFiles, allBackupFiles] = await Promise.all([
-    listObjects(env, accountBucketPrefix(uid)),
-    listObjects(env, 'chat-backups/')
+    listLegacyObjects(env, accountBucketPrefix(uid)),
+    listLegacyObjects(env, 'chat-backups/')
   ]);
   const knownIds = new Set(existingDocs.docs.map(doc => String(doc.data()?.chatId || '')).filter(Boolean));
   const liveChatFiles = sourceFiles.filter(file => String(file.name).startsWith(accountBucketPrefix(uid) + 'chats/'));
