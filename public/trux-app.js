@@ -1788,16 +1788,22 @@
       cloudChatRetryDelayMs = Math.min(30000, cloudChatRetryDelayMs * 2);
       cloudChatRetryTimer = setTimeout(() => {
         cloudChatRetryTimer = null;
-        if(auth?.currentUser?.uid !== uid || cloudChatsOwnerUid !== uid || !cloudChatsReady) return;
+        if(auth?.currentUser?.uid !== uid || cloudChatsOwnerUid !== uid) return;
         if(navigator.onLine === false) {
           scheduleCloudChatRetry(uid);
+          return;
+        }
+        // A failed history read must be retried before normal sync can start.
+        // Requiring cloudChatsReady here deadlocked the retry after one read error.
+        if(!cloudChatsReady) {
+          void loadChatsFromCloud(auth.currentUser, true);
           return;
         }
         void syncChatsToCloud(true);
       }, delay);
     }
 
-    async function loadChatsFromCloud(user) {
+    async function loadChatsFromCloud(user, isRetry = false) {
       if(!user?.uid) return false;
       const uid = String(user.uid);
       const sameAccount = cloudChatsOwnerUid === uid;
@@ -1890,8 +1896,12 @@
         }
         // Locally changed/new records intentionally keep the previous fingerprint
         // (or no fingerprint) so the normal sync path uploads them after load.
+        clearTimeout(cloudChatRetryTimer);
+        cloudChatRetryTimer = null;
+        cloudChatRetryDelayMs = 1500;
         cloudChatsReady = true;
         renderSidebar();
+        if(isRetry) toast("Cloud chat history restored.", "ok");
         updateTruxStorageSummary();
         if(Number(result.unreadableRecords || 0) > 0) {
           toast(
@@ -1925,7 +1935,10 @@
           cloudChatsReady = false;
           renderSidebar();
           console.warn("TruX could not load account chat history from Cloud Storage:", error?.message || error);
-          toast("Cloud chat history could not be refreshed. Existing chats were preserved; please retry.", "err");
+          if(!isRetry) {
+            toast("Cloud chat history could not be refreshed. Existing chats were preserved; retrying automatically.", "err");
+          }
+          scheduleCloudChatRetry(uid);
         }
         return false;
       }
