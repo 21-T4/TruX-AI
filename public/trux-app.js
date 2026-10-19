@@ -3931,17 +3931,22 @@
       const thid = "restored_th_" + Date.now() + "_" + Math.random().toString(36).slice(2);
       const tsid = "restored_ts_" + Date.now() + "_" + Math.random().toString(36).slice(2);
       const panel = document.createElement("div");
-      panel.className = "trux-thinking-panel completed";
+      panel.className = "trux-thinking-panel trux-code-thinking completed";
       panel.id = thid;
       panel.setAttribute("aria-label", "Executed steps");
       panel.innerHTML =
-        '<span class="trux-thinking-elapsed">Worked for ' + formatCodexElapsed(durationMs) + '</span>' +
         '<div class="trux-thinking-bar">' +
           '<span class="trux-thinking-spark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 1.5C13.45 7.95 16.05 10.55 22.5 12C16.05 13.45 13.45 16.05 12 22.5C10.55 16.05 7.95 12 1.5 12C7.95 10.55 10.55 7.95 12 1.5Z"/></svg></span>' +
-          '<div class="trux-thinking-copy"><span class="status-msg" role="status" aria-live="polite"><span class="thinking-status-line compact">Completed</span><span class="thinking-status-line full">Completed</span></span></div>' +
+          '<div class="trux-thinking-copy"><span class="status-msg" role="status" aria-live="polite"><span class="thinking-status-line compact"></span><span class="thinking-status-line full"></span></span></div>' +
           '<button type="button" class="trux-thinking-toggle" aria-expanded="false" aria-label="Show executed steps" title="Show executed steps"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>' +
         '</div>' +
         '<div class="trux-thinking-details" id="' + tsid + '" hidden></div>';
+      const summary = durationMs > 0 ? "Worked for " + formatCodexElapsed(durationMs) : "Work completed";
+      panel.querySelectorAll(".thinking-status-line").forEach(line => {
+        line.textContent = summary;
+        line.title = summary;
+      });
+      panel.querySelector(".status-msg")?.setAttribute("aria-label", summary);
       stack.insertBefore(panel, bubble);
       const toggle = panel.querySelector(".trux-thinking-toggle");
       if (toggle) toggle.onclick = () => toggleThinkingDetails(thid);
@@ -4035,16 +4040,18 @@
         ? Math.max(0, Date.now() - responseRow._startedAt)
         : 0;
 
-      if(responseRow?._elapsedTimer) clearInterval(responseRow._elapsedTimer);
-
       if (codingTurn && responseRow) {
         const panel = responseRow.querySelector(".trux-thinking-panel");
         if (panel) {
           panel.classList.add("completed");
           panel.removeAttribute("data-thinking-visible");
           panel.setAttribute("aria-label", "Executed steps");
-          const elapsed = panel.querySelector(".trux-thinking-elapsed");
-          if (elapsed) elapsed.textContent = "Worked for " + formatCodexElapsed(durationMs);
+          const summary = durationMs > 0 ? "Worked for " + formatCodexElapsed(durationMs) : "Work completed";
+          panel.querySelectorAll(".thinking-status-line").forEach(line => {
+            line.textContent = summary;
+            line.title = summary;
+          });
+          panel.querySelector(".status-msg")?.setAttribute("aria-label", summary);
           const toggle = panel.querySelector(".trux-thinking-toggle");
           if (toggle) {
             toggle.setAttribute("aria-label", "Show executed steps");
@@ -4531,7 +4538,7 @@
       const collapsedLabel = completed ? "Show executed steps" : "Expand AI activity";
       toggle.setAttribute("aria-label", expanded ? expandedLabel : collapsedLabel);
       toggle.title = expanded ? expandedLabel : collapsedLabel;
-      if (expanded) requestAnimationFrame(() => { details.scrollTop = details.scrollHeight; });
+      if (expanded) requestAnimationFrame(() => { details.scrollTop = completed ? 0 : details.scrollHeight; });
     }
 
     function dismissThinkingPanel(row) {
@@ -4672,12 +4679,13 @@
         panel._seenThinkingActivities = new Set();
       }
       const seenActivities = panel?._seenThinkingActivities;
+      const isPlaceholderActivity = value => /^(?:thinking|working|processing)(?:[ .…]*)?$/i.test(String(value || "").trim());
       const previousKey = activityKey(previous);
       const nextKey = activityKey(next);
       if (seenActivities && previousKey) seenActivities.add(previousKey);
       if (previous === next || (seenActivities && nextKey && seenActivities.has(nextKey))) return;
       if (seenActivities && nextKey) seenActivities.add(nextKey);
-      if (previous) appendThinkingHistory(panel, previous);
+      if (previous && !isPlaceholderActivity(previous)) appendThinkingHistory(panel, previous);
       if (compactLine) compactLine.textContent = compact;
       if (fullLine) { fullLine.textContent = next; fullLine.title = next; }
       else {
@@ -4686,7 +4694,7 @@
       }
       if (panel) {
         panel.classList.add("has-activity");
-        appendThinkingHistory(panel, next);
+        if (!isPlaceholderActivity(next)) appendThinkingHistory(panel, next);
         const details = panel.querySelector(".trux-thinking-details");
         if (details && panel.classList.contains("expanded")) {
           requestAnimationFrame(() => { details.scrollTop = details.scrollHeight; });
@@ -4864,12 +4872,6 @@
       truxCodeIdleTimer = setInterval(pulse, 3200);
     }
 
-    function formatThinkingClock(ms) {
-      const total = Math.max(0, Math.floor(ms / 1000));
-      const minutes = Math.floor(total / 60);
-      const seconds = total % 60;
-      return String(minutes).padStart(2,"0") + ":" + String(seconds).padStart(2,"0");
-    }
 
     function isNetworkFailure(error) {
       if (!error || error.name === "AbortError") return false;
@@ -5053,12 +5055,11 @@
       const thid = "th_" + Date.now();
       const thinkingMarkup = `
         <div class="trux-thinking-panel ${codingTurn ? "trux-code-thinking" : "trux-chat-thinking"}" id="${thid}" data-thinking-visible="true">
-          <span class="trux-thinking-elapsed ${codingTurn ? "" : "chat-thinking-elapsed"}" id="elapsed_${id}">${codingTurn ? "Working for 00:00" : ""}</span>
           <div class="trux-thinking-bar">
             <span class="trux-thinking-spark trux-thinking-chat-spark" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 1.5C13.45 7.95 16.05 10.55 22.5 12C16.05 13.45 13.45 16.05 12 22.5C10.55 16.05 7.95 13.45 1.5 12C7.95 10.55 10.55 7.95 12 1.5Z"/></svg></span>
             <div class="trux-thinking-copy"><span class="status-msg" id="${sid}" role="status" aria-live="polite"><span class="thinking-status-line compact"></span><span class="thinking-status-line full"></span></span></div>
 
-            ${codingTurn ? `<button type="button" class="trux-thinking-toggle" onclick="toggleThinkingDetails('${thid}')" aria-expanded="false" aria-label="Expand AI activity" title="Expand AI activity"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>` : ""}
+            <button type="button" class="trux-thinking-toggle" onclick="toggleThinkingDetails('${thid}')" aria-expanded="false" aria-label="Expand AI activity" title="Expand AI activity"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>
           </div>
           <div class="trux-thinking-details" id="${tsid}" hidden></div>
         </div>`;
@@ -5077,12 +5078,6 @@
       setThinkingStatus(sid, "Thinking");
 
       row._startedAt = codingTurn ? Date.now() : 0;
-      if (codingTurn) {
-        const elapsedEl = getEl("elapsed_" + id);
-        row._elapsedTimer = setInterval(() => {
-          if(elapsedEl) elapsedEl.innerText = "Working for " + formatThinkingClock(Date.now() - row._startedAt);
-        }, 1000);
-      }
 
       // TruX-Code defaults to Gemini 3.1 Pro Preview; owner overrides are validated server-side.
 
@@ -5494,7 +5489,6 @@
             persistTurnDraft(turnContext, full, true);
             clearTurnStreamer(true);
             const stalledRow = getEl(id)?.closest(".row");
-            if (stalledRow?._elapsedTimer) clearInterval(stalledRow._elapsedTimer);
             hideToolStatus(tsid);
             const bubble = getEl(id);
             const partialText = String(full || "").trim();
@@ -5573,7 +5567,6 @@
           }
 
           const failedRow = getEl(id)?.closest(".row");
-          if(failedRow?._elapsedTimer) clearInterval(failedRow._elapsedTimer);
           hideToolStatus(tsid);
           clearTurnStreamer(true);
           let b = getEl(id);
@@ -5766,7 +5759,6 @@
     function closeMediaLibrary(){ getEl("mediaLibraryModal")?.classList.remove("open"); }
 
     function markGenerationStopped(row, id, sid, tsid) {
-      if(row?._elapsedTimer) clearInterval(row._elapsedTimer);
       hideToolStatus(tsid);
       dismissThinkingPanel(row);
 
