@@ -1964,7 +1964,7 @@
     // debounce queue. Larger payloads are already uploaded incrementally while active.
     function flushSmallChatChangesOnPageHide() {
       const user = auth?.currentUser;
-      if(!user || !cloudChatsReady || cloudChatsOwnerUid !== user.uid || incognitoMode) return;
+      if(!user || cloudChatsOwnerUid !== user.uid || incognitoMode) return;
       const changedChats = {};
       for(const [id, chat] of Object.entries(chatSessions)) {
         if(!isPersistableChatSession(chat)) continue;
@@ -6151,10 +6151,10 @@
     };
 
     addEventListener("pagehide", () => {
-      flushSmallChatChangesOnPageHide();
       if (activeTurnContext) {
         persistTurnDraft(activeTurnContext, activeTurnContext.latestText || "", true);
       }
+      flushSmallChatChangesOnPageHide();
       // Closing or navigating away aborts the one live request. No detached
       // worker remains generating after the UI is gone.
       if (isGenerating) {
