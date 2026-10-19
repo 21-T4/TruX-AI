@@ -3474,7 +3474,9 @@ body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .co
 
 
 
-  body.coding-workspace #modelPickerContainer{
+  body.coding-workspace #modelPickerContainer,
+  body.coding-workspace .bar > #topbarMoreBtn,
+  body.coding-workspace .bar > #incognitoBtn{
     display:none!important;
     visibility:hidden!important;
     pointer-events:none!important;
@@ -4447,7 +4449,7 @@ body.coding-workspace .bar > #voiceBtn{grid-column:3!important;grid-row:1!import
 body.coding-workspace .bar > #actionBtn{grid-column:4!important;grid-row:1!important;width:48px!important;height:48px!important;min-width:48px!important;min-height:48px!important;justify-self:end!important;align-self:center!important;border:1px solid rgba(160,178,255,.3)!important;border-radius:50%!important;background:#2d48bc!important;color:#fff!important;box-shadow:0 0 18px rgba(45,72,220,.18)!important}
 body.coding-workspace #actionBtn.code-idle{opacity:.78!important}
 body.coding-workspace #actionBtn.ready,body.coding-workspace #actionBtn.stop{opacity:1!important}
-body.coding-workspace #modelPickerContainer,body.coding-workspace .bar > #topbarMoreBtn,body.coding-workspace .bar > #incognitoBtn{display:none!important;visibility:hidden!important;pointer-events:none!important}
+
 @media(max-width:700px){body.coding-workspace .bar{grid-template-columns:40px minmax(0,1fr) 38px 44px!important;gap:0 4px!important;min-height:70px!important;padding:8px 9px!important}body.coding-workspace .bar > #attachBtn{width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important}body.coding-workspace .bar > #promptInput{font-size:17px!important;padding:5px 5px!important}body.coding-workspace .bar > #voiceBtn{width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important}body.coding-workspace .bar > #actionBtn{width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important}}
 @media(max-width:380px){body.coding-workspace .bar > #promptInput{font-size:15px!important}}
 body[data-media-mode="video"] .bar{--trux-input-accent:#e0bcff}
