@@ -1825,7 +1825,11 @@
         for(const [id, chat] of Object.entries(chatSessions)) {
           if(!isPersistableChatSession(chat) || pendingDeletedCloudChatIds.has(id)) continue;
           const serialized = JSON.stringify(chat);
-          if(cloudChatSyncedFingerprints.get(id) !== serialized) {
+          if(cloudChatSyncedFingerprints.get(id) !== serialized ||
+             (sameAccount && result.found !== true)) {
+            // If an account with a previously loaded history suddenly looks
+            // completely uninitialized in the bucket, do not treat that empty
+            // response as proof that its known chats should be discarded.
             localUnsynced.set(id, chat);
           }
         }
