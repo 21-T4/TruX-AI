@@ -1881,14 +1881,29 @@
       if (bar) bar.classList.remove("multiline");
 
       const btn = getEl("actionBtn");
+      const isCodeWorkspace = workspaceMode === "coding" ||
+        document.body.classList.contains("coding-workspace") ||
+        document.body.dataset.workspaceMode === "coding";
       const hasDraft = !!(p.value.trim() || selectedImageBase64 || pastedTextBlocks.length || fileAttachments.length);
-      if (btn && !isGenerating) {
-        // Idle is authoritative: a stale Stop class/icon must never survive a
-        // completed, cancelled, or invalidated generation.
+
+      // While a request is live, always show a real Stop action. Stale idle/live
+      // classes after mode switches used to override this button's visual state.
+      if (btn && isGenerating) {
+        btn.classList.remove("live", "live-active", "ready", "code-idle");
+        btn.classList.add("stop");
+        btn.dataset.actionMode = "stop";
+        btn.title = "Stop generation";
+        btn.setAttribute("aria-label", btn.title);
+        const icon = getEl("btnIcon");
+        if (icon) {
+          icon.innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>';
+          icon.style.opacity = "1";
+          icon.style.transform = "translateY(0) scale(1)";
+        }
+      } else if (btn) {
         const wasStopping = btn.classList.contains("stop");
         btn.classList.remove("stop");
-        if (wasStopping) btn.dataset.actionMode = "";
-        const isCodeWorkspace = workspaceMode === "coding";
+        if (wasStopping || btn.dataset.actionMode === "stop") btn.dataset.actionMode = "";
         const liveActive = window.__truxLiveState === "live" || window.__truxLiveState === "connecting";
         const nextMode = hasDraft ? "send" : (isCodeWorkspace ? "code-idle" : (liveActive ? "live-stop" : "live"));
         btn.classList.toggle("ready", hasDraft);
@@ -1897,10 +1912,8 @@
         btn.classList.toggle("code-idle", isCodeWorkspace && !hasDraft);
         btn.title = hasDraft ? "Send message" : (isCodeWorkspace ? "Enter a coding task" : (liveActive ? "Stop Live assistant" : "Start Live assistant"));
         btn.setAttribute("aria-label", btn.title);
-
         const icon = getEl("btnIcon");
-        const iconMode = btn.dataset.actionMode;
-        if (icon && iconMode !== nextMode) {
+        if (icon && btn.dataset.actionMode !== nextMode) {
           btn.dataset.actionMode = nextMode;
           const icons = {
             send: '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>',
@@ -1924,13 +1937,6 @@
       // Code is only auto-attached on PASTE now. Doing it while typing used to
       // swallow long normal messages into a “file” chip mid-sentence.
     }
-
-    /* =====================================================================
-       ATTACH (“+”) MENU
-       It is position:fixed and anchored in JS. Two things used to break it:
-       the composer's overflow clipped it away, and it sat below other UI in
-       the stacking order — so it was invisible and/or unclickable.
-       ===================================================================== */
     function toggleAttachmentMenu(e) {
       e?.preventDefault(); e?.stopPropagation();
       const menu = getEl("attachmentMenu"), button = getEl("attachBtn");
@@ -4178,6 +4184,7 @@
       document.body.removeAttribute("data-media-mode");
       isGenerating = true; isScrolledUp = false;
       getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>'; getEl("actionBtn").classList.add("stop"); getEl("actionBtn").classList.remove("ready");
+      handleInputChange();
 
       if(!currentChatId) { currentChatId = "chat_" + Date.now(); chatSessions[currentChatId] = { title: basePrompt ? basePrompt.slice(0, 32) : "Image", mode: workspaceMode, notebookId: notebookIdForNewChat(), messages: [] }; }
       if(!opts.reuseTurn) {
@@ -4598,6 +4605,48 @@
       input.value = promptText;
       input.focus();
       handleInputChange();
+    }
+
+    function renderBrowserPreview(responseRow, event) {
+      if (!responseRow || !event?.screenshotBase64) return;
+      const stack = responseRow.querySelector(".trux-response-stack");
+      if (!stack) return;
+      const sourceUrl = String(event.url || "");
+      let preview = Array.from(stack.querySelectorAll("[data-trux-browser-preview]"))
+        .find(node => node.dataset.previewUrl === sourceUrl);
+      if (!preview) {
+        preview = document.createElement("section");
+        preview.className = "trux-browser-preview";
+        preview.dataset.truxBrowserPreview = "1";
+        preview.dataset.previewUrl = sourceUrl;
+        const header = document.createElement("div");
+        header.className = "trux-browser-preview-head";
+        const heading = document.createElement("strong");
+        heading.className = "trux-browser-preview-title";
+        const meta = document.createElement("span");
+        meta.className = "trux-browser-preview-meta";
+        header.append(heading, meta);
+        const image = document.createElement("img");
+        image.className = "trux-browser-preview-image";
+        image.alt = "Live rendered website screenshot";
+        image.loading = "lazy";
+        image.decoding = "async";
+        const link = document.createElement("a");
+        link.className = "trux-browser-preview-link";
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = "Open website";
+        preview.append(header, image, link);
+        preview._title = heading; preview._meta = meta; preview._image = image; preview._link = link;
+        stack.insertBefore(preview, stack.querySelector("[data-trux-terminal-window]") || stack.querySelector(".bubble"));
+      }
+      if (preview._title) preview._title.textContent = String(event.title || "Live website preview").slice(0, 240);
+      if (preview._meta) preview._meta.textContent =
+        (event.httpStatus == null ? "Browser-rendered" : "HTTP " + String(event.httpStatus)) +
+        " · " + (event.viewport === "mobile" ? "Mobile" : "Desktop");
+      if (preview._image) preview._image.src =
+        "data:" + String(event.screenshotMimeType || "image/jpeg") + ";base64," + String(event.screenshotBase64);
+      if (preview._link && /^https?:\/\//i.test(sourceUrl)) preview._link.href = sourceUrl;
     }
 
     function escapeTerminalText(value) {
@@ -5035,6 +5084,7 @@
       /* Dedicated TruX-Code transcript replaces its own landing surface for the active turn. */
       isGenerating = true; isScrolledUp = false;
       getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>'; getEl("actionBtn").classList.add("stop"); getEl("actionBtn").classList.remove("ready");
+      handleInputChange();
       let voice = wasInputByVoice; wasInputByVoice = false;
 
       if(!currentChatId) { currentChatId = "chat_" + Date.now(); chatSessions[currentChatId] = { title: basePrompt ? basePrompt.slice(0, 32) : "Query", mode: workspaceMode, notebookId: notebookIdForNewChat(), messages: [] }; }
@@ -5329,6 +5379,10 @@
                 }
               }
             }
+          }
+          else if(j.type === "browser_preview") {
+            const responseRow = getEl(id)?.closest(".row");
+            renderBrowserPreview(responseRow, j);
           }
           else if(j.type === "terminal") {
             const responseRow = getEl(id)?.closest(".row");
@@ -5644,6 +5698,7 @@
       isGenerating=true; isScrolledUp=false;
       getEl("btnIcon").innerHTML='<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>';
       getEl("actionBtn").classList.add("stop"); getEl("actionBtn").classList.remove("ready");
+      handleInputChange();
       if(!currentChatId) {
         currentChatId="chat_"+Date.now();
         chatSessions[currentChatId]={title:(basePrompt||"Video").slice(0,32),mode:"video",notebookId:notebookIdForNewChat(),messages:[]};
@@ -5872,8 +5927,11 @@
       const promptInput = getEl("promptInput");
       const hasContent = !!(promptInput?.value.trim() || selectedImageBase64 || pastedTextBlocks.length || fileAttachments.length);
       if (!hasContent) {
-        // TruX-Code is an ask-and-build workspace, never a Live entry point.
-        if (workspaceMode === "coding") return;
+        // The visible workspace is authoritative; a stale JS mode must never launch Live.
+        const codeWorkspaceVisible = workspaceMode === "coding" ||
+          document.body.classList.contains("coding-workspace") ||
+          document.body.dataset.workspaceMode === "coding";
+        if (codeWorkspaceVisible) return;
         startTruxLiveAssistant();
         return;
       }
