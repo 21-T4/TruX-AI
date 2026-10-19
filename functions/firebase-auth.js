@@ -5,7 +5,10 @@ let authInstance = null;
 
 function getAdminAuth(env = {}) {
   if(authInstance) return authInstance;
-  const app = getApps()[0] || initializeApp({ credential: applicationDefault() });
+  // Match the Firebase project used by the browser config rather than relying
+  // on whichever Google Cloud project happens to host the Cloud Run service.
+  const projectId = String(env.FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID || 'trux-ai').trim();
+  const app = getApps()[0] || initializeApp({ credential: applicationDefault(), projectId });
   authInstance = getAuth(app);
   return authInstance;
 }
