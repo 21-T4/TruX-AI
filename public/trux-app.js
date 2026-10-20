@@ -1939,7 +1939,7 @@
               if (!message || typeof message !== "object") return null;
               const copy = { ...message };
               if (typeof copy.text === "string") copy.text = copy.text.slice(-8000);
-              for (const key of ["dataUrl", "imageData", "audioData", "fileData"]) {
+              for (const key of Object.keys(copy)) {
                 if (typeof copy[key] === "string" && copy[key].startsWith("data:")) delete copy[key];
               }
               if (Array.isArray(copy.attachments)) {
