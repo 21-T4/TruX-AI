@@ -136,7 +136,7 @@
       const item = chat && typeof chat === "object" ? chat : {};
       return {
         title: String(item.title || "New chat").slice(0, 80),
-        mode: ["chat", "coding", "deep-research"].includes(item.mode) ? item.mode : "chat",
+        mode: ["chat", "coding", "deep-research", "video"].includes(item.mode) ? item.mode : "chat",
         pinned: item.pinned === true,
         notebookId: typeof item.notebookId === "string" && item.notebookId ? item.notebookId : null,
         notebookUnassigned: item.notebookUnassigned === true
@@ -5856,14 +5856,29 @@
 
       try {
         const videoUser = auth?.currentUser;
+        const videoChatId = currentChatId;
+        const videoChatTurnId = "turn_video_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
+        const videoChatSession = chatSessions[videoChatId];
+
         const res=await truxAuthenticatedFetch("/api/chat",{
           method:"POST",
           headers:{"Content-Type":"application/json","Accept":"text/event-stream"},
           signal:activeAbortController.signal,
-          body:JSON.stringify({message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null,userEmail:videoUser?.email||"",notifyOnComplete:true})
+          body:JSON.stringify({
+              incognito: !!incognitoMode,
+              chatId: incognitoMode ? null : videoChatId,
+              chatTurnId: incognitoMode ? null : videoChatTurnId,
+              chatTitle: videoChatSession?.title || basePrompt.slice(0, 32),
+              chatMetadata: chatMetadataForSession(videoChatSession),
+message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null,userEmail:videoUser?.email||"",notifyOnComplete:true})
         }, videoUser);
         if(!res.ok){ const p=await res.json().catch(()=>({})); throw Error(p.error||p.reply||"Video generation failed."); }
         if(!res.body) throw Error("Video streaming body unavailable.");
+        if (!incognitoMode && videoChatSession && auth?.currentUser?.uid === chatSessionsOwnerUid) {
+          videoChatSession.cloudStored = true;
+          videoChatSession.messagesLoaded = true;
+          chatMetadataFingerprints.set(videoChatId, chatMetadataFingerprint(videoChatSession));
+        }
         const reader=res.body.getReader(), decoder=new TextDecoder();
         let buffer="", result=null;
         const parseFrame=raw=>{ if(!raw) return; let j; try{j=JSON.parse(raw);}catch{return;} if(j.type==="status"){const el=getEl(sid); if(el&&j.status) el.textContent=j.status;} else if(j.type==="result"){result=j;} else if(j.type==="error"){throw Error(j.error||"Video generation failed.");} };
@@ -5882,8 +5897,8 @@
         const wrap=document.createElement("div"); wrap.className="gen-video-wrap";
         const video=document.createElement("video"); video.src=result.video.url; video.controls=true; video.preload="metadata"; video.playsInline=true; wrap.appendChild(video); bubble.appendChild(wrap);
         const reply=result.reply||"Your video is ready.";
-        chatSessions[currentChatId].messages.push({role:"trux",text:reply,video:result.video.url});
-        saveChatSessions();
+        chatSessions[videoChatId].messages.push({ role: "trux",text:reply,video:result.video.url});
+        saveChatSessions(videoChatId);
         await saveGeneratedMedia({type:"video",url:result.video.url,prompt:basePrompt,mimeType:result.video.mimeType||"video/mp4"});
         const actions=getEl(aid); if(actions){ const openBtn=document.createElement("button"); openBtn.className="act"; openBtn.textContent="Open"; openBtn.onclick=()=>window.open(result.video.url,"_blank","noopener"); actions.appendChild(openBtn); }
       } catch(e) {
