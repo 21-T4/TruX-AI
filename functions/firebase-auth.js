@@ -15,8 +15,7 @@ export function getFirebaseAdminApp(env = {}) {
     return existing;
   }
 
-  // Auth, chat history, and Firestore-backed app state must use the same
-  // explicitly configured Firebase project, independent of import order.
+  // Auth and account-scoped chat data use this explicitly configured Firebase project.
   return initializeApp({
     credential: applicationDefault(),
     projectId
