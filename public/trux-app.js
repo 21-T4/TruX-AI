@@ -1912,7 +1912,7 @@
           const rawDetail = await response.text().catch(() => "");
           let body = null;
           try { body = rawDetail ? JSON.parse(rawDetail) : null; } catch {}
-          const detail = String(body?.error || body?.detail || body?.message || rawDetail ||
+          const detail = String(body?.detail || body?.error || body?.message || rawDetail ||
             "Cloud chat history could not be loaded (HTTP " + response.status + ").");
           const error = new Error(detail);
           error.status = response.status;
