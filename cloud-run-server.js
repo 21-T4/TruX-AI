@@ -19,6 +19,8 @@ const PUBLIC_DIR = path.join(__dirname, "public");
 
 const routes = {
   "/api/chat": "./functions/api/chat.js",
+  "/api/chats": "./functions/api/chats.js",
+  "/api/chats-stream": "./functions/api/chats-stream.js",
   "/api/video": "./functions/api/video.js",
   "/api/firebase-config": "./functions/api/firebase-config.js",
   "/api/models": "./functions/api/models.js",
@@ -149,6 +151,7 @@ async function handleApi(req, res, route, pathname) {
 
     if (req.method === "GET" && mod.onRequestGet) response = await mod.onRequestGet(context);
     else if (req.method === "POST" && mod.onRequestPost) response = await mod.onRequestPost(context);
+    else if (req.method === "DELETE" && mod.onRequestDelete) response = await mod.onRequestDelete(context);
     else if (req.method === "OPTIONS") response = new Response(null, { status: 204 });
     else response = new Response("Method Not Allowed", { status: 405 });
 
