@@ -19,8 +19,6 @@ const PUBLIC_DIR = path.join(__dirname, "public");
 
 const routes = {
   "/api/chat": "./functions/api/chat.js",
-  "/api/chats": "./functions/api/chats.js",
-  "/api/chats-stream": "./functions/api/chats-stream.js",
   "/api/video": "./functions/api/video.js",
   "/api/firebase-config": "./functions/api/firebase-config.js",
   "/api/models": "./functions/api/models.js",

@@ -132,181 +132,6 @@
       return response;
     }
 
-    function chatMetadataForSession(chat) {
-      const item = chat && typeof chat === "object" ? chat : {};
-      return {
-        title: String(item.title || "New chat").slice(0, 80),
-        mode: ["chat", "coding", "deep-research", "video"].includes(item.mode) ? item.mode : "chat",
-        pinned: item.pinned === true,
-        notebookId: typeof item.notebookId === "string" && item.notebookId ? item.notebookId : null,
-        notebookUnassigned: item.notebookUnassigned === true
-      };
-    }
-    function chatMetadataFingerprint(chat) { return JSON.stringify(chatMetadataForSession(chat)); }
-
-    async function refreshCloudChatSessions(user) {
-      const uid = String(user?.uid || "");
-      if (!uid || auth?.currentUser?.uid !== uid || chatSessionsOwnerUid !== uid) return;
-      chatHistoryLoading = true;
-      chatHistoryLoadError = "";
-      renderSidebar();
-      try {
-        const response = await truxAuthenticatedFetch("/api/chats", {
-          method: "GET", cache: "no-store", headers: { "Accept": "application/json" }
-        }, user);
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(payload.error || "Could not load saved chats.");
-        if (auth?.currentUser?.uid !== uid || chatSessionsOwnerUid !== uid) return;
-
-        const nextSessions = {};
-        (Array.isArray(payload.chats) ? payload.chats : []).forEach(summary => {
-          if (!summary || typeof summary.id !== "string") return;
-          const existing = chatSessions[summary.id];
-          const keepLocalMessages = !!(existing?.localCache && Array.isArray(existing.messages) && existing.messages.length);
-          const session = {
-            ...summary,
-            messages: keepLocalMessages ? existing.messages : (existing?.cloudStored && existing?.messagesLoaded && Array.isArray(existing.messages) ? existing.messages : []),
-            messagesLoaded: keepLocalMessages || !!(existing?.cloudStored && existing?.messagesLoaded),
-            localCache: keepLocalMessages,
-            cloudStored: true
-          };
-          nextSessions[summary.id] = session;
-          chatMetadataFingerprints.set(summary.id, chatMetadataFingerprint(session));
-        });
-        // Retain local unsent drafts and the intentionally memory-only Incognito session.
-        Object.entries(chatSessions).forEach(([id, session]) => {
-          if (session?.incognito) { nextSessions[id] = session; return; }
-          if ((session?.localCache || !session?.cloudStored) && Array.isArray(session?.messages) && session.messages.length) nextSessions[id] = session;
-        });
-        chatSessions = nextSessions;
-        chatHistoryLoadError = "";
-      } catch (error) {
-        if (auth?.currentUser?.uid === uid && chatSessionsOwnerUid === uid) {
-          console.warn("[chat-storage] Could not refresh saved chats:", error?.message || error);
-          chatHistoryLoadError = "Could not load saved chats. Check your connection and refresh to retry.";
-        }
-      } finally {
-        if (auth?.currentUser?.uid === uid && chatSessionsOwnerUid === uid) {
-          chatHistoryLoading = false;
-          renderSidebar();
-        }
-      }
-    }
-
-    function queueCloudChatMetadataSync(chatId) {
-      const initial = chatSessions[chatId];
-      const user = auth?.currentUser;
-      const ownerUid = String(chatSessionsOwnerUid || "");
-      if (!initial || !initial.cloudStored || initial.incognito || !user || user.uid !== ownerUid || incognitoMode) return;
-      const previous = chatMetadataWriteQueues.get(chatId) || Promise.resolve();
-      const task = previous.catch(() => {}).then(async () => {
-        const latest = chatSessions[chatId];
-        if (!latest || !latest.cloudStored || latest.incognito || auth?.currentUser?.uid !== ownerUid || chatSessionsOwnerUid !== ownerUid) return;
-        const metadata = chatMetadataForSession(latest);
-        const fingerprint = JSON.stringify(metadata);
-        if (chatMetadataFingerprints.get(chatId) === fingerprint) return;
-        const response = await truxAuthenticatedFetch("/api/chats", {
-          method: "POST", cache: "no-store",
-          headers: { "Content-Type": "application/json", "Accept": "application/json" },
-          body: JSON.stringify({ action: "metadata", chatId, metadata })
-        }, user);
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(payload.error || "Could not save chat details.");
-        if (auth?.currentUser?.uid === ownerUid && chatSessionsOwnerUid === ownerUid) {
-          chatMetadataFingerprints.set(chatId, fingerprint);
-          chatHistoryLoadError = "";
-        }
-      });
-      chatMetadataWriteQueues.set(chatId, task);
-      task.catch(error => {
-        console.warn("[chat-storage] Could not save chat metadata:", error?.message || error);
-        if (auth?.currentUser?.uid === ownerUid && chatSessionsOwnerUid === ownerUid) {
-          toast("Could not save chat changes to the cloud. Please retry.", "err");
-        }
-      });
-    }
-
-    // Temporarily bypass Firebase's separate saved-response stream. The POST /api/chat
-    // response already carries the live SSE tokens and must remain usable without chat storage.
-    const USE_FIREBASE_REALTIME_CHAT_STREAM = false;
-
-    async function openTruxRealtimeChatStream(chatId, turnId, user, signal, onEvent) {
-      const url = "/api/chats-stream?chatId=" + encodeURIComponent(chatId) + "&turnId=" + encodeURIComponent(turnId);
-      const response = await truxAuthenticatedFetch(url, {
-        method: "GET", cache: "no-store", headers: { "Accept": "text/event-stream" }, signal
-      }, user);
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
-        throw new Error(payload.error || "Could not open the saved response stream.");
-      }
-      if (!response.body) throw new Error("Firebase chat stream is unavailable.");
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "", sawReady = false, completed = false;
-      let resolveReady, rejectReady, resolveDone, rejectDone;
-      const ready = new Promise((resolve, reject) => { resolveReady = resolve; rejectReady = reject; });
-      const done = new Promise((resolve, reject) => { resolveDone = resolve; rejectDone = reject; });
-      done.catch(() => {});
-      const dispatch = frame => {
-        const data = frame.split(/\r?\n/).filter(line => line.startsWith("data:"))
-          .map(line => line.slice(5).trimStart()).join("\n");
-        if (!data) return;
-        let packet;
-        try { packet = JSON.parse(data); } catch { return; }
-        if (packet.type === "ready") { sawReady = true; resolveReady(); }
-        else if (packet.type === "heartbeat") return;
-        else if (packet.type === "complete") {
-          completed = true;
-          try { onEvent(packet); } catch {}
-          resolveDone(packet);
-        } else if (packet.type === "error") {
-          const error = new Error(packet.error || "Firebase chat stream failed.");
-          if (!sawReady) rejectReady(error);
-          else {
-            try { onEvent({ type: "stream_error", error: error.message }); } catch {}
-            rejectDone(error);
-          }
-        } else { try { onEvent(packet); } catch {} }
-      };
-      const runner = (async () => {
-        try {
-          while (true) {
-            const { value, done: readDone } = await reader.read();
-            if (readDone) break;
-            buffer += decoder.decode(value, { stream: true });
-            const frames = buffer.split(/\r?\n\r?\n/);
-            buffer = frames.pop() || "";
-            frames.forEach(dispatch);
-          }
-          buffer += decoder.decode();
-          if (buffer.trim()) dispatch(buffer);
-          if (!sawReady) rejectReady(new Error("Firebase chat stream closed before it was ready."));
-          if (!completed && !signal?.aborted) {
-            const error = new Error("Firebase chat stream closed before the response was complete.");
-            try { onEvent({ type: "stream_error", error: error.message }); } catch {}
-            rejectDone(error);
-          } else if (!completed && signal?.aborted) {
-            rejectDone(new Error("Firebase chat stream stopped."));
-          }
-        } catch (error) {
-          if (!sawReady) rejectReady(error);
-          else if (!completed) {
-            if (!signal?.aborted) {
-              try { onEvent({ type: "stream_error", error: error?.message || "Firebase chat stream failed." }); } catch {}
-            }
-            rejectDone(error);
-          }
-        } finally { try { reader.releaseLock(); } catch {} }
-      })();
-      try { await ready; }
-      catch (error) { try { await reader.cancel(); } catch {} throw error; }
-      return {
-        done,
-        cancel: async () => { try { await reader.cancel(); } catch {} try { await runner; } catch {} }
-      };
-    }
-
     function updateTruxProfileUI(user) {
       const signedIn = !!user;
       const fallbackAvatar = "https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff";
@@ -399,9 +224,10 @@
           updateNotificationSettingsUI();
           maybeAskForLocation();
           if("Notification" in window && Notification.permission === "granted") syncTruxNotificationsSilently();
-          const nextChatOwnerUid = String(u.uid || "");
-          if (chatSessionsOwnerUid !== nextChatOwnerUid) {
-            chatSessions = {};
+          const nextLocalChatOwnerUid = String(u.uid || "");
+          if (localChatOwnerUid !== nextLocalChatOwnerUid) {
+            if (localChatOwnerUid) saveChatSessions();
+            chatSessions = loadLocalChatCache(nextLocalChatOwnerUid);
             currentChatId = null;
             getEl("chatContainer")?.replaceChildren();
             getEl("codeChatContainer")?.replaceChildren();
@@ -409,15 +235,11 @@
             document.body.classList.remove("chat-session-active", "coding-workspace");
             document.body.classList.add("home-active");
           }
-          chatSessionsOwnerUid = nextChatOwnerUid;
-          void refreshCloudChatSessions(u);
+          localChatOwnerUid = nextLocalChatOwnerUid;
           renderSidebar();
         } else {
-          chatSessionsOwnerUid = null;
-          chatHistoryLoading = false;
-          chatHistoryLoadError = "";
-          chatMetadataFingerprints.clear();
-          chatMetadataWriteQueues.clear();
+          if (localChatOwnerUid) saveChatSessions();
+          localChatOwnerUid = null;
           chatSessions = {};
           currentChatId = null;
           getEl("chatContainer")?.replaceChildren();
@@ -634,7 +456,7 @@
       return {
         available: persistent,
         getItem(k) { try { return backing.getItem(k); } catch (e) { return null; } },
-        setItem(k, v) { try { backing.setItem(k, v); } catch (e) {} },
+        setItem(k, v) { try { backing.setItem(k, v); return true; } catch (e) { return false; } },
         removeItem(k) { try { backing.removeItem(k); } catch (e) {} },
         // Parse JSON defensively: one corrupted entry must not brick the app.
         json(k, fallback) {
@@ -648,21 +470,59 @@
       };
     })();
 
-    function loadLocalChatCache() {
-      const cached = store.json("trux_chat_sessions_cache", {});
-      if (!cached || typeof cached !== "object" || Array.isArray(cached)) return {};
-      return cached;
+    function chatStorageKey(uid) {
+      return "trux_chat_sessions_local_v1:" + encodeURIComponent(String(uid || ""));
     }
 
-    let chatSessionsOwnerUid = null;
-    let chatHistoryLoading = false;
-    let chatHistoryLoadError = "";
-    const chatMetadataFingerprints = new Map();
-    const chatMetadataWriteQueues = new Map();
+    function normalizeLocalChatMessage(message) {
+      if (!message || typeof message !== "object") return null;
+      const copy = { ...message };
+      for (const key of Object.keys(copy)) {
+        if (key === "text") continue;
+        if (typeof copy[key] === "string" && copy[key].startsWith("data:")) delete copy[key];
+      }
+      if (Array.isArray(copy.attachments)) {
+        copy.attachments = copy.attachments.map(item => {
+          if (!item || typeof item !== "object") return null;
+          const attachment = { ...item };
+          for (const key of ["data", "dataUrl", "base64", "content"]) {
+            if (typeof attachment[key] === "string" &&
+                (attachment[key].startsWith("data:") || attachment[key].length > 20000)) {
+              delete attachment[key];
+            }
+          }
+          return attachment;
+        }).filter(Boolean);
+      }
+      return copy;
+    }
+
+    function normalizeLocalChatSessions(value) {
+      if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+      const sessions = {};
+      for (const [id, session] of Object.entries(value)) {
+        if (!session || typeof session !== "object" || session.incognito === true) continue;
+        sessions[id] = {
+          ...session,
+          messages: Array.isArray(session.messages)
+            ? session.messages.map(normalizeLocalChatMessage).filter(Boolean)
+            : []
+        };
+      }
+      return sessions;
+    }
+
+    function loadLocalChatCache(uid) {
+      store.removeItem("trux_chat_sessions_cache");
+      return normalizeLocalChatSessions(store.json(chatStorageKey(uid), {}));
+    }
+
+    let localChatOwnerUid = null;
+    let chatStorageFullNoticeShown = false;
 
     let currentPlanTier = "base",
         workspaceMode = "chat",
-        chatSessions = loadLocalChatCache(),
+        chatSessions = {},
         pinnedInsights = store.json("trux_pinned", []),
         feedbackCount = Number(store.getItem("trux_feedback_count")) || 0,
         currentChatId = null,
@@ -1925,55 +1785,30 @@
       }, 120);
     }
 
-    function saveChatSessions(changedChatId = currentChatId) {
-      if(incognitoMode || (currentChatId && chatSessions[currentChatId]?.incognito)) return;
-      // Keep a bounded, device-local recovery copy so chat sending does not depend on Firebase.
+    function saveChatSessions() {
+      if (incognitoMode || (currentChatId && chatSessions[currentChatId]?.incognito)) return;
+      const uid = String(localChatOwnerUid || auth?.currentUser?.uid || "");
+      if (!uid) return;
       try {
-        const cache = {};
-        const entries = Object.entries(chatSessions || {})
-          .filter(([id, session]) => session && !session.incognito && Array.isArray(session.messages) && session.messages.length)
-          .sort((a, b) => (Number(b[1]?.updatedAt) || 0) - (Number(a[1]?.updatedAt) || 0))
-          .slice(0, 30);
-        for (const [id, session] of entries) {
-          cache[id] = {
-            ...session,
-            localCache: true,
-            messagesLoaded: true,
-            messages: session.messages.slice(-40).map(message => {
-              if (!message || typeof message !== "object") return null;
-              const copy = { ...message };
-              if (typeof copy.text === "string") copy.text = copy.text.slice(-8000);
-              for (const key of Object.keys(copy)) {
-                if (typeof copy[key] === "string" && copy[key].startsWith("data:")) delete copy[key];
-              }
-              if (Array.isArray(copy.attachments)) {
-                copy.attachments = copy.attachments.map(item => {
-                  if (!item || typeof item !== "object") return null;
-                  const attachment = { ...item };
-                  for (const key of ["data", "dataUrl", "base64", "content"]) {
-                    if (typeof attachment[key] === "string" && (attachment[key].startsWith("data:") || attachment[key].length > 20000)) delete attachment[key];
-                  }
-                  return attachment;
-                }).filter(Boolean);
-              }
-              return copy;
-            }).filter(Boolean)
-          };
+        const sessions = {};
+        for (const [id, session] of Object.entries(chatSessions || {})) {
+          if (!session || session.incognito || !Array.isArray(session.messages) || !session.messages.length) continue;
+          sessions[id] = { ...session, messages: session.messages.map(normalizeLocalChatMessage).filter(Boolean) };
         }
-        let serialized = JSON.stringify(cache);
-        while (serialized.length > 3000000 && Object.keys(cache).length > 1) {
-          delete cache[Object.keys(cache).at(-1)];
-          serialized = JSON.stringify(cache);
+        const saved = store.setItem(chatStorageKey(uid), JSON.stringify(sessions));
+        if (!saved && !chatStorageFullNoticeShown) {
+          chatStorageFullNoticeShown = true;
+          toast(store.available
+            ? "Browser storage is full. Export or delete older chats to keep new messages after refresh."
+            : "Browser storage is unavailable, so chats may not survive refresh.", "err");
         }
-        store.setItem("trux_chat_sessions_cache", serialized);
       } catch (error) {
-        console.warn("[chat-cache] Could not update local chat cache:", error?.message || error);
+        console.warn("[chat-storage-local] Could not save browser chat history:", error?.message || error);
       }
       queueSidebarSync();
-      if (changedChatId && chatSessions[changedChatId]) queueCloudChatMetadataSync(changedChatId);
     }
 
-        function launchIncognitoChat() {
+    function launchIncognitoChat() {
       /* Incognito is a memory-only Chat workspace.
          It stays in memory only and is removed on exit. */
       if (isGenerating) {
@@ -5234,7 +5069,7 @@
       handleInputChange();
       let voice = wasInputByVoice; wasInputByVoice = false;
 
-      if(!currentChatId) { currentChatId = "chat_" + Date.now(); chatSessions[currentChatId] = { title: basePrompt ? basePrompt.slice(0, 32) : "Query", mode: workspaceMode, notebookId: notebookIdForNewChat(), messages: [], cloudStored: false, messagesLoaded: true }; }
+      if(!currentChatId) { currentChatId = "chat_" + Date.now(); chatSessions[currentChatId] = { title: basePrompt ? basePrompt.slice(0, 32) : "Query", mode: workspaceMode, notebookId: notebookIdForNewChat(), messages: [] }; }
       const turnChatId = currentChatId;
       const turnMode = workspaceMode;
       chatSessions[turnChatId].mode = turnMode;
@@ -5306,10 +5141,6 @@
         advancedThinking: advancedThinkingLevel === "extended" || workspaceMode === "deep-research",
         thinkingLevel: advancedThinkingLevel,
         incognito: !!incognitoMode,
-        chatId: incognitoMode ? null : turnChatId,
-        chatTurnId: incognitoMode ? null : turnContext.turnKey,
-        chatTitle: chatSessions[turnChatId]?.title || (basePrompt ? basePrompt.slice(0, 32) : "Query"),
-        chatMetadata: chatMetadataForSession(chatSessions[turnChatId]),
         history: (() => {
           const prior = (chatSessions[turnChatId]?.messages || []).slice(0, sentMessageIndex);
           const deepMode = workspaceMode === "coding" || workspaceMode === "deep-research";
@@ -5369,11 +5200,6 @@
         const requestController = activeAbortController;
         // Keep stream state visible to catch so partial text can be preserved after any failure.
         let full = "";
-        let firebaseStreamHandle = null;
-        let firebaseStreamUiReady = false;
-        let firebaseStreamEvents = [];
-        let firebaseStreamFailure = "";
-        let realtimeProcessor = null;
         let finalizedEarly = false;
         let finalizedOnFinal = false;
         try {
@@ -5395,27 +5221,6 @@
 
         if(!res.body) throw Error("Streaming body unavailable.");
 
-        const receiveRealtimeEvent = event => {
-          if (!firebaseStreamUiReady || !realtimeProcessor) firebaseStreamEvents.push(event);
-          else realtimeProcessor(event);
-        };
-        if (USE_FIREBASE_REALTIME_CHAT_STREAM && !incognitoMode && requestBody.chatId && requestBody.chatTurnId) {
-          try {
-            firebaseStreamHandle = await openTruxRealtimeChatStream(
-              requestBody.chatId, requestBody.chatTurnId, requestUser, requestController.signal, receiveRealtimeEvent
-            );
-          } catch (streamError) {
-            firebaseStreamFailure = String(streamError?.message || "Could not open the saved response stream.");
-            try { requestController.abort(); } catch {}
-            throw streamError;
-          }
-          const storedSession = chatSessions[requestBody.chatId];
-          if (storedSession && auth?.currentUser?.uid === requestUser.uid && chatSessionsOwnerUid === requestUser.uid) {
-            storedSession.cloudStored = true;
-            storedSession.messagesLoaded = true;
-            chatMetadataFingerprints.set(requestBody.chatId, JSON.stringify(requestBody.chatMetadata));
-          }
-        }
         let rd = res.body.getReader(), dec = new TextDecoder(), buf = "", fin = null;
         let streamDone = false;
         // SSE heartbeats keep long-running tool work connected. There is no client-side
@@ -5490,7 +5295,6 @@
             return;
           }
           else if(j.type === "chunk") {
-            if (firebaseStreamHandle) return;
             let piece = j.text || "";
             if (!piece) return;
             full += piece;
@@ -5515,8 +5319,7 @@
               if (status) status.innerText = "Composing your image…";
             }
             if (fin && !imageRoute) {
-              if (firebaseStreamHandle) return;
-              if (codingTurn && !finalizedEarly) {
+                if (codingTurn && !finalizedEarly) {
                 finalizedEarly = true;
                 finalizeResponse(id, aid, fin, prompt, voice, turnStreamer, turnSources, turnContext);
                 if (activeStreamer === turnStreamer) activeStreamer = null;
@@ -5568,7 +5371,6 @@
           }
           else if(j.type === "done") {
             streamDone = true;
-            if (firebaseStreamHandle && !imageRoute) return;
             /* A clean EOF is authoritative even if the server omitted a final frame.
                Finalize once here so the caret and Stop control cannot be left active. */
             if (!finalizedEarly && !finalizedOnFinal && !imageRoute) {
@@ -5675,51 +5477,6 @@
           else if(j.type === "error") throw Error(j.error || "Streaming error.");
         }
 
-        realtimeProcessor = function(event) {
-          if (!event || finalizedOnFinal || finalizedEarly) return;
-          if (event.type === "heartbeat" || event.type === "ready") return;
-          if (event.type === "stream_error") {
-            firebaseStreamFailure = String(event.error || "The saved response stream failed.");
-            try { requestController.abort(); } catch {}
-            return;
-          }
-          if (event.type === "chunk") {
-            const piece = String(event.text || "");
-            if (!piece) return;
-            full += piece;
-            sniffRoute();
-            if (!routeSettled || imageRoute) return;
-            vibrateWhenResponseStarts();
-            updateIncompleteTurn(turnContext, full);
-            const renderer = ensureStreamer();
-            if (renderer) {
-              if (!renderer.received) renderer.setText(full);
-              else renderer.push(piece);
-            }
-            return;
-          }
-          if (event.type === "complete") {
-            if (event.status === "error") {
-              firebaseStreamFailure = String(event.error || "The saved chat response failed.");
-              try { requestController.abort(); } catch {}
-              return;
-            }
-            if (typeof event.text === "string" && event.text !== full) {
-              full = event.text;
-              sniffRoute();
-              if (routeSettled && !imageRoute) {
-                updateIncompleteTurn(turnContext, full);
-                const renderer = ensureStreamer();
-                if (renderer) renderer.setText(full);
-              }
-            }
-          }
-        };
-        firebaseStreamUiReady = true;
-        const queuedRealtimeEvents = firebaseStreamEvents;
-        firebaseStreamEvents = [];
-        queuedRealtimeEvents.forEach(event => realtimeProcessor(event));
-
         while(1) {
           if (turnId !== generationEpoch || generationStopRequested) {
             try { await rd.cancel(); } catch {}
@@ -5727,7 +5484,6 @@
           }
           if (requestController.signal.aborted) {
             try { await rd.cancel(); } catch {}
-            if (firebaseStreamFailure) throw new Error(firebaseStreamFailure);
             return;
           }
           let { value, done } = await rd.read();
@@ -5737,7 +5493,6 @@
           }
           if (requestController.signal.aborted) {
             try { await rd.cancel(); } catch {}
-            if (firebaseStreamFailure) throw new Error(firebaseStreamFailure);
             return;
           }
           if(done) break;
@@ -5765,15 +5520,7 @@
           return;
         }
 
-        if (firebaseStreamHandle && !imageRoute) {
-          const savedCompletion = await firebaseStreamHandle.done;
-          if (firebaseStreamFailure) throw new Error(firebaseStreamFailure);
-          if (!savedCompletion || savedCompletion.status !== "complete") {
-            throw new Error(savedCompletion?.error || "The saved response did not complete successfully.");
-          }
-        }
-
-        let text = (firebaseStreamHandle && !imageRoute ? full : (fin !== null ? fin : full)).trim();
+        let text = (fin !== null ? fin : full).trim();
          if(!text) throw Error("The model completed the request without returning a final response.");
         sniffRoute();
         const routedImagePrompt = extractImageRoutePrompt(text, prompt);
@@ -5816,8 +5563,6 @@
         clearTurnStreamer(false);
         return;
         } catch(e) {
-          try { await firebaseStreamHandle?.cancel(); } catch {}
-          if (firebaseStreamFailure) e = new Error(firebaseStreamFailure);
           if (turnId !== generationEpoch) return;
           if (row._backgroundHandover) return;
           // The authoritative answer has already been rendered; a late stream
@@ -5910,9 +5655,6 @@
 
       try {
         const videoUser = auth?.currentUser;
-        const videoChatId = currentChatId;
-        const videoChatTurnId = "turn_video_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
-        const videoChatSession = chatSessions[videoChatId];
 
         const res=await truxAuthenticatedFetch("/api/chat",{
           method:"POST",
@@ -5920,19 +5662,10 @@
           signal:activeAbortController.signal,
           body:JSON.stringify({
               incognito: !!incognitoMode,
-              chatId: incognitoMode ? null : videoChatId,
-              chatTurnId: incognitoMode ? null : videoChatTurnId,
-              chatTitle: videoChatSession?.title || basePrompt.slice(0, 32),
-              chatMetadata: chatMetadataForSession(videoChatSession),
 message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null,userEmail:videoUser?.email||"",notifyOnComplete:true})
         }, videoUser);
         if(!res.ok){ const p=await res.json().catch(()=>({})); throw Error(p.error||p.reply||"Video generation failed."); }
         if(!res.body) throw Error("Video streaming body unavailable.");
-        if (!incognitoMode && videoChatSession && auth?.currentUser?.uid === chatSessionsOwnerUid) {
-          videoChatSession.cloudStored = true;
-          videoChatSession.messagesLoaded = true;
-          chatMetadataFingerprints.set(videoChatId, chatMetadataFingerprint(videoChatSession));
-        }
         const reader=res.body.getReader(), decoder=new TextDecoder();
         let buffer="", result=null;
         const parseFrame=raw=>{ if(!raw) return; let j; try{j=JSON.parse(raw);}catch{return;} if(j.type==="status"){const el=getEl(sid); if(el&&j.status) el.textContent=j.status;} else if(j.type==="result"){result=j;} else if(j.type==="error"){throw Error(j.error||"Video generation failed.");} };
@@ -6810,10 +6543,6 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
       if(!ids.length) {
         if(q) {
           hL.innerHTML = '<div class="empty">No chats match <b>' + escapeHtml(q) + '</b>.</div>';
-        } else if (chatHistoryLoading) {
-          hL.innerHTML = '<div class="empty">Loading saved chats…</div>';
-        } else if (chatHistoryLoadError) {
-          hL.innerHTML = '<div class="empty">' + escapeHtml(chatHistoryLoadError) + '</div>';
         } else {
           hL.innerHTML = '<div class="empty">Your chats will appear here.<br>Start a new chat to begin.</div>';
         }
@@ -6935,35 +6664,7 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
     }
 
     async function loadChatSession(id) {
-      if(!chatSessions[id]) return;
-      if (chatSessions[id]?.messagesLoaded !== true) {
-        const requestUser = auth?.currentUser;
-        if (!requestUser || requestUser.uid !== chatSessionsOwnerUid) {
-          toast("Sign in again to load this chat.", "err");
-          return;
-        }
-        try {
-          const response = await truxAuthenticatedFetch("/api/chats?chatId=" + encodeURIComponent(id), {
-            method: "GET", cache: "no-store", headers: { "Accept": "application/json" }
-          }, requestUser);
-          const payload = await response.json().catch(() => ({}));
-          if (!response.ok || !payload.chat) throw new Error(payload.error || "Could not load this chat.");
-          if (auth?.currentUser?.uid !== requestUser.uid || chatSessionsOwnerUid !== requestUser.uid) return;
-          chatSessions[id] = {
-            ...payload.chat,
-            messages: Array.isArray(payload.chat.messages) ? payload.chat.messages : [],
-            cloudStored: true,
-            messagesLoaded: true
-          };
-          chatMetadataFingerprints.set(id, chatMetadataFingerprint(chatSessions[id]));
-          chatHistoryLoadError = "";
-        } catch (error) {
-          console.warn("[chat-storage] Could not open chat:", error?.message || error);
-          toast("Could not load this chat from the cloud. Please retry.", "err");
-          return;
-        }
-      }
-      if(!chatSessions[id]) return;
+      if (!chatSessions[id]) return;
       if (activeTurnContext) updateIncompleteTurn(activeTurnContext, activeTurnContext.latestText || "", true);
             generationEpoch += 1;
       activeTurnContext = null;
@@ -6999,7 +6700,7 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
            if (host) renderGithubProposalCard(host, m.githubProposal);
          }
        });
-      // Partial direct-request output is restored from the account's cloud history; no worker is reattached.
+      // Chat messages are restored from browser-local history; no worker is reattached.
       renderSidebar(); if(innerWidth <= 768) closeSidebar(); else setSidebarOpen(true);
     }
     async function deleteChat(id) {
@@ -7009,25 +6710,6 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
       if (isGenerating && activeTurnContext?.chatId === id) {
         toast("Stop generation before deleting this chat, then retry.", "err");
         return;
-      }
-      if (targetChat.cloudStored) {
-        const requestUser = auth?.currentUser;
-        if (!requestUser || requestUser.uid !== chatSessionsOwnerUid) {
-          toast("Sign in again before deleting this chat.", "err");
-          return;
-        }
-        try {
-          const response = await truxAuthenticatedFetch("/api/chats?chatId=" + encodeURIComponent(id), {
-            method: "DELETE", cache: "no-store", headers: { "Accept": "application/json" }
-          }, requestUser);
-          const payload = await response.json().catch(() => ({}));
-          if (!response.ok) throw new Error(payload.error || "Could not delete this chat.");
-          if (auth?.currentUser?.uid !== requestUser.uid || chatSessionsOwnerUid !== requestUser.uid) return;
-        } catch (error) {
-          console.warn("[chat-storage] Could not delete chat:", error?.message || error);
-          toast(error?.message || "Could not delete this chat from the cloud.", "err");
-          return;
-        }
       }
       const notebookWasOpen = document.body.classList.contains("notebook-open");
       const openNotebookId = getActiveNotebookId();

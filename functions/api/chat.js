@@ -5,7 +5,6 @@ import path from 'node:path';
 import { getMessaging } from 'firebase-admin/messaging';
 import { getCloudRunKv } from '../cloud-run-store.js';
 import { getFirebaseAdminApp, requireFirebaseUser } from '../firebase-auth.js';
-import { beginFirebaseChatTurn, appendFirebaseAssistantChunk, finishFirebaseAssistantTurn, touchFirebaseAssistantTurn } from '../trux-chat-store.js';
 import { listAvailableGeminiModels } from '../vertex-model-catalog.js';
 import { getProcessedText } from '../gcs-store.js';
 import {
@@ -84,7 +83,6 @@ function isDeveloperEmail(email) {
 }
 
 
-const CHAT_STORAGE_ENABLED = false; // Temporary fallback: AI generation must not depend on Firebase chat persistence.
 const IMAGE_LIMIT = 15;
 const VIDEO_MODEL = "veo-3.1-fast-generate-001";
 const TRUX_CODE_MODEL = 'gemini-4-argon';
@@ -972,111 +970,43 @@ async function generateVideoWithVertex({
    STREAM RESPONSE HELPER
    ========================================================= */
 
-function createSseResponse(startStreaming, request = null, chatPersistence = null) {
+function createSseResponse(startStreaming, request = null) {
   const stream = new ReadableStream({
     async start(controller) {
       const encoder = new TextEncoder();
       const signal = request?.signal || null;
       let closed = false;
-      let persistenceError = null;
       let eventQueue = Promise.resolve();
+
       const enqueue = payload => {
         if (closed) return;
         try { controller.enqueue(encoder.encode('data: ' + JSON.stringify(payload) + '\n\n')); }
         catch { /* Client disconnects propagate via the request abort signal. */ }
       };
-      // Serializes stream events and durably writes each chunk before emitting it.
+
+      // Serialize events so asynchronous model/tool work cannot reorder response packets.
       const send = payload => {
-        const task = eventQueue.then(async () => {
-          if (closed || persistenceError) return;
-          try {
-            if (chatPersistence && payload?.type === 'chunk') {
-              await appendFirebaseAssistantChunk(chatPersistence, payload.text);
-            } else if (chatPersistence && payload?.type === 'final') {
-              await finishFirebaseAssistantTurn(chatPersistence, payload.text, 'complete');
-            } else if (chatPersistence && payload?.type === 'result') {
-              const reply = String(payload.reply || 'Generation completed.');
-              const media = payload.video && typeof payload.video === 'object'
-                ? { type: 'video', url: payload.video.url, mimeType: payload.video.mimeType || 'video/mp4' }
-                : null;
-              await finishFirebaseAssistantTurn(chatPersistence, reply, 'complete', '', media);
-            } else if (chatPersistence && payload?.type === 'error') {
-              await finishFirebaseAssistantTurn(
-                chatPersistence, chatPersistence.assistantText || '',
-                signal?.aborted ? 'stopped' : 'error', payload.error
-              );
-            }
-            enqueue(payload);
-          } catch (error) {
-            persistenceError = error;
-            console.error('[chat-storage] Could not persist stream event:', error?.message || error);
-            try {
-              if (chatPersistence?.status === 'streaming') {
-                await finishFirebaseAssistantTurn(
-                  chatPersistence, chatPersistence.assistantText || '',
-                  signal?.aborted ? 'stopped' : 'error',
-                  'Response streaming stopped because chat storage became unavailable.'
-                );
-              }
-            } catch (finishError) {
-              console.error('[chat-storage] Could not mark failed turn:', finishError?.message || finishError);
-            }
-            enqueue({ type: 'error', error: 'Chat storage became unavailable. The response was stopped to avoid losing streamed text.' });
-          }
+        const task = eventQueue.then(() => {
+          if (!closed) enqueue(payload);
         });
-        eventQueue = task.catch(error => { persistenceError = persistenceError || error; });
-        return eventQueue.then(() => !persistenceError);
+        eventQueue = task.catch(() => {});
+        return eventQueue.then(() => !closed);
       };
 
       let heartbeatCount = 0;
-      let lastLeaseRefresh = Date.now();
       enqueue({ type: 'heartbeat', ts: Date.now(), count: heartbeatCount });
       const heartbeat = setInterval(() => {
-        const now = Date.now();
         heartbeatCount += 1;
-        enqueue({ type: 'heartbeat', ts: now, count: heartbeatCount });
-
-        // Keep the active-turn lease alive during model thinking/tool work, even before the next text chunk.
-        if (chatPersistence?.status === 'streaming' && now - lastLeaseRefresh >= 15000) {
-          lastLeaseRefresh = now;
-          eventQueue = eventQueue.then(async () => {
-            if (closed || persistenceError || chatPersistence.status !== 'streaming') return;
-            try {
-              await touchFirebaseAssistantTurn(chatPersistence);
-            } catch (error) {
-              // The next text write will stop the turn if storage is still unavailable.
-              console.warn('[chat-storage] Could not refresh active-turn lease:', error?.message || error);
-            }
-          }).catch(error => {
-            console.warn('[chat-storage] Lease refresh queue failed:', error?.message || error);
-          });
-        }
+        enqueue({ type: 'heartbeat', ts: Date.now(), count: heartbeatCount });
       }, 3000);
+
       try {
         await startStreaming({ send, signal });
         await eventQueue;
-        if (chatPersistence?.status === 'streaming') {
-          const aborted = !!signal?.aborted;
-          await finishFirebaseAssistantTurn(
-            chatPersistence, chatPersistence.assistantText || '',
-            aborted ? 'stopped' : 'error',
-            aborted ? 'Generation stopped.' : 'The model stream ended without a final response.'
-          );
-          if (!aborted && !persistenceError) enqueue({ type: 'error', error: 'The model stream ended without a final response.' });
-        }
-        if (!signal?.aborted && !persistenceError) enqueue({ type: 'done' });
+        if (!signal?.aborted) enqueue({ type: 'done' });
       } catch (error) {
         await eventQueue;
-        if (!persistenceError && !signal?.aborted) {
-          await send({ type: 'error', error: error?.message || 'Streaming error.' });
-        } else if (chatPersistence?.status === 'streaming') {
-          try {
-            await finishFirebaseAssistantTurn(
-              chatPersistence, chatPersistence.assistantText || '',
-              signal?.aborted ? 'stopped' : 'error', error?.message || 'Streaming error.'
-            );
-          } catch {}
-        }
+        if (!signal?.aborted) await send({ type: 'error', error: error?.message || 'Streaming error.' });
       } finally {
         closed = true;
         clearInterval(heartbeat);
@@ -1357,10 +1287,6 @@ export async function onRequestPost(context) {
       githubBranch,
       notifyOnComplete = true,
       incognito = false,
-      chatId = null,
-      chatTurnId = null,
-      chatTitle = null,
-      chatMetadata = null
     } = body;
 
     if (mode === 'home-prompts') {
@@ -1419,28 +1345,6 @@ export async function onRequestPost(context) {
         }, request);
       }
 
-      let firebaseVideoTurn = null;
-      if (!incognito && CHAT_STORAGE_ENABLED) {
-        if (!chatId || !chatTurnId) {
-          return Response.json({ error: 'Missing chat session identifiers. Please refresh and retry.' }, { status: 400 });
-        }
-        try {
-          firebaseVideoTurn = await beginFirebaseChatTurn({
-            uid: trustedUserId, chatId, turnId: chatTurnId,
-            text: String(message || ''), title: chatTitle, mode: 'video',
-            metadata: chatMetadata, attachments, env
-          });
-        } catch (storageError) {
-          const status = Number(storageError?.status) || 503;
-          console.error('[chat-storage] Could not start video chat turn:', storageError?.message || storageError);
-          return Response.json({
-            error: status === 409
-              ? 'This video request was already saved. Reload the chat before retrying.'
-              : 'Could not save this video request to Firebase. Please retry when chat storage is available.'
-          }, { status, headers: { 'Cache-Control': 'no-store' } });
-        }
-      }
-
       return createSseResponse(async ({send}) => {
         send({type:"status",status:"Starting video generation…"});
         try {
@@ -1454,7 +1358,7 @@ export async function onRequestPost(context) {
         } catch(error) {
           await send({type:"error",error:(error && error.message) || "Video generation failed."});
         }
-      }, request, firebaseVideoTurn);
+      }, request);
     }
 
     /* =====================================================
@@ -1666,29 +1570,6 @@ export async function onRequestPost(context) {
             attachments: effectiveAttachments,
             advancedThinking: effectiveAdvancedThinking,
           });
-    }
-
-    // Store user input before model work; Incognito remains memory-only.
-    let firebaseChatTurn = null;
-    if (!incognito && CHAT_STORAGE_ENABLED) {
-      if (!chatId || !chatTurnId) {
-        return Response.json({ error: 'Missing chat session identifiers. Please refresh and retry.' }, { status: 400 });
-      }
-      try {
-        firebaseChatTurn = await beginFirebaseChatTurn({
-          uid: trustedUserId, chatId, turnId: chatTurnId,
-          text: String(message || ''), title: chatTitle, mode,
-          metadata: chatMetadata, attachments, env
-        });
-      } catch (storageError) {
-        const status = Number(storageError?.status) || 503;
-        console.error('[chat-storage] Could not start chat turn:', storageError?.message || storageError);
-        return Response.json({
-          error: status === 409
-            ? 'This message was already saved. Reload the chat before retrying.'
-            : 'Could not save this message to Firebase. Please retry when chat storage is available.'
-        }, { status, headers: { 'Cache-Control': 'no-store' } });
-      }
     }
 
     return createSseResponse(async ({ send, signal }) => {
@@ -2482,7 +2363,7 @@ export async function onRequestPost(context) {
         }
 
         return;
-    }, request, firebaseChatTurn);
+    }, request);
   } catch (error) {
     console.error('Vertex AI Error:', error);
 
