@@ -465,8 +465,8 @@
       };
     })();
 
-    let legacyCachedChats = store.json("trux_chats", {});
-    let legacyCachedChatsUid = store.json("trux_cached_user", null)?.uid || null;
+    // Chat history is account-scoped in Firestore; discard the obsolete device-only cache.
+    store.removeItem("trux_chats");
     let cloudChatsReady = false;
     let cloudChatsOwnerUid = null;
     let cloudChatLoadGeneration = 0;
@@ -1356,9 +1356,6 @@
       chatSessions = {};
       cloudChatSyncedFingerprints.clear();
       pendingDeletedCloudChatIds.clear();
-      store.removeItem("trux_chats");
-      legacyCachedChats = {};
-      legacyCachedChatsUid = null;
       currentChatId = null;
       cloudChatsReady = !!user && cloudChatsOwnerUid === user.uid;
       startNewChat();
@@ -1847,40 +1844,17 @@
           Object.entries(result.chats).filter(([_, chat]) => isPersistableChatSession(chat))
         );
 
-        // Preserve edits/new chats made while the network read was in flight.
-        // Only local records that differ from their last confirmed cloud version
-        // can override a remote record. Cloud remains authoritative otherwise.
+        // Preserve only in-memory edits made while this Firestore read was in flight.
+        // Firestore is authoritative; a missing remote chat is not restored from device cache.
         const localUnsynced = new Map();
         for(const [id, chat] of Object.entries(chatSessions)) {
           if(!isPersistableChatSession(chat) || pendingDeletedCloudChatIds.has(id)) continue;
-          const serialized = JSON.stringify(chat);
-          if(cloudChatSyncedFingerprints.get(id) !== serialized ||
-             (sameAccount && (result.found !== true || Number(result.unreadableRecords || 0) > 0))) {
-            // If an account with a previously loaded history suddenly looks
-            // completely uninitialized in the bucket, do not treat that empty
-            // response as proof that its known chats should be discarded.
+          if(cloudChatSyncedFingerprints.get(id) !== JSON.stringify(chat)) {
             localUnsynced.set(id, chat);
           }
         }
 
         const nextChats = { ...remoteChats };
-        let legacyMigrationNeeded = false;
-        // One-time migration/recovery: older app versions stored chats in the
-        // browser. Preserve those records if the account bucket has no matching
-        // record, even when a stale/empty manifest exists. After a confirmed
-        // cloud upload the legacy cache is removed; normal loads remain bucket-only.
-        if(legacyCachedChatsUid === uid &&
-           legacyCachedChats && typeof legacyCachedChats === "object" &&
-           !Array.isArray(legacyCachedChats)) {
-          for(const [id, chat] of Object.entries(legacyCachedChats)) {
-            if(isPersistableChatSession(chat) &&
-               !Object.prototype.hasOwnProperty.call(nextChats, id) &&
-               !pendingDeletedCloudChatIds.has(id)) {
-              nextChats[id] = chat;
-              legacyMigrationNeeded = true;
-            }
-          }
-        }
         for(const [id, chat] of localUnsynced) nextChats[id] = chat;
         for(const id of pendingDeletedCloudChatIds) delete nextChats[id];
 
@@ -1906,37 +1880,25 @@
         if(Number(result.unreadableRecords || 0) > 0) {
           toast(
             "Restored the readable chats. " + Number(result.unreadableRecords) +
-            " stored record(s) could not be read; their cloud objects were preserved for recovery.",
+            " stored Firestore record(s) could not be read; those records were left untouched.",
             "err"
           );
         }
 
-        const needsSync = legacyMigrationNeeded ||
+        const needsSync =
           Array.from(localUnsynced.keys()).some(id =>
             JSON.stringify(chatSessions[id]) !== cloudChatSyncedFingerprints.get(id)
-          ) ||
-          pendingDeletedCloudChatIds.size > 0;
-        let legacyCacheSyncConfirmed = false;
+          ) || pendingDeletedCloudChatIds.size > 0;
         if(needsSync) {
           const saved = await syncChatsToCloud(true);
           if(!saved) {
             toast("Your chats are shown, but cloud sync is still pending. Keep TruX open and check your connection.", "err");
             return true;
           }
-          legacyCacheSyncConfirmed = legacyMigrationNeeded;
-        }
-
-        // Do not erase a recoverable legacy cache while the server reports that
-        // its old bucket migration is still pending. The cache is cleared only
-        // after migration completes or those legacy chats were confirmed in Firestore.
-        if(result.migrationPending !== true || legacyCacheSyncConfirmed) {
-          store.removeItem("trux_chats");
-          legacyCachedChats = {};
-          legacyCachedChatsUid = null;
         }
 
         // The conversation body was always cleared at startup, even after its
-        // messages loaded successfully from Cloud Storage. Restore the last
+        // messages loaded successfully from Firestore. Restore the last
         // active conversation without keeping message content on this device.
         if(!currentChatId) {
           const activeKey = "trux_last_active_chat_id:" + uid;

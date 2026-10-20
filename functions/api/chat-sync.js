@@ -4,7 +4,6 @@ import { getFirestore } from 'firebase-admin/firestore';
 import crypto from 'node:crypto';
 import { gzip as gzipCallback, gunzip as gunzipCallback } from 'node:zlib';
 import { promisify } from 'node:util';
-import { downloadBuffer, getBucket, listObjects } from '../gcs-store.js';
 
 const gzip = promisify(gzipCallback);
 const gunzip = promisify(gunzipCallback);
@@ -36,8 +35,7 @@ function isPersistableChat(chat) {
 }
 
 function firestore() {
-  // Authenticated chat requests initialize this app via firebase-auth.js, while
-  // the secret-protected one-time migration route can run without a user token.
+  // Authenticated chat requests initialize this app via firebase-auth.js.
   const app = getApps()[0] || initializeApp({ credential: applicationDefault() });
   return getFirestore(app);
 }
@@ -46,45 +44,12 @@ function chatCollection(uid) {
   return firestore().collection('users').doc(uid).collection('chats');
 }
 
-function accountManifest(uid) {
-  return firestore().collection('users').doc(uid).collection('chatState').doc('manifest');
-}
-
 function chatDocumentId(chatId) {
   return crypto.createHash('sha256').update(String(chatId)).digest('hex');
 }
 
 function chatDocument(uid, chatId) {
   return chatCollection(uid).doc(chatDocumentId(chatId));
-}
-
-function accountBucketPrefix(uid) {
-  return 'chat-state/' + uid + '/';
-}
-
-async function listLegacyObjects(env, prefix) {
-  try {
-    return await listObjects(env, prefix);
-  } catch (error) {
-    // A bucket removed after migration is an empty legacy source, not a reason
-    // to make Firestore-backed chats unavailable. Permission and outage errors
-    // still fail closed so they cannot be mistaken for empty history.
-    if (Number(error?.code) === 404 || error?.code === 'ENOENT') return [];
-    throw error;
-  }
-}
-
-function accountBackupMatches(name, uid) {
-  const parts = String(name || '').split('/');
-  if (parts[0] !== 'chat-backups' || parts.length < 3) return false;
-  return parts[2] === uid || parts[2] === uid + '.json.gz';
-}
-
-function backupAccountUid(name) {
-  const parts = String(name || '').split('/');
-  if (parts[0] !== 'chat-backups' || parts.length < 3) return null;
-  const owner = parts[2];
-  return owner.endsWith('.json.gz') ? (owner.slice(0, -8) || null) : (owner || null);
 }
 
 function bufferFromFirestore(value) {
@@ -276,177 +241,6 @@ async function readChatDocument(snapshot, uid) {
   return { chatId, chat, savedAt: String(record.savedAt || '') };
 }
 
-async function readGzipJson(env, objectKey) {
-  // GCS may transparently decompress objects carrying Content-Encoding: gzip.
-  const downloaded = await downloadBuffer(env, objectKey);
-  try {
-    return JSON.parse(downloaded.toString('utf8'));
-  } catch {
-    return JSON.parse((await gunzip(downloaded)).toString('utf8'));
-  }
-}
-
-function validLegacySnapshot(value, uid) {
-  return isObject(value) && (!value.userId || value.userId === uid) && isObject(value.chats);
-}
-
-async function removeAccountBucketChatData(env, uid, files = null, backups = null) {
-  const sourceFiles = files || await listLegacyObjects(env, accountBucketPrefix(uid));
-  const backupFiles = backups || await listLegacyObjects(env, 'chat-backups/');
-  const ownedBackups = backupFiles.filter(file => accountBackupMatches(file.name, uid));
-  const refs = sourceFiles.map(file => getBucket(env).file(file.name))
-    .concat(ownedBackups.map(file => getBucket(env).file(file.name)));
-  for (let start = 0; start < refs.length; start += 100) {
-    await Promise.all(refs.slice(start, start + 100).map(ref => ref.delete({ ignoreNotFound: true })));
-  }
-  return { sourceObjectsDeleted: sourceFiles.length, backupObjectsDeleted: ownedBackups.length };
-}
-
-async function readLatestBackupChats(env, uid, backupFiles, knownIds) {
-  const owned = backupFiles.filter(file => accountBackupMatches(file.name, uid));
-  if (!owned.length) return { found: false, imported: 0 };
-
-  // Use one consistent backup date only. Combining historical snapshots could
-  // resurrect conversations that the account owner intentionally deleted.
-  const latestDate = owned.map(file => String(file.name).split('/')[1] || '')
-    .filter(Boolean).sort().at(-1);
-  if (!latestDate) return { found: false, imported: 0 };
-
-  const latest = owned.filter(file => String(file.name).split('/')[1] === latestDate);
-  const chatFiles = latest.filter(file => {
-    const parts = String(file.name).split('/');
-    return parts[2] === uid && parts[3] === 'chats' && parts[4];
-  });
-  let imported = 0;
-  for (const file of chatFiles) {
-    const record = await readGzipJson(env, file.name);
-    if (!isObject(record) || (record.userId && record.userId !== uid) ||
-        !record.chatId || !isPersistableChat(record.chat)) {
-      throw new Error('A recent account chat backup is invalid; it was preserved.');
-    }
-    const id = String(record.chatId);
-    if (!knownIds.has(id)) {
-      await writeChat(uid, id, record.chat, { savedAt: record.savedAt });
-      knownIds.add(id);
-      imported++;
-    }
-  }
-
-  const legacyName = 'chat-backups/' + latestDate + '/' + uid + '.json.gz';
-  const legacyFile = latest.find(file => file.name === legacyName);
-  if (legacyFile) {
-    const legacy = await readGzipJson(env, legacyName);
-    if (!validLegacySnapshot(legacy, uid)) {
-      throw new Error('The recent account chat backup snapshot is invalid; it was preserved.');
-    }
-    for (const [rawId, chat] of Object.entries(legacy.chats)) {
-      const id = String(rawId || '');
-      if (id && !knownIds.has(id) && isPersistableChat(chat)) {
-        await writeChat(uid, id, chat, { savedAt: legacy.savedAt });
-        knownIds.add(id);
-        imported++;
-      }
-    }
-  }
-  return { found: true, imported };
-}
-
-async function migrateBucketChatHistory(env, uid, existingDocs, inventory = null) {
-  const manifestRef = accountManifest(uid);
-  const manifestSnapshot = await manifestRef.get();
-  if (manifestSnapshot.exists && manifestSnapshot.data()?.bucketMigrationComplete === true) {
-    return { complete: true, imported: 0 };
-  }
-
-  const [sourceFiles, allBackupFiles] = inventory
-    ? [
-        inventory.sourceFiles.filter(file => String(file.name).startsWith(accountBucketPrefix(uid))),
-        inventory.backupFiles
-      ]
-    : await Promise.all([
-        listLegacyObjects(env, accountBucketPrefix(uid)),
-        listLegacyObjects(env, 'chat-backups/')
-      ]);
-  const knownIds = new Set();
-  const savedAtById = new Map();
-  for (const doc of existingDocs.docs) {
-    const data = doc.data() || {};
-    const id = String(data.chatId || '');
-    if (!id) continue;
-    knownIds.add(id);
-    savedAtById.set(id, String(data.savedAt || ''));
-  }
-  const shouldImport = (id, savedAt) => {
-    if (!knownIds.has(id)) return true;
-    const incoming = String(savedAt || '');
-    return !!incoming && incoming > String(savedAtById.get(id) || '');
-  };
-  const markImported = (id, savedAt) => {
-    knownIds.add(id);
-    savedAtById.set(id, String(savedAt || ''));
-  };
-  const liveChatFiles = sourceFiles.filter(file => String(file.name).startsWith(accountBucketPrefix(uid) + 'chats/'));
-  const legacyFile = sourceFiles.find(file => file.name === accountBucketPrefix(uid) + 'current.json.gz');
-  const hasLiveChatStorage = liveChatFiles.length > 0 || !!legacyFile;
-  let imported = 0;
-
-  // Prefer the live per-chat objects over an older all-chats snapshot.
-  for (const file of liveChatFiles) {
-    const record = await readGzipJson(env, file.name);
-    if (!isObject(record) || (record.userId && record.userId !== uid) ||
-        !record.chatId || !isPersistableChat(record.chat)) {
-      throw new Error('An existing account chat record is invalid; its bucket object was preserved.');
-    }
-    const id = String(record.chatId);
-    const recordSavedAt = String(record.savedAt || '');
-    if (shouldImport(id, recordSavedAt)) {
-      await writeChat(uid, id, record.chat, { savedAt: recordSavedAt });
-      markImported(id, recordSavedAt);
-      imported++;
-    }
-  }
-
-  if (legacyFile) {
-    const legacy = await readGzipJson(env, legacyFile.name);
-    if (!validLegacySnapshot(legacy, uid)) {
-      throw new Error('The existing account chat snapshot is invalid; its bucket object was preserved.');
-    }
-    for (const [rawId, chat] of Object.entries(legacy.chats)) {
-      const id = String(rawId || '');
-      const recordSavedAt = String(legacy.savedAt || '');
-      if (id && isPersistableChat(chat) && shouldImport(id, recordSavedAt)) {
-        await writeChat(uid, id, chat, { savedAt: recordSavedAt });
-        markImported(id, recordSavedAt);
-        imported++;
-      }
-    }
-  }
-
-  // Recover from the most recent backup only if both Firestore and the live
-  // bucket chat area are empty. This avoids resurrecting older deleted chats.
-  let backupRecovery = { found: false, imported: 0 };
-  if (!hasLiveChatStorage && knownIds.size === 0) {
-    backupRecovery = await readLatestBackupChats(env, uid, allBackupFiles, knownIds);
-    imported += backupRecovery.imported;
-  }
-
-  // Data has been committed to Firestore before any legacy source is removed.
-  // If cleanup fails, leave the migration marker unset so the next read retries.
-  const removed = await removeAccountBucketChatData(env, uid, sourceFiles, allBackupFiles);
-  await manifestRef.set({
-    schemaVersion: 1,
-    userId: uid,
-    bucketMigrationComplete: true,
-    migrationCompletedAt: new Date().toISOString(),
-    importedChats: imported,
-    legacySourceObjectsDeleted: removed.sourceObjectsDeleted,
-    legacyBackupObjectsDeleted: removed.backupObjectsDeleted,
-    backupRecoveryUsed: backupRecovery.found,
-    legacyCleanupPending: false
-  });
-  return { complete: true, imported, backupRecoveryUsed: backupRecovery.found };
-}
-
 async function deleteChatWithData(ref) {
   // Serialize a delete with concurrent saves to this chat. Parent and current
   // chunk references change atomically, so a stale cleanup cannot break a new save.
@@ -503,133 +297,10 @@ async function deleteAllFirestoreChats(uid) {
   return snapshot.size;
 }
 
-export async function migrateAllBucketChats(env) {
-  const migrationRef = firestore().collection('_system').doc('chatHistoryGcsMigrationV1');
-  const previous = await migrationRef.get();
-  if (previous.exists && previous.data()?.complete === true) {
-    return { complete: true, alreadyCompleted: true, accountsMigrated: 0, chatsImported: 0 };
-  }
-
-  const [sourceFiles, backupFiles] = await Promise.all([
-    listLegacyObjects(env, 'chat-state/'),
-    listLegacyObjects(env, 'chat-backups/')
-  ]);
-  const inventory = { sourceFiles, backupFiles };
-  const accountIds = new Set();
-
-  for (const file of sourceFiles) {
-    const match = String(file.name || '').match(/^chat-state\/([^/]+)\//);
-    if (match) accountIds.add(match[1]);
-  }
-  for (const file of backupFiles) {
-    const uid = backupAccountUid(file.name);
-    if (uid) accountIds.add(uid);
-  }
-
-  let accountsMigrated = 0;
-  let chatsImported = 0;
-  for (const uid of [...accountIds].sort()) {
-    const manifestRef = accountManifest(uid);
-    const manifestSnapshot = await manifestRef.get();
-    const alreadyMigrated = manifestSnapshot.exists &&
-      manifestSnapshot.data()?.bucketMigrationComplete === true;
-    const accountObjects = sourceFiles.filter(file => String(file.name).startsWith(accountBucketPrefix(uid)));
-    const hasBackupObjects = backupFiles.some(file => accountBackupMatches(file.name, uid));
-
-    if (alreadyMigrated) {
-      // A previously completed account is cleanup-only: never re-import its
-      // older copies, which could otherwise resurrect a deleted conversation.
-      if (accountObjects.length || hasBackupObjects ||
-          manifestSnapshot.data()?.legacyCleanupPending === true) {
-        const removed = await removeAccountBucketChatData(env, uid, accountObjects, backupFiles);
-        await manifestRef.set({
-          legacyCleanupPending: false,
-          cleanupCompletedAt: new Date().toISOString(),
-          cleanupSourceObjectsDeleted: removed.sourceObjectsDeleted,
-          cleanupBackupObjectsDeleted: removed.backupObjectsDeleted
-        }, { merge: true });
-      }
-      continue;
-    }
-
-    const existingDocs = await chatCollection(uid).get();
-    const result = await migrateBucketChatHistory(env, uid, existingDocs, inventory);
-    accountsMigrated++;
-    chatsImported += Number(result.imported || 0);
-  }
-
-  const [remainingSources, remainingBackups] = await Promise.all([
-    listLegacyObjects(env, 'chat-state/'),
-    listLegacyObjects(env, 'chat-backups/')
-  ]);
-  if (remainingSources.length || remainingBackups.length) {
-    throw new Error('Legacy chat objects remain. The global migration marker was not completed.');
-  }
-
-  await migrationRef.set({
-    schemaVersion: 1,
-    complete: true,
-    accountsSeen: accountIds.size,
-    accountsMigrated,
-    chatsImported,
-    legacyObjectsRemaining: 0,
-    completedAt: new Date().toISOString()
-  });
-  return {
-    complete: true,
-    alreadyCompleted: false,
-    accountsSeen: accountIds.size,
-    accountsMigrated,
-    chatsImported,
-    legacyObjectsRemaining: 0
-  };
-}
-
 export async function onRequestGet({ request, env }) {
   const user = await requireFirebaseUser(request, env);
   const uid = user.uid;
-  const manifestRef = accountManifest(uid);
-
-  let docs = await chatCollection(uid).get();
-  let manifest = await manifestRef.get();
-  let migrationPending = false;
-  if (!manifest.exists || manifest.data()?.bucketMigrationComplete !== true) {
-    try {
-      await migrateBucketChatHistory(env, uid, docs);
-      docs = await chatCollection(uid).get();
-      manifest = await manifestRef.get();
-    } catch (error) {
-      // Legacy bucket access must not hide conversations already committed to
-      // Firestore. Only fail the read when Firestore is empty too, because in that
-      // case the bucket may be the only remaining copy of the account history.
-      migrationPending = true;
-      console.warn('[chat-sync] Legacy chat migration remains pending:', String(error?.message || error));
-      if (docs.size === 0) {
-        return jsonResponse({
-          ok: false,
-          error: 'Chat history migration could not be completed. Existing bucket data was preserved; retrying is safe.'
-        }, 503);
-      }
-    }
-  }
-
-  // A clear operation records its tombstone before bucket cleanup. Retry that
-  // cleanup on later reads without importing old data or blocking Firestore reads.
-  if (manifest.exists && manifest.data()?.bucketMigrationComplete === true &&
-      manifest.data()?.legacyCleanupPending === true) {
-    try {
-      const removed = await removeAccountBucketChatData(env, uid);
-      await manifestRef.set({
-        legacyCleanupPending: false,
-        cleanupCompletedAt: new Date().toISOString(),
-        cleanupSourceObjectsDeleted: removed.sourceObjectsDeleted,
-        cleanupBackupObjectsDeleted: removed.backupObjectsDeleted
-      }, { merge: true });
-      manifest = await manifestRef.get();
-    } catch (error) {
-      console.warn('[chat-sync] Legacy bucket cleanup will be retried:', String(error?.message || error));
-    }
-  }
+  const docs = await chatCollection(uid).get();
 
   const chats = {};
   let savedAt = null;
@@ -656,11 +327,9 @@ export async function onRequestGet({ request, env }) {
     }
   }
 
-  const migrationComplete = manifest.exists && manifest.data()?.bucketMigrationComplete === true;
   return jsonResponse({
     ok: true,
-    found: docs.size > 0 || migrationComplete,
-    migrationPending,
+    found: docs.size > 0,
     userId: uid,
     savedAt,
     latestChatId,
@@ -689,56 +358,12 @@ export async function onRequestPost({ request, env }) {
 
   if (body?.action === 'clear') {
     const deleted = await deleteAllFirestoreChats(uid);
-    const manifestRef = accountManifest(uid);
-    // Persist the tombstone before attempting legacy cleanup, so old bucket
-    // copies can never be re-imported after the owner clears their history.
-    await manifestRef.set({
-      schemaVersion: 1,
-      userId: uid,
-      bucketMigrationComplete: true,
-      legacyCleanupPending: true,
-      clearedAt: new Date().toISOString()
-    });
-    let legacyCleanupPending = false;
-    let legacyObjectsDeleted = 0;
-    try {
-      const removed = await removeAccountBucketChatData(env, uid);
-      legacyObjectsDeleted = removed.sourceObjectsDeleted + removed.backupObjectsDeleted;
-    } catch (error) {
-      legacyCleanupPending = true;
-      console.warn('[chat-sync] Firestore was cleared, but legacy bucket cleanup is pending:',
-        String(error?.message || error));
-    }
-    await manifestRef.set({
-      legacyCleanupPending,
-      cleanupCompletedAt: legacyCleanupPending ? null : new Date().toISOString()
-    }, { merge: true });
     return jsonResponse({
       ok: true,
       cleared: true,
       deleted,
-      legacyObjectsDeleted,
-      legacyCleanupPending,
       savedAt: new Date().toISOString()
     });
-  }
-
-  // Normally the signed-in startup GET performs this one-time migration. Keep
-  // POST safe for direct callers too, without ever writing new chats to GCS.
-  const manifestRef = accountManifest(uid);
-  const manifest = await manifestRef.get();
-  let bucketMigrationComplete = manifest.exists && manifest.data()?.bucketMigrationComplete === true;
-  if (!bucketMigrationComplete) {
-    try {
-      const existing = await chatCollection(uid).get();
-      await migrateBucketChatHistory(env, uid, existing);
-      bucketMigrationComplete = true;
-    } catch (error) {
-      // Firestore writes remain available if the retired legacy bucket is
-      // unavailable. Leave the migration marker unset so recovery can retry.
-      console.warn('[chat-sync] Legacy migration deferred; continuing with Firestore save:',
-        String(error?.message || error));
-    }
   }
 
   const chats = body?.chats;
@@ -775,13 +400,7 @@ export async function onRequestPost({ request, env }) {
     await deleteChatWithData(ref);
   }
 
-  const manifestUpdate = {
-    schemaVersion: 1,
-    userId: uid,
-    lastChatWriteAt: new Date().toISOString()
-  };
-  if (bucketMigrationComplete) manifestUpdate.bucketMigrationComplete = true;
-  await manifestRef.set(manifestUpdate, { merge: true });
+
 
   return jsonResponse({
     ok: true,
