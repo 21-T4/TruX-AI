@@ -469,8 +469,6 @@
       };
     })();
 
-    // Chat history is account-scoped in Firestore; discard the obsolete device-only cache.
-    store.removeItem("trux_chats");
     let cloudChatsReady = false;
     let cloudChatsOwnerUid = null;
     let cloudChatLoadState = "signed-out";
@@ -2019,16 +2017,18 @@
         // The conversation body was always cleared at startup, even after its
         // messages loaded successfully from Firestore. Restore the last
         // active conversation without keeping message content on this device.
-        if(!currentChatId) {
-          const activeKey = "trux_last_active_chat_id:" + uid;
-          const suppressKey = "trux_suppress_latest_chat_restore:" + uid;
-          const rememberedId = store.getItem(activeKey);
-          const suppressLatest = store.getItem(suppressKey) === "1";
-          const latestId = result.latestChatId;
-          const restoreId = (rememberedId && chatSessions[rememberedId])
-            ? rememberedId
-            : (!suppressLatest && latestId && chatSessions[latestId] ? latestId : null);
-          if(restoreId) loadChatSession(restoreId);
+        const activeKey = "trux_last_active_chat_id:" + uid;
+        const suppressKey = "trux_suppress_latest_chat_restore:" + uid;
+        const rememberedId = store.getItem(activeKey);
+        const suppressLatest = store.getItem(suppressKey) === "1";
+        const latestId = result.latestChatId;
+        const targetChatId = currentChatId && chatSessions[currentChatId]
+          ? currentChatId
+          : ((rememberedId && chatSessions[rememberedId])
+              ? rememberedId
+              : (!suppressLatest && latestId && chatSessions[latestId] ? latestId : null));
+        if(targetChatId) {
+          loadChatSession(targetChatId);
         }
         return true;
       } catch(error) {
@@ -2041,9 +2041,7 @@
           updateCloudChatStatus("error", cloudChatStatusMessage);
           renderSidebar();
           console.warn("TruX could not load account chat history from Firestore:", error?.status || "", error?.message || error);
-          if(!isRetry) {
-            toast("Cloud chat history could not be refreshed. Existing chats were preserved; retrying automatically.", "err");
-          }
+          toast("Cloud chat history could not be refreshed (" + (error?.status ? "HTTP " + error.status : "Network Error") + "). Retrying automatically.", "err");
           scheduleCloudChatRetry(uid);
         }
         return false;
