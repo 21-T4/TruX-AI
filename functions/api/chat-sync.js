@@ -324,6 +324,26 @@ export async function onRequestGet({ request, env }) {
     }
   }
 
+  // Do not report a completely unreadable history as a successful empty
+  // snapshot. Otherwise the client treats stored-but-undecodable records as
+  // deleted chats after refresh. Preserve those records and return a retryable
+  // error when there is no readable chat to show.
+  if (docs.size > 0 && Object.keys(chats).length === 0 &&
+      (unreadableRecords > 0 || missingRecords > 0)) {
+    return jsonResponse({
+      ok: false,
+      code: 'CHAT_HISTORY_UNREADABLE',
+      error: 'Saved chats exist but could not be decoded. No chat records were deleted.',
+      found: true,
+      storedRecords: docs.size,
+      unreadableRecords,
+      missingRecords,
+      savedAt: null,
+      latestChatId: null,
+      chats: {}
+    }, 503);
+  }
+
   return jsonResponse({
     ok: true,
     found: docs.size > 0,

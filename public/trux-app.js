@@ -232,6 +232,7 @@
           cloudChatLoadGeneration += 1;
           cloudChatsReady = false;
           cloudChatsOwnerUid = null;
+          cloudChatLoadState = "signed-out";
           chatSessions = {};
           cloudChatSyncedFingerprints.clear();
           pendingDeletedCloudChatIds.clear();
@@ -469,6 +470,7 @@
     store.removeItem("trux_chats");
     let cloudChatsReady = false;
     let cloudChatsOwnerUid = null;
+    let cloudChatLoadState = "signed-out";
     let cloudChatLoadGeneration = 0;
     const cloudChatSyncedFingerprints = new Map();
     const pendingDeletedCloudChatIds = new Set();
@@ -1810,6 +1812,7 @@
       // the read succeeds made a transient Storage/auth error look like data loss.
       cloudChatsReady = false;
       cloudChatsOwnerUid = uid;
+      cloudChatLoadState = "loading";
       if(!sameAccount) {
         chatSessions = {};
         cloudChatSyncedFingerprints.clear();
@@ -1874,6 +1877,7 @@
         cloudChatRetryTimer = null;
         cloudChatRetryDelayMs = 1500;
         cloudChatsReady = true;
+        cloudChatLoadState = "ready";
         renderSidebar();
         if(isRetry) toast("Cloud chat history restored.", "ok");
         updateTruxStorageSummary();
@@ -1917,6 +1921,7 @@
           // Never replace available in-memory history with an empty list on a
           // transient cloud read failure.
           cloudChatsReady = false;
+          cloudChatLoadState = "error";
           renderSidebar();
           console.warn("TruX could not load account chat history from Firestore:", error?.message || error);
           if(!isRetry) {
@@ -6798,9 +6803,15 @@
 
       hL.innerHTML = "";
       if(!ids.length) {
-        hL.innerHTML = q
-          ? '<div class="empty">No chats match <b>' + escapeHtml(q) + '</b>.</div>'
-          : '<div class="empty">Your chats will appear here.<br>Start a new chat to begin.</div>';
+        if(q) {
+          hL.innerHTML = '<div class="empty">No chats match <b>' + escapeHtml(q) + '</b>.</div>';
+        } else if(auth?.currentUser && cloudChatLoadState === "loading") {
+          hL.innerHTML = '<div class="empty">Loading chats from your TruX account…</div>';
+        } else if(auth?.currentUser && cloudChatLoadState === "error") {
+          hL.innerHTML = '<div class="empty">Could not load your saved chats. TruX is retrying the cloud connection. Your chats have not been deleted.</div>';
+        } else {
+          hL.innerHTML = '<div class="empty">Your chats will appear here.<br>Start a new chat to begin.</div>';
+        }
         return;
       }
 
