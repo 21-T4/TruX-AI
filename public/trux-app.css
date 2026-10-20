@@ -4615,7 +4615,7 @@ body.subscription-page-active .subscription-workspace{display:block}
   z-index: 20;
 }
 .cloud-chat-status[data-state="error"],
-.cloud-chat-status[data-state="sync-error] {
+.cloud-chat-status[data-state="sync-error"] {
   border-color: rgba(255, 110, 110, .45);
 }
 .cloud-chat-status-copy {
