@@ -132,6 +132,175 @@
       return response;
     }
 
+    function chatMetadataForSession(chat) {
+      const item = chat && typeof chat === "object" ? chat : {};
+      return {
+        title: String(item.title || "New chat").slice(0, 80),
+        mode: ["chat", "coding", "deep-research"].includes(item.mode) ? item.mode : "chat",
+        pinned: item.pinned === true,
+        notebookId: typeof item.notebookId === "string" && item.notebookId ? item.notebookId : null,
+        notebookUnassigned: item.notebookUnassigned === true
+      };
+    }
+    function chatMetadataFingerprint(chat) { return JSON.stringify(chatMetadataForSession(chat)); }
+
+    async function refreshCloudChatSessions(user) {
+      const uid = String(user?.uid || "");
+      if (!uid || auth?.currentUser?.uid !== uid || chatSessionsOwnerUid !== uid) return;
+      chatHistoryLoading = true;
+      chatHistoryLoadError = "";
+      renderSidebar();
+      try {
+        const response = await truxAuthenticatedFetch("/api/chats", {
+          method: "GET", cache: "no-store", headers: { "Accept": "application/json" }
+        }, user);
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || "Could not load saved chats.");
+        if (auth?.currentUser?.uid !== uid || chatSessionsOwnerUid !== uid) return;
+
+        const nextSessions = {};
+        (Array.isArray(payload.chats) ? payload.chats : []).forEach(summary => {
+          if (!summary || typeof summary.id !== "string") return;
+          const existing = chatSessions[summary.id];
+          const session = {
+            ...summary,
+            messages: existing?.cloudStored && existing?.messagesLoaded && Array.isArray(existing.messages) ? existing.messages : [],
+            messagesLoaded: !!(existing?.cloudStored && existing?.messagesLoaded),
+            cloudStored: true
+          };
+          nextSessions[summary.id] = session;
+          chatMetadataFingerprints.set(summary.id, chatMetadataFingerprint(session));
+        });
+        // Retain local unsent drafts and the intentionally memory-only Incognito session.
+        Object.entries(chatSessions).forEach(([id, session]) => {
+          if (session?.incognito) { nextSessions[id] = session; return; }
+          if (!session?.cloudStored && Array.isArray(session?.messages) && session.messages.length) nextSessions[id] = session;
+        });
+        chatSessions = nextSessions;
+        chatHistoryLoadError = "";
+      } catch (error) {
+        if (auth?.currentUser?.uid === uid && chatSessionsOwnerUid === uid) {
+          console.warn("[chat-storage] Could not refresh saved chats:", error?.message || error);
+          chatHistoryLoadError = "Could not load saved chats. Check your connection and refresh to retry.";
+        }
+      } finally {
+        if (auth?.currentUser?.uid === uid && chatSessionsOwnerUid === uid) {
+          chatHistoryLoading = false;
+          renderSidebar();
+        }
+      }
+    }
+
+    function queueCloudChatMetadataSync(chatId) {
+      const initial = chatSessions[chatId];
+      const user = auth?.currentUser;
+      const ownerUid = String(chatSessionsOwnerUid || "");
+      if (!initial || !initial.cloudStored || initial.incognito || !user || user.uid !== ownerUid || incognitoMode) return;
+      const previous = chatMetadataWriteQueues.get(chatId) || Promise.resolve();
+      const task = previous.catch(() => {}).then(async () => {
+        const latest = chatSessions[chatId];
+        if (!latest || !latest.cloudStored || latest.incognito || auth?.currentUser?.uid !== ownerUid || chatSessionsOwnerUid !== ownerUid) return;
+        const metadata = chatMetadataForSession(latest);
+        const fingerprint = JSON.stringify(metadata);
+        if (chatMetadataFingerprints.get(chatId) === fingerprint) return;
+        const response = await truxAuthenticatedFetch("/api/chats", {
+          method: "POST", cache: "no-store",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({ action: "metadata", chatId, metadata })
+        }, user);
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || "Could not save chat details.");
+        if (auth?.currentUser?.uid === ownerUid && chatSessionsOwnerUid === ownerUid) {
+          chatMetadataFingerprints.set(chatId, fingerprint);
+          chatHistoryLoadError = "";
+        }
+      });
+      chatMetadataWriteQueues.set(chatId, task);
+      task.catch(error => {
+        console.warn("[chat-storage] Could not save chat metadata:", error?.message || error);
+        if (auth?.currentUser?.uid === ownerUid && chatSessionsOwnerUid === ownerUid) {
+          toast("Could not save chat changes to the cloud. Please retry.", "err");
+        }
+      });
+    }
+
+    async function openTruxRealtimeChatStream(chatId, turnId, user, signal, onEvent) {
+      const url = "/api/chats-stream?chatId=" + encodeURIComponent(chatId) + "&turnId=" + encodeURIComponent(turnId);
+      const response = await truxAuthenticatedFetch(url, {
+        method: "GET", cache: "no-store", headers: { "Accept": "text/event-stream" }, signal
+      }, user);
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.error || "Could not open the saved response stream.");
+      }
+      if (!response.body) throw new Error("Firebase chat stream is unavailable.");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "", sawReady = false, completed = false;
+      let resolveReady, rejectReady, resolveDone, rejectDone;
+      const ready = new Promise((resolve, reject) => { resolveReady = resolve; rejectReady = reject; });
+      const done = new Promise((resolve, reject) => { resolveDone = resolve; rejectDone = reject; });
+      done.catch(() => {});
+      const dispatch = frame => {
+        const data = frame.split(/\r?\n/).filter(line => line.startsWith("data:"))
+          .map(line => line.slice(5).trimStart()).join("\n");
+        if (!data) return;
+        let packet;
+        try { packet = JSON.parse(data); } catch { return; }
+        if (packet.type === "ready") { sawReady = true; resolveReady(); }
+        else if (packet.type === "heartbeat") return;
+        else if (packet.type === "complete") {
+          completed = true;
+          try { onEvent(packet); } catch {}
+          resolveDone(packet);
+        } else if (packet.type === "error") {
+          const error = new Error(packet.error || "Firebase chat stream failed.");
+          if (!sawReady) rejectReady(error);
+          else {
+            try { onEvent({ type: "stream_error", error: error.message }); } catch {}
+            rejectDone(error);
+          }
+        } else { try { onEvent(packet); } catch {} }
+      };
+      const runner = (async () => {
+        try {
+          while (true) {
+            const { value, done: readDone } = await reader.read();
+            if (readDone) break;
+            buffer += decoder.decode(value, { stream: true });
+            const frames = buffer.split(/\r?\n\r?\n/);
+            buffer = frames.pop() || "";
+            frames.forEach(dispatch);
+          }
+          buffer += decoder.decode();
+          if (buffer.trim()) dispatch(buffer);
+          if (!sawReady) rejectReady(new Error("Firebase chat stream closed before it was ready."));
+          if (!completed && !signal?.aborted) {
+            const error = new Error("Firebase chat stream closed before the response was complete.");
+            try { onEvent({ type: "stream_error", error: error.message }); } catch {}
+            rejectDone(error);
+          } else if (!completed && signal?.aborted) {
+            rejectDone(new Error("Firebase chat stream stopped."));
+          }
+        } catch (error) {
+          if (!sawReady) rejectReady(error);
+          else if (!completed) {
+            if (!signal?.aborted) {
+              try { onEvent({ type: "stream_error", error: error?.message || "Firebase chat stream failed." }); } catch {}
+            }
+            rejectDone(error);
+          }
+        } finally { try { reader.releaseLock(); } catch {} }
+      })();
+      try { await ready; }
+      catch (error) { try { await reader.cancel(); } catch {} throw error; }
+      return {
+        done,
+        cancel: async () => { try { await reader.cancel(); } catch {} try { await runner; } catch {} }
+      };
+    }
+
     function updateTruxProfileUI(user) {
       const signedIn = !!user;
       const fallbackAvatar = "https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff";
@@ -235,9 +404,14 @@
             document.body.classList.add("home-active");
           }
           chatSessionsOwnerUid = nextChatOwnerUid;
+          void refreshCloudChatSessions(u);
           renderSidebar();
         } else {
           chatSessionsOwnerUid = null;
+          chatHistoryLoading = false;
+          chatHistoryLoadError = "";
+          chatMetadataFingerprints.clear();
+          chatMetadataWriteQueues.clear();
           chatSessions = {};
           currentChatId = null;
           getEl("chatContainer")?.replaceChildren();
@@ -469,6 +643,10 @@
     })();
 
     let chatSessionsOwnerUid = null;
+    let chatHistoryLoading = false;
+    let chatHistoryLoadError = "";
+    const chatMetadataFingerprints = new Map();
+    const chatMetadataWriteQueues = new Map();
 
     let currentPlanTier = "base",
         workspaceMode = "chat",
@@ -1735,9 +1913,10 @@
       }, 120);
     }
 
-    function saveChatSessions() {
+    function saveChatSessions(changedChatId = currentChatId) {
       if(incognitoMode || (currentChatId && chatSessions[currentChatId]?.incognito)) return;
       queueSidebarSync();
+      if (changedChatId && chatSessions[changedChatId]) queueCloudChatMetadataSync(changedChatId);
     }
 
         function launchIncognitoChat() {
@@ -5001,7 +5180,7 @@
       handleInputChange();
       let voice = wasInputByVoice; wasInputByVoice = false;
 
-      if(!currentChatId) { currentChatId = "chat_" + Date.now(); chatSessions[currentChatId] = { title: basePrompt ? basePrompt.slice(0, 32) : "Query", mode: workspaceMode, notebookId: notebookIdForNewChat(), messages: [] }; }
+      if(!currentChatId) { currentChatId = "chat_" + Date.now(); chatSessions[currentChatId] = { title: basePrompt ? basePrompt.slice(0, 32) : "Query", mode: workspaceMode, notebookId: notebookIdForNewChat(), messages: [], cloudStored: false, messagesLoaded: true }; }
       const turnChatId = currentChatId;
       const turnMode = workspaceMode;
       chatSessions[turnChatId].mode = turnMode;
@@ -5073,6 +5252,10 @@
         advancedThinking: advancedThinkingLevel === "extended" || workspaceMode === "deep-research",
         thinkingLevel: advancedThinkingLevel,
         incognito: !!incognitoMode,
+        chatId: incognitoMode ? null : turnChatId,
+        chatTurnId: incognitoMode ? null : turnContext.turnKey,
+        chatTitle: chatSessions[turnChatId]?.title || (basePrompt ? basePrompt.slice(0, 32) : "Query"),
+        chatMetadata: chatMetadataForSession(chatSessions[turnChatId]),
         history: (() => {
           const prior = (chatSessions[turnChatId]?.messages || []).slice(0, sentMessageIndex);
           const deepMode = workspaceMode === "coding" || workspaceMode === "deep-research";
@@ -5135,7 +5318,7 @@
           if (!requestUser) throw Error("Your session ended. Sign in again to continue.");
           const requestOptions = {
             method: "POST",
-            cache: incognitoMode ? "no-store" : "default",
+            cache: "no-store",
             headers: { "Content-Type": "application/json", "Accept": "text/event-stream" },
             signal: requestController.signal,
             body: JSON.stringify(requestBody)
@@ -5148,8 +5331,29 @@
         }
 
         if(!res.body) throw Error("Streaming body unavailable.");
-        
-        let rd = res.body.getReader(), dec = new TextDecoder(), buf = "", full = "", fin = null;
+
+        let full = "";
+        let firebaseStreamHandle = null;
+        let firebaseStreamUiReady = false;
+        let firebaseStreamEvents = [];
+        let firebaseStreamFailure = "";
+        let realtimeProcessor = null;
+        const receiveRealtimeEvent = event => {
+          if (!firebaseStreamUiReady || !realtimeProcessor) firebaseStreamEvents.push(event);
+          else realtimeProcessor(event);
+        };
+        if (!incognitoMode && requestBody.chatId && requestBody.chatTurnId) {
+          firebaseStreamHandle = await openTruxRealtimeChatStream(
+            requestBody.chatId, requestBody.chatTurnId, requestUser, requestController.signal, receiveRealtimeEvent
+          );
+          const storedSession = chatSessions[requestBody.chatId];
+          if (storedSession && auth?.currentUser?.uid === requestUser.uid && chatSessionsOwnerUid === requestUser.uid) {
+            storedSession.cloudStored = true;
+            storedSession.messagesLoaded = true;
+            chatMetadataFingerprints.set(requestBody.chatId, JSON.stringify(requestBody.chatMetadata));
+          }
+        }
+        let rd = res.body.getReader(), dec = new TextDecoder(), buf = "", fin = null;
         let streamDone = false, finalizedEarly = false, finalizedOnFinal = false;
         // SSE heartbeats keep long-running tool work connected. There is no client-side
         // inactivity timeout; Cloud Run's configured request lifetime is the outer boundary.
@@ -5223,6 +5427,7 @@
             return;
           }
           else if(j.type === "chunk") {
+            if (firebaseStreamHandle) return;
             let piece = j.text || "";
             if (!piece) return;
             full += piece;
@@ -5247,6 +5452,7 @@
               if (status) status.innerText = "Composing your image…";
             }
             if (fin && !imageRoute) {
+              if (firebaseStreamHandle) return;
               if (codingTurn && !finalizedEarly) {
                 finalizedEarly = true;
                 finalizeResponse(id, aid, fin, prompt, voice, turnStreamer, turnSources, turnContext);
@@ -5299,6 +5505,7 @@
           }
           else if(j.type === "done") {
             streamDone = true;
+            if (firebaseStreamHandle && !imageRoute) return;
             /* A clean EOF is authoritative even if the server omitted a final frame.
                Finalize once here so the caret and Stop control cannot be left active. */
             if (!finalizedEarly && !finalizedOnFinal && !imageRoute) {
@@ -5405,6 +5612,51 @@
           else if(j.type === "error") throw Error(j.error || "Streaming error.");
         }
 
+        realtimeProcessor = function(event) {
+          if (!event || finalizedOnFinal || finalizedEarly) return;
+          if (event.type === "heartbeat" || event.type === "ready") return;
+          if (event.type === "stream_error") {
+            firebaseStreamFailure = String(event.error || "The saved response stream failed.");
+            try { requestController.abort(); } catch {}
+            return;
+          }
+          if (event.type === "chunk") {
+            const piece = String(event.text || "");
+            if (!piece) return;
+            full += piece;
+            sniffRoute();
+            if (!routeSettled || imageRoute) return;
+            vibrateWhenResponseStarts();
+            updateIncompleteTurn(turnContext, full);
+            const renderer = ensureStreamer();
+            if (renderer) {
+              if (!renderer.received) renderer.setText(full);
+              else renderer.push(piece);
+            }
+            return;
+          }
+          if (event.type === "complete") {
+            if (event.status === "error") {
+              firebaseStreamFailure = String(event.error || "The saved chat response failed.");
+              try { requestController.abort(); } catch {}
+              return;
+            }
+            if (typeof event.text === "string" && event.text !== full) {
+              full = event.text;
+              sniffRoute();
+              if (routeSettled && !imageRoute) {
+                updateIncompleteTurn(turnContext, full);
+                const renderer = ensureStreamer();
+                if (renderer) renderer.setText(full);
+              }
+            }
+          }
+        };
+        firebaseStreamUiReady = true;
+        const queuedRealtimeEvents = firebaseStreamEvents;
+        firebaseStreamEvents = [];
+        queuedRealtimeEvents.forEach(event => realtimeProcessor(event));
+
         while(1) {
           if (turnId !== generationEpoch || generationStopRequested) {
             try { await rd.cancel(); } catch {}
@@ -5448,7 +5700,15 @@
           return;
         }
 
-        let text = (fin !== null ? fin : full).trim();
+        if (firebaseStreamHandle && !imageRoute) {
+          const savedCompletion = await firebaseStreamHandle.done;
+          if (firebaseStreamFailure) throw new Error(firebaseStreamFailure);
+          if (!savedCompletion || savedCompletion.status !== "complete") {
+            throw new Error(savedCompletion?.error || "The saved response did not complete successfully.");
+          }
+        }
+
+        let text = (firebaseStreamHandle && !imageRoute ? full : (fin !== null ? fin : full)).trim();
          if(!text) throw Error("The model completed the request without returning a final response.");
         sniffRoute();
         const routedImagePrompt = extractImageRoutePrompt(text, prompt);
@@ -5491,6 +5751,8 @@
         clearTurnStreamer(false);
         return;
         } catch(e) {
+          try { await firebaseStreamHandle?.cancel(); } catch {}
+          if (firebaseStreamFailure) e = new Error(firebaseStreamFailure);
           if (turnId !== generationEpoch) return;
           if (row._backgroundHandover) return;
           // The authoritative answer has already been rendered; a late stream
@@ -6241,7 +6503,7 @@
       const chat = chatSessions[id];
       if(!chat || chat.incognito) return;
       chat.pinned = !chat.pinned;
-      saveChatSessions();
+      saveChatSessions(id);
       renderSidebar();
       if(document.body.classList.contains("notebook-open")) renderNotebookWorkspace(getActiveNotebookId());
       toast(chat.pinned ? "Chat pinned to the top of Recent." : "Chat unpinned.", "ok");
@@ -6255,7 +6517,7 @@
       const cleanTitle = String(nextTitle).trim().slice(0, 80);
       if(!cleanTitle) return toast("Chat title cannot be empty.", "err");
       chat.title = cleanTitle;
-      saveChatSessions();
+      saveChatSessions(id);
       renderSidebar();
       if(document.body.classList.contains("notebook-open")) renderNotebookWorkspace(getActiveNotebookId());
       toast("Conversation renamed.", "ok");
@@ -6267,7 +6529,7 @@
       const notebook = getNotebooks().find(item => item && item.id === chat.notebookId);
       delete chat.notebookId;
       chat.notebookUnassigned = true;
-      saveChatSessions();
+      saveChatSessions(id);
       closeChatContextMenu();
       renderSidebar();
       if(document.body.classList.contains("notebook-open")) renderNotebookWorkspace(getActiveNotebookId());
@@ -6446,7 +6708,7 @@
       const previousNotebookId = chat.notebookId;
       chat.notebookId = notebook.id;
       chat.notebookUnassigned = false;
-      saveChatSessions();
+      saveChatSessions(id);
       closeNotebookMoveModal();
       renderSidebar();
       if(document.body.classList.contains("notebook-open")) {
@@ -6468,6 +6730,10 @@
       if(!ids.length) {
         if(q) {
           hL.innerHTML = '<div class="empty">No chats match <b>' + escapeHtml(q) + '</b>.</div>';
+        } else if (chatHistoryLoading) {
+          hL.innerHTML = '<div class="empty">Loading saved chats…</div>';
+        } else if (chatHistoryLoadError) {
+          hL.innerHTML = '<div class="empty">' + escapeHtml(chatHistoryLoadError) + '</div>';
         } else {
           hL.innerHTML = '<div class="empty">Your chats will appear here.<br>Start a new chat to begin.</div>';
         }
@@ -6588,7 +6854,35 @@
       return active;
     }
 
-    function loadChatSession(id) {
+    async function loadChatSession(id) {
+      if(!chatSessions[id]) return;
+      if (chatSessions[id]?.messagesLoaded !== true) {
+        const requestUser = auth?.currentUser;
+        if (!requestUser || requestUser.uid !== chatSessionsOwnerUid) {
+          toast("Sign in again to load this chat.", "err");
+          return;
+        }
+        try {
+          const response = await truxAuthenticatedFetch("/api/chats?chatId=" + encodeURIComponent(id), {
+            method: "GET", cache: "no-store", headers: { "Accept": "application/json" }
+          }, requestUser);
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok || !payload.chat) throw new Error(payload.error || "Could not load this chat.");
+          if (auth?.currentUser?.uid !== requestUser.uid || chatSessionsOwnerUid !== requestUser.uid) return;
+          chatSessions[id] = {
+            ...payload.chat,
+            messages: Array.isArray(payload.chat.messages) ? payload.chat.messages : [],
+            cloudStored: true,
+            messagesLoaded: true
+          };
+          chatMetadataFingerprints.set(id, chatMetadataFingerprint(chatSessions[id]));
+          chatHistoryLoadError = "";
+        } catch (error) {
+          console.warn("[chat-storage] Could not open chat:", error?.message || error);
+          toast("Could not load this chat from the cloud. Please retry.", "err");
+          return;
+        }
+      }
       if(!chatSessions[id]) return;
       if (activeTurnContext) updateIncompleteTurn(activeTurnContext, activeTurnContext.latestText || "", true);
             generationEpoch += 1;
@@ -6628,8 +6922,33 @@
       // Partial direct-request output is restored from the account's cloud history; no worker is reattached.
       renderSidebar(); if(innerWidth <= 768) closeSidebar(); else setSidebarOpen(true);
     }
-    function deleteChat(id) {
+    async function deleteChat(id) {
       if(!confirm("Delete this chat?")) return;
+      const targetChat = chatSessions[id];
+      if (!targetChat) return;
+      if (isGenerating && activeTurnContext?.chatId === id) {
+        toast("Stop generation before deleting this chat, then retry.", "err");
+        return;
+      }
+      if (targetChat.cloudStored) {
+        const requestUser = auth?.currentUser;
+        if (!requestUser || requestUser.uid !== chatSessionsOwnerUid) {
+          toast("Sign in again before deleting this chat.", "err");
+          return;
+        }
+        try {
+          const response = await truxAuthenticatedFetch("/api/chats?chatId=" + encodeURIComponent(id), {
+            method: "DELETE", cache: "no-store", headers: { "Accept": "application/json" }
+          }, requestUser);
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(payload.error || "Could not delete this chat.");
+          if (auth?.currentUser?.uid !== requestUser.uid || chatSessionsOwnerUid !== requestUser.uid) return;
+        } catch (error) {
+          console.warn("[chat-storage] Could not delete chat:", error?.message || error);
+          toast(error?.message || "Could not delete this chat from the cloud.", "err");
+          return;
+        }
+      }
       const notebookWasOpen = document.body.classList.contains("notebook-open");
       const openNotebookId = getActiveNotebookId();
       delete chatSessions[id];
