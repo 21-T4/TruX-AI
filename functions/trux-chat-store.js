@@ -85,6 +85,17 @@ export function getFirebaseAssistantRefs(uid, chatId, turnId, env = {}) {
   };
 }
 
+export async function touchFirebaseAssistantTurn(context) {
+  if (!context || context.status !== 'streaming') return;
+  const now = Date.now();
+  try {
+    await context.userRoot.child('chats').child(context.chatId).child('turns')
+      .child(context.turnId).update({ updatedAt: now });
+  } catch (error) {
+    throw statusError('Could not refresh the active chat turn lease.', 503, error);
+  }
+}
+
 export async function beginFirebaseChatTurn({
   uid, chatId, turnId, text, title, mode, metadata, attachments, env = {}
 }) {
@@ -179,7 +190,8 @@ export async function appendFirebaseAssistantChunk(context, piece) {
     await context.userRoot.update({
       [messagePath + '/chunks/' + chunkKey]: { sequence, text: chunkText, createdAt: now },
       [messagePath + '/chunkCount']: sequence,
-      [messagePath + '/updatedAt']: now
+      [messagePath + '/updatedAt']: now,
+      ['chats/' + context.chatId + '/turns/' + context.turnId + '/updatedAt']: now
     });
     context.assistantText += chunkText;
     context.chunkCount = sequence;
@@ -316,7 +328,15 @@ export async function deleteFirebaseChat(uid, chatId, env = {}) {
   const safeChatId = validateKey(chatId, 'chat ID');
   const root = userRoot(uid, env);
   const turns = await root.child('chats').child(safeChatId).child('turns').once('value');
-  const active = Object.values(turns.val() || {}).some(turn => turn?.status === 'streaming' || turn?.status === 'starting');
+  const now = Date.now();
+  // The server refreshes this lease while a turn is active. A crashed worker cannot
+  // leave a conversation permanently undeletable.
+  const activeLeaseWindowMs = 90_000;
+  const active = Object.values(turns.val() || {}).some(turn => {
+    const isActive = turn?.status === 'streaming' || turn?.status === 'starting';
+    const lastSeen = Number(turn?.updatedAt || turn?.createdAt) || 0;
+    return isActive && now - lastSeen <= activeLeaseWindowMs;
+  });
   if (active) throw statusError('This chat still has a live response. Stop generation and retry deletion.', 409);
   try {
     await root.update({ ['chats/' + safeChatId]: null, ['chatIndex/' + safeChatId]: null });
