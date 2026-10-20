@@ -180,9 +180,19 @@ async function writeChat(uid, chatId, chat, options = {}) {
 
 async function readChatDocument(snapshot, uid) {
   const record = snapshot.data();
-  if (!isObject(record) || (record.userId && record.userId !== uid)) return null;
+  // Never silently turn stored-but-invalid Firestore documents into an empty
+  // history. The GET handler counts thrown errors and returns a retryable 503
+  // when no readable chat remains, preserving the original records.
+  if (!isObject(record)) {
+    throw new Error('Stored chat record is invalid.');
+  }
+  if (record.userId && record.userId !== uid) {
+    throw new Error('Stored chat owner does not match the signed-in account.');
+  }
   const chatId = String(record.chatId || '');
-  if (!chatId) return null;
+  if (!chatId) {
+    throw new Error('Stored chat record has no chat ID.');
+  }
 
   let payload;
   if (record.storageMode === 'chunks-v2') {
@@ -234,7 +244,9 @@ async function readChatDocument(snapshot, uid) {
 
   const expanded = await gunzip(payload);
   const chat = JSON.parse(expanded.toString('utf8'));
-  if (!isPersistableChat(chat)) return null;
+  if (!isPersistableChat(chat)) {
+    throw new Error('Stored chat payload is not eligible for persistent history.');
+  }
   return { chatId, chat, savedAt: String(record.savedAt || '') };
 }
 
@@ -328,8 +340,7 @@ export async function onRequestGet({ request, env }) {
   // snapshot. Otherwise the client treats stored-but-undecodable records as
   // deleted chats after refresh. Preserve those records and return a retryable
   // error when there is no readable chat to show.
-  if (docs.size > 0 && Object.keys(chats).length === 0 &&
-      (unreadableRecords > 0 || missingRecords > 0)) {
+  if (docs.size > 0 && Object.keys(chats).length === 0) {
     return jsonResponse({
       ok: false,
       code: 'CHAT_HISTORY_UNREADABLE',
