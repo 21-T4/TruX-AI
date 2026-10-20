@@ -5,6 +5,7 @@ import path from 'node:path';
 import { getMessaging } from 'firebase-admin/messaging';
 import { getCloudRunKv } from '../cloud-run-store.js';
 import { getFirebaseAdminApp, requireFirebaseUser } from '../firebase-auth.js';
+import { beginFirebaseChatTurn, appendFirebaseAssistantChunk, finishFirebaseAssistantTurn } from '../trux-chat-store.js';
 import { listAvailableGeminiModels } from '../vertex-model-catalog.js';
 import { getProcessedText } from '../gcs-store.js';
 import {
@@ -367,7 +368,9 @@ function getPushKv(env) {
 
 async function resolveTrustedChatIdentity(request, env) {
   const authorization = String(request?.headers?.get('authorization') || '').trim();
-  if (!/^Bearer\s+\S+$/i.test(authorization)) return null;
+  if (!/^Bearer\s+\S+$/i.test(authorization)) {
+    throw Object.assign(new Error('Authentication required.'), { status: 401 });
+  }
 
   try {
     const verified = await requireFirebaseUser(request, env);
@@ -968,57 +971,101 @@ async function generateVideoWithVertex({
    STREAM RESPONSE HELPER
    ========================================================= */
 
-function createSseResponse(startStreaming, request = null) {
+function createSseResponse(startStreaming, request = null, chatPersistence = null) {
   const stream = new ReadableStream({
     async start(controller) {
       const encoder = new TextEncoder();
-
+      const signal = request?.signal || null;
+      let closed = false;
+      let persistenceError = null;
+      let eventQueue = Promise.resolve();
+      const enqueue = payload => {
+        if (closed) return;
+        try { controller.enqueue(encoder.encode('data: ' + JSON.stringify(payload) + '\n\n')); }
+        catch { /* Client disconnects propagate via the request abort signal. */ }
+      };
+      // Serializes stream events and durably writes each chunk before emitting it.
       const send = payload => {
-        try {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
-        } catch {
-          // Client may have disconnected.
-        }
+        const task = eventQueue.then(async () => {
+          if (closed || persistenceError) return;
+          try {
+            if (chatPersistence && payload?.type === 'chunk') {
+              await appendFirebaseAssistantChunk(chatPersistence, payload.text);
+            } else if (chatPersistence && payload?.type === 'final') {
+              await finishFirebaseAssistantTurn(chatPersistence, payload.text, 'complete');
+            } else if (chatPersistence && payload?.type === 'error') {
+              await finishFirebaseAssistantTurn(
+                chatPersistence, chatPersistence.assistantText || '',
+                signal?.aborted ? 'stopped' : 'error', payload.error
+              );
+            }
+            enqueue(payload);
+          } catch (error) {
+            persistenceError = error;
+            console.error('[chat-storage] Could not persist stream event:', error?.message || error);
+            try {
+              if (chatPersistence?.status === 'streaming') {
+                await finishFirebaseAssistantTurn(
+                  chatPersistence, chatPersistence.assistantText || '',
+                  signal?.aborted ? 'stopped' : 'error',
+                  'Response streaming stopped because chat storage became unavailable.'
+                );
+              }
+            } catch (finishError) {
+              console.error('[chat-storage] Could not mark failed turn:', finishError?.message || finishError);
+            }
+            enqueue({ type: 'error', error: 'Chat storage became unavailable. The response was stopped to avoid losing streamed text.' });
+          }
+        });
+        eventQueue = task.catch(error => { persistenceError = persistenceError || error; });
+        return eventQueue.then(() => !persistenceError);
       };
 
-      // Flush an SSE byte immediately, then continue with a 3s heartbeat.
-      // Frequent heartbeats keep deep TruX-Code runs visibly alive without
-      // changing the model's thinking level.
       let heartbeatCount = 0;
-      send({ type: 'heartbeat', ts: Date.now(), count: heartbeatCount });
+      enqueue({ type: 'heartbeat', ts: Date.now(), count: heartbeatCount });
       const heartbeat = setInterval(() => {
         heartbeatCount += 1;
-        send({ type: 'heartbeat', ts: Date.now(), count: heartbeatCount });
+        enqueue({ type: 'heartbeat', ts: Date.now(), count: heartbeatCount });
       }, 3000);
-
-      const signal = request?.signal || null;
       try {
         await startStreaming({ send, signal });
-        if (!signal?.aborted) send({ type: 'done' });
-        controller.close();
-      } catch (error) {
-        if (!signal?.aborted) {
-          send({ type: 'error', error: error?.message || 'Streaming error.' });
+        await eventQueue;
+        if (chatPersistence?.status === 'streaming') {
+          const aborted = !!signal?.aborted;
+          await finishFirebaseAssistantTurn(
+            chatPersistence, chatPersistence.assistantText || '',
+            aborted ? 'stopped' : 'error',
+            aborted ? 'Generation stopped.' : 'The model stream ended without a final response.'
+          );
+          if (!aborted && !persistenceError) enqueue({ type: 'error', error: 'The model stream ended without a final response.' });
         }
-        try { controller.close(); } catch {}
+        if (!signal?.aborted && !persistenceError) enqueue({ type: 'done' });
+      } catch (error) {
+        await eventQueue;
+        if (!persistenceError && !signal?.aborted) {
+          await send({ type: 'error', error: error?.message || 'Streaming error.' });
+        } else if (chatPersistence?.status === 'streaming') {
+          try {
+            await finishFirebaseAssistantTurn(
+              chatPersistence, chatPersistence.assistantText || '',
+              signal?.aborted ? 'stopped' : 'error', error?.message || 'Streaming error.'
+            );
+          } catch {}
+        }
       } finally {
+        closed = true;
         clearInterval(heartbeat);
+        try { controller.close(); } catch {}
       }
     }
   });
-
   return new Response(stream, {
     status: 200,
     headers: {
       'Content-Type': 'text/event-stream; charset=utf-8',
       'Cache-Control': 'no-store, private, max-age=0, must-revalidate, no-transform',
-      'CDN-Cache-Control': 'no-store',
-      'Surrogate-Control': 'no-store',
-      'Pragma': 'no-cache',
-      'Expires': '0',
-      'Vary': '*',
-      'X-Accel-Buffering': 'no',
-      'Access-Control-Allow-Origin': '*'
+      'CDN-Cache-Control': 'no-store', 'Surrogate-Control': 'no-store',
+      'Pragma': 'no-cache', 'Expires': '0', 'Vary': '*', 'X-Accel-Buffering': 'no'
     }
   });
 }
@@ -1283,7 +1330,12 @@ export async function onRequestPost(context) {
       generateImage: forceImageGen,
       githubRepository,
       githubBranch,
-      notifyOnComplete = true
+      notifyOnComplete = true,
+      incognito = false,
+      chatId = null,
+      chatTurnId = null,
+      chatTitle = null,
+      chatMetadata = null
     } = body;
 
     if (mode === 'home-prompts') {
@@ -1301,23 +1353,19 @@ export async function onRequestPost(context) {
       }
     }
 
-    /*
-     * Authentication is intentionally NOT enforced here.
-     *
-     * If userId exists, it is used for image limits.
-     * Otherwise the request IP is used.
-     */
+    // All account-scoped chat, code, image, and video calls require a verified Firebase ID token.
     const trustedIdentity = await resolveTrustedChatIdentity(request, env);
     const trustedUserId = String(trustedIdentity?.uid || '');
     const requestedUserId = String(userId || '').trim();
 
-    if (requestedUserId && trustedUserId && requestedUserId !== trustedUserId) {
+    if (!trustedUserId) return Response.json({ error: 'Authentication required.' }, { status: 401 });
+    if (requestedUserId && requestedUserId !== trustedUserId) {
       return Response.json({ error: 'Authenticated account does not match the requested user.' }, { status: 403 });
     }
 
-    const developerAccount = !!trustedIdentity && isDeveloperEmail(trustedIdentity.email);
-    const userIdentifier = trustedUserId || (request.headers.get('cf-connecting-ip') || 'anonymous');
-    const effectiveUserId = trustedUserId || null;
+    const developerAccount = isDeveloperEmail(trustedIdentity.email);
+    const userIdentifier = trustedUserId;
+    const effectiveUserId = trustedUserId;
     const effectiveUserEmail = String(trustedIdentity?.email || '');
 
     if (!message && !image && (!Array.isArray(attachments) || attachments.length === 0)) {
@@ -1572,6 +1620,29 @@ export async function onRequestPost(context) {
           });
     }
 
+    // Store user input before model work; Incognito remains memory-only.
+    let firebaseChatTurn = null;
+    if (!incognito) {
+      if (!chatId || !chatTurnId) {
+        return Response.json({ error: 'Missing chat session identifiers. Please refresh and retry.' }, { status: 400 });
+      }
+      try {
+        firebaseChatTurn = await beginFirebaseChatTurn({
+          uid: trustedUserId, chatId, turnId: chatTurnId,
+          text: String(message || ''), title: chatTitle, mode,
+          metadata: chatMetadata, attachments, env
+        });
+      } catch (storageError) {
+        const status = Number(storageError?.status) || 503;
+        console.error('[chat-storage] Could not start chat turn:', storageError?.message || storageError);
+        return Response.json({
+          error: status === 409
+            ? 'This message was already saved. Reload the chat before retrying.'
+            : 'Could not save this message to Firebase. Please retry when chat storage is available.'
+        }, { status, headers: { 'Cache-Control': 'no-store' } });
+      }
+    }
+
     return createSseResponse(async ({ send, signal }) => {
       // Chat retains a neutral waiting indicator; TruX-Code reports actual tool
       // operations and optional model-authored milestones instead of canned stages.
@@ -1764,7 +1835,7 @@ export async function onRequestPost(context) {
           }
 
           // Send answer content immediately without parallel status-model calls.
-          send({ type: 'chunk', text: piece });
+          if (!(await send({ type: 'chunk', text: piece }))) throw new Error('Chat storage failed while saving a response chunk.');
         },
         });
 
@@ -2065,7 +2136,7 @@ export async function onRequestPost(context) {
                   pluginName: String(composioLabel?.toolkitName || 'Plugin'),
                   message: messageText
                 });
-                send({ type: 'chunk', text: '\n\n' + messageText });
+                if (!(await send({ type: 'chunk', text: '\n\n' + messageText }))) throw new Error('Chat storage failed while saving a response chunk.');
                 responseParts.push({
                   functionResponse: {
                     ...(call?.id ? { id: String(call.id) } : {}),
@@ -2106,7 +2177,7 @@ export async function onRequestPost(context) {
                   redirectUrl: callResult?.reconnectUrl || null,
                   message: messageText
                 });
-                send({ type: 'chunk', text: '\n\n' + messageText });
+                if (!(await send({ type: 'chunk', text: '\n\n' + messageText }))) throw new Error('Chat storage failed while saving a response chunk.');
                 responseParts.push({
                   functionResponse: {
                     ...(call?.id ? { id: String(call.id) } : {}),
@@ -2363,11 +2434,12 @@ export async function onRequestPost(context) {
         }
 
         return;
-    }, request);
+    }, request, firebaseChatTurn);
   } catch (error) {
     console.error('Vertex AI Error:', error);
 
-    return Response.json({ error: error.message || 'Server error' }, { status: 500 });
+    const status = Number(error?.status) || 500;
+    return Response.json({ error: status >= 500 ? (status === 503 ? 'A required service is temporarily unavailable.' : 'Server error') : (error.message || 'Request failed') }, { status });
   }
 }
 
