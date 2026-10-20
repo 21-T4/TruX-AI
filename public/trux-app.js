@@ -692,9 +692,19 @@
     applyTruxAccent(store.getItem("trux_accent") || "blue", false);
     
     void initFirebase().catch(error => {
-      console.warn("TruX Firebase initialization failed:", error?.message || error);
+      const detail = String(error?.message || error || "Unknown Firebase initialization error.").slice(0, 260);
+      console.error("TruX Firebase initialization failed:", error);
+      // If Firebase fails before onAuthStateChanged is registered, the normal
+      // signed-out callback never runs. Previously the sidebar stayed on its
+      // generic empty-history text forever with no visible error or retry.
+      cloudChatsReady = false;
+      cloudChatsOwnerUid = null;
+      cloudChatLoadState = "error";
+      cloudChatStatusMessage = "Firebase initialization failed: " + detail;
       markTruxAuthStateReady(null);
       updateTruxProfileUI(null);
+      updateCloudChatStatus("error", cloudChatStatusMessage);
+      renderSidebar();
     });
 
     function updateLocationSettingUI() {
@@ -6932,10 +6942,18 @@
       const retry = document.createElement("button");
       retry.type = "button";
       retry.className = "history-cloud-notice-retry";
-      retry.textContent = state === "sync-error" ? "Retry save" : "Retry cloud history";
+      const authInitializationFailed = !auth && cloudChatLoadState === "error" &&
+        cloudChatStatusMessage.startsWith("Firebase initialization failed:");
+      retry.textContent = state === "sync-error"
+        ? "Retry save"
+        : (authInitializationFailed ? "Reload and retry" : "Retry cloud history");
       retry.onclick = () => {
         const user = auth?.currentUser;
         if(!user) {
+          if(authInitializationFailed) {
+            window.location.reload();
+            return;
+          }
           handleAuthAction();
           return;
         }
@@ -6961,7 +6979,7 @@
       let cloudNoticeShown = false;
       const userSignedIn = !!auth?.currentUser;
       const saveFailed = userSignedIn && cloudChatStatusMessage.startsWith("Cloud save failed");
-      if(!q && userSignedIn && cloudChatLoadState === "error") {
+      if(!q && cloudChatLoadState === "error") {
         appendSidebarCloudNotice(
           hL,
           "error",
@@ -7006,7 +7024,7 @@
             "Cloud history returned 0 chats",
             detail + " If you expected old chats, Cloud Run may be reading a different Firebase project or the records may not exist in the account's Firestore collection. This app does not restore chats from a device cache."
           );
-        } else if(userSignedIn && cloudChatLoadState === "error") {
+        } else if(cloudChatLoadState === "error") {
           // Defensive fallback in case this branch is reached before the notice state renders.
           appendSidebarCloudNotice(
             hL,
