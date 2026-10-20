@@ -1,5 +1,4 @@
-import { requireFirebaseUser } from '../firebase-auth.js';
-import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
+import { getFirebaseAdminApp, requireFirebaseUser } from '../firebase-auth.js';
 import { getFirestore } from 'firebase-admin/firestore';
 import crypto from 'node:crypto';
 import { gzip as gzipCallback, gunzip as gunzipCallback } from 'node:zlib';
@@ -35,9 +34,7 @@ function isPersistableChat(chat) {
 }
 
 function firestore() {
-  // Authenticated chat requests initialize this app via firebase-auth.js.
-  const app = getApps()[0] || initializeApp({ credential: applicationDefault() });
-  return getFirestore(app);
+  return getFirestore(getFirebaseAdminApp());
 }
 
 function chatCollection(uid) {

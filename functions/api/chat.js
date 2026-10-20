@@ -2,10 +2,9 @@ import { GoogleGenAI } from '@google/genai';
 import { execFile } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
 import { getMessaging } from 'firebase-admin/messaging';
 import { getCloudRunKv } from '../cloud-run-store.js';
-import { requireFirebaseUser } from '../firebase-auth.js';
+import { getFirebaseAdminApp, requireFirebaseUser } from '../firebase-auth.js';
 import { listAvailableGeminiModels } from '../vertex-model-catalog.js';
 import { getProcessedText } from '../gcs-store.js';
 import {
@@ -404,11 +403,7 @@ async function sendFcmNotification(userIdentifier, env, title, body, data = {}) 
   if (!validTokens.length) return;
 
   try {
-    const projectId = String(env.FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID || 'trux-ai').trim();
-    const app = getApps()[0] || initializeApp({
-      credential: applicationDefault(),
-      projectId
-    });
+    const app = getFirebaseAdminApp(env);
 
     const response = await getMessaging(app).sendEachForMulticast({
       tokens: validTokens,

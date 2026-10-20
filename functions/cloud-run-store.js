@@ -1,4 +1,4 @@
-import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
+import { getFirebaseAdminApp } from './firebase-auth.js';
 import { getFirestore } from 'firebase-admin/firestore';
 
 /* Cloud Run state adapter: Firestore + short-lived in-memory fallback. */
@@ -8,11 +8,7 @@ let firestoreRetryAfter = 0;
 
 function getFirestoreInstance() {
   if (firestoreInstance) return firestoreInstance;
-  // Keep this Firestore adapter in the same Firebase project as Auth and the
-  // browser app; Cloud Run's hosting project is not necessarily that project.
-  const projectId = String(process.env.FIREBASE_PROJECT_ID || 'trux-ai').trim();
-  const app = getApps()[0] || initializeApp({ credential: applicationDefault(), projectId });
-  firestoreInstance = getFirestore(app);
+  firestoreInstance = getFirestore(getFirebaseAdminApp());
   return firestoreInstance;
 }
 

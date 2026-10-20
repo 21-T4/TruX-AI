@@ -1,16 +1,30 @@
 import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 
-let authInstance = null;
+const ADMIN_APP_NAME = 'trux-account-data';
+
+export function getFirebaseAdminApp(env = {}) {
+  const projectId = String(env.FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID || 'trux-ai').trim();
+  const existing = getApps().find(app => app.name === ADMIN_APP_NAME);
+
+  if(existing) {
+    const existingProjectId = String(existing.options?.projectId || '').trim();
+    if(existingProjectId && existingProjectId !== projectId) {
+      throw new Error('Firebase Admin was initialized for a different Firebase project.');
+    }
+    return existing;
+  }
+
+  // Auth, chat history, and Firestore-backed app state must use the same
+  // explicitly configured Firebase project, independent of import order.
+  return initializeApp({
+    credential: applicationDefault(),
+    projectId
+  }, ADMIN_APP_NAME);
+}
 
 function getAdminAuth(env = {}) {
-  if(authInstance) return authInstance;
-  // Match the Firebase project used by the browser config rather than relying
-  // on whichever Google Cloud project happens to host the Cloud Run service.
-  const projectId = String(env.FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID || 'trux-ai').trim();
-  const app = getApps()[0] || initializeApp({ credential: applicationDefault(), projectId });
-  authInstance = getAuth(app);
-  return authInstance;
+  return getAuth(getFirebaseAdminApp(env));
 }
 
 export async function requireFirebaseUser(request, env = {}) {
