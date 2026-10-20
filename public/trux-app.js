@@ -5346,9 +5346,15 @@
           else realtimeProcessor(event);
         };
         if (!incognitoMode && requestBody.chatId && requestBody.chatTurnId) {
-          firebaseStreamHandle = await openTruxRealtimeChatStream(
-            requestBody.chatId, requestBody.chatTurnId, requestUser, requestController.signal, receiveRealtimeEvent
-          );
+          try {
+            firebaseStreamHandle = await openTruxRealtimeChatStream(
+              requestBody.chatId, requestBody.chatTurnId, requestUser, requestController.signal, receiveRealtimeEvent
+            );
+          } catch (streamError) {
+            firebaseStreamFailure = String(streamError?.message || "Could not open the saved response stream.");
+            try { requestController.abort(); } catch {}
+            throw streamError;
+          }
           const storedSession = chatSessions[requestBody.chatId];
           if (storedSession && auth?.currentUser?.uid === requestUser.uid && chatSessionsOwnerUid === requestUser.uid) {
             storedSession.cloudStored = true;
@@ -5667,6 +5673,7 @@
           }
           if (requestController.signal.aborted) {
             try { await rd.cancel(); } catch {}
+            if (firebaseStreamFailure) throw new Error(firebaseStreamFailure);
             return;
           }
           let { value, done } = await rd.read();
@@ -5676,6 +5683,7 @@
           }
           if (requestController.signal.aborted) {
             try { await rd.cancel(); } catch {}
+            if (firebaseStreamFailure) throw new Error(firebaseStreamFailure);
             return;
           }
           if(done) break;
