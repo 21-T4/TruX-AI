@@ -5313,6 +5313,15 @@
 
         activeAbortController = new AbortController();
         const requestController = activeAbortController;
+        // Keep stream state visible to catch so partial text can be preserved after any failure.
+        let full = "";
+        let firebaseStreamHandle = null;
+        let firebaseStreamUiReady = false;
+        let firebaseStreamEvents = [];
+        let firebaseStreamFailure = "";
+        let realtimeProcessor = null;
+        let finalizedEarly = false;
+        let finalizedOnFinal = false;
         try {
           const requestUser = auth?.currentUser;
           if (!requestUser) throw Error("Your session ended. Sign in again to continue.");
@@ -5332,12 +5341,6 @@
 
         if(!res.body) throw Error("Streaming body unavailable.");
 
-        let full = "";
-        let firebaseStreamHandle = null;
-        let firebaseStreamUiReady = false;
-        let firebaseStreamEvents = [];
-        let firebaseStreamFailure = "";
-        let realtimeProcessor = null;
         const receiveRealtimeEvent = event => {
           if (!firebaseStreamUiReady || !realtimeProcessor) firebaseStreamEvents.push(event);
           else realtimeProcessor(event);
@@ -5354,7 +5357,7 @@
           }
         }
         let rd = res.body.getReader(), dec = new TextDecoder(), buf = "", fin = null;
-        let streamDone = false, finalizedEarly = false, finalizedOnFinal = false;
+        let streamDone = false;
         // SSE heartbeats keep long-running tool work connected. There is no client-side
         // inactivity timeout; Cloud Run's configured request lifetime is the outer boundary.
         let responseStartVibrated = false;
