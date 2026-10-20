@@ -993,6 +993,12 @@ function createSseResponse(startStreaming, request = null, chatPersistence = nul
               await appendFirebaseAssistantChunk(chatPersistence, payload.text);
             } else if (chatPersistence && payload?.type === 'final') {
               await finishFirebaseAssistantTurn(chatPersistence, payload.text, 'complete');
+            } else if (chatPersistence && payload?.type === 'result') {
+              const reply = String(payload.reply || 'Generation completed.');
+              const media = payload.video && typeof payload.video === 'object'
+                ? { type: 'video', url: payload.video.url, mimeType: payload.video.mimeType || 'video/mp4' }
+                : null;
+              await finishFirebaseAssistantTurn(chatPersistence, reply, 'complete', '', media);
             } else if (chatPersistence && payload?.type === 'error') {
               await finishFirebaseAssistantTurn(
                 chatPersistence, chatPersistence.assistantText || '',
@@ -1411,6 +1417,29 @@ export async function onRequestPost(context) {
           send({type:"error",error:"Video generation is available to Pro accounts and Owner access."});
         }, request);
       }
+
+      let firebaseVideoTurn = null;
+      if (!incognito) {
+        if (!chatId || !chatTurnId) {
+          return Response.json({ error: 'Missing chat session identifiers. Please refresh and retry.' }, { status: 400 });
+        }
+        try {
+          firebaseVideoTurn = await beginFirebaseChatTurn({
+            uid: trustedUserId, chatId, turnId: chatTurnId,
+            text: String(message || ''), title: chatTitle, mode: 'video',
+            metadata: chatMetadata, attachments, env
+          });
+        } catch (storageError) {
+          const status = Number(storageError?.status) || 503;
+          console.error('[chat-storage] Could not start video chat turn:', storageError?.message || storageError);
+          return Response.json({
+            error: status === 409
+              ? 'This video request was already saved. Reload the chat before retrying.'
+              : 'Could not save this video request to Firebase. Please retry when chat storage is available.'
+          }, { status, headers: { 'Cache-Control': 'no-store' } });
+        }
+      }
+
       return createSseResponse(async ({send}) => {
         send({type:"status",status:"Starting video generation…"});
         try {
@@ -1420,11 +1449,11 @@ export async function onRequestPost(context) {
             onStatus:status => send({type:"status",status:status})
           });
           const appUrl="/api/video?uri="+encodeURIComponent(result.gcsUri);
-          send({type:"result",reply:"Your video is ready.",video:{url:appUrl,gcsUri:result.gcsUri,mimeType:result.mimeType}});
+          await send({type:"result",reply:"Your video is ready.",video:{url:appUrl,gcsUri:result.gcsUri,mimeType:result.mimeType}});
         } catch(error) {
-          send({type:"error",error:(error && error.message) || "Video generation failed."});
+          await send({type:"error",error:(error && error.message) || "Video generation failed."});
         }
-      }, request);
+      }, request, firebaseVideoTurn);
     }
 
     /* =====================================================
