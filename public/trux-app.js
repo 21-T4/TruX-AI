@@ -162,10 +162,12 @@
         (Array.isArray(payload.chats) ? payload.chats : []).forEach(summary => {
           if (!summary || typeof summary.id !== "string") return;
           const existing = chatSessions[summary.id];
+          const keepLocalMessages = !!(existing?.localCache && Array.isArray(existing.messages) && existing.messages.length);
           const session = {
             ...summary,
-            messages: existing?.cloudStored && existing?.messagesLoaded && Array.isArray(existing.messages) ? existing.messages : [],
-            messagesLoaded: !!(existing?.cloudStored && existing?.messagesLoaded),
+            messages: keepLocalMessages ? existing.messages : (existing?.cloudStored && existing?.messagesLoaded && Array.isArray(existing.messages) ? existing.messages : []),
+            messagesLoaded: keepLocalMessages || !!(existing?.cloudStored && existing?.messagesLoaded),
+            localCache: keepLocalMessages,
             cloudStored: true
           };
           nextSessions[summary.id] = session;
@@ -174,7 +176,7 @@
         // Retain local unsent drafts and the intentionally memory-only Incognito session.
         Object.entries(chatSessions).forEach(([id, session]) => {
           if (session?.incognito) { nextSessions[id] = session; return; }
-          if (!session?.cloudStored && Array.isArray(session?.messages) && session.messages.length) nextSessions[id] = session;
+          if ((session?.localCache || !session?.cloudStored) && Array.isArray(session?.messages) && session.messages.length) nextSessions[id] = session;
         });
         chatSessions = nextSessions;
         chatHistoryLoadError = "";
@@ -642,6 +644,12 @@
       };
     })();
 
+    function loadLocalChatCache() {
+      const cached = store.json("trux_chat_sessions_cache", {});
+      if (!cached || typeof cached !== "object" || Array.isArray(cached)) return {};
+      return cached;
+    }
+
     let chatSessionsOwnerUid = null;
     let chatHistoryLoading = false;
     let chatHistoryLoadError = "";
@@ -650,7 +658,7 @@
 
     let currentPlanTier = "base",
         workspaceMode = "chat",
-        chatSessions = {},
+        chatSessions = loadLocalChatCache(),
         pinnedInsights = store.json("trux_pinned", []),
         feedbackCount = Number(store.getItem("trux_feedback_count")) || 0,
         currentChatId = null,
@@ -1915,6 +1923,48 @@
 
     function saveChatSessions(changedChatId = currentChatId) {
       if(incognitoMode || (currentChatId && chatSessions[currentChatId]?.incognito)) return;
+      // Keep a bounded, device-local recovery copy so chat sending does not depend on Firebase.
+      try {
+        const cache = {};
+        const entries = Object.entries(chatSessions || {})
+          .filter(([id, session]) => session && !session.incognito && Array.isArray(session.messages) && session.messages.length)
+          .sort((a, b) => (Number(b[1]?.updatedAt) || 0) - (Number(a[1]?.updatedAt) || 0))
+          .slice(0, 30);
+        for (const [id, session] of entries) {
+          cache[id] = {
+            ...session,
+            localCache: true,
+            messagesLoaded: true,
+            messages: session.messages.slice(-40).map(message => {
+              if (!message || typeof message !== "object") return null;
+              const copy = { ...message };
+              if (typeof copy.text === "string") copy.text = copy.text.slice(-8000);
+              for (const key of ["dataUrl", "imageData", "audioData", "fileData"]) {
+                if (typeof copy[key] === "string" && copy[key].startsWith("data:")) delete copy[key];
+              }
+              if (Array.isArray(copy.attachments)) {
+                copy.attachments = copy.attachments.map(item => {
+                  if (!item || typeof item !== "object") return null;
+                  const attachment = { ...item };
+                  for (const key of ["data", "dataUrl", "base64", "content"]) {
+                    if (typeof attachment[key] === "string" && (attachment[key].startsWith("data:") || attachment[key].length > 20000)) delete attachment[key];
+                  }
+                  return attachment;
+                }).filter(Boolean);
+              }
+              return copy;
+            }).filter(Boolean)
+          };
+        }
+        let serialized = JSON.stringify(cache);
+        while (serialized.length > 3000000 && Object.keys(cache).length > 1) {
+          delete cache[Object.keys(cache).at(-1)];
+          serialized = JSON.stringify(cache);
+        }
+        store.setItem("trux_chat_sessions_cache", serialized);
+      } catch (error) {
+        console.warn("[chat-cache] Could not update local chat cache:", error?.message || error);
+      }
       queueSidebarSync();
       if (changedChatId && chatSessions[changedChatId]) queueCloudChatMetadataSync(changedChatId);
     }
