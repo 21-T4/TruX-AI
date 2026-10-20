@@ -475,6 +475,8 @@
     let cloudChatsOwnerUid = null;
     let cloudChatLoadState = "signed-out";
     let cloudChatStatusMessage = "";
+    let cloudChatLastResponseSummary = "";
+    let cloudChatLastResponseWarning = "";
     let cloudChatLoadGeneration = 0;
     const cloudChatSyncedFingerprints = new Map();
     const pendingDeletedCloudChatIds = new Set();
@@ -1832,22 +1834,22 @@
 
     function cloudChatLoadErrorMessage(error) {
       const status = Number(error?.status || 0);
-      const message = String(error?.message || "");
+      const message = String(error?.message || "Unknown cloud history error.");
+      const code = String(error?.code || "");
       if(status === 401 || /invalid or expired authentication token|authentication required/i.test(message)) {
-        return "The server rejected this sign-in token. Sign out, sign in again, then press Retry.";
+        return "Cloud history failed (HTTP 401): the server rejected this sign-in token. Sign out, sign in again, then retry.";
       }
       if(status === 403 || /different account|account does not match/i.test(message)) {
-        return "The signed-in account does not match the account authorized for this chat request. Your saved chats were not changed.";
+        return "Cloud history failed (HTTP 403): the signed-in account does not match the account authorized for this request. Saved chats were not changed.";
       }
-      if(status === 503 || /CHAT_HISTORY_UNREADABLE|could not be decoded/i.test(message)) {
-        return "The database returned saved records it could not read. Those records were not deleted. Retry after checking the server connection.";
-      }
-      if(/different account/i.test(message)) {
-        return "The chat service returned a different account identity. Your saved chats were not changed.";
-      }
-      return "Cloud history request failed" + (status ? " (HTTP " + status + ")" : "") +
-        (message ? ": " + message.slice(0, 240) : ".") +
-        " Your chats were not deleted by this screen.";
+      const counts = [];
+      if(Number.isFinite(Number(error?.storedRecords))) counts.push("stored records: " + Number(error.storedRecords));
+      if(Number.isFinite(Number(error?.unreadableRecords))) counts.push("unreadable: " + Number(error.unreadableRecords));
+      if(Number.isFinite(Number(error?.missingRecords))) counts.push("missing parts: " + Number(error.missingRecords));
+      const technical = [code, ...counts].filter(Boolean).join(" · ");
+      return "Cloud history failed" + (status ? " (HTTP " + status + ")" : "") +
+        (technical ? " [" + technical + "]" : "") + ": " + message.slice(0, 260) +
+        ". Saved records were not deleted. Tap Retry to check again.";
     }
 
     function scheduleCloudChatRetry(uid) {
@@ -1883,6 +1885,8 @@
       cloudChatsOwnerUid = uid;
       cloudChatLoadState = "loading";
       cloudChatStatusMessage = "";
+      cloudChatLastResponseSummary = "";
+      cloudChatLastResponseWarning = "";
       updateCloudChatStatus("loading");
       if(!sameAccount) {
         chatSessions = {};
@@ -1905,9 +1909,20 @@
           headers: { "Cache-Control": "no-cache, no-store", "Pragma": "no-cache" }
         }, user);
         if(!response.ok) {
-          const detail = await response.text().catch(() => "");
-          const error = new Error(detail || "Cloud chat history could not be loaded (HTTP " + response.status + ").");
+          const rawDetail = await response.text().catch(() => "");
+          let body = null;
+          try { body = rawDetail ? JSON.parse(rawDetail) : null; } catch {}
+          const detail = String(body?.error || body?.detail || body?.message || rawDetail ||
+            "Cloud chat history could not be loaded (HTTP " + response.status + ").");
+          const error = new Error(detail);
           error.status = response.status;
+          error.code = body?.code || "";
+          error.storedRecords = body?.storedRecords;
+          error.unreadableRecords = body?.unreadableRecords;
+          error.missingRecords = body?.missingRecords;
+          cloudChatLastResponseSummary = "HTTP " + response.status +
+            (error.code ? " · " + error.code : "") +
+            (Number.isFinite(Number(error.storedRecords)) ? " · stored records: " + Number(error.storedRecords) : "");
           throw error;
         }
         const result = await response.json();
@@ -1924,6 +1939,16 @@
         const remoteChats = Object.fromEntries(
           Object.entries(result.chats).filter(([_, chat]) => isPersistableChatSession(chat))
         );
+        const returnedChats = Object.keys(remoteChats).length;
+        const unreadableCount = Number(result.unreadableRecords || 0);
+        const missingCount = Number(result.missingRecords || 0);
+        cloudChatLastResponseSummary = "Cloud API returned " + returnedChats + " chat(s)." +
+          (result.found === false ? " Firestore reports no saved records for this account." : "") +
+          " Unreadable records: " + unreadableCount + "; missing chat parts: " + missingCount + ".";
+        if(unreadableCount > 0 || missingCount > 0) {
+          cloudChatLastResponseWarning = unreadableCount + " stored record(s) could not be read; " +
+            missingCount + " record(s) reported missing parts. Those records were left untouched.";
+        }
 
         // Preserve only in-memory edits made while this Firestore read was in flight.
         // Firestore is authoritative; a missing remote chat is not restored from device cache.
@@ -2092,6 +2117,7 @@
             ". This change is still pending; it may not survive refresh until the save succeeds.";
           updateCloudChatStatus("sync-error", cloudChatStatusMessage);
           console.warn("TruX account chat sync failed:", error?.status || "", error?.message || error);
+          renderSidebar();
           scheduleCloudChatRetry(uid);
           return false;
         });
@@ -6890,6 +6916,39 @@
       else toast('Moved "' + (chat.title || "Untitled chat") + '" to ' + notebook.title + ".", "ok");
     }
 
+    function appendSidebarCloudNotice(host, state, headingText, detailText) {
+      const card = document.createElement("div");
+      card.className = "history-cloud-notice history-cloud-notice-" + state;
+      card.setAttribute("role", state === "error" || state === "sync-error" ? "alert" : "status");
+
+      const heading = document.createElement("strong");
+      heading.className = "history-cloud-notice-title";
+      heading.textContent = headingText;
+      const detail = document.createElement("div");
+      detail.className = "history-cloud-notice-detail";
+      detail.textContent = detailText;
+      card.append(heading, detail);
+
+      const retry = document.createElement("button");
+      retry.type = "button";
+      retry.className = "history-cloud-notice-retry";
+      retry.textContent = state === "sync-error" ? "Retry save" : "Retry cloud history";
+      retry.onclick = () => {
+        const user = auth?.currentUser;
+        if(!user) {
+          handleAuthAction();
+          return;
+        }
+        if(state === "sync-error" && cloudChatsReady && cloudChatsOwnerUid === user.uid) {
+          void syncChatsToCloud(true);
+        } else {
+          void loadChatsFromCloud(user, true);
+        }
+      };
+      card.appendChild(retry);
+      host.appendChild(card);
+    }
+
     function renderSidebar() {
       ensureNotebookAssignments();
       renderNotebooks();
@@ -6899,13 +6958,62 @@
       if(q) ids = ids.filter(id => (chatSessions[id]?.title || "").toLowerCase().includes(q));
 
       hL.innerHTML = "";
+      let cloudNoticeShown = false;
+      const userSignedIn = !!auth?.currentUser;
+      const saveFailed = userSignedIn && cloudChatStatusMessage.startsWith("Cloud save failed");
+      if(!q && userSignedIn && cloudChatLoadState === "error") {
+        appendSidebarCloudNotice(
+          hL,
+          "error",
+          "Could not load saved chats",
+          cloudChatStatusMessage || "Cloud history failed. No chat records were deleted. Check the details and retry."
+        );
+        cloudNoticeShown = true;
+      } else if(!q && saveFailed) {
+        appendSidebarCloudNotice(
+          hL,
+          "sync-error",
+          "Chat changes are not saved",
+          cloudChatStatusMessage + " Your latest changes may not survive refresh until saving succeeds."
+        );
+        cloudNoticeShown = true;
+      } else if(!q && userSignedIn && cloudChatLoadState === "ready" && cloudChatLastResponseWarning) {
+        appendSidebarCloudNotice(
+          hL,
+          "warning",
+          "Some saved chats could not be read",
+          cloudChatLastResponseWarning + " " + cloudChatLastResponseSummary
+        );
+        cloudNoticeShown = true;
+      }
+
       if(!ids.length) {
         if(q) {
           hL.innerHTML = '<div class="empty">No chats match <b>' + escapeHtml(q) + '</b>.</div>';
-        } else if(auth?.currentUser && cloudChatLoadState === "loading") {
+        } else if(cloudNoticeShown) {
+          const empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = "No readable chats are currently shown above. Retry the cloud check to see whether the problem has cleared.";
+          hL.appendChild(empty);
+        } else if(userSignedIn && cloudChatLoadState === "loading") {
           hL.innerHTML = '<div class="empty">Loading chats from your TruX account…</div>';
-        } else if(auth?.currentUser && cloudChatLoadState === "error") {
-          hL.innerHTML = '<div class="empty">Could not load your saved chats. TruX is retrying the cloud connection. Your chats have not been deleted.</div>';
+        } else if(userSignedIn && cloudChatLoadState === "ready") {
+          const detail = cloudChatLastResponseSummary ||
+            "The cloud request succeeded, but returned no saved chats for this account.";
+          appendSidebarCloudNotice(
+            hL,
+            "empty",
+            "Cloud history returned 0 chats",
+            detail + " If you expected old chats, Cloud Run may be reading a different Firebase project or the records may not exist in the account's Firestore collection. This app does not restore chats from a device cache."
+          );
+        } else if(userSignedIn && cloudChatLoadState === "error") {
+          // Defensive fallback in case this branch is reached before the notice state renders.
+          appendSidebarCloudNotice(
+            hL,
+            "error",
+            "Could not load saved chats",
+            cloudChatStatusMessage || "Cloud history failed. No chat records were deleted. Retry the cloud request."
+          );
         } else {
           hL.innerHTML = '<div class="empty">Your chats will appear here.<br>Start a new chat to begin.</div>';
         }
