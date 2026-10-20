@@ -40,7 +40,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
 
   
-  <link rel="stylesheet" href="/trux-app.css?v=20261020-sidebar-cloud-history-errors1">
+  <link rel="stylesheet" href="/trux-app.css?v=20261020-memory-chat-session1">
 
 
 
@@ -307,7 +307,6 @@
         </div>
       </div>
 
-      <div id="cloudChatStatus" class="cloud-chat-status" role="status" aria-live="polite" hidden></div>
 
       <section class="media-gen-workspace" id="imageWorkspace" aria-label="Image generation workspace">
         <div class="media-gen-orbit media-gen-orbit-a"></div><div class="media-gen-orbit media-gen-orbit-b"></div>
@@ -711,7 +710,7 @@
               <div class="settings-card"><div class="sect"><h4>Chat history</h4><button class="mbtn" type="button" onclick="viewArchivedChats()">View archived chats</button><button class="mbtn" type="button" onclick="archiveAllHistory()">Archive chat history</button><button class="mbtn danger" type="button" onclick="clearAllHistory()">Clear chat history</button><div id="archivedChatsList" class="archived-chats-list" aria-live="polite"></div></div></div>
               <div class="settings-card"><div class="sect"><h4>Export data</h4><button class="mbtn" type="button" onclick="exportTruxMemory()">Export workspace data</button><button class="mbtn" type="button" onclick="exportChatData()">Export chats only</button><button class="mbtn" type="button" onclick="importTruxMemory()">Import workspace data</button></div></div>
             
-<div class="settings-card"><div class="sect"><h4>Account chat storage</h4><p class="mrow-sub">Chat history is stored in your signed-in account's Firestore database and restored across devices. Large file uploads and generated media remain in object storage.</p><div id="truxStorageSummary" class="profile-info-panel">Loading account chat history…</div><button type="button" class="mbtn" onclick="updateTruxStorageSummary()">Refresh storage estimate</button></div></div><div class="settings-card"><div class="sect"><h4>Files &amp; images</h4><p class="mrow-sub">Image and file payloads stored in chat history are counted approximately; browser caches are excluded.</p></div></div>
+
 <div class="settings-card">
                 <div class="sect"><h4>Location access</h4>
                   <div class="mrow"><span><b>Let TruX use your location</b><small class="mrow-sub">Used for location-aware answers and research.</small></span><label class="toggle"><input id="locationAccessToggle" type="checkbox" onchange="toggleTruxLocationAccess(this.checked)"><span class="slider"></span></label></div>
@@ -831,7 +830,7 @@
   <div class="toast-host" id="toastHost" aria-live="polite"></div>
 
   
-  <script src="/trux-app.js?v=20261020-firebase-sidebar-retry1"></script>
+  <script src="/trux-app.js?v=20261020-memory-chat-session1"></script>
 
 
 <script src="/trux-plugins.js?v=20261015-cleanup1" defer></script>
