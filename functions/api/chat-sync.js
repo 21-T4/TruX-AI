@@ -421,6 +421,7 @@ export async function onRequestPost({ request, env }) {
 
   return jsonResponse({
     ok: true,
+    userId: uid,
     saved,
     deleted: idsToDelete.size,
     savedAt: new Date().toISOString(),
