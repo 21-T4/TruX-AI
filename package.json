@@ -8,8 +8,8 @@
   "scripts": {
     "dev": "node cloud-run-server.js",
     "start": "node cloud-run-server.js",
-    "build": "node --check cloud-run-server.js && node --check functions/firebase-auth.js && node --check functions/cloud-run-store.js && node --check functions/api/chat.js && node --check functions/api/chat-sync.js",
-    "lint": "node --check cloud-run-server.js && node --check functions/firebase-auth.js && node --check functions/cloud-run-store.js && node --check functions/api/chat.js && node --check functions/api/chat-sync.js"
+    "build": "node --check cloud-run-server.js && node --check functions/firebase-auth.js && node --check functions/cloud-run-store.js && node --check functions/api/chat.js",
+    "lint": "node --check cloud-run-server.js && node --check functions/firebase-auth.js && node --check functions/cloud-run-store.js && node --check functions/api/chat.js"
   },
   "dependencies": {
     "@google/genai": "^2.29.1",
