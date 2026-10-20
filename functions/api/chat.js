@@ -5,7 +5,7 @@ import path from 'node:path';
 import { getMessaging } from 'firebase-admin/messaging';
 import { getCloudRunKv } from '../cloud-run-store.js';
 import { getFirebaseAdminApp, requireFirebaseUser } from '../firebase-auth.js';
-import { beginFirebaseChatTurn, appendFirebaseAssistantChunk, finishFirebaseAssistantTurn } from '../trux-chat-store.js';
+import { beginFirebaseChatTurn, appendFirebaseAssistantChunk, finishFirebaseAssistantTurn, touchFirebaseAssistantTurn } from '../trux-chat-store.js';
 import { listAvailableGeminiModels } from '../vertex-model-catalog.js';
 import { getProcessedText } from '../gcs-store.js';
 import {
@@ -1022,10 +1022,28 @@ function createSseResponse(startStreaming, request = null, chatPersistence = nul
       };
 
       let heartbeatCount = 0;
+      let lastLeaseRefresh = Date.now();
       enqueue({ type: 'heartbeat', ts: Date.now(), count: heartbeatCount });
       const heartbeat = setInterval(() => {
+        const now = Date.now();
         heartbeatCount += 1;
-        enqueue({ type: 'heartbeat', ts: Date.now(), count: heartbeatCount });
+        enqueue({ type: 'heartbeat', ts: now, count: heartbeatCount });
+
+        // Keep the active-turn lease alive during model thinking/tool work, even before the next text chunk.
+        if (chatPersistence?.status === 'streaming' && now - lastLeaseRefresh >= 15000) {
+          lastLeaseRefresh = now;
+          eventQueue = eventQueue.then(async () => {
+            if (closed || persistenceError || chatPersistence.status !== 'streaming') return;
+            try {
+              await touchFirebaseAssistantTurn(chatPersistence);
+            } catch (error) {
+              // The next text write will stop the turn if storage is still unavailable.
+              console.warn('[chat-storage] Could not refresh active-turn lease:', error?.message || error);
+            }
+          }).catch(error => {
+            console.warn('[chat-storage] Lease refresh queue failed:', error?.message || error);
+          });
+        }
       }, 3000);
       try {
         await startStreaming({ send, signal });
