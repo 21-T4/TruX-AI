@@ -2050,15 +2050,15 @@
 
     async function syncChatsToCloud(immediate = false) {
       const currentUser = auth?.currentUser;
-      if(!currentUser || !cloudChatsReady || cloudChatsOwnerUid !== currentUser.uid) return false;
+      if(!currentUser || (cloudChatsOwnerUid && cloudChatsOwnerUid !== currentUser.uid)) return false;
       clearTimeout(cloudChatSyncTimer);
 
       const run = () => {
         const requestUser = auth?.currentUser;
-        if(!requestUser || requestUser.uid !== cloudChatsOwnerUid) return Promise.resolve(false);
+        if(!requestUser || (cloudChatsOwnerUid && requestUser.uid !== cloudChatsOwnerUid)) return Promise.resolve(false);
         const uid = requestUser.uid;
         const task = cloudChatSyncChain.catch(() => {}).then(async () => {
-          if(!auth?.currentUser || auth.currentUser.uid !== uid || !cloudChatsReady || cloudChatsOwnerUid !== uid) return false;
+          if(!auth?.currentUser || auth.currentUser.uid !== uid || (cloudChatsOwnerUid && cloudChatsOwnerUid !== uid)) return false;
 
           const changed = [];
           for(const [id, chat] of Object.entries(chatSessions)) {
@@ -2117,6 +2117,8 @@
           clearTimeout(cloudChatRetryTimer);
           cloudChatRetryTimer = null;
           cloudChatStatusMessage = "";
+          cloudChatsReady = true;
+          cloudChatsOwnerUid = uid;
           updateCloudChatStatus("ready");
           return true;
         }).catch(error => {
