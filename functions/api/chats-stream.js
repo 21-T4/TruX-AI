@@ -19,6 +19,19 @@ export async function onRequestGet(context) {
     refs = getFirebaseAssistantRefs(user.uid, chatId, turnId, env);
   } catch (error) { return errorResponse(error); }
 
+  // Reject missing turns before creating a long-lived SSE request; use only the tiny status node,
+  // not the full answer/chunk subtree.
+  try {
+    const statusSnapshot = await refs.statusRef.once('value');
+    if (!statusSnapshot.exists()) {
+      return Response.json({ error: 'Chat turn not found.' }, {
+        status: 404, headers: { 'Cache-Control': 'no-store' }
+      });
+    }
+  } catch (error) {
+    return errorResponse(error);
+  }
+
   const stream = new ReadableStream({
     start(controller) {
       const encoder = new TextEncoder();
