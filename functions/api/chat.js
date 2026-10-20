@@ -84,6 +84,7 @@ function isDeveloperEmail(email) {
 }
 
 
+const CHAT_STORAGE_ENABLED = false; // Temporary fallback: AI generation must not depend on Firebase chat persistence.
 const IMAGE_LIMIT = 15;
 const VIDEO_MODEL = "veo-3.1-fast-generate-001";
 const TRUX_CODE_MODEL = 'gemini-4-argon';
@@ -1419,7 +1420,7 @@ export async function onRequestPost(context) {
       }
 
       let firebaseVideoTurn = null;
-      if (!incognito) {
+      if (!incognito && CHAT_STORAGE_ENABLED) {
         if (!chatId || !chatTurnId) {
           return Response.json({ error: 'Missing chat session identifiers. Please refresh and retry.' }, { status: 400 });
         }
@@ -1669,7 +1670,7 @@ export async function onRequestPost(context) {
 
     // Store user input before model work; Incognito remains memory-only.
     let firebaseChatTurn = null;
-    if (!incognito) {
+    if (!incognito && CHAT_STORAGE_ENABLED) {
       if (!chatId || !chatTurnId) {
         return Response.json({ error: 'Missing chat session identifiers. Please refresh and retry.' }, { status: 400 });
       }
