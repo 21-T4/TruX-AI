@@ -4645,3 +4645,61 @@ body.subscription-page-active .subscription-workspace{display:block}
   .cloud-chat-status-copy span { font-size: 11px; }
   .cloud-chat-status-retry { min-height: 32px; padding: 0 10px; }
 }
+
+
+/* Cloud-history diagnostics live directly inside the Recent sidebar empty state. */
+.history-cloud-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  margin: 7px 3px 10px;
+  padding: 12px 11px;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 12px;
+  background: rgba(255,255,255,.045);
+  color: var(--txt, #f5f5f5);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.history-cloud-notice-error,
+.history-cloud-notice-sync-error {
+  border-color: rgba(255,105,105,.48);
+  background: rgba(110,24,32,.19);
+}
+.history-cloud-notice-warning {
+  border-color: rgba(255,190,80,.42);
+  background: rgba(105,70,15,.15);
+}
+.history-cloud-notice-title {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1.4;
+  color: var(--txt, #f5f5f5);
+}
+.history-cloud-notice-detail {
+  color: var(--txt-2, #c7c7c7);
+  font-size: 11.5px;
+  line-height: 1.5;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.history-cloud-notice-retry {
+  align-self: flex-start;
+  min-height: 31px;
+  padding: 0 10px;
+  border: 1px solid var(--line-2, rgba(255,255,255,.22));
+  border-radius: 9px;
+  background: rgba(255,255,255,.075);
+  color: var(--txt, #f5f5f5);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.history-cloud-notice-retry:hover { background: rgba(255,255,255,.14); }
+.history-cloud-notice-retry:focus-visible {
+  outline: 2px solid var(--acc, #a9baff);
+  outline-offset: 2px;
+}
