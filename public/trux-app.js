@@ -226,6 +226,10 @@
       });
     }
 
+    // Temporarily bypass Firebase's separate saved-response stream. The POST /api/chat
+    // response already carries the live SSE tokens and must remain usable without chat storage.
+    const USE_FIREBASE_REALTIME_CHAT_STREAM = false;
+
     async function openTruxRealtimeChatStream(chatId, turnId, user, signal, onEvent) {
       const url = "/api/chats-stream?chatId=" + encodeURIComponent(chatId) + "&turnId=" + encodeURIComponent(turnId);
       const response = await truxAuthenticatedFetch(url, {
@@ -5395,7 +5399,7 @@
           if (!firebaseStreamUiReady || !realtimeProcessor) firebaseStreamEvents.push(event);
           else realtimeProcessor(event);
         };
-        if (!incognitoMode && requestBody.chatId && requestBody.chatTurnId) {
+        if (USE_FIREBASE_REALTIME_CHAT_STREAM && !incognitoMode && requestBody.chatId && requestBody.chatTurnId) {
           try {
             firebaseStreamHandle = await openTruxRealtimeChatStream(
               requestBody.chatId, requestBody.chatTurnId, requestUser, requestController.signal, receiveRealtimeEvent
