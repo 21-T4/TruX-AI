@@ -2,7 +2,7 @@ import { getDatabase } from 'firebase-admin/database';
 import { getFirebaseAdminApp } from './firebase-auth.js';
 
 const CHAT_ROOT = 'truxChatStorage/v1/users';
-const CHAT_MODES = new Set(['chat', 'coding', 'deep-research']);
+const CHAT_MODES = new Set(['chat', 'coding', 'deep-research', 'video']);
 const CHAT_KEY_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
 
 function statusError(message, status = 500, cause = null) {
@@ -200,7 +200,23 @@ export async function appendFirebaseAssistantChunk(context, piece) {
   }
 }
 
-export async function finishFirebaseAssistantTurn(context, finalText, status = 'complete', errorMessage = '') {
+function normalizeStoredMedia(value) {
+  const type = value?.type === 'video' ? 'video' : value?.type === 'image' ? 'image' : '';
+  if (!type) return null;
+  const url = typeof value.url === 'string' ? value.url.trim() : '';
+  // Store only media references/metadata in chat history, never binary media or data URLs.
+  if (!url || url.startsWith('data:') || url.length > 4096) return null;
+  if (type === 'video' && !url.startsWith('/api/video?uri=')) return null;
+  if (type === 'image' && !url.startsWith('/api/media/')) return null;
+  return {
+    type,
+    url,
+    mimeType: String(value.mimeType || '').slice(0, 160),
+    alt: String(value.alt || (type === 'video' ? 'Generated video' : 'Generated image')).slice(0, 160)
+  };
+}
+
+export async function finishFirebaseAssistantTurn(context, finalText, status = 'complete', errorMessage = '', media = null) {
   if (!context || context.status !== 'streaming') return;
   const validStatus = new Set(['complete', 'error', 'stopped']).has(status) ? status : 'error';
   const storedText = typeof finalText === 'string' ? finalText : String(context.assistantText || '');
@@ -215,6 +231,9 @@ export async function finishFirebaseAssistantTurn(context, finalText, status = '
       [messagePath + '/updatedAt']: now,
       [messagePath + '/completedAt']: now,
       [messagePath + '/error']: errorText,
+      ...(media && typeof media === 'object' ? {
+        [messagePath + '/media']: normalizeStoredMedia(media)
+      } : {}),
       ['chats/' + context.chatId + '/metadata/updatedAt']: now,
       ['chats/' + context.chatId + '/metadata/lastMessageAt']: now,
       ['chats/' + context.chatId + '/turns/' + context.turnId + '/status']: validStatus,
@@ -267,7 +286,9 @@ export async function getFirebaseChatSession(uid, chatId, env = {}) {
           .map(chunk => String(chunk.text || '')).join('');
         return {
           role: message.role === 'user' ? 'user' : 'trux',
-          text: typeof message.text === 'string' && message.text.length ? message.text : (chunkText || ''),
+          text: typeof message.text === 'string' && message.text.length
+            ? message.text
+            : (chunkText || (message.error ? 'Error: ' + String(message.error).slice(0, 600) : message.status === 'stopped' ? 'Generation stopped.' : '')),
           attachments: safeAttachments(message.attachments),
           status: String(message.status || 'complete'),
           incomplete: ['streaming', 'stopped', 'error'].includes(String(message.status || '')),
@@ -275,7 +296,13 @@ export async function getFirebaseChatSession(uid, chatId, env = {}) {
           createdAt: Number(message.createdAt) || 0,
           updatedAt: Number(message.updatedAt) || 0,
           turnId: String(message.turnId || ''),
-          sequence: Number(message.sequence) || 0
+          sequence: Number(message.sequence) || 0,
+          ...(message.media?.type === 'video' && typeof message.media.url === 'string'
+            ? { video: message.media.url }
+            : {}),
+          ...(message.media?.type === 'image' && typeof message.media.url === 'string'
+            ? { image: message.media.url }
+            : {})
         };
       });
     return {
