@@ -1555,7 +1555,10 @@ export async function onRequestPost(context) {
           finalChars: finalText.length,
           totalTokens: agentResult.usage?.total_tokens ?? null
         }));
-        if (effectiveResponseJobId) await saveCodeJob(env, userIdentifier, effectiveResponseJobId, { interactionId: String(agentResult.interactionId || ''), status: 'completed' });
+        if (effectiveResponseJobId) {
+          try { await saveCodeJob(env, userIdentifier, effectiveResponseJobId, { interactionId: String(agentResult.interactionId || ''), status: 'completed' }); }
+          catch (error) { console.warn('[trux-code] completion status update deferred to recovery lookup:', error?.message || error); }
+        }
         await send({ type: 'final', text: finalText });
 
         if (notifyOnComplete) {
@@ -2208,11 +2211,17 @@ export async function onRequestGet(context = {}) {
         await saveCodeJob(env, identity.uid, jobId, { status: 'incomplete' });
         return Response.json({ status: 'incomplete', error: 'The agent returned no final text.' }, { headers });
       }
-      if (record.status !== 'completed') await saveCodeJob(env, identity.uid, jobId, { interactionId: String(record.interactionId), status: 'completed' });
+      if (record.status !== 'completed') {
+        try { await saveCodeJob(env, identity.uid, jobId, { interactionId: String(record.interactionId), status: 'completed' }); }
+        catch (error) { console.warn('[trux-code] recovered answer status update deferred:', error?.message || error); }
+      }
       return Response.json({ status: 'completed', text }, { headers });
     }
     if (['failed', 'cancelled', 'incomplete'].includes(status)) {
-      if (record.status !== status) await saveCodeJob(env, identity.uid, jobId, { interactionId: String(record.interactionId), status });
+      if (record.status !== status) {
+        try { await saveCodeJob(env, identity.uid, jobId, { interactionId: String(record.interactionId), status }); }
+        catch (error) { console.warn('[trux-code] terminal status update deferred:', error?.message || error); }
+      }
       return Response.json({ status, error: status === 'failed' ? 'The Antigravity agent failed.' : status === 'cancelled' ? 'The interaction was cancelled.' : 'The interaction ended incomplete.' }, { headers });
     }
     return Response.json({ status }, { headers });
