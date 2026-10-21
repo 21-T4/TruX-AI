@@ -1906,8 +1906,13 @@
       const minComposerHeight = document.body.matches('body[data-media-mode="image"], body[data-media-mode="video"]') ? 60 : 44;
       const maxComposerHeight = isCodeWorkspace ? 108 : 200;
       p.style.setProperty("height", "auto", "important");
-      p.style.setProperty("height", Math.max(minComposerHeight, Math.min(p.scrollHeight, maxComposerHeight)) + "px", "important");
-      p.style.setProperty("overflow-y", isCodeWorkspace && p.scrollHeight > maxComposerHeight ? "auto" : "hidden", "important");
+      const contentHeight = p.scrollHeight;
+      p.style.setProperty("height", Math.max(minComposerHeight, Math.min(contentHeight, maxComposerHeight)) + "px", "important");
+      if (isCodeWorkspace) {
+        p.style.setProperty("overflow-y", contentHeight > maxComposerHeight ? "auto" : "hidden", "important");
+      } else {
+        p.style.removeProperty("overflow-y");
+      }
       const bar = p.closest(".bar");
       if (bar) bar.classList.remove("multiline");
 
