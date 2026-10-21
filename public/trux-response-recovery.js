@@ -270,11 +270,16 @@
       while (true) {
         if (!navigator.onLine) { await sleep(3000); continue; }
         try {
-          const token = await user.getIdToken();
-          const response = await window.__truxRecoveryNativeFetch(
-            "/api/chat?responseJobId=" + encodeURIComponent(jobId),
-            { method: "GET", cache: "no-store", headers: { "Authorization": "Bearer " + token, "Accept": "application/json" } }
-          );
+          const recoveryUrl = "/api/chat?responseJobId=" + encodeURIComponent(jobId);
+          const requestWithToken = token => window.__truxRecoveryNativeFetch(recoveryUrl, {
+            method: "GET",
+            cache: "no-store",
+            headers: { "Authorization": "Bearer " + token, "Accept": "application/json" }
+          });
+          let response = await requestWithToken(await user.getIdToken());
+          if (response.status === 401) {
+            response = await requestWithToken(await user.getIdToken(true));
+          }
           if (response.status === 404) {
             if (!missingSince) missingSince = Date.now();
             if (Date.now() - missingSince > 90000) return;
