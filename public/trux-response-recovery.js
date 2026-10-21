@@ -278,6 +278,9 @@
       }
     } finally {
       polling.delete(jobId);
+      for (const [key, activeJob] of activeRequests) {
+        if (activeJob.id === jobId) activeRequests.delete(key);
+      }
     }
   }
 
@@ -369,7 +372,13 @@
         }
       }
     } catch {}
-    const response = await nativeFetch(input, options);
+    let response;
+    try {
+      response = await nativeFetch(input, options);
+    } catch (error) {
+      if (job) void recoverJob(job.id, job.user);
+      throw error;
+    }
     if (!job) return response;
     if (!response.ok || !response.body || !String(response.headers.get("content-type") || "").includes("text/event-stream")) {
       if (response.status !== 401 || job.authFailures > 0) {
