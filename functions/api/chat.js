@@ -1518,7 +1518,7 @@ export async function onRequestPost(context) {
       const historyForTurn = isStandaloneGreeting && Array.isArray(history)
         ? history.slice(-HISTORY_RECENT_LIMIT)
         : history;
-      const formattedHistory = await buildConversationHistory(historyForTurn, signal, env, {
+      const formattedHistory = await buildConversationHistory(historyForTurn, codingMode ? null : signal, env, {
         codingMode,
         researchMode,
         thinkingLevel: effectiveThinkingLevel
