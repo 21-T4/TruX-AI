@@ -41,10 +41,18 @@
           isJobId(oldAssistant.responseJobId);
         if (!pendingId && !completed) continue;
         const prompt = completed ? String(oldAssistant.recoveryPrompt || messageText(oldUser)) : messageText(oldUser);
-        let ni = messages.findIndex((m, index) =>
-          m?.role === "user" && messageText(m) === prompt &&
-          (pendingId ? (!m.responseJobId || m.responseJobId === pendingId) : true)
-        );
+        let ni = -1;
+        const matches = (m) => m?.role === "user" && messageText(m) === prompt &&
+          (pendingId ? (!m.responseJobId || m.responseJobId === pendingId) : true);
+        if (matches(messages[oi])) ni = oi;
+        if (ni < 0) {
+          let nearestDistance = Infinity;
+          for (let index = 0; index < messages.length; index++) {
+            if (!matches(messages[index])) continue;
+            const distance = Math.abs(index - oi);
+            if (distance < nearestDistance) { nearestDistance = distance; ni = index; }
+          }
+        }
         if (ni < 0) continue;
         if (pendingId && !messages[ni].responseJobId) messages[ni].responseJobId = pendingId;
         const jobId = pendingId || oldAssistant.responseJobId;
@@ -92,6 +100,25 @@
         const index = session.messages.findIndex(m => m?.role === "user" && m.responseJobId === jobId);
         if (index >= 0) return { key, sessions, chatId, session, userIndex: index, prompt: messageText(session.messages[index]) };
       }
+    }
+    return null;
+  }
+
+  function findVisiblePromptUser(uid, prompt) {
+    const key = cacheKey(uid), sessions = readCache(key);
+    const rows = Array.from(document.querySelectorAll(".row.user-row")).reverse();
+    for (const row of rows) {
+      if (!row.dataset.chatId || !Number.isInteger(Number(row.dataset.messageIndex))) continue;
+      if (row.getClientRects().length === 0) continue;
+      const shown = String(row.querySelector(".user-bubble")?.textContent || "").trim();
+      if (shown !== String(prompt || "").trim() && !shown.startsWith(String(prompt || "").trim())) continue;
+      const chatId = String(row.dataset.chatId), userIndex = Number(row.dataset.messageIndex);
+      const session = sessions[chatId], message = session?.messages?.[userIndex];
+      if (session?.incognito || session?.mode !== "coding" || message?.role !== "user" || messageText(message) !== String(prompt || "")) continue;
+      return {
+        key, sessions, chatId, session, userIndex, prompt: messageText(message),
+        ...(isJobId(message.responseJobId) ? { jobId: message.responseJobId } : {})
+      };
     }
     return null;
   }
@@ -301,8 +328,7 @@
         type: packet.type,
         status: String(packet.status || "").slice(0, 240),
         tool: String(packet.tool || "").slice(0, 120),
-        phase: String(packet.phase || "complete").slice(0, 24),
-        ...(packet.details && typeof packet.details === "object" ? { details: packet.details } : {})
+        phase: String(packet.phase || "complete").slice(0, 24)
       });
       storeSnapshot(job.id, job.full, false, job.toolEvents);
     } else if (packet.type === "final") {
@@ -330,6 +356,7 @@
           if (user) {
             const prompt = String(body.message || "");
             const location = (isJobId(body.responseJobId) ? findJob(body.responseJobId) : null)
+              || findVisiblePromptUser(user.uid, prompt)
               || findJobForPrompt(user.uid, prompt)
               || bindJobToPrompt(user.uid, prompt, body.responseJobId || "");
             const id = isJobId(body.responseJobId) ? body.responseJobId
