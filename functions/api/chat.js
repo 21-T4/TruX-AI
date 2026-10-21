@@ -41,10 +41,7 @@ RESPONSE FORMAT:
 - IMAGE ROUTING: Use [[IMAGE]] only when the user wants the separate raster/photo-style image-generation feature. Editable vector diagrams, custom drawings, arbitrary shapes, letters, numbers, charts, and illustrations meant to appear in the answer must follow the SVG rules above. Do not use [[IMAGE]] when the user is analyzing or discussing an existing image.
 `;
 
-/*
- * Backend policy and capability catalog are kept separate from UI preferences.
- * They apply to both TruX Chat and TruX-Code.
- */
+
 const BACKEND_CAPABILITY_INSTRUCTIONS = `
 AVAILABLE CAPABILITIES — these are your capabilities. You may select and run whichever currently available capability best serves the user's request; you are not required to call a tool simply because it is listed. This is a capability menu, not a checklist:
 - General assistance: answer, reason, calculate, explain, summarize, compare, plan, translate, write, analyze supplied text/images, and use available conversation history or attached/processed files.
@@ -84,7 +81,21 @@ const IMAGE_LIMIT = 15;
 const VIDEO_MODEL = "veo-3.1-fast-generate-001";
 const TRUX_CODE_MODEL = 'gemini-4-argon';
 const TRUX_CODE_AGENT = 'antigravity-preview-09-2026';
+const CODE_JOB_TTL = 6 * 24 * 60 * 60;
 let truxCodeAntigravityClient = null;
+
+function validCodeJobId(id) { return /^[A-Za-z0-9_-]{12,128}$/.test(String(id || '')); }
+function codeJobKey(uid, id) { return 'trux_code_response_job_v1:' + uid + ':' + id; }
+async function saveCodeJob(env, uid, id, patch = {}) {
+  if (!uid || !validCodeJobId(id)) throw new Error('Invalid TruX-Code response job.');
+  const kv = getCloudRunKv(env, { strict: true }), key = codeJobKey(uid, id);
+  let previous = null;
+  try { previous = await kv.get(key, 'json'); } catch {}
+  const now = Date.now();
+  const record = { ...(previous || {}), uid: String(uid), jobId: String(id), createdAt: Number(previous?.createdAt) || now, ...patch, updatedAt: now };
+  await kv.put(key, JSON.stringify(record), { expirationTtl: CODE_JOB_TTL });
+  return record;
+}
 let truxCodeAntigravityApiKey = '';
 
 function getTruxCodeAntigravityClient(env) {
@@ -133,86 +144,71 @@ function buildTruxCodeAntigravityInput(contents, systemInstruction) {
   ].filter(Boolean).join('\n\n');
 }
 
-async function streamTruxCodeWithAntigravity({ contents, systemInstruction, env, send, signal }) {
-  const client = getTruxCodeAntigravityClient(env);
+async function streamTruxCodeWithAntigravity({ contents, systemInstruction, env, send, signal, responseJobId = '', onInteractionCreated = null }) {
+  const client = getTruxCodeAntigravityClient(env), background = validCodeJobId(responseJobId);
   const input = buildTruxCodeAntigravityInput(contents, systemInstruction);
-  const stream = await client.interactions.create({
-    agent: TRUX_CODE_AGENT,
-    input,
-    environment: 'remote',
-    agent_config: {
-      type: 'antigravity',
-      model: TRUX_CODE_MODEL
-    },
-    stream: true
+  const created = await client.interactions.create({
+    agent: TRUX_CODE_AGENT, input, environment: 'remote',
+    agent_config: { type: 'antigravity', model: TRUX_CODE_MODEL },
+    ...(background ? { background: true, store: true } : { stream: true })
   });
-
+  const interactionId = String(created?.id || '');
+  let interaction = background ? created : null, answerText = '', lastEventId = '';
+  if (background) {
+    if (!interactionId) throw new Error('Antigravity did not return a background interaction ID.');
+    if (onInteractionCreated) await onInteractionCreated(created);
+  }
   const stepTypes = new Map();
-  let answerText = '';
-  let interaction = null;
-
-  for await (const event of stream) {
-    if (signal?.aborted) return { aborted: true, text: '' };
-
-    const eventType = String(event?.event_type || '');
-    if (eventType === 'error') {
-      throw new Error(String(event?.error?.message || 'The Antigravity agent reported an error.'));
-    }
-
-    if (eventType === 'interaction.created') {
-      interaction = event?.interaction || interaction;
-      continue;
-    }
-
-    if (eventType === 'step.start') {
-      const stepIndex = Number(event?.index);
-      const step = event?.step || {};
-      const stepType = String(step?.type || '');
-      if (Number.isFinite(stepIndex)) stepTypes.set(stepIndex, stepType);
-      if (stepType && stepType !== 'thought') {
-        const label = String(step?.name || stepType.replace(/[_-]+/g, ' ')).trim();
-        await send({ type: 'ai_step', status: 'Antigravity · ' + label.slice(0, 220) });
-      }
-      continue;
-    }
-
-    if (eventType === 'step.delta') {
-      const delta = event?.delta || {};
-      const stepType = stepTypes.get(Number(event?.index)) || '';
-      if (delta.type === 'text' && stepType === 'model_output') {
-        const piece = String(delta.text || '');
-        if (piece) {
-          answerText += piece;
-          await send({ type: 'chunk', text: piece });
+  let complete = false;
+  while (!complete && !signal?.aborted) {
+    try {
+      const stream = background
+        ? await client.interactions.get(interactionId, { stream: true, ...(lastEventId ? { last_event_id: lastEventId } : {}) })
+        : created;
+      for await (const event of stream) {
+        if (signal?.aborted) return { aborted: true, text: '', interactionId };
+        const eventId = String(event?.event_id || event?.id || '');
+        if (eventId) lastEventId = eventId;
+        const type = String(event?.event_type || '');
+        if (type === 'error') throw new Error(String(event?.error?.message || 'The Antigravity agent reported an error.'));
+        if (type === 'interaction.created' || type === 'interaction.completed') {
+          interaction = event?.interaction || interaction;
+          if (type === 'interaction.completed') complete = true;
+          continue;
         }
+        if (type === 'step.start') {
+          const index = Number(event?.index), step = event?.step || {}, stepType = String(step?.type || '');
+          if (Number.isFinite(index)) stepTypes.set(index, stepType);
+          if (stepType && stepType !== 'thought') await send({ type: 'ai_step', status: 'Antigravity · ' + String(step?.name || stepType.replace(/[_-]+/g, ' ')).slice(0, 220) });
+        } else if (type === 'step.delta') {
+          const delta = event?.delta || {};
+          if (delta.type === 'text' && stepTypes.get(Number(event?.index)) === 'model_output') {
+            const piece = String(delta.text || '');
+            if (piece) { answerText += piece; await send({ type: 'chunk', text: piece }); }
+          }
+        } else if (type === 'step.stop') stepTypes.delete(Number(event?.index));
       }
-      continue;
-    }
-
-    if (eventType === 'step.stop') {
-      stepTypes.delete(Number(event?.index));
-      continue;
-    }
-
-    if (eventType === 'interaction.completed') {
-      interaction = event?.interaction || interaction;
+      if (!background) { complete = true; break; }
+      interaction = await client.interactions.get(interactionId).catch(() => interaction);
+      if (['completed', 'failed', 'cancelled', 'incomplete'].includes(String(interaction?.status || '').toLowerCase())) complete = true;
+      else if (!signal?.aborted) await new Promise(resolve => setTimeout(resolve, 1200));
+    } catch (error) {
+      if (!background) throw error;
+      if (signal?.aborted) return { aborted: true, text: '', interactionId };
+      interaction = await client.interactions.get(interactionId).catch(() => interaction);
+      if (['completed', 'failed', 'cancelled', 'incomplete'].includes(String(interaction?.status || '').toLowerCase())) complete = true;
+      else await new Promise(resolve => setTimeout(resolve, 1800));
     }
   }
-
-  if (signal?.aborted) return { aborted: true, text: '' };
-  if (String(interaction?.status || '').toLowerCase() === 'failed') {
-    throw new Error('The Antigravity interaction failed before completion.');
-  }
-
-  const text = answerText.trim() || String(interaction?.output_text || interaction?.outputText || '').trim();
+  if (signal?.aborted) return { aborted: true, text: '', interactionId };
+  if (background) interaction = await client.interactions.get(interactionId).catch(() => interaction);
+  const status = String(interaction?.status || '').toLowerCase();
+  if (status === 'failed') throw new Error('The Antigravity interaction failed before completion.');
+  if (status === 'cancelled') throw new Error('The Antigravity interaction was cancelled.');
+  if (status === 'incomplete') throw new Error('The Antigravity interaction ended before a complete response was available.');
+  const text = String(interaction?.output_text || interaction?.outputText || '').trim() || answerText.trim();
   if (!text) throw new Error('Antigravity finished without a final text response. Retry the task; no success was assumed.');
-
-  return {
-    aborted: false,
-    text,
-    interactionId: String(interaction?.id || ''),
-    usage: interaction?.usage || null
-  };
+  return { aborted: false, text, interactionId, usage: interaction?.usage || null, status: status || 'completed' };
 }
 const VIDEO_MAX_POLL_MS = 20 * 60 * 1000;
 const PRO_TOKEN_LIMIT = 1000000;
@@ -220,12 +216,7 @@ const CODING_TOKEN_LIMIT = 150000;
 const DEEP_RESEARCH_LIMIT = 1;
 
 
-/* =========================================================
-   NATIVE GOOGLE GEN AI / VERTEX AI CLIENT
-   Cloud Run provides the runtime identity and native GCP metadata.
-   Project ID is discovered from the Cloud Run metadata server.
-   Gen AI uses the global location directly in code.
-   ========================================================= */
+
 
 let vertexAIClient = null;
 let vertexAIClientConfigKey = '';
@@ -353,9 +344,7 @@ async function sendFcmNotification(userIdentifier, env, title, body, data = {}) 
   }
 }
 
-/* =========================================================
-   IMAGE LIMIT (resets every calendar month) — shared across ALL models
-   ========================================================= */
+
 
 function getCurrentMonthKey() {
   const d = new Date();
@@ -421,11 +410,7 @@ async function recordModeUsage(userIdentifier, mode, previousCount, delta, limit
 }
 
 
-/* =========================================================
-   TOOL RESULT NORMALIZATION
-   Tool availability is based on capabilities and connected accounts.
-   The model, not keyword matching, chooses when to use those tools.
-   ========================================================= */
+
 
 function stableJson(value) {
   if (Array.isArray(value)) return '[' + value.map(stableJson).join(',') + ']';
@@ -437,9 +422,7 @@ function stableJson(value) {
   return JSON.stringify(value);
 }
 
-/* =========================================================
-   STANDARD VERTEX REQUEST
-   ========================================================= */
+
 
 async function fetchVertexGemini({
   model,
@@ -474,9 +457,7 @@ async function fetchVertexGemini({
   }
 }
 
-/* =========================================================
-   VERTEX STREAMING REQUEST
-   ========================================================= */
+
 
 async function streamVertexGemini({
   model,
@@ -617,13 +598,7 @@ async function streamVertexGemini({
   };
 }
 
-/* =========================================================
-   REQUEST-MODEL ROUTING
-   Chat requests are routed by prompt complexity. The tier still
-   controls legacy account entitlements; TruX-Code and Deep Research
-   use separate pinned model paths. Image
-   generation always uses the dedicated image model under the hood.
-   ========================================================= */
+
 
 function getVertexModel(tier) {
   switch (tier) {
@@ -637,13 +612,7 @@ function getVertexModel(tier) {
   }
 }
 
-/*
- * Chat-only automatic model router.
- * Short, uncomplicated turns use Flash-Lite; normal requests use Gemini 3.6 Flash;
- * complex coding, deep reasoning, multi-stage work, and large attachments
- * use Gemini 3.8 Flash. Dedicated TruX-Code and Deep Research are routed
- * separately from this chat-only model selector.
- */
+
 function selectAutoChatModel({
   message = '',
   image = null,
@@ -754,9 +723,7 @@ function getGroundingData(groundingMetadata) {
 }
 
 
-/* =========================================================
-   GEMINI IMAGE GENERATION (shared by every chat tier)
-   ========================================================= */
+
 
 async function generateImageWithVertex({ prompt, env }) {
   const response = await fetchVertexGemini({
@@ -796,9 +763,7 @@ async function generateImageWithVertex({ prompt, env }) {
 }
 
 
-/* =========================================================
-   VEO VIDEO GENERATION
-   ========================================================= */
+
 function getVideoOutputUri(env) {
   return String(env.TRUX_VIDEO_OUTPUT_GCS_URI || env.VIDEO_OUTPUT_GCS_URI || "").trim().replace(/\/+$/,"");
 }
@@ -884,9 +849,7 @@ async function generateVideoWithVertex({
   };
 }
 
-/* =========================================================
-   STREAM RESPONSE HELPER
-   ========================================================= */
+
 
 function createSseResponse(startStreaming, request = null) {
   const stream = new ReadableStream({
@@ -902,7 +865,6 @@ function createSseResponse(startStreaming, request = null) {
         catch { /* Client disconnects propagate via the request abort signal. */ }
       };
 
-      // Serialize events so asynchronous model/tool work cannot reorder response packets.
       const send = payload => {
         const task = eventQueue.then(() => {
           if (!closed) enqueue(payload);
@@ -992,11 +954,7 @@ async function resolveStoredAttachments(request, env, attachments, userId, query
   return { uid, items };
 }
 
-/* =========================================================
-   CONVERSATION HISTORY
-   Reuse the conversation already sent by the client. Do not make a
-   second, blocking model request just to summarize older messages.
-   ========================================================= */
+
 
 const HISTORY_RECENT_LIMIT = 5;
 function normalizeHistoryMessages(history) {
@@ -1052,7 +1010,6 @@ async function buildConversationHistory(history, signal, env, options = {}) {
     parts: [{ text: msg.text }]
   }));
 
-  // Gemini history must begin with a user turn.
   if (result[0]?.role === 'model') {
     result.unshift({
       role: 'user',
@@ -1063,10 +1020,7 @@ async function buildConversationHistory(history, signal, env, options = {}) {
   return result;
 }
 
-/* =========================================================
-   LOW-COST HOME PROMPT SUGGESTIONS
-   Generated independently of normal chat streaming and cached briefly.
-   ========================================================= */
+
 let truxHomePromptsCache = null;
 let truxHomePromptsCacheAt = 0;
 let truxHomePromptsInFlight = null;
@@ -1225,9 +1179,7 @@ async function getTruxCodeHomePrompt(env, avoidPrompt = '') {
   throw lastError || new Error('Coding home prompt generation failed.');
 }
 
-/* =========================================================
-   MAIN POST HANDLER
-   ========================================================= */
+
 
 export async function onRequestPost(context) {
   const requestStartedAt = Date.now();
@@ -1255,6 +1207,7 @@ export async function onRequestPost(context) {
       githubBranch,
       notifyOnComplete = true,
       incognito = false,
+      responseJobId: requestedResponseJobId = '',
     } = body;
 
     if (mode === 'home-prompts') {
@@ -1287,7 +1240,6 @@ export async function onRequestPost(context) {
       }
     }
 
-    // All account-scoped chat, code, image, and video calls require a verified Firebase ID token.
     const trustedIdentity = await resolveTrustedChatIdentity(request, env);
     const trustedUserId = String(trustedIdentity?.uid || '');
     const requestedUserId = String(userId || '').trim();
@@ -1308,8 +1260,9 @@ export async function onRequestPost(context) {
 
     const researchMode = mode === 'deep-research';
     const codingMode = mode === 'coding';
-    // TruX-Code defaults to Gemini 4 Argon. Tool use is selected by the model,
-    // not by matching words in the user's request.
+    const suppliedJobId = String(requestedResponseJobId || '').trim();
+    if (codingMode && !incognito && suppliedJobId && !validCodeJobId(suppliedJobId)) return Response.json({ error: 'Invalid response job ID.' }, { status: 400 });
+    const effectiveResponseJobId = codingMode && !incognito ? (suppliedJobId || crypto.randomUUID()) : '';
     const effectiveTier =
       researchMode || codingMode
         ? 'ultra'
@@ -1317,10 +1270,7 @@ export async function onRequestPost(context) {
     const proTier = effectiveTier === 'pro' || effectiveTier === 'ultra' || researchMode;
 
 
-    /* =====================================================
-       VIDEO GENERATION — Pro + Owner only.
-       Owner access has no application-level video limit.
-       ===================================================== */
+    
     if(mode === "video") {
       if(!developerAccount && effectiveTier !== "pro") {
         return createSseResponse(async ({send}) => {
@@ -1344,20 +1294,9 @@ export async function onRequestPost(context) {
       }, request);
     }
 
-    /* =====================================================
-       IMAGE GENERATION — available from ANY model tier now.
-       Triggered either by an explicit "generateImage" flag
-       from the client, or by intent detection on the message.
-       There is no more separate "nano-banana" model; the
-       currently selected tier (base/pro) is just passed through
-       for usage-accounting purposes but doesn't change how the
-       image itself is generated.
-       ===================================================== */
+    
 
-    /* The model decides whether a turn is an image turn (it answers with an
-       [[IMAGE]] tag, and the client then calls back with generateImage:true).
-       No keyword guessing here - that was what made image generation fire
-       inconsistently. */
+    
     if (forceImageGen || mode === 'image') {
       let previousCount = 0;
 
@@ -1411,9 +1350,7 @@ export async function onRequestPost(context) {
       }
     }
 
-    /* =====================================================
-       NORMAL TEXT STREAM (works the same for every tier)
-       ===================================================== */
+    
 
     if (!developerAccount && (codingMode || researchMode || proTier)) {
       try {
@@ -1482,16 +1419,9 @@ export async function onRequestPost(context) {
       const index = effectiveAttachments.findIndex(a => String(a?.objectKey || '') === String(stored.objectKey || ''));
       if (index >= 0) effectiveAttachments[index] = { ...effectiveAttachments[index], text: stored.text, kind: 'processed' };
     }
-    /* =====================================================
-       HISTORY
-       =====================================================
-       The client-provided conversation history is formatted directly for
-       the primary stream; no separate history-summary model request is made.
-       ===================================================== */
+    
 
-    /* =====================================================
-       CURRENT MESSAGE
-       ===================================================== */
+    
 
     const currentParts = [];
 
@@ -1555,14 +1485,20 @@ export async function onRequestPost(context) {
           });
     }
 
+    if (effectiveResponseJobId) {
+      try { await saveCodeJob(env, userIdentifier, effectiveResponseJobId, { status: 'starting' }); }
+      catch (error) {
+        console.error('[trux-code] durable job registration failed:', error?.message || error);
+        return Response.json({ error: 'Response recovery storage is unavailable. Please retry.' }, { status: 503 });
+      }
+    }
     return createSseResponse(async ({ send, signal }) => {
       send({ type: 'status', status: codingMode ? 'Connecting to Antigravity…' : 'Thinking' });
+      if (effectiveResponseJobId) await send({ type: 'response_job', responseJobId: effectiveResponseJobId });
       let firstTextAt = 0;
       let streamedChunkCount = 0;
       let streamedCharCount = 0;
 
-      // Keep greetings lightweight; other turns pass the supplied history
-      // directly to the primary Vertex stream without a blocking status-model call.
       const isStandaloneGreeting = /^(?:hi|hello|hey|hiya|howdy|yo|good morning|good afternoon|good evening)[\s!.,?]*$/i
         .test(String(message || '').trim());
       const historyForTurn = isStandaloneGreeting && Array.isArray(history)
@@ -1588,16 +1524,25 @@ export async function onRequestPost(context) {
 
       const contents = [...formattedHistory, { role: 'user', parts: currentParts }];
 
-      // TruX-Code runs through Google's managed Antigravity agent with Argon
-      // configured on the agent itself, not through Vertex generateContent.
       if (codingMode) {
-        const agentResult = await streamTruxCodeWithAntigravity({
-          contents,
-          systemInstruction: thinkingInstruction,
-          env,
-          send,
-          signal
-        });
+        let agentResult;
+        try {
+          agentResult = await streamTruxCodeWithAntigravity({
+            contents, systemInstruction: thinkingInstruction, env, send, signal,
+            responseJobId: effectiveResponseJobId,
+            onInteractionCreated: async interaction => {
+              if (effectiveResponseJobId) await saveCodeJob(env, userIdentifier, effectiveResponseJobId, {
+                interactionId: String(interaction?.id || ''),
+                status: String(interaction?.status || 'in_progress').toLowerCase()
+              });
+            }
+          });
+        } catch (error) {
+          if (effectiveResponseJobId && !signal?.aborted) {
+            try { await saveCodeJob(env, userIdentifier, effectiveResponseJobId, { status: 'failed' }); } catch {}
+          }
+          throw error;
+        }
         if (agentResult.aborted || signal?.aborted) return;
 
         const finalText = String(agentResult.text || '').trim();
@@ -1610,6 +1555,7 @@ export async function onRequestPost(context) {
           finalChars: finalText.length,
           totalTokens: agentResult.usage?.total_tokens ?? null
         }));
+        if (effectiveResponseJobId) await saveCodeJob(env, userIdentifier, effectiveResponseJobId, { interactionId: String(agentResult.interactionId || ''), status: 'completed' });
         await send({ type: 'final', text: finalText });
 
         if (notifyOnComplete) {
@@ -1640,9 +1586,7 @@ export async function onRequestPost(context) {
         }
         return;
       }
-      /* -------------------------------------------------
-         First streamed generation
-         ------------------------------------------------- */
+      
 
 
       const composioToolMetadata = new Map();
@@ -1650,10 +1594,7 @@ export async function onRequestPost(context) {
       const composioApiKeyConfigured = !!String(env.COMPOSIO_API_KEY || '').trim();
       const canDiscoverComposioTools = !!effectiveUserId && composioApiKeyConfigured;
 
-      /*
-       * Load only the user's active integration metadata. No external action
-       * runs here. Gemini decides if action discovery is useful for this turn.
-       */
+      
       if (canDiscoverComposioTools) {
         try {
           const connectedAccounts = await listConnectedAccounts(env, effectiveUserId);
@@ -1662,8 +1603,6 @@ export async function onRequestPost(context) {
               .map(account => String(account?.toolkit?.slug || account?.toolkit_slug || '').trim())
               .filter(Boolean)
           );
-          // Discover from every active connected Composio toolkit, not only
-          // integrations currently listed in the Plugins page catalog.
           connectedToolkitSlugs = [...activeSlugs];
         } catch (integrationError) {
           send({
@@ -1734,8 +1673,6 @@ export async function onRequestPost(context) {
         return out;
       }
 
-      // Tool replay protection is local to this request and prevents the same
-      // tool action from being executed twice during one streamed turn.
       const executedToolResults = new Map();
       const completedComposioActions = [];
 
@@ -1753,7 +1690,6 @@ export async function onRequestPost(context) {
           contents: agentContents,
           systemInstruction: thinkingInstruction,
           tools: modelTools,
-          // No ANY-mode forcing: the model chooses its own tool calls.
           toolConfig: undefined,
           signal,
           env,
@@ -1775,15 +1711,13 @@ export async function onRequestPost(context) {
             }));
           }
 
-          // Send answer content immediately without parallel status-model calls.
           if (!(await send({ type: 'chunk', text: piece }))) throw new Error('Chat storage failed while saving a response chunk.');
         },
         });
 
         lastModelResult = result;
 
-        /* Preserve sources from every model round. A later synthesis/tool round
-           may replace finalResult and otherwise discard earlier search grounding. */
+        
         const roundGrounding = getGroundingData(result?.groundingMetadata);
         if (roundGrounding.sources.length || roundGrounding.searchSuggestionHtml) {
           send({ type: 'grounding', grounding: roundGrounding });
@@ -1859,7 +1793,6 @@ export async function onRequestPost(context) {
               }
 
               if (replayedToolCall) {
-                // Reuse the verified result without inventing a new activity label.
               } else if (TRUX_WEB_TOOL_NAMES.has(String(call?.name || ''))) {
                 roundDidNewWork = true;
                 callResult = await executeTruxWebTool({
@@ -2057,7 +1990,6 @@ export async function onRequestPost(context) {
                 try { safeOutput = JSON.stringify(safeToolPayload(callResult), null, 2); }
                 catch { safeOutput = String(callResult ?? ''); }
                 completedComposioActions.push({ tool: toolName, success: resultSucceeded, output: safeOutput.slice(0, 6000) });
-                // Keep every verified action result for final synthesis; do not impose a per-turn action cap.
               }
               send({
                 type: 'tool_status',
@@ -2134,12 +2066,7 @@ export async function onRequestPost(context) {
         finalResult = { text: String(lastModelResult?.text || '').trim() };
       }
 
-      /*
-       * Tool execution and answer generation are two distinct phases. If Gemini
-       * completed the tool loop but returned an empty model message, make one
-       * dedicated synthesis request with tools disabled. This produces the
-       * model's actual final answer instead of inventing a canned success line.
-       */
+      
       let currentFinalText = String(finalResult?.text || '').trim();
       if (!currentFinalText && !generationStopped && Array.isArray(agentContents) && agentContents.length) {
         try {
@@ -2259,10 +2186,40 @@ export async function onRequestPost(context) {
 }
 
 
-/* =========================================================
-   SIMPLE HEALTH CHECK
-   ========================================================= */
 
-export async function onRequestGet() {
-  return Response.json({ ok: true, service: 'TruX-Omni Vertex backend' });
+
+export async function onRequestGet(context = {}) {
+  const request = context?.request, env = context?.env || {};
+  const jobId = String(request?.url ? new URL(request.url).searchParams.get('responseJobId') || '' : '').trim();
+  const headers = { 'Cache-Control': 'no-store, private, max-age=0' };
+  if (!jobId) return Response.json({ ok: true, service: 'TruX-Omni Vertex backend' }, { headers });
+  if (!validCodeJobId(jobId)) return Response.json({ error: 'Invalid response job ID.' }, { status: 400, headers });
+  try {
+    const identity = await resolveTrustedChatIdentity(request, env);
+    const kv = getCloudRunKv(env, { strict: true });
+    const record = await kv.get(codeJobKey(identity.uid, jobId), 'json');
+    if (!record || record.uid !== identity.uid || record.jobId !== jobId) return Response.json({ error: 'Response job not found.' }, { status: 404, headers });
+    if (!record.interactionId) return Response.json({ status: 'starting' }, { status: 202, headers });
+    const interaction = await getTruxCodeAntigravityClient(env).interactions.get(String(record.interactionId));
+    const status = String(interaction?.status || record.status || 'in_progress').toLowerCase();
+    if (status === 'completed') {
+      const text = String(interaction?.output_text || interaction?.outputText || '').trim();
+      if (!text) {
+        await saveCodeJob(env, identity.uid, jobId, { status: 'incomplete' });
+        return Response.json({ status: 'incomplete', error: 'The agent returned no final text.' }, { headers });
+      }
+      if (record.status !== 'completed') await saveCodeJob(env, identity.uid, jobId, { interactionId: String(record.interactionId), status: 'completed' });
+      return Response.json({ status: 'completed', text }, { headers });
+    }
+    if (['failed', 'cancelled', 'incomplete'].includes(status)) {
+      if (record.status !== status) await saveCodeJob(env, identity.uid, jobId, { interactionId: String(record.interactionId), status });
+      return Response.json({ status, error: status === 'failed' ? 'The Antigravity agent failed.' : status === 'cancelled' ? 'The interaction was cancelled.' : 'The interaction ended incomplete.' }, { headers });
+    }
+    return Response.json({ status }, { headers });
+  } catch (error) {
+    const status = Number(error?.status) || 503;
+    if ([400, 401, 403, 404].includes(status)) return Response.json({ error: String(error?.message || 'Request failed.') }, { status, headers });
+    console.warn('[trux-code] recovery lookup failed:', error?.message || error);
+    return Response.json({ error: 'Response recovery is temporarily unavailable.' }, { status: 503, headers });
+  }
 }
