@@ -96,6 +96,20 @@ async function saveCodeJob(env, uid, id, patch = {}) {
   await kv.put(key, JSON.stringify(record), { expirationTtl: CODE_JOB_TTL });
   return record;
 }
+
+async function saveCodeJobWithRetry(env, uid, id, patch = {}, attempts = 7) {
+  let lastError;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try { return await saveCodeJob(env, uid, id, patch); }
+    catch (error) {
+      lastError = error;
+      if (attempt + 1 < attempts) {
+        await new Promise(resolve => setTimeout(resolve, Math.min(500 * (2 ** attempt), 5000)));
+      }
+    }
+  }
+  throw lastError || new Error('Could not persist TruX-Code response metadata.');
+}
 let truxCodeAntigravityApiKey = '';
 
 function getTruxCodeAntigravityClient(env) {
@@ -1531,7 +1545,7 @@ export async function onRequestPost(context) {
             contents, systemInstruction: thinkingInstruction, env, send, signal,
             responseJobId: effectiveResponseJobId,
             onInteractionCreated: async interaction => {
-              if (effectiveResponseJobId) await saveCodeJob(env, userIdentifier, effectiveResponseJobId, {
+              if (effectiveResponseJobId) await saveCodeJobWithRetry(env, userIdentifier, effectiveResponseJobId, {
                 interactionId: String(interaction?.id || ''),
                 status: String(interaction?.status || 'in_progress').toLowerCase()
               });
