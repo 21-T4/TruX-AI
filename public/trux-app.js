@@ -4473,8 +4473,7 @@
       head.textContent = target;
 
       // Keep the thinking bar compact: never print raw tool arguments or large
-      // provider responses here. Terminal commands and their output are rendered
-      // separately in the TruX-Code terminal.
+      // provider responses here.
       item.querySelector(".thinking-tool-meta")?.remove();
       item.querySelector(".thinking-tool-result")?.remove();
       let status = item.querySelector(".thinking-tool-status");
@@ -4644,7 +4643,7 @@
         link.textContent = "Open website";
         preview.append(header, image, link);
         preview._title = heading; preview._meta = meta; preview._image = image; preview._link = link;
-        stack.insertBefore(preview, stack.querySelector("[data-trux-terminal-window]") || stack.querySelector(".bubble"));
+        stack.insertBefore(preview, stack.querySelector(".bubble"));
       }
       if (preview._title) preview._title.textContent = String(event.title || "Live website preview").slice(0, 240);
       if (preview._meta) preview._meta.textContent =
@@ -4653,92 +4652,6 @@
       if (preview._image) preview._image.src =
         "data:" + String(event.screenshotMimeType || "image/jpeg") + ";base64," + String(event.screenshotBase64);
       if (preview._link && /^https?:\/\//i.test(sourceUrl)) preview._link.href = sourceUrl;
-    }
-
-    function escapeTerminalText(value) {
-      return escapeHtml(String(value == null ? "" : value));
-    }
-
-    function ensureTruxTerminal(responseRow) {
-      const stack = responseRow?.querySelector?.(".trux-response-stack");
-      if (!stack) return null;
-      let win = stack.querySelector("[data-trux-terminal-window]");
-      if (!win) {
-        win = document.createElement("div");
-        win.className = "trux-terminal-window";
-        win.setAttribute("data-trux-terminal-window", "1");
-        win.hidden = true;
-        stack.insertBefore(win, stack.querySelector(".bubble"));
-      }
-      if (!win.querySelector(".trux-terminal-head")) {
-        win.innerHTML =
-          '<div class="trux-terminal-head">' +
-            '<span class="trux-terminal-dots"><i></i><i></i><i></i></span>' +
-            '<span class="trux-terminal-title">TruX Terminal</span>' +
-            '<button type="button" class="trux-terminal-toggle" onclick="toggleTruxTerminal(this)" aria-label="Collapse terminal">COLLAPSE</button>' +
-          '</div>' +
-          '<div class="trux-terminal-body"></div>';
-      }
-      win.hidden = false;
-      return win;
-    }
-
-    function toggleTruxTerminal(button) {
-      const win = button?.closest?.(".trux-terminal-window");
-      if (!win) return;
-      const collapsed = !win.classList.contains("collapsed");
-      win.classList.toggle("collapsed", collapsed);
-      button.textContent = collapsed ? "EXPAND" : "COLLAPSE";
-      button.setAttribute("aria-label", collapsed ? "Expand terminal" : "Collapse terminal");
-    }
-
-    function renderTerminalEvent(responseRow, event) {
-      if (!responseRow || workspaceMode !== "coding") return;
-      const win = ensureTruxTerminal(responseRow);
-      if (!win) return;
-      const body = win.querySelector(".trux-terminal-body");
-      if (!body) return;
-
-      if (event.phase === "start") {
-        const entry = document.createElement("div");
-        entry.className = "trux-terminal-entry";
-        entry.innerHTML =
-          '<div class="trux-terminal-command">' +
-            '<span class="trux-terminal-prompt">›</span>' +
-            '<code>' + escapeTerminalText(event.command || "") + '</code>' +
-          '</div>' +
-          '<div class="trux-terminal-output"></div>';
-        body.appendChild(entry);
-        responseRow._activeTerminalEntry = entry;
-      } else if (event.phase === "output") {
-        const entry = responseRow._activeTerminalEntry || body.lastElementChild;
-        const output = entry?.querySelector?.(".trux-terminal-output");
-        if (output && event.text) {
-          output.textContent += String(event.text);
-        }
-      } else if (event.phase === "complete") {
-        const entry = responseRow._activeTerminalEntry || body.lastElementChild;
-        const output = entry?.querySelector?.(".trux-terminal-output");
-        if (output) {
-          if (event.stderr && !output.textContent.includes(event.stderr)) {
-            output.textContent += (output.textContent ? "\n" : "") + String(event.stderr);
-          }
-          if (!output.textContent && event.stdout) output.textContent = String(event.stdout);
-          output.classList.toggle("error", !event.success);
-        }
-        if (entry) {
-          const exit = document.createElement("div");
-          exit.className = "trux-terminal-exit";
-          exit.textContent =
-            (event.success ? "Process finished" : "Process failed") +
-            " · exit " + String(event.code ?? 1) +
-            " · " + String(event.durationMs || 0) + " ms";
-          entry.appendChild(exit);
-        }
-        responseRow._activeTerminalEntry = null;
-      }
-
-      body.scrollTop = body.scrollHeight;
     }
 
     function setThinkingStatus(statusId, text) {
@@ -5143,7 +5056,6 @@
         </div>`;
       row.innerHTML = `<div class="trux-response-stack">
         ${thinkingMarkup}
-        ${codingTurn ? '<div class="trux-terminal-window" data-trux-terminal-window hidden></div>' : ''}
         <div class="bubble trux-bubble ${codingTurn ? "thinking" : ""}" id="${id}"></div>
         <div class="actions" id="${aid}"></div>
       </div>`;
@@ -5386,10 +5298,7 @@
             const responseRow = getEl(id)?.closest(".row");
             renderBrowserPreview(responseRow, j);
           }
-          else if(j.type === "terminal") {
-            const responseRow = getEl(id)?.closest(".row");
-            renderTerminalEvent(responseRow, j);
-          }
+          
           else if(j.type === "done") {
             streamDone = true;
             /* A clean EOF is authoritative even if the server omitted a final frame.
