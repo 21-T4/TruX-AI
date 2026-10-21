@@ -5,7 +5,6 @@
   window.__truxResponseRecoveryInstalled = true;
 
   const PREFIX = "trux_chat_sessions_local_v1:";
-  const jobs = new Map();
   const polling = new Set();
   const rawSet = Storage.prototype.setItem;
   const rawGet = Storage.prototype.getItem;
@@ -205,7 +204,7 @@
     polling.add(jobId);
     let wait = 2500, missingSince = 0;
     const deadline = Date.now() + 6 * 60 * 60 * 1000;
-    let accumulated = "", toolEvents = [];
+    const toolEvents = [];
     try {
       while (Date.now() < deadline) {
         if (!navigator.onLine) { await sleep(3000); continue; }
@@ -235,7 +234,7 @@
             const current = findJob(jobId);
             if (current) {
               const old = current.session.messages[current.userIndex + 1];
-              storeSnapshot(jobId, old?.text || accumulated, false, toolEvents, String(data.error || "Response recovery ended before completion."));
+              storeSnapshot(jobId, old?.text || "", false, toolEvents, String(data.error || "Response recovery ended before completion."));
               const refreshed = findJob(jobId);
               if (refreshed) {
                 delete refreshed.session.messages[refreshed.userIndex].responseJobId;
@@ -318,8 +317,7 @@
             if (location) {
               body.responseJobId = location.jobId;
               job = { id: location.jobId, uid: user.uid, prompt: String(body.message || ""), user, location, full: "", finalText: "", lastSaveAt: 0, toolEvents: [] };
-              jobs.set(job.id, job);
-              options = { ...init, body: JSON.stringify(body) };
+                      options = { ...init, body: JSON.stringify(body) };
             }
           }
         }
@@ -346,7 +344,6 @@
             if (pending.trim()) parseFrame(pending, job);
             if (!job.finalText) void recoverJob(job.id, job.user);
             controller.close();
-            jobs.delete(job.id);
             return;
           }
           pending += decoder.decode(part.value, { stream: true });
@@ -363,7 +360,6 @@
         // The browser may stop reading on navigation/final UI render; provider generation is a background interaction.
         void reader.cancel(reason).catch(() => {});
         if (!job.finalText) void recoverJob(job.id, job.user);
-        jobs.delete(job.id);
       }
     });
     return new Response(stream, { status: response.status, statusText: response.statusText, headers: response.headers });
