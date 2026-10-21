@@ -6,6 +6,7 @@
 
   const PREFIX = "trux_chat_sessions_local_v1:";
   const polling = new Set();
+  const activeRequests = new Map();
   const rawSet = Storage.prototype.setItem;
   const rawGet = Storage.prototype.getItem;
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -90,6 +91,20 @@
         if (session?.incognito || !Array.isArray(session?.messages)) continue;
         const index = session.messages.findIndex(m => m?.role === "user" && m.responseJobId === jobId);
         if (index >= 0) return { key, sessions, chatId, session, userIndex: index, prompt: messageText(session.messages[index]) };
+      }
+    }
+    return null;
+  }
+
+  function findJobForPrompt(uid, prompt) {
+    const key = cacheKey(uid), sessions = readCache(key);
+    for (const [chatId, session] of Object.entries(sessions)) {
+      if (session?.incognito || !Array.isArray(session?.messages)) continue;
+      for (let i = session.messages.length - 1; i >= 0; i--) {
+        const message = session.messages[i];
+        if (message?.role === "user" && messageText(message) === String(prompt || "") && isJobId(message.responseJobId)) {
+          return { key, sessions, chatId, session, userIndex: i, prompt: messageText(message), jobId: message.responseJobId };
+        }
       }
     }
     return null;
@@ -272,9 +287,9 @@
     if (!data) return;
     let packet;
     try { packet = JSON.parse(data); } catch { return; }
-    if (packet.type === "response_job" && isJobId(packet.responseJobId) && packet.responseJobId !== job.id) {
-      job.id = packet.responseJobId;
-      job.location = bindJobToPrompt(job.uid, job.prompt, job.id) || job.location;
+    if (packet.type === "response_job" && isJobId(packet.responseJobId)) {
+      if (packet.responseJobId !== job.id) job.id = packet.responseJobId;
+      if (!job.location) job.location = findJob(job.id) || bindJobToPrompt(job.uid, job.prompt, job.id);
     } else if (packet.type === "chunk") {
       job.full += String(packet.text || "");
       if (Date.now() - job.lastSaveAt > 500) {
@@ -310,15 +325,29 @@
       const method = String(init?.method || (input instanceof Request ? input.method : "GET")).toUpperCase();
       if (url.includes("/api/chat") && method === "POST" && typeof init?.body === "string") {
         const body = JSON.parse(init.body);
-        if (body?.mode === "coding" && !body.incognito && !body.responseJobId) {
+        if (body?.mode === "coding" && !body.incognito) {
           const user = window.firebase?.auth?.()?.currentUser;
           if (user) {
-            const location = bindJobToPrompt(user.uid, body.message);
-            if (location) {
-              body.responseJobId = location.jobId;
-              job = { id: location.jobId, uid: user.uid, prompt: String(body.message || ""), user, location, full: "", finalText: "", lastSaveAt: 0, toolEvents: [] };
-                      options = { ...init, body: JSON.stringify(body) };
+            const prompt = String(body.message || "");
+            const location = (isJobId(body.responseJobId) ? findJob(body.responseJobId) : null)
+              || findJobForPrompt(user.uid, prompt)
+              || bindJobToPrompt(user.uid, prompt, body.responseJobId || "");
+            const id = isJobId(body.responseJobId) ? body.responseJobId
+              : location?.jobId || ("truxjob_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10));
+            body.responseJobId = id;
+            if (location && location.session.messages[location.userIndex]?.responseJobId !== id) {
+              location.session.messages[location.userIndex].responseJobId = id;
+              writeCache(location.key, location.sessions);
             }
+            const stateKey = String(user.uid) + "|" + (location?.chatId || "") + "|" + prompt;
+            const previousJob = activeRequests.get(stateKey);
+            job = previousJob?.id === id ? previousJob : {
+              id, uid: user.uid, prompt, user, location, stateKey,
+              full: "", finalText: "", lastSaveAt: 0, authFailures: 0, toolEvents: []
+            };
+            if (!job.location && location) job.location = location;
+            activeRequests.set(stateKey, job);
+            options = { ...init, body: JSON.stringify(body) };
           }
         }
       }
@@ -326,11 +355,14 @@
     const response = await nativeFetch(input, options);
     if (!job) return response;
     if (!response.ok || !response.body || !String(response.headers.get("content-type") || "").includes("text/event-stream")) {
-      const location = findJob(job.id);
-      if (location) {
-        delete location.session.messages[location.userIndex].responseJobId;
-        writeCache(location.key, location.sessions);
-      }
+      if (response.status !== 401 || job.authFailures > 0) {
+        const location = findJob(job.id);
+        if (location) {
+          delete location.session.messages[location.userIndex].responseJobId;
+          writeCache(location.key, location.sessions);
+        }
+        activeRequests.delete(job.stateKey);
+      } else job.authFailures += 1;
       return response;
     }
     const reader = response.body.getReader(), decoder = new TextDecoder();
@@ -344,6 +376,7 @@
             if (pending.trim()) parseFrame(pending, job);
             if (!job.finalText) void recoverJob(job.id, job.user);
             controller.close();
+            activeRequests.delete(job.stateKey);
             return;
           }
           pending += decoder.decode(part.value, { stream: true });
@@ -360,6 +393,7 @@
         // The browser may stop reading on navigation/final UI render; provider generation is a background interaction.
         void reader.cancel(reason).catch(() => {});
         if (!job.finalText) void recoverJob(job.id, job.user);
+        activeRequests.delete(job.stateKey);
       }
     });
     return new Response(stream, { status: response.status, statusText: response.statusText, headers: response.headers });
