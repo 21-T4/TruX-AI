@@ -469,4 +469,10 @@
   window.addEventListener("online", () => {
     try { startPendingRecovery(window.firebase?.auth?.()?.currentUser); } catch {}
   });
+  window.addEventListener("pagehide", () => {
+    activeRequests.clear();
+  });
+  window.addEventListener("pageshow", () => {
+    try { startPendingRecovery(window.firebase?.auth?.()?.currentUser); } catch {}
+  });
 })();
