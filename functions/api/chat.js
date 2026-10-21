@@ -86,6 +86,137 @@ function isDeveloperEmail(email) {
 const IMAGE_LIMIT = 15;
 const VIDEO_MODEL = "veo-3.1-fast-generate-001";
 const TRUX_CODE_MODEL = 'gemini-4-argon';
+const TRUX_CODE_AGENT = 'antigravity-preview-09-2026';
+let truxCodeAntigravityClient = null;
+let truxCodeAntigravityApiKey = '';
+
+function getTruxCodeAntigravityClient(env) {
+  const apiKey = String(
+    env?.GEMINI_API_KEY ||
+    env?.GOOGLE_API_KEY ||
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    ''
+  ).trim();
+  if (!apiKey) {
+    throw Object.assign(
+      new Error('TruX-Code Antigravity is not configured. Add GEMINI_API_KEY to the Cloud Run service environment or secrets.'),
+      { status: 503 }
+    );
+  }
+  if (!truxCodeAntigravityClient || truxCodeAntigravityApiKey !== apiKey) {
+    truxCodeAntigravityClient = new GoogleGenAI({ apiKey });
+    truxCodeAntigravityApiKey = apiKey;
+  }
+  return truxCodeAntigravityClient;
+}
+
+function buildTruxCodeAntigravityInput(contents, systemInstruction) {
+  const transcript = (Array.isArray(contents) ? contents : []).map(message => {
+    const role = message?.role === 'model' || message?.role === 'assistant' ? 'ASSISTANT' : 'USER';
+    const parts = (Array.isArray(message?.parts) ? message.parts : []).map(part => {
+      if (typeof part?.text === 'string') return part.text;
+      if (part?.inlineData) {
+        return '[User image attachment; MIME type: ' +
+          String(part.inlineData.mimeType || 'image') +
+          '. The image payload is not represented in this text transcript.]';
+      }
+      if (part?.fileData) return '[Attached file: ' + String(part.fileData.mimeType || 'file') + ']';
+      return '';
+    }).filter(Boolean);
+    return parts.length ? role + ':\n' + parts.join('\n') : '';
+  }).filter(Boolean).join('\n\n');
+
+  return [
+    String(systemInstruction || ''),
+    '[TRUX-CODE ANTIGRAVITY EXECUTION CONTRACT]',
+    'This is an autonomous coding-agent task, not a request to merely suggest code. Inspect the available remote workspace, choose and use the available filesystem and code-execution tools when relevant, implement the requested outcome, and run relevant checks. Do not invent a repository checkout, deployment, terminal action, file edit, or test result. The remote Antigravity sandbox is separate from the TruX host application and any external Git repository unless that repository is actually made available in the task. Explain that limitation when it matters. Continue until useful work is complete or a real service/permission boundary blocks you, then provide a clear final response.',
+    '[CONVERSATION]',
+    transcript || '[No text conversation was supplied.]'
+  ].filter(Boolean).join('\n\n');
+}
+
+async function streamTruxCodeWithAntigravity({ contents, systemInstruction, env, send, signal }) {
+  const client = getTruxCodeAntigravityClient(env);
+  const input = buildTruxCodeAntigravityInput(contents, systemInstruction);
+  const stream = await client.interactions.create({
+    agent: TRUX_CODE_AGENT,
+    input,
+    environment: 'remote',
+    agent_config: {
+      type: 'antigravity',
+      model: TRUX_CODE_MODEL
+    },
+    stream: true
+  });
+
+  const stepTypes = new Map();
+  let answerText = '';
+  let interaction = null;
+
+  for await (const event of stream) {
+    if (signal?.aborted) return { aborted: true, text: '' };
+
+    const eventType = String(event?.event_type || '');
+    if (eventType === 'error') {
+      throw new Error(String(event?.error?.message || 'The Antigravity agent reported an error.'));
+    }
+
+    if (eventType === 'interaction.created') {
+      interaction = event?.interaction || interaction;
+      continue;
+    }
+
+    if (eventType === 'step.start') {
+      const stepIndex = Number(event?.index);
+      const step = event?.step || {};
+      const stepType = String(step?.type || '');
+      if (Number.isFinite(stepIndex)) stepTypes.set(stepIndex, stepType);
+      if (stepType && stepType !== 'thought') {
+        const label = String(step?.name || stepType.replace(/[_-]+/g, ' ')).trim();
+        await send({ type: 'ai_step', status: 'Antigravity · ' + label.slice(0, 220) });
+      }
+      continue;
+    }
+
+    if (eventType === 'step.delta') {
+      const delta = event?.delta || {};
+      const stepType = stepTypes.get(Number(event?.index)) || '';
+      if (delta.type === 'text' && stepType === 'model_output') {
+        const piece = String(delta.text || '');
+        if (piece) {
+          answerText += piece;
+          await send({ type: 'chunk', text: piece });
+        }
+      }
+      continue;
+    }
+
+    if (eventType === 'step.stop') {
+      stepTypes.delete(Number(event?.index));
+      continue;
+    }
+
+    if (eventType === 'interaction.completed') {
+      interaction = event?.interaction || interaction;
+    }
+  }
+
+  if (signal?.aborted) return { aborted: true, text: '' };
+  if (String(interaction?.status || '').toLowerCase() === 'failed') {
+    throw new Error('The Antigravity interaction failed before completion.');
+  }
+
+  const text = answerText.trim() || String(interaction?.output_text || interaction?.outputText || '').trim();
+  if (!text) throw new Error('Antigravity finished without a final text response. Retry the task; no success was assumed.');
+
+  return {
+    aborted: false,
+    text,
+    interactionId: String(interaction?.id || ''),
+    usage: interaction?.usage || null
+  };
+}
 const VIDEO_MAX_POLL_MS = 20 * 60 * 1000;
 const PRO_TOKEN_LIMIT = 1000000;
 const CODING_TOKEN_LIMIT = 150000;
@@ -1204,7 +1335,7 @@ async function getTruxHomePrompts(env) {
   if (truxHomePromptsInFlight) return truxHomePromptsInFlight;
 
   truxHomePromptsInFlight = (async () => {
-    const modelAttempts = ['gemini-3.5-flash-lite', 'gemini-3.6-flash'];
+    const modelAttempts = ['gemini-3.5-flash-lite'];
     let lastError = null;
     for (const model of modelAttempts) {
       try {
@@ -1257,6 +1388,56 @@ async function getTruxHomePrompts(env) {
   }
 }
 
+async function getTruxCodeHomePrompt(env, avoidPrompt = '') {
+  let avoid = String(avoidPrompt || '').replace(/\s+/g, ' ').trim().slice(0, 70);
+  let lastError = null;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetchVertexGemini({
+        model: 'gemini-3.5-flash-lite',
+        contents: [{
+          role: 'user',
+          parts: [{
+            text: [
+              'Create one original, concise prompt for a coding-agent home screen.',
+              'Use 3–7 words and no more than 54 characters.',
+              'Prefer a concrete coding task, not a greeting or generic marketing phrase.',
+              avoid ? 'Do not repeat or paraphrase this previous prompt: "' + avoid + '".' : '',
+              'Request marker: ' + Date.now().toString(36) + '-' + attempt
+            ].filter(Boolean).join(' ')
+          }]
+        }],
+        systemInstruction: 'Return only one fresh coding-task suggestion. No quotes, labels, bullets, numbering, markdown, greeting, or explanation. Avoid the supplied previous prompt. Use 3–7 words and at most 54 characters.',
+        generationConfig: { temperature: 0.95, maxOutputTokens: 36 },
+        env
+      });
+
+      const directText = typeof response?.text === 'string' ? response.text : '';
+      const partsText = response?.candidates?.[0]?.content?.parts
+        ?.filter(part => typeof part?.text === 'string' && part?.thought !== true)
+        .map(part => part.text)
+        .join('') || '';
+      const prompt = String(directText || partsText)
+        .split(/\r?\n/)[0]
+        .replace(/^\s*(?:[-*•]|\d+[.)])\s*/, '')
+        .replace(/^["'“”]+|["'“”]+$/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const words = prompt ? prompt.split(/\s+/).length : 0;
+      if (prompt.length >= 8 && prompt.length <= 54 && words >= 3 && words <= 7 &&
+          (!avoid || prompt.toLowerCase() !== avoid.toLowerCase())) {
+        return prompt;
+      }
+      avoid = prompt || avoid;
+      lastError = new Error('Flash-Lite returned an empty or repeated coding prompt.');
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError || new Error('Coding home prompt generation failed.');
+}
+
 /* =========================================================
    MAIN POST HANDLER
    ========================================================= */
@@ -1298,6 +1479,21 @@ export async function onRequestPost(context) {
       } catch (error) {
         console.warn('TruX home prompt generation failed:', error?.message || error);
         return Response.json({ prompts: [] }, {
+          status: 503,
+          headers: { 'Cache-Control': 'no-store' }
+        });
+      }
+    }
+
+    if (mode === 'coding-home-prompt') {
+      try {
+        const prompt = await getTruxCodeHomePrompt(env, body.avoidPrompt);
+        return Response.json({ prompt }, {
+          headers: { 'Cache-Control': 'no-store' }
+        });
+      } catch (error) {
+        console.warn('TruX-Code home prompt generation failed:', error?.message || error);
+        return Response.json({ error: 'Coding home prompt generation is temporarily unavailable.' }, {
           status: 503,
           headers: { 'Cache-Control': 'no-store' }
         });
@@ -1542,7 +1738,7 @@ export async function onRequestPost(context) {
 
     let targetModel;
     const requestedOwnerModel = developerAccount ? String(ownerModel || 'auto').trim() : 'auto';
-    if (requestedOwnerModel && requestedOwnerModel !== 'auto') {
+    if (!codingMode && requestedOwnerModel && requestedOwnerModel !== 'auto') {
       let availableModels;
       try {
         availableModels = await listAvailableGeminiModels();
@@ -1606,6 +1802,59 @@ export async function onRequestPost(context) {
       }));
 
       const contents = [...formattedHistory, { role: 'user', parts: currentParts }];
+
+      // TruX-Code runs through Google's managed Antigravity agent with Argon
+      // configured on the agent itself, not through Vertex generateContent.
+      if (codingMode) {
+        const agentResult = await streamTruxCodeWithAntigravity({
+          contents,
+          systemInstruction: thinkingInstruction,
+          env,
+          send,
+          signal
+        });
+        if (agentResult.aborted || signal?.aborted) return;
+
+        const finalText = String(agentResult.text || '').trim();
+        if (!finalText) throw new Error('Antigravity did not return a final response.');
+        console.info('[trux-code] antigravity complete', JSON.stringify({
+          agent: TRUX_CODE_AGENT,
+          model: TRUX_CODE_MODEL,
+          interactionId: agentResult.interactionId || null,
+          totalMs: Date.now() - requestStartedAt,
+          finalChars: finalText.length,
+          totalTokens: agentResult.usage?.total_tokens ?? null
+        }));
+        await send({ type: 'final', text: finalText });
+
+        if (notifyOnComplete) {
+          try {
+            await sendFcmNotification(
+              userIdentifier,
+              env,
+              'TruX-Code',
+              'Your coding response is ready.',
+              { type: 'coding' }
+            );
+          } catch {}
+        }
+
+        if (proTier && !developerAccount) {
+          const inputChars = JSON.stringify(contents).length + String(thinkingInstruction || '').length;
+          const estimatedTokens = Math.ceil((inputChars + finalText.length) / 4);
+          const previous = await getModeUsage(userIdentifier, 'coding', env);
+          const nextUsage = await recordModeUsage(
+            userIdentifier,
+            'coding',
+            previous,
+            estimatedTokens,
+            CODING_TOKEN_LIMIT,
+            env
+          );
+          await send({ type: 'usage', kind: 'coding', tokensUsed: nextUsage, tokensLimit: CODING_TOKEN_LIMIT });
+        }
+        return;
+      }
       /* -------------------------------------------------
          First streamed generation
          ------------------------------------------------- */

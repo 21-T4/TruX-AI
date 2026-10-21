@@ -1367,8 +1367,8 @@
     #attachmentMenu .trux-plus-sep{ height: 1px; min-height: 1px; background: rgba(255,255,255,.075); margin: 5px 2px 8px; }
     @media (min-width: 769px){
       #attachmentMenu{
-        left: 280px; right: auto; bottom: 84px; width: min(380px, calc(100vw - 304px));
-        height: min(68dvh, 620px); min-height: 0; max-height: calc(100dvh - 104px); padding: 10px 12px 12px;
+        left: 12px; right: auto; bottom: 84px; width: min(380px, calc(100vw - 24px));
+        height: min(68dvh, 620px); min-height: 0; max-height: calc(100dvh - 32px); padding: 10px 12px 12px;
         border: 1px solid var(--line-2); border-radius: 20px; transform: translateY(12px) scale(.985);
         transform-origin: bottom left; box-shadow: 0 20px 55px rgba(0,0,0,.56);
       }
@@ -2908,8 +2908,8 @@ body.plugins-page-active #welcomeScreen, body.plugins-page-active #chatContainer
 }
 
 .trux-code-workspace{position:relative;display:none;min-width:0;min-height:0;flex:1 1 auto;width:100%;overflow:hidden;background:#000;color:#eee}
-.trux-code-home{position:absolute;inset:0;z-index:2;display:none;align-items:center;justify-content:center;text-align:center;padding:24px 22px 52px;pointer-events:none}
-.trux-code-home-title{max-width:min(700px,calc(100vw - 42px));margin:0;color:#f0f0f0;font:500 clamp(30px,5vw,46px)/1.16 var(--font-disp);letter-spacing:-.04em;text-wrap:balance;opacity:1;transform:translateY(0);transition:opacity .2s var(--ease),transform .2s var(--ease)}
+.trux-code-home{position:absolute;inset:0;z-index:2;display:none;align-items:center;justify-content:center;box-sizing:border-box;width:100%;min-width:0;text-align:center;padding:24px 22px 52px;pointer-events:none}
+.trux-code-home-title{width:fit-content;max-width:min(700px,calc(100vw - 42px));margin:0 auto;color:#f0f0f0;font:500 clamp(30px,5vw,46px)/1.16 var(--font-disp);letter-spacing:-.04em;text-wrap:balance;overflow-wrap:anywhere;text-align:center;opacity:1;transform:translateY(0);transition:opacity .2s var(--ease),transform .2s var(--ease)}
 .trux-code-home-title.is-replacing{opacity:0;transform:translateY(5px)}
 .trux-code-home-title.is-visible{opacity:1;transform:translateY(0)}
 .trux-sr-only{
@@ -4537,7 +4537,7 @@ body.chat-session-active:not(.coding-workspace) #codeChatContainer{display:none!
 @media(prefers-reduced-motion:reduce){.trux-code-home-title{transition:none!important}}
 @media(max-width:380px){body.coding-workspace .trux-code-home-title{font-size:28px!important}}
 
-/* Floating composer and navigation chrome. *//* Floating composer and navigation chrome. */
+/* Floating composer and navigation chrome. */
 :root{--trux-chrome-fade:0}
 .composer,.compose{border:0!important;background:transparent!important;box-shadow:none!important}
 .composer{position:relative!important;padding-top:18px!important;background:linear-gradient(to top,var(--bg) 8%,rgba(0,0,0,.76) 44%,transparent 100%)!important}
@@ -4555,7 +4555,7 @@ body[data-workspace-mode="coding"] .bar{
   box-shadow:0 0 42px rgba(45,72,220,.23),0 1px 0 rgba(255,255,255,.08) inset!important;
 }
 body.coding-workspace .bar > #attachBtn{grid-column:1!important;grid-row:1!important;align-self:center!important;justify-self:center!important;width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;display:grid!important;place-items:center!important}
-body.coding-workspace .bar > #promptInput{grid-column:2!important;grid-row:1!important;width:100%!important;min-width:0!important;min-height:44px!important;max-height:130px!important;height:auto!important;padding:6px 8px!important;align-self:center!important;font-family:var(--font-body)!important;font-size:19px!important;line-height:1.35!important;letter-spacing:-.02em!important}
+body.coding-workspace .bar > #promptInput{grid-column:2!important;grid-row:1!important;width:100%!important;min-width:0!important;min-height:44px!important;max-height:108px!important;height:auto!important;padding:5px 8px!important;align-self:center!important;justify-self:stretch!important;overflow-x:hidden!important;overflow-y:auto!important;resize:none!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;text-align:left!important;font-family:var(--font-body)!important;font-size:18px!important;line-height:1.35!important;letter-spacing:-.02em!important}
 body.coding-workspace .bar > #voiceBtn{grid-column:3!important;grid-row:1!important;width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important;align-self:center!important;justify-self:center!important}
 body.coding-workspace .bar > #actionBtn{
   grid-column:4!important;grid-row:1!important;width:48px!important;height:48px!important;

@@ -1031,14 +1031,7 @@
       if(workspaceMode === "chat" && !currentChatId && !isMedia) {
         startHomeGreetingPulse();
       }
-      if(isCoding) {
-        startTruxCodeIdlePulse();
-      } else {
-        if(truxCodeIdleTimer) clearInterval(truxCodeIdleTimer);
-        if(truxCodeGreetingSwapTimer) clearTimeout(truxCodeGreetingSwapTimer);
-        truxCodeIdleTimer = null;
-        truxCodeGreetingSwapTimer = null;
-      }
+      if (isCoding) void startTruxCodeIdlePulse();
     }
     async function submitFeedback() {
       const type = getEl("feedbackType")?.value || "general-feedback";
@@ -1906,16 +1899,19 @@
     
     function handleInputChange() {
       const p = getEl("promptInput");
+      if (!p) return;
+      const isCodeWorkspace = workspaceMode === "coding" ||
+        document.body.classList.contains("coding-workspace") ||
+        document.body.dataset.workspaceMode === "coding";
       const minComposerHeight = document.body.matches('body[data-media-mode="image"], body[data-media-mode="video"]') ? 60 : 44;
+      const maxComposerHeight = isCodeWorkspace ? 108 : 200;
       p.style.setProperty("height", "auto", "important");
-      p.style.setProperty("height", Math.max(minComposerHeight, Math.min(p.scrollHeight, 200)) + "px", "important");
+      p.style.setProperty("height", Math.max(minComposerHeight, Math.min(p.scrollHeight, maxComposerHeight)) + "px", "important");
+      p.style.setProperty("overflow-y", isCodeWorkspace && p.scrollHeight > maxComposerHeight ? "auto" : "hidden", "important");
       const bar = p.closest(".bar");
       if (bar) bar.classList.remove("multiline");
 
       const btn = getEl("actionBtn");
-      const isCodeWorkspace = workspaceMode === "coding" ||
-        document.body.classList.contains("coding-workspace") ||
-        document.body.dataset.workspaceMode === "coding";
       const hasDraft = !!(p.value.trim() || selectedImageBase64 || pastedTextBlocks.length || fileAttachments.length);
 
       // While a request is live, always show a real Stop action. Stale idle/live
@@ -1969,14 +1965,32 @@
       // Code is only auto-attached on PASTE now. Doing it while typing used to
       // swallow long normal messages into a “file” chip mid-sentence.
     }
+    function positionAttachmentMenu(menu, button) {
+      if (!menu || !button || window.innerWidth <= 768) {
+        if (menu) ["left", "right", "bottom", "width"].forEach(property => menu.style.removeProperty(property));
+        return;
+      }
+      const anchor = button.getBoundingClientRect();
+      const width = Math.min(380, Math.max(260, window.innerWidth - 24));
+      const left = Math.max(12, Math.min(anchor.left, window.innerWidth - width - 12));
+      const bottom = Math.max(12, window.innerHeight - anchor.top + 10);
+      menu.style.left = left + "px";
+      menu.style.right = "auto";
+      menu.style.bottom = bottom + "px";
+      menu.style.width = width + "px";
+    }
+
     function toggleAttachmentMenu(e) {
       e?.preventDefault(); e?.stopPropagation();
       const menu = getEl("attachmentMenu"), button = getEl("attachBtn");
       if (!menu || !button) return;
       if (menu.classList.contains("open")) return closeAttachmentMenu();
       closeModelDropdown();
+      // A blurred/transformed composer can capture fixed descendants; the menu must use viewport coordinates.
+      if (menu.parentElement !== document.body) document.body.appendChild(menu);
       menu.style.removeProperty("animation"); menu.style.removeProperty("transform");
       menu.style.removeProperty("opacity"); menu.style.removeProperty("transition"); menu.style.removeProperty("will-change");
+      positionAttachmentMenu(menu, button);
       menu.scrollTop = 0;
       const modeRow = menu.querySelector(".trux-plus-grid");
       if (modeRow) modeRow.scrollLeft = 0;
@@ -1989,10 +2003,16 @@
         menu.classList.remove("open");
         menu.style.removeProperty("animation"); menu.style.removeProperty("transform");
         menu.style.removeProperty("opacity"); menu.style.removeProperty("transition"); menu.style.removeProperty("will-change");
+        ["left", "right", "bottom", "width"].forEach(property => menu.style.removeProperty(property));
       }
       const button = getEl("attachBtn");
       button?.classList.remove("open"); button?.setAttribute("aria-expanded", "false");
     }
+
+    window.addEventListener("resize", () => {
+      const menu = getEl("attachmentMenu");
+      if (menu?.classList.contains("open")) positionAttachmentMenu(menu, getEl("attachBtn"));
+    }, { passive: true });
 
     (function bindPlusMenuGestures() {
       const menu = getEl("attachmentMenu"), handle = getEl("plusMenuHandle"), button = getEl("attachBtn");
@@ -4881,49 +4901,46 @@
       void loadHomePrompts();
     }
 
-    const TRUX_CODE_IDLE_LINES = [
-      "Hello",
-      "What should we build today?",
-      "Let's build something useful."
-    ];
-    let truxCodeIdleIndex = 0;
-    let truxCodeIdleTimer = null;
-    let truxCodeGreetingSwapTimer = null;
-    function startTruxCodeIdlePulse() {
-      if (truxCodeIdleTimer) clearInterval(truxCodeIdleTimer);
-      if (truxCodeGreetingSwapTimer) clearTimeout(truxCodeGreetingSwapTimer);
-      truxCodeIdleTimer = null;
-      truxCodeGreetingSwapTimer = null;
+    let truxCodeGreetingRequest = null;
+    let truxCodeLastGreeting = "";
+    async function startTruxCodeIdlePulse() {
       const transcript = getEl("codeChatContainer");
       const el = getEl("truxCodeGreeting");
       if (!el || !document.body.classList.contains("coding-workspace") ||
           currentChatId || (transcript && transcript.children.length)) return;
-      const pulse = () => {
-        if (!el.isConnected || !document.body.classList.contains("coding-workspace") ||
-            currentChatId || (transcript && transcript.children.length)) {
-          if (truxCodeIdleTimer) clearInterval(truxCodeIdleTimer);
-          if (truxCodeGreetingSwapTimer) clearTimeout(truxCodeGreetingSwapTimer);
-          truxCodeIdleTimer = null;
-          truxCodeGreetingSwapTimer = null;
-          return;
-        }
-        const next = TRUX_CODE_IDLE_LINES[truxCodeIdleIndex++ % TRUX_CODE_IDLE_LINES.length];
-        el.classList.remove("is-visible");
-        el.classList.add("is-replacing");
-        truxCodeGreetingSwapTimer = setTimeout(() => {
-          if (!el.isConnected || !document.body.classList.contains("coding-workspace") ||
-              currentChatId || (transcript && transcript.children.length)) return;
-          el.textContent = next;
-          el.classList.remove("is-replacing");
-          el.classList.add("is-visible");
-          truxCodeGreetingSwapTimer = null;
-        }, 180);
-      };
-      truxCodeIdleIndex = 1;
-      el.textContent = TRUX_CODE_IDLE_LINES[0];
+      if (truxCodeGreetingRequest) return truxCodeGreetingRequest;
+
       el.classList.remove("is-replacing");
       el.classList.add("is-visible");
-      truxCodeIdleTimer = setInterval(pulse, 3200);
+      const request = (async () => {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          cache: "no-store",
+          body: JSON.stringify({ mode: "coding-home-prompt", avoidPrompt: truxCodeLastGreeting })
+        });
+        if (!response.ok) throw new Error("Coding home prompt generation unavailable.");
+        const payload = await response.json().catch(() => ({}));
+        const prompt = String(payload.prompt || "").replace(/\s+/g, " ").trim();
+        if (prompt.length < 8 || prompt.length > 54) throw new Error("Coding home prompt response was invalid.");
+        if (!el.isConnected || !document.body.classList.contains("coding-workspace") ||
+            currentChatId || (transcript && transcript.children.length)) return;
+        el.classList.remove("is-visible");
+        el.classList.add("is-replacing");
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        if (!el.isConnected || !document.body.classList.contains("coding-workspace") ||
+            currentChatId || (transcript && transcript.children.length)) return;
+        el.textContent = prompt;
+        truxCodeLastGreeting = prompt;
+        el.classList.remove("is-replacing");
+        el.classList.add("is-visible");
+      })().catch(error => {
+        console.debug("TruX-Code generated home prompt unavailable:", error?.message || error);
+      }).finally(() => {
+        if (truxCodeGreetingRequest === request) truxCodeGreetingRequest = null;
+      });
+      truxCodeGreetingRequest = request;
+      return request;
     }
 
 
