@@ -1,4 +1,4 @@
-const CACHE_NAME = 'trux-ai-v21';
+const CACHE_NAME = 'trux-ai-v22';
 
 try {
   importScripts(
@@ -102,6 +102,27 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(new Request(request, { cache: 'no-store' }))
         .then((response) => response)
+    );
+    return;
+  }
+
+  // Keep the executable app bundles aligned with the API routes shipped by this revision.
+  // Network-first avoids serving an old chat client after chat-storage routes are removed.
+  const isVersionSensitiveScript =
+    url.pathname === '/trux-app.js' ||
+    url.pathname === '/pwa-enhancements.js';
+
+  if (isVersionSensitiveScript) {
+    event.respondWith(
+      fetch(new Request(request, { cache: 'no-store' }))
+        .then((response) => {
+          if (response && response.status === 200 && response.type !== 'opaque') {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request))
     );
     return;
   }

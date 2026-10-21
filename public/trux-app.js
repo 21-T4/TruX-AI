@@ -42,7 +42,7 @@
       lastTouchEnd = now;
     }, { passive: false });
 
-    addEventListener("load", () => { try { if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js?v=20261015-2", { updateViaCache: "none" }).catch(() => {}); } catch (e) {} });
+    addEventListener("load", () => { try { if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js?v=20261021-browser-chat-storage-v1", { updateViaCache: "none" }).catch(() => {}); } catch (e) {} });
     // Suppress the browser's PWA-install prompt: the sidebar download control now
     // downloads the native Android APK instead.
     addEventListener("beforeinstallprompt", event => event.preventDefault());
