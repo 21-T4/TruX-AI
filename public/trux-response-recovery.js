@@ -209,7 +209,7 @@
     const bubble = row.querySelector(".bubble:not(.user-bubble)");
     if (bubble) {
       bubble.classList.remove("thinking");
-      bubble.textContent = text;
+      if (bubble.textContent !== text) bubble.textContent = text;
     }
     const panel = row.querySelector(".trux-thinking-panel");
     if (panel) {
@@ -227,6 +227,39 @@
       actions.appendChild(copy);
     }
   }
+
+  function restoreRecoveredAnswersInVisibleChat() {
+    const user = window.firebase?.auth?.()?.currentUser;
+    if (!user) return;
+    const sessions = readCache(cacheKey(user.uid));
+    for (const row of document.querySelectorAll(".row.user-row")) {
+      if (!row.dataset.chatId || row.getClientRects().length === 0) continue;
+      const chatId = String(row.dataset.chatId), userIndex = Number(row.dataset.messageIndex);
+      if (!Number.isInteger(userIndex) || userIndex < 0) continue;
+      const session = sessions[chatId], savedUser = session?.messages?.[userIndex];
+      const answer = session?.messages?.[userIndex + 1];
+      if (session?.incognito || savedUser?.role !== "user" ||
+          answer?.role !== "trux" || answer.recoveredByClient !== true ||
+          answer.incomplete === true || !isJobId(answer.responseJobId) ||
+          !String(answer.text || "").trim()) continue;
+      paintRecoveredReply(chatId, userIndex, answer.responseJobId, String(answer.text));
+    }
+  }
+
+  let restoreQueued = false;
+  const recoveryObserver = new MutationObserver(records => {
+    const hasNewUserRow = records.some(record => Array.from(record.addedNodes || []).some(node =>
+      node?.nodeType === 1 &&
+      (node.matches?.(".row.user-row") || node.querySelector?.(".row.user-row"))
+    ));
+    if (!hasNewUserRow || restoreQueued) return;
+    restoreQueued = true;
+    Promise.resolve().then(() => {
+      restoreQueued = false;
+      restoreRecoveredAnswersInVisibleChat();
+    });
+  });
+  if (document.body) recoveryObserver.observe(document.body, { childList: true, subtree: true });
 
   async function recoverJob(jobId, user) {
     if (!isJobId(jobId) || polling.has(jobId)) return;
