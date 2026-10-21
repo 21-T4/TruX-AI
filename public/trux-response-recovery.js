@@ -123,19 +123,6 @@
     return null;
   }
 
-  function findJobForPrompt(uid, prompt) {
-    const key = cacheKey(uid), sessions = readCache(key);
-    for (const [chatId, session] of Object.entries(sessions)) {
-      if (session?.incognito || !Array.isArray(session?.messages)) continue;
-      for (let i = session.messages.length - 1; i >= 0; i--) {
-        const message = session.messages[i];
-        if (message?.role === "user" && messageText(message) === String(prompt || "") && isJobId(message.responseJobId)) {
-          return { key, sessions, chatId, session, userIndex: i, prompt: messageText(message), jobId: message.responseJobId };
-        }
-      }
-    }
-    return null;
-  }
 
   function bindJobToPrompt(uid, prompt, requestedId = "") {
     const key = cacheKey(uid), sessions = readCache(key);
@@ -355,9 +342,12 @@
           const user = window.firebase?.auth?.()?.currentUser;
           if (user) {
             const prompt = String(body.message || "");
+            const pendingAuthRetry = Array.from(activeRequests.values()).find(item =>
+              item.uid === String(user.uid) && item.prompt === prompt && item.authFailures === 1
+            );
             const location = (isJobId(body.responseJobId) ? findJob(body.responseJobId) : null)
               || findVisiblePromptUser(user.uid, prompt)
-              || findJobForPrompt(user.uid, prompt)
+              || (pendingAuthRetry ? findJob(pendingAuthRetry.id) || pendingAuthRetry.location : null)
               || bindJobToPrompt(user.uid, prompt, body.responseJobId || "");
             const id = isJobId(body.responseJobId) ? body.responseJobId
               : location?.jobId || ("truxjob_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10));
