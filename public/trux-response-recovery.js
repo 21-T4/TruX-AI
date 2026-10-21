@@ -265,10 +265,9 @@
     if (!isJobId(jobId) || polling.has(jobId)) return;
     polling.add(jobId);
     let wait = 2500, missingSince = 0;
-    const deadline = Date.now() + 6 * 60 * 60 * 1000;
     const toolEvents = [];
     try {
-      while (Date.now() < deadline) {
+      while (true) {
         if (!navigator.onLine) { await sleep(3000); continue; }
         try {
           const token = await user.getIdToken();
