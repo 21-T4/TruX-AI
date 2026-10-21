@@ -1198,7 +1198,6 @@
       const plan = getEl("profilePlanText"), limit = getEl("profileLimitText");
       if(plan) plan.innerText = owner ? "Owner" : (currentPlanTier === "pro" ? "Pro" : "Core");
       if(limit) limit.innerText = "Unlimited";
-      updateFeedbackCounterUI();
     }
 
 
