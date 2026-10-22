@@ -189,16 +189,18 @@
       userMessage.responseRecoveryComplete = true;
     }
     writeCache(key, sessions);
-    try {
-      const uid = decodeURIComponent(String(key).slice(PREFIX.length));
-      window.__truxApplyRecoveredResponse?.({
-        uid, chatId, userIndex, jobId, prompt,
-        text: String(text || ""), complete: complete === true,
-        toolEvents: Array.isArray(toolEvents) ? toolEvents : [],
-        errorText: String(errorText || "")
-      });
-    } catch (error) {
-      console.warn("[trux-response-recovery] could not sync the live chat session", error?.message || error);
+    if (complete || errorText) {
+      try {
+        const uid = decodeURIComponent(String(key).slice(PREFIX.length));
+        window.__truxApplyRecoveredResponse?.({
+          uid, chatId, userIndex, jobId, prompt,
+          text: String(text || ""), complete: complete === true,
+          toolEvents: Array.isArray(toolEvents) ? toolEvents : [],
+          errorText: String(errorText || "")
+        });
+      } catch (error) {
+        console.warn("[trux-response-recovery] could not sync the live chat session", error?.message || error);
+      }
     }
     if (complete) paintRecoveredReply(chatId, userIndex, jobId, String(text || ""));
   }
