@@ -5007,9 +5007,17 @@
       const turnChatId = currentChatId;
       const turnMode = workspaceMode;
       chatSessions[turnChatId].mode = turnMode;
+
+      // TruX-Code must have a durable client/server correlation ID before its
+      // first network request. Do not rely on the fetch wrapper discovering the
+      // just-added user row after generation has already started.
+      const codingResponseJobId = turnMode === "coding" && !incognitoMode
+        ? "truxjob_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10)
+        : "";
       chatSessions[turnChatId].messages.push({
         role: "user",
         text: prompt,
+        ...(codingResponseJobId ? { responseJobId: codingResponseJobId } : {}),
         attachments: allAttachments.map(a => ({
           name: a.name,
           size: a.size || null,
@@ -5074,6 +5082,7 @@
         advancedThinking: advancedThinkingLevel === "extended" || workspaceMode === "deep-research",
         thinkingLevel: advancedThinkingLevel,
         incognito: !!incognitoMode,
+        ...(codingResponseJobId ? { responseJobId: codingResponseJobId } : {}),
         history: (() => {
           const prior = (chatSessions[turnChatId]?.messages || []).slice(0, sentMessageIndex);
           const deepMode = workspaceMode === "coding" || workspaceMode === "deep-research";
