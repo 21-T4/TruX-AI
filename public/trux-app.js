@@ -1833,6 +1833,12 @@
         if (userIndex < 0) return false;
 
         const userMessage = messages[userIndex];
+        const activeTurnMatches = activeTurnContext?.chatId === chatId &&
+          activeTurnContext?.mode === "coding" &&
+          userMessage.responseJobId === jobId;
+        if (activeTurnMatches && activeTurnContext) {
+          activeTurnContext.userMessageIndex = userIndex;
+        }
         let assistantIndex = -1;
         for (let index = userIndex + 1; index < messages.length; index++) {
           const message = messages[index];
@@ -1855,6 +1861,9 @@
           assistantMessage = messages[assistantIndex];
         } else {
           assistantMessage = { role: "trux", text: "", incomplete: true };
+          if (activeTurnMatches && activeTurnContext?.turnKey) {
+            assistantMessage.draftTurnId = activeTurnContext.turnKey;
+          }
           messages.splice(userIndex + 1, 0, assistantMessage);
         }
         assistantMessage.role = "trux";
@@ -1869,7 +1878,11 @@
         if (errorText) assistantMessage.recoveryError = errorText;
         else if (complete) delete assistantMessage.recoveryError;
         if (complete) {
-          delete assistantMessage.draftTurnId;
+          if (activeTurnMatches && activeTurnContext?.turnKey) {
+            assistantMessage.draftTurnId = activeTurnContext.turnKey;
+          } else {
+            delete assistantMessage.draftTurnId;
+          }
           delete userMessage.responseJobId;
           delete userMessage.responseRecoveryFailed;
           userMessage.responseRecoveryComplete = true;
