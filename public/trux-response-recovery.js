@@ -462,17 +462,30 @@
     return new Response(stream, { status: response.status, statusText: response.statusText, headers: response.headers });
   };
 
+  function resumeRecoveryForUser(user) {
+    if (!user) return;
+    // Restore already-recovered answers as well as polling unfinished jobs.
+    // Auth/page-resume and DOM rendering can complete in either order.
+    restoreRecoveredAnswersInVisibleChat();
+    startPendingRecovery(user);
+    setTimeout(restoreRecoveredAnswersInVisibleChat, 1000);
+  }
+
   try {
     const auth = window.firebase?.auth?.();
-    if (auth?.onAuthStateChanged) auth.onAuthStateChanged(user => startPendingRecovery(user));
+    if (auth?.onAuthStateChanged) auth.onAuthStateChanged(resumeRecoveryForUser);
   } catch {}
   window.addEventListener("online", () => {
-    try { startPendingRecovery(window.firebase?.auth?.()?.currentUser); } catch {}
+    try { resumeRecoveryForUser(window.firebase?.auth?.()?.currentUser); } catch {}
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") return;
+    try { resumeRecoveryForUser(window.firebase?.auth?.()?.currentUser); } catch {}
   });
   window.addEventListener("pagehide", () => {
     activeRequests.clear();
   });
   window.addEventListener("pageshow", () => {
-    try { startPendingRecovery(window.firebase?.auth?.()?.currentUser); } catch {}
+    try { resumeRecoveryForUser(window.firebase?.auth?.()?.currentUser); } catch {}
   });
 })();
