@@ -80,9 +80,8 @@ function isDeveloperEmail(email) {
 const IMAGE_LIMIT = 15;
 const VIDEO_MODEL = "veo-3.1-fast-generate-001";
 const TRUX_CODE_MODEL = 'gemini-4-argon';
-const TRUX_CODE_AGENT = 'antigravity-preview-09-2026';
+const TRUX_CODE_AGENT = 'antigravity-preview-05-2026';
 const CODE_JOB_TTL = 6 * 24 * 60 * 60;
-let truxCodeAntigravityClient = null;
 
 function validCodeJobId(id) { return /^[A-Za-z0-9_-]{12,128}$/.test(String(id || '')); }
 function codeJobKey(uid, id) { return 'trux_code_response_job_v1:' + uid + ':' + id; }
@@ -110,29 +109,6 @@ async function saveCodeJobWithRetry(env, uid, id, patch = {}, attempts = 7) {
   }
   throw lastError || new Error('Could not persist TruX-Code response metadata.');
 }
-let truxCodeAntigravityApiKey = '';
-
-function getTruxCodeAntigravityClient(env) {
-  const apiKey = String(
-    env?.GEMINI_API_KEY ||
-    env?.GOOGLE_API_KEY ||
-    process.env.GEMINI_API_KEY ||
-    process.env.GOOGLE_API_KEY ||
-    ''
-  ).trim();
-  if (!apiKey) {
-    throw Object.assign(
-      new Error('TruX-Code Antigravity is not configured. Add GEMINI_API_KEY to the Cloud Run service environment or secrets.'),
-      { status: 503 }
-    );
-  }
-  if (!truxCodeAntigravityClient || truxCodeAntigravityApiKey !== apiKey) {
-    truxCodeAntigravityClient = new GoogleGenAI({ apiKey });
-    truxCodeAntigravityApiKey = apiKey;
-  }
-  return truxCodeAntigravityClient;
-}
-
 function buildTruxCodeAntigravityInput(contents, systemInstruction) {
   const transcript = (Array.isArray(contents) ? contents : []).map(message => {
     const role = message?.role === 'model' || message?.role === 'assistant' ? 'ASSISTANT' : 'USER';
@@ -158,8 +134,8 @@ function buildTruxCodeAntigravityInput(contents, systemInstruction) {
   ].filter(Boolean).join('\n\n');
 }
 
-async function streamTruxCodeWithAntigravity({ contents, systemInstruction, env, send, signal, responseJobId = '', onInteractionCreated = null }) {
-  const client = getTruxCodeAntigravityClient(env), background = validCodeJobId(responseJobId);
+async function streamTruxCodeWithAntigravity({ contents, systemInstruction, send, signal, responseJobId = '', onInteractionCreated = null }) {
+  const client = await getVertexAIClient(), background = validCodeJobId(responseJobId);
   const input = buildTruxCodeAntigravityInput(contents, systemInstruction);
   const created = await client.interactions.create({
     agent: TRUX_CODE_AGENT, input, environment: 'remote',
@@ -1542,7 +1518,7 @@ export async function onRequestPost(context) {
         let agentResult;
         try {
           agentResult = await streamTruxCodeWithAntigravity({
-            contents, systemInstruction: thinkingInstruction, env, send, signal,
+            contents, systemInstruction: thinkingInstruction, send, signal,
             responseJobId: effectiveResponseJobId,
             onInteractionCreated: async interaction => {
               if (effectiveResponseJobId) await saveCodeJobWithRetry(env, userIdentifier, effectiveResponseJobId, {
@@ -2217,7 +2193,8 @@ export async function onRequestGet(context = {}) {
     const record = await kv.get(codeJobKey(identity.uid, jobId), 'json');
     if (!record || record.uid !== identity.uid || record.jobId !== jobId) return Response.json({ error: 'Response job not found.' }, { status: 404, headers });
     if (!record.interactionId) return Response.json({ status: 'starting' }, { status: 202, headers });
-    const interaction = await getTruxCodeAntigravityClient(env).interactions.get(String(record.interactionId));
+    const client = await getVertexAIClient();
+    const interaction = await client.interactions.get(String(record.interactionId));
     const status = String(interaction?.status || record.status || 'in_progress').toLowerCase();
     if (status === 'completed') {
       const text = String(interaction?.output_text || interaction?.outputText || '').trim();
