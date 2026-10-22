@@ -1546,8 +1546,20 @@ export async function onRequestPost(context) {
           totalTokens: agentResult.usage?.total_tokens ?? null
         }));
         if (effectiveResponseJobId) {
-          try { await saveCodeJob(env, userIdentifier, effectiveResponseJobId, { interactionId: String(agentResult.interactionId || ''), status: 'completed' }); }
-          catch (error) { console.warn('[trux-code] completion status update deferred to recovery lookup:', error?.message || error); }
+          // Persist the exact answer before notifying. Recovery must not depend on
+          // reconnecting to the provider to reconstruct text already generated here.
+          try {
+            await saveCodeJobWithRetry(env, userIdentifier, effectiveResponseJobId, {
+              interactionId: String(agentResult.interactionId || ''),
+              status: 'completed',
+              finalText,
+              completedAt: Date.now()
+            });
+          } catch (error) {
+            // The interaction itself is stored by the provider, so GET recovery can
+            // still query it if durable answer persistence is temporarily unavailable.
+            console.warn('[trux-code] durable answer save failed; provider lookup remains available:', error?.message || error);
+          }
         }
         await send({ type: 'final', text: finalText });
 
@@ -2192,19 +2204,36 @@ export async function onRequestGet(context = {}) {
     const kv = getCloudRunKv(env, { strict: true });
     const record = await kv.get(codeJobKey(identity.uid, jobId), 'json');
     if (!record || record.uid !== identity.uid || record.jobId !== jobId) return Response.json({ error: 'Response job not found.' }, { status: 404, headers });
+
+    // The saved final answer is authoritative and survives app/browser closure.
+    // Avoid an unnecessary provider round-trip when the response is already durable.
+    const savedText = String(record.finalText || '').trim();
+    if (String(record.status || '').toLowerCase() === 'completed' && savedText) {
+      return Response.json({ status: 'completed', text: savedText }, { headers });
+    }
     if (!record.interactionId) return Response.json({ status: 'starting' }, { status: 202, headers });
+
     const client = await getVertexAIClient();
     const interaction = await client.interactions.get(String(record.interactionId));
     const status = String(interaction?.status || record.status || 'in_progress').toLowerCase();
     if (status === 'completed') {
-      const text = String(interaction?.output_text || interaction?.outputText || '').trim();
+      const text = savedText || String(interaction?.output_text || interaction?.outputText || '').trim();
       if (!text) {
-        await saveCodeJob(env, identity.uid, jobId, { status: 'incomplete' });
-        return Response.json({ status: 'incomplete', error: 'The agent returned no final text.' }, { headers });
+        // Do not clear the browser's pending job marker because a terminal status
+        // without a readable output is not proof that the generated answer is lost.
+        return Response.json({ status: 'retrieving_output' }, { status: 202, headers });
       }
-      if (record.status !== 'completed') {
-        try { await saveCodeJob(env, identity.uid, jobId, { interactionId: String(record.interactionId), status: 'completed' }); }
-        catch (error) { console.warn('[trux-code] recovered answer status update deferred:', error?.message || error); }
+      if (record.status !== 'completed' || savedText !== text) {
+        try {
+          await saveCodeJobWithRetry(env, identity.uid, jobId, {
+            interactionId: String(record.interactionId),
+            status: 'completed',
+            finalText: text,
+            completedAt: Number(record.completedAt) || Date.now()
+          });
+        } catch (error) {
+          console.warn('[trux-code] recovered answer persistence deferred:', error?.message || error);
+        }
       }
       return Response.json({ status: 'completed', text }, { headers });
     }
