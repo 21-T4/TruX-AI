@@ -55,14 +55,21 @@
           }
         }
         if (ni < 0) continue;
+        // The live finalizer has explicitly completed this prompt; do not resurrect
+        // a stale pending ID from the previous cache snapshot.
+        if (pendingId && messages[ni]?.responseRecoveryComplete === true) continue;
         if (pendingId && !messages[ni].responseJobId) messages[ni].responseJobId = pendingId;
         const jobId = pendingId || oldAssistant.responseJobId;
         const oldReply = oldMessages.slice(oi + 1).find(m => m?.role === "trux" && m.responseJobId === jobId);
         if (!oldReply) continue;
         const current = messages[ni + 1];
         if (oldReply.incomplete !== true) {
-          if (current?.role === "trux") messages[ni + 1] = { ...oldReply };
-          else messages.splice(ni + 1, 0, { ...oldReply });
+          if (current?.role === "trux") {
+            // Preserve the live stream's draft identity so its finalizer updates
+            // this same message rather than appending a duplicate assistant reply.
+            const draftTurnId = current.draftTurnId;
+            messages[ni + 1] = { ...oldReply, ...(draftTurnId ? { draftTurnId } : {}) };
+          } else messages.splice(ni + 1, 0, { ...oldReply });
           delete messages[ni].responseJobId;
         } else if (current?.role === "trux") {
           current.responseJobId = jobId;
