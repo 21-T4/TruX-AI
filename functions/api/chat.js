@@ -150,13 +150,13 @@ async function streamTruxCodeWithAntigravity({ contents, systemInstruction, send
   }
   const stepTypes = new Map();
   let complete = false;
-  while (!complete && !signal?.aborted) {
+  while (!complete && (background || !signal?.aborted)) {
     try {
       const stream = background
         ? await client.interactions.get(interactionId, { stream: true, ...(lastEventId ? { last_event_id: lastEventId } : {}) })
         : created;
       for await (const event of stream) {
-        if (signal?.aborted) return { aborted: true, text: '', interactionId };
+        if (!background && signal?.aborted) return { aborted: true, text: '', interactionId };
         const eventId = String(event?.event_id || event?.id || '');
         if (eventId) lastEventId = eventId;
         const type = String(event?.event_type || '');
@@ -181,10 +181,10 @@ async function streamTruxCodeWithAntigravity({ contents, systemInstruction, send
       if (!background) { complete = true; break; }
       interaction = await client.interactions.get(interactionId).catch(() => interaction);
       if (['completed', 'failed', 'cancelled', 'incomplete'].includes(String(interaction?.status || '').toLowerCase())) complete = true;
-      else if (!signal?.aborted) await new Promise(resolve => setTimeout(resolve, 1200));
+      else await new Promise(resolve => setTimeout(resolve, 1200));
     } catch (error) {
       if (!background) throw error;
-      if (signal?.aborted) return { aborted: true, text: '', interactionId };
+      if (!background && signal?.aborted) return { aborted: true, text: '', interactionId };
       interaction = await client.interactions.get(interactionId).catch(() => interaction);
       if (['completed', 'failed', 'cancelled', 'incomplete'].includes(String(interaction?.status || '').toLowerCase())) complete = true;
       else await new Promise(resolve => setTimeout(resolve, 1800));
@@ -1528,12 +1528,14 @@ export async function onRequestPost(context) {
             }
           });
         } catch (error) {
-          if (effectiveResponseJobId && !signal?.aborted) {
-            try { await saveCodeJob(env, userIdentifier, effectiveResponseJobId, { status: 'failed' }); } catch {}
+          if (effectiveResponseJobId) {
+            try { await saveCodeJobWithRetry(env, userIdentifier, effectiveResponseJobId, { status: 'failed', failedAt: Date.now() }); } catch (persistError) {
+              console.warn('[trux-code] durable job failure save deferred:', persistError?.message || persistError);
+            }
           }
           throw error;
         }
-        if (agentResult.aborted || signal?.aborted) return;
+        if (agentResult.aborted || (signal?.aborted && !effectiveResponseJobId)) return;
 
         const finalText = String(agentResult.text || '').trim();
         if (!finalText) throw new Error('Antigravity did not return a final response.');
