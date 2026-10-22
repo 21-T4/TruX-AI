@@ -3804,6 +3804,8 @@
         // No stray newlines inside the bubble: it is white-space: pre-wrap,
         // so template indentation would render as blank lines.
         r.dataset.chatId = currentChatId || "";
+        const userResponseJobId = String(messageMeta?.responseJobId || "");
+        if (userResponseJobId) r.dataset.responseJobId = userResponseJobId;
         const userMessageIndex = Number.isInteger(messageMeta?.messageIndex)
           ? Number(messageMeta.messageIndex)
           : findStoppedMessageIndex(r, textContent);
@@ -5156,7 +5158,7 @@
       getEl("welcomeScreen").style.display = "none";
       let chatContainer = getActiveChatContainer(); chatContainer.style.display = "block";
       
-      appendMessageRow("You", basePrompt + attachmentLabel + (selectedImageBase64 ? "\n[Image Attached]" : ""), "user-row", "user-bubble", null, true, undefined, undefined, { messageIndex: sentMessageIndex });
+      appendMessageRow("You", basePrompt + attachmentLabel + (selectedImageBase64 ? "\n[Image Attached]" : ""), "user-row", "user-bubble", null, true, undefined, undefined, { messageIndex: sentMessageIndex, responseJobId: codingResponseJobId });
       promptInput.value = ""; let img = selectedImageBase64; removeImage(); pastedTextBlocks = []; fileAttachments = []; renderFileChips(); handleInputChange();
 
       const codingTurn = workspaceMode === "coding";
@@ -6738,7 +6740,7 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
       getEl("codeChatContainer").innerHTML = "";
       const cC = enterChatWorkspace();
        chatSessions[id].messages.forEach((m, index) => {
-         appendMessageRow(m.role === "user" ? "You" : "TruX-Omni", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image, false, m.sources, m.video, { messageIndex: index, stopped: m.role === "user" && m.stopped === true, incomplete: m.role === "trux" && m.incomplete === true });
+         appendMessageRow(m.role === "user" ? "You" : "TruX-Omni", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image, false, m.sources, m.video, { messageIndex: index, responseJobId: m.role === "user" ? m.responseJobId || "" : "", stopped: m.role === "user" && m.stopped === true, incomplete: m.role === "trux" && m.incomplete === true });
          if (workspaceMode === "coding" && m.role === "trux" && Number.isFinite(Number(m.durationMs))) {
            const rows = getActiveChatContainer()?.querySelectorAll(".row.trux-row") || [];
            const restoredRow = rows[rows.length - 1];
