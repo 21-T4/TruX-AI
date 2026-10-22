@@ -6,6 +6,7 @@
 
   const PREFIX = "trux_chat_sessions_local_v1:";
   const polling = new Set();
+  const recoveryStartTimers = new Map();
   const activeRequests = new Map();
   const rawSet = Storage.prototype.setItem;
   const rawGet = Storage.prototype.getItem;
@@ -188,6 +189,17 @@
       userMessage.responseRecoveryComplete = true;
     }
     writeCache(key, sessions);
+    try {
+      const uid = decodeURIComponent(String(key).slice(PREFIX.length));
+      window.__truxApplyRecoveredResponse?.({
+        uid, chatId, userIndex, jobId, prompt,
+        text: String(text || ""), complete: complete === true,
+        toolEvents: Array.isArray(toolEvents) ? toolEvents : [],
+        errorText: String(errorText || "")
+      });
+    } catch (error) {
+      console.warn("[trux-response-recovery] could not sync the live chat session", error?.message || error);
+    }
     if (complete) paintRecoveredReply(chatId, userIndex, jobId, String(text || ""));
   }
 
@@ -264,7 +276,7 @@
   async function recoverJob(jobId, user) {
     if (!isJobId(jobId) || polling.has(jobId)) return;
     polling.add(jobId);
-    let wait = 2500, missingSince = 0;
+    let wait = 3000, missingSince = 0, authMissingSince = 0;
     const toolEvents = [];
     try {
       while (true) {
@@ -289,7 +301,16 @@
           if (response.status === 202 || response.status === 429 || response.status >= 500) {
             await sleep(wait); wait = Math.min(12000, Math.round(wait * 1.3)); continue;
           }
-          if (response.status === 401 || response.status === 403) return;
+          if (response.status === 401) {
+            if (!authMissingSince) authMissingSince = Date.now();
+            if (Date.now() - authMissingSince > 90000) return;
+            // Firebase can briefly serve an old/unsettled token after cold start.
+            await sleep(3000);
+            wait = 3000;
+            continue;
+          }
+          if (response.status === 403) return;
+          authMissingSince = 0;
           if (!response.ok) { await sleep(wait); wait = Math.min(12000, Math.round(wait * 1.3)); continue; }
           const data = await response.json();
           if (data.status === "completed" && String(data.text || "").trim()) {
@@ -322,9 +343,17 @@
   }
 
   function startPendingRecovery(user) {
-    if (!user) return;
-    setTimeout(() => {
-      const sessions = readCache(cacheKey(user.uid));
+    const uid = String(user?.uid || "");
+    if (!uid || recoveryStartTimers.has(uid)) return;
+    const timer = setTimeout(async () => {
+      recoveryStartTimers.delete(uid);
+      const currentUser = window.firebase?.auth?.()?.currentUser;
+      if (!currentUser || String(currentUser.uid || "") !== uid) return;
+      // Let Firebase restore the account token before the first recovery request.
+      try { await user.getIdToken(); } catch {}
+      const latestUser = window.firebase?.auth?.()?.currentUser;
+      if (!latestUser || String(latestUser.uid || "") !== uid) return;
+      const sessions = readCache(cacheKey(uid));
       const ids = [];
       for (const session of Object.values(sessions)) {
         if (session?.incognito || !Array.isArray(session?.messages)) continue;
@@ -332,8 +361,9 @@
           if (message?.role === "user" && isJobId(message.responseJobId)) ids.push(message.responseJobId);
         }
       }
-      for (const id of new Set(ids)) void recoverJob(id, user);
-    }, 500);
+      for (const id of new Set(ids)) void recoverJob(id, latestUser);
+    }, 3000);
+    recoveryStartTimers.set(uid, timer);
   }
 
   function parseFrame(frame, job) {
