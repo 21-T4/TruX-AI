@@ -262,14 +262,39 @@
     const sessions = readCache(cacheKey(user.uid));
     for (const row of document.querySelectorAll(".row.user-row")) {
       if (!row.dataset.chatId || row.getClientRects().length === 0) continue;
-      const chatId = String(row.dataset.chatId), userIndex = Number(row.dataset.messageIndex);
+      const chatId = String(row.dataset.chatId);
+      const session = sessions[chatId];
+      if (session?.incognito || !Array.isArray(session?.messages)) continue;
+
+      // The durable message array can gain a recovered answer after this DOM row
+      // was rendered. Prefer the job correlation key over its now-stale index.
+      const rowJobId = String(row.dataset.responseJobId || "");
+      if (isJobId(rowJobId)) {
+        const answerIndex = session.messages.findIndex((message, index) =>
+          index > 0 && message?.role === "trux" &&
+          message.responseJobId === rowJobId &&
+          message.recoveredByClient === true &&
+          message.incomplete !== true &&
+          String(message.text || "").trim()
+        );
+        if (answerIndex > 0) {
+          const answer = session.messages[answerIndex];
+          const savedUser = session.messages[answerIndex - 1];
+          if (savedUser?.role === "user" &&
+              messageText(savedUser) === String(answer.recoveryPrompt || "")) {
+            paintRecoveredReply(chatId, answerIndex - 1, rowJobId, String(answer.text));
+            continue;
+          }
+        }
+      }
+
+      const userIndex = Number(row.dataset.messageIndex);
       if (!Number.isInteger(userIndex) || userIndex < 0) continue;
-      const session = sessions[chatId], savedUser = session?.messages?.[userIndex];
-      const answer = session?.messages?.[userIndex + 1];
-      if (session?.incognito || savedUser?.role !== "user" ||
-          answer?.role !== "trux" || answer.recoveredByClient !== true ||
-          answer.incomplete === true || !isJobId(answer.responseJobId) ||
-          !String(answer.text || "").trim()) continue;
+      const savedUser = session.messages[userIndex];
+      const answer = session.messages[userIndex + 1];
+      if (savedUser?.role !== "user" || answer?.role !== "trux" ||
+          answer.recoveredByClient !== true || answer.incomplete === true ||
+          !isJobId(answer.responseJobId) || !String(answer.text || "").trim()) continue;
       paintRecoveredReply(chatId, userIndex, answer.responseJobId, String(answer.text));
     }
   }
