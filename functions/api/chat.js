@@ -184,7 +184,7 @@ async function streamTruxCodeWithAntigravity({ contents, systemInstruction, send
       else await new Promise(resolve => setTimeout(resolve, 1200));
     } catch (error) {
       if (!background) throw error;
-      if (!background && signal?.aborted) return { aborted: true, text: '', interactionId };
+      // Background interactions are durable; transient stream errors are retried via provider state.
       interaction = await client.interactions.get(interactionId).catch(() => interaction);
       if (['completed', 'failed', 'cancelled', 'incomplete'].includes(String(interaction?.status || '').toLowerCase())) complete = true;
       else await new Promise(resolve => setTimeout(resolve, 1800));
