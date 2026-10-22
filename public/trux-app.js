@@ -1001,22 +1001,7 @@
         codeHome.style.removeProperty("transform");
       }
 
-      // Rehydrate the same chat only for internal/history navigation.
-      if(modeChanged && currentChatId && chatSessions[currentChatId] && !isMedia) {
-        const target = isCoding ? codeView : chatView;
-        if(target) {
-          target.innerHTML = "";
-          target.style.display = "block";
-          (chatSessions[currentChatId].messages || []).forEach(m => appendMessageRow(
-            m.role === "user" ? "You" : "TruX-Omni",
-            m.text || "",
-            m.role === "user" ? "user-row" : "trux-row",
-            m.role === "user" ? "user-bubble" : "trux-bubble",
-            m.image || null, false, m.sources, m.video
-          ));
-          target.scrollTop = target.scrollHeight;
-        }
-      }
+      // Session rehydration is owned by loadChatSession() so it runs once with stable message indexes.
 
       document.querySelectorAll("[data-trux-mode]").forEach(x => x.classList.toggle("active", x.dataset.truxMode === workspaceMode));
       document.querySelectorAll("[data-trux-menu-mode]").forEach(x => x.classList.toggle("active", x.dataset.truxMenuMode === workspaceMode));
@@ -1799,6 +1784,124 @@
       }
       queueSidebarSync();
     }
+
+    function applyRecoveredCodingResponse(snapshot = {}) {
+      try {
+        const uid = String(snapshot.uid || "");
+        const jobId = String(snapshot.jobId || "");
+        const chatId = String(snapshot.chatId || "");
+        const prompt = String(snapshot.prompt || "");
+        const recoveredText = String(snapshot.text || "");
+        const complete = snapshot.complete === true;
+        const errorText = String(snapshot.errorText || "");
+        const signedInUser = auth?.currentUser;
+        if (!uid || !jobId || !chatId || !signedInUser ||
+            String(signedInUser.uid || "") !== uid ||
+            String(localChatOwnerUid || "") !== uid ||
+            !/^[A-Za-z0-9_-]{12,128}$/.test(jobId)) return false;
+
+        const session = chatSessions[chatId];
+        if (!session || session.incognito || session.mode !== "coding" ||
+            !Array.isArray(session.messages)) return false;
+
+        const messages = session.messages;
+        const matchesPrompt = message => message?.role === "user" &&
+          String(message.text || "") === prompt &&
+          (!message.responseJobId || message.responseJobId === jobId) &&
+          message.responseRecoveryComplete !== true;
+        const expectedIndex = Number(snapshot.userIndex);
+        let userIndex = messages.findIndex(message =>
+          message?.role === "user" && message.responseJobId === jobId
+        );
+        if (userIndex < 0 && Number.isInteger(expectedIndex) &&
+            expectedIndex >= 0 && expectedIndex < messages.length &&
+            matchesPrompt(messages[expectedIndex])) {
+          userIndex = expectedIndex;
+        }
+        if (userIndex < 0) {
+          const candidates = [];
+          messages.forEach((message, index) => {
+            if (matchesPrompt(message)) candidates.push(index);
+          });
+          if (candidates.length) {
+            userIndex = candidates.reduce((best, index) =>
+              Math.abs(index - expectedIndex) < Math.abs(best - expectedIndex) ? index : best,
+              candidates[0]
+            );
+          }
+        }
+        if (userIndex < 0) return false;
+
+        const userMessage = messages[userIndex];
+        const activeTurnMatches = activeTurnContext?.chatId === chatId &&
+          activeTurnContext?.mode === "coding" &&
+          userMessage.responseJobId === jobId;
+        if (activeTurnMatches && activeTurnContext) {
+          activeTurnContext.userMessageIndex = userIndex;
+        }
+        let assistantIndex = -1;
+        for (let index = userIndex + 1; index < messages.length; index++) {
+          const message = messages[index];
+          if (message?.role === "user") break;
+          if (message?.role === "trux" &&
+              (message.responseJobId === jobId || !!message.draftTurnId)) {
+            assistantIndex = index;
+            break;
+          }
+        }
+        // A reply directly after this prompt belongs to this turn even when an
+        // older client saved it without the correlation ID.
+        if (assistantIndex < 0 && messages[userIndex + 1]?.role === "trux") {
+          assistantIndex = userIndex + 1;
+        }
+        if (complete && !recoveredText.trim()) return false;
+
+        let assistantMessage;
+        if (assistantIndex >= 0) {
+          assistantMessage = messages[assistantIndex];
+        } else {
+          assistantMessage = { role: "trux", text: "", incomplete: true };
+          if (activeTurnMatches && activeTurnContext?.turnKey) {
+            assistantMessage.draftTurnId = activeTurnContext.turnKey;
+          }
+          messages.splice(userIndex + 1, 0, assistantMessage);
+        }
+        assistantMessage.role = "trux";
+        if (recoveredText || complete) assistantMessage.text = recoveredText;
+        assistantMessage.incomplete = !complete;
+        assistantMessage.responseJobId = jobId;
+        assistantMessage.recoveredByClient = true;
+        assistantMessage.recoveryPrompt = prompt;
+        if (Array.isArray(snapshot.toolEvents) && snapshot.toolEvents.length) {
+          assistantMessage.toolEvents = snapshot.toolEvents.slice(-180);
+        }
+        if (errorText) assistantMessage.recoveryError = errorText;
+        else if (complete) delete assistantMessage.recoveryError;
+        if (complete) {
+          if (activeTurnMatches && activeTurnContext?.turnKey) {
+            assistantMessage.draftTurnId = activeTurnContext.turnKey;
+          } else {
+            delete assistantMessage.draftTurnId;
+          }
+          delete userMessage.responseJobId;
+          delete userMessage.responseRecoveryFailed;
+          userMessage.responseRecoveryComplete = true;
+        } else if (errorText) {
+          delete userMessage.responseJobId;
+          userMessage.responseRecoveryFailed = true;
+        } else {
+          userMessage.responseJobId = jobId;
+          delete userMessage.responseRecoveryFailed;
+        }
+
+        if (complete || errorText) saveChatSessions();
+        return true;
+      } catch (error) {
+        console.warn("[trux-response-recovery] app-session sync failed:", error?.message || error);
+        return false;
+      }
+    }
+    window.__truxApplyRecoveredResponse = applyRecoveredCodingResponse;
 
     function launchIncognitoChat() {
       /* Incognito is a memory-only Chat workspace.
@@ -3701,6 +3804,8 @@
         // No stray newlines inside the bubble: it is white-space: pre-wrap,
         // so template indentation would render as blank lines.
         r.dataset.chatId = currentChatId || "";
+        const userResponseJobId = String(messageMeta?.responseJobId || "");
+        if (userResponseJobId) r.dataset.responseJobId = userResponseJobId;
         const userMessageIndex = Number.isInteger(messageMeta?.messageIndex)
           ? Number(messageMeta.messageIndex)
           : findStoppedMessageIndex(r, textContent);
@@ -4143,9 +4248,18 @@
         if (codingTurn) {
           responseMessage.durationMs = durationMs;
           responseMessage.toolEvents = Array.isArray(turnContext?.toolEvents) ? turnContext.toolEvents : [];
+          const userIndex = Number(turnContext?.userMessageIndex);
+          const completedUserMessage = Number.isInteger(userIndex) ? resultSession.messages[userIndex] : null;
+          if (completedUserMessage?.role === "user" && completedUserMessage.responseJobId) {
+            delete completedUserMessage.responseJobId;
+            delete completedUserMessage.responseRecoveryFailed;
+            completedUserMessage.responseRecoveryComplete = true;
+          }
         }
-        
-        queueSidebarSync();
+
+        // The finished answer must be durable before the UI reports this turn complete.
+        if (codingTurn && turnContext && !resultSession.incognito) saveChatSessions();
+        else queueSidebarSync();
       }
       if(b) attachSources(b.closest(".row"), cleanSources);
 
@@ -5044,7 +5158,7 @@
       getEl("welcomeScreen").style.display = "none";
       let chatContainer = getActiveChatContainer(); chatContainer.style.display = "block";
       
-      appendMessageRow("You", basePrompt + attachmentLabel + (selectedImageBase64 ? "\n[Image Attached]" : ""), "user-row", "user-bubble", null, true, undefined, undefined, { messageIndex: sentMessageIndex });
+      appendMessageRow("You", basePrompt + attachmentLabel + (selectedImageBase64 ? "\n[Image Attached]" : ""), "user-row", "user-bubble", null, true, undefined, undefined, { messageIndex: sentMessageIndex, responseJobId: codingResponseJobId });
       promptInput.value = ""; let img = selectedImageBase64; removeImage(); pastedTextBlocks = []; fileAttachments = []; renderFileChips(); handleInputChange();
 
       const codingTurn = workspaceMode === "coding";
@@ -6626,7 +6740,7 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
       getEl("codeChatContainer").innerHTML = "";
       const cC = enterChatWorkspace();
        chatSessions[id].messages.forEach((m, index) => {
-         appendMessageRow(m.role === "user" ? "You" : "TruX-Omni", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image, false, m.sources, m.video, { messageIndex: index, stopped: m.role === "user" && m.stopped === true, incomplete: m.role === "trux" && m.incomplete === true });
+         appendMessageRow(m.role === "user" ? "You" : "TruX-Omni", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image, false, m.sources, m.video, { messageIndex: index, responseJobId: m.role === "user" ? m.responseJobId || "" : "", stopped: m.role === "user" && m.stopped === true, incomplete: m.role === "trux" && m.incomplete === true });
          if (workspaceMode === "coding" && m.role === "trux" && Number.isFinite(Number(m.durationMs))) {
            const rows = getActiveChatContainer()?.querySelectorAll(".row.trux-row") || [];
            const restoredRow = rows[rows.length - 1];
@@ -6816,9 +6930,14 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
     function closeSubscriptionPage() {
       const state = truxSubscriptionReturnState || { mode: "chat", chatId: currentChatId };
       document.body.classList.remove("subscription-page-active");
-      currentChatId = state.chatId || currentChatId;
-      setWorkspaceMode(state.mode || "chat", { reload: false, preserveSession: true });
       truxSubscriptionReturnState = null;
+      const sessionId = state.chatId || currentChatId;
+      if (sessionId && chatSessions[sessionId]) {
+        void loadChatSession(sessionId);
+        return;
+      }
+      currentChatId = null;
+      setWorkspaceMode(state.mode || "chat", { reload: false, preserveSession: false, forceReset: true });
     }
     function selectSubscriptionPlan(plan) {
       const planNames = { base: "Free", plus: "Plus", pro: "Pro", edge: "TruX AI Edge" };

@@ -6,6 +6,7 @@
 
   const PREFIX = "trux_chat_sessions_local_v1:";
   const polling = new Set();
+  const recoveryStartTimers = new Map();
   const activeRequests = new Map();
   const rawSet = Storage.prototype.setItem;
   const rawGet = Storage.prototype.getItem;
@@ -54,14 +55,21 @@
           }
         }
         if (ni < 0) continue;
+        // The live finalizer has explicitly completed this prompt; do not resurrect
+        // a stale pending ID from the previous cache snapshot.
+        if (pendingId && messages[ni]?.responseRecoveryComplete === true) continue;
         if (pendingId && !messages[ni].responseJobId) messages[ni].responseJobId = pendingId;
         const jobId = pendingId || oldAssistant.responseJobId;
         const oldReply = oldMessages.slice(oi + 1).find(m => m?.role === "trux" && m.responseJobId === jobId);
         if (!oldReply) continue;
         const current = messages[ni + 1];
         if (oldReply.incomplete !== true) {
-          if (current?.role === "trux") messages[ni + 1] = { ...oldReply };
-          else messages.splice(ni + 1, 0, { ...oldReply });
+          if (current?.role === "trux") {
+            // Preserve the live stream's draft identity so its finalizer updates
+            // this same message rather than appending a duplicate assistant reply.
+            const draftTurnId = current.draftTurnId;
+            messages[ni + 1] = { ...oldReply, ...(draftTurnId ? { draftTurnId } : {}) };
+          } else messages.splice(ni + 1, 0, { ...oldReply });
           delete messages[ni].responseJobId;
         } else if (current?.role === "trux") {
           current.responseJobId = jobId;
@@ -112,7 +120,15 @@
       if (row.getClientRects().length === 0) continue;
       const shown = String(row.querySelector(".user-bubble")?.textContent || "").trim();
       if (shown !== String(prompt || "").trim() && !shown.startsWith(String(prompt || "").trim())) continue;
-      const chatId = String(row.dataset.chatId), userIndex = Number(row.dataset.messageIndex);
+      const chatId = String(row.dataset.chatId);
+      const rowJobId = String(row.dataset.responseJobId || "");
+      if (isJobId(rowJobId)) {
+        const byJob = findJob(rowJobId);
+        if (byJob && byJob.key === key && byJob.chatId === chatId && byJob.prompt === String(prompt || "")) {
+          return { ...byJob, jobId: rowJobId };
+        }
+      }
+      const userIndex = Number(row.dataset.messageIndex);
       const session = sessions[chatId], message = session?.messages?.[userIndex];
       if (session?.incognito || session?.mode !== "coding" || message?.role !== "user" || messageText(message) !== String(prompt || "")) continue;
       return {
@@ -149,16 +165,22 @@
     const id = isJobId(requestedId) ? requestedId : "truxjob_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
     best.session.messages[best.userIndex].responseJobId = id;
     writeCache(best.key, best.sessions);
-    const row = locateUserRow(best.chatId, best.userIndex);
+    const row = locateUserRow(best.chatId, best.userIndex, id);
+    if (row) row.dataset.responseJobId = id;
     const replyRow = row?.nextElementSibling;
     if (replyRow?.classList.contains("trux-row")) replyRow.dataset.responseJobId = id;
     return { ...best, jobId: id };
   }
 
-  function locateUserRow(chatId, index) {
-    return Array.from(document.querySelectorAll(".row.user-row")).find(row =>
-      row.dataset.chatId === String(chatId) && Number(row.dataset.messageIndex) === Number(index)
-    ) || null;
+  function locateUserRow(chatId, index, jobId = "") {
+    const rows = Array.from(document.querySelectorAll(".row.user-row")).filter(row =>
+      row.dataset.chatId === String(chatId)
+    );
+    const correlated = jobId
+      ? rows.find(row => row.dataset.responseJobId === String(jobId))
+      : null;
+    if (correlated) return correlated;
+    return rows.find(row => Number(row.dataset.messageIndex) === Number(index)) || null;
   }
 
   function storeSnapshot(jobId, text, complete, toolEvents = [], errorText = "") {
@@ -188,11 +210,24 @@
       userMessage.responseRecoveryComplete = true;
     }
     writeCache(key, sessions);
+    if (complete || errorText) {
+      try {
+        const uid = decodeURIComponent(String(key).slice(PREFIX.length));
+        window.__truxApplyRecoveredResponse?.({
+          uid, chatId, userIndex, jobId, prompt,
+          text: String(text || ""), complete: complete === true,
+          toolEvents: Array.isArray(toolEvents) ? toolEvents : [],
+          errorText: String(errorText || "")
+        });
+      } catch (error) {
+        console.warn("[trux-response-recovery] could not sync the live chat session", error?.message || error);
+      }
+    }
     if (complete) paintRecoveredReply(chatId, userIndex, jobId, String(text || ""));
   }
 
   function paintRecoveredReply(chatId, userIndex, jobId, text) {
-    const userRow = locateUserRow(chatId, userIndex);
+    const userRow = locateUserRow(chatId, userIndex, jobId);
     if (!userRow) return;
     let row = Array.from(document.querySelectorAll(".row.trux-row")).find(item => item.dataset.responseJobId === jobId);
     if (!row) {
@@ -234,14 +269,39 @@
     const sessions = readCache(cacheKey(user.uid));
     for (const row of document.querySelectorAll(".row.user-row")) {
       if (!row.dataset.chatId || row.getClientRects().length === 0) continue;
-      const chatId = String(row.dataset.chatId), userIndex = Number(row.dataset.messageIndex);
+      const chatId = String(row.dataset.chatId);
+      const session = sessions[chatId];
+      if (session?.incognito || !Array.isArray(session?.messages)) continue;
+
+      // The durable message array can gain a recovered answer after this DOM row
+      // was rendered. Prefer the job correlation key over its now-stale index.
+      const rowJobId = String(row.dataset.responseJobId || "");
+      if (isJobId(rowJobId)) {
+        const answerIndex = session.messages.findIndex((message, index) =>
+          index > 0 && message?.role === "trux" &&
+          message.responseJobId === rowJobId &&
+          message.recoveredByClient === true &&
+          message.incomplete !== true &&
+          String(message.text || "").trim()
+        );
+        if (answerIndex > 0) {
+          const answer = session.messages[answerIndex];
+          const savedUser = session.messages[answerIndex - 1];
+          if (savedUser?.role === "user" &&
+              messageText(savedUser) === String(answer.recoveryPrompt || "")) {
+            paintRecoveredReply(chatId, answerIndex - 1, rowJobId, String(answer.text));
+            continue;
+          }
+        }
+      }
+
+      const userIndex = Number(row.dataset.messageIndex);
       if (!Number.isInteger(userIndex) || userIndex < 0) continue;
-      const session = sessions[chatId], savedUser = session?.messages?.[userIndex];
-      const answer = session?.messages?.[userIndex + 1];
-      if (session?.incognito || savedUser?.role !== "user" ||
-          answer?.role !== "trux" || answer.recoveredByClient !== true ||
-          answer.incomplete === true || !isJobId(answer.responseJobId) ||
-          !String(answer.text || "").trim()) continue;
+      const savedUser = session.messages[userIndex];
+      const answer = session.messages[userIndex + 1];
+      if (savedUser?.role !== "user" || answer?.role !== "trux" ||
+          answer.recoveredByClient !== true || answer.incomplete === true ||
+          !isJobId(answer.responseJobId) || !String(answer.text || "").trim()) continue;
       paintRecoveredReply(chatId, userIndex, answer.responseJobId, String(answer.text));
     }
   }
@@ -264,7 +324,7 @@
   async function recoverJob(jobId, user) {
     if (!isJobId(jobId) || polling.has(jobId)) return;
     polling.add(jobId);
-    let wait = 2500, missingSince = 0;
+    let wait = 3000, missingSince = 0, authMissingSince = 0;
     const toolEvents = [];
     try {
       while (true) {
@@ -289,7 +349,16 @@
           if (response.status === 202 || response.status === 429 || response.status >= 500) {
             await sleep(wait); wait = Math.min(12000, Math.round(wait * 1.3)); continue;
           }
-          if (response.status === 401 || response.status === 403) return;
+          if (response.status === 401) {
+            if (!authMissingSince) authMissingSince = Date.now();
+            if (Date.now() - authMissingSince > 90000) return;
+            // Firebase can briefly serve an old/unsettled token after cold start.
+            await sleep(3000);
+            wait = 3000;
+            continue;
+          }
+          if (response.status === 403) return;
+          authMissingSince = 0;
           if (!response.ok) { await sleep(wait); wait = Math.min(12000, Math.round(wait * 1.3)); continue; }
           const data = await response.json();
           if (data.status === "completed" && String(data.text || "").trim()) {
@@ -322,9 +391,17 @@
   }
 
   function startPendingRecovery(user) {
-    if (!user) return;
-    setTimeout(() => {
-      const sessions = readCache(cacheKey(user.uid));
+    const uid = String(user?.uid || "");
+    if (!uid || recoveryStartTimers.has(uid)) return;
+    const timer = setTimeout(async () => {
+      recoveryStartTimers.delete(uid);
+      const currentUser = window.firebase?.auth?.()?.currentUser;
+      if (!currentUser || String(currentUser.uid || "") !== uid) return;
+      // Let Firebase restore the account token before the first recovery request.
+      try { await user.getIdToken(); } catch {}
+      const latestUser = window.firebase?.auth?.()?.currentUser;
+      if (!latestUser || String(latestUser.uid || "") !== uid) return;
+      const sessions = readCache(cacheKey(uid));
       const ids = [];
       for (const session of Object.values(sessions)) {
         if (session?.incognito || !Array.isArray(session?.messages)) continue;
@@ -332,8 +409,9 @@
           if (message?.role === "user" && isJobId(message.responseJobId)) ids.push(message.responseJobId);
         }
       }
-      for (const id of new Set(ids)) void recoverJob(id, user);
-    }, 500);
+      for (const id of new Set(ids)) void recoverJob(id, latestUser);
+    }, 3000);
+    recoveryStartTimers.set(uid, timer);
   }
 
   function parseFrame(frame, job) {
