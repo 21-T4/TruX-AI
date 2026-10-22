@@ -190,7 +190,8 @@ async function streamTruxCodeWithAntigravity({ contents, systemInstruction, send
       else await new Promise(resolve => setTimeout(resolve, 1800));
     }
   }
-  if (signal?.aborted) return { aborted: true, text: '', interactionId };
+  // A durable background interaction must still return its final output after the browser disconnects.
+  if (!background && signal?.aborted) return { aborted: true, text: '', interactionId };
   if (background) interaction = await client.interactions.get(interactionId).catch(() => interaction);
   const status = String(interaction?.status || '').toLowerCase();
   if (status === 'failed') throw new Error('The Antigravity interaction failed before completion.');
