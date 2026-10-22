@@ -6922,7 +6922,7 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
         return;
       }
       currentChatId = null;
-      setWorkspaceMode(state.mode || "chat", { reload: false, preserveSession: false });
+      setWorkspaceMode(state.mode || "chat", { reload: false, preserveSession: false, forceReset: true });
     }
     function selectSubscriptionPlan(plan) {
       const planNames = { base: "Free", plus: "Plus", pro: "Pro", edge: "TruX AI Edge" };
