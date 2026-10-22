@@ -138,7 +138,7 @@ async function streamTruxCodeWithAntigravity({ contents, systemInstruction, send
   const client = await getVertexAIClient(), background = validCodeJobId(responseJobId);
   const input = buildTruxCodeAntigravityInput(contents, systemInstruction);
   const created = await client.interactions.create({
-    agent: TRUX_CODE_AGENT, input, environment: 'remote',
+    agent: TRUX_CODE_AGENT, input, environment: { type: 'remote' },
     agent_config: { type: 'antigravity', model: TRUX_CODE_MODEL },
     ...(background ? { background: true, store: true } : { stream: true })
   });
@@ -161,9 +161,9 @@ async function streamTruxCodeWithAntigravity({ contents, systemInstruction, send
         if (eventId) lastEventId = eventId;
         const type = String(event?.event_type || '');
         if (type === 'error') throw new Error(String(event?.error?.message || 'The Antigravity agent reported an error.'));
-        if (type === 'interaction.created' || type === 'interaction.completed') {
+        if (type === 'interaction.created' || type === 'interaction.complete' || type === 'interaction.completed') {
           interaction = event?.interaction || interaction;
-          if (type === 'interaction.completed') complete = true;
+          if (type === 'interaction.complete' || type === 'interaction.completed') complete = true;
           continue;
         }
         if (type === 'step.start') {
@@ -249,7 +249,7 @@ async function getVertexAIClient() {
 
   if (!vertexAIClient || vertexAIClientConfigKey !== configKey) {
     vertexAIClient = new GoogleGenAI({
-      enterprise: true,
+      vertexai: true,
       project: projectId,
       location: 'global'
     });
