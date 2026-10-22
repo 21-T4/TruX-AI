@@ -4452,12 +4452,12 @@ body[data-workspace-mode="coding"] .bar{
   --trux-input-accent:#f0f2ff;
   grid-template-columns:44px minmax(0,1fr) 42px 48px!important;
   grid-template-rows:minmax(0,1fr)!important;align-items:center!important;gap:0 7px!important;
-  min-height:78px!important;height:auto!important;padding:10px 12px!important;border-radius:999px!important;
+  min-height:86px!important;height:auto!important;padding:10px 12px!important;border-radius:999px!important;
   background:rgba(24,24,28,.9)!important;border-color:rgba(255,255,255,.16)!important;
   box-shadow:0 0 42px rgba(45,72,220,.23),0 1px 0 rgba(255,255,255,.08) inset!important;
 }
 body.coding-workspace .bar > #attachBtn{grid-column:1!important;grid-row:1!important;align-self:center!important;justify-self:center!important;width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;display:grid!important;place-items:center!important}
-body.coding-workspace .bar > #promptInput{grid-column:2!important;grid-row:1!important;width:100%!important;min-width:0!important;min-height:44px!important;max-height:108px!important;height:auto!important;padding:5px 8px!important;align-self:center!important;justify-self:stretch!important;overflow-x:hidden!important;overflow-y:auto!important;resize:none!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;text-align:left!important;font-family:var(--font-body)!important;font-size:18px!important;line-height:1.35!important;letter-spacing:-.02em!important}
+body.coding-workspace .bar > #promptInput{grid-column:2!important;grid-row:1!important;width:100%!important;min-width:0!important;min-height:48px!important;max-height:108px!important;height:auto!important;padding:1px 8px 9px!important;transform:translateY(-2px)!important;align-self:center!important;justify-self:stretch!important;overflow-x:hidden!important;overflow-y:auto!important;resize:none!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;text-align:left!important;font-family:var(--font-body)!important;font-size:18px!important;line-height:1.35!important;letter-spacing:-.02em!important}
 body.coding-workspace .bar > #voiceBtn{grid-column:3!important;grid-row:1!important;width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important;align-self:center!important;justify-self:center!important}
 body.coding-workspace .bar > #actionBtn{
   grid-column:4!important;grid-row:1!important;width:48px!important;height:48px!important;
@@ -4477,7 +4477,7 @@ body.coding-workspace .bar > #actionBtn.stop{
 }
 body.coding-workspace .bar > #actionBtn.stop #btnIcon{opacity:1!important;transform:none!important}
 
-@media(max-width:700px){body.coding-workspace .bar{grid-template-columns:40px minmax(0,1fr) 38px 44px!important;gap:0 4px!important;min-height:70px!important;padding:8px 9px!important}body.coding-workspace .bar > #attachBtn{width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important}body.coding-workspace .bar > #promptInput{font-size:17px!important;padding:5px 5px!important}body.coding-workspace .bar > #voiceBtn{width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important}body.coding-workspace .bar > #actionBtn{width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important}}
+@media(max-width:700px){body.coding-workspace .bar{grid-template-columns:40px minmax(0,1fr) 38px 44px!important;gap:0 4px!important;min-height:78px!important;padding:10px 9px!important}body.coding-workspace .bar > #attachBtn{width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important}body.coding-workspace .bar > #promptInput{font-size:17px!important;padding:1px 5px 9px!important}body.coding-workspace .bar > #voiceBtn{width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important}body.coding-workspace .bar > #actionBtn{width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important}}
 @media(max-width:380px){body.coding-workspace .bar > #promptInput{font-size:15px!important}}
 body[data-media-mode="video"] .bar{--trux-input-accent:#e0bcff}
 body[data-media-mode="image"] .bar{--trux-input-accent:#b3f0dc}
