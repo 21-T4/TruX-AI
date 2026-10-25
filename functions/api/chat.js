@@ -883,112 +883,83 @@ async function buildConversationHistory(history, signal, env, options = {}) {
 }
 
 
-let truxHomePromptsCache = null;
-let truxHomePromptsCacheAt = 0;
-let truxHomePromptsInFlight = null;
-
 function isCompactTruxHomePrompt(value) {
-  const prompt = String(value || '').trim();
+  const prompt = String(value || "").trim();
   const wordCount = prompt ? prompt.split(/\s+/).length : 0;
   return prompt.length >= 8 && prompt.length <= 54 && wordCount >= 3 && wordCount <= 7;
 }
 
-function parseTruxHomePromptText(rawText) {
-  let raw = String(rawText || '').trim();
-  if (!raw) return [];
-
-  raw = raw.replace(/^\x60{3}(?:json|text)?\s*/i, '').replace(/\s*\x60{3}$/i, '').trim();
-  try {
-    const parsed = JSON.parse(raw);
-    const list = Array.isArray(parsed) ? parsed : parsed?.prompts;
-    if (Array.isArray(list)) {
-      const clean = [...new Set(list.map(value =>
-        String(value || '')
-          .replace(/^\s*(?:[-*•]|\d+[.)])\s*/, '')
-          .replace(/^["'“”]+|["'“”]+$/g, '')
-          .replace(/\s+/g, ' ')
-          .trim()
-      ).filter(isCompactTruxHomePrompt))];
-      if (clean.length >= 3) return clean.slice(0, 3);
+function cleanTruxHomeTextList(values, validator, limit) {
+  if (!Array.isArray(values)) return [];
+  const found = new Set();
+  const result = [];
+  for (const value of values) {
+    const text = String(value || "").replace(/\s+/g, " ").trim().replace(/^["'“”]+|["'“”]+$/g, "");
+    const key = text.toLocaleLowerCase();
+    if (validator(text) && !found.has(key)) {
+      found.add(key);
+      result.push(text);
+      if (result.length >= limit) break;
     }
-  } catch {}
-
-  const lines = raw.split(/\r?\n/).map(line =>
-    line.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, '')
-      .replace(/^["'“”]+|["'“”]+$/g, '')
-      .replace(/\s+/g, ' ')
-      .trim()
-  ).filter(isCompactTruxHomePrompt);
-
-  const uniqueLines = [...new Set(lines)];
-  if (uniqueLines.length >= 3) return uniqueLines.slice(0, 3);
-
-  const sentences = raw.match(/[^.!?]+[.!?]?/g) || [];
-  const combined = [...new Set([...uniqueLines, ...sentences
-    .map(line => line.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, '').replace(/\s+/g, ' ').trim())
-    .filter(isCompactTruxHomePrompt)])];
-  return combined.slice(0, 3);
+  }
+  return result;
 }
 
-async function getTruxHomePrompts(env) {
-  const now = Date.now();
-  if (Array.isArray(truxHomePromptsCache) && now - truxHomePromptsCacheAt < 5 * 60 * 1000) {
-    return truxHomePromptsCache;
-  }
-  if (truxHomePromptsInFlight) return truxHomePromptsInFlight;
-
-  truxHomePromptsInFlight = (async () => {
-    const modelAttempts = ['gemini-3.5-flash-lite'];
-    let lastError = null;
-    for (const model of modelAttempts) {
-      try {
-        const response = await fetchVertexGemini({
-          model,
-          contents: [{
-            role: 'user',
-            parts: [{
-              text: [
-                'Create exactly three very short, natural example prompts for an AI workspace home screen.',
-                'Each prompt must be 3 to 6 words and no more than 44 characters.',
-                'Cover everyday help, learning or explanation, and creative ideas; one category per prompt.',
-                'Prefer compact phrasing such as "Plan meals from my pantry" or "Explain quantum computing simply".',
-                'Avoid long setups, multi-part requests, personal assumptions, numbering, markdown, and emojis.',
-                'Return exactly three distinct lines, one prompt per line. Vary them from earlier examples. Date: ' + new Date().toISOString().slice(0, 10) + '.'
-              ].join(' ')
-            }]
-          }],
-          systemInstruction: 'Write exactly three home-screen prompt suggestions. Each must be 3–6 words and at most 44 characters. Keep each to one simple idea with no long setup. Return one prompt per line, no commentary, bullets, numbering, or markdown.',
-          generationConfig: {
-            temperature: 0.8,
-            maxOutputTokens: 160
-          },
-          env
-        });
-
-        const directText = typeof response?.text === 'string' ? response.text : '';
-        const partsText = response?.candidates?.[0]?.content?.parts
-          ?.filter(part => typeof part?.text === 'string' && part?.thought !== true)
-          .map(part => part.text)
-          .join('') || '';
-        const prompts = parseTruxHomePromptText(directText || partsText);
-        if (prompts.length === 3) {
-          truxHomePromptsCache = prompts;
-          truxHomePromptsCacheAt = Date.now();
-          return prompts;
-        }
-        lastError = new Error('Home prompt model returned fewer than three usable suggestions.');
-      } catch (error) {
-        lastError = error;
-      }
-    }
-    throw lastError || new Error('Home prompt generation failed.');
-  })();
-
+function parseTruxHomeContent(rawText) {
+  let raw = String(rawText || "").trim();
+  if (!raw) return { greetings: [], prompts: [] };
+  raw = raw.replace(/^\x60{3}(?:json)?\s*/i, "").replace(/\s*\x60{3}$/i, "").trim();
+  let parsed;
   try {
-    return await truxHomePromptsInFlight;
-  } finally {
-    truxHomePromptsInFlight = null;
+    parsed = JSON.parse(raw);
+  } catch {
+    const start = raw.indexOf("{");
+    const end = raw.lastIndexOf("}");
+    if (start < 0 || end <= start) return { greetings: [], prompts: [] };
+    try { parsed = JSON.parse(raw.slice(start, end + 1)); } catch { return { greetings: [], prompts: [] }; }
   }
+  const greetings = cleanTruxHomeTextList(parsed?.greetings, value => {
+    const words = value ? value.split(/\s+/).length : 0;
+    return value.length >= 16 && value.length <= 100 && words >= 4 && words <= 14;
+  }, 6);
+  const prompts = cleanTruxHomeTextList(parsed?.prompts, isCompactTruxHomePrompt, 3);
+  return { greetings, prompts };
+}
+
+async function getTruxHomeContent(env) {
+  const novelty = Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 9);
+  const response = await fetchVertexGemini({
+    model: "gemini-3.5-flash-lite",
+    contents: [{
+      role: "user",
+      parts: [{
+        text: [
+          "Generate fresh, original content for an AI workspace home screen.",
+          "Return exactly one valid JSON object with keys greetings and prompts.",
+          "greetings: an array of six different, natural, welcoming headline lines. Each must be 4–10 words and 16–85 characters.",
+          "prompts: an array of exactly three short, useful example requests, each 3–7 words and at most 54 characters.",
+          "Make all six headlines meaningfully different from one another and vary their style and wording from other generations.",
+          "Do not use stock phrases, repeated templates, numbering, markdown, emojis, or commentary.",
+          "Use concise everyday language. Do not assume the user identity, location, mood, or personal circumstances.",
+          "Generation variation nonce: " + novelty + ". Timestamp: " + new Date().toISOString()
+        ].join(" ")
+      }]
+    }],
+    systemInstruction: 'You create fresh UI copy. Output only valid JSON in the exact shape {"greetings":[six distinct short headline strings],"prompts":[three distinct short prompt strings]}. No defaults, explanations, markdown, or extra keys. Generate every value anew for this request.',
+    generationConfig: { temperature: 1, maxOutputTokens: 480, responseMimeType: "application/json" },
+    env
+  });
+
+  const directText = typeof response?.text === "string" ? response.text : "";
+  const partsText = response?.candidates?.[0]?.content?.parts
+    ?.filter(part => typeof part?.text === "string" && part?.thought !== true)
+    .map(part => part.text)
+    .join("") || "";
+  const content = parseTruxHomeContent(directText || partsText);
+  if (content.greetings.length < 5 || content.prompts.length !== 3) {
+    throw new Error("Vertex AI returned incomplete home content.");
+  }
+  return content;
 }
 
 export async function onRequestPost(context) {
@@ -1017,17 +988,17 @@ export async function onRequestPost(context) {
       incognito = false,
     } = body;
 
-    if (mode === 'home-prompts') {
+    if (mode === 'home-content') {
       try {
-        const prompts = await getTruxHomePrompts(env);
-        return Response.json({ prompts }, {
-          headers: { 'Cache-Control': 'no-store' }
+        const content = await getTruxHomeContent(env);
+        return Response.json(content, {
+          headers: { 'Cache-Control': 'no-store, max-age=0' }
         });
       } catch (error) {
-        console.warn('TruX home prompt generation failed:', error?.message || error);
-        return Response.json({ prompts: [] }, {
+        console.warn('TruX AI-generated home content failed:', error?.message || error);
+        return Response.json({ greetings: [], prompts: [] }, {
           status: 503,
-          headers: { 'Cache-Control': 'no-store' }
+          headers: { 'Cache-Control': 'no-store, max-age=0' }
         });
       }
     }
