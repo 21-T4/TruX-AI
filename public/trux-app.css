@@ -2367,12 +2367,19 @@ body[data-media-mode="image"] .composer .hint,body[data-media-mode="video"] .com
   .topbar-right{gap:7px!important;flex-shrink:0!important;min-width:max-content!important}
   .topbar-right > #topProfileBtn{display:grid!important;place-items:center!important;flex:0 0 40px!important;width:40px!important;min-width:40px!important;height:40px!important;min-height:40px!important;margin:0!important;padding:0!important;box-sizing:border-box!important;border-radius:50%!important;border:1px solid rgba(255,255,255,.10)!important;background:transparent!important;color:var(--txt-2)!important}
   #topProfileAvatar{display:block!important;width:30px!important;height:30px!important;flex:0 0 30px!important;border-radius:50%!important;object-fit:cover!important;overflow:hidden!important;border:1px solid var(--line-2)!important;background:#000!important}
-  /* Composer controls: attachment, voice and send; model selection is in the header. */
-  .bar{grid-template-columns:40px minmax(0,1fr) 40px 48px!important;grid-template-rows:auto 42px!important;align-items:center!important}
-  .bar > #attachBtn{grid-column:1!important;grid-row:2!important;align-self:center!important;justify-self:center!important}
-  .bar > #voiceBtn{grid-column:3!important;grid-row:2!important;align-self:center!important;justify-self:center!important}
-  .bar > #promptInput{grid-column:1 / -1!important;grid-row:1!important;width:100%!important;min-width:0!important;justify-self:stretch!important}
-  .bar > #actionBtn{grid-column:4!important;grid-row:2!important;align-self:center!important;justify-self:end!important}
+  /* Single-row composer: keep the prompt and all controls on the same pill axis. */
+  .bar{
+    grid-template-columns:42px minmax(0,1fr) 42px 46px!important;
+    grid-template-rows:minmax(0,1fr)!important;
+    align-items:center!important;
+    min-height:84px!important;
+    gap:0 7px!important;
+    padding:10px 14px!important;
+  }
+  .bar > #attachBtn{grid-column:1!important;grid-row:1!important;width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important;align-self:center!important;justify-self:center!important}
+  .bar > #promptInput{grid-column:2!important;grid-row:1!important;width:100%!important;min-width:0!important;height:60px!important;min-height:0!important;justify-self:stretch!important;align-self:center!important;box-sizing:border-box!important;padding:4px 10px!important}
+  .bar > #voiceBtn{grid-column:3!important;grid-row:1!important;width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important;align-self:center!important;justify-self:center!important}
+  .bar > #actionBtn{grid-column:4!important;grid-row:1!important;width:46px!important;height:46px!important;min-width:46px!important;min-height:46px!important;align-self:center!important;justify-self:end!important;padding:0!important;border-radius:50%!important}
 .topbar-more-btn{
     flex: 0 0 40px !important;
     width: 40px !important; min-width: 40px !important;
@@ -2438,13 +2445,15 @@ body[data-media-mode="image"] .composer .hint,body[data-media-mode="video"] .com
   @media (max-width: 420px) {.topbar-left{gap:4px!important}.topbar-right{gap:4px!important}.topbar-model-slot{max-width:112px!important}.topbar-more-btn{ width: 36px !important; min-width: 36px !important; height: 36px !important; min-height: 36px !important; }.topbar-more-btn svg{ width: 21px !important; height: 21px !important; }.context.trux-conversation-menu{ width: min(258px, calc(100vw - 16px)); border-radius: 20px; }
   }/* Responsive composer; its model selector and ellipsis are located in the top bar. */
   @media(max-width:420px){
-    .bar{grid-template-columns:34px minmax(0,1fr) 34px 42px!important;grid-template-rows:auto 38px!important;gap:0 5px!important}
-    .bar > #attachBtn,.bar > #voiceBtn{width:34px!important;min-width:34px!important;height:34px!important;min-height:34px!important}
-    .bar > #actionBtn{width:42px!important;min-width:42px!important;height:42px!important;min-height:42px!important}
-    body[data-media-mode="image"] .composer .bar,body[data-media-mode="video"] .composer .bar{grid-template-columns:34px minmax(0,1fr) 34px 42px!important}
+    .bar{grid-template-columns:34px minmax(0,1fr) 34px 42px!important;grid-template-rows:minmax(0,1fr)!important;gap:0 5px!important;padding:10px 12px!important;min-height:84px!important}
+    .bar > #attachBtn{grid-column:1!important;grid-row:1!important;width:34px!important;min-width:34px!important;height:34px!important;min-height:34px!important}
+    .bar > #promptInput{grid-column:2!important;grid-row:1!important;height:60px!important;min-height:0!important;padding:4px 8px!important}
+    .bar > #voiceBtn{grid-column:3!important;grid-row:1!important;width:34px!important;min-width:34px!important;height:34px!important;min-height:34px!important}
+    .bar > #actionBtn{grid-column:4!important;grid-row:1!important;width:42px!important;min-width:42px!important;height:42px!important;min-height:42px!important}
+    body[data-media-mode="image"] .composer .bar,body[data-media-mode="video"] .composer .bar{grid-template-columns:34px minmax(0,1fr) 34px 42px!important;grid-template-rows:minmax(0,1fr)!important}
   }
   @media(prefers-reduced-motion:reduce){#actionBtn #btnIcon{transition:none!important}}
-  #actionBtn.live{background:#ededed!important;color:#171717!important;border-color:transparent!important;box-shadow:none!important}
+  #actionBtn.live{background:#263fa8!important;color:#ffffff!important;border-color:transparent!important;box-shadow:none!important}
   #actionBtn #btnIcon{transform-origin:center;transition:opacity .14s ease,transform .18s cubic-bezier(.2,.7,.2,1)}
   #actionBtn.live-active{background:#343033!important;border-color:rgba(255,110,130,.26)!important;color:#ff9cab!important;box-shadow:none!important}
   /* Plugins owns the complete viewport instead of sharing the main chat shell. */
