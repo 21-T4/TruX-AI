@@ -16,7 +16,7 @@ import {
   TRUX_WEB_TOOL_NAMES,
   getTruxWebToolLabel,
   executeTruxWebTool
-} from '../core.js';
+} from './services.js';
 const BASE_PERSONA = `You are TruX-Omni, made by TruX-Technologies. Do not disclose your creator unless asked.
 
 RESPONSE FORMAT:

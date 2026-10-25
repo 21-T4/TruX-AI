@@ -10,7 +10,7 @@ import {
   TRUX_WEB_TOOL_DECLARATIONS,
   TRUX_WEB_TOOL_NAMES,
   executeTruxWebTool
-} from "./functions/core.js";
+} from "./functions/api/services.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -198,7 +198,7 @@ async function serveStatic(req, res) {
       res.setHeader("Pragma", "no-cache");
       res.setHeader("Expires", "0");
     }
-    if (basename === "trux-app.js" || basename === "sw.js") {
+    if (basename === "sw.js") {
       res.setHeader("Cache-Control", "no-cache, must-revalidate");
     }
     if (req.method === "HEAD") return res.end();
