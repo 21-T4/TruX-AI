@@ -109,8 +109,8 @@ self.addEventListener('fetch', (event) => {
   // Keep the executable app bundles aligned with the API routes shipped by this revision.
   // Network-first avoids serving an old chat client after chat-storage routes are removed.
   const isVersionSensitiveScript =
-    url.pathname === '/trux-app.js' ||
-    url.pathname === '/pwa-enhancements.js';
+    url.pathname === '/trux-app.js';
+
 
   if (isVersionSensitiveScript) {
     event.respondWith(
