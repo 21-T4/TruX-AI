@@ -39,7 +39,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
 
   
-  <link rel="stylesheet" href="/trux-app.css?v=20261025-chat-only-removal1">
+  <link rel="stylesheet" href="/trux-app.css?v=20261025-header-plus-redesign2">
 
 
 
@@ -280,7 +280,7 @@
           <button class="top-btn menu-btn" onclick="toggleSidebar(event)" title="Toggle sidebar" aria-label="Toggle sidebar">
             <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
           </button>
-          <button class="top-btn mobile-new" onclick="startNewChat()" title="New chat" aria-label="New chat">
+          <button class="top-btn mobile-new" id="newChatTopBtn" onclick="startNewChat()" title="New chat" aria-label="New chat">
             <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
           </button>
         </div>
@@ -292,8 +292,13 @@
         </div>
 
         <div class="topbar-right">
+          <button type="button" class="top-btn" id="incognitoBtn" onclick="launchIncognitoChat()" title="Start an incognito chat" aria-label="Start an incognito chat">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h16l-2.2-5H6.2L4 10Z"/><path d="M5 10v1.5a3 3 0 0 0 6 0V10M13 10v1.5a3 3 0 0 0 6 0V10M11 10h2"/></svg>
+          </button>
+          <button type="button" class="top-btn topbar-more-btn" id="topbarMoreBtn" onclick="toggleTopbarMoreMenu(event)" title="More options" aria-label="More options" aria-haspopup="menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
+          </button>
           <button type="button" class="top-plan-btn" onclick="openSubscriptionPage()" aria-label="Open plans and subscriptions">Plans</button>
-
           <button type="button" class="top-profile-btn" id="topProfileBtn" onclick="handleAuthAction()" title="Profile" aria-label="Open profile">
             <img class="top-profile-avatar" id="topProfileAvatar" src="https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff" alt="" aria-hidden="true" referrerpolicy="no-referrer">
           </button>
@@ -460,18 +465,39 @@
             </button>
             <div class="attach-menu" id="attachmentMenu" role="menu" aria-label="Add to TruX">
               <button type="button" class="plus-menu-handle" id="plusMenuHandle" aria-label="Drag down to close the add menu" title="Drag down to close"></button>
-              <div class="trux-plus-title">Workspace mode</div>
-              <div class="trux-plus-grid">
-                <button type="button" class="trux-plus-item active" data-trux-menu-mode="chat" onclick="setWorkspaceMode('chat');closeAttachmentMenu()"><span>✦</span><span><b>Chat</b><small>General answers</small></span></button>
-                <button type="button" class="trux-plus-item" data-trux-menu-mode="deep-research" onclick="setWorkspaceMode('deep-research');closeAttachmentMenu()"><span>◌</span><span><b>Deep Research</b><small>Reason through complex questions with web research</small></span></button>
-                <button type="button" class="trux-plus-item" data-trux-menu-mode="image" onclick="setWorkspaceMode('image');closeAttachmentMenu()"><span>◈</span><span><b>Create image</b><small>Gemini image generation</small></span></button>
+              <div class="trux-plus-title">Quick actions</div>
+              <div class="trux-plus-grid" role="group" aria-label="Attachments">
+                <button type="button" class="trux-plus-item" onclick="openPhotoLibrary()" role="menuitem" aria-label="Choose photos">
+                  <span class="trux-plus-item-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m4 18 5-5 3 3 3-3 5 5"/></svg></span><span><b>Photos</b></span>
+                </button>
+                <button type="button" class="trux-plus-item" onclick="openCamera()" role="menuitem" aria-label="Open camera">
+                  <span class="trux-plus-item-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l1.4-2h7.2L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.5"/></svg></span><span><b>Camera</b></span>
+                </button>
+                <button type="button" class="trux-plus-item" onclick="openAvatarPicker();closeAttachmentMenu()" role="menuitem" aria-label="Choose profile avatar">
+                  <span class="trux-plus-item-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></span><span><b>Avatar</b></span>
+                </button>
+                <button type="button" class="trux-plus-item" onclick="openFileLibrary()" role="menuitem" aria-label="Choose files">
+                  <span class="trux-plus-item-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h9l4 4V19.5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-14a1 1 0 0 1 1-1Z"/><path d="M13 4.5v4h4M7.5 13h9M7.5 16h7"/></svg></span><span><b>Files</b></span>
+                </button>
               </div>
-              
               <div class="trux-plus-sep"></div>
-              <button type="button" onclick="openFileLibrary()" role="menuitem"><svg viewBox="0 0 24 24"><path d="M5 4.5h9l4 4V19.5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-14a1 1 0 0 1 1-1Z"/><path d="M13 4.5v4h4M7.5 13h9M7.5 16h7"/></svg>Files</button>
-              <button type="button" onclick="openCamera()" role="menuitem"><svg viewBox="0 0 24 24"><path d="M4 7h3l1.4-2h7.2L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.5"/></svg>Camera</button>
-              <button type="button" onclick="openPhotoLibrary()" role="menuitem"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="1.5"/><path d="m4 18 5-5 3 3 3-3 5 5"/></svg>Photos</button>
-              <button type="button" onclick="openPluginsPage();closeAttachmentMenu()" role="menuitem"><svg viewBox="0 0 24 24"><path d="M9 4.5v3M15 4.5v3M9 16.5v3M15 16.5v-3M4.5 9h3M4.5 15h3M19.5 9h-3M19.5 15h-3"/><path d="M9 7.5h6a3 3 0 0 1 3 3v3a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3v-3a3 3 0 0 1 3-3Z"/></svg>Plugins</button>
+              <div class="trux-plus-title">Explore tools</div>
+              <button type="button" class="trux-plus-action" data-trux-menu-mode="image" onclick="setWorkspaceMode('image');closeAttachmentMenu()" role="menuitem">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m4 18 5-5 3 3 3-3 5 5"/></svg>
+                <span class="trux-plus-action-copy"><b>Create images</b><small>Visualise and edit</small></span>
+              </button>
+              <button type="button" class="trux-plus-action" data-trux-menu-mode="video" onclick="setWorkspaceMode('video');closeAttachmentMenu()" role="menuitem">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3Z"/></svg>
+                <span class="trux-plus-action-copy"><b>Video</b><small>Generate with Veo</small></span>
+              </button>
+              <button type="button" class="trux-plus-action" data-trux-menu-mode="deep-research" onclick="setWorkspaceMode('deep-research');closeAttachmentMenu()" role="menuitem">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5M8 10.5h5M10.5 8v5"/></svg>
+                <span class="trux-plus-action-copy"><b>Deep Research</b><small>Reason through complex questions with web research</small></span>
+              </button>
+              <button type="button" class="trux-plus-action" onclick="openPluginsPage();closeAttachmentMenu()" role="menuitem">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5v3M15 4.5v3M9 16.5v3M15 16.5v-3M4.5 9h3M4.5 15h3M19.5 9h-3M19.5 15h-3"/><path d="M9 7.5h6a3 3 0 0 1 3 3v3a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3v-3a3 3 0 0 1 3-3Z"/></svg>
+                <span class="trux-plus-action-copy"><b>Plugins</b><small>Connect your apps and tools</small></span>
+              </button>
             </div>
 
             <div class="model-picker-container" id="modelPickerContainer">
@@ -497,10 +523,7 @@
               </div>
             </div>
 
-          <button type="button" class="top-btn topbar-more-btn composer-more-btn" id="topbarMoreBtn" onclick="toggleTopbarMoreMenu(event)" title="More options" aria-label="More options" aria-haspopup="menu" aria-expanded="false">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
-          </button>
-                        <button class="icon-btn" id="voiceBtn" onclick="toggleVoiceInput()" title="Voice input" aria-label="Voice input">
+            <button class="icon-btn" id="voiceBtn" onclick="toggleVoiceInput()" title="Voice input" aria-label="Voice input">
               <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8"/></svg>
             </button>
             
@@ -811,7 +834,7 @@
   <div class="toast-host" id="toastHost" aria-live="polite"></div>
 
   
-  <script src="/trux-app.js?v=20261025-chat-only-removal1"></script>
+  <script src="/trux-app.js?v=20261025-header-plus-redesign2"></script>
 <script src="/trux-plugins.js?v=20261015-cleanup1" defer></script>
 
 
