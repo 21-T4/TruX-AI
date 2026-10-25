@@ -10,7 +10,7 @@
     "start": "node --env-file-if-exists=.env cloud-run-server.js",
     "build": "npm run check",
     "lint": "npm run check",
-    "check": "node --check cloud-run-server.js && node --check functions/core.js && node --check functions/api/chat.js && node --check functions/api/services.js && node --check public/trux-app.js && node --check public/trux-plugins.js && node --check public/sw.js"
+    "check": "node --check cloud-run-server.js && node --check functions/core.js && node --check functions/api/chat.js && node --check functions/api/services.js && node --check public/trux-app.js && node --check public/sw.js"
   },
   "dependencies": {
     "@google/genai": "^2.29.1",
