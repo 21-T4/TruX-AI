@@ -938,7 +938,7 @@
       border-radius: 12px; background: transparent; color: var(--txt-2); font-size: 13px; font-weight: 500;
       text-align: left; flex: 0 0 auto;
       transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
-    }#attachmentMenu > button:not(.plus-menu-handle):not(.trux-plus-item){ width: 100%; min-height: 44px; flex-direction: row; }#attachmentMenu > button:not(.plus-menu-handle):not(.trux-plus-item):hover, #attachmentMenu > button:not(.plus-menu-handle):not(.trux-plus-item):focus-visible{ background: rgba(255,255,255,.065); color: #fff; outline: none; }#attachmentMenu svg{ width: 17px; height: 17px; flex: 0 0 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }#attachmentMenu .plus-menu-handle{
+    }#attachmentMenu > button:not(.plus-menu-handle):not(.trux-plus-item):not(.trux-plus-action){ width: 100%; min-height: 44px; flex-direction: row; }#attachmentMenu > button:not(.plus-menu-handle):not(.trux-plus-item):not(.trux-plus-action):hover, #attachmentMenu > button:not(.plus-menu-handle):not(.trux-plus-item):not(.trux-plus-action):focus-visible{ background: rgba(255,255,255,.065); color: #fff; outline: none; }#attachmentMenu svg{ width: 17px; height: 17px; flex: 0 0 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }#attachmentMenu .plus-menu-handle{
       position: sticky; top: -8px; z-index: 2; display: flex; align-items: center; justify-content: center;
       align-self: center; flex: 0 0 24px; width: 68px; min-width: 68px; height: 24px; margin: 0 auto 4px;
       padding: 0; border: 0; border-radius: 999px; background: transparent; color: inherit; cursor: grab;
@@ -2670,7 +2670,7 @@ body[data-media-mode="image"] .composer .bar, body[data-media-mode="video"] .com
   #actionBtn.live{ background: #ededed !important; color: #171717 !important; border-color: transparent !important; box-shadow: none !important; }
   #actionBtn #btnIcon{ transform-origin: center; transition: opacity .14s ease, transform .18s cubic-bezier(.2,.7,.2,1); }
   #actionBtn.live-active{ background: #343033 !important; border-color: rgba(255,110,130,.26) !important; color: #ff9cab !important; box-shadow: none !important; }
-  /* Plugins owns the complete viewport instead of sharing the Code workspace. */
+  /* Plugins owns the complete viewport instead of sharing the main chat shell. */
     body.plugins-page-active #pluginsWorkspace{
       position: fixed !important;
       inset: 0 !important;
