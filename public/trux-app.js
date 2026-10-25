@@ -4281,6 +4281,7 @@
     let truxHomePendingGreetings = [];
     let truxHomeLastGreeting = "";
     let truxHomeContentRetryCount = 0;
+    let truxHomeGreetingRunId = 0;
 
     function clearHomeGreetingTimers() {
       truxHomeGreetingTimers.forEach(id => clearTimeout(id));
@@ -4370,10 +4371,11 @@
         if (document.body.classList.contains("home-active") && truxHomeContentRetryCount < 2) {
           truxHomeContentRetryCount += 1;
           const retryAsPrefetch = prefetch && truxHomeGreetingIndex < truxHomeGreetingQueue.length;
+          const retryRunId = truxHomeGreetingRunId;
           scheduleHomeGreeting(() => {
-            if (!document.body.classList.contains("home-active")) return;
+            if (!document.body.classList.contains("home-active") || retryRunId !== truxHomeGreetingRunId) return;
             void loadHomeContent({ prefetch: retryAsPrefetch }).then(loaded => {
-              if (loaded && !retryAsPrefetch && document.body.classList.contains("home-active")) cycleHomeGreeting();
+              if (loaded && !retryAsPrefetch && document.body.classList.contains("home-active") && retryRunId === truxHomeGreetingRunId) cycleHomeGreeting(retryRunId);
             });
           }, 1100 * truxHomeContentRetryCount);
         }
@@ -4384,8 +4386,8 @@
       return truxHomeContentRequest;
     }
 
-    function cycleHomeGreeting() {
-      if (!document.body.classList.contains("home-active")) return;
+    function cycleHomeGreeting(runId = truxHomeGreetingRunId) {
+      if (runId !== truxHomeGreetingRunId || !document.body.classList.contains("home-active")) return;
       const text = getEl("truxHomeSequenceText");
       if (!text) return;
 
@@ -4399,7 +4401,7 @@
           text.textContent = "";
           text.hidden = true;
           void loadHomeContent({ prefetch: false }).then(loaded => {
-            if (document.body.classList.contains("home-active") && (loaded || truxHomePendingGreetings.length)) cycleHomeGreeting();
+            if (runId === truxHomeGreetingRunId && document.body.classList.contains("home-active") && (loaded || truxHomePendingGreetings.length)) cycleHomeGreeting(runId);
           });
           return;
         }
@@ -4421,11 +4423,12 @@
       if (truxHomeGreetingQueue.length - truxHomeGreetingIndex <= 2 && !truxHomePendingGreetings.length && !truxHomeContentRequest) {
         void loadHomeContent({ prefetch: true });
       }
-      scheduleHomeGreeting(cycleHomeGreeting, 4300);
+      scheduleHomeGreeting(() => cycleHomeGreeting(runId), 4300);
     }
 
     function startHomeGreetingPulse() {
       clearHomeGreetingTimers();
+      const runId = ++truxHomeGreetingRunId;
       truxHomeGreetingQueue = [];
       truxHomeGreetingIndex = 0;
       truxHomePendingGreetings = [];
@@ -4440,7 +4443,7 @@
       const prompts = getEl("truxHomePrompts");
       if (prompts) { prompts.replaceChildren(); prompts.hidden = true; }
       void loadHomeContent({ prefetch: false }).then(loaded => {
-        if (loaded && document.body.classList.contains("home-active")) cycleHomeGreeting();
+        if (loaded && runId === truxHomeGreetingRunId && document.body.classList.contains("home-active")) cycleHomeGreeting(runId);
       });
     }
 
