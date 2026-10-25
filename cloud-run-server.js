@@ -333,7 +333,7 @@ liveSocketServer.on("connection", socket => {
           name,
           args,
           client,
-          model: "gemini-3.8-flash"
+          model: "gemini-3.5-flash-lite"
         });
         functionResponse.response = { result };
       } catch (error) {
