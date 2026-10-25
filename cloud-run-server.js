@@ -519,7 +519,7 @@ const server = http.createServer(async (req, res) => {
   return serveStatic(req, res);
 });
 
-// TruX-Code may legitimately run for a long time. Cloud Run controls the
+// AI streams remain bounded by Cloud Run's configured request lifetime.
 // service request lifetime; do not add a shorter Node-level request/socket limit.
 server.requestTimeout = 0;
 server.timeout = 0;

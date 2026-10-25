@@ -39,7 +39,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
 
   
-  <link rel="stylesheet" href="/trux-app.css?v=20261022-trux-code-recovery-sync-fix3">
+  <link rel="stylesheet" href="/trux-app.css?v=20261025-chat-only-removal1">
 
 
 
@@ -111,7 +111,7 @@
      shell. The normal boot remains unchanged; this only runs before boot
      finishes and forces the base Chat surface back into view. */
   window.__truxBootFinished = false;
-  // The first painted workspace is always Chat; Code requires explicit navigation.
+  // The first painted workspace is always Chat.
   document.documentElement.removeAttribute("data-trux-initial-code");
   window.__truxRecoverBoot = function(reason){
     try {
@@ -119,14 +119,12 @@
       var b=document.body;
       if(!b) return;
       b.classList.add("trux-boot-recovered","home-active");
-      b.classList.remove("chat-session-active","coding-workspace","plugins-page-active");
+      b.classList.remove("chat-session-active","plugins-page-active");
       b.removeAttribute("data-media-mode");
       var welcome=document.getElementById("welcomeScreen");
       if(welcome) welcome.style.display="flex";
       var chat=document.getElementById("chatContainer");
-      var code=document.getElementById("codeChatContainer");
       if(chat) chat.style.display="none";
-      if(code) code.style.display="none";
 
       /* A recovered first boot must also initialize the home sequence and
          generated suggestions. Otherwise the static "Hello" fallback remains
@@ -287,10 +285,6 @@
           </button>
         </div>
 
-        <div class="trux-mode-switch" id="truxModeSwitch" aria-label="Workspace mode">
-          <button type="button" class="trux-mode-btn active" data-trux-mode="chat" onclick="setWorkspaceMode('chat')">Chat</button>
-          <button type="button" class="trux-mode-btn" data-trux-mode="coding" onclick="setWorkspaceMode('coding')">TruX-Code</button>
-        </div>
         <div class="trux-incognito-top" id="truxIncognitoTop" aria-label="Incognito chat">
           <span class="trux-incognito-dot"></span>
           <span>Incognito</span>
@@ -333,20 +327,13 @@
         </div>
       </section>
 
-      <section id="truxCodeWorkspace" class="trux-code-workspace" aria-label="TruX-Code workspace">
-        <div class="chat" id="codeChatContainer" aria-live="polite"></div>
-        <div class="trux-code-home" id="truxCodeHome" aria-label="Start a coding task">
-          <h1 class="trux-code-home-title is-visible" id="truxCodeGreeting">Hello</h1>
-        </div>
-      </section>
-
       <section class="trux-plugins-workspace" id="pluginsWorkspace" aria-label="TruX Plugins">
         <div class="trux-plugins-page">
           <div class="trux-plugins-head">
             <div class="trux-plugins-title-wrap">
               <div class="trux-plugins-kicker"><span></span> TRUX CONNECT</div>
               <h1>Plugins</h1>
-              <p>Connect the tools you already use and let TruX work with them in Chat and TruX-Code.</p>
+              <p>Connect the tools you already use and let TruX work with them in Chat.</p>
             </div>
             <div class="trux-plugins-head-actions">
               <div class="trux-plugins-summary" id="pluginsSummary">Loading…</div>
@@ -394,7 +381,7 @@
           <button type="button" class="subscription-back" onclick="closeSubscriptionPage()" aria-label="Back to workspace">← <span>Workspace</span></button>
           <div class="subscription-page-label">TRUX MEMBERSHIP</div>
           <h1>Plans built for every level of work.</h1>
-          <p>Auto model selection is included with every plan. Compare the upcoming chat, TruX-Code, image, and video allowances below.</p>
+          <p>Auto model selection is included with every plan. Compare the upcoming chat, image, and video allowances below.</p>
         </div>
         <div class="subscription-launch-note" role="note" aria-label="Plan implementation date">
           <strong>Effective December 1, 2026</strong>
@@ -407,7 +394,6 @@
             <ul>
               <li>Auto model selection</li>
               <li>1,000,000 chat tokens per day across all models</li>
-              <li>200,000 TruX-Code tokens per month, including thinking tokens</li>
               <li>5 images per day</li>
               <li>Video generation not included</li>
             </ul>
@@ -415,11 +401,10 @@
           </article>
           <article class="subscription-plan" data-subscription-plan="plus">
             <div class="subscription-plan-top"><span>MORE CAPACITY</span><strong>₹250/month</strong></div>
-            <h2>Plus</h2><p>More room for chat, coding, and creation.</p>
+            <h2>Plus</h2><p>More room for chat and creation.</p>
             <ul>
               <li>Auto model selection</li>
               <li>2× chat usage — 2,000,000 tokens per day across all models</li>
-              <li>2× TruX-Code usage — 400,000 tokens per month, including thinking tokens</li>
               <li>10 images per day</li>
               <li>1 video per day</li>
             </ul>
@@ -431,7 +416,6 @@
             <ul>
               <li>Auto model selection</li>
               <li>4× chat usage — 4,000,000 tokens per day across all models</li>
-              <li>4× TruX-Code usage — 800,000 tokens per month, including thinking tokens</li>
               <li>20 images per day</li>
               <li>10 videos per day</li>
             </ul>
@@ -443,7 +427,6 @@
             <ul>
               <li>Auto model selection with flagship model access</li>
               <li>6× chat usage — 6,000,000 tokens per day across all models</li>
-              <li>6× TruX-Code usage — 1,200,000 tokens per month, including thinking tokens</li>
               <li>Expanded model choices and new models first</li>
               <li>30 images per day</li>
               <li>20 videos per day</li>
@@ -480,8 +463,7 @@
               <div class="trux-plus-title">Workspace mode</div>
               <div class="trux-plus-grid">
                 <button type="button" class="trux-plus-item active" data-trux-menu-mode="chat" onclick="setWorkspaceMode('chat');closeAttachmentMenu()"><span>✦</span><span><b>Chat</b><small>General answers</small></span></button>
-                <button type="button" class="trux-plus-item" data-trux-menu-mode="coding" onclick="setWorkspaceMode('coding');closeAttachmentMenu()"><span>&lt;/&gt;</span><span><b>Coding</b><small>Build, debug, refactor</small></span></button>
-                <button type="button" class="trux-plus-item" data-trux-menu-mode="deep-research" onclick="setWorkspaceMode('deep-research');closeAttachmentMenu()"><span>◌</span><span><b>Deep Research</b><small>TruX-Code reasoning engine + web</small></span></button>
+                <button type="button" class="trux-plus-item" data-trux-menu-mode="deep-research" onclick="setWorkspaceMode('deep-research');closeAttachmentMenu()"><span>◌</span><span><b>Deep Research</b><small>Reason through complex questions with web research</small></span></button>
                 <button type="button" class="trux-plus-item" data-trux-menu-mode="image" onclick="setWorkspaceMode('image');closeAttachmentMenu()"><span>◈</span><span><b>Create image</b><small>Gemini image generation</small></span></button>
               </div>
               
@@ -829,10 +811,7 @@
   <div class="toast-host" id="toastHost" aria-live="polite"></div>
 
   
-  <script src="/trux-app.js?v=20261022-trux-code-recovery-sync-fix3"></script>
-<script src="/trux-response-recovery.js?v=20261022-trux-code-recovery-sync-fix3"></script>
-
-
+  <script src="/trux-app.js?v=20261025-chat-only-removal1"></script>
 <script src="/trux-plugins.js?v=20261015-cleanup1" defer></script>
 
 

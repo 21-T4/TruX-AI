@@ -230,9 +230,9 @@
             chatSessions = loadLocalChatCache(nextLocalChatOwnerUid);
             currentChatId = null;
             getEl("chatContainer")?.replaceChildren();
-            getEl("codeChatContainer")?.replaceChildren();
+            
             getEl("welcomeScreen")?.style.setProperty("display", "block", "important");
-            document.body.classList.remove("chat-session-active", "coding-workspace");
+            document.body.classList.remove("chat-session-active");
             document.body.classList.add("home-active");
           }
           localChatOwnerUid = nextLocalChatOwnerUid;
@@ -243,9 +243,9 @@
           chatSessions = {};
           currentChatId = null;
           getEl("chatContainer")?.replaceChildren();
-          getEl("codeChatContainer")?.replaceChildren();
+          
           getEl("welcomeScreen")?.style.setProperty("display", "block", "important");
-          document.body.classList.remove("chat-session-active", "coding-workspace");
+          document.body.classList.remove("chat-session-active");
           document.body.classList.add("home-active");
           renderSidebar();
           store.removeItem("trux_cached_user");
@@ -584,8 +584,7 @@
     }, { passive: true });
 
     function toggleModelDropdown(e) {
-      if (workspaceMode === "coding") { closeModelDropdown(); return; }
-      e?.stopPropagation();
+            e?.stopPropagation();
       const dropdown = getEl("modelDropdown"), button = getEl("modelPickerBtn");
       if(!dropdown || !button) return;
       closeAttachmentMenu();
@@ -609,8 +608,7 @@
     }
 
     function selectModel(m, e) {
-      if (workspaceMode === "coding") { closeModelDropdown(); return; }
-      e?.stopPropagation();
+            e?.stopPropagation();
       // Auto is the only Chat model selection; account entitlements remain separate.
       try { store.setItem("trux_model", "auto"); } catch (_) {}
       const modelEl = getEl("profileModelText");
@@ -716,7 +714,7 @@
     }
 
     function getActiveChatContainer() {
-      return getEl(workspaceMode === "coding" ? "codeChatContainer" : "chatContainer");
+      return getEl("chatContainer");
     }
 
 
@@ -919,104 +917,46 @@
     }
 
     function setWorkspaceMode(mode, options) {
-      document.body.classList.remove("plugins-page-active","notebook-open");
       options = options || {};
-      const nextMode = mode || "chat";
+      const allowedModes = new Set(["chat", "deep-research", "image", "video"]);
+      const nextMode = allowedModes.has(String(mode || "")) ? String(mode) : "chat";
       const previousMode = workspaceMode;
-      // Plans is a standalone page. Any explicit workspace switch must leave it
-      // first, even when the selected mode matches the previously saved mode.
+      document.body.classList.remove("plugins-page-active", "notebook-open");
       const leavingSubscriptionPage = document.body.classList.contains("subscription-page-active");
-      if(leavingSubscriptionPage) {
-        document.body.classList.remove("subscription-page-active");
-        truxSubscriptionReturnState = null;
-      }
+      if (leavingSubscriptionPage) { document.body.classList.remove("subscription-page-active"); truxSubscriptionReturnState = null; }
       const modeChanged = leavingSubscriptionPage || nextMode !== previousMode || !!document.body.dataset.mediaMode || options.forceReset === true;
       const preserveSession = options.preserveSession === true;
-
       closeAttachmentMenu(); closeModelDropdown();
-
-      if(modeChanged) {
+      if (modeChanged) {
         if (activeTurnContext) updateIncompleteTurn(activeTurnContext, activeTurnContext.latestText || "", true);
-                generationEpoch += 1;
-        activeTurnContext = null;
-        activeAbortController?.abort();
-        activeStreamer?.cancel(); activeStreamer = null;
-        isGenerating = false;
-        generationStopRequested = false;
-        handleInputChange();
-        if(typeof clearHomeGreetingTimers === "function") clearHomeGreetingTimers();
-        document.body.classList.remove("scrolled");
-        getEl("scrollDownBtn")?.classList.remove("visible");
+        generationEpoch += 1; activeTurnContext = null;
+        try { activeAbortController?.abort(); } catch {}
+        try { activeStreamer?.cancel(); } catch {}
+        activeStreamer = null; isGenerating = false; generationStopRequested = false; handleInputChange();
+        if (typeof clearHomeGreetingTimers === "function") clearHomeGreetingTimers();
+        document.body.classList.remove("scrolled"); getEl("scrollDownBtn")?.classList.remove("visible");
         pastedTextBlocks = []; fileAttachments = []; renderFileChips();
-
-        // Switching between Chat and TruX-Code is a workspace boundary.
-        // It always starts a fresh session. Only history navigation opts into
-        // preserving the existing session.
-        if(!preserveSession) {
-          currentChatId = null;
-          incognitoMode = false;
-        }
-
+        if (!preserveSession) { currentChatId = null; incognitoMode = false; }
         const chatView = getEl("chatContainer");
-        const codeView = getEl("codeChatContainer");
-        if(chatView) { chatView.style.display = "none"; chatView.innerHTML = ""; }
-        if(codeView) { codeView.style.display = "none"; codeView.innerHTML = ""; }
+        if (chatView) { chatView.style.display = "none"; chatView.innerHTML = ""; }
         void document.body.offsetHeight;
       }
-
-      workspaceMode = nextMode;
-      document.body.dataset.workspaceMode = workspaceMode;
-      if(currentChatId && chatSessions[currentChatId] && preserveSession) chatSessions[currentChatId].mode = workspaceMode;
-
-      const isCoding = workspaceMode === "coding";
+      workspaceMode = nextMode; document.body.dataset.workspaceMode = workspaceMode;
+      if (currentChatId && chatSessions[currentChatId] && preserveSession) chatSessions[currentChatId].mode = workspaceMode;
       const isMedia = workspaceMode === "image" || workspaceMode === "video";
-
-      if(isMedia) document.body.dataset.mediaMode = workspaceMode;
-      else document.body.removeAttribute("data-media-mode");
-
-      document.body.classList.toggle("coding-workspace", isCoding);
-      document.body.classList.toggle("chat-session-active", !!currentChatId && !isMedia && !isCoding);
-      document.body.classList.toggle("home-active", !isCoding && !isMedia && !currentChatId);
-
+      if (isMedia) document.body.dataset.mediaMode = workspaceMode; else document.body.removeAttribute("data-media-mode");
+      document.body.classList.toggle("chat-session-active", !!currentChatId && !isMedia);
+      document.body.classList.toggle("home-active", !isMedia && !currentChatId);
       const welcome = getEl("welcomeScreen");
-      if(welcome) {
-        // Workspace classes are the single source of truth for home visibility.
-        // Clear inline values left by older navigation paths before CSS applies.
-        welcome.style.removeProperty("display");
-        welcome.style.removeProperty("visibility");
-        welcome.style.removeProperty("pointer-events");
-      }
-
+      if (welcome) { welcome.style.removeProperty("display"); welcome.style.removeProperty("visibility"); welcome.style.removeProperty("pointer-events"); }
       const chatView = getEl("chatContainer");
-      const codeView = getEl("codeChatContainer");
-      if(chatView) chatView.style.display = isCoding ? "none" : (currentChatId ? "block" : "none");
-      if(codeView) codeView.style.display = isCoding ? "block" : "none";
-
-      // Reset any stale inline state. Workspace-mode CSS controls visibility;
-      // the transcript lives inside this same element.
-      const codeHome = getEl("truxCodeWorkspace");
-      if(codeHome) {
-        codeHome.style.removeProperty("display");
-        codeHome.style.removeProperty("opacity");
-        codeHome.style.removeProperty("transform");
-      }
-
-      // Session rehydration is owned by loadChatSession() so it runs once with stable message indexes.
-
-      document.querySelectorAll("[data-trux-mode]").forEach(x => x.classList.toggle("active", x.dataset.truxMode === workspaceMode));
-      document.querySelectorAll("[data-trux-menu-mode]").forEach(x => x.classList.toggle("active", x.dataset.truxMenuMode === workspaceMode));
-
-      const p = getEl("promptInput");
-      const placeholders = { chat:"Ask TruX…", coding:"Let’s code…", "deep-research":"Let’s research…", image:"Let’s create an image…", video:"Let’s make a video…" };
-      if(p) { p.placeholder = placeholders[workspaceMode] || "Ask TruX…"; p.style.height = "auto"; handleInputChange(); }
-
-      // Thinking is controlled inside the model picker; no separate top thinking button exists.
-      syncModelPickerUI();
-      renderSidebar();
-      if(workspaceMode === "chat" && !currentChatId && !isMedia) {
-        startHomeGreetingPulse();
-      }
-      if (isCoding) void startTruxCodeIdlePulse();
+      if (chatView) chatView.style.display = currentChatId && !isMedia ? "block" : "none";
+      document.querySelectorAll("[data-trux-menu-mode]").forEach(el => el.classList.toggle("active", el.dataset.truxMenuMode === workspaceMode));
+      const prompt = getEl("promptInput");
+      const placeholders = { chat: "Ask TruX…", "deep-research": "Let’s research…", image: "Let’s create an image…", video: "Let’s make a video…" };
+      if (prompt) { prompt.placeholder = placeholders[workspaceMode] || "Ask TruX…"; prompt.style.height = "auto"; handleInputChange(); }
+      syncModelPickerUI(); renderSidebar();
+      if (workspaceMode === "chat" && !currentChatId && !isMedia) startHomeGreetingPulse();
     }
     async function submitFeedback() {
       const type = getEl("feedbackType")?.value || "general-feedback";
@@ -1483,9 +1423,9 @@
         const safeScript = codeText.replace(/<\/script/gi, "<\\/script");
         frame.srcdoc = [
           '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-          '<style>html,body{margin:0;min-height:100%;}body{box-sizing:border-box;padding:12px;font:13px/1.45 system-ui,sans-serif;color:#202124;background:#fff}#trux-code-console{margin-top:12px;padding:8px;white-space:pre-wrap;overflow-wrap:anywhere;border-radius:8px;background:#f1f2f4;color:#41444b;font:12px/1.5 ui-monospace,monospace}#trux-code-console:empty{display:none}</style></head><body>',
-          '<pre id="trux-code-console" aria-live="polite"></pre>',
-          '<script>(function(){var out=document.getElementById("trux-code-console");var fmt=function(v){try{return typeof v==="string"?v:JSON.stringify(v)}catch(e){return String(v)}};["log","info","warn","error"].forEach(function(key){var native=console[key].bind(console);console[key]=function(){native.apply(console,arguments);var line=Array.from(arguments).map(fmt).join(" ");out.textContent+=(out.textContent?"\\n":"")+line;};});window.addEventListener("error",function(e){out.textContent+=(out.textContent?"\\n":"")+"Error: "+String(e.message||"Script failed");});})();', 
+          '<style>html,body{margin:0;min-height:100%;}body{box-sizing:border-box;padding:12px;font:13px/1.45 system-ui,sans-serif;color:#202124;background:#fff}#trux-preview-console{margin-top:12px;padding:8px;white-space:pre-wrap;overflow-wrap:anywhere;border-radius:8px;background:#f1f2f4;color:#41444b;font:12px/1.5 ui-monospace,monospace}#trux-preview-console:empty{display:none}</style></head><body>',
+          '<pre id="trux-preview-console" aria-live="polite"></pre>',
+          '<script>(function(){var out=document.getElementById("trux-preview-console");var fmt=function(v){try{return typeof v==="string"?v:JSON.stringify(v)}catch(e){return String(v)}};["log","info","warn","error"].forEach(function(key){var native=console[key].bind(console);console[key]=function(){native.apply(console,arguments);var line=Array.from(arguments).map(fmt).join(" ");out.textContent+=(out.textContent?"\\n":"")+line;};});window.addEventListener("error",function(e){out.textContent+=(out.textContent?"\\n":"")+"Error: "+String(e.message||"Script failed");});})();', 
           String.fromCharCode(10),
           safeScript,
           String.fromCharCode(10),
@@ -1575,7 +1515,7 @@
       });
     }
     bindChatScroll(getEl("chatContainer"));
-    bindChatScroll(getEl("codeChatContainer"));
+
     function scrollToBottom() {
       const container = getActiveChatContainer();
       container?.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
@@ -1785,124 +1725,6 @@
       queueSidebarSync();
     }
 
-    function applyRecoveredCodingResponse(snapshot = {}) {
-      try {
-        const uid = String(snapshot.uid || "");
-        const jobId = String(snapshot.jobId || "");
-        const chatId = String(snapshot.chatId || "");
-        const prompt = String(snapshot.prompt || "");
-        const recoveredText = String(snapshot.text || "");
-        const complete = snapshot.complete === true;
-        const errorText = String(snapshot.errorText || "");
-        const signedInUser = auth?.currentUser;
-        if (!uid || !jobId || !chatId || !signedInUser ||
-            String(signedInUser.uid || "") !== uid ||
-            String(localChatOwnerUid || "") !== uid ||
-            !/^[A-Za-z0-9_-]{12,128}$/.test(jobId)) return false;
-
-        const session = chatSessions[chatId];
-        if (!session || session.incognito || session.mode !== "coding" ||
-            !Array.isArray(session.messages)) return false;
-
-        const messages = session.messages;
-        const matchesPrompt = message => message?.role === "user" &&
-          String(message.text || "") === prompt &&
-          (!message.responseJobId || message.responseJobId === jobId) &&
-          message.responseRecoveryComplete !== true;
-        const expectedIndex = Number(snapshot.userIndex);
-        let userIndex = messages.findIndex(message =>
-          message?.role === "user" && message.responseJobId === jobId
-        );
-        if (userIndex < 0 && Number.isInteger(expectedIndex) &&
-            expectedIndex >= 0 && expectedIndex < messages.length &&
-            matchesPrompt(messages[expectedIndex])) {
-          userIndex = expectedIndex;
-        }
-        if (userIndex < 0) {
-          const candidates = [];
-          messages.forEach((message, index) => {
-            if (matchesPrompt(message)) candidates.push(index);
-          });
-          if (candidates.length) {
-            userIndex = candidates.reduce((best, index) =>
-              Math.abs(index - expectedIndex) < Math.abs(best - expectedIndex) ? index : best,
-              candidates[0]
-            );
-          }
-        }
-        if (userIndex < 0) return false;
-
-        const userMessage = messages[userIndex];
-        const activeTurnMatches = activeTurnContext?.chatId === chatId &&
-          activeTurnContext?.mode === "coding" &&
-          userMessage.responseJobId === jobId;
-        if (activeTurnMatches && activeTurnContext) {
-          activeTurnContext.userMessageIndex = userIndex;
-        }
-        let assistantIndex = -1;
-        for (let index = userIndex + 1; index < messages.length; index++) {
-          const message = messages[index];
-          if (message?.role === "user") break;
-          if (message?.role === "trux" &&
-              (message.responseJobId === jobId || !!message.draftTurnId)) {
-            assistantIndex = index;
-            break;
-          }
-        }
-        // A reply directly after this prompt belongs to this turn even when an
-        // older client saved it without the correlation ID.
-        if (assistantIndex < 0 && messages[userIndex + 1]?.role === "trux") {
-          assistantIndex = userIndex + 1;
-        }
-        if (complete && !recoveredText.trim()) return false;
-
-        let assistantMessage;
-        if (assistantIndex >= 0) {
-          assistantMessage = messages[assistantIndex];
-        } else {
-          assistantMessage = { role: "trux", text: "", incomplete: true };
-          if (activeTurnMatches && activeTurnContext?.turnKey) {
-            assistantMessage.draftTurnId = activeTurnContext.turnKey;
-          }
-          messages.splice(userIndex + 1, 0, assistantMessage);
-        }
-        assistantMessage.role = "trux";
-        if (recoveredText || complete) assistantMessage.text = recoveredText;
-        assistantMessage.incomplete = !complete;
-        assistantMessage.responseJobId = jobId;
-        assistantMessage.recoveredByClient = true;
-        assistantMessage.recoveryPrompt = prompt;
-        if (Array.isArray(snapshot.toolEvents) && snapshot.toolEvents.length) {
-          assistantMessage.toolEvents = snapshot.toolEvents.slice(-180);
-        }
-        if (errorText) assistantMessage.recoveryError = errorText;
-        else if (complete) delete assistantMessage.recoveryError;
-        if (complete) {
-          if (activeTurnMatches && activeTurnContext?.turnKey) {
-            assistantMessage.draftTurnId = activeTurnContext.turnKey;
-          } else {
-            delete assistantMessage.draftTurnId;
-          }
-          delete userMessage.responseJobId;
-          delete userMessage.responseRecoveryFailed;
-          userMessage.responseRecoveryComplete = true;
-        } else if (errorText) {
-          delete userMessage.responseJobId;
-          userMessage.responseRecoveryFailed = true;
-        } else {
-          userMessage.responseJobId = jobId;
-          delete userMessage.responseRecoveryFailed;
-        }
-
-        if (complete || errorText) saveChatSessions();
-        return true;
-      } catch (error) {
-        console.warn("[trux-response-recovery] app-session sync failed:", error?.message || error);
-        return false;
-      }
-    }
-    window.__truxApplyRecoveredResponse = applyRecoveredCodingResponse;
-
     function launchIncognitoChat() {
       /* Incognito is a memory-only Chat workspace.
          It stays in memory only and is removed on exit. */
@@ -1939,14 +1761,13 @@
       closeAttachmentMenu();
       closeModelDropdown();
 
-      document.body.classList.remove("plugins-page-active","coding-workspace","home-active");
+      document.body.classList.remove("plugins-page-active","home-active");
       document.body.classList.add("chat-session-active","incognito-mode");
       document.body.dataset.workspaceMode = "chat";
       document.body.removeAttribute("data-media-mode");
       handleInputChange();
 
       const chat = getEl("chatContainer");
-      const code = getEl("codeChatContainer");
       if (chat) { chat.innerHTML = ""; chat.style.display = "block"; }
       if (code) { code.innerHTML = ""; code.style.display = "none"; }
       getEl("welcomeScreen")?.style.setProperty("display","none","important");
@@ -1990,8 +1811,7 @@
       closeAttachmentMenu();
       closeModelDropdown();
 
-      // Use the same state transition as the Chat/TruX-Code switch so a new
-      // Chat always clears coding-workspace and restores the normal home UI.
+      // Reset the active Chat workspace and restore the normal home UI.
       setWorkspaceMode("chat", {reload:false,preserveSession:false,forceReset:true});
 
       isScrolledUp = false;
@@ -2003,19 +1823,12 @@
     function handleInputChange() {
       const p = getEl("promptInput");
       if (!p) return;
-      const isCodeWorkspace = workspaceMode === "coding" ||
-        document.body.classList.contains("coding-workspace") ||
-        document.body.dataset.workspaceMode === "coding";
       const minComposerHeight = document.body.matches('body[data-media-mode="image"], body[data-media-mode="video"]') ? 60 : 44;
-      const maxComposerHeight = isCodeWorkspace ? 108 : 200;
+      const maxComposerHeight = 200
       p.style.setProperty("height", "auto", "important");
       const contentHeight = p.scrollHeight;
       p.style.setProperty("height", Math.max(minComposerHeight, Math.min(contentHeight, maxComposerHeight)) + "px", "important");
-      if (isCodeWorkspace) {
-        p.style.setProperty("overflow-y", contentHeight > maxComposerHeight ? "auto" : "hidden", "important");
-      } else {
-        p.style.removeProperty("overflow-y");
-      }
+      p.style.removeProperty("overflow-y");
       const bar = p.closest(".bar");
       if (bar) bar.classList.remove("multiline");
 
@@ -2025,7 +1838,7 @@
       // While a request is live, always show a real Stop action. Stale idle/live
       // classes after mode switches used to override this button's visual state.
       if (btn && isGenerating) {
-        btn.classList.remove("live", "live-active", "ready", "code-idle");
+        btn.classList.remove("live", "live-active", "ready");
         btn.classList.add("stop");
         btn.dataset.actionMode = "stop";
         btn.title = "Stop generation";
@@ -2041,11 +1854,10 @@
         btn.classList.remove("stop");
         if (wasStopping || btn.dataset.actionMode === "stop") btn.dataset.actionMode = "";
         const liveActive = window.__truxLiveState === "live" || window.__truxLiveState === "connecting";
-        const nextMode = hasDraft ? "send" : (isCodeWorkspace ? "code-idle" : (liveActive ? "live-stop" : "live"));
+        const nextMode = hasDraft ? "send" : (liveActive ? "live-stop" : "live")
         btn.classList.toggle("ready", hasDraft);
-        btn.classList.toggle("live", !hasDraft && !isCodeWorkspace);
-        btn.classList.toggle("live-active", !hasDraft && !isCodeWorkspace && liveActive);
-        btn.classList.toggle("code-idle", isCodeWorkspace && !hasDraft);
+        btn.classList.toggle("live", !hasDraft)
+        btn.classList.toggle("live-active", !hasDraft && liveActive)
         btn.title = hasDraft ? "Send message" : (isCodeWorkspace ? "Enter a coding task" : (liveActive ? "Stop Live assistant" : "Start Live assistant"));
         btn.setAttribute("aria-label", btn.title);
         const icon = getEl("btnIcon");
@@ -2053,7 +1865,6 @@
           btn.dataset.actionMode = nextMode;
           const icons = {
             send: '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>',
-            "code-idle": '<path d="M12 19V5M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
             live: '<path d="M3 12h2l2-5 4 10 3-14 3 9h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
             "live-stop": '<rect x="6.5" y="6.5" width="11" height="11" rx="2" fill="currentColor" stroke="none"/>'
           };
@@ -3804,8 +3615,6 @@
         // No stray newlines inside the bubble: it is white-space: pre-wrap,
         // so template indentation would render as blank lines.
         r.dataset.chatId = currentChatId || "";
-        const userResponseJobId = String(messageMeta?.responseJobId || "");
-        if (userResponseJobId) r.dataset.responseJobId = userResponseJobId;
         const userMessageIndex = Number.isInteger(messageMeta?.messageIndex)
           ? Number(messageMeta.messageIndex)
           : findStoppedMessageIndex(r, textContent);
@@ -4106,7 +3915,7 @@
         get received() { return target; }
       };
     }
-    function formatCodexElapsed(ms) {
+    function formatElapsedTime(ms) {
       const totalSeconds = Math.max(0, Math.floor(Number(ms || 0) / 1000));
       const hours = Math.floor(totalSeconds / 3600);
       const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -4114,46 +3923,6 @@
       if (hours) return hours + "h " + minutes + "m " + seconds + "s";
       if (minutes) return minutes + "m " + seconds + "s";
       return seconds + "s";
-    }
-
-    function restoreCompletedCodeSteps(responseRow, message) {
-      const stack = responseRow?.querySelector(".trux-response-stack");
-      const bubble = responseRow?.querySelector(".trux-bubble");
-      if (!stack || !bubble || stack.querySelector(".trux-thinking-panel")) return;
-      const steps = Array.isArray(message?.toolEvents) ? message.toolEvents : [];
-      if (!steps.length) return;
-      const thid = "restored_th_" + Date.now() + "_" + Math.random().toString(36).slice(2);
-      const tsid = "restored_ts_" + Date.now() + "_" + Math.random().toString(36).slice(2);
-      const panel = document.createElement("div");
-      panel.className = "trux-thinking-panel trux-code-thinking completed";
-      panel.id = thid;
-      panel.setAttribute("aria-label", "Executed steps");
-      panel.innerHTML =
-        '<div class="trux-thinking-bar">' +
-          '<span class="trux-thinking-spark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 1.5C13.45 7.95 16.05 10.55 22.5 12C16.05 13.45 13.45 16.05 12 22.5C10.55 16.05 7.95 12 1.5 12C7.95 10.55 10.55 7.95 12 1.5Z"/></svg></span>' +
-          '<div class="trux-thinking-copy"><span class="status-msg" role="status" aria-live="polite"><span class="thinking-status-line compact"></span><span class="thinking-status-line full"></span></span></div>' +
-          '<button type="button" class="trux-thinking-toggle" hidden aria-expanded="false" aria-label="Show executed steps" title="Show executed steps"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>' +
-        '</div>' +
-        '<div class="trux-thinking-details" id="' + tsid + '" hidden></div>';
-      const summary = "Worked for this response";
-      panel.querySelectorAll(".thinking-status-line").forEach(line => {
-        line.textContent = summary;
-        line.title = summary;
-      });
-      panel.querySelector(".status-msg")?.setAttribute("aria-label", summary);
-      stack.insertBefore(panel, bubble);
-      const toggle = panel.querySelector(".trux-thinking-toggle");
-      if (toggle) toggle.onclick = () => toggleThinkingDetails(thid);
-      for (const event of steps) {
-        if (event?.type === "tool_status") {
-          appendToolStatusLine(tsid, event.tool || "TruX-Code", event.status || "", event.phase || "complete", event.details || null);
-        } else if ((event?.type === "ai_step" || event?.type === "status") && (event.status || event.text)) {
-          appendThinkingHistory(panel, event.status || event.text);
-        }
-      }
-      const details = getEl(tsid);
-      const toggleAfterRestore = panel.querySelector(".trux-thinking-toggle");
-      if (toggleAfterRestore) toggleAfterRestore.hidden = !details?.children.length;
     }
 
     function updateIncompleteTurn(context, text) {
@@ -4178,34 +3947,6 @@
         function finalizeResponse(id, aid, text, prompt, voice, streamer, sources, turnContext = null) {
       let b = getEl(id);
       const responseRow = b?.closest(".row");
-      const codingTurn = (turnContext?.mode || workspaceMode) === "coding";
-
-      if (codingTurn && responseRow) {
-        const panel = responseRow.querySelector(".trux-thinking-panel");
-        if (panel) {
-          panel.classList.add("completed");
-          panel.removeAttribute("data-thinking-visible");
-          panel.setAttribute("aria-label", "Executed steps");
-          const summary = "Worked for this response";
-          panel.querySelectorAll(".thinking-status-line").forEach(line => {
-            line.textContent = summary;
-            line.title = summary;
-          });
-          panel.querySelector(".status-msg")?.setAttribute("aria-label", summary);
-          const toggle = panel.querySelector(".trux-thinking-toggle");
-          if (toggle) {
-            toggle.setAttribute("aria-label", "Show executed steps");
-            toggle.title = "Show executed steps";
-          }
-          panel.querySelectorAll(".thinking-tool-item.active").forEach(item => {
-            item.classList.remove("active");
-            item.classList.add("completed");
-          });
-          const details = panel.querySelector(".trux-thinking-details");
-          if (toggle && details) toggle.hidden = !details.children.length;
-        }
-      }
-
       if (b) {
         b.classList.remove("thinking");
         if (streamer) {
@@ -4245,20 +3986,8 @@
         delete responseMessage.draftTurnId;
         if (cleanSources.length) responseMessage.sources = cleanSources;
         else delete responseMessage.sources;
-        if (codingTurn) {
-          responseMessage.durationMs = durationMs;
-          responseMessage.toolEvents = Array.isArray(turnContext?.toolEvents) ? turnContext.toolEvents : [];
-          const userIndex = Number(turnContext?.userMessageIndex);
-          const completedUserMessage = Number.isInteger(userIndex) ? resultSession.messages[userIndex] : null;
-          if (completedUserMessage?.role === "user" && completedUserMessage.responseJobId) {
-            delete completedUserMessage.responseJobId;
-            delete completedUserMessage.responseRecoveryFailed;
-            completedUserMessage.responseRecoveryComplete = true;
-          }
-        }
-
         // The finished answer must be durable before the UI reports this turn complete.
-        if (codingTurn && turnContext && !resultSession.incognito) saveChatSessions();
+        if (!resultSession.incognito) saveChatSessions();
         else queueSidebarSync();
       }
       if(b) attachSources(b.closest(".row"), cleanSources);
@@ -4380,172 +4109,6 @@
       }
     }
 
-
-    function githubProposalPreview(text) {
-      const clean = String(text || "");
-      if (clean.length <= 1400) return clean;
-      return clean.slice(0, 1400) + "\n…";
-    }
-
-    function renderGithubProposalCard(container, proposal) {
-      if(!container || !proposal) return;
-      container.querySelector(".github-proposal-card")?.remove();
-
-      const card = document.createElement("div");
-      card.className = "github-proposal-card";
-      card.dataset.chatId = currentChatId || "";
-
-      const title = document.createElement("div");
-      title.className = "github-proposal-title";
-      title.textContent = "GitHub changes ready for review";
-
-      const summary = document.createElement("div");
-      summary.className = "github-proposal-summary";
-      summary.textContent = proposal.summary || "TruX-Code prepared repository changes.";
-
-      const files = document.createElement("div");
-      files.className = "github-proposal-files";
-
-      const proposalEdits = Array.isArray(proposal.edits) ? proposal.edits : [];
-      const duplicatePaths = [];
-
-      (proposalEdits).forEach(edit => {
-        const file = document.createElement("div");
-        file.className = "github-proposal-file";
-
-        const name = document.createElement("div");
-        name.className = "github-proposal-file-name";
-        name.textContent = edit.path || "unknown file";
-
-        const stats = document.createElement("div");
-        stats.className = "github-proposal-file-stats";
-        stats.textContent = `Replace ${Number(edit.oldChars || String(edit.oldText || "").length).toLocaleString()} chars → ${Number(edit.newChars || String(edit.newText || "").length).toLocaleString()} chars`;
-
-        const details = document.createElement("details");
-        const summaryEl = document.createElement("summary");
-        summaryEl.textContent = "Review exact change";
-        const diff = document.createElement("div");
-        diff.className = "github-proposal-diff";
-
-        const oldBox = document.createElement("pre");
-        oldBox.textContent = "OLD\n" + githubProposalPreview(edit.oldText);
-        const newBox = document.createElement("pre");
-        newBox.textContent = "NEW\n" + githubProposalPreview(edit.newText);
-
-        diff.append(oldBox, newBox);
-        details.append(summaryEl, diff);
-        file.append(name, stats, details);
-        files.appendChild(file);
-      });
-
-      const actions = document.createElement("div");
-      actions.className = "github-proposal-actions";
-
-      const apply = document.createElement("button");
-      apply.className = "github-proposal-apply";
-      apply.textContent = "Apply changes";
-      apply.onclick = () => applyGithubProposal(proposal, card, apply, cancel, status);
-
-      const cancel = document.createElement("button");
-      cancel.className = "github-proposal-cancel";
-      cancel.textContent = "Cancel";
-      cancel.onclick = () => {
-        apply.disabled = true;
-        cancel.disabled = true;
-        status.textContent = "Changes were not applied.";
-      };
-
-      const status = document.createElement("div");
-      status.className = "github-proposal-status";
-      status.textContent = `Nothing has been written yet · review the changes, then tap Apply changes · ${proposal.repository || "GitHub"}${proposal.branch ? " · " + proposal.branch : ""}`;
-
-      if(duplicatePaths.length) {
-        apply.disabled = true;
-        cancel.disabled = true;
-        status.textContent = "This proposal contains an invalid edit path.";
-      }
-
-      actions.append(apply, cancel);
-      card.append(title, summary, files, actions, status);
-      container.appendChild(card);
-    }
-
-    function appendGithubCommitResponse(proposal, commit, chatId = currentChatId) {
-      if (!commit?.sha) return;
-      if (proposal?.__commitResponseShown) return;
-
-      const targetChatId = chatId || currentChatId;
-      const session = targetChatId ? chatSessions[targetChatId] : null;
-      if(!session?.messages) return;
-
-      proposal.__commitResponseShown = true;
-
-      const shortSha = commit.shortSha || String(commit.sha).slice(0, 7);
-      const fileCount = Array.isArray(proposal?.edits) ? proposal.edits.length : 0;
-      const responseText =
-        `Done — I applied the reviewed changes to ${proposal.repository || "your GitHub repository"} and verified the saved result.
-
-**Commit:** \`${shortSha}\`
-**Files:** ${fileCount}
-**Message:** ${commit.message || proposal.commitMessage || "Update files with TruX-Code"}
-
-[View commit on GitHub](${commit.url || `https://github.com/${proposal.repository}/commit/${commit.sha}`})`;
-
-      session.messages.push({
-        role: "trux",
-        text: responseText,
-        githubCommit: {
-          sha: commit.sha,
-          url: commit.url || "",
-          message: commit.message || ""
-        }
-      });
-      saveChatSessions();
-
-      appendMessageRow("TruX-Omni", responseText, "trux-row", "trux-bubble", null, true);
-    }
-
-    async function applyGithubProposal(proposal, card, apply, cancel, status) {
-      if(!proposal || !Array.isArray(proposal.edits) || !proposal.edits.length) return;
-      if(card?.dataset.applied === "true" || card?.dataset.applying === "true") return;
-
-      card.dataset.applying = "true";
-      apply.disabled = true;
-      cancel.disabled = true;
-      status.textContent = "Validating the reviewed changes against the current repository…";
-
-      try {
-        const r = await truxAuthenticatedFetch("/api/github/apply-edits", {
-          method: "POST",
-          credentials: "same-origin",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            repository: proposal.repository,
-            branch: proposal.branch || "",
-            edits: proposal.edits,
-            message: proposal.commitMessage || "Update files with TruX-Code",
-            confirmed: true
-          })
-        }, auth?.currentUser);
-        const d = await r.json().catch(() => ({}));
-
-        if(!r.ok || d.ok !== true || d.applied !== true || d.verified !== true || !d.commit?.sha) {
-          throw Error(d.error || "GitHub did not confirm a verified apply.");
-        }
-
-        const shortSha = d.commit.shortSha || String(d.commit.sha).slice(0, 7);
-        status.textContent = `Applied & verified · one commit ${shortSha} created.`;
-        card.dataset.applied = "true";
-        delete card.dataset.applying;
-        apply.textContent = "Applied";
-        appendGithubCommitResponse(proposal, d.commit, card?.dataset.chatId || currentChatId);
-      } catch(e) {
-        delete card.dataset.applying;
-        status.textContent = e.message || "The changes could not be safely applied.";
-        apply.disabled = false;
-        cancel.disabled = false;
-      }
-    }
 
     function appendToolStatusLine(toolId, tool, detail, phase = "complete", details = null) {
       const wrap = getEl(toolId);
@@ -4726,48 +4289,6 @@
       handleInputChange();
     }
 
-    function renderBrowserPreview(responseRow, event) {
-      if (!responseRow || !event?.screenshotBase64) return;
-      const stack = responseRow.querySelector(".trux-response-stack");
-      if (!stack) return;
-      const sourceUrl = String(event.url || "");
-      let preview = Array.from(stack.querySelectorAll("[data-trux-browser-preview]"))
-        .find(node => node.dataset.previewUrl === sourceUrl);
-      if (!preview) {
-        preview = document.createElement("section");
-        preview.className = "trux-browser-preview";
-        preview.dataset.truxBrowserPreview = "1";
-        preview.dataset.previewUrl = sourceUrl;
-        const header = document.createElement("div");
-        header.className = "trux-browser-preview-head";
-        const heading = document.createElement("strong");
-        heading.className = "trux-browser-preview-title";
-        const meta = document.createElement("span");
-        meta.className = "trux-browser-preview-meta";
-        header.append(heading, meta);
-        const image = document.createElement("img");
-        image.className = "trux-browser-preview-image";
-        image.alt = "Live rendered website screenshot";
-        image.loading = "lazy";
-        image.decoding = "async";
-        const link = document.createElement("a");
-        link.className = "trux-browser-preview-link";
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        link.textContent = "Open website";
-        preview.append(header, image, link);
-        preview._title = heading; preview._meta = meta; preview._image = image; preview._link = link;
-        stack.insertBefore(preview, stack.querySelector(".bubble"));
-      }
-      if (preview._title) preview._title.textContent = String(event.title || "Live website preview").slice(0, 240);
-      if (preview._meta) preview._meta.textContent =
-        (event.httpStatus == null ? "Browser-rendered" : "HTTP " + String(event.httpStatus)) +
-        " · " + (event.viewport === "mobile" ? "Mobile" : "Desktop");
-      if (preview._image) preview._image.src =
-        "data:" + String(event.screenshotMimeType || "image/jpeg") + ";base64," + String(event.screenshotBase64);
-      if (preview._link && /^https?:\/\//i.test(sourceUrl)) preview._link.href = sourceUrl;
-    }
-
     function setThinkingStatus(statusId, text) {
       const el = getEl(statusId);
       if (!el) return;
@@ -4933,49 +4454,6 @@
       void loadHomePrompts();
     }
 
-    let truxCodeGreetingRequest = null;
-    let truxCodeLastGreeting = "";
-    async function startTruxCodeIdlePulse() {
-      const transcript = getEl("codeChatContainer");
-      const el = getEl("truxCodeGreeting");
-      if (!el || !document.body.classList.contains("coding-workspace") ||
-          currentChatId || (transcript && transcript.children.length)) return;
-      if (truxCodeGreetingRequest) return truxCodeGreetingRequest;
-
-      el.classList.remove("is-replacing");
-      el.classList.add("is-visible");
-      const request = (async () => {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Accept": "application/json" },
-          cache: "no-store",
-          body: JSON.stringify({ mode: "coding-home-prompt", avoidPrompt: truxCodeLastGreeting })
-        });
-        if (!response.ok) throw new Error("Coding home prompt generation unavailable.");
-        const payload = await response.json().catch(() => ({}));
-        const prompt = String(payload.prompt || "").replace(/\s+/g, " ").trim();
-        if (prompt.length < 8 || prompt.length > 54) throw new Error("Coding home prompt response was invalid.");
-        if (!el.isConnected || !document.body.classList.contains("coding-workspace") ||
-            currentChatId || (transcript && transcript.children.length)) return;
-        el.classList.remove("is-visible");
-        el.classList.add("is-replacing");
-        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-        if (!el.isConnected || !document.body.classList.contains("coding-workspace") ||
-            currentChatId || (transcript && transcript.children.length)) return;
-        el.textContent = prompt;
-        truxCodeLastGreeting = prompt;
-        el.classList.remove("is-replacing");
-        el.classList.add("is-visible");
-      })().catch(error => {
-        console.debug("TruX-Code generated home prompt unavailable:", error?.message || error);
-      }).finally(() => {
-        if (truxCodeGreetingRequest === request) truxCodeGreetingRequest = null;
-      });
-      truxCodeGreetingRequest = request;
-      return request;
-    }
-
-
     function isNetworkFailure(error) {
       if (!error || error.name === "AbortError") return false;
       const msg = String(error.message || error || "").toLowerCase();
@@ -5063,9 +4541,8 @@
 
       const owner = isTruxDeveloper(auth?.currentUser);
       const month = new Date().toISOString().slice(0, 7);
-      const modeUsage = store.json("trux_mode_usage", { month, codingTokens: 0, deepResearchRuns: 0 });
-      if(modeUsage.month !== month) { modeUsage.month = month; modeUsage.codingTokens = 0; modeUsage.deepResearchRuns = 0; store.setItem("trux_mode_usage", JSON.stringify(modeUsage)); }
-      if(!owner && workspaceMode === "coding" && modeUsage.codingTokens >= 150000) return toast("TruX-Code monthly limit reached (150k tokens).", "err");
+      const modeUsage = store.json("trux_mode_usage", { month, deepResearchRuns: 0 });
+      if (modeUsage.month !== month) { modeUsage.month = month; modeUsage.deepResearchRuns = 0; store.setItem("trux_mode_usage", JSON.stringify(modeUsage)); }
       if(!owner && workspaceMode === "deep-research" && modeUsage.deepResearchRuns >= 1) return toast("Deep Research is limited to one run per month.", "err");
       if(!owner && currentPlanTier === "pro" && workspaceMode !== "coding" && getProUsageData().tokensUsed >= 1000000) return toast("TruX Pro monthly limit reached.", "err");
       if(workspaceMode === "video") {
@@ -5111,7 +4588,6 @@
         if (activeStreamer === ownedStreamer) activeStreamer = null;
         turnStreamer = null;
       };
-      /* Dedicated TruX-Code transcript replaces its own landing surface for the active turn. */
       isGenerating = true; isScrolledUp = false;
       getEl("btnIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>'; getEl("actionBtn").classList.add("stop"); getEl("actionBtn").classList.remove("ready");
       handleInputChange();
@@ -5121,17 +4597,9 @@
       const turnChatId = currentChatId;
       const turnMode = workspaceMode;
       chatSessions[turnChatId].mode = turnMode;
-
-      // TruX-Code must have a durable client/server correlation ID before its
-      // first network request. Do not rely on the fetch wrapper discovering the
-      // just-added user row after generation has already started.
-      const codingResponseJobId = turnMode === "coding" && !incognitoMode
-        ? "truxjob_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10)
-        : "";
       chatSessions[turnChatId].messages.push({
         role: "user",
         text: prompt,
-        ...(codingResponseJobId ? { responseJobId: codingResponseJobId } : {}),
         attachments: allAttachments.map(a => ({
           name: a.name,
           size: a.size || null,
@@ -5149,8 +4617,7 @@
         userMessageIndex: sentMessageIndex,
         mode: turnMode,
         latestText: "",
-        lastPersistAt: 0,
-        toolEvents: []
+        lastPersistAt: 0
       };
       activeTurnContext = turnContext;
       saveChatSessions();
@@ -5158,16 +4625,15 @@
       getEl("welcomeScreen").style.display = "none";
       let chatContainer = getActiveChatContainer(); chatContainer.style.display = "block";
       
-      appendMessageRow("You", basePrompt + attachmentLabel + (selectedImageBase64 ? "\n[Image Attached]" : ""), "user-row", "user-bubble", null, true, undefined, undefined, { messageIndex: sentMessageIndex, responseJobId: codingResponseJobId });
+      appendMessageRow("You", basePrompt + attachmentLabel + (selectedImageBase64 ? "\n[Image Attached]" : ""), "user-row", "user-bubble", null, true, undefined, undefined, { messageIndex: sentMessageIndex });
       promptInput.value = ""; let img = selectedImageBase64; removeImage(); pastedTextBlocks = []; fileAttachments = []; renderFileChips(); handleInputChange();
 
-      const codingTurn = workspaceMode === "coding";
       let id = "b_" + Date.now(), aid = "a_" + Date.now(), sid = "s_" + Date.now(), row = document.createElement("div");
       row.className = "row trux-row appear";
       const tsid = "ts_" + Date.now();
       const thid = "th_" + Date.now();
       const thinkingMarkup = `
-        <div class="trux-thinking-panel ${codingTurn ? "trux-code-thinking" : "trux-chat-thinking"}" id="${thid}" data-thinking-visible="true">
+        <div class="trux-thinking-panel trux-chat-thinking" id="${thid}" data-thinking-visible="true">
           <div class="trux-thinking-bar">
             <span class="trux-thinking-spark trux-thinking-chat-spark" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 1.5C13.45 7.95 16.05 10.55 22.5 12C16.05 13.45 13.45 16.05 12 22.5C10.55 16.05 7.95 13.45 1.5 12C7.95 10.55 10.55 7.95 12 1.5Z"/></svg></span>
             <div class="trux-thinking-copy"><span class="status-msg" id="${sid}" role="status" aria-live="polite"><span class="thinking-status-line compact"></span><span class="thinking-status-line full"></span></span></div>
@@ -5178,28 +4644,24 @@
         </div>`;
       row.innerHTML = `<div class="trux-response-stack">
         ${thinkingMarkup}
-        <div class="bubble trux-bubble ${codingTurn ? "thinking" : ""}" id="${id}"></div>
+        <div class="bubble trux-bubble" id="${id}"></div>
         <div class="actions" id="${aid}"></div>
       </div>`;
 
       chatContainer.appendChild(row);
       chatContainer.scrollTop = chatContainer.scrollHeight;
 
-      row._startedAt = codingTurn ? Date.now() : 0;
-
-      // TruX-Code defaults to Gemini 3.1 Pro Preview; owner overrides are validated server-side.
 
       const requestBody = {
         message: prompt,
-        tier: (workspaceMode === "deep-research" || workspaceMode === "coding") ? "ultra" : currentPlanTier,
+        tier: workspaceMode === "deep-research" ? "ultra" : currentPlanTier,
         mode: workspaceMode,
         advancedThinking: advancedThinkingLevel === "extended" || workspaceMode === "deep-research",
         thinkingLevel: advancedThinkingLevel,
         incognito: !!incognitoMode,
-        ...(codingResponseJobId ? { responseJobId: codingResponseJobId } : {}),
         history: (() => {
           const prior = (chatSessions[turnChatId]?.messages || []).slice(0, sentMessageIndex);
-          const deepMode = workspaceMode === "coding" || workspaceMode === "deep-research";
+          const deepMode = workspaceMode === "deep-research";
           const selected = [];
           const maxMessages = deepMode ? 24 : advancedThinkingLevel === "extended" ? 18 : advancedThinkingLevel === "medium" ? 14 : 12;
           const maxChars = deepMode ? 80000 : advancedThinkingLevel === "extended" ? 60000 : advancedThinkingLevel === "medium" ? 45000 : 36000;
@@ -5243,8 +4705,7 @@
         notifyOnComplete: true
       };
 
-      // Chat and TruX-Code share the same direct, cancellable Vertex stream.
-      // Closing the client aborts this request; partial text is checkpointed locally.
+      // Chat uses a direct, cancellable Vertex stream; partial text is checkpointed locally.
       while (true) {
         if (turnId !== generationEpoch || generationStopRequested || !isGenerating) return;
         if (navigator.onLine === false) {
@@ -5256,7 +4717,6 @@
         const requestController = activeAbortController;
         // Keep stream state visible to catch so partial text can be preserved after any failure.
         let full = "";
-        let finalizedEarly = false;
         let finalizedOnFinal = false;
         try {
           const requestUser = auth?.currentUser;
@@ -5294,7 +4754,6 @@
             /* Haptics are optional; a missing device/browser API must not affect streaming. */
           }
         }
-        let githubProposal = null;
         let toolInProgress = false;
         /* Web pages the model actually consulted when it ran a Google search. */
         let turnSources = [];
@@ -5330,11 +4789,11 @@
         // thinking indicator stays visible until real content exists.
         function ensureStreamer() {
           if (turnStreamer) return turnStreamer;
-          if (finalizedEarly || finalizedOnFinal) return null;
+          if (finalizedOnFinal) return null;
           let bubble = getEl(id);
           if (!bubble) return null;
           const responseRow = bubble.closest(".row");
-          if (!codingTurn) dismissThinkingPanel(responseRow);
+          dismissThinkingPanel(responseRow);
           bubble.classList.remove("thinking");
           turnStreamer = createStreamRenderer(bubble);
           activeStreamer = turnStreamer;
@@ -5346,7 +4805,7 @@
           if(!raw) return; let j; try { j = JSON.parse(raw); } catch { return; }
           // Once a final payload has been accepted, late text frames must not
           // create a new draft or mutate a completed answer.
-          if ((finalizedEarly || finalizedOnFinal) && (j.type === "chunk" || j.type === "final")) return;
+          if (finalizedOnFinal && (j.type === "chunk" || j.type === "final")) return;
           if(j.type === "progress") {
             return;
           }
@@ -5374,59 +4833,21 @@
               const status = getEl(sid);
               if (status) status.innerText = "Composing your image…";
             }
-            if (fin && !imageRoute) {
-                if (codingTurn && !finalizedEarly) {
-                finalizedEarly = true;
-                finalizeResponse(id, aid, fin, prompt, voice, turnStreamer, turnSources, turnContext);
-                if (activeStreamer === turnStreamer) activeStreamer = null;
-                try { rd.cancel(); } catch {}
-              } else if (!codingTurn && !finalizedOnFinal) {
-                if (!turnStreamer && !codingTurn) dismissThinkingPanel(getEl(id)?.closest(".row"));
-                finalizeResponse(id, aid, fin, prompt, voice, turnStreamer, turnSources, turnContext);
-                /* Only mark complete after finalization succeeds. If it throws,
-                   the catch path must still reset the Stop control and live renderer. */
-                finalizedOnFinal = true;
-                if (activeStreamer === turnStreamer) activeStreamer = null;
-              }
+            if (fin && !imageRoute && !finalizedOnFinal) {
+              if (!turnStreamer) dismissThinkingPanel(getEl(id)?.closest(".row"));
+              finalizeResponse(id, aid, fin, prompt, voice, turnStreamer, turnSources, turnContext);
+              finalizedOnFinal = true;
+              if (activeStreamer === turnStreamer) activeStreamer = null;
             }
           }
           else if(j.type === "status") {
             setThinkingStatus(sid, j.status || "");
-            if (codingTurn && turnContext) {
-              const activityStatus = normalizeAiActivity(j.status || "");
-              const placeholder = /^(?:thinking|working|processing)(?:[ .…]*)?$/i.test(activityStatus);
-              if (activityStatus && !placeholder) {
-                appendThinkingHistory(getEl(thid), activityStatus);
-                const events = turnContext.toolEvents || (turnContext.toolEvents = []);
-                if (!events.some(event => event.type === "status" && event.status === activityStatus)) {
-                  events.push({ type: "status", status: activityStatus });
-                }
-              }
-            }
           }
-          else if(j.type === "ai_step") {
-            if (codingTurn && turnContext) {
-              const activityStatus = normalizeAiActivity(j.status || j.text || "");
-              if (activityStatus) {
-                setThinkingStatus(sid, activityStatus);
-                appendThinkingHistory(getEl(thid), activityStatus);
-                const events = turnContext.toolEvents || (turnContext.toolEvents = []);
-                if (!events.some(event => event.type === "ai_step" && event.status === activityStatus)) {
-                  events.push({ type: "ai_step", status: activityStatus });
-                }
-              }
-            }
-          }
-          else if(j.type === "browser_preview") {
-            const responseRow = getEl(id)?.closest(".row");
-            renderBrowserPreview(responseRow, j);
-          }
-          
           else if(j.type === "done") {
             streamDone = true;
             /* A clean EOF is authoritative even if the server omitted a final frame.
                Finalize once here so the caret and Stop control cannot be left active. */
-            if (!finalizedEarly && !finalizedOnFinal && !imageRoute) {
+            if (!finalizedOnFinal && !imageRoute) {
               const completedText = String(fin !== null ? fin : full).trim();
               if (completedText) {
                 finalizeResponse(id, aid, completedText, prompt, voice, turnStreamer, turnSources, turnContext);
@@ -5437,22 +4858,7 @@
           }
           else if(j.type === "tool_status") {
             const phase = j.phase || "complete";
-            if (codingTurn) setThinkingStatus(sid, j.status || j.tool || "");
             appendToolStatusLine(tsid, j.tool, j.status, phase, j.details || null);
-            if (codingTurn && turnContext) {
-              const safeDetails = {};
-              if (j.details?.id) safeDetails.id = String(j.details.id).slice(0, 120);
-              if (j.details?.target) safeDetails.target = String(j.details.target).slice(0, 180);
-              if (typeof j.details?.ok === "boolean") safeDetails.ok = j.details.ok;
-              const events = turnContext.toolEvents || (turnContext.toolEvents = []);
-              events.push({
-                type: "tool_status",
-                tool: String(j.tool || "TruX-Code").slice(0, 120),
-                status: String(j.status || "").slice(0, 240),
-                phase: String(phase).slice(0, 24),
-                ...(Object.keys(safeDetails).length ? { details: safeDetails } : {})
-              });
-            }
             if(phase === "start") {
               toolInProgress = true;
             } else {
@@ -5483,30 +4889,6 @@
           }
           else if(j.type === "heartbeat") {
             /* Keepalive only. The last real AI activity remains visible. */
-          }
-          else if(j.type === "github_commit") {
-            const commit = j.commit;
-            const proposal = j.proposal || {};
-            proposal.commit = commit;
-            githubProposal = proposal;
-            appendGithubCommitResponse(proposal, commit, currentChatId);
-          }
-          else if(j.type === "github_proposal") {
-            githubProposal = j.proposal || null;
-            const proposalSession = chatSessions[currentChatId];
-            if (proposalSession && githubProposal) {
-              proposalSession.pendingGithubProposal = githubProposal;
-              saveChatSessions();
-            }
-            if (githubProposal?.commit) {
-              appendGithubCommitResponse(githubProposal, githubProposal.commit, currentChatId);
-            } else {
-              let st = getEl(sid);
-              if (st) st.innerText = "GitHub changes ready for review…";
-              const bubble = getEl(id);
-              const host = bubble?.closest(".trux-response-stack") || bubble;
-              if (host && githubProposal) renderGithubProposalCard(host, githubProposal);
-            }
           }
           else if(j.type === "grounding") {
             const incomingSources = (j.grounding && Array.isArray(j.grounding.sources)) ? j.grounding.sources : [];
@@ -5554,9 +4936,9 @@
           for(let x of es) {
             let ls = x.split(/\r?\n/).filter(l => l.startsWith("data:"));
             if(ls.length) ev(ls.map(l => l.slice(5).trimStart()).join("\n"));
-            if (finalizedEarly || streamDone) break;
+            if (streamDone) break;
           }
-          if (finalizedEarly || streamDone) {
+          if (streamDone) {
             try { await rd.cancel(); } catch {}
             break;
           }
@@ -5568,9 +4950,6 @@
             const ls = frame.split(/\r?\n/).filter(l => l.startsWith("data:"));
             if (ls.length) ev(ls.map(l => l.slice(5).trimStart()).join("\n"));
           }
-        }
-        if (finalizedEarly) {
-          return;
         }
 
         let text = (fin !== null ? fin : full).trim();
@@ -5597,21 +4976,9 @@
         /* Defensive: never show the routing tag if it slipped into prose. */
         text = text.replace(/^[\s\u0060>*_]*\[\[?\s*IMAGE\s*\]\]?\s*/i, "").replace(/\[\[IMAGE\]\]/gi, "").replace(/^\[image\]\s*/i, "").trim();
 
-        if (!finalizedOnFinal && !finalizedEarly) {
+        if (!finalizedOnFinal) {
           let streamer = turnStreamer || ensureStreamer();
           finalizeResponse(id, aid, text, prompt, voice, streamer, turnSources, turnContext);
-        }
-        if(githubProposal) {
-          const session = chatSessions[currentChatId];
-          const lastMessage = session?.messages?.[session.messages.length - 1];
-          if (lastMessage?.role === "trux") {
-            lastMessage.githubProposal = githubProposal;
-            delete session.pendingGithubProposal;
-            saveChatSessions();
-          }
-          const bubble = getEl(id);
-          const host = bubble?.closest(".trux-response-stack") || bubble;
-          if(host) renderGithubProposalCard(host, githubProposal);
         }
         clearTurnStreamer(false);
         return;
@@ -5620,7 +4987,7 @@
           if (row._backgroundHandover) return;
           // The authoritative answer has already been rendered; a late stream
           // close/error must not overwrite it or create a duplicate partial draft.
-          if (finalizedOnFinal || finalizedEarly) {
+          if (finalizedOnFinal) {
             clearTurnStreamer(false);
             activeAbortController = null;
             return;
@@ -5704,7 +5071,7 @@
       row.innerHTML='<div class="label">'+BRAND_LABEL+'</div><div class="bubble trux-bubble" id="'+id+'"><div class="gen-video-card"><div class="gen-image-label" id="'+sid+'">Generating video…</div><span class="video-shimmer"></span></div></div><div class="actions" id="'+aid+'"></div>';
       chatContainer.appendChild(row); chatContainer.scrollTop=chatContainer.scrollHeight; row._startedAt=Date.now();
       activeAbortController=new AbortController();
-      const timer=setInterval(()=>{ const el=getEl(sid); if(el) el.textContent="Generating video · "+formatCodexElapsed(Date.now()-row._startedAt); },1000);
+      const timer=setInterval(()=>{ const el=getEl(sid); if(el) el.textContent="Generating video · "+formatElapsedTime(Date.now()-row._startedAt); },1000);
 
       try {
         const videoUser = auth?.currentUser;
@@ -5919,10 +5286,6 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
       const hasContent = !!(promptInput?.value.trim() || selectedImageBase64 || pastedTextBlocks.length || fileAttachments.length);
       if (!hasContent) {
         // The visible workspace is authoritative; a stale JS mode must never launch Live.
-        const codeWorkspaceVisible = workspaceMode === "coding" ||
-          document.body.classList.contains("coding-workspace") ||
-          document.body.dataset.workspaceMode === "coding";
-        if (codeWorkspaceVisible) return;
         startTruxLiveAssistant();
         return;
       }
@@ -6042,7 +5405,7 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
       } finally {
         sendPromptInFlight=false;
         // This wrapper is the terminal boundary for the request started by
-        // this send, including Chat, TruX-Code, image routing, and video.
+        // this send, including Chat, image routing, and video.
         // Some branches can return after the stream has ended without passing
         // through finalizeResponse. Only repair state when this send still
         // owns the epoch, or when it was already invalidated/stopped. Never
@@ -6319,7 +5682,7 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
       store.setItem("trux_active_notebook", notebook.id);
       closeSidebar();
       getEl("contextMenu").style.display = "none";
-      document.body.classList.remove("home-active","chat-session-active","coding-workspace","plugins-page-active","incognito-mode");
+      document.body.classList.remove("home-active","chat-session-active","plugins-page-active","incognito-mode");
       document.body.removeAttribute("data-media-mode");
       document.body.classList.add("notebook-open");
       const welcome = getEl("welcomeScreen");
@@ -6643,79 +6006,29 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
       });
     }
     function enterChatWorkspace() {
-      const codingSession = workspaceMode === "coding";
-      const body = document.body;
-      const welcomeForExit = getEl("welcomeScreen");
-      const leavingHome = body.classList.contains("home-active") && !codingSession && !!welcomeForExit;
+      const body = document.body, welcomeForExit = getEl("welcomeScreen");
+      const leavingHome = body.classList.contains("home-active") && !!welcomeForExit;
       if (leavingHome) {
         const rect = welcomeForExit.getBoundingClientRect();
         if (window.__truxHomeExitTimer) clearTimeout(window.__truxHomeExitTimer);
-        body.classList.remove("home-exiting-fade");
-        body.classList.add("home-exiting");
-        welcomeForExit.style.setProperty("--trux-home-exit-left", rect.left + "px");
-        welcomeForExit.style.setProperty("--trux-home-exit-top", rect.top + "px");
-        welcomeForExit.style.setProperty("--trux-home-exit-width", rect.width + "px");
-        welcomeForExit.style.setProperty("--trux-home-exit-height", rect.height + "px");
-        welcomeForExit.style.removeProperty("opacity");
-        welcomeForExit.style.removeProperty("transform");
-        // Resolve the visible exit state first, then begin the fade on the next
-        // paint. A single RAF can coalesce both class changes before paint,
-        // making the prompts and home glow appear to vanish instantly.
-        void welcomeForExit.offsetWidth;
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            if (body.classList.contains("home-exiting")) body.classList.add("home-exiting-fade");
-          });
-        });
+        body.classList.remove("home-exiting-fade"); body.classList.add("home-exiting");
+        welcomeForExit.style.setProperty("--trux-home-exit-left", rect.left + "px"); welcomeForExit.style.setProperty("--trux-home-exit-top", rect.top + "px");
+        welcomeForExit.style.setProperty("--trux-home-exit-width", rect.width + "px"); welcomeForExit.style.setProperty("--trux-home-exit-height", rect.height + "px");
+        welcomeForExit.style.removeProperty("opacity"); welcomeForExit.style.removeProperty("transform"); void welcomeForExit.offsetWidth;
+        requestAnimationFrame(() => requestAnimationFrame(() => { if (body.classList.contains("home-exiting")) body.classList.add("home-exiting-fade"); }));
         window.__truxHomeExitTimer = setTimeout(() => {
-          const returnedHome = body.classList.contains("home-active");
-          body.classList.remove("home-exiting", "home-exiting-fade");
-          [
-            "--trux-home-exit-left",
-            "--trux-home-exit-top",
-            "--trux-home-exit-width",
-            "--trux-home-exit-height"
-          ].forEach(property => welcomeForExit.style.removeProperty(property));
-          welcomeForExit.style.removeProperty("opacity");
-          welcomeForExit.style.removeProperty("transform");
-          if (returnedHome) welcomeForExit.style.removeProperty("display");
-          else welcomeForExit.style.setProperty("display", "none");
+          const returnedHome = body.classList.contains("home-active"); body.classList.remove("home-exiting", "home-exiting-fade");
+          ["--trux-home-exit-left", "--trux-home-exit-top", "--trux-home-exit-width", "--trux-home-exit-height"].forEach(property => welcomeForExit.style.removeProperty(property));
+          welcomeForExit.style.removeProperty("opacity"); welcomeForExit.style.removeProperty("transform");
+          if (returnedHome) welcomeForExit.style.removeProperty("display"); else welcomeForExit.style.setProperty("display", "none");
           window.__truxHomeExitTimer = null;
         }, 1050);
       }
-
-      body.classList.remove("home-active");
-      body.classList.toggle("chat-session-active", !codingSession);
-      body.classList.toggle("coding-workspace", codingSession);
-      body.removeAttribute("data-media-mode");
-
-      const welcome = getEl("welcomeScreen");
-      if (welcome) welcome.style.display = "none";
-
-      const active = getActiveChatContainer();
-      ["chatContainer", "codeChatContainer"].forEach(function(id) {
-        const el = getEl(id);
-        if (!el) return;
-        el.style.display = el === active ? "block" : "none";
-      });
-
-      if (codingSession) {
-        // #truxCodeWorkspace contains #codeChatContainer; keep this parent
-        // visible while the assistant row is appended and streamed.
-        const codeHome = getEl("truxCodeWorkspace");
-        if (codeHome) {
-          codeHome.style.removeProperty("display");
-          codeHome.style.removeProperty("opacity");
-          codeHome.style.removeProperty("transform");
-        }
-      }
-
-      if (active) {
-        active.classList.add("chat-session-view");
-      }
+      body.classList.remove("home-active"); body.classList.add("chat-session-active"); body.removeAttribute("data-media-mode");
+      const welcome = getEl("welcomeScreen"); if (welcome) welcome.style.display = "none";
+      const active = getEl("chatContainer"); if (active) { active.style.display = "block"; active.classList.add("chat-session-view"); }
       return active;
     }
-
     async function loadChatSession(id) {
       if (!chatSessions[id]) return;
       if (activeTurnContext) updateIncompleteTurn(activeTurnContext, activeTurnContext.latestText || "", true);
@@ -6731,27 +6044,15 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
       incognitoMode = false;
       currentChatId = id;
       generationStopRequested = false;
-      setWorkspaceMode(chatSessions[id].mode || "chat", {reload:false,preserveSession:true});
+      setWorkspaceMode(chatSessions[id].mode === "coding" ? "chat" : (chatSessions[id].mode || "chat"), {reload:false,preserveSession:true});
       getEl("btnIcon").innerHTML = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
       getEl("actionBtn").classList.remove("stop");
       const welcome = getEl("welcomeScreen");
       if(welcome) welcome.style.display = "none";
       getEl("chatContainer").innerHTML = "";
-      getEl("codeChatContainer").innerHTML = "";
       const cC = enterChatWorkspace();
        chatSessions[id].messages.forEach((m, index) => {
-         appendMessageRow(m.role === "user" ? "You" : "TruX-Omni", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image, false, m.sources, m.video, { messageIndex: index, responseJobId: m.role === "user" ? m.responseJobId || "" : "", stopped: m.role === "user" && m.stopped === true, incomplete: m.role === "trux" && m.incomplete === true });
-         if (workspaceMode === "coding" && m.role === "trux" && Number.isFinite(Number(m.durationMs))) {
-           const rows = getActiveChatContainer()?.querySelectorAll(".row.trux-row") || [];
-           const restoredRow = rows[rows.length - 1];
-           restoreCompletedCodeSteps(restoredRow, m);
-         }
-         if (m.githubProposal) {
-           const rows = getActiveChatContainer()?.querySelectorAll(".row.trux-row") || [];
-           const lastRow = rows[rows.length - 1];
-           const host = lastRow?.querySelector(".trux-response-stack") || lastRow;
-           if (host) renderGithubProposalCard(host, m.githubProposal);
-         }
+         appendMessageRow(m.role === "user" ? "You" : "TruX-Omni", m.text, m.role === "user" ? "user-row" : "trux-row", m.role === "user" ? "user-bubble" : "trux-bubble", m.image, false, m.sources, m.video, { messageIndex: index, stopped: m.role === "user" && m.stopped === true, incomplete: m.role === "trux" && m.incomplete === true });
        });
       // Chat messages are restored from browser-local history; no worker is reattached.
       renderSidebar(); if(innerWidth <= 768) closeSidebar(); else setSidebarOpen(true);
@@ -6867,7 +6168,7 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
     const startupWorkspaceMode = "chat";
     try {
       currentChatId = null;
-      document.body.classList.remove("chat-session-active","coding-workspace","plugins-page-active");
+      document.body.classList.remove("chat-session-active","plugins-page-active");
       document.body.removeAttribute("data-media-mode");
       document.body.classList.add("home-active");
       loadSettings();
@@ -6876,7 +6177,7 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
       updateAllUsageUI();
       handleInputChange();
       setWorkspaceMode(startupWorkspaceMode, {reload:false,preserveSession:false});
-      startTruxCodeIdlePulse();
+      
     } catch (startupError) {
       window.__truxRecoverBoot(startupError);
     } finally {
@@ -6916,7 +6217,6 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
       document.body.classList.remove(
         "home-active",
         "chat-session-active",
-        "coding-workspace",
         "plugins-page-active",
         "notebook-open",
         "scrolled"
@@ -6960,4 +6260,4 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
       const amount = container ? Math.min(1, Math.max(0, container.scrollTop / 140)) : 0;
       document.body.style.setProperty("--trux-chrome-fade", String(amount));
     }
-    ["chatContainer", "codeChatContainer"].forEach(id => getEl(id)?.addEventListener("scroll", syncFloatingChromeFade, { passive: true }));
+    getEl("chatContainer")?.addEventListener("scroll", syncFloatingChromeFade, { passive: true });

@@ -76,23 +76,6 @@
     var side=el('sidebarPluginCount'); if(side) side.textContent=String(active);
     var summary=el('pluginsSummary'); if(summary) summary.textContent=active+' active · '+connected+' connected';
 
-    var status=el('codePluginStatus'), statusText=status && status.querySelector('span:nth-child(2)');
-    if(statusText) statusText.textContent=active ? active+' plugin'+(active===1?'':'s')+' active' : 'No plugins enabled';
-    if(status) status.classList.toggle('active',active>0);
-    var countText=el('codePluginCountText'); if(countText) countText.textContent=active+' connected';
-
-    var integrationItems=el('truxCodeIntegrationItems');
-    if(integrationItems){
-      var activeList=all.filter(function(p){return !!p.connected;}).slice(0,6);
-      integrationItems.innerHTML=activeList.length
-        ? activeList.map(function(p){
-            var logo=p.logo || p.fallbackLogo
-              ? '<img src="'+esc(p.logo || p.fallbackLogo)+'" alt="" loading="lazy">'
-              : '<span class="trux-code-mini-initials">'+esc(initials(p.name))+'</span>';
-            return '<span class="trux-code-integration-app" title="'+esc(p.name)+'">'+logo+'<b>'+esc(p.name)+'</b></span>';
-          }).join('')
-        : '<span class="trux-code-integrations-empty">No integrations connected</span>';
-    }
   }
   function setGroup(group){
     state.group=group || 'All';
@@ -250,7 +233,6 @@
   window.openPluginsPage=open;
   window.closePluginsPage=close;
   window.handlePluginCallback=callback;
-  window.refreshTruxCodeIntegrations=function(){ return load({silent:true}); };
 
   function boot(){
     if(!window.__truxPluginControlsBound){
@@ -266,8 +248,6 @@
     }
     var a=auth();
     if(a){
-      // Hydrate plugin state as soon as Firebase is ready so TruX-Code does
-      // not depend on opening/clicking the Plugins page first.
       a.onAuthStateChanged(function(){
         updateAccessUI();
         load({silent:true});
@@ -278,7 +258,7 @@
       // another tab/window or after returning from the Composio flow.
       if(!window.__truxPluginRefreshTimer){
         window.__truxPluginRefreshTimer=setInterval(function(){
-          if(document.body.classList.contains('coding-workspace') || document.body.classList.contains('plugins-page-active')){
+          if(document.body.classList.contains('plugins-page-active')){
             load({silent:true});
           }
         },12000);
