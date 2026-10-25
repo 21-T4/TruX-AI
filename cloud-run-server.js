@@ -199,14 +199,14 @@ async function serveStatic(req, res) {
       res.setHeader("Pragma", "no-cache");
       res.setHeader("Expires", "0");
     }
-    if (basename === "pwa-enhancements.js" || basename === "trux-app.js" || basename === "sw.js") {
+    if (basename === "trux-app.js" || basename === "sw.js") {
       res.setHeader("Cache-Control", "no-cache, must-revalidate");
     }
     if (req.method === "HEAD") return res.end();
     if (extension === ".html" && basename === "index.html") {
       const html = await fs.promises.readFile(filePath, "utf8");
-      const scriptTag = '<script src="/pwa-enhancements.js?v=20261021-browser-chat-storage-v1"></script>';
-      return res.end(html.includes(scriptTag) ? html : html.replace("</body>", scriptTag + "\n</body>"));
+
+      return res.end(html);
     }
     fs.createReadStream(filePath).pipe(res);
   } catch {
@@ -230,8 +230,8 @@ async function serveStatic(req, res) {
       res.setHeader("Pragma", "no-cache");
       res.setHeader("Expires", "0");
       const html = await fs.promises.readFile(indexPath, "utf8");
-      const scriptTag = '<script src="/pwa-enhancements.js?v=20261021-browser-chat-storage-v1"></script>';
-      return res.end(html.includes(scriptTag) ? html : html.replace("</body>", scriptTag + "\n</body>"));
+
+      return res.end(html);
     } catch {
       res.statusCode = 500;
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
