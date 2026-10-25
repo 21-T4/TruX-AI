@@ -1858,7 +1858,7 @@
         btn.classList.toggle("ready", hasDraft);
         btn.classList.toggle("live", !hasDraft)
         btn.classList.toggle("live-active", !hasDraft && liveActive)
-        btn.title = hasDraft ? "Send message" : (isCodeWorkspace ? "Enter a coding task" : (liveActive ? "Stop Live assistant" : "Start Live assistant"));
+        btn.title = hasDraft ? "Send message" : (liveActive ? "Stop Live assistant" : "Start Live assistant");
         btn.setAttribute("aria-label", btn.title);
         const icon = getEl("btnIcon");
         if (icon && btn.dataset.actionMode !== nextMode) {
