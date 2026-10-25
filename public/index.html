@@ -39,7 +39,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
 
   
-  <link rel="stylesheet" href="/trux-app.css?v=20261025-header-model-plus-fixed3">
+  <link rel="stylesheet" href="/trux-app.css?v=20261025-reference-pill-profile-swap-v1">
 
 
 
@@ -280,15 +280,7 @@
           <button class="top-btn menu-btn" onclick="toggleSidebar(event)" title="Toggle sidebar" aria-label="Toggle sidebar">
             <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
           </button>
-          <button type="button" class="top-profile-btn" id="topProfileBtn" onclick="handleAuthAction()" title="Profile" aria-label="Open profile">
-            <img class="top-profile-avatar" id="topProfileAvatar" src="https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff" alt="" aria-hidden="true" referrerpolicy="no-referrer">
-          </button>
-        </div>
-        <div class="topbar-center">
-          <div class="trux-incognito-top" id="truxIncognitoTop" aria-label="Incognito chat">
-            <span class="trux-incognito-dot"></span><span>Incognito</span>
-            <button type="button" class="trux-incognito-close" onclick="closeIncognitoChat()" title="Exit incognito chat" aria-label="Close incognito chat">×</button>
-          </div>
+
           <div class="topbar-model-slot" id="topbarModelSlot"><div class="model-picker-container" id="modelPickerContainer">
               <button type="button" id="modelPickerBtn" class="model-picker-btn" onclick="toggleModelDropdown(event)" aria-haspopup="menu" aria-expanded="false" aria-label="Automatic model routing"><span id="modelPickerLabel">Auto</span></button>
               <div class="model-dropdown-menu" id="modelDropdown" role="menu" aria-label="Automatic model routing">
@@ -312,9 +304,19 @@
               </div>
             </div></div>
         </div>
+        <div class="topbar-center">
+          <div class="trux-incognito-top" id="truxIncognitoTop" aria-label="Incognito chat">
+            <span class="trux-incognito-dot"></span><span>Incognito</span>
+            <button type="button" class="trux-incognito-close" onclick="closeIncognitoChat()" title="Exit incognito chat" aria-label="Close incognito chat">×</button>
+          </div>
+
+        </div>
         <div class="topbar-right">
           <button class="top-btn mobile-new" id="newChatTopBtn" onclick="startNewChat()" title="New chat" aria-label="New chat">
             <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+          <button type="button" class="top-profile-btn" id="topProfileBtn" onclick="handleAuthAction()" title="Profile" aria-label="Open profile">
+            <img class="top-profile-avatar" id="topProfileAvatar" src="https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff" alt="" aria-hidden="true" referrerpolicy="no-referrer">
           </button>
           <button type="button" class="top-btn topbar-more-btn" id="topbarMoreBtn" onclick="toggleTopbarMoreMenu(event)" title="More options" aria-label="More options" aria-haspopup="menu" aria-expanded="false">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
