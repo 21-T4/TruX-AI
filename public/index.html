@@ -1820,7 +1820,7 @@ html, body{
   overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important
 }.chat{min-width:0!important}body.chat-session-active #chatContainer{display:block!important;flex:1 1 auto!important;min-height:0!important;overflow:auto!important}body.chat-session-active:not(.home-exiting) #welcomeScreen{display:none!important}.composer{
   position:relative!important;z-index:200!important;flex:0 0 auto!important;
-  width:100%!important;min-width:0!important;margin:0!important;padding:8px 18px calc(18px + var(--safe-b))!important;
+  width:100%!important;min-width:0!important;margin:auto 0 0!important;padding:8px 18px calc(18px + var(--safe-b))!important;
   background:transparent!important;background-image:none!important;border:0!important;box-shadow:none!important;overflow:visible!important;
 }.compose{width:min(740px,80vw)!important;max-width:740px!important;min-width:0!important;margin:0 auto!important}.bar{
   position:relative!important;display:grid!important;
@@ -3035,6 +3035,19 @@ body.home-active:not(.chat-session-active):not(.plugins-page-active):not([data-m
           <div class="media-gen-actions">
             <button type="button" class="media-gen-secondary" onclick="openMediaLibrary('image')">Open image library</button>
             <button type="button" class="media-gen-primary" onclick="quickPrompt('Let’s create an image of ')">Start creating</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="media-gen-workspace" id="videoWorkspace" aria-label="Video generation workspace">
+        <div class="media-gen-orbit media-gen-orbit-a"></div><div class="media-gen-orbit media-gen-orbit-b"></div>
+        <div class="media-gen-inner">
+          <div class="media-gen-kicker"><span>◈</span> VIDEO STUDIO</div>
+          <h1>Create a video with TruX.</h1>
+          <p>Describe a scene and generate a video directly from the chat bar.</p>
+          <div class="media-gen-actions">
+            <button type="button" class="media-gen-secondary" onclick="openMediaLibrary('video')">Open video library</button>
+            <button type="button" class="media-gen-primary" onclick="quickPrompt('Create a video of ')">Start creating</button>
           </div>
         </div>
       </section>
