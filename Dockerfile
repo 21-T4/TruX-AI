@@ -8,13 +8,16 @@ ENV NODE_ENV=production
 ENV PORT=8080
 
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev --no-audit --no-fund
 
 COPY cloud-run-server.js ./cloud-run-server.js
 COPY public ./public
 COPY functions ./functions
 
 RUN npm run build
+
+# The packaged application only needs read access at runtime.
+USER node
 
 EXPOSE 8080
 

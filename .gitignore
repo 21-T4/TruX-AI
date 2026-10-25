@@ -1,13 +1,32 @@
-node_modules
-**/node_modules
+# Dependencies and local package-manager state
+node_modules/
+**/node_modules/
+.npm/
+**/.npm/
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
-.DS_Store
+
+# Local environment files and credentials
 .env
 .env.*
-!.env.example
-.wrangler
-.cache
-dist
-build
+**/.env
+**/.env.*
+!/.env.example
+*.pem
+**/*.pem
+*.key
+**/*.key
+**/*service-account*.json
+**/*credentials*.json
+**/secrets/**
+
+# Generated output and local state
+.DS_Store
+**/.DS_Store
+.cache/
+**/.cache/
+coverage/
+dist/
+build/
+.firebase/

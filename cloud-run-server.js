@@ -175,7 +175,14 @@ async function handleApi(req, res, route, pathname) {
 }
 
 async function serveStatic(req, res) {
-  const pathname = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
+  let pathname;
+  try {
+    pathname = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
+  } catch {
+    res.statusCode = 400;
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    return res.end("Bad Request");
+  }
   const relative = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
   const filePath = path.resolve(PUBLIC_DIR, relative);
 

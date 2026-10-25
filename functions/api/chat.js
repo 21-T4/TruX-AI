@@ -104,7 +104,18 @@ async function fetchGcpMetadata(path) {
   return String(await response.text()).trim();
 }
 
-async function getGoogleCloudProjectId() {
+async function getGoogleCloudProjectId(env = {}) {
+  const configuredProjectId = String(
+    env.GOOGLE_CLOUD_PROJECT ||
+    env.GCLOUD_PROJECT ||
+    env.GCP_PROJECT ||
+    process.env.GOOGLE_CLOUD_PROJECT ||
+    process.env.GCLOUD_PROJECT ||
+    process.env.GCP_PROJECT ||
+    ''
+  ).trim();
+  if (configuredProjectId) return configuredProjectId;
+
   if (!googleCloudProjectPromise) {
     googleCloudProjectPromise = fetchGcpMetadata('/project/project-id').catch(error => {
       googleCloudProjectPromise = null;
@@ -115,8 +126,8 @@ async function getGoogleCloudProjectId() {
   return googleCloudProjectPromise;
 }
 
-async function getVertexAIClient() {
-  const projectId = await getGoogleCloudProjectId();
+async function getVertexAIClient(env = {}) {
+  const projectId = await getGoogleCloudProjectId(env);
   const configKey = projectId;
 
   if (!vertexAIClient || vertexAIClientConfigKey !== configKey) {
@@ -144,9 +155,13 @@ async function resolveTrustedChatIdentity(request, env) {
 
   try {
     const verified = await requireFirebaseUser(request, env);
+    // Plan entitlements come from a signed Firebase custom claim, never from
+    // localStorage or a caller-controlled request body.
+    const claimedTier = String(verified?.truxTier || '').trim().toLowerCase();
     return {
       uid: String(verified?.uid || ''),
-      email: String(verified?.email || '')
+      email: String(verified?.email || ''),
+      tier: claimedTier === 'pro' ? 'pro' : 'base'
     };
   } catch {
     throw Object.assign(new Error('Invalid or expired authentication token.'), { status: 401 });
@@ -296,7 +311,7 @@ async function fetchVertexGemini({
   env
 }) {
 
-  const client = await getVertexAIClient();
+  const client = await getVertexAIClient(env);
   const config = {};
 
   if (systemInstruction) config.systemInstruction = systemInstruction;
@@ -334,7 +349,7 @@ async function streamVertexGemini({
   signal,
   env
 }) {
-  const client = await getVertexAIClient();
+  const client = await getVertexAIClient(env);
   const config = {};
 
   if (systemInstruction) config.systemInstruction = systemInstruction;
@@ -659,7 +674,7 @@ async function generateVideoWithVertex({
     videoSafePathPart(randomPart);
 
   const model = String(env.TRUX_VIDEO_MODEL || VIDEO_MODEL);
-    const client = await getVertexAIClient();
+    const client = await getVertexAIClient(env);
 
   let operation = await client.models.generateVideos({
     model,
@@ -970,7 +985,6 @@ export async function onRequestPost(context) {
 
     const {
       message,
-      tier,
       mode = 'chat',
       history,
       image,
@@ -1022,8 +1036,8 @@ export async function onRequestPost(context) {
     }
 
     const researchMode = mode === 'deep-research';
-    const effectiveTier = researchMode ? 'ultra' : (tier || 'base');
-    const proTier = effectiveTier === 'pro' || effectiveTier === 'ultra' || researchMode;
+    const effectiveTier = researchMode ? 'ultra' : (developerAccount ? 'pro' : trustedIdentity.tier);
+    const proTier = effectiveTier === 'pro' || effectiveTier === 'ultra';
 
 
     
@@ -1475,7 +1489,7 @@ export async function onRequestPost(context) {
                 callResult = await executeTruxWebTool({
                   name: call.name,
                   args: call.args || {},
-                  client: await getVertexAIClient(),
+                  client: await getVertexAIClient(env),
                   model: 'gemini-3.8-flash'
                 });
                 const webSources = call.name === 'trux_web_search'

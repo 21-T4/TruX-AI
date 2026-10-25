@@ -7527,7 +7527,7 @@ body.home-active:not(.chat-session-active):not(.plugins-page-active):not([data-m
           method: "POST",
           headers: { "Content-Type": "application/json" },
           signal: activeAbortController.signal,
-          body: JSON.stringify({ message: imagePrompt, tier: currentPlanTier, mode: "image", generateImage: true, userId: imageUser?.uid || null, userEmail: imageUser?.email || "" })
+          body: JSON.stringify({ message: imagePrompt, mode: "image", generateImage: true, userId: imageUser?.uid || null, userEmail: imageUser?.email || "" })
         }, imageUser);
         let payload = await res.json().catch(() => ({}));
 
@@ -8169,7 +8169,6 @@ body.home-active:not(.chat-session-active):not(.plugins-page-active):not([data-m
 
       const requestBody = {
         message: prompt,
-        tier: workspaceMode === "deep-research" ? "ultra" : currentPlanTier,
         mode: workspaceMode,
         advancedThinking: advancedThinkingLevel === "extended" || workspaceMode === "deep-research",
         thinkingLevel: advancedThinkingLevel,
@@ -8597,7 +8596,7 @@ body.home-active:not(.chat-session-active):not(.plugins-page-active):not([data-m
           signal:activeAbortController.signal,
           body:JSON.stringify({
               incognito: !!incognitoMode,
-message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null,userEmail:videoUser?.email||"",notifyOnComplete:true})
+message:basePrompt,mode:"video",userId:videoUser?.uid||null,userEmail:videoUser?.email||"",notifyOnComplete:true})
         }, videoUser);
         if(!res.ok){ const p=await res.json().catch(()=>({})); throw Error(p.error||p.reply||"Video generation failed."); }
         if(!res.body) throw Error("Video streaming body unavailable.");

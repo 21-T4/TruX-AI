@@ -1,16 +1,32 @@
+# Repository metadata and local tooling
 .git
+**/.git
 .github
-.gitignore
+**/.github
+.DS_Store
+**/.DS_Store
+
+# Local environment and credentials must never enter the Docker context
+.env
+.env.*
+**/.env
+**/.env.*
+**/*.pem
+**/*.key
+**/*service-account*.json
+**/*credentials*.json
+**/secrets/**
+
+# Dependencies, caches, logs, coverage, and generated output
 node_modules
 **/node_modules
+.npm
+**/.npm
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
-.DS_Store
-.env
-.env.*
-!.env.example
-.wrangler
 .cache
+**/.cache
+coverage
 dist
 build
