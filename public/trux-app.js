@@ -42,7 +42,7 @@
       lastTouchEnd = now;
     }, { passive: false });
 
-    addEventListener("load", () => { try { if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js?v=20261025-compact-pill-models-v2", { updateViaCache: "none" }).catch(() => {}); } catch (e) {} });
+    addEventListener("load", () => { try { if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js?v=20261025-compact-pill-models-v3", { updateViaCache: "none" }).catch(() => {}); } catch (e) {} });
     // Suppress the browser's PWA-install prompt: the sidebar download control now
     // downloads the native Android APK instead.
     addEventListener("beforeinstallprompt", event => event.preventDefault());
