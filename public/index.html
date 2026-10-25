@@ -25,8 +25,11 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="TruX-Omni">
   
-  <link rel="preconnect" href="https://cdn.prod.website-files.com" crossorigin>
-  <link rel="preload" href="https://cdn.prod.website-files.com/67ce28cfec624e2b733f8a52/69971a1551eb6cda0d656e8a_AnthropicSerif-Roman-Web.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@8..144,400..700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@300..800&display=swap">
 
   <!-- KaTeX: real math rendering happens in the browser. -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.18.7/dist/katex.min.css" integrity="sha384-JctiRyLzXCrSoOOzFlSoWLdyzQl7OrrRnhyeBmzB6ZWtcjccUyc8lCQJqIbs3uQX" crossorigin="anonymous">
@@ -39,7 +42,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
 
   
-  <link rel="stylesheet" href="/trux-app.css?v=20261025-consolidated-v5">
+  <link rel="stylesheet" href="/trux-app.css?v=20261025-google-fonts-ai-home-v6">
 
 
 
@@ -142,12 +145,12 @@
             } else {
               var greeting = document.getElementById("truxHomeSequenceText");
               if(greeting) {
-                greeting.hidden = false;
-                greeting.textContent = "How can I help you?";
-                greeting.classList.remove("is-replacing");
-                greeting.classList.add("is-visible");
+                greeting.textContent = "";
+                greeting.hidden = true;
+                greeting.classList.remove("is-visible","is-replacing");
               }
-              if(typeof loadHomePrompts === "function") void loadHomePrompts();
+              var prompts = document.getElementById("truxHomePrompts");
+              if(prompts) { prompts.replaceChildren(); prompts.hidden = true; }
             }
           } catch(homeError) {
             console.error("TruX home recovery failed:",homeError);
@@ -387,13 +390,9 @@
       <section id="welcomeScreen" class="trux-home-v2" aria-label="TruX home">
         <div class="trux-home-content">
           <div class="trux-home-sequence" aria-live="polite">
-            <h1 class="trux-home-sequence-text is-visible" id="truxHomeSequenceText">Hello</h1>
+            <h1 class="trux-home-sequence-text" id="truxHomeSequenceText" aria-label="AI-generated home greeting" hidden></h1>
           </div>
-          <div class="trux-home-prompts" id="truxHomePrompts" aria-label="Suggested prompts">
-            <button class="trux-home-prompt" type="button" onclick="quickPrompt('Plan meals from my pantry')"><span class="trux-home-prompt-mark" aria-hidden="true">↗</span><span class="trux-home-prompt-label">Plan meals from my pantry</span></button>
-            <button class="trux-home-prompt" type="button" onclick="quickPrompt('Explain quantum computing simply')"><span class="trux-home-prompt-mark" aria-hidden="true">↗</span><span class="trux-home-prompt-label">Explain quantum computing simply</span></button>
-            <button class="trux-home-prompt" type="button" onclick="quickPrompt('Name a community garden')"><span class="trux-home-prompt-mark" aria-hidden="true">↗</span><span class="trux-home-prompt-label">Name a community garden</span></button>
-          </div>
+          <div class="trux-home-prompts" id="truxHomePrompts" aria-label="AI-generated suggested prompts" hidden></div>
         </div>
       </section>
 
@@ -832,7 +831,7 @@
   <div class="toast-host" id="toastHost" aria-live="polite"></div>
 
   
-  <script src="/trux-app.js?v=20261025-consolidated-v5"></script>
+  <script src="/trux-app.js?v=20261025-google-fonts-ai-home-v6"></script>
 
 
 
