@@ -4274,13 +4274,32 @@
       }
     }
 
-    let truxHomeGreetingTimers = [];
-    let truxHomePromptRequest = null;
-    let truxHomePromptLastLoadedAt = 0;
-    let truxHomePromptRetryCount = 0;
+        let truxHomeGreetingTimers = [];
+    let truxHomeContentRequest = null;
+    let truxHomeGreetingQueue = [];
+    let truxHomeGreetingIndex = 0;
+    let truxHomePendingGreetings = [];
+    let truxHomeLastGreeting = "";
+    let truxHomeContentRetryCount = 0;
+
     function clearHomeGreetingTimers() {
       truxHomeGreetingTimers.forEach(id => clearTimeout(id));
       truxHomeGreetingTimers = [];
+    }
+
+    function scheduleHomeGreeting(fn, delay) {
+      const timer = setTimeout(() => {
+        truxHomeGreetingTimers = truxHomeGreetingTimers.filter(id => id !== timer);
+        fn();
+      }, delay);
+      truxHomeGreetingTimers.push(timer);
+      return timer;
+    }
+
+    function cleanHomeGreeting(value) {
+      const greeting = String(value || "").replace(/\s+/g, " ").trim().replace(/^["'“”]+|["'“”]+$/g, "");
+      const words = greeting ? greeting.split(/\s+/).length : 0;
+      return greeting.length >= 16 && greeting.length <= 100 && words >= 4 && words <= 14 ? greeting : "";
     }
 
     function renderHomePrompts(prompts) {
@@ -4288,7 +4307,10 @@
       if (!panel || !Array.isArray(prompts)) return false;
       const cleanPrompts = [...new Set(prompts
         .map(prompt => String(prompt || "").replace(/\s+/g, " ").trim())
-        .filter(prompt => prompt.length >= 8 && prompt.length <= 100))];
+        .filter(prompt => {
+          const words = prompt ? prompt.split(/\s+/).length : 0;
+          return prompt.length >= 8 && prompt.length <= 100 && words >= 3 && words <= 10;
+        }))];
       if (cleanPrompts.length !== 3) return false;
 
       const buttons = cleanPrompts.map(cleanPrompt => {
@@ -4311,93 +4333,118 @@
       return true;
     }
 
-    async function loadHomePrompts() {
-      if (!document.body.classList.contains("home-active")) return;
-      if (truxHomePromptRequest) return truxHomePromptRequest;
-      if (truxHomePromptLastLoadedAt && Date.now() - truxHomePromptLastLoadedAt < 4 * 60 * 1000) return;
-      const panel = getEl("truxHomePrompts");
-      if (!panel) return;
+    async function loadHomeContent({ prefetch = false } = {}) {
+      if (!document.body.classList.contains("home-active")) return false;
+      if (truxHomeContentRequest) return truxHomeContentRequest;
 
-      truxHomePromptRequest = (async () => {
+      truxHomeContentRequest = (async () => {
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json", "Accept": "application/json" },
           cache: "no-store",
-          body: JSON.stringify({ mode: "home-prompts" })
+          body: JSON.stringify({ mode: "home-content" })
         });
-        if (!response.ok) throw new Error("Home prompt generation unavailable.");
+        if (!response.ok) throw new Error("AI-generated home content is unavailable.");
         const payload = await response.json().catch(() => ({}));
-        if (!document.body.classList.contains("home-active")) return;
-        if (!Array.isArray(payload.prompts) || payload.prompts.length !== 3 || !renderHomePrompts(payload.prompts)) {
-          throw new Error("Home prompts response did not contain three usable suggestions.");
+        if (!document.body.classList.contains("home-active")) return false;
+
+        const greetings = [...new Set((Array.isArray(payload.greetings) ? payload.greetings : [])
+          .map(cleanHomeGreeting)
+          .filter(Boolean))];
+        if (greetings.length < 5 || !renderHomePrompts(payload.prompts)) {
+          throw new Error("The AI returned incomplete home content.");
         }
-        if (panel.children.length === 3) {
-          truxHomePromptLastLoadedAt = Date.now();
-          truxHomePromptRetryCount = 0;
+
+        const uniqueGreetings = greetings.filter(greeting => greeting.toLocaleLowerCase() !== truxHomeLastGreeting.toLocaleLowerCase());
+        if (prefetch && truxHomeGreetingIndex < truxHomeGreetingQueue.length) {
+          truxHomePendingGreetings = uniqueGreetings;
+        } else {
+          truxHomeGreetingQueue = uniqueGreetings;
+          truxHomeGreetingIndex = 0;
+          truxHomePendingGreetings = [];
         }
+        truxHomeContentRetryCount = 0;
+        return true;
       })().catch(error => {
-        console.debug("TruX home prompts unavailable:", error?.message || error);
-        if (
-          document.body.classList.contains("home-active") &&
-          !truxHomePromptLastLoadedAt &&
-          truxHomePromptRetryCount < 2
-        ) {
-          truxHomePromptRetryCount += 1;
-          const retryDelay = 1200 * truxHomePromptRetryCount;
-          const timer = setTimeout(() => {
-            if (document.body.classList.contains("home-active")) void loadHomePrompts();
-          }, retryDelay);
-          truxHomeGreetingTimers.push(timer);
+        console.debug("TruX AI-generated home content unavailable:", error?.message || error);
+        if (document.body.classList.contains("home-active") && truxHomeContentRetryCount < 2) {
+          truxHomeContentRetryCount += 1;
+          const retryAsPrefetch = prefetch && truxHomeGreetingIndex < truxHomeGreetingQueue.length;
+          scheduleHomeGreeting(() => {
+            if (!document.body.classList.contains("home-active")) return;
+            void loadHomeContent({ prefetch: retryAsPrefetch }).then(loaded => {
+              if (loaded && !retryAsPrefetch && document.body.classList.contains("home-active")) cycleHomeGreeting();
+            });
+          }, 1100 * truxHomeContentRetryCount);
         }
+        return false;
       }).finally(() => {
-        truxHomePromptRequest = null;
+        truxHomeContentRequest = null;
       });
-      return truxHomePromptRequest;
+      return truxHomeContentRequest;
+    }
+
+    function cycleHomeGreeting() {
+      if (!document.body.classList.contains("home-active")) return;
+      const text = getEl("truxHomeSequenceText");
+      if (!text) return;
+
+      if (truxHomeGreetingIndex >= truxHomeGreetingQueue.length) {
+        if (truxHomePendingGreetings.length) {
+          truxHomeGreetingQueue = truxHomePendingGreetings;
+          truxHomeGreetingIndex = 0;
+          truxHomePendingGreetings = [];
+        } else {
+          text.classList.remove("is-visible", "is-replacing");
+          text.textContent = "";
+          text.hidden = true;
+          void loadHomeContent({ prefetch: false }).then(loaded => {
+            if (document.body.classList.contains("home-active") && (loaded || truxHomePendingGreetings.length)) cycleHomeGreeting();
+          });
+          return;
+        }
+      }
+
+      const greeting = truxHomeGreetingQueue[truxHomeGreetingIndex++];
+      if (!greeting) return;
+      text.hidden = false;
+      text.classList.remove("is-visible");
+      text.classList.add("is-replacing");
+      scheduleHomeGreeting(() => {
+        if (!document.body.classList.contains("home-active")) return;
+        text.textContent = greeting;
+        text.classList.remove("is-replacing");
+        text.classList.add("is-visible");
+        truxHomeLastGreeting = greeting;
+      }, 180);
+
+      if (truxHomeGreetingQueue.length - truxHomeGreetingIndex <= 2 && !truxHomePendingGreetings.length && !truxHomeContentRequest) {
+        void loadHomeContent({ prefetch: true });
+      }
+      scheduleHomeGreeting(cycleHomeGreeting, 4300);
     }
 
     function startHomeGreetingPulse() {
       clearHomeGreetingTimers();
+      truxHomeGreetingQueue = [];
+      truxHomeGreetingIndex = 0;
+      truxHomePendingGreetings = [];
+      truxHomeLastGreeting = "";
+      truxHomeContentRetryCount = 0;
       const text = getEl("truxHomeSequenceText");
-      if (!text) return;
-
-      text.hidden = false;
-      text.textContent = "Hello";
-      text.classList.remove("is-visible", "is-replacing");
-      requestAnimationFrame(() => {
-        if (document.body.classList.contains("home-active")) text.classList.add("is-visible");
+      if (text) {
+        text.textContent = "";
+        text.hidden = true;
+        text.classList.remove("is-visible", "is-replacing");
+      }
+      const prompts = getEl("truxHomePrompts");
+      if (prompts) { prompts.replaceChildren(); prompts.hidden = true; }
+      void loadHomeContent({ prefetch: false }).then(loaded => {
+        if (loaded && document.body.classList.contains("home-active")) cycleHomeGreeting();
       });
-
-      const schedule = (fn, ms) => {
-        const timer = setTimeout(fn, ms);
-        truxHomeGreetingTimers.push(timer);
-        return timer;
-      };
-
-      schedule(() => {
-        if (!document.body.classList.contains("home-active")) return;
-        text.classList.add("is-replacing");
-        schedule(() => {
-          if (!document.body.classList.contains("home-active")) return;
-          text.textContent = "I am TruX";
-          text.classList.remove("is-replacing");
-          text.classList.add("is-visible");
-        }, 180);
-      }, 1500);
-
-      schedule(() => {
-        if (!document.body.classList.contains("home-active")) return;
-        text.classList.remove("is-visible");
-        text.classList.add("is-replacing");
-        schedule(() => {
-          if (!document.body.classList.contains("home-active")) return;
-          text.textContent = "How can I help you?";
-          text.classList.remove("is-replacing");
-          text.classList.add("is-visible");
-        }, 180);
-      }, 3000);
-
-      void loadHomePrompts();
     }
+
+    window.startHomeGreetingPulse = startHomeGreetingPulse;
 
     function isNetworkFailure(error) {
       if (!error || error.name === "AbortError") return false;
