@@ -563,19 +563,20 @@
 
     function positionModelDropdown() {
       const dropdown = getEl("modelDropdown"), button = getEl("modelPickerBtn");
-      if(!dropdown || !button || !dropdown.classList.contains("open")) return;
-      const r = button.getBoundingClientRect();
+      if (!dropdown || !button || !dropdown.classList.contains("open")) return;
+      const rect = button.getBoundingClientRect();
       const width = Math.min(360, Math.max(260, window.innerWidth - 20));
-      const left = Math.min(Math.max(10, r.left), Math.max(10, window.innerWidth - width - 10));
-      const maxH = Math.min(540, Math.max(260, window.innerHeight - 24));
+      const left = Math.min(Math.max(10, rect.left), Math.max(10, window.innerWidth - width - 10));
+      const top = Math.max(8, rect.bottom + 8);
+      const maxHeight = Math.max(160, Math.min(540, window.innerHeight - top - 12));
       dropdown.style.setProperty("position", "fixed", "important");
       dropdown.style.setProperty("width", width + "px", "important");
       dropdown.style.setProperty("max-width", "calc(100vw - 20px)", "important");
-      dropdown.style.setProperty("max-height", maxH + "px", "important");
+      dropdown.style.setProperty("max-height", maxHeight + "px", "important");
       dropdown.style.setProperty("left", left + "px", "important");
       dropdown.style.setProperty("right", "auto", "important");
-      dropdown.style.setProperty("top", "auto", "important");
-      dropdown.style.setProperty("bottom", Math.max(12, window.innerHeight - r.top + 8) + "px", "important");
+      dropdown.style.setProperty("top", top + "px", "important");
+      dropdown.style.setProperty("bottom", "auto", "important");
       dropdown.style.setProperty("transform", "none", "important");
     }
     window.positionModelDropdown = positionModelDropdown;
