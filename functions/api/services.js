@@ -843,7 +843,7 @@ async function executeTruxWebTool({ name, args = {}, client, model = 'gemini-3.8
       }],
       config: {
         tools: [{ googleSearch: {} }],
-        maxOutputTokens: 3500,
+        maxOutputTokens: 1200,
         temperature: 0.2
       }
     });
