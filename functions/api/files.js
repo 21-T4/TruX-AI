@@ -3,8 +3,8 @@ import { pipeline } from 'node:stream/promises';
 import { PDFParse } from 'pdf-parse';
 import unzipper from 'unzipper';
 import path from 'node:path';
-import { downloadBuffer, getBucket, processedMetaKey, processedTextKey, userFileKey } from '../../gcs-store.js';
-import { requireFirebaseUser } from '../../firebase-auth.js';
+import { downloadBuffer, getBucket, processedMetaKey, processedTextKey, userFileKey } from '../gcs-store.js';
+import { requireFirebaseUser } from '../firebase-auth.js';
 
 const MAX_UPLOAD_BYTES = 30 * 1024 * 1024;
 
