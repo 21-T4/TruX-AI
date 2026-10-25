@@ -42,7 +42,7 @@
       lastTouchEnd = now;
     }, { passive: false });
 
-    addEventListener("load", () => { try { if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js?v=20261021-browser-chat-storage-v1", { updateViaCache: "none" }).catch(() => {}); } catch (e) {} });
+    addEventListener("load", () => { try { if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js?v=20261025-compact-pill-models-v2", { updateViaCache: "none" }).catch(() => {}); } catch (e) {} });
     // Suppress the browser's PWA-install prompt: the sidebar download control now
     // downloads the native Android APK instead.
     addEventListener("beforeinstallprompt", event => event.preventDefault());
@@ -615,7 +615,7 @@
       const modelEl = getEl("profileModelText");
       if(modelEl) modelEl.innerText = "Auto";
       const pickerLabel = getEl("modelPickerLabel");
-      if(pickerLabel) pickerLabel.textContent = "Auto";
+      if(pickerLabel) pickerLabel.textContent = "Models";
       document.querySelectorAll("[data-model]").forEach(x => {
         x.classList.toggle("active", x.dataset.model === "auto");
         const check = x.querySelector(".model-check");
@@ -639,7 +639,7 @@
 
     function syncModelPickerUI() {
       const pickerLabel = getEl("modelPickerLabel");
-      if(pickerLabel) pickerLabel.textContent = "Auto";
+      if(pickerLabel) pickerLabel.textContent = "Models";
       const modelEl = getEl("profileModelText");
       if(modelEl) modelEl.innerText = "Auto";
       document.querySelectorAll("[data-model]").forEach(x => {
