@@ -39,7 +39,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
 
   
-  <link rel="stylesheet" href="/trux-app.css?v=20261025-header-plus-redesign2">
+  <link rel="stylesheet" href="/trux-app.css?v=20261025-header-model-plus-fixed3">
 
 
 
@@ -280,27 +280,44 @@
           <button class="top-btn menu-btn" onclick="toggleSidebar(event)" title="Toggle sidebar" aria-label="Toggle sidebar">
             <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
           </button>
+          <button type="button" class="top-profile-btn" id="topProfileBtn" onclick="handleAuthAction()" title="Profile" aria-label="Open profile">
+            <img class="top-profile-avatar" id="topProfileAvatar" src="https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff" alt="" aria-hidden="true" referrerpolicy="no-referrer">
+          </button>
+        </div>
+        <div class="topbar-center">
+          <div class="trux-incognito-top" id="truxIncognitoTop" aria-label="Incognito chat">
+            <span class="trux-incognito-dot"></span><span>Incognito</span>
+            <button type="button" class="trux-incognito-close" onclick="closeIncognitoChat()" title="Exit incognito chat" aria-label="Close incognito chat">×</button>
+          </div>
+          <div class="topbar-model-slot" id="topbarModelSlot"><div class="model-picker-container" id="modelPickerContainer">
+              <button type="button" id="modelPickerBtn" class="model-picker-btn" onclick="toggleModelDropdown(event)" aria-haspopup="menu" aria-expanded="false" aria-label="Automatic model routing"><span id="modelPickerLabel">Auto</span></button>
+              <div class="model-dropdown-menu" id="modelDropdown" role="menu" aria-label="Automatic model routing">
+                <button type="button" class="model-item active" data-model="auto" onclick="selectModel('auto',event);closeModelDropdown()">
+                  <span class="model-icon">✧</span>
+                  <span class="model-info"><b>Auto</b><small>Chooses the best model according to your request</small></span>
+                  <span class="model-check">✓</span>
+                </button>
+                <div class="thinking-choice-wrap">
+                  <div class="thinking-choice-title">Thinking</div>
+                  <button type="button" class="thinking-choice active" data-thinking-level="low" onclick="setThinkingLevel('low',event)">
+                    <span><b>Low</b><small>Fastest responses</small></span><span class="thinking-check">✓</span>
+                  </button>
+                  <button type="button" class="thinking-choice" data-thinking-level="medium" onclick="setThinkingLevel('medium',event)">
+                    <span><b>Medium</b><small>Balanced reasoning</small></span><span class="thinking-check"></span>
+                  </button>
+                  <button type="button" class="thinking-choice" data-thinking-level="extended" onclick="setThinkingLevel('extended',event)">
+                    <span><b>Extended</b><small>Deepest reasoning</small></span><span class="thinking-check"></span>
+                  </button>
+                </div>
+              </div>
+            </div></div>
+        </div>
+        <div class="topbar-right">
           <button class="top-btn mobile-new" id="newChatTopBtn" onclick="startNewChat()" title="New chat" aria-label="New chat">
             <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
           </button>
-        </div>
-
-        <div class="trux-incognito-top" id="truxIncognitoTop" aria-label="Incognito chat">
-          <span class="trux-incognito-dot"></span>
-          <span>Incognito</span>
-          <button type="button" class="trux-incognito-close" onclick="closeIncognitoChat()" title="Exit incognito chat" aria-label="Close incognito chat">×</button>
-        </div>
-
-        <div class="topbar-right">
-          <button type="button" class="top-btn" id="incognitoBtn" onclick="launchIncognitoChat()" title="Start an incognito chat" aria-label="Start an incognito chat">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h16l-2.2-5H6.2L4 10Z"/><path d="M5 10v1.5a3 3 0 0 0 6 0V10M13 10v1.5a3 3 0 0 0 6 0V10M11 10h2"/></svg>
-          </button>
           <button type="button" class="top-btn topbar-more-btn" id="topbarMoreBtn" onclick="toggleTopbarMoreMenu(event)" title="More options" aria-label="More options" aria-haspopup="menu" aria-expanded="false">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
-          </button>
-          <button type="button" class="top-plan-btn" onclick="openSubscriptionPage()" aria-label="Open plans and subscriptions">Plans</button>
-          <button type="button" class="top-profile-btn" id="topProfileBtn" onclick="handleAuthAction()" title="Profile" aria-label="Open profile">
-            <img class="top-profile-avatar" id="topProfileAvatar" src="https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff" alt="" aria-hidden="true" referrerpolicy="no-referrer">
           </button>
         </div>
       </div>
@@ -500,28 +517,7 @@
               </button>
             </div>
 
-            <div class="model-picker-container" id="modelPickerContainer">
-              <button type="button" id="modelPickerBtn" class="model-picker-btn" onclick="toggleModelDropdown(event)" aria-haspopup="menu" aria-expanded="false" aria-label="Automatic model routing"><span id="modelPickerLabel">Auto</span></button>
-              <div class="model-dropdown-menu" id="modelDropdown" role="menu" aria-label="Automatic model routing">
-                <button type="button" class="model-item active" data-model="auto" onclick="selectModel('auto',event);closeModelDropdown()">
-                  <span class="model-icon">✧</span>
-                  <span class="model-info"><b>Auto</b><small>Chooses the best model according to your request</small></span>
-                  <span class="model-check">✓</span>
-                </button>
-                <div class="thinking-choice-wrap">
-                  <div class="thinking-choice-title">Thinking</div>
-                  <button type="button" class="thinking-choice active" data-thinking-level="low" onclick="setThinkingLevel('low',event)">
-                    <span><b>Low</b><small>Fastest responses</small></span><span class="thinking-check">✓</span>
-                  </button>
-                  <button type="button" class="thinking-choice" data-thinking-level="medium" onclick="setThinkingLevel('medium',event)">
-                    <span><b>Medium</b><small>Balanced reasoning</small></span><span class="thinking-check"></span>
-                  </button>
-                  <button type="button" class="thinking-choice" data-thinking-level="extended" onclick="setThinkingLevel('extended',event)">
-                    <span><b>Extended</b><small>Deepest reasoning</small></span><span class="thinking-check"></span>
-                  </button>
-                </div>
-              </div>
-            </div>
+            
 
             <button class="icon-btn" id="voiceBtn" onclick="toggleVoiceInput()" title="Voice input" aria-label="Voice input">
               <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8"/></svg>
@@ -813,6 +809,10 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="6"/><path d="m9.5 12 1.7 1.7 3.5-3.8"/></svg><span class="context-label">Set TruX as Android assistant</span>
     </div>
     <div class="context-separator" id="contextMenuAssistantSeparator" role="separator" style="display:none"></div>
+    <div class="context-action" id="contextMenuPlansBtn" role="menuitem" tabindex="0" onclick="openSubscriptionPage()">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16l-1.5 13h-13L4 7Z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg><span class="context-label">Plans &amp; upgrades</span>
+    </div>
+    <div class="context-separator" role="separator"></div>
     <div class="context-action" id="contextMenuIncognitoBtn" role="menuitem" tabindex="0">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5h16"/><path d="m6 10.5 1.5-4h9l1.5 4"/><circle cx="8" cy="14.5" r="2.3"/><circle cx="16" cy="14.5" r="2.3"/><path d="M10.3 14.5h3.4"/></svg><span class="context-label">New incognito chat</span>
     </div>
@@ -834,7 +834,7 @@
   <div class="toast-host" id="toastHost" aria-live="polite"></div>
 
   
-  <script src="/trux-app.js?v=20261025-header-plus-redesign2"></script>
+  <script src="/trux-app.js?v=20261025-header-model-plus-fixed3"></script>
 <script src="/trux-plugins.js?v=20261015-cleanup1" defer></script>
 
 
