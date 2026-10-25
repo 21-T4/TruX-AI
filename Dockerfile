@@ -7,11 +7,14 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=8080
 
-COPY package.json ./
-RUN npm install --omit=dev
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
 COPY cloud-run-server.js ./cloud-run-server.js
 COPY public ./public
 COPY functions ./functions
+
+RUN npm run build
 
 EXPOSE 8080
 

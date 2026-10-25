@@ -257,7 +257,7 @@
       background: var(--bg-2);
       cursor: pointer;
       transition: background 0.2s var(--ease), border-color 0.2s var(--ease);
-    }.profile:hover{ background: var(--bg-3); border-color: var(--line-2); }.avatar{ width: 33px; height: 33px; flex: 0 0 33px; border-radius: 9px; object-fit: cover; background: var(--bg-4); }.profile-info{ min-width: 0; flex: 1; }.profile-info b{ display: block; font-size: 13.5px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }.profile-info small{ display: block; font-size: 11.5px; color: var(--txt-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }/* Android APK download control — available from the sidebar. */
+    }.profile:hover{ background: var(--bg-3); border-color: var(--line-2); }.avatar{ width: 33px; height: 33px; flex: 0 0 33px; border-radius: 9px; object-fit: cover; background: var(--bg-4); }.profile-info{ min-width: 0; flex: 1; }.profile-info b{ display: block; font-size: 13.5px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }.profile-info small{ display: block; font-size: 11.5px; color: var(--txt-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }/* PWA install control — available from the sidebar. */
     .sidebar-install-wrap{ display:block; margin-top:8px; }.sidebar-install{
       width:100%; min-height:38px; display:flex; align-items:center; justify-content:center; gap:8px;
       padding:0 12px; border-radius:11px; border:1px solid var(--line-2);

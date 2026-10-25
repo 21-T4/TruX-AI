@@ -1,8 +1,68 @@
+import { Readable, Transform } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { PDFParse } from 'pdf-parse';
 import unzipper from 'unzipper';
 import path from 'node:path';
-import { downloadBuffer, getBucket, getProcessedText, processedMetaKey, processedTextKey } from '../../gcs-store.js';
+import { downloadBuffer, getBucket, processedMetaKey, processedTextKey, userFileKey } from '../../gcs-store.js';
 import { requireFirebaseUser } from '../../firebase-auth.js';
+
+const MAX_UPLOAD_BYTES = 30 * 1024 * 1024;
+
+async function handleUpload({ request, env }) {
+  const user = await requireFirebaseUser(request, env);
+  const name = decodeURIComponent(String(request.headers.get('x-trux-file-name') || 'upload.bin')).slice(0, 200);
+  const mimeType = String(request.headers.get('content-type') || 'application/octet-stream').split(';')[0].trim();
+  const declaredSize = Number(request.headers.get('content-length') || 0);
+
+  if (!request.body) {
+    return Response.json({ error: 'File body is missing.' }, { status: 400 });
+  }
+  if (declaredSize > MAX_UPLOAD_BYTES) {
+    return Response.json({ error: 'Files are limited to 30 MB.' }, { status: 413 });
+  }
+
+  const objectKey = userFileKey(user.uid, name);
+  const target = getBucket(env).file(objectKey);
+  let total = 0;
+
+  const limiter = new Transform({
+    transform(chunk, enc, callback) {
+      total += chunk.length;
+      if (total > MAX_UPLOAD_BYTES) {
+        callback(new Error('Files are limited to 30 MB.'));
+        return;
+      }
+      callback(null, chunk);
+    }
+  });
+
+  try {
+    await pipeline(
+      Readable.fromWeb(request.body),
+      limiter,
+      target.createWriteStream({
+        resumable: false,
+        validation: 'crc32c',
+        metadata: {
+          contentType: mimeType,
+          metadata: { ownerUid: user.uid, originalName: name }
+        }
+      })
+    );
+  } catch (error) {
+    try { await target.delete({ ignoreNotFound: true }); } catch {}
+    const status = /limited to 30 MB/i.test(String(error?.message)) ? 413 : 500;
+    return Response.json({ error: status === 413 ? error.message : 'Upload failed.' }, { status });
+  }
+
+  return Response.json({
+    ok: true,
+    objectKey,
+    name,
+    size: total,
+    mimeType
+  });
+}
 
 const MAX_PROCESS_BYTES = 30 * 1024 * 1024;
 const MAX_EXTRACTED_CHARS = 5_000_000;
@@ -102,7 +162,7 @@ async function extractFile(buffer, name, mimeType) {
   throw new Error('This file type cannot be text-processed yet. PDF, CSV, ZIP codebases, and common text/code formats are supported.');
 }
 
-export async function onRequestPost({ request, env }) {
+async function handleProcess({ request, env }) {
   const user = await requireFirebaseUser(request, env);
   const body = await request.json();
   const objectKey = String(body?.objectKey || '');
@@ -171,4 +231,11 @@ export async function onRequestPost({ request, env }) {
       snippet: `${originalName} · ${meta.kind.toUpperCase()} · ${Math.ceil(size / 1024)} KB`
     }
   });
+}
+
+export async function onRequestPost(context) {
+  const pathname = new URL(context.request.url).pathname;
+  if (pathname === '/api/files/upload') return handleUpload(context);
+  if (pathname === '/api/files/process') return handleProcess(context);
+  return new Response('Not Found', { status: 404 });
 }

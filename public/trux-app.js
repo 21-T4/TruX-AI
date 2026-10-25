@@ -42,14 +42,7 @@
       lastTouchEnd = now;
     }, { passive: false });
 
-    addEventListener("load", () => { try { if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js?v=20261025-compact-pill-models-v3", { updateViaCache: "none" }).catch(() => {}); } catch (e) {} });
-    // Suppress the browser's PWA-install prompt: the sidebar download control now
-    // downloads the native Android APK instead.
-    addEventListener("beforeinstallprompt", event => event.preventDefault());
-    function downloadTruXAndroidApk() {
-      window.location.href = "https://trux-ai-workspace.trux.website/TruX-Omni-Android.apk";
-    }
-
+    addEventListener("load", () => { try { if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js?v=20261025-workspace-cleanup-v4", { updateViaCache: "none" }).catch(() => {}); } catch (e) {} });
     /* ============ Auth: sign-in wall only shown on demand ============ */
     let auth = null, provider = null, isSigningIn = false, firebaseMessaging = null, pushMessageBound = false;
     let truxAuthStateReady = false;
@@ -313,55 +306,6 @@
 
     function openLoginWall() { getEl("loginWallModal").classList.add("active"); }
     function closeLoginWall() { getEl("loginWallModal").classList.remove("active"); }
-
-    const TRUX_ANDROID_APK_URL = "https://trux-ai-workspace.trux.website/TruX-Omni-Android.apk";
-    const TRUX_ANDROID_BUILD_URL = "https://github.com/21-T4/TruX-AI/actions/workflows/build-android.yml";
-
-    function closeAndroidCompanionInstallDialog() {
-      getEl("androidCompanionInstallModal")?.classList.remove("active");
-    }
-
-    function showAndroidCompanionInstallDialog() {
-      let modal = getEl("androidCompanionInstallModal");
-      if (!modal) {
-        modal = document.createElement("div");
-        modal.className = "modal";
-        modal.id = "androidCompanionInstallModal";
-        modal.setAttribute("role", "dialog");
-        modal.setAttribute("aria-modal", "true");
-        modal.setAttribute("aria-labelledby", "androidCompanionInstallTitle");
-        modal.innerHTML = `
-          <div class="card" style="width:min(540px,100%);max-height:84vh;overflow:auto;text-align:left">
-            <button class="close" type="button" onclick="closeAndroidCompanionInstallDialog()" aria-label="Close">×</button>
-            <div class="mtitle" id="androidCompanionInstallTitle">Enable TruX Live on Android</div>
-            <div class="msub">A browser tab cannot keep sharing your whole screen after it is minimized. Install the native companion once; Android will then ask for screen-sharing permission whenever Live starts.</div>
-            <div style="display:grid;gap:11px;margin-top:18px;font-size:13px;line-height:1.55;color:var(--txt-2)">
-              <div><b style="color:var(--txt)">1. Download and install</b><br>Download the APK below and open it on your Android phone. Approve Android's installer prompt if asked.</div>
-              <div><b style="color:var(--txt)">2. Sign in</b><br>Open TruX-Omni and sign in to your usual account in your browser.</div>
-              <div><b style="color:var(--txt)">3. Start Live again</b><br>Tap Live and approve the microphone and screen-sharing prompts. Android's persistent notification lets you stop sharing at any time.</div>
-              <div style="font-size:12px;color:var(--txt-3)">To make TruX your system assistant, install the companion first, then choose <b>Set TruX as Android assistant</b> from the three-dot menu and confirm it in Android's system dialog.</div>
-            </div>
-            <a class="mbtn" href="${TRUX_ANDROID_APK_URL}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:center;text-decoration:none;width:100%;margin-top:20px">Download Android companion APK</a>
-            <a href="${TRUX_ANDROID_BUILD_URL}" target="_blank" rel="noopener noreferrer" style="display:block;margin-top:12px;text-align:center;color:var(--txt-3);font-size:12px;text-decoration:underline">Build status / backup download</a>
-            <button class="mbtn" type="button" onclick="closeAndroidCompanionInstallDialog()" style="width:100%;margin-top:10px">Not now</button>
-          </div>`;
-        modal.addEventListener("click", event => {
-          if (event.target === modal) closeAndroidCompanionInstallDialog();
-        });
-        document.body.appendChild(modal);
-      }
-      modal.classList.add("active");
-      modal.querySelector(".close")?.focus();
-    }
-
-    try {
-      const currentUrl = new URL(location.href);
-      if (currentUrl.searchParams.get("truxNativeMissing") === "1") {
-        currentUrl.searchParams.delete("truxNativeMissing");
-        history.replaceState(history.state, "", currentUrl.toString());
-        setTimeout(showAndroidCompanionInstallDialog, 350);
-      }
-    } catch {}
 
     function handleGoogleLogin() {
       if (!auth || isSigningIn) { setLoginAuthMessage("Sign-in is still initializing. Please try again."); return; }
@@ -2968,7 +2912,7 @@
         '<div class="trux-diagram-editor" hidden><textarea spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Editable vector drawing or diagram source"></textarea>'+
         '<div class="trux-diagram-editor-actions"><button type="button" data-trux-diagram-action="cancel">Cancel</button><button type="button" data-trux-diagram-action="apply">Apply changes</button></div></div>'+
         '<div class="trux-diagram-stage"><div class="trux-diagram-svg"></div>'+
-        '<img class="trux-diagram-cursor" src="/icon-grey.png" alt="" aria-hidden="true" draggable="false"></div>'+
+        '<img class="trux-diagram-cursor" src="/icon-grey.svg" alt="" aria-hidden="true" draggable="false"></div>'+
         '<pre class="trux-diagram-source" hidden>'+escapeHtml(String(source||""))+'</pre>'+
         '<div class="trux-diagram-error" hidden></div></div>';
     }
@@ -5286,77 +5230,15 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
       const promptInput = getEl("promptInput");
       const hasContent = !!(promptInput?.value.trim() || selectedImageBase64 || pastedTextBlocks.length || fileAttachments.length);
       if (!hasContent) {
-        // The visible workspace is authoritative; a stale JS mode must never launch Live.
-        startTruxLiveAssistant();
+        // Use the in-app Live workspace, never a native-app handoff.
+        if (typeof window.startTruxLiveAssistant === "function") {
+          window.startTruxLiveAssistant();
+        } else {
+          toast("TruX Live is still initializing. Please try again.", "err");
+        }
         return;
       }
       sendPrompt();
-    }
-
-    function openTruXNativeIntent(route, extraKey, extraValue) {
-      const fallbackUrl = new URL(location.href);
-      fallbackUrl.searchParams.set("truxNativeMissing", "1");
-      const extra = extraKey ? ";S." + extraKey + "=" + encodeURIComponent(String(extraValue || "")) : "";
-      const intentUrl = "intent://" + route +
-        "#Intent;scheme=truxnative;package=website.trux.omni" +
-        extra +
-        ";S.browser_fallback_url=" + encodeURIComponent(fallbackUrl.toString()) +
-        ";end";
-      location.href = intentUrl;
-    }
-
-    function startTruxLiveAssistant() {
-      const nativeAssistant = window.TruXNativeAssistant;
-      if (nativeAssistant && typeof nativeAssistant.startLiveSession === "function") {
-        try {
-          if (typeof nativeAssistant.isLiveSessionActive === "function" && nativeAssistant.isLiveSessionActive()) {
-            nativeAssistant.stopLiveSession();
-            return;
-          }
-          if (!auth?.currentUser) {
-            openLoginWall();
-            return;
-          }
-          auth.currentUser.getIdToken().then(token => {
-            if (!window.TruXNativeAssistant || !token) throw new Error("Authentication token unavailable");
-            window.TruXNativeAssistant.startLiveSession(token);
-          }).catch(() => toast("Could not authenticate or start Live. Please sign in again.", "err"));
-          return;
-        } catch (_) {
-          toast("Could not start the Live assistant.", "err");
-          return;
-        }
-      }
-
-      if (/Android/i.test(navigator.userAgent)) {
-        if (!auth?.currentUser) {
-          openLoginWall();
-          return;
-        }
-        auth.currentUser.getIdToken().then(token => {
-          if (!token) throw new Error("Authentication token unavailable");
-          // This explicit-package Android intent only delivers the token to the
-          // installed TruX companion. Chrome falls back to this page if absent.
-          openTruXNativeIntent("live", "trux_firebase_token", token);
-        }).catch(() => toast("Could not authenticate or start Live. Please sign in again.", "err"));
-        return;
-      }
-      toast("Whole-screen Live needs the native TruX Android companion. A browser tab alone cannot share your other apps while minimized.", "err");
-    }
-
-    function requestTruXAndroidAssistant() {
-      closeChatContextMenu();
-      const bridge = window.TruXNativeAssistant;
-      if (bridge && typeof bridge.requestAssistantRole === "function") {
-        try { bridge.requestAssistantRole(); }
-        catch (_) { toast("Android assistant setup could not be opened.", "err"); }
-        return;
-      }
-      if (/Android/i.test(navigator.userAgent)) {
-        openTruXNativeIntent("assistant", "", "");
-        return;
-      }
-      toast("Install the native TruX Android companion to enable Android assistant integration.", "err");
     }
 
     window.__truxLiveState = "idle";
@@ -5843,12 +5725,6 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
       if(pinLabel) pinLabel.textContent = chat?.pinned ? "Unpin" : "Pin";
       const incognitoLabel = getEl("contextMenuIncognitoBtn")?.querySelector(".context-label");
       if(incognitoLabel) incognitoLabel.textContent = source === "topbar" && incognitoMode ? "Exit incognito chat" : "New incognito chat";
-      const hasNativeAssistant = !!((window.TruXNativeAssistant && typeof window.TruXNativeAssistant.requestAssistantRole === "function") || /Android/i.test(navigator.userAgent));
-      const androidAssistantButton = getEl("contextMenuAndroidAssistantBtn");
-      const androidAssistantSeparator = getEl("contextMenuAssistantSeparator");
-      if(androidAssistantButton) androidAssistantButton.style.display = hasNativeAssistant ? "flex" : "none";
-      if(androidAssistantSeparator) androidAssistantSeparator.style.display = hasNativeAssistant ? "block" : "none";
-
       menu.style.display = "block";
       const width = menu.offsetWidth || 258;
       const height = menu.offsetHeight || 360;
@@ -6336,21 +6212,9 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
     const button = byId("sidebarInstallBtn");
     if (!button || button.dataset.pwaInstallBound === "true") return;
     button.dataset.pwaInstallBound = "true";
-    button.removeAttribute("onclick");
     button.setAttribute("aria-label", "Install TruX-Omni");
     button.title = "Install TruX-Omni";
     button.addEventListener("click", installPwa);
-  }
-
-  function removeAndroidUi() {
-    byId("contextMenuAndroidAssistantBtn")?.remove();
-    byId("contextMenuAssistantSeparator")?.remove();
-    byId("androidCompanionInstallModal")?.remove();
-    if (location.search.includes("truxNativeMissing=")) {
-      const url = new URL(location.href);
-      url.searchParams.delete("truxNativeMissing");
-      history.replaceState(history.state, "", url.toString());
-    }
   }
 
   function makeDiagramStatic(stage, svg, cursor) {
@@ -7045,12 +6909,10 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
 
   function run() {
     bindInstallButton();
-    removeAndroidUi();
     bindDiagramRendering();
     installLiveUi();
     const observer = new MutationObserver(() => {
       bindInstallButton();
-      removeAndroidUi();
     });
     observer.observe(document.body, { childList: true, subtree: true });
   }

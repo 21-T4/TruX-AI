@@ -23,13 +23,13 @@ const routes = {
   "/api/firebase-config": "./functions/api/firebase-config.js",
   "/api/models": "./functions/api/models.js",
   "/api/plugins": "./functions/api/plugins.js",
-  "/api/plugins/connect": "./functions/api/plugins-connect.js",
-  "/api/plugins/disconnect": "./functions/api/plugins-disconnect.js",
-  "/api/files/upload": "./functions/api/files-upload.js",
-  "/api/files/process": "./functions/api/files-process.js",
-  "/api/push/config": "./functions/api/push/config.js",
-  "/api/push/register": "./functions/api/push/register.js",
-  "/api/push/unregister": "./functions/api/push/unregister.js",
+  "/api/plugins/connect": "./functions/api/plugins.js",
+  "/api/plugins/disconnect": "./functions/api/plugins.js",
+  "/api/files/upload": "./functions/api/files.js",
+  "/api/files/process": "./functions/api/files.js",
+  "/api/push/config": "./functions/api/push.js",
+  "/api/push/register": "./functions/api/push.js",
+  "/api/push/unregister": "./functions/api/push.js",
   "/api/feedback": "./functions/api/feedback.js"
 };
 
@@ -176,7 +176,6 @@ async function handleApi(req, res, route, pathname) {
 
 async function serveStatic(req, res) {
   const pathname = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
-  if (pathname.toLowerCase().endsWith(".apk")) { res.statusCode = 404; return res.end("Not Found"); }
   const relative = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
   const filePath = path.resolve(PUBLIC_DIR, relative);
 
