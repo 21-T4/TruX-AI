@@ -5,12 +5,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { GoogleGenAI } from "@google/genai";
 import { WebSocket, WebSocketServer } from "ws";
-import { requireFirebaseUser } from "./functions/firebase-auth.js";
 import {
+  requireFirebaseUser,
   TRUX_WEB_TOOL_DECLARATIONS,
   TRUX_WEB_TOOL_NAMES,
   executeTruxWebTool
-} from "./functions/web-tools.js";
+} from "./functions/core.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,18 +19,18 @@ const PUBLIC_DIR = path.join(__dirname, "public");
 
 const routes = {
   "/api/chat": "./functions/api/chat.js",
-  "/api/video": "./functions/api/video.js",
-  "/api/firebase-config": "./functions/api/firebase-config.js",
-  "/api/models": "./functions/api/models.js",
-  "/api/plugins": "./functions/api/plugins.js",
-  "/api/plugins/connect": "./functions/api/plugins.js",
-  "/api/plugins/disconnect": "./functions/api/plugins.js",
-  "/api/files/upload": "./functions/api/files.js",
-  "/api/files/process": "./functions/api/files.js",
-  "/api/push/config": "./functions/api/push.js",
-  "/api/push/register": "./functions/api/push.js",
-  "/api/push/unregister": "./functions/api/push.js",
-  "/api/feedback": "./functions/api/feedback.js"
+  "/api/video": "./functions/api/services.js",
+  "/api/firebase-config": "./functions/api/services.js",
+  "/api/models": "./functions/api/services.js",
+  "/api/plugins": "./functions/api/services.js",
+  "/api/plugins/connect": "./functions/api/services.js",
+  "/api/plugins/disconnect": "./functions/api/services.js",
+  "/api/files/upload": "./functions/api/services.js",
+  "/api/files/process": "./functions/api/services.js",
+  "/api/push/config": "./functions/api/services.js",
+  "/api/push/register": "./functions/api/services.js",
+  "/api/push/unregister": "./functions/api/services.js",
+  "/api/feedback": "./functions/api/services.js"
 };
 
 function mimeType(file) {

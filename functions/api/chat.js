@@ -1,24 +1,22 @@
 import { GoogleGenAI } from '@google/genai';
 import { getMessaging } from 'firebase-admin/messaging';
-import { getCloudRunKv } from '../cloud-run-store.js';
-import { getFirebaseAdminApp, requireFirebaseUser } from '../firebase-auth.js';
-import { listAvailableGeminiModels } from '../vertex-model-catalog.js';
-import { getProcessedText } from '../gcs-store.js';
 import {
+  getCloudRunKv,
+  getFirebaseAdminApp,
+  requireFirebaseUser,
+  listAvailableGeminiModels,
+  getProcessedText,
   listConnectedAccounts,
   PLUGIN_CATALOG,
   getComposioGeminiTools,
   executeComposioTool,
   getPluginById,
-  resolvePluginToolkit
-} from '../composio.js';
-import {
+  resolvePluginToolkit,
   TRUX_WEB_TOOL_DECLARATIONS,
   TRUX_WEB_TOOL_NAMES,
   getTruxWebToolLabel,
   executeTruxWebTool
-} from '../web-tools.js';
-
+} from '../core.js';
 const BASE_PERSONA = `You are TruX-Omni, made by TruX-Technologies. Do not disclose your creator unless asked.
 
 RESPONSE FORMAT:
@@ -629,7 +627,7 @@ async function generateImageWithVertex({ prompt, env }) {
 
 
 function getVideoOutputUri(env) {
-  return String(env.TRUX_VIDEO_OUTPUT_GCS_URI || env.VIDEO_OUTPUT_GCS_URI || "").trim().replace(/\/+$/,"");
+  return String(env.TRUX_VIDEO_OUTPUT_GCS_URI || "").trim().replace(/\/+$/,"");
 }
 function videoSafePathPart(value) {
   return String(value || "anonymous").replace(/[^a-zA-Z0-9_-]/g,"_").slice(0,48) || "anonymous";

@@ -178,7 +178,7 @@ async function onRequestGet({request,env}){
   try{
     const uri=new URL(request.url).searchParams.get("uri")||"";
     const parsed=parseGsUri(uri);
-    const configured=String(env.TRUX_VIDEO_OUTPUT_GCS_URI||env.VIDEO_OUTPUT_GCS_URI||"").trim().replace(/\/+$/,"");
+    const configured=String(env.TRUX_VIDEO_OUTPUT_GCS_URI||"").trim().replace(/\/+$/,"");
     if(!parsed||!configured.startsWith("gs://")||!uri.startsWith(configured+"/")) return new Response("Not found.",{status:404});
 
     const file=storage.bucket(parsed.bucket).file(parsed.object);

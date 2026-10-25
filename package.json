@@ -3,14 +3,14 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.9"
   },
   "scripts": {
-    "dev": "node cloud-run-server.js",
-    "start": "node cloud-run-server.js",
+    "dev": "node --env-file-if-exists=.env cloud-run-server.js",
+    "start": "node --env-file-if-exists=.env cloud-run-server.js",
     "build": "npm run check",
     "lint": "npm run check",
-    "check": "node --check cloud-run-server.js && node --check functions/firebase-auth.js && node --check functions/cloud-run-store.js && node --check functions/gcs-store.js && node --check functions/vertex-model-catalog.js && node --check functions/web-tools.js && node --check functions/composio.js && node --check functions/api/chat.js && node --check functions/api/feedback.js && node --check functions/api/files.js && node --check functions/api/firebase-config.js && node --check functions/api/models.js && node --check functions/api/plugins.js && node --check functions/api/push.js && node --check functions/api/video.js && node --check public/trux-app.js && node --check public/trux-plugins.js && node --check public/sw.js"
+    "check": "node --check cloud-run-server.js && node --check functions/core.js && node --check functions/api/chat.js && node --check functions/api/services.js && node --check public/trux-app.js && node --check public/trux-plugins.js && node --check public/sw.js"
   },
   "dependencies": {
     "@google/genai": "^2.29.1",
