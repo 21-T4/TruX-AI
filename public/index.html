@@ -1827,14 +1827,14 @@ html, body{
   background:#1d1d1d!important;background-image:none!important;
   border:1px solid rgba(255,255,255,.08)!important;box-shadow:none!important;overflow:visible!important
 }.bar:focus-within{background:#1d1d1d!important;border-color:rgba(255,255,255,.12)!important;box-shadow:none!important}.bar > #attachBtn{grid-column:1!important;grid-row:1!important;width:42px!important;min-width:42px!important;height:42px!important;min-height:42px!important;justify-self:center!important;align-self:center!important;display:grid!important;place-items:center!important}
-.bar > #promptInput{grid-column:2!important;grid-row:1!important;width:100%!important;min-width:0!important;height:60px!important;min-height:0!important;padding:4px 12px!important;align-self:center!important;box-sizing:border-box!important;background:transparent!important;border:0!important;resize:none!important;overflow:hidden!important;color:#d8d8d8!important;line-height:1.3!important}
+.bar > #promptInput{grid-column:2!important;grid-row:1!important;width:100%!important;min-width:0!important;height:44px!important;min-height:44px!important;max-height:200px!important;padding:10px 8px!important;align-self:center!important;box-sizing:border-box!important;background:transparent!important;border:0!important;resize:none!important;overflow-x:hidden!important;overflow-y:auto!important;color:#d8d8d8!important;font-size:18px!important;line-height:24px!important}
 #promptInput::placeholder{color:#7a7a7a!important;opacity:1!important}
 .bar > #voiceBtn{grid-column:3!important;grid-row:1!important;width:42px!important;min-width:42px!important;height:42px!important;min-height:42px!important;justify-self:center!important;align-self:center!important}
 .bar > #actionBtn{grid-column:4!important;grid-row:1!important;width:46px!important;height:46px!important;min-width:46px!important;min-height:46px!important;justify-self:end!important;align-self:center!important;padding:0!important;border-radius:50%!important}
 .hint{color:#666!important}.sidebar{position:fixed!important;left:0!important;top:0!important;bottom:0!important;width:100vw!important;max-width:none!important;z-index:1200!important}.sidebar-overlay{position:fixed!important;inset:0!important;z-index:1100!important}
 
 
-@media(max-width:700px){.topbar{flex-basis:62px!important;height:62px!important;padding:0 14px!important}.topbar-left{gap:10px!important}.topbar-center{min-width:0!important}.topbar-right{gap:8px!important}.composer{padding:8px 14px calc(14px + var(--safe-b))!important}.bar{grid-template-columns:42px minmax(0,1fr) 42px 48px!important;grid-template-rows:auto!important;min-height:84px!important;gap:0 6px!important;padding:10px 12px!important;border-radius:999px!important}.bar > #attachBtn, .bar > #voiceBtn{width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important}.bar > #actionBtn{width:46px!important;height:46px!important;min-width:46px!important;min-height:46px!important}.bar > #promptInput{height:60px!important;font-size:20px!important;padding:4px 10px!important}
+@media(max-width:700px){.topbar{flex-basis:62px!important;height:62px!important;padding:0 14px!important}.topbar-left{gap:10px!important}.topbar-center{min-width:0!important}.topbar-right{gap:8px!important}.composer{padding:8px 14px calc(14px + var(--safe-b))!important}.bar{grid-template-columns:42px minmax(0,1fr) 42px 48px!important;grid-template-rows:auto!important;min-height:84px!important;gap:0 6px!important;padding:10px 12px!important;border-radius:999px!important}.bar > #attachBtn, .bar > #voiceBtn{width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important}.bar > #actionBtn{width:46px!important;height:46px!important;min-width:46px!important;min-height:46px!important}.bar > #promptInput{height:44px!important;min-height:44px!important;max-height:200px!important;font-size:18px!important;padding:10px 8px!important;line-height:24px!important}
   
 }.home-ui-fixed-note{color:#727272;font-size:12px;line-height:1.4}/* Incognito — same app shell/layout, but visibly isolated and never listed in history. */
 .trux-incognito-top{
@@ -2110,7 +2110,7 @@ body.home-exiting #welcomeScreen{
   color:#e0e4ff!important;
 }/* Image and video use the same single-row pill geometry as chat. */
 body[data-media-mode="image"] .composer .bar,body[data-media-mode="video"] .composer .bar{display:grid!important;grid-template-columns:42px minmax(0,1fr) 42px 48px!important;grid-template-rows:auto!important;align-items:center!important;gap:0 7px!important;min-height:84px!important;padding:10px 14px!important;border-radius:999px!important;box-sizing:border-box!important}
-body[data-media-mode="image"] .composer .bar > #promptInput,body[data-media-mode="video"] .composer .bar > #promptInput{grid-column:2!important;grid-row:1!important;width:100%!important;min-width:0!important;height:60px!important;min-height:0!important;max-height:200px!important;margin:0!important;padding:5px 9px!important;align-self:center!important;box-sizing:border-box!important;line-height:1.35!important;overflow-x:hidden!important}
+body[data-media-mode="image"] .composer .bar > #promptInput,body[data-media-mode="video"] .composer .bar > #promptInput{grid-column:2!important;grid-row:1!important;width:100%!important;min-width:0!important;height:60px!important;min-height:0!important;max-height:200px!important;margin:0!important;padding:17px 9px!important;align-self:center!important;box-sizing:border-box!important;font-size:18px!important;line-height:24px!important;overflow-x:hidden!important;overflow-y:auto!important}
 body[data-media-mode="image"] .composer .bar > #attachBtn,body[data-media-mode="video"] .composer .bar > #attachBtn{grid-column:1!important;grid-row:1!important;width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important;margin:0!important;padding:0!important;align-self:center!important;justify-self:center!important}
 body[data-media-mode="image"] .composer .bar > #voiceBtn,body[data-media-mode="video"] .composer .bar > #voiceBtn{grid-column:3!important;grid-row:1!important;width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important;margin:0!important;padding:0!important;align-self:center!important;justify-self:center!important}
 body[data-media-mode="image"] .composer .bar > #actionBtn,body[data-media-mode="video"] .composer .bar > #actionBtn{grid-column:4!important;grid-row:1!important;width:46px!important;height:46px!important;min-width:46px!important;min-height:46px!important;margin:0!important;padding:0!important;align-self:center!important;justify-self:end!important}
@@ -2402,8 +2402,9 @@ body[data-media-mode="image"] .composer .hint,body[data-media-mode="video"] .com
       box-sizing: border-box !important;
       align-self: center !important;
       margin: 0 !important;
-      padding: 7px 12px !important;
-      line-height: 1.4 !important;
+      padding: 10px 8px !important;
+      font-size: 18px !important;
+      line-height: 24px !important;
       text-indent: 0 !important;
     }
   .topbar-left{gap:14px!important;flex-shrink:0!important;min-width:max-content!important}
@@ -2422,7 +2423,7 @@ body[data-media-mode="image"] .composer .hint,body[data-media-mode="video"] .com
     padding:10px 14px!important;
   }
   .bar > #attachBtn{grid-column:1!important;grid-row:1!important;width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important;align-self:center!important;justify-self:center!important}
-  .bar > #promptInput{grid-column:2!important;grid-row:1!important;width:100%!important;min-width:0!important;height:60px!important;min-height:0!important;justify-self:stretch!important;align-self:center!important;box-sizing:border-box!important;padding:4px 10px!important}
+  .bar > #promptInput{grid-column:2!important;grid-row:1!important;width:100%!important;min-width:0!important;height:44px!important;min-height:44px!important;max-height:200px!important;justify-self:stretch!important;align-self:center!important;box-sizing:border-box!important;padding:10px 8px!important;font-size:18px!important;line-height:24px!important;overflow-x:hidden!important;overflow-y:auto!important}
   .bar > #voiceBtn{grid-column:3!important;grid-row:1!important;width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important;align-self:center!important;justify-self:center!important}
   .bar > #actionBtn{grid-column:4!important;grid-row:1!important;width:46px!important;height:46px!important;min-width:46px!important;min-height:46px!important;align-self:center!important;justify-self:end!important;padding:0!important;border-radius:50%!important}
 .topbar-more-btn{
@@ -2492,7 +2493,7 @@ body[data-media-mode="image"] .composer .hint,body[data-media-mode="video"] .com
   @media(max-width:420px){
     .bar{grid-template-columns:34px minmax(0,1fr) 34px 42px!important;grid-template-rows:minmax(0,1fr)!important;gap:0 5px!important;padding:10px 12px!important;min-height:84px!important}
     .bar > #attachBtn{grid-column:1!important;grid-row:1!important;width:34px!important;min-width:34px!important;height:34px!important;min-height:34px!important}
-    .bar > #promptInput{grid-column:2!important;grid-row:1!important;height:60px!important;min-height:0!important;padding:4px 8px!important}
+    .bar > #promptInput{grid-column:2!important;grid-row:1!important;height:44px!important;min-height:44px!important;max-height:200px!important;padding:10px 8px!important;font-size:18px!important;line-height:24px!important;overflow-x:hidden!important;overflow-y:auto!important}
     .bar > #voiceBtn{grid-column:3!important;grid-row:1!important;width:34px!important;min-width:34px!important;height:34px!important;min-height:34px!important}
     .bar > #actionBtn{grid-column:4!important;grid-row:1!important;width:42px!important;min-width:42px!important;height:42px!important;min-height:42px!important}
     body[data-media-mode="image"] .composer .bar,body[data-media-mode="video"] .composer .bar{grid-template-columns:34px minmax(0,1fr) 34px 42px!important;grid-template-rows:minmax(0,1fr)!important}
@@ -2710,8 +2711,11 @@ body[data-media-mode="image"] .composer .hint,body[data-media-mode="video"] .com
     @keyframes profileListIn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
     @keyframes profileDetailIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
     @keyframes settingsPageIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-    @media(prefers-reduced-motion:reduce){#profileModal .profile-home-page, #profileModal .profile-option-list, #profileModal .profile-detail-view, #profileModal[data-settings-view="section"] .settings-page{animation:none!important;transition:none!important}}/* Workspace visibility has one source of truth; Plans remains a separate page. */
-body.home-active #chatContainer{display:none!important}body.chat-session-active #chatContainer{display:block!important;visibility:visible!important;pointer-events:auto!important}
+    @media(prefers-reduced-motion:reduce){#profileModal .profile-home-page, #profileModal .profile-option-list, #profileModal .profile-detail-view, #profileModal[data-settings-view="section"] .settings-page{animation:none!important;transition:none!important}}/* Workspace visibility has one source of truth; the home panel and transcript are mutually exclusive. */
+body.home-active:not(.chat-session-active) #chatContainer{display:none!important}
+body.chat-session-active #chatContainer{display:block!important;visibility:visible!important;pointer-events:auto!important}
+body.chat-session-active:not(.home-exiting) #welcomeScreen,body.plugins-page-active #welcomeScreen,body[data-media-mode] #welcomeScreen,body.subscription-page-active #welcomeScreen{display:none!important;visibility:hidden!important;pointer-events:none!important}
+body.home-active:not(.chat-session-active):not(.plugins-page-active):not([data-media-mode]):not(.subscription-page-active) #welcomeScreen{display:flex!important;visibility:visible!important;pointer-events:auto!important}
 @media(max-width:860px){}
 @media(prefers-reduced-motion:reduce){}
 @media(max-width:380px){}/* Floating composer and navigation chrome. */
@@ -2795,6 +2799,17 @@ body.home-active #chatContainer{display:none!important}body.chat-session-active 
   window.__truxBootFinished = false;
   // The first painted workspace is always Chat.
   document.documentElement.removeAttribute("data-trux-initial-code");
+
+  // Prefetch AI-generated home copy during shell startup. The home loader
+  // reuses this one request instead of waiting for all app scripts first.
+  window.__truxHomeContentPrefetch = fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+    cache: "no-store",
+    body: JSON.stringify({ mode: "home-content" })
+  }).catch(function(error) {
+    return { __truxHomePrefetchError: error };
+  });
   window.__truxRecoverBoot = function(reason){
     try {
       console.error("TruX startup recovery:", reason);
@@ -3207,7 +3222,7 @@ body.home-active #chatContainer{display:none!important}body.chat-session-active 
             <input id="cameraUpload" type="file" accept="image/*" capture="environment" hidden onchange="handleImageUpload(event)">
             <input id="fileUpload" type="file" accept=".txt,.md,.markdown,.json,.csv,.log,.js,.jsx,.ts,.tsx,.html,.css,.xml,.py,.java,.c,.cpp,.h,.hpp,.cs,.go,.rs,.sql,.sh,.yaml,.yml,.toml,.ini,.env,.pdf,.zip,image/*" hidden multiple onchange="handleFileUpload(event)">
             
-            <textarea id="promptInput" rows="1" placeholder="Ask anything…" oninput="handleInputChange()"></textarea>
+            <textarea id="promptInput" rows="1" placeholder="Message TruX…" oninput="handleInputChange()"></textarea>
 
             <button class="send-btn live" id="actionBtn" data-action-mode="live" onclick="handleActionButton()" title="Start Live assistant" aria-label="Start Live assistant">
               <svg id="btnIcon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
@@ -5245,7 +5260,7 @@ body.home-active #chatContainer{display:none!important}body.chat-session-active 
       const input = getEl("promptInput");
       if (input) {
         input.value = "";
-        input.placeholder = "Ask anything…";
+        input.placeholder = "Message TruX…";
       }
       startNewChat();
     }
@@ -7846,13 +7861,16 @@ body.home-active #chatContainer{display:none!important}body.chat-session-active 
       if (truxHomeContentRequest) return truxHomeContentRequest;
 
       truxHomeContentRequest = (async () => {
-        const response = await fetch("/api/chat", {
+        const prefetchedResponse = window.__truxHomeContentPrefetch;
+        window.__truxHomeContentPrefetch = null;
+        const response = await (prefetchedResponse || fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json", "Accept": "application/json" },
           cache: "no-store",
           body: JSON.stringify({ mode: "home-content" })
-        });
-        if (!response.ok) throw new Error("AI-generated home content is unavailable.");
+        }));
+        if (response?.__truxHomePrefetchError) throw response.__truxHomePrefetchError;
+        if (!response || !response.ok) throw new Error("AI-generated home content is unavailable.");
         const payload = await response.json().catch(() => ({}));
         if (!document.body.classList.contains("home-active")) return false;
 
@@ -9853,6 +9871,8 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
     let processor = null;
     let monitorGain = null;
     let playbackAt = 0;
+    let micResamplePosition = 0;
+    let micLastInputSample = 0;
     let connectTimer = null;
     let frameTimer = null;
     let frameBusy = false;
@@ -10050,12 +10070,45 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
     }
 
     function pcmBase64(samples, inputRate) {
+      if (!samples?.length || !Number.isFinite(inputRate) || inputRate <= 0) return "";
       const ratio = inputRate / 16000;
-      const len = Math.floor(samples.length / ratio);
-      if (!len) return "";
-      const pcm = new Int16Array(len);
-      for (let i = 0; i < len; i++) {
-        const n = Math.max(-1, Math.min(1, samples[Math.min(samples.length - 1, Math.floor(i * ratio))] || 0));
+      let outputSamples;
+
+      if (Math.abs(ratio - 1) < 0.0001) {
+        outputSamples = samples;
+        micResamplePosition = 0;
+        micLastInputSample = samples[samples.length - 1];
+      } else {
+        const resampled = [];
+        let position = micResamplePosition;
+        // Preserve the fractional sample position across processor blocks.
+        // Resetting it every block creates discontinuities at 44.1/48 kHz.
+        while (position < samples.length) {
+          const index = Math.floor(position);
+          const fraction = position - index;
+          let sample;
+          if (index < 0) {
+            const blend = Math.max(0, Math.min(1, position + 1));
+            sample = micLastInputSample * (1 - blend) + samples[0] * blend;
+          } else if (index + 1 < samples.length) {
+            sample = samples[index] * (1 - fraction) + samples[index + 1] * fraction;
+          } else if (fraction < 0.000001) {
+            sample = samples[index];
+          } else {
+            break;
+          }
+          resampled.push(sample);
+          position += ratio;
+        }
+        micResamplePosition = position - samples.length;
+        micLastInputSample = samples[samples.length - 1];
+        outputSamples = resampled;
+      }
+
+      if (!outputSamples.length) return "";
+      const pcm = new Int16Array(outputSamples.length);
+      for (let i = 0; i < outputSamples.length; i++) {
+        const n = Math.max(-1, Math.min(1, outputSamples[i] || 0));
         pcm[i] = n < 0 ? n * 32768 : n * 32767;
       }
       const bytes = new Uint8Array(pcm.buffer);
@@ -10066,6 +10119,8 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
 
     function startMic(forSocket) {
       if (!audioContext || !audioStream) throw new Error("Microphone stream is not ready.");
+      micResamplePosition = 0;
+      micLastInputSample = 0;
       const src = audioContext.createMediaStreamSource(audioStream);
       const proc = audioContext.createScriptProcessor(2048, 1, 1);
       const analyser = audioContext.createAnalyser();
@@ -10137,15 +10192,28 @@ message:basePrompt,tier:currentPlanTier,mode:"video",userId:videoUser?.uid||null
         buffer.copyToChannel(samples, 0);
         const node = audioContext.createBufferSource();
         node.buffer = buffer;
-        node.connect(audioContext.destination);
+        // Edge fades and a brief overlap avoid hard waveform cuts between
+        // separate PCM packets without adding a long buffering delay.
+        const fade = Math.min(0.006, buffer.duration * 0.15);
+        const now = audioContext.currentTime;
+        const queued = playbackAt > now + 0.015;
+        const startAt = queued ? Math.max(now + 0.005, playbackAt - fade) : now + 0.04;
+        const endAt = startAt + buffer.duration;
+        const gainNode = audioContext.createGain();
+        gainNode.gain.setValueAtTime(0, startAt);
+        gainNode.gain.linearRampToValueAtTime(1, startAt + fade);
+        gainNode.gain.setValueAtTime(1, Math.max(startAt + fade, endAt - fade));
+        gainNode.gain.linearRampToValueAtTime(0, endAt);
+        node.connect(gainNode);
+        gainNode.connect(audioContext.destination);
         node.onended = () => {
           playback.delete(node);
           try { node.disconnect(); } catch {}
+          try { gainNode.disconnect(); } catch {}
           if (!playback.size) panel?.classList.remove("trux-live-assistant-speaking");
         };
-        const startAt = Math.max(audioContext.currentTime + .02, playbackAt);
         node.start(startAt);
-        playbackAt = startAt + buffer.duration;
+        playbackAt = endAt;
         playback.add(node);
         panel?.classList.add("trux-live-assistant-speaking");
       } catch (error) {
