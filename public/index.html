@@ -1673,49 +1673,64 @@
     @media(max-width:900px){
     }
     @media(max-width:620px){
-    }/* Final composer alignment: every workspace uses the SAME composer
-       geometry and placement as the default Chat composer. Keeping the
-       composer free of transforms is also required because the attachment
-       menu is position:fixed and must use viewport coordinates. */
-    .composer{
-      padding-top: 0;
-      /* Keep the composer at the bottom in every workspace. Chat/code already
-         have a flexing transcript; media workspaces need this auto margin so
-         their fixed-height studio panel does not pull the composer upward. */
-      margin-top: auto;
-      padding-bottom: calc(42px + var(--safe-b));
-      transform: none !important;
-    }body[data-media-mode="image"] .composer, body[data-media-mode="video"] .composer{
-      margin-top: auto;
-      transform: none !important;
-      padding-bottom: calc(42px + var(--safe-b));
-    }body[data-media-mode="image"] .composer .compose, body[data-media-mode="video"] .composer .compose{
-      max-width: 700px;
-      width: 100%;
-    }body[data-media-mode="image"] .composer .bar, body[data-media-mode="video"] .composer .bar{
-      width: 100%;
-    }body[data-media-mode="image"] .composer .hint, body[data-media-mode="video"] .composer .hint{
-      display: block;
-      margin-top: 9px;
-      text-align: center;
-    }.media-gen-short{
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: min(680px, calc(100vw - 80px));
-      font-size: 12.5px !important;
-      line-height: 1.35 !important;
-    }
-    @media (max-width: 760px) {.composer{
-        margin-top: auto;
-        padding-bottom: calc(30px + var(--safe-b));
-        transform: none !important;
-      }body[data-media-mode="image"] .composer, body[data-media-mode="video"] .composer{
-        margin-top: auto;
-        padding-bottom: calc(30px + var(--safe-b));
-        transform: none !important;
-      }.media-gen-short{ max-width: calc(100vw - 48px); }
-    }/* Compact PWA install control: icon-only instead of a full-width card. */
+    }/* Single source of truth for media layout.
+   Chat keeps the shared flex-flow composer. Video pins that same composer to
+   the viewport bottom, because the empty media canvas has no transcript to
+   absorb free space. This replaces the old auto-margin-only fix. */
+.composer{
+  margin-top:auto;
+  transform:none!important;
+}
+body[data-media-mode="image"] .composer{
+  margin-top:auto;
+  transform:none!important;
+}
+body[data-media-mode="video"] .composer{
+  position:fixed!important;
+  top:auto!important;
+  right:0!important;
+  bottom:0!important;
+  left:0!important;
+  width:100vw!important;
+  max-width:none!important;
+  margin:0!important;
+  z-index:220!important;
+  transform:none!important;
+}
+body[data-media-mode="video"] #videoWorkspace{
+  display:flex!important;
+  flex:0 0 auto!important;
+  height:calc(100dvh - 214px)!important;
+  min-height:0!important;
+  align-items:center!important;
+  justify-content:center!important;
+}
+body[data-media-mode="video"] .composer .compose{
+  width:min(740px,80vw)!important;
+  max-width:740px!important;
+}
+body[data-media-mode="video"] .composer .bar{
+  width:100%!important;
+}
+body[data-media-mode="video"] .composer .hint{
+  display:block!important;
+  margin-top:8px!important;
+  text-align:center!important;
+}
+.media-gen-short{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:min(680px,calc(100vw - 80px));
+  font-size:12.5px!important;
+  line-height:1.35!important;
+}
+@media(max-width:760px){
+  body[data-media-mode="video"] #videoWorkspace{
+    height:calc(100dvh - 214px)!important;
+  }
+  .media-gen-short{max-width:calc(100vw - 48px);}
+}/* Compact PWA install control: icon-only instead of a full-width card. */
   .sidebar-install-wrap{
     display:flex!important;
     justify-content:flex-end!important;
