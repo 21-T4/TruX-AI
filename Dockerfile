@@ -13,6 +13,7 @@ RUN npm ci --omit=dev --no-audit --no-fund
 COPY cloud-run-server.js ./cloud-run-server.js
 COPY public ./public
 COPY functions ./functions
+COPY metadata.json ./
 
 RUN npm run build
 
