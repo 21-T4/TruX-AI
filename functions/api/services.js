@@ -999,6 +999,9 @@ async function resolveAllPluginToolkits(env) {
       const resolved = await resolvePluginToolkit(env, plugin);
       return { plugin, ...resolved };
     } catch (error) {
+      // Do not disguise project-key/auth failures as a catalog of unsupported
+      // plugins. The API route should return the actual configuration error.
+      if ([401, 403, 503].includes(Number(error?.status))) throw error;
       return { plugin, slug: '', detail: null, error: String(error?.message || error) };
     }
   }));
@@ -1311,11 +1314,14 @@ async function getComposioGeminiTools(env, enabledToolkitSlugs, queryText = '') 
     const slug = String(item?.slug || item?.name || '').trim();
     if (!slug || declarations.some(tool => tool.name === slug)) continue;
 
-    const toolkitSlug = String(
+    const reportedToolkitSlug = String(
       item?.toolkit?.slug || item?.toolkit_slug || ''
     ).trim();
+    const toolkitSlug = slugs.find(
+      slug => slug.toLowerCase() === reportedToolkitSlug.toLowerCase()
+    ) || '';
 
-    if (!toolkitSlug || !slugs.some(slug => slug.toLowerCase() === toolkitSlug.toLowerCase())) continue;
+    if (!toolkitSlug) continue;
 
     const schema = schemaFromInputParameters(
       item?.input_parameters ||
