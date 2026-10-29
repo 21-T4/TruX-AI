@@ -1313,8 +1313,8 @@ export async function onRequestPost(context) {
       if (connectedToolkitSlugs.length) {
         modelTools.push({ functionDeclarations: [COMPOSIO_DISCOVERY_TOOL] });
       }
-      const needsFreshExternalInformation = researchMode || /\b(?:search(?:\s+(?:the\s+)?(?:web|internet|google))?|look\s+up|browse|on\s+the\s+web|online resources|latest|most recent|recent|current|today|yesterday|this week|this month|news|weather|price|prices|stock|exchange rate|near me|nearby|open now|source|sources|citation|citations|reference|references|official website|schedule|flight|restaurant|store|shop|law|regulation|election|president|ceo|202[6-9])\b/i.test(String(message || ''));
-      if (needsFreshExternalInformation) modelTools.push({ googleSearch: {} });
+      // Keep Search available as an AI-selected tool; the model decides when research is useful.
+      modelTools.push({ googleSearch: {} });
 
       const agentContents = contents.slice();
       let finalResult = null;
