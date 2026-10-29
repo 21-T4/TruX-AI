@@ -344,7 +344,6 @@ async function streamVertexGemini({
   toolConfig,
   onText,
   onThought,
-  holdTextUntilToolDecision = false,
   generationConfig,
   signal,
   env
@@ -376,7 +375,6 @@ async function streamVertexGemini({
   const functionCalls = [];
   const functionCallKeys = new Set();
   const modelContentParts = [];
-  let bufferedText = '';
   let groundingMetadata = null;
   let accumulatedText = '';
   let finishReason = '';
@@ -426,8 +424,6 @@ async function streamVertexGemini({
 
           if (part?.thought === true) {
             if (onThought) await onThought(part.text);
-          } else if (holdTextUntilToolDecision) {
-            bufferedText += part.text;
           } else {
             accumulatedText += part.text;
             if (onText) await onText(part.text);
@@ -448,15 +444,6 @@ async function streamVertexGemini({
     throw new Error(
       `Vertex AI ${model} Stream Error: ${String(error?.message || error)}`
     );
-  }
-
-  if (bufferedText) {
-    accumulatedText = bufferedText;
-    if (functionCalls.length) {
-      if (onThought) await onThought(bufferedText);
-    } else if (onText) {
-      await onText(bufferedText);
-    }
   }
 
   const functionContentParts = modelContentParts.length
@@ -531,22 +518,25 @@ function selectAutoChatModel({
     /\b(?:essay|report|proposal|lesson plan|detailed|thorough|long[- ]form|complete guide|full explanation|\d{3,4}[- ]word)\b/i.test(lower);
   const longPrompt = text.length >= 900 || words.length >= 125;
 
-  if (
+  const requiresHighCapability =
     complexCoding ||
     complexReasoning ||
     complexProjectBuild ||
     (hasCodeSignal && (words.length >= 42 || actionCount >= 2 || multiStage)) ||
-    (reasoningSignal && (words.length >= 40 || advancedThinking || actionCount >= 2)) ||
-    multiStage ||
-    longPrompt ||
-    attachmentTextLength >= 12000 ||
-    (hasAttachments && words.length >= 50)
-  ) {
-    return 'gemini-3.8-flash';
+    (reasoningSignal && !hasAttachments && (words.length >= 40 || advancedThinking || actionCount >= 2)) ||
+    multiStage;
+
+  if (requiresHighCapability) return 'gemini-3.8-flash';
+
+  // Flash-Lite is multimodal and tuned for low-latency extraction/document
+  // understanding. Do not promote every long prompt or attached image/file
+  // to the heavier Flash model unless the request actually needs deep reasoning.
+  const largeOrMultimodalInput = hasAttachments || longPrompt || attachmentTextLength >= 12000;
+  if (largeOrMultimodalInput) {
+    return advancedThinking ? 'gemini-3.8-flash' : 'gemini-3.5-flash-lite';
   }
 
   const lightweight =
-    !hasAttachments &&
     !advancedThinking &&
     words.length <= 18 &&
     text.length <= 140 &&
@@ -1318,15 +1308,13 @@ export async function onRequestPost(context) {
       };
 
       const modelTools = [
-        // Native Google Search runs inside the streaming turn. Exclude the
-        // model-backed search function so one query does not trigger a second
-        // generateContent request before results can reach the user.
         { functionDeclarations: TRUX_WEB_TOOL_DECLARATIONS.filter(tool => tool.name !== 'trux_web_search') }
       ];
       if (connectedToolkitSlugs.length) {
         modelTools.push({ functionDeclarations: [COMPOSIO_DISCOVERY_TOOL] });
       }
-      modelTools.push({ googleSearch: {} });
+      const needsFreshExternalInformation = researchMode || /\b(?:search(?:\s+(?:the\s+)?(?:web|internet|google))?|look\s+up|browse|on\s+the\s+web|online resources|latest|most recent|recent|current|today|yesterday|this week|this month|news|weather|price|prices|stock|exchange rate|near me|nearby|open now|source|sources|citation|citations|reference|references|official website|schedule|flight|restaurant|store|shop|law|regulation|election|president|ceo|202[6-9])\b/i.test(String(message || ''));
+      if (needsFreshExternalInformation) modelTools.push({ googleSearch: {} });
 
       const agentContents = contents.slice();
       let finalResult = null;
@@ -1384,7 +1372,6 @@ export async function onRequestPost(context) {
           toolConfig: undefined,
           signal,
           env,
-          holdTextUntilToolDecision: connectedToolkitSlugs.length > 0,
           generationConfig: requestedOwnerModel !== 'auto' ? undefined : getThinkingGenerationConfig(targetModel, effectiveThinkingLevel),
         onText: async text => {
           const piece = String(text || '');
