@@ -7398,24 +7398,8 @@ body.home-active:not(.chat-session-active):not(.plugins-page-active):not([data-m
             rafId = null;
             return;
           }
-
-          // Text has already streamed progressively; do not type out the
-          // remaining answer or fade the completed response for 2.6 seconds.
-          stopped = true;
-          if (rafId !== null) cancelAnimationFrame(rafId);
-          rafId = null;
-          const container = getActiveChatContainer();
-          const stick = isNearBottom(container);
-          host.classList.remove("md-stream-fade-active", "md-stream-fade-settling");
-          host.innerHTML = renderFormattedText(target, false);
-          renderTruxDiagrams(host);
-          scheduleTruxMath(host);
-          if (stick && container) container.scrollTop = container.scrollHeight;
-          if (doneCb) {
-            const callback = doneCb;
-            doneCb = null;
-            callback();
-          }
+          stopped = false;
+          start();
         },
         cancel() {
           stopped = true;
