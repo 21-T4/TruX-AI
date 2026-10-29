@@ -5719,7 +5719,7 @@ body.home-active:not(.chat-session-active):not(.plugins-page-active):not([data-m
       let i = 0;
 
       function isBoundaryChar(ch) {
-        return !ch || " \t\n,.;:!?()[]{}".includes(ch);
+        return !ch || " \t\n,.;:!?()[]{}+-=*/^=|".includes(ch);
       }
 
       function add(raw) {
@@ -5777,11 +5777,11 @@ body.home-active:not(.chat-session-active):not(.plugins-page-active):not([data-m
             const body = s.slice(i + 1, end);
             const before = i > 0 ? s[i - 1] : "";
             const after = end + 1 < s.length ? s[end + 1] : "";
-            const looksLikePlainAmount = /^\s*\d[\d,.]*(?:\s*[A-Za-z]{0,3})?\s*$/.test(body);
-            const hasMathSyntax = /\\[A-Za-z]+|[=+\-*/^_{}]/.test(body);
-            const likelyCurrencyText = /^\s*\d/.test(body) && !hasMathSyntax;
+            const hasMathSyntax = /\\[A-Za-z]+|[=+\-*\/^_{}]/.test(body);
+            const looksLikeCurrency = /^\s*\d[\d,.]*\s*(?:USD|INR|EUR|GBP|CAD|AUD|Rs\.?|₹)\s*$/i.test(body) ||
+              /^\s*\d[\d,.]*\s+[A-Za-z]{2,}(?:\s+[A-Za-z]{2,})*\s*$/.test(body);
 
-            if (!looksLikePlainAmount && !likelyCurrencyText &&
+            if ((!looksLikeCurrency || hasMathSyntax) &&
                 (isBoundaryChar(before) || before === "") &&
                 (isBoundaryChar(after) || after === "")) {
               const finish = end + 1;
