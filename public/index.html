@@ -525,7 +525,7 @@
       max-width: 100%;
       min-width: 0;
     }.trux-bubble > *:last-child{ margin-bottom: 0 !important; }.trux-bubble.thinking{ color: var(--txt-2); }/* ---------- assistant markdown typography ---------- */
-    .trux-bubble p{ margin: 0 0 15px; }.trux-bubble b, .trux-bubble strong{ font-weight: 700; color: #fff; }.trux-bubble em, .trux-bubble i{ font-style: italic; color: #e4e4ea; }.trux-bubble del{ color: var(--txt-3); text-decoration-color: var(--txt-4); }.trux-bubble h1, .trux-bubble h2, .trux-bubble h3, .trux-bubble h4{
+    .trux-bubble p{ margin: 0 0 15px; }.trux-bubble b, .trux-bubble strong{ font-weight: 700; color: #8ab4f8; }.trux-bubble mark{ background: rgba(138,180,248,.16); color: #8ab4f8; border-radius: 3px; padding: 0 .12em; }.trux-bubble em, .trux-bubble i{ font-style: italic; color: #e4e4ea; }.trux-bubble del{ color: var(--txt-3); text-decoration-color: var(--txt-4); }.trux-bubble h1, .trux-bubble h2, .trux-bubble h3, .trux-bubble h4{
       font-family: var(--font-disp);
       color: #fff;
       line-height: 1.24;
@@ -1590,7 +1590,7 @@
       font-weight: 500;
       line-height: 1.65;
       letter-spacing: -0.012em;
-    }.trux-bubble p{ margin-bottom: 17px; }.trux-bubble b, .trux-bubble strong{ color: #ffffff; font-weight: 700; }.trux-bubble h1, .trux-bubble h2, .trux-bubble h3, .trux-bubble h4{
+    }.trux-bubble p{ margin-bottom: 17px; }.trux-bubble b, .trux-bubble strong{ color: #8ab4f8; font-weight: 700; }.trux-bubble h1, .trux-bubble h2, .trux-bubble h3, .trux-bubble h4{
       font-family: var(--font-disp);
     }.trux-bubble h1{ font-size: 29px; }.trux-bubble h2{ font-size: 25px; }.trux-bubble h3{ font-size: 22px; }.trux-bubble h4{ font-size: 19px; }.brand-x{
       background: linear-gradient(140deg, #f5f5f5 0%, var(--acc) 55%, var(--acc-2) 100%);
@@ -5723,63 +5723,70 @@ body.home-active:not(.chat-session-active):not(.plugins-page-active):not([data-m
       }
 
       function add(raw) {
-        const token = "\\uE000TRUXMATH" + segments.length + "\\uE001";
+        const token = "\uE000TRUXMATH" + segments.length + "\uE001";
         segments.push(String(raw));
         return token;
       }
 
       while (i < s.length) {
-        // Display math: $ ... $
-        if (s.startsWith("$", i)) {
-          const end = s.indexOf("$", i + 2);
+        // Display math must be checked before single-dollar inline math.
+        if (s.startsWith("$$", i)) {
+          const end = s.indexOf("$$", i + 2);
           if (end !== -1) {
-            const raw = s.slice(i, end + 2);
-            out += add(raw);
-            i = end + 2;
+            const finish = end + 2;
+            out += add(s.slice(i, finish));
+            i = finish;
             continue;
           }
         }
 
-        // Display math: \[ ... \]
+        // TeX display and inline delimiters.
         if (s.startsWith("\\[", i)) {
           const end = s.indexOf("\\]", i + 2);
           if (end !== -1) {
-            const raw = s.slice(i, end + 2);
-            out += add(raw);
-            i = end + 2;
+            const finish = end + 2;
+            out += add(s.slice(i, finish));
+            i = finish;
             continue;
           }
         }
-
-        // Inline math: \( ... \)
         if (s.startsWith("\\(", i)) {
           const end = s.indexOf("\\)", i + 2);
           if (end !== -1) {
-            const raw = s.slice(i, end + 2);
-            out += add(raw);
-            i = end + 2;
+            const finish = end + 2;
+            out += add(s.slice(i, finish));
+            i = finish;
             continue;
           }
         }
 
-        // Single-dollar inline math. Avoid treating obvious currency such as
-        // "$20" or "$5.99" as TeX.
-        if (s[i] === "$" && s[i + 1] !== "$") {
+        // Single-dollar inline TeX: never cross a line or consume the
+        // character after the closing delimiter. Leave plain currency alone.
+        if (s[i] === "$" && s[i + 1] !== "$" && (i === 0 || s[i - 1] !== "\\")) {
           let end = i + 1;
           while (end < s.length) {
-            if (s[end] === "$" && s[end - 1] !== "\\") break;
-            if (s[end] === "\n") { end = -1; break; }
+            if (s[end] === "\n") {
+              end = -1;
+              break;
+            }
+            if (s[end] === "$" && s[end - 1] !== "\\" && s[end + 1] !== "$") break;
             end++;
           }
+
           if (end > i + 1 && end < s.length) {
             const body = s.slice(i + 1, end);
             const before = i > 0 ? s[i - 1] : "";
             const after = end + 1 < s.length ? s[end + 1] : "";
-            const looksLikeCurrency = /^\s*\d(?:[\d,.]*)(?:\s*[A-Za-z])?$/.test(body);
-            if (!looksLikeCurrency && (isBoundaryChar(before) || before === "") &&
+            const looksLikePlainAmount = /^\s*\d[\d,.]*(?:\s*[A-Za-z]{0,3})?\s*$/.test(body);
+            const hasMathSyntax = /\\[A-Za-z]+|[=+\-*/^_{}]/.test(body);
+            const likelyCurrencyText = /^\s*\d/.test(body) && !hasMathSyntax;
+
+            if (!looksLikePlainAmount && !likelyCurrencyText &&
+                (isBoundaryChar(before) || before === "") &&
                 (isBoundaryChar(after) || after === "")) {
-              out += add(s.slice(i, end + 1));
-              i = end + 1;
+              const finish = end + 1;
+              out += add(s.slice(i, finish));
+              i = finish;
               continue;
             }
           }
@@ -5794,21 +5801,19 @@ body.home-active:not(.chat-session-active):not(.plugins-page-active):not([data-m
     function restoreTruxMathSegments(html, segments) {
       let out = String(html);
       segments.forEach((raw, index) => {
-        const token = "\\uE000TRUXMATH" + index + "\\uE001";
+        const token = "\uE000TRUXMATH" + index + "\uE001";
         out = out.split(token).join(escapeHtml(raw));
       });
       return out;
     }
 
-    /* Inline markdown, applied to text that is ALREADY html-escaped. */
-
     /* ============================================================
        KATEX MATH RENDERING
-       The API may emit Markdown plus TeX; we render TeX in-browser.
+       The API may emit Markdown plus TeX; render TeX in-browser.
        ============================================================ */
     const TRUX_MATH_OPTIONS = {
       delimiters: [
-        { left: "$", right: "$", display: true },
+        { left: "$$", right: "$$", display: true },
         { left: "\\[", right: "\\]", display: true },
         { left: "\\(", right: "\\)", display: false },
         { left: "$", right: "$", display: false }
@@ -7393,9 +7398,25 @@ body.home-active:not(.chat-session-active):not(.plugins-page-active):not([data-m
             rafId = null;
             return;
           }
-          stopped = false;
-          start();
-        },
+
+          // Text has already streamed progressively; do not type out the
+          // remaining answer or fade the completed response for 2.6 seconds.
+          stopped = true;
+          if (rafId !== null) cancelAnimationFrame(rafId);
+          rafId = null;
+          const container = getActiveChatContainer();
+          const stick = isNearBottom(container);
+          host.classList.remove("md-stream-fade-active", "md-stream-fade-settling");
+          host.innerHTML = renderFormattedText(target, false);
+          renderTruxDiagrams(host);
+          scheduleTruxMath(host);
+          if (stick && container) container.scrollTop = container.scrollHeight;
+          if (doneCb) {
+            const callback = doneCb;
+            doneCb = null;
+            callback();
+          }
+        }
         cancel() {
           stopped = true;
           if (rafId !== null) cancelAnimationFrame(rafId);
