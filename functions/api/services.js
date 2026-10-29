@@ -1014,11 +1014,20 @@ async function getManagedAuthConfig(env, toolkitSlug) {
 
   const payload = await composioRequest(env, '/auth_configs?' + query.toString());
   const items = Array.isArray(payload?.items) ? payload.items : [];
-  const managed = items.find(item =>
-    item?.status === 'ENABLED' &&
-    (item?.isComposioManaged === true || item?.is_composio_managed === true) &&
-    item?.id
-  );
+  const managed = items.find(item => {
+    const status = String(item?.status || '').trim().toUpperCase();
+    const isManaged =
+      item?.isComposioManaged === true ||
+      item?.is_composio_managed === true ||
+      String(item?.isComposioManaged ?? item?.is_composio_managed ?? '').toLowerCase() === 'true';
+    const isDisabled =
+      item?.isDisabled === true ||
+      item?.is_disabled === true ||
+      String(status) === 'DISABLED';
+    // The current Composio API exposes is_disabled; older responses may also
+    // expose status. Treat a missing status as enabled unless explicitly disabled.
+    return isManaged && !isDisabled && (!status || status === 'ENABLED') && item?.id;
+  });
   if (managed) return managed;
 
   // Some managed OAuth toolkits may not have a project auth config yet.
@@ -1280,13 +1289,10 @@ async function getComposioGeminiTools(env, enabledToolkitSlugs, queryText = '') 
 
   const params = new URLSearchParams(baseParams);
   params.set('query', requested);
-  let payload;
-  try {
-    payload = await composioRequest(env, '/tools?' + params.toString());
-  } catch (error) {
-    if (error?.status) payload = null;
-    else throw error;
-  }
+  // Do not turn API/auth/version failures into an empty discovery result.
+  // The chat tool runner surfaces real errors so the agent can explain the
+  // integration problem instead of claiming that no actions exist.
+  const payload = await composioRequest(env, '/tools?' + params.toString());
 
   const items = [];
   const seenItems = new Set();
@@ -1309,7 +1315,7 @@ async function getComposioGeminiTools(env, enabledToolkitSlugs, queryText = '') 
       item?.toolkit?.slug || item?.toolkit_slug || ''
     ).trim();
 
-    if (!toolkitSlug || !slugs.includes(toolkitSlug)) continue;
+    if (!toolkitSlug || !slugs.some(slug => slug.toLowerCase() === toolkitSlug.toLowerCase())) continue;
 
     const schema = schemaFromInputParameters(
       item?.input_parameters ||
@@ -1328,7 +1334,8 @@ async function getComposioGeminiTools(env, enabledToolkitSlugs, queryText = '') 
     metadata.set(slug, {
       toolkitSlug,
       toolkitName: String(item?.toolkit?.name || toolkitSlug),
-      name: String(item?.name || slug)
+      name: String(item?.name || slug),
+      version: String(item?.version || item?.toolkit_version || item?.toolkit?.version || 'latest')
     });
   }
 
@@ -1363,7 +1370,8 @@ async function executeComposioTool(env, userId, toolSlug, args, metadata = null,
   const body = {
     connected_account_id: connectedAccountId,
     user_id: userId,
-    arguments: args && typeof args === 'object' ? args : {}
+    version: String(metadata?.version || 'latest'),
+    arguments: args && typeof args === 'object' && !Array.isArray(args) ? args : {}
   };
 
   try {
