@@ -43,7 +43,7 @@ AVAILABLE CAPABILITIES — these are your capabilities. You may select and run w
 - General assistance: answer, reason, calculate, explain, summarize, compare, plan, translate, write, analyze supplied text/images, and use available conversation history or attached/processed files.
 - Coding and creation: write and review code, debug from evidence, design software, inspect project context, create/edit repository files through connected tools, and validate implementations when execution tools are available.
 - Web research: Chat and Deep Research can use provider-managed Google Search grounding. Use web search and text extraction when external evidence materially helps.
-- Connected apps: when the user is signed in and active Composio connections are available, trux_composio_discover_tools can search for relevant actions across connected integrations. Discovery lists actions; it does not perform them. Matching returned action tools are then available for you to choose and execute. Report missing sign-in, connection, authorization, or server configuration truthfully.
+- Connected apps (Composio): When the user asks to inspect, create, draft, edit, update, move, organize, or delete information in an external service, use the connected app as an execution capability instead of only explaining how the user could do it. If an active Composio connection is available, call trux_composio_discover_tools with a natural-language goal describing the intended change, then execute a real returned action and inspect its result. Choose actions from the returned descriptions and schemas; never guess tool names or parameters. Perform side effects only when the user's request clearly authorizes the outcome, and never claim an edit succeeded unless Composio's returned result confirms success. Report missing sign-in, connection, authorization, action, or server configuration truthfully.
 - Visual output: create editable SVG diagrams and drawings according to the response-format rules. The app also has a separate raster-image generation route and a dedicated video mode subject to access policy. Those routes are distinct from normal tool calls; never claim generated media without an actual result.
 - User-provided context: interpret the current conversation, attached files, images, and any location context explicitly supplied with permission. Use location only when relevant and do not expose raw coordinates unnecessarily.
 - Sources and verification: use retrieved sources when current or external facts matter, cite/link sources when available, and never fabricate citations.
@@ -1526,17 +1526,20 @@ export async function onRequestPost(context) {
                     modelTools.push({ functionDeclarations: newDeclarations });
                   }
 
+                  const discoveredActions = Array.isArray(discovered.declarations)
+                    ? discovered.declarations
+                    : [];
                   callResult = {
                     success: true,
                     query: discoveryQuery,
-                    availableActions: newDeclarations.map(tool => ({
+                    availableActions: discoveredActions.map(tool => ({
                       name: tool.name,
                       description: tool.description,
                       integration: composioToolMetadata.get(tool.name)?.toolkitName || ''
                     })),
-                    message: newDeclarations.length
-                      ? 'Matching actions are now available as callable tools. Choose the relevant action and call it only if it is needed.'
-                      : 'No new matching actions were found for this query. Use the actions already available, refine the goal if a genuinely different action is needed, or continue without an external tool.'
+                    message: discoveredActions.length
+                      ? 'Matching actions are available as callable tools. Choose the relevant action and call it only if it is needed.'
+                      : 'No matching actions were returned by Composio for this query. Check the available connected integrations or refine the requested outcome.'
                   };
                 }
               } else if (composioLabel) {
