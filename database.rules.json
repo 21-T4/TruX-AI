@@ -1,0 +1,54 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "_server": {
+      ".read": false,
+      ".write": false
+    },
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid && (auth.token.email_verified === true || auth.token.firebase.sign_in_provider === 'google.com')",
+        ".write": "auth != null && auth.uid === $uid && (auth.token.email_verified === true || auth.token.firebase.sign_in_provider === 'google.com')",
+        "chats": {
+          ".indexOn": ["updatedAt"],
+          "$chatId": {
+            ".validate": "$chatId.length <= 40",
+            "title": { ".validate": "newData.isString() && newData.val().length <= 200" }
+          }
+        },
+        "messages": {
+          "$chatId": {
+            "$messageId": {
+              "text": { ".validate": "newData.isString() && newData.val().length <= 400000" },
+              "role": { ".validate": "newData.val() === 'user' || newData.val() === 'model'" },
+              "stopRequested": { ".validate": "newData.isBoolean()" }
+            }
+          }
+        },
+        "memories": {
+          ".indexOn": ["createdAt"],
+          "$memoryId": {
+            ".validate": "newData.hasChildren(['text', 'createdAt'])",
+            "text": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 300" },
+            "createdAt": { ".validate": "newData.isNumber()" }
+          }
+        },
+        "personalization": {
+          "preset": { ".validate": "newData.isString() && newData.val().length <= 20" },
+          "nickname": { ".validate": "newData.isString() && newData.val().length <= 60" },
+          "occupation": { ".validate": "newData.isString() && newData.val().length <= 120" },
+          "about": { ".validate": "newData.isString() && newData.val().length <= 1500" },
+          "instructions": { ".validate": "newData.isString() && newData.val().length <= 3000" },
+          "memoryEnabled": { ".validate": "newData.isBoolean()" },
+          "voice": { ".validate": "newData.isString() && newData.val().length <= 20" }
+        },
+        "notebooks": {
+          "$notebookId": {
+            "name": { ".validate": "newData.isString() && newData.val().length <= 120" }
+          }
+        }
+      }
+    }
+  }
+}
