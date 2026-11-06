@@ -1,0 +1,33 @@
+/* Square, zoomable diagram viewer */
+.trux-diagram{position:relative;width:min(100%,640px);margin:14px 0;display:flex;flex-direction:column;gap:8px}
+.tdg-view{position:relative;aspect-ratio:1/1;width:100%;overflow:hidden;border-radius:18px;background:var(--bg-2);border:1px solid var(--line);cursor:grab;touch-action:pan-y;user-select:none;-webkit-user-select:none;outline:none}
+.tdg-view:focus-visible{border-color:var(--acc-line);box-shadow:0 0 0 3px var(--acc-soft)}
+.tdg-view.tdg-zoomed{touch-action:none}
+.tdg-view:active{cursor:grabbing}
+.tdg-img{position:absolute;left:0;top:0;max-width:none!important;max-height:none!important;width:auto;height:auto;border-radius:0!important;transform-origin:0 0;will-change:transform;pointer-events:none;image-rendering:auto}
+.tdg-status{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--txt-3);font-size:13px}
+.tdg-status[hidden]{display:none}
+.tdg-spinner{width:16px;height:16px;border-radius:50%;border:2px solid var(--line-3);border-top-color:var(--acc);animation:tdgSpin .8s linear infinite}
+@keyframes tdgSpin{to{transform:rotate(360deg)}}
+.tdg-view::after{content:"Ctrl + scroll or pinch to zoom";position:absolute;left:50%;bottom:12px;transform:translateX(-50%);padding:6px 12px;border-radius:999px;background:rgba(var(--shade),.82);color:var(--txt);font-size:12px;white-space:nowrap;opacity:0;transition:opacity .2s;pointer-events:none}
+.tdg-view.tdg-hint::after{opacity:1}
+.tdg-view.tdg-failed{display:none}
+.trux-diagram:has(.tdg-failed) .tdg-bar>:not([data-trux-diagram-action="edit"]){display:none}
+.tdg-bar{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.tdg-bar button{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-width:32px;height:32px;padding:0 8px;border-radius:10px;border:0;background:transparent;color:var(--txt-3);font:500 12px var(--font-ui);cursor:pointer}
+.tdg-bar button svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+@media (hover:hover){.tdg-bar button:hover{background:var(--bg-2);color:var(--txt)}}
+.tdg-zoom{min-width:44px;text-align:center;font:500 12px var(--font-mono,monospace);color:var(--txt-3)}
+.tdg-gap{flex:1}
+.trux-diagram-error{padding:12px 14px;border-radius:12px;background:color-mix(in srgb,var(--danger) 10%,transparent);color:var(--txt-2);font-size:13px;line-height:1.45}
+.trux-diagram-error[hidden],.trux-diagram-source[hidden],.trux-diagram-editor[hidden]{display:none!important}
+.trux-diagram-editor{display:flex;flex-direction:column;gap:8px}
+.trux-diagram-editor textarea{width:100%;min-height:180px;resize:vertical;padding:12px;border-radius:12px;border:1px solid var(--line-2);background:var(--bg-2);color:var(--txt);font:13px/1.5 var(--font-mono,monospace)}
+.trux-diagram-editor-actions{display:flex;justify-content:flex-end;gap:8px}
+.trux-diagram-editor-actions button{height:34px;padding:0 14px;border-radius:10px;border:1px solid var(--line-2);background:transparent;color:var(--txt);font:500 13px var(--font-ui);cursor:pointer}
+.trux-diagram-editor-actions button:last-child{background:var(--txt);color:var(--bg);border-color:transparent}
+/* Full screen */
+.trux-diagram.tdg-full{position:fixed;inset:0;z-index:200000;width:auto;margin:0;padding:12px calc(12px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));background:var(--bg)}
+.trux-diagram.tdg-full .tdg-view{flex:1;aspect-ratio:auto;touch-action:none}
+.trux-diagram:fullscreen{background:var(--bg)}
+body.tdg-lock{overflow:hidden}

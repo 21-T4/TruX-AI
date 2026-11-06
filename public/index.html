@@ -43,6 +43,12 @@
   <script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-messaging-compat.js"></script>
 
   
+  <script>
+    /* Apply the saved theme before first paint. */
+    (function(){try{var t=localStorage.getItem("trux_theme")||"system",map={oled:"dark",dracula:"midnight",nord:"midnight","rose-pine":"midnight",monokai:"graphite",solarized:"forest",hacker:"dark"};t=map[t]||t;
+    var light={light:1,sand:1},r=t==="system"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):t;
+    document.documentElement.dataset.theme=r;document.documentElement.dataset.scheme=light[r]?"light":"dark";}catch(e){}})();
+  </script>
   <link rel="stylesheet" href="/css/app-1.css">
   <link rel="stylesheet" href="/css/app-2.css">
   <link rel="stylesheet" href="/css/app-3.css">
@@ -53,6 +59,9 @@
   <link rel="stylesheet" href="/css/login.css">
   <link rel="stylesheet" href="/css/live.css">
   <link rel="stylesheet" href="/css/circle.css">
+  <link rel="stylesheet" href="/css/video-studio.css">
+  <link rel="stylesheet" href="/css/diagrams.css">
+  <link rel="stylesheet" href="/css/themes.css">
 
 
 
@@ -287,7 +296,7 @@
             <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>
             <span>Search chats</span>
           </button>
-                    <button class="sidebar-item" type="button" onclick="setWorkspaceMode('video');closeSidebar()">
+          <button class="sidebar-item" type="button" onclick="setWorkspaceMode('video');closeSidebar()">
             <svg viewBox="0 0 24 24"><path d="m8 5 11 7-11 7Z"/><rect x="3" y="4" width="18" height="16" rx="3"/></svg>
             <span>Videos</span>
             <small class="sidebar-item-badge">PRO</small>
@@ -394,28 +403,48 @@
       </div>
 
 
-      <section class="media-gen-workspace" id="imageWorkspace" aria-label="Image generation workspace">
-        <div class="media-gen-orbit media-gen-orbit-a"></div><div class="media-gen-orbit media-gen-orbit-b"></div>
-        <div class="media-gen-inner">
-          <div class="media-gen-kicker"><span>◈</span> IMAGE STUDIO</div>
-          <h1>Create an image with TruX.</h1>
-          <p>Create images directly from the chat bar.</p>
-          <div class="media-gen-actions">
-            <button type="button" class="media-gen-secondary" onclick="openMediaLibrary('image')">Open image library</button>
-            <button type="button" class="media-gen-primary" onclick="quickPrompt('Let’s create an image of ')">Start creating</button>
+      <section class="video-studio" id="videoStudio" aria-label="Video studio">
+        <div class="vs-wrap">
+          <header class="vs-head">
+            <span class="vs-badge">Video studio</span>
+            <h1>What should we film?</h1>
+            <p>Describe the story. TruX writes the shot list, films it with Veo 3.1 and stitches longer cuts with Gemini Omni.</p>
+          </header>
+          <div class="vs-options" role="group" aria-label="Video options">
+            <div class="vs-opt">
+              <span class="vs-opt-label">Length</span>
+              <div class="vs-seg" data-video-opt="length">
+                <button type="button" data-value="auto" class="on">Auto</button>
+                <button type="button" data-value="8">8s</button>
+                <button type="button" data-value="18">18s</button>
+                <button type="button" data-value="28">28s</button>
+              </div>
+            </div>
+            <div class="vs-opt">
+              <span class="vs-opt-label">Format</span>
+              <div class="vs-seg" data-video-opt="aspectRatio">
+                <button type="button" data-value="16:9" class="on"><i class="vs-ar vs-ar-wide"></i>16:9</button>
+                <button type="button" data-value="9:16"><i class="vs-ar vs-ar-tall"></i>9:16</button>
+              </div>
+            </div>
+            <button type="button" class="vs-ref" onclick="getEl('fileUpload').click()" title="Start from an image, or edit a video you upload">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Image or video
+            </button>
           </div>
-        </div>
-      </section>
-
-      <section class="media-gen-workspace" id="videoWorkspace" aria-label="Video generation workspace">
-        <div class="media-gen-orbit media-gen-orbit-a"></div><div class="media-gen-orbit media-gen-orbit-b"></div>
-        <div class="media-gen-inner">
-          <div class="media-gen-kicker"><span>◈</span> VIDEO STUDIO</div>
-          <h1>Create a video with TruX.</h1>
-          <p>Describe a scene and generate a video directly from the chat bar.</p>
-          <div class="media-gen-actions">
-            <button type="button" class="media-gen-secondary" onclick="openMediaLibrary('video')">Open video library</button>
-            <button type="button" class="media-gen-primary" onclick="quickPrompt('Create a video of ')">Start creating</button>
+          <div class="vs-ideas" id="videoIdeas">
+            <button type="button" data-idea="A slow dolly shot through a rain-soaked neon market at night, a street cook flipping noodles, steam glowing in the light.">Neon night market</button>
+            <button type="button" data-idea="A product reveal: a matte black smartwatch rising out of dark water, droplets catching rim light, ending on the logo TruX.">Product reveal</button>
+            <button type="button" data-idea="A short documentary-style story of a potter in Punjab shaping a clay pot at sunrise, with gentle narration.">Mini documentary</button>
+            <button type="button" data-idea="A vertical travel reel: drone sweep over Himalayan peaks, then a hiker reaching the summit at golden hour.">Travel reel</button>
+          </div>
+          <ol class="vs-steps" aria-label="How TruX makes your video">
+            <li><b>Plan</b><span>Gemini 4 Argon writes the shot list and look.</span></li>
+            <li><b>Film</b><span>Veo 3.1 renders each shot in 1080p with sound.</span></li>
+            <li><b>Extend</b><span>Gemini Omni continues the scene for 18s and 28s cuts.</span></li>
+          </ol>
+          <div class="vs-recent" id="videoRecent" hidden>
+            <div class="vs-recent-head"><b>Recent videos</b><button type="button" onclick="openMediaLibrary('video')">See all</button></div>
+            <div class="vs-recent-grid" id="videoRecentGrid"></div>
           </div>
         </div>
       </section>
@@ -566,13 +595,9 @@
               </div>
               <div class="trux-plus-sep"></div>
               <div class="trux-plus-title">Explore tools</div>
-              <button type="button" class="trux-plus-action" data-trux-menu-mode="image" onclick="setWorkspaceMode('image');closeAttachmentMenu()" role="menuitem">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m4 18 5-5 3 3 3-3 5 5"/></svg>
-                <span class="trux-plus-action-copy"><b>Create images</b><small>Visualise and edit</small></span>
-              </button>
               <button type="button" class="trux-plus-action" data-trux-menu-mode="video" onclick="setWorkspaceMode('video');closeAttachmentMenu()" role="menuitem">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3Z"/></svg>
-                <span class="trux-plus-action-copy"><b>Video</b><small>Generate with Veo</small></span>
+                <span class="trux-plus-action-copy"><b>Video studio</b><small>Veo 3.1 + Gemini Omni</small></span>
               </button>
               <button type="button" class="trux-plus-action trux-plus-circle" onclick="closeAttachmentMenu();truxCircle.start()" role="menuitem">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5c4.9 0 8.5 3.4 8.5 7.8s-3.8 7.7-8.6 7.7c-4.7 0-8.4-3.2-8.4-7.4 0-3.6 2.6-6.2 6-7"/><path d="m16.5 16.5 4 4"/></svg>
@@ -600,7 +625,7 @@
             
             <input id="imageUpload" type="file" accept="image/*" hidden onchange="handleImageUpload(event)">
             <input id="cameraUpload" type="file" accept="image/*" capture="environment" hidden onchange="handleImageUpload(event)">
-            <input id="fileUpload" type="file" accept=".txt,.md,.markdown,.json,.csv,.log,.js,.jsx,.ts,.tsx,.html,.css,.xml,.py,.java,.c,.cpp,.h,.hpp,.cs,.go,.rs,.sql,.sh,.yaml,.yml,.toml,.ini,.env,.pdf,.zip,image/*" hidden multiple onchange="handleFileUpload(event)">
+            <input id="fileUpload" type="file" accept=".txt,.md,.markdown,.json,.csv,.log,.js,.jsx,.ts,.tsx,.html,.css,.xml,.py,.java,.c,.cpp,.h,.hpp,.cs,.go,.rs,.sql,.sh,.yaml,.yml,.toml,.ini,.env,.pdf,.zip,image/*,video/mp4,video/webm,video/quicktime" hidden multiple onchange="handleFileUpload(event)">
             
             <textarea id="promptInput" rows="1" placeholder="Message TruX…" oninput="handleInputChange()"></textarea>
 
@@ -702,7 +727,7 @@
 
           <section class="settings-section" data-settings-content="appearance">
               <div class="settings-section-head"><h2>Appearance</h2><p>Keep the interface calm, responsive, and easy on the eyes.</p></div>
-              <div class="settings-card"><div class="sect"><h4>Theme</h4><label class="profile-field-label" for="truxThemeSelect">App appearance</label><select id="truxThemeSelect" class="instr" onchange="applyTruxTheme(this.value)"><option value="dark">Dark</option><option value="light">Light</option><option value="oled">OLED black</option><option value="dracula">Dracula</option><option value="nord">Nord</option><option value="solarized">Solarized</option><option value="rose-pine">Rose Pine</option><option value="monokai">Monokai</option><option value="hacker">Hacker</option></select></div></div>
+              <div class="settings-card"><div class="sect"><h4>Theme</h4><label class="profile-field-label" for="truxThemeSelect">App appearance</label><select id="truxThemeSelect" class="instr" onchange="applyTruxTheme(this.value)"><option value="system">System</option><option value="dark">Dark</option><option value="light">Light</option><option value="graphite">Graphite</option><option value="midnight">Midnight</option><option value="forest">Forest</option><option value="sand">Sand</option></select></div></div>
 
               <div class="settings-card">
                 <div class="sect"><div class="accent-palette">
@@ -730,24 +755,11 @@
             </section>
 
           <section class="settings-section" data-settings-content="assistant">
-              <div class="settings-section-head"><h2>Assistant</h2><p>Use TruX hands-free: wake it with your voice, circle anything on screen, and let it call, text and open apps for you.</p></div>
-              <div class="settings-card assistant-hero" id="truxAssistantAppCard">
-                <div class="assistant-hero-glow" aria-hidden="true"></div>
-                <div class="sect"><h4>TruX for Android</h4>
-                  <p class="mrow-sub">Install the TruX app to make it your phone's digital assistant (works with Samsung's side button). Then hold the side or home button to circle anything, say "Hey TruX" even with the screen off, and let TruX place calls, send texts and open apps.</p>
-                  <a class="mbtn assistant-download" href="/download/android" rel="noopener">Download the Android app</a>
-                  <p class="mrow-sub assistant-fine">After installing, open TruX and tap Set up assistant. Android may ask you to allow installing from your browser first.</p>
-                </div>
-              </div>
-              <div class="settings-card" id="truxAssistantNativeCard" hidden>
-                <div class="mrow"><span><b>Default digital assistant</b><small class="mrow-sub" id="truxAssistantRoleStatus">Checking…</small></span><button type="button" class="mbtn" onclick="truxNative.openAssistantSettings()">Open settings</button></div>
-                <div class="mrow"><span><b>Permissions</b><small class="mrow-sub" id="truxPermissionSummary">Microphone, camera, phone, contacts, notifications, location and display over other apps.</small></span><button type="button" class="mbtn" onclick="truxNative.requestAllPermissions()">Grant all</button></div>
-                <div id="truxPermissionList" class="permission-list"></div>
-              </div>
+              <div class="settings-section-head"><h2>Assistant</h2><p>Use TruX hands-free: wake it with your voice, circle anything on screen, and let it start calls, texts, emails and navigation for you.</p></div>
               <div class="settings-card">
                 <div class="mrow"><span><b>"Hey TruX" wake word</b><small class="mrow-sub" id="truxWakeStatus">Say "Hey TruX" or "TruX" to start a Live conversation.</small></span><label class="toggle"><input id="truxWakeToggle" type="checkbox" onchange="truxWake.setEnabled(this.checked)"><span class="slider"></span></label></div>
                 <div class="mrow"><span><b>Circle to search</b><small class="mrow-sub" id="truxCircleHint">Circle or tap anything on your screen and ask about it.</small></span><button type="button" class="mbtn" onclick="truxCircle.start()">Try it</button></div>
-                <div class="mrow"><span><b>Phone actions</b><small class="mrow-sub">Ask "call Mom", "text Rahul I'm on my way", "open Spotify" or "set an alarm for 6:30". Calls and texts always show who they go to.</small></span></div>
+                <div class="mrow"><span><b>Phone actions</b><small class="mrow-sub">Ask "call +91 98…", "text Rahul I'm on my way", "navigate to the airport" or "play lo-fi on YouTube". TruX opens the right app and you confirm there.</small></span></div>
               </div></section>
 
           <section class="settings-section" data-settings-content="voice">
@@ -945,15 +957,15 @@
   <script src="/js/chat-store.js"></script>
   <script src="/js/chat-engine.js"></script>
   <script src="/js/media-library.js"></script>
+  <script src="/js/video-studio.js"></script>
   <script src="/js/notebooks.js"></script>
   <script src="/js/subscription.js"></script>
   <script src="/js/boot.js"></script>
-  <script src="/js/pwa-diagrams.js"></script>
+  <script src="/js/pwa.js"></script>
   <script src="/js/device.js"></script>
   <script src="/js/circle-search.js"></script>
   <script src="/js/wake-word.js"></script>
   <script src="/js/live.js"></script>
-  <script src="/js/native-bridge.js"></script>
   <script src="/js/plugins.js"></script>
 
 

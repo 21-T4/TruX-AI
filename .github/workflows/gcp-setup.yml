@@ -2,7 +2,8 @@ name: Google Cloud setup
 
 # Run from GitHub: Actions → "Google Cloud setup" → Run workflow.
 # Needs the repository secret GCP_SA_KEY (a service-account JSON key with the
-# Owner role). Optional API keys are copied into Secret Manager when set as
+# Owner role). It also deploys the private trux-sandbox service from
+# sandbox/. Optional API keys are copied into Secret Manager when set as
 # repository secrets with the same names.
 on:
   workflow_dispatch:
@@ -51,6 +52,5 @@ jobs:
           REGION: ${{ inputs.region }}
           COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          TRUX_FEEDBACK_FROM_EMAIL: ${{ secrets.TRUX_FEEDBACK_FROM_EMAIL }}
           FCM_VAPID_PUBLIC_KEY: ${{ secrets.FCM_VAPID_PUBLIC_KEY }}
         run: python3 scripts/gcp_setup.py

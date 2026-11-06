@@ -1,0 +1,99 @@
+/* ============================================================
+   TruX themes. Loaded last. Every surface reads these tokens:
+   --bg … --bg-4 surfaces, --txt … --txt-4 text, --line* hairlines,
+   --ink / --shade are RGB channels for translucent overlays
+   (ink = toward the text colour, shade = toward the page).
+   Accent comes from body[data-accent] and adapts to the scheme.
+   ============================================================ */
+:root,
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#000000; --bg-1:#0a0a0b; --bg-2:#131315; --bg-3:#1a1a1d; --bg-4:#242428;
+  --txt:#f2f2f3; --txt-2:#c2c2c8; --txt-3:#8e8e96; --txt-4:#64646c;
+  --ink:255,255,255; --shade:0,0,0;
+  --line:rgba(255,255,255,.08); --line-2:rgba(255,255,255,.13); --line-3:rgba(255,255,255,.22);
+  --danger:#ff5d6c;
+}
+:root[data-theme="graphite"]{
+  color-scheme:dark;
+  --bg:#1b1b1d; --bg-1:#202023; --bg-2:#28282c; --bg-3:#303035; --bg-4:#3a3a40;
+  --txt:#ededf0; --txt-2:#c0c0c6; --txt-3:#94949c; --txt-4:#6c6c74;
+  --ink:255,255,255; --shade:0,0,0;
+  --line:rgba(255,255,255,.08); --line-2:rgba(255,255,255,.13); --line-3:rgba(255,255,255,.22);
+  --danger:#ff6b78;
+}
+:root[data-theme="midnight"]{
+  color-scheme:dark;
+  --bg:#0a0f1e; --bg-1:#0e1426; --bg-2:#151c33; --bg-3:#1c2541; --bg-4:#263150;
+  --txt:#e9edf8; --txt-2:#bcc4dc; --txt-3:#8a94b3; --txt-4:#626c8c;
+  --ink:226,232,255; --shade:4,8,20;
+  --line:rgba(226,232,255,.08); --line-2:rgba(226,232,255,.13); --line-3:rgba(226,232,255,.22);
+  --danger:#ff6b81;
+}
+:root[data-theme="forest"]{
+  color-scheme:dark;
+  --bg:#0c1310; --bg-1:#101915; --bg-2:#16221c; --bg-3:#1d2b24; --bg-4:#27392f;
+  --txt:#e7f0ea; --txt-2:#bdcdc3; --txt-3:#8aa094; --txt-4:#62786b;
+  --ink:228,245,234; --shade:4,10,7;
+  --line:rgba(228,245,234,.08); --line-2:rgba(228,245,234,.13); --line-3:rgba(228,245,234,.22);
+  --danger:#ff6f6f;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --bg:#ffffff; --bg-1:#f6f6f7; --bg-2:#efeff1; --bg-3:#e7e7ea; --bg-4:#dcdce1;
+  --txt:#111114; --txt-2:#3f3f46; --txt-3:#66666f; --txt-4:#8b8b94;
+  --ink:17,17,20; --shade:255,255,255;
+  --line:rgba(17,17,20,.08); --line-2:rgba(17,17,20,.13); --line-3:rgba(17,17,20,.22);
+  --danger:#d92d3f;
+}
+:root[data-theme="sand"]{
+  color-scheme:light;
+  --bg:#f8f4ed; --bg-1:#f1ebe1; --bg-2:#eae3d7; --bg-3:#e1d9cb; --bg-4:#d5cbba;
+  --txt:#2a2219; --txt-2:#4f4537; --txt-3:#72675a; --txt-4:#8c806e;
+  --ink:42,34,25; --shade:252,248,240;
+  --line:rgba(42,34,25,.09); --line-2:rgba(42,34,25,.14); --line-3:rgba(42,34,25,.24);
+  --danger:#c4352f;
+}
+
+/* ---------- Accent ---------- */
+body{--acc-base:#6d8cff; --on-acc-base:#ffffff}
+body[data-accent="blue"]{--acc-base:#6d8cff; --on-acc-base:#ffffff}
+body[data-accent="cyan"]{--acc-base:#20d7ff; --on-acc-base:#04161c}
+body[data-accent="purple"]{--acc-base:#9a6cff; --on-acc-base:#ffffff}
+body[data-accent="pink"]{--acc-base:#ff5fb3; --on-acc-base:#ffffff}
+body[data-accent="red"]{--acc-base:#ff5b68; --on-acc-base:#ffffff}
+body[data-accent="orange"]{--acc-base:#ff9a3d; --on-acc-base:#1f1203}
+body[data-accent="yellow"]{--acc-base:#f1d75a; --on-acc-base:#1d1802}
+body[data-accent="green"]{--acc-base:#56d58c; --on-acc-base:#05190d}
+body[data-accent="teal"]{--acc-base:#38d0b5; --on-acc-base:#03180f}
+body[data-accent="white"]{--acc-base:#f2f2f3; --on-acc-base:#111114}
+body,body[data-accent]{
+  --acc:var(--acc-base);
+  --on-acc:var(--on-acc-base);
+  --acc-2:color-mix(in srgb,var(--acc) 65%,var(--txt));
+  --acc-3:color-mix(in srgb,var(--acc) 70%,var(--bg));
+  --acc-soft:color-mix(in srgb,var(--acc) 14%,transparent);
+  --acc-line:color-mix(in srgb,var(--acc) 42%,transparent);
+}
+/* Light schemes: deepen the accent so it reads on pale surfaces. */
+:root[data-scheme="light"] body,:root[data-scheme="light"] body[data-accent]{
+  --acc:color-mix(in srgb,var(--acc-base) 74%,#000);
+  --on-acc:#ffffff;
+  --acc-soft:color-mix(in srgb,var(--acc) 11%,transparent);
+  --acc-line:color-mix(in srgb,var(--acc) 36%,transparent);
+}
+:root[data-scheme="light"] body[data-accent="white"]{--acc:var(--txt); --on-acc:var(--bg)}
+:root[data-scheme="light"] body[data-accent="yellow"]{--acc:#8a6d00}
+
+/* ---------- Shared chrome that used to be hard-coded ---------- */
+html,body{background:var(--bg)!important;color:var(--txt)}
+.sidebar,#sidebar{background:var(--bg-1)!important;border-color:var(--line)!important}
+.topbar{background:transparent!important}
+#actionBtn.ready,#actionBtn:not(:disabled):not(.generating){background:var(--txt)!important;color:var(--bg)!important}
+#actionBtn svg{stroke:currentColor}
+::selection{background:color-mix(in srgb,var(--acc) 30%,transparent)}
+.accent-option[data-accent-option="white"]{--swatch:var(--txt)}
+
+/* ---------- Code ---------- */
+:root{--code-bg:color-mix(in srgb,var(--bg) 70%,#000); --code-txt:#dcdcf0; --tk-key:#9fb0ff; --tk-str:#86d0b4; --tk-com:#6b6b78; --tk-num:#e3b489; --tk-fn:#8fbcf0; --tk-dec:#c4a6ff}
+:root[data-scheme="light"]{--code-bg:var(--bg-1); --code-txt:var(--txt); --tk-key:#3b4fc4; --tk-str:#137a55; --tk-com:#8a8a94; --tk-num:#a35a12; --tk-fn:#1f6fb8; --tk-dec:#7a3fd1}

@@ -81,7 +81,7 @@ wss.on('connection', (socket, request) => {
   async function connect() {
     const ai = await liveClient();
     session = await ai.live.connect({
-      model: process.env.TRUX_LIVE_MODEL || MODELS.live,
+      model: MODELS.live,
       config: {
         ...config,
         sessionResumption: resumeHandle ? { handle: resumeHandle } : {}

@@ -316,6 +316,11 @@ async function ingestLargeFile(file) {
   }, requestUser);
   const uploaded = await uploadResponse.json().catch(() => ({}));
   if(!uploadResponse.ok) throw new Error(uploaded.error || "File upload failed.");
+  // Video and audio go to Gemini as files; there is no text to extract.
+  if (/^(video|audio)\//.test(uploaded.mimeType || file.type || "")) {
+    return { name: uploaded.name || file.name, size: uploaded.size || file.size, mimeType: uploaded.mimeType || file.type, objectKey: uploaded.objectKey, kind: "media",
+      snippet: (uploaded.name || file.name) + " · " + Math.max(1, Math.round((uploaded.size || file.size) / 1048576)) + " MB" };
+  }
   const processResponse = await truxAuthenticatedFetch("/api/files/process", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

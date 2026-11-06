@@ -66,13 +66,35 @@ async function truxMediaObjectUrl(objectKey) {
   return promise;
 }
 
+function truxFileSize(bytes) {
+  const n = Number(bytes) || 0;
+  return n >= 1048576 ? (n / 1048576).toFixed(1) + " MB" : n >= 1024 ? Math.round(n / 1024) + " KB" : n + " B";
+}
+
 function attachTruxMedia(row, mediaList) {
   const bubble = row?.querySelector(".bubble");
   const actions = row?.querySelector(".actions");
   if (!bubble) return;
   for (const media of mediaList || []) {
     if (!media?.objectKey || bubble.querySelector(`[data-media-key="${CSS.escape(media.objectKey)}"]`)) continue;
-    const isVideo = media.kind === "video" || String(media.mimeType || "").startsWith("video/");
+    const mime = String(media.mimeType || "");
+    const isVideo = media.kind === "video" || mime.startsWith("video/");
+    const isImage = !isVideo && (media.kind === "image" || mime.startsWith("image/"));
+    if (!isVideo && !isImage) {
+      // Files made in the sandbox: a download chip.
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "trux-file-chip";
+      chip.dataset.mediaKey = media.objectKey;
+      const name = media.name || media.objectKey.split("/").pop();
+      chip.innerHTML = `<span class="tfc-icon">${ICON.down}</span><span class="tfc-copy"><b></b><small></small></span>`;
+      chip.querySelector("b").textContent = name;
+      chip.querySelector("small").textContent = [truxFileSize(media.size), mime].filter(Boolean).join(" · ");
+      chip.onclick = () => truxMediaObjectUrl(media.objectKey).then(url => { const a = document.createElement("a"); a.href = url; a.download = name; a.click(); })
+        .catch(() => toast("This file is no longer available.", "err"));
+      bubble.appendChild(chip);
+      continue;
+    }
     const wrap = document.createElement("div");
     wrap.className = isVideo ? "gen-video-wrap" : "gen-image-wrap";
     wrap.dataset.mediaKey = media.objectKey;
@@ -81,6 +103,7 @@ function attachTruxMedia(row, mediaList) {
     else { el.alt = media.prompt ? "Generated image: " + media.prompt.slice(0, 120) : "Generated image"; el.onload = () => el.classList.add("loaded"); }
     wrap.appendChild(el);
     bubble.appendChild(wrap);
+    const ext = (mime.split("/")[1] || (isVideo ? "mp4" : "png")).replace("jpeg", "jpg").replace("quicktime", "mov");
     truxMediaObjectUrl(media.objectKey).then(url => {
       el.src = url;
       if (actions && !actions.querySelector(`[data-download="${CSS.escape(media.objectKey)}"]`)) {
@@ -88,7 +111,7 @@ function attachTruxMedia(row, mediaList) {
         dl.className = "act"; dl.type = "button"; dl.dataset.download = media.objectKey;
         dl.title = isVideo ? "Download video" : "Download image";
         dl.innerHTML = ICON.down + "Download";
-        dl.onclick = () => { const a = document.createElement("a"); a.href = url; a.download = `trux-${isVideo ? "video" : "image"}-${Date.now()}.${isVideo ? "mp4" : "png"}`; a.click(); };
+        dl.onclick = () => { const a = document.createElement("a"); a.href = url; a.download = `trux-${isVideo ? "video" : "image"}-${Date.now()}.${ext}`; a.click(); };
         actions.prepend(dl);
       }
     }).catch(() => { wrap.classList.add("media-error"); wrap.textContent = "This media is no longer available."; });
@@ -153,7 +176,7 @@ function thinkingParam() {
 }
 
 function serverMode() {
-  return ["deep-research", "image", "video"].includes(workspaceMode) ? workspaceMode : "chat";
+  return ["deep-research", "video"].includes(workspaceMode) ? workspaceMode : "chat";
 }
 
 async function readSseStream(response, onEvent, signal) {
@@ -273,6 +296,7 @@ async function sendPromptImpl() {
     incognito,
     history: incognito ? session.messages.slice(0, userIndex).map(m => ({ role: m.role === "trux" ? "model" : "user", text: m.text })) : undefined,
     notify: true,
+    video: workspaceMode === "video" ? window.truxVideoStudio?.options() : undefined,
     device: (() => { try { return window.truxDevice?.info() || null; } catch { return null; } })(),
     ...(isTruxDeveloper(user) ? { ownerModel: store.getItem("trux_owner_gemini_model") || "auto" } : {})
   };
@@ -294,6 +318,7 @@ async function sendPromptImpl() {
   const finish = msg => {
     if (ctx.settled) return;
     ctx.settled = true;
+    row.querySelector(".trux-storyboard")?.remove();
     if (streamer) { try { streamer.setText(msg.text || ""); streamer.finish(); } catch {} }
     if (activeStreamer === streamer) activeStreamer = null;
     const stored = { id: ctx.messageId, role: "trux", text: msg.text || "", sources: msg.sources || ctx.sources, media: msg.media || ctx.media, status: msg.status || "done", error: msg.error || "", incomplete: msg.status !== "done" };
@@ -307,7 +332,7 @@ async function sendPromptImpl() {
       if (activeTurnContext === ctx) activeTurnContext = null;
       setComposerGenerating(false);
       if (stored.status === "done" && stored.text && (voice || getEl("autoReadToggle")?.checked)) speakText(stored.text);
-      for (const m of stored.media || []) { try { saveGeneratedMedia?.({ type: m.kind, objectKey: m.objectKey, prompt: m.prompt || typed }); } catch {} }
+      for (const m of stored.media || []) { if (m.kind !== "image" && m.kind !== "video") continue; try { saveGeneratedMedia?.({ type: m.kind, objectKey: m.objectKey, prompt: m.prompt || typed }); } catch {} }
     }
     queueSidebarSync();
   };
@@ -322,7 +347,11 @@ async function sendPromptImpl() {
         row.dataset.messageId = ev.messageId;
         if (generationStopRequested && !incognito) requestServerStop(chatId, ev.messageId);
         break;
-      case "status": if (!streamer) setThinkingStatus(sid, ev.status || ""); break;
+      case "status":
+        if (!streamer) setThinkingStatus(sid, ev.status || "");
+        if (ev.stage) window.truxVideoStudio?.progress(row, ev);
+        break;
+      case "storyboard": window.truxVideoStudio?.storyboard(row, ev.plan); break;
       case "chunk": {
         if (!ev.text) break;
         ctx.text += ev.text;

@@ -30,10 +30,7 @@ dist/
 build/
 .firebase/
 
-# Android
-android/.gradle/
-android/**/build/
-android/local.properties
+# Play Store wrapper files (keep signing keys out of git)
 *.jks
 *.keystore
 *.p12

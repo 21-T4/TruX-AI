@@ -9,7 +9,12 @@ Idempotent: safe to run again any time. It
   5. makes sure the storage bucket, Firebase project, web app and Realtime
      Database exist, and uploads database.rules.json,
   6. turns on Email/Password sign-in and adds the authorized domains,
-  7. sets the Cloud Run environment variables and runtime flags.
+  7. deploys the private `trux-sandbox` service (bash, curl, browser) that
+     only the TruX service account may call,
+  8. sets the Cloud Run runtime flags and removes old environment variables.
+
+TruX needs no environment variables: the project id comes from Cloud Run and
+everything else is discovered from the project.
 
 Every step reports what it did to the GitHub job summary.
 """
@@ -27,8 +32,13 @@ PROJECT = os.environ.get("PROJECT", "").strip()
 REGION = os.environ.get("REGION", "").strip()
 SERVICE = os.environ.get("SERVICE", "").strip()
 APP_DOMAIN = os.environ.get("APP_DOMAIN", "trux-ai-workspace.trux.website").strip()
-OWNER_EMAIL = os.environ.get("OWNER_EMAIL", "ekagraavn2003@gmail.com").strip()
-LIVE_LOCATION = os.environ.get("LIVE_LOCATION", "us-central1").strip()
+BUCKET_LOCATION = "us-central1"
+SANDBOX = "trux-sandbox"
+# Variables older TruX versions used. They're ignored now and get removed.
+OLD_ENV = ["TRUX_LIVE_LOCATION", "TRUX_BUCKET_NAME", "FIREBASE_WEB_APP_ID", "FIREBASE_DATABASE_URL", "TRUX_OWNER_EMAIL",
+           "TRUX_VIDEO_MODEL", "TRUX_LIVE_MODEL", "TRUX_IMAGE_MODEL", "TRUX_FEEDBACK_FROM_EMAIL", "FIREBASE_PROJECT_ID",
+           "FIREBASE_API_KEY", "FIREBASE_AUTH_DOMAIN", "FIREBASE_STORAGE_BUCKET", "FIREBASE_MESSAGING_SENDER_ID",
+           "FIREBASE_APP_ID", "GOOGLE_CLOUD_LOCATION", "TRUX_ANDROID_PACKAGE", "TRUX_ANDROID_SHA256"]
 
 APIS = [
     "run.googleapis.com", "aiplatform.googleapis.com", "firebase.googleapis.com",
@@ -48,8 +58,9 @@ ROLES = [
     ("roles/firebasecloudmessaging.admin", "Firebase Cloud Messaging Admin"),
     ("roles/serviceusage.serviceUsageConsumer", "Service Usage Consumer"),
     ("roles/logging.logWriter", "Logs Writer"),
+    ("roles/run.viewer", "Cloud Run Viewer (finds the sandbox URL)"),
 ]
-SECRETS = ["COMPOSIO_API_KEY", "RESEND_API_KEY", "TRUX_FEEDBACK_FROM_EMAIL", "FCM_VAPID_PUBLIC_KEY"]
+SECRETS = ["COMPOSIO_API_KEY", "RESEND_API_KEY", "FCM_VAPID_PUBLIC_KEY"]
 
 summary = []
 problems = []
@@ -213,7 +224,7 @@ def step_bucket():
         ok(f"Bucket `{bucket}` exists")
         return bucket
     try:
-        gcloud("storage", "buckets", "create", f"gs://{bucket}", "--location", LIVE_LOCATION if LIVE_LOCATION not in ("us", "eu") else "us-central1",
+        gcloud("storage", "buckets", "create", f"gs://{bucket}", "--location", BUCKET_LOCATION,
                "--uniform-bucket-level-access", "--public-access-prevention")
         ok(f"Created bucket `{bucket}`")
     except Exception as e:
@@ -299,12 +310,33 @@ def step_auth(run_url):
         warn("Google sign-in provider is off. Firebase console → Authentication → Sign-in method → Add new provider → Google → Enable → Save (Google creates the OAuth client for you).")
 
 
-def step_cloud_run(env):
-    pairs = ",".join(f"{k}={v}" for k, v in env.items() if v)
+def step_sandbox(main_sa):
+    """Private sandbox service: no roles of its own, callable only by TruX."""
+    sa = f"{SANDBOX}@{PROJECT}.iam.gserviceaccount.com"
+    if gcloud("iam", "service-accounts", "describe", sa, "--format=value(email)", check=False, quiet=True).returncode != 0:
+        try:
+            gcloud("iam", "service-accounts", "create", SANDBOX, "--display-name", "TruX sandbox (no permissions)", "--format=none")
+            time.sleep(8)
+        except Exception as e:
+            warn("Could not create the sandbox service account: " + str(e)[:200])
+            return
     try:
-        gcloud("run", "services", "update", SERVICE, "--region", REGION, "--update-env-vars", pairs,
+        gcloud("run", "deploy", SANDBOX, "--source", "sandbox", "--region", REGION, "--no-allow-unauthenticated",
+               "--service-account", sa, "--execution-environment", "gen2", "--memory", "4Gi", "--cpu", "2",
+               "--concurrency", "10", "--min-instances", "0", "--max-instances", "1", "--timeout", "300",
+               "--set-env-vars", f"ALLOWED_CALLER={main_sa}", "--format=none")
+        gcloud("run", "services", "add-iam-policy-binding", SANDBOX, "--region", REGION,
+               "--member", "serviceAccount:" + main_sa, "--role", "roles/run.invoker", "--format=none")
+        ok(f"Sandbox `{SANDBOX}` deployed (private, only `{main_sa}` can call it)")
+    except Exception as e:
+        warn("Could not deploy the sandbox: " + str(e)[:400])
+
+
+def step_cloud_run():
+    try:
+        gcloud("run", "services", "update", SERVICE, "--region", REGION, "--remove-env-vars", ",".join(OLD_ENV),
                "--no-cpu-throttling", "--timeout=3600", "--session-affinity", "--format=none")
-        ok("Cloud Run updated: " + ", ".join(f"`{k}`" for k in env if env[k]) + ", CPU always allocated, 60 min timeout, session affinity")
+        ok("Cloud Run updated: no environment variables needed, CPU always allocated, 60 min timeout, session affinity")
     except Exception as e:
         warn("Could not update Cloud Run: " + str(e)[:400])
 
@@ -316,14 +348,13 @@ def main():
     if svc:
         step_roles(svc["sa"])
     step_secrets()
-    bucket = step_bucket()
-    app_id = db_url = None
+    step_bucket()
     try:
-        app_id = step_firebase()
+        step_firebase()
     except Exception as e:
         warn("Firebase web app step failed: " + str(e)[:300])
     try:
-        db_url = step_database()
+        step_database()
     except Exception as e:
         warn("Realtime Database step failed: " + str(e)[:300])
     try:
@@ -331,15 +362,8 @@ def main():
     except Exception as e:
         warn("Authentication step failed: " + str(e)[:300])
     if svc:
-        step_cloud_run({
-            "TRUX_LIVE_LOCATION": LIVE_LOCATION,
-            "TRUX_BUCKET_NAME": bucket,
-            "FIREBASE_WEB_APP_ID": app_id,
-            "FIREBASE_DATABASE_URL": db_url,
-            "TRUX_OWNER_EMAIL": OWNER_EMAIL,
-            "TRUX_VIDEO_MODEL": os.environ.get("VIDEO_MODEL", "veo-3.1-fast-generate-001"),
-            "TRUX_LIVE_MODEL": os.environ.get("LIVE_MODEL", "gemini-3.8-live"),
-        })
+        step_sandbox(svc["sa"])
+        step_cloud_run()
     out = os.environ.get("GITHUB_STEP_SUMMARY")
     text = "## TruX Google Cloud setup\n\n" + "\n".join(summary) + "\n"
     if problems:

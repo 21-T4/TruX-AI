@@ -1,6 +1,6 @@
 /* Circle to search.
- * 1. Grab one frame of the screen (getDisplayMedia in a browser; in the
- *    Android app the system assistant hands us the screenshot instead).
+ * 1. Grab one frame of the screen (getDisplayMedia on computers; on phones,
+ *    where browsers can't capture the screen, pick a screenshot instead).
  * 2. Freeze it full screen with a glowing Gemini-style border.
  * 3. The user circles (lasso) or taps something; the outside dims and the
  *    selection gets corner brackets.
@@ -30,15 +30,26 @@ window.truxCircle = (() => {
   async function start() {
     if (root) return;
     if (!auth?.currentUser) { openLoginWall("signin"); return; }
-    if (window.TruXAndroid?.startCircle) { try { window.TruXAndroid.startCircle(); return; } catch {} }
-    if (!navigator.mediaDevices?.getDisplayMedia) {
-      toast(/Android/i.test(navigator.userAgent) ? "On Android, install the TruX app and hold the side button to circle anything." : "This browser can't capture the screen. Try Chrome or Edge on a computer.", "err");
-      return;
-    }
+    if (!navigator.mediaDevices?.getDisplayMedia) { pickScreenshot(); return; }
     let dataUrl;
     try { dataUrl = await captureBrowserFrame(); }
     catch (error) { if (error?.name !== "NotAllowedError") toast("Couldn't capture the screen.", "err"); return; }
     open(dataUrl);
+  }
+
+  function pickScreenshot() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => open(String(reader.result));
+      reader.readAsDataURL(file);
+    };
+    toast("Pick a screenshot, then circle what you want to search.", "ok");
+    input.click();
   }
 
   function open(dataUrl, presetText = "") {

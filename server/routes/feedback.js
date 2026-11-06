@@ -1,5 +1,5 @@
 /* Feedback form → email to the owner via Resend. */
-import { OWNER_EMAIL } from '../lib/config.js';
+import { FEEDBACK_FROM, OWNER_EMAIL } from '../lib/config.js';
 import { requireUser } from '../lib/firebase.js';
 import { HttpError, json, readJson } from '../lib/http.js';
 
@@ -21,7 +21,7 @@ async function submit(request, { env }) {
   const message = String(body?.message ?? '').trim();
   if (message.length < 8) throw new HttpError(400, 'Please include a little more detail.');
   if (message.length > 12000) throw new HttpError(413, 'Your message is too long.');
-  if (!env.RESEND_API_KEY || !env.TRUX_FEEDBACK_FROM_EMAIL) throw new HttpError(503, 'Email delivery is not configured on the server yet.');
+  if (!env.RESEND_API_KEY) throw new HttpError(503, 'Email delivery is not configured on the server yet.');
 
   const text = [
     'New TruX-Omni ' + label, '',
@@ -37,7 +37,7 @@ async function submit(request, { env }) {
     method: 'POST',
     headers: { Authorization: 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: env.TRUX_FEEDBACK_FROM_EMAIL,
+      from: FEEDBACK_FROM,
       to: [OWNER_EMAIL],
       subject: '[TruX-Omni ' + label + '] ' + subject,
       text,

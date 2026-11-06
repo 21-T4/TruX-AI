@@ -9,8 +9,10 @@ export const MODELS = Object.freeze({
   balanced: 'gemini-3.6-flash',
   smart: 'gemini-3.8-flash',
   research: 'gemini-3.1-pro-preview',
-  image: 'gemini-3.1-flash-image',
-  video: 'veo-3.1-fast-generate-001',
+  image: 'gemini-3-pro-image',       // Nano Banana Pro
+  video: 'veo-3.1-generate-001',      // Veo 3.1 (full quality)
+  omni: 'gemini-omni-1.2-flash',      // Gemini Omni: video extension and editing
+  director: 'gemini-4-argon',         // shot planning / prompt design
   tts: 'gemini-3.8-flash-tts',
   live: 'gemini-3.8-live'
 });
@@ -163,51 +165,26 @@ export function thinkingConfig(model, level) {
 }
 
 /* ---------- Image generation ---------- */
-export async function generateImage({ prompt, aspectRatio = '1:1', referenceImage = null, signal }) {
+export const IMAGE_RATIOS = ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '4:5', '5:4', '21:9'];
+
+export async function generateImage({ prompt, aspectRatio = '1:1', size = '2K', referenceImages = [], signal }) {
   const parts = [];
-  if (referenceImage?.data) parts.push({ inlineData: { mimeType: referenceImage.mimeType || 'image/png', data: referenceImage.data } });
+  for (const ref of referenceImages.slice(0, 6)) {
+    if (ref?.uri) parts.push({ fileData: { fileUri: ref.uri, mimeType: ref.mimeType || 'image/png' } });
+  }
   parts.push({ text: String(prompt || '').slice(0, 6000) });
   const { parts: out } = await generateOnce({
     model: MODELS.image,
     contents: [{ role: 'user', parts }],
     config: {
       responseModalities: ['TEXT', 'IMAGE'],
-      imageConfig: { aspectRatio: ['1:1', '16:9', '9:16', '4:3', '3:4'].includes(aspectRatio) ? aspectRatio : '1:1' }
+      imageConfig: { aspectRatio: IMAGE_RATIOS.includes(aspectRatio) ? aspectRatio : '1:1', imageSize: ['1K', '2K', '4K'].includes(size) ? size : '2K' }
     },
     signal
   });
   const image = out.find(p => p.inlineData?.data);
   if (!image) throw new Error('The image model did not return an image. Try rephrasing the request.');
   return { mimeType: image.inlineData.mimeType || 'image/png', data: image.inlineData.data };
-}
-
-/* ---------- Video generation (Veo) ---------- */
-export async function generateVideo({ prompt, outputGcsUri, aspectRatio = '16:9', onStatus, signal }) {
-  const client = await getVertexClient();
-  let operation = await client.models.generateVideos({
-    model: process.env.TRUX_VIDEO_MODEL || MODELS.video,
-    prompt: String(prompt || '').slice(0, 8000),
-    config: {
-      numberOfVideos: 1,
-      aspectRatio: aspectRatio === '9:16' ? '9:16' : '16:9',
-      durationSeconds: 8,
-      resolution: '720p',
-      outputGcsUri
-    }
-  });
-  const deadline = Date.now() + 15 * 60 * 1000;
-  while (!operation?.done) {
-    if (signal?.aborted) throw Object.assign(new Error('Video generation was stopped.'), { stopped: true });
-    if (Date.now() > deadline) throw new Error('Video generation took too long. Please try again.');
-    await new Promise(resolve => setTimeout(resolve, 8000));
-    onStatus?.('Rendering video…');
-    operation = await client.operations.get({ operation });
-  }
-  if (operation.error?.message) throw new Error(String(operation.error.message));
-  const video = operation.response?.generatedVideos?.[0]?.video;
-  const uri = String(video?.uri || video?.gcsUri || '');
-  if (!uri) throw new Error('The video model returned no video.');
-  return { gcsUri: uri, mimeType: video?.mimeType || 'video/mp4' };
 }
 
 /* ---------- Text to speech (Gemini TTS, streaming PCM) ---------- */

@@ -331,7 +331,7 @@ async function toggleTruxNotificationsSetting(enabled){
 
 function setWorkspaceMode(mode, options) {
   options = options || {};
-  const allowedModes = new Set(["chat", "deep-research", "image", "video"]);
+  const allowedModes = new Set(["chat", "deep-research", "video"]);
   const nextMode = allowedModes.has(String(mode || "")) ? String(mode) : "chat";
   const previousMode = workspaceMode;
   document.body.classList.remove("plugins-page-active", "notebook-open");
@@ -352,7 +352,7 @@ function setWorkspaceMode(mode, options) {
   }
   workspaceMode = nextMode; document.body.dataset.workspaceMode = workspaceMode;
   if (currentChatId && chatSessions[currentChatId] && preserveSession) chatSessions[currentChatId].mode = workspaceMode;
-  const isMedia = workspaceMode === "image" || workspaceMode === "video";
+  const isMedia = workspaceMode === "video" && !currentChatId;
   if (isMedia) document.body.dataset.mediaMode = workspaceMode; else document.body.removeAttribute("data-media-mode");
   document.body.classList.toggle("chat-session-active", !!currentChatId && !isMedia);
   document.body.classList.toggle("home-active", !isMedia && !currentChatId);
@@ -362,9 +362,10 @@ function setWorkspaceMode(mode, options) {
   if (chatView) chatView.style.display = currentChatId && !isMedia ? "block" : "none";
   document.querySelectorAll("[data-trux-menu-mode]").forEach(el => el.classList.toggle("active", el.dataset.truxMenuMode === workspaceMode));
   const prompt = getEl("promptInput");
-  const placeholders = { chat: "Ask TruX…", "deep-research": "Research prompt…", image: "Image prompt…", video: "Video prompt…" };
+  const placeholders = { chat: "Ask TruX…", "deep-research": "Research prompt…", video: "Describe a video…" };
   if (prompt) { prompt.placeholder = placeholders[workspaceMode] || "Ask TruX…"; prompt.style.height = "auto"; handleInputChange(); }
   syncModelPickerUI(); renderSidebar();
+  if (isMedia) window.truxVideoStudio?.refresh();
   if (workspaceMode === "chat" && !currentChatId && !isMedia) startHomeGreetingPulse();
 }
 async function submitFeedback() {
@@ -485,22 +486,12 @@ function getProUsageData() {
   if(u.monthReset !== currentMonth) { u = { tokensUsed: 0, monthReset: currentMonth }; store.setItem("trux_pro_usage", JSON.stringify(u)); }
   return u;
 }
-function recordProTokens(n) {
-  let u = getProUsageData(); u.tokensUsed = Math.min(1000000, u.tokensUsed + n);
-  store.setItem("trux_pro_usage", JSON.stringify(u)); updateAllUsageUI();
-}
-
 function getCoreUsageData() {
   let currentMonth = new Date().toISOString().slice(0, 7);
   let u = store.json("trux_core_usage", { tokensUsed: 0, monthReset: currentMonth });
   if(u.monthReset !== currentMonth) { u = { tokensUsed: 0, monthReset: currentMonth }; store.setItem("trux_core_usage", JSON.stringify(u)); }
   return u;
 }
-function recordCoreTokens(n) {
-  let u = getCoreUsageData(); u.tokensUsed = u.tokensUsed + n;
-  store.setItem("trux_core_usage", JSON.stringify(u)); updateAllUsageUI();
-}
-
 function getImageUsageData() {
   let currentMonth = new Date().toISOString().slice(0, 7);
   let u = store.json("trux_image_usage", { count: 0, monthReset: currentMonth });

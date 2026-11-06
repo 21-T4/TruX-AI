@@ -16,7 +16,9 @@ async function download(request, { url }) {
     'Cache-Control': 'private, max-age=86400',
     'Accept-Ranges': 'bytes',
     'X-Content-Type-Options': 'nosniff',
-    'Content-Disposition': 'inline'
+    // Files can come from the AI sandbox: never let them run as a page.
+    'Content-Security-Policy': "sandbox; default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'",
+    'Content-Disposition': /^(image\/(png|jpeg|webp|gif)|video\/|audio\/|application\/pdf)/.test(String(metadata.contentType)) ? 'inline' : 'attachment'
   };
   const range = String(request.headers.get('range') || '').match(/^bytes=(\d*)-(\d*)$/);
   if (range && size) {

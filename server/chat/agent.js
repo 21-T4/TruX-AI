@@ -2,7 +2,7 @@
    feed results back, repeat until the model answers. */
 import { groundingSources, MODELS, streamRound, thinkingConfig } from '../lib/vertex.js';
 
-const MAX_ROUNDS = 12;
+const MAX_ROUNDS = 30;
 
 export async function runAgent({ model, thinking, contents, systemInstruction, toolbox, writer, send, signal, temperature = 0.9 }) {
   const messages = contents.slice();
@@ -53,8 +53,9 @@ export async function runAgent({ model, thinking, contents, systemInstruction, t
       writer.setTool(id, label, 'running');
       send({ type: 'tool_status', id, tool: call.name, label, phase: 'start' });
       let response;
+      let parts = [];
       try {
-        ({ response } = await toolbox.run(call, signal));
+        ({ response, parts = [] } = await toolbox.run(call, signal));
         writer.setTool(id, label, response?.ok === false || response?.success === false ? 'error' : 'done');
         send({ type: 'tool_status', id, tool: call.name, label, phase: 'complete', ok: response?.ok !== false && response?.success !== false });
       } catch (error) {
@@ -63,7 +64,8 @@ export async function runAgent({ model, thinking, contents, systemInstruction, t
         writer.setTool(id, label, 'error');
         send({ type: 'tool_status', id, tool: call.name, label, phase: 'complete', ok: false });
       }
-      return { functionResponse: { ...(call.id ? { id: call.id } : {}), name: call.name, response: { output: response } } };
+      // Gemini 3 accepts images inside function responses (e.g. browser screenshots).
+      return { functionResponse: { ...(call.id ? { id: call.id } : {}), name: call.name, response: { output: response }, ...(parts.length ? { parts } : {}) } };
     }));
     messages.push({ role: 'user', parts: responses });
     // After tools, the cheapest model may struggle to synthesise; step up once.

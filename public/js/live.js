@@ -39,7 +39,6 @@
     if (panel) panel.dataset.state = next;
     if (typeof handleInputChange === "function") handleInputChange();
     const active = next === "live" || next === "connecting";
-    try { window.TruXAndroid?.liveActive?.(active); } catch {}
     window.dispatchEvent(new CustomEvent("trux-live-state", { detail: { state: next, active } }));
   }
 
@@ -86,7 +85,7 @@
       const span = byId(id + "Label"); if (span && text) span.textContent = text;
     };
     set("truxPwaLiveCamera", videoKind === "camera", videoKind === "camera" ? "Turn camera off" : "Turn camera on", videoKind === "camera" ? "Camera on" : "Camera");
-    const sharing = videoKind === "screen" || videoKind === "screen-native";
+    const sharing = videoKind === "screen";
     set("truxPwaLiveScreen", sharing, sharing ? "Stop sharing screen" : "Share screen", sharing ? "Sharing" : "Share");
     set("truxPwaLiveMic", muted, muted ? "Unmute microphone" : "Mute microphone", muted ? "Mic muted" : "Mic on");
     const mc = byId("truxPwaLiveMenuCamera"); if (mc) mc.textContent = videoKind === "camera" ? "Turn camera off" : "Turn camera on";
@@ -220,17 +219,7 @@
 
   /* ---------- Camera / screen ---------- */
 
-  // Inside the Android app, screen frames come from MediaProjection (works
-  // across every app, not just this page) via window.truxNativeScreenFrame.
-  const nativeScreen = () => !!window.TruXAndroid?.startScreenShare;
-  window.truxNativeScreenFrame = b64 => {
-    if (videoKind !== "screen-native" || state !== "live" || socket?.readyState !== WebSocket.OPEN || socket.bufferedAmount > 512 * 1024) return;
-    if (b64) socket.send(JSON.stringify({ type: "video", data: String(b64) }));
-  };
-  window.truxNativeScreenStopped = () => { if (videoKind === "screen-native") { videoKind = ""; syncButtons(); } };
-
   function stopVideo() {
-    if (videoKind === "screen-native") { try { window.TruXAndroid.stopScreenShare(); } catch {} }
     clearInterval(frameTimer); frameTimer = null;
     videoStream?.getTracks().forEach(t => t.stop());
     videoStream = null; videoKind = "";
@@ -260,16 +249,9 @@
   }
 
   async function toggleVideo(kind) {
-    if (videoKind === kind || (kind === "screen" && videoKind === "screen-native")) { stopVideo(); return; }
+    if (videoKind === kind) { stopVideo(); return; }
     if (state !== "live" && state !== "connecting") { toast("Start Live first.", "err"); return; }
     stopVideo();
-    if (kind === "screen" && nativeScreen()) {
-      videoKind = "screen-native";
-      try { window.TruXAndroid.startScreenShare(); } catch { videoKind = ""; toast("Screen sharing could not start.", "err"); }
-      setStatus("Sharing your screen. Switch to any app and keep talking.");
-      syncButtons();
-      return;
-    }
     try {
       if (kind === "screen") {
         if (!navigator.mediaDevices?.getDisplayMedia) { toast("Screen sharing isn't supported in this browser.", "err"); return; }

@@ -247,23 +247,6 @@ function attachUserMessageActions(userRow, messageIndex, promptText) {
   }
 }
 
-function markPromptMessageStopped(assistantRow) {
-  const session = chatSessions[currentChatId];
-  const container = getActiveChatContainer();
-  let userRow = assistantRow?.previousElementSibling;
-  if (!userRow?.classList.contains("user-row")) {
-    const userRows = Array.from(container?.querySelectorAll(".row.user-row") || []);
-    userRow = userRows[userRows.length - 1] || null;
-  }
-  if (!userRow || !session?.messages) return;
-  const index = findStoppedMessageIndex(userRow);
-  if (index < 0) return;
-  session.messages[index].stopped = true;
-  saveChatSessions();
-  userRow.dataset.messageIndex = String(index);
-  attachUserMessageActions(userRow, index, String(session.messages[index].text || ""));
-}
-
 function appendMessageRow(label, text, rc, bc, imageUrl, animate, sources, videoUrl, messageMeta = null) {
   let chatContainer = getActiveChatContainer(), r = document.createElement("div");
   r.className = `row ${rc}` + (animate ? " appear" : "");
@@ -573,13 +556,4 @@ function createStreamRenderer(bubble) {
     },
     get received() { return target; }
   };
-}
-function formatElapsedTime(ms) {
-  const totalSeconds = Math.max(0, Math.floor(Number(ms || 0) / 1000));
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  if (hours) return hours + "h " + minutes + "m " + seconds + "s";
-  if (minutes) return minutes + "m " + seconds + "s";
-  return seconds + "s";
 }
