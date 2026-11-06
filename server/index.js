@@ -35,7 +35,7 @@ const MAX_BODY = 512 * 1024;
 const CSP = [
   "default-src 'self'",
   // Inline handlers in the app markup still need 'unsafe-inline'; sources stay pinned.
-  "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.gstatic.com https://apis.google.com https://accounts.google.com",
+  "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://www.gstatic.com https://apis.google.com https://accounts.google.com https://*.firebaseio.com https://*.firebasedatabase.app",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
   "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net",
   "img-src 'self' data: blob: https:",
@@ -146,7 +146,7 @@ async function serveStatic(req, res, url) {
   const base = path.basename(filePath);
   res.setHeader('Content-Type', MIME[ext] || 'application/octet-stream');
   res.setHeader('Content-Length', stat.size);
-  if (ext === '.html' || base === 'sw.js' || base === 'manifest.json') res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+  if (ext === '.html' || ext === '.js' || ext === '.css' || base === 'manifest.json') res.setHeader('Cache-Control', 'no-cache, must-revalidate');
   else res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=86400');
   const etag = `W/"${stat.size.toString(16)}-${Math.floor(stat.mtimeMs).toString(16)}"`;
   res.setHeader('ETag', etag);

@@ -1,0 +1,55 @@
+#truxPwaLivePanel{position:fixed!important;inset:0!important;z-index:10050!important;display:flex;flex-direction:column;width:100vw;height:100vh;height:100dvh;max-width:none;max-height:none;margin:0;padding:calc(18px + env(safe-area-inset-top,0px)) 20px calc(18px + env(safe-area-inset-bottom,0px));overflow:hidden;border:0;border-radius:0;background:#000;color:#ededed;box-shadow:none;font-family:var(--font-body,Arial,sans-serif);isolation:isolate}
+#truxPwaLivePanel[hidden],#truxPwaLivePanel [hidden]{display:none!important}
+#truxPwaLivePanel .trux-live-glow{position:absolute;z-index:-1;pointer-events:none;inset:24% -30% -15%;background:radial-gradient(ellipse at 50% 100%,rgba(25,55,145,.84) 0%,rgba(18,35,93,.54) 36%,rgba(0,0,0,0) 72%)}
+#truxPwaLivePanel .trux-live-topbar{position:relative;z-index:3;display:flex;align-items:center;gap:16px;min-height:52px;flex:0 0 auto}
+#truxPwaLivePanel .trux-live-top-button{display:grid;place-items:center;width:46px;height:46px;flex:0 0 46px;border:0;border-radius:50%;background:transparent;color:#e7e7ec;cursor:pointer}
+#truxPwaLivePanel .trux-live-top-button svg{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#truxPwaLivePanel .trux-live-top-button:hover,#truxPwaLivePanel .trux-live-top-button[aria-pressed="true"]{background:rgba(255,255,255,.09)}
+#truxPwaLivePanel .trux-live-brand{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
+#truxPwaLivePanel .trux-live-brand b{font-size:15px;font-weight:600;letter-spacing:.01em}
+#truxPwaLivePanel .trux-live-brand span{font-size:11px;color:#a4a8ba}
+#truxPwaLivePanel .trux-live-menu{position:absolute;z-index:5;top:calc(18px + env(safe-area-inset-top,0px) + 52px);left:20px;width:min(260px,calc(100vw - 40px));padding:8px;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:rgba(22,23,31,.97);box-shadow:0 14px 50px rgba(0,0,0,.5);backdrop-filter:blur(18px)}
+#truxPwaLivePanel .trux-live-menu button{display:block;width:100%;padding:12px 13px;border:0;border-radius:9px;background:transparent;color:#e9e9ef;text-align:left;font:inherit;font-size:13px;cursor:pointer}
+#truxPwaLivePanel .trux-live-menu button:hover{background:rgba(255,255,255,.08)}
+#truxPwaLivePanel .trux-live-stage{position:relative;display:flex;flex:1;min-height:0;flex-direction:column;align-items:center;justify-content:center;padding:18px 0 24px;text-align:center}
+#truxPwaLivePanel .trux-live-stage h1{max-width:620px;margin:0 14px 10px;color:#eeeef4;font-size:clamp(28px,5.5vw,54px);font-weight:400;line-height:1.15;letter-spacing:-.035em}
+#truxPwaLivePanel .trux-live-stage>p{max-width:min(540px,90vw);min-height:18px;margin:0;color:#a8adc1;font-size:13px;line-height:1.45;overflow-wrap:anywhere}
+#truxPwaLivePanel .trux-live-retry{margin-top:20px;padding:11px 18px;border:1px solid rgba(205,215,255,.24);border-radius:999px;background:rgba(255,255,255,.08);color:#f5f5ff;font:inherit;font-size:13px;cursor:pointer}
+#truxPwaLivePanel .trux-live-camera-preview{position:absolute;top:16px;right:4px;width:clamp(94px,22vw,164px);aspect-ratio:3/4;overflow:hidden;border:1px solid rgba(255,255,255,.25);border-radius:18px;background:#080a13;box-shadow:0 10px 32px rgba(0,0,0,.4)}
+#truxPwaLivePanel .trux-live-camera-preview video{display:block;width:100%;height:100%;object-fit:cover}
+#truxPwaLivePanel .trux-live-camera-preview span{position:absolute;left:8px;bottom:7px;padding:3px 6px;border-radius:6px;background:rgba(0,0,0,.45);color:#fff;font-size:10px}
+#truxPwaLivePanel .trux-live-transcript{width:min(620px,100%);max-height:min(28vh,250px);margin-top:18px;padding:14px 16px;overflow:auto;border:1px solid rgba(255,255,255,.10);border-radius:16px;background:rgba(3,5,14,.48);text-align:left;backdrop-filter:blur(14px);font-size:13px;line-height:1.45}
+#truxPwaLivePanel .trux-live-line{margin:0 0 12px;overflow-wrap:anywhere;white-space:pre-wrap}
+#truxPwaLivePanel .trux-live-line:last-child{margin-bottom:0}
+#truxPwaLivePanel .trux-live-line b{display:block;margin-bottom:4px;color:#aebdfb;font-size:11px;font-weight:600}
+#truxPwaLivePanel .trux-live-controls{position:relative;z-index:2;display:flex;flex:0 0 auto;align-items:center;justify-content:center;gap:clamp(6px,2.4vw,20px);padding:10px 0 4px}
+#truxPwaLivePanel .trux-live-control{display:flex;flex:0 0 clamp(48px,6vw,66px);flex-direction:column;align-items:center;justify-content:center;gap:5px;width:clamp(48px,6vw,66px);height:clamp(58px,7vw,78px);padding:0;border:0;border-radius:999px;background:rgba(33,34,40,.96);color:#ededf3;cursor:pointer;transition:background .15s ease,transform .15s ease}
+#truxPwaLivePanel .trux-live-control svg{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#truxPwaLivePanel .trux-live-control span{font-size:10px;line-height:1;color:#c4c6d0}
+#truxPwaLivePanel .trux-live-control:hover{background:#343644;transform:translateY(-1px)}
+#truxPwaLivePanel .trux-live-control[aria-pressed="true"]{background:#3a4164;color:#fff}
+#truxPwaLivePanel .trux-live-control.trux-live-end{background:#242428;color:#f5dfe2}
+#truxPwaLivePanel .trux-live-control.trux-live-end:hover{background:#632e3a}
+#truxPwaLivePanel .trux-live-center-pill{display:flex;flex:0 1 210px;min-width:88px;max-width:210px;height:76px;align-items:center;justify-content:center;flex-direction:column;gap:7px;overflow:hidden;border:1px solid rgba(203,216,255,.10);border-radius:999px;background:linear-gradient(180deg,#020307 0%,#050917 48%,#263868 77%,#dde6ff 100%);box-shadow:0 9px 28px rgba(4,10,38,.35),inset 0 1px 8px rgba(255,255,255,.05);color:#e8ecff}
+#truxPwaLivePanel .trux-live-center-pill span{font-size:10px;line-height:1;color:#d8def3}
+#truxPwaLivePanel .trux-live-center-pill{position:relative;background:#03050c!important}
+#truxPwaLivePanel .trux-live-voice-color{position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:var(--trux-live-level,0);background:radial-gradient(ellipse at var(--trux-live-tone,50%) 110%,rgba(74,118,255,.96) 0%,rgba(41,75,190,.74) 36%,rgba(6,12,38,0) 76%);transition:opacity .08s linear,background .08s linear}
+#truxPwaLivePanel .trux-live-center-pill span{position:relative;z-index:1}
+#truxPwaLivePanel .trux-live-stage h1:empty{display:none!important}
+#truxPwaLivePanel.trux-live-heard-user .trux-live-stage h1,#truxPwaLivePanel.trux-live-heard-user .trux-live-stage>p{display:none!important}
+@media(max-width:480px){#truxPwaLivePanel{padding-left:12px;padding-right:12px}
+#truxPwaLivePanel .trux-live-topbar{gap:10px}
+#truxPwaLivePanel .trux-live-top-button{width:42px;height:42px;flex-basis:42px}
+#truxPwaLivePanel .trux-live-brand b{font-size:14px}
+#truxPwaLivePanel .trux-live-brand span{font-size:10px}
+#truxPwaLivePanel .trux-live-stage h1{font-size:clamp(28px,8vw,42px)}
+#truxPwaLivePanel .trux-live-controls{gap:5px}
+#truxPwaLivePanel .trux-live-control{flex-basis:clamp(44px,12vw,58px);width:clamp(44px,12vw,58px);height:62px}
+#truxPwaLivePanel .trux-live-control svg{width:23px;height:23px}
+#truxPwaLivePanel .trux-live-control span{font-size:9px}
+#truxPwaLivePanel .trux-live-center-pill{flex:1 1 92px;min-width:72px;height:70px}
+#truxPwaLivePanel .trux-live-camera-preview{top:0;right:0;width:clamp(78px,21vw,110px);border-radius:12px}
+#truxPwaLivePanel .trux-live-transcript{max-height:24vh;padding:10px 12px}
+}
+@media(prefers-reduced-motion:reduce){#truxPwaLivePanel *,#truxPwaLivePanel *:before{animation:none!important;transition:none!important}
+}

@@ -1,0 +1,533 @@
+.sidebar-brand-copy small{display:block!important;font-size:9px!important;line-height:1.15!important;letter-spacing:.13em!important;text-transform:uppercase!important;color:#686868!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}/* Smaller plugin cards: logos stay visually secondary to the plugin name. */
+.trux-plugin-logo{width:42px!important;height:42px!important;border-radius:12px!important}.trux-plugin-logo img{width:23px!important;height:23px!important;max-width:23px!important;max-height:23px!important}/* Model picker — single source of truth. The button itself is the model name. */
+/* Consolidated pure-black model selector and dropdown. */
+.model-picker-container{position:relative!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;width:auto!important;max-width:100%!important;min-width:0!important;overflow:visible!important}
+#modelPickerBtn{position:relative!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:0!important;width:auto!important;min-width:88px!important;max-width:160px!important;height:42px!important;margin:0!important;padding:0 16px!important;border-radius:999px!important;background:var(--bg-2)!important;background-image:none!important;border:1px solid var(--line-2)!important;color:var(--txt)!important;font:500 16px/1 var(--font-ui)!important;white-space:nowrap!important;box-shadow:none!important;overflow:visible!important}
+#modelPickerBtn:hover,#modelPickerBtn[aria-expanded="true"]{background:var(--bg-4)!important;color:var(--txt)!important;border-color:var(--line-3)!important}
+#modelPickerLabel{display:block!important;min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+#modelPickerBtn::before{display:none!important;content:none!important}
+#modelPickerBtn::after{display:none!important;content:none!important}
+#modelDropdown{display:none!important;position:fixed!important;z-index:100000!important;width:min(360px,calc(100vw - 20px))!important;max-width:calc(100vw - 20px)!important;max-height:min(540px,calc(100dvh - 24px))!important;box-sizing:border-box!important;overflow:auto!important;overflow-x:hidden!important;overscroll-behavior:contain!important;padding:8px!important;border-radius:18px!important;background:var(--bg-1)!important;background-image:none!important;border:1px solid var(--line-2)!important;box-shadow:0 22px 58px rgba(0,0,0,.62)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;transform:none!important}
+#modelDropdown.open{display:block!important;visibility:visible!important;opacity:1!important}
+#modelDropdown .model-item{box-sizing:border-box!important;width:100%!important;min-width:0!important;min-height:62px!important;display:grid!important;grid-template-columns:30px minmax(0,1fr) 20px!important;align-items:start!important;gap:10px!important;padding:10px!important;border-radius:12px!important;color:#d5d5d5!important;background:transparent!important;border:1px solid transparent!important;text-align:left!important;overflow:hidden!important}
+#modelDropdown .model-item:hover,#modelDropdown .model-item.active{background:#151515!important;border-color:rgba(255,255,255,.12)!important;color:#fff!important}
+#modelDropdown .model-icon{width:30px!important;height:30px!important;display:grid!important;place-items:center!important;margin-top:1px!important;border:1px solid rgba(255,255,255,.10)!important;border-radius:10px!important;background:#111!important;color:#d5d5d5!important}
+#modelDropdown .model-info{min-width:0!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:3px!important;overflow:hidden!important;padding:1px 0!important}
+#modelDropdown .model-info b{display:block!important;width:100%!important;font-size:14px!important;line-height:1.2!important;white-space:normal!important}
+#modelDropdown .model-info small{display:block!important;width:100%!important;margin:0!important;font-size:11px!important;line-height:1.35!important;color:#888!important;white-space:normal!important;overflow-wrap:anywhere!important}
+#modelDropdown .model-check{min-width:18px!important;margin-top:3px!important;text-align:center!important;color:#e0e0e0!important}
+#modelDropdown .thinking-choice-wrap{margin-top:7px!important;padding:10px 8px 8px!important;border-top:1px solid rgba(255,255,255,.09)!important}
+#modelDropdown .thinking-choice-title{margin:0 0 5px!important;color:#777!important;font-size:10px!important;font-weight:700!important;letter-spacing:.12em!important;text-transform:uppercase!important}
+#modelDropdown .thinking-choice{box-sizing:border-box!important;width:100%!important;min-width:0!important;min-height:42px!important;padding:8px 9px!important;display:grid!important;grid-template-columns:minmax(0,1fr) 20px!important;gap:8px!important;align-items:center!important;border-radius:10px!important;color:#aaa!important;background:transparent!important;border:1px solid transparent!important;text-align:left!important}
+#modelDropdown .thinking-choice:hover,#modelDropdown .thinking-choice.active{background:#151515!important;color:#fff!important;border-color:rgba(255,255,255,.08)!important}
+#modelDropdown .thinking-choice > span:first-child{min-width:0!important;display:flex!important;flex-direction:column!important;gap:2px!important;overflow:hidden!important}
+#modelDropdown .thinking-choice b{display:block!important;line-height:1.2!important}
+#modelDropdown .thinking-choice small{display:block!important;color:#888!important;line-height:1.25!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+#modelDropdown .thinking-check{display:block!important;width:20px!important;text-align:center!important}
+@media(max-width:700px){#modelPickerBtn{min-width:76px!important;height:38px!important;max-width:132px!important;padding:0 10px!important;font-size:13px!important}#modelDropdown{width:min(360px,calc(100vw - 20px))!important}}
+.trux-home-content{position:absolute;inset:0;z-index:1;pointer-events:none!important}.trux-home-sequence{
+  position:absolute!important;inset:0!important;display:flex!important;align-items:center!important;justify-content:center!important;
+  padding:0 22px!important;pointer-events:none!important;
+}.trux-home-sequence-text{
+  width:min(840px,100%);margin:0!important;padding:0!important;
+  color:#f1f1f1!important;font-family:var(--font-disp)!important;
+  font-size:clamp(34px,4.8vw,50px)!important;font-weight:500!important;
+  line-height:1.22!important;letter-spacing:-.018em!important;word-spacing:.015em!important;text-align:center!important;
+  white-space:normal!important;overflow-wrap:anywhere!important;
+  opacity:0!important;transform:translateY(5px)!important;
+  transition:opacity .24s ease,transform .24s ease!important;
+}.trux-home-sequence-text.is-visible{opacity:1!important;transform:none!important}.trux-home-sequence-text.is-replacing{opacity:0!important;transform:translateY(-4px)!important}.trux-home-prompts{
+  position:absolute;left:50%;bottom:calc(150px + var(--safe-b));transform:translateX(-50%);
+  width:min(540px,calc(100% - 44px));display:flex;flex-direction:column;gap:2px;
+  pointer-events:auto!important;
+}.trux-home-prompts[hidden]{display:none!important}.trux-home-prompt{
+  width:100%;display:flex;align-items:center;gap:12px;padding:7px 8px;
+  border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;
+  color:#d2d2d2!important;text-align:left!important;font:400 clamp(15px,1.9vw,17px)/1.35 var(--font-body)!important;
+  cursor:pointer;transition:color .2s ease,transform .2s ease!important;
+}.trux-home-prompt:hover{color:#ffffff!important;transform:translateX(3px)}.trux-home-prompt:focus-visible{outline:1px solid rgba(255,255,255,.38);outline-offset:2px;border-radius:6px!important}.trux-home-prompt-mark{
+  display:inline-grid;place-items:center;flex:0 0 18px;width:18px;
+  color:#bcbcbc;font:400 19px/1 Arial,sans-serif;opacity:.92;
+}.trux-home-prompt-label{min-width:0;overflow-wrap:anywhere}
+@media(max-width:600px){.trux-home-sequence{padding:0 20px!important}.trux-home-sequence-text{font-size:clamp(34px,8.4vw,44px)!important}.trux-home-prompts{width:calc(100% - 44px);bottom:calc(150px + var(--safe-b));gap:2px}.trux-home-prompt{gap:10px;padding:7px 5px;font-size:15px!important}
+}
+@media(max-height:650px){.trux-home-sequence{padding-bottom:0!important}.trux-home-prompts{bottom:calc(144px + var(--safe-b));gap:0}.trux-home-prompt{padding-top:5px;padding-bottom:5px;font-size:14px!important}
+}
+@media(prefers-reduced-motion:reduce){.trux-home-sequence-text{transition:none!important}
+}/* Top-bar picker styles are consolidated above. */
+/* Do not render a text X as the sign-in emblem; use the real repository logo. */
+.login-orb::after{display:none!important;content:none!important}.login-orb{overflow:hidden!important;padding:0!important}.login-orb img{
+  width:44px!important;height:44px!important;object-fit:contain!important;
+  display:block!important;border:0!important;box-shadow:none!important;background:transparent!important;
+}/* Chat home: only the new minimal intro/logo surface is allowed. */
+body.chat-session-active:not(.home-exiting) #welcomeScreen, body.plugins-page-active #welcomeScreen, body[data-media-mode] #welcomeScreen{
+  display:none!important;visibility:hidden!important;pointer-events:none!important;
+}body.home-active #welcomeScreen{
+  display:flex!important;visibility:visible!important;pointer-events:auto!important;
+}/* Hold the current home panel at its original screen coordinates for the exit
+   animation; it no longer participates in the flex layout while chat appears. */
+body.home-exiting #welcomeScreen{
+  position:fixed!important;
+  top:var(--trux-home-exit-top,60px)!important;
+  left:var(--trux-home-exit-left,0px)!important;
+  width:var(--trux-home-exit-width,100vw)!important;
+  height:var(--trux-home-exit-height,calc(100dvh - 60px))!important;
+  flex:none!important;margin:0!important;
+  display:flex!important;visibility:visible!important;
+  opacity:1!important;pointer-events:none!important;z-index:150!important;
+  transition:opacity 1s var(--ease-out),transform 1s var(--ease-out)!important;
+  will-change:opacity,transform;
+}body.home-exiting.home-exiting-fade #welcomeScreen{
+  opacity:0!important;transform:translateY(-6px)!important;
+}#modelDropdown{
+  left:auto!important;right:auto!important;transform:none!important;
+  width:min(360px,calc(100vw - 20px))!important;
+  max-width:calc(100vw - 20px)!important;
+  box-sizing:border-box!important;overflow-x:hidden!important;
+}#modelDropdown .model-item{
+  box-sizing:border-box!important;width:100%!important;min-width:0!important;
+  grid-template-columns:30px minmax(0,1fr) 20px!important;align-items:start!important;
+}#modelDropdown .model-info{min-width:0!important;overflow:hidden!important}#modelDropdown .model-info b, #modelDropdown .model-info small{
+  min-width:0!important;overflow-wrap:anywhere!important;
+}#modelDropdown .thinking-choice{
+  box-sizing:border-box!important;width:100%!important;min-width:0!important;
+  display:grid!important;grid-template-columns:minmax(0,1fr) 20px!important;
+  gap:8px!important;align-items:center!important;
+}#modelDropdown .thinking-choice > span:first-child{
+  min-width:0!important;display:flex!important;flex-direction:column!important;
+  gap:2px!important;overflow:hidden!important;
+}#modelDropdown .thinking-choice b{display:block!important;line-height:1.2!important}#modelDropdown .thinking-choice small{
+  display:block!important;color:#777!important;line-height:1.25!important;
+  overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
+}#modelDropdown .thinking-check{
+  display:block!important;width:20px!important;text-align:center!important;
+}/* The home screen intentionally has no centered logo. */
+
+
+.katex-display{max-width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;padding:2px 0!important;scrollbar-width:thin!important}.katex{max-width:100%!important}.trux-bubble .katex-display{margin:12px 0!important}.trux-diagram{position:relative;display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin:14px 0;padding:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;background:#000000!important;border:0!important;border-radius:0!important;box-shadow:none!important;-webkit-overflow-scrolling:touch}/* Mermaid's SVG must have a genuinely large canvas; the chat bubble clips it to a swipeable viewport. */
+    .trux-diagram-stage{position:relative;display:block;width:max(100%, 1440px);min-width:1440px;min-height:460px;background:#000000!important}.trux-diagram-svg{display:block;width:100%;min-width:0;max-width:none;background:#000000!important}.trux-diagram-svg svg{display:block!important;width:100%!important;min-width:100%!important;min-height:460px!important;max-width:none!important;height:auto!important;margin:0;background:#000000!important;overflow:visible!important}
+    @media(max-width:768px){.trux-diagram-stage{width:max(100%, 1280px);min-width:1280px;min-height:460px}.trux-diagram-svg svg{min-height:460px!important}}.trux-diagram-cursor{position:absolute;left:0;top:0;z-index:2;display:block;width:24px;height:24px;max-width:24px;max-height:24px;margin:0;padding:0;object-fit:contain;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;filter:none!important;mix-blend-mode:normal!important;animation:none!important;opacity:1!important;pointer-events:none;user-select:none;-webkit-user-drag:none}.trux-diagram-cursor[hidden], .trux-diagram-source{display:none!important}.trux-diagram-toolbar{position:sticky;left:0;display:flex;justify-content:flex-end;gap:8px;padding:8px 10px 0;z-index:3;background:#000000}.trux-diagram-toolbar button{font:12px/1.2 Arial,sans-serif;color:#bdbdbd;background:transparent;border:1px solid #414141;border-radius:7px;padding:7px 10px;cursor:pointer}.trux-diagram-toolbar button:hover{color:#fff;border-color:#777}.trux-diagram-editor{position:relative;min-width:280px;margin:10px 0 4px;padding:0 10px 10px;background:#000000}.trux-diagram-editor[hidden]{display:none!important}.trux-diagram-editor textarea{display:block;width:100%;min-height:210px;resize:vertical;padding:12px;color:#dedede;background:#191919;border:1px solid #444;border-radius:8px;font:13px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre;tab-size:2;user-select:text!important;-webkit-user-select:text!important;-webkit-touch-callout:default!important}.trux-diagram-editor-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}.trux-diagram-editor-actions button{font:12px/1.2 Arial,sans-serif;color:#d6d6d6;background:#222;border:1px solid #444;border-radius:7px;padding:8px 11px;cursor:pointer}.trux-diagram-editor-actions button[data-trux-diagram-apply]{background:#dedede;color:#000000;border-color:#dedede}.trux-diagram-error{margin:6px 0;color:var(--txt-3);font-size:13px}
+    .trux-thinking-chat-marker{
+      position:relative;isolation:isolate;flex:0 0 27px;width:27px;height:27px;
+      display:inline-grid;place-items:center;align-self:center;margin:0;overflow:visible;border-radius:50%;
+    }.trux-thinking-chat-marker::before{
+      content:"";position:absolute;inset:1px;border-radius:50%;
+      background:conic-gradient(from 0deg,#8eeaff 0deg,#739bff 105deg,#b69aff 210deg,#8eeaff 360deg);
+      -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 1.1px));
+      mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 1.1px));
+      filter:drop-shadow(0 0 5px rgba(130,179,255,.72)) drop-shadow(0 0 12px rgba(126,220,255,.38));
+      transform-origin:50% 50%;opacity:0;
+      animation:truxChatAuroraOrbit 2s cubic-bezier(.22,.61,.36,1) infinite;animation-delay:2s;
+    }.trux-thinking-chat-marker::after{
+      content:"";position:absolute;inset:-6px;border-radius:50%;pointer-events:none;z-index:-1;
+      background:conic-gradient(from 25deg,rgba(110,225,255,.7),rgba(120,151,255,.68),rgba(189,145,255,.64),rgba(110,225,255,.7));
+      opacity:0;transform:rotate(0deg) scale(.52);
+      filter:blur(5px) saturate(1.3) drop-shadow(0 0 9px rgba(126,169,255,.6));
+      animation:truxChatAuroraGlow 2s cubic-bezier(.22,.61,.36,1) infinite;animation-delay:2s;
+    }.trux-thinking-chat-marker svg{
+      position:relative;z-index:1;display:block;width:14px;height:14px;overflow:visible;
+      filter:drop-shadow(0 0 1px rgba(216,220,240,.24));transform-origin:50% 50%;
+      animation:truxChatStarTurn 2s cubic-bezier(.22,.61,.36,1) infinite;animation-delay:2s;
+    }
+    @keyframes truxChatAuroraOrbit {
+      0%{opacity:0;transform:rotate(0deg) scale(.58)}
+      8%{opacity:.5;transform:rotate(72deg) scale(.82)}
+      16%{opacity:1;transform:rotate(220deg) scale(1.22)}
+      22%{opacity:.88;transform:rotate(360deg) scale(1.28)}
+      30%{opacity:.32;transform:rotate(360deg) scale(1.08)}
+      36%{opacity:0;transform:rotate(360deg) scale(.92)}
+      100%{opacity:0;transform:rotate(360deg) scale(.92)}
+    }
+    @keyframes truxChatAuroraGlow {
+      0%{opacity:0;transform:rotate(0deg) scale(.52)}
+      10%{opacity:.24;transform:rotate(120deg) scale(.84)}
+      18%{opacity:.68;transform:rotate(300deg) scale(1.22)}
+      22%{opacity:.58;transform:rotate(360deg) scale(1.3)}
+      30%{opacity:.2;transform:rotate(360deg) scale(1.12)}
+      36%{opacity:0;transform:rotate(360deg) scale(1.02)}
+      100%{opacity:0;transform:rotate(360deg) scale(1.02)}
+    }
+    @keyframes truxChatStarTurn {
+      0%{transform:rotate(0deg) scale(.94);filter:drop-shadow(0 0 0 rgba(235,239,255,0))}
+      8%{transform:rotate(150deg) scale(1.08);filter:drop-shadow(0 0 8px rgba(145,157,255,.76)) drop-shadow(0 0 12px rgba(122,219,240,.35))}
+      16%{transform:rotate(300deg) scale(1.2);filter:drop-shadow(0 0 10px rgba(160,174,255,.92)) drop-shadow(0 0 16px rgba(122,219,240,.58))}
+      20%{transform:rotate(360deg) scale(1.14);filter:drop-shadow(0 0 9px rgba(160,174,255,.74)) drop-shadow(0 0 12px rgba(122,219,240,.4))}
+      30%{transform:rotate(360deg) scale(.96);filter:drop-shadow(0 0 1px rgba(235,239,255,.18))}
+      100%{transform:rotate(360deg) scale(.96);filter:drop-shadow(0 0 1px rgba(235,239,255,.18))}
+    }/* Intentional product motion: the star remains animated in either mode. */
+    @media (prefers-reduced-motion:reduce){
+      .trux-thinking-chat-marker::before{animation:truxChatAuroraOrbit 2s cubic-bezier(.22,.61,.36,1) 2s infinite!important}
+      .trux-thinking-chat-marker::after{animation:truxChatAuroraGlow 2s cubic-bezier(.22,.61,.36,1) 2s infinite!important}
+      .trux-thinking-chat-marker svg{animation:truxChatStarTurn 2s cubic-bezier(.22,.61,.36,1) 2s infinite!important}
+    }/* Desktop sidebar: a compact floating drawer, not a page-sized replacement.
+   Mobile retains its existing full-screen drawer layout. */
+@media (min-width:769px){
+  .sidebar {
+    position:fixed!important;
+    inset:14px auto 14px 14px!important;
+    width:min(352px,calc(100vw - 44px))!important;
+    max-width:352px!important;
+    height:auto!important;
+    min-height:0!important;
+    box-sizing:border-box!important;
+    margin-left:0!important;
+    padding:20px 16px 16px!important;
+    border:1px solid rgba(255,255,255,.09)!important;
+    border-radius:22px!important;
+    background:#000!important;
+    box-shadow:0 24px 80px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.035)!important;
+    transform:translate3d(calc(-100% - 30px),0,0)!important;
+    opacity:0!important;
+    visibility:hidden!important;
+    pointer-events:none!important;
+    transition:transform 300ms cubic-bezier(.2,.75,.25,1),opacity 200ms ease,visibility 0s linear 300ms!important;
+  }
+  .sidebar.open {
+    transform:translate3d(0,0,0)!important;
+    opacity:1!important;
+    visibility:visible!important;
+    pointer-events:auto!important;
+    transition:transform 300ms cubic-bezier(.2,.75,.25,1),opacity 200ms ease,visibility 0s linear 0s!important;
+  }
+  .sidebar.collapsed {
+    margin-left:0!important;
+    transform:translate3d(calc(-100% - 30px),0,0)!important;
+    opacity:0!important;
+    visibility:hidden!important;
+    pointer-events:none!important;
+  }
+  .sidebar-overlay {
+    display:block!important;
+    position:fixed!important;
+    inset:0!important;
+    z-index:1100!important;
+    background:rgba(0,0,0,.38)!important;
+    backdrop-filter:blur(3px)!important;
+    -webkit-backdrop-filter:blur(3px)!important;
+    opacity:0!important;
+    visibility:hidden!important;
+    pointer-events:none!important;
+    transition:opacity 200ms ease,visibility 0s linear 200ms!important;
+  }
+  .sidebar-overlay.active {
+    opacity:1!important;
+    visibility:visible!important;
+    pointer-events:auto!important;
+    transition:opacity 200ms ease,visibility 0s linear 0s!important;
+  }
+  .sidebar-item,.notebook-item,.profile,.sidebar-close {
+    transition:background 160ms ease,border-color 160ms ease,color 160ms ease,transform 160ms ease!important;
+  }
+}/* Incognito has an explicit active state and a one-tap exit control. */
+.trux-incognito-close{
+  display:grid!important;
+  place-items:center!important;
+  flex:0 0 24px!important;
+  width:24px!important;
+  height:24px!important;
+  margin-left:2px!important;
+  padding:0!important;
+  border:1px solid rgba(255,255,255,.10)!important;
+  border-radius:8px!important;
+  background:rgba(255,255,255,.035)!important;
+  color:#b4b4b4!important;
+  font:500 19px/1 var(--font-body)!important;
+  cursor:pointer!important;
+  transition:background 150ms ease,color 150ms ease,border-color 150ms ease,transform 150ms ease!important;
+}.trux-incognito-close:hover{
+  background:rgba(255,255,255,.12)!important;
+  border-color:rgba(255,255,255,.18)!important;
+  color:#fff!important;
+}.trux-incognito-close:active{ transform:scale(.94)!important; }body.incognito-mode #truxIncognitoTop{
+  gap:7px!important;
+  padding:0 7px 0 12px!important;
+  border-color:rgba(117,137,255,.30)!important;
+  background:rgba(70,82,155,.15)!important;
+  color:#d5d8ff!important;
+}body.incognito-mode #truxIncognitoTop .trux-incognito-dot{
+  background:#aebaff!important;
+  box-shadow:0 0 9px rgba(125,145,255,.35)!important;
+}body.incognito-mode #incognitoBtn{
+  background:rgba(109,131,255,.17)!important;
+  border-color:rgba(109,131,255,.42)!important;
+  color:#b9c3ff!important;
+  box-shadow:inset 0 0 0 1px rgba(109,131,255,.08)!important;
+}body.incognito-mode #incognitoBtn:hover{
+  background:rgba(109,131,255,.25)!important;
+  border-color:rgba(139,157,255,.58)!important;
+  color:#e0e4ff!important;
+}/* Image and video use the same single-row pill geometry as chat. */
+body[data-media-mode="image"] .composer .bar,body[data-media-mode="video"] .composer .bar{display:grid!important;grid-template-columns:42px minmax(0,1fr) 42px 48px!important;grid-template-rows:auto!important;align-items:center!important;gap:0 7px!important;min-height:84px!important;padding:10px 14px!important;border-radius:999px!important;box-sizing:border-box!important}
+body[data-media-mode="image"] .composer .bar > #promptInput,body[data-media-mode="video"] .composer .bar > #promptInput{grid-column:2!important;grid-row:1!important;width:100%!important;min-width:0!important;height:44px!important;min-height:44px!important;max-height:200px!important;margin:0!important;padding:10px 8px!important;align-self:center!important;box-sizing:border-box!important;font-size:16px!important;line-height:24px!important;overflow-x:hidden!important;overflow-y:auto!important}
+body[data-media-mode="image"] .composer .bar > #attachBtn,body[data-media-mode="video"] .composer .bar > #attachBtn{grid-column:1!important;grid-row:1!important;width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important;margin:0!important;padding:0!important;align-self:center!important;justify-self:center!important}
+body[data-media-mode="image"] .composer .bar > #voiceBtn,body[data-media-mode="video"] .composer .bar > #voiceBtn{grid-column:3!important;grid-row:1!important;width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important;margin:0!important;padding:0!important;align-self:center!important;justify-self:center!important}
+body[data-media-mode="image"] .composer .bar > #actionBtn,body[data-media-mode="video"] .composer .bar > #actionBtn{grid-column:4!important;grid-row:1!important;width:46px!important;height:46px!important;min-width:46px!important;min-height:46px!important;margin:0!important;padding:0!important;align-self:center!important;justify-self:end!important}
+body[data-media-mode="image"] .composer .hint,body[data-media-mode="video"] .composer .hint{margin-top:8px!important;line-height:1.35!important}
+@media(max-width:760px){body[data-media-mode="image"] .composer .bar,body[data-media-mode="video"] .composer .bar{grid-template-columns:42px minmax(0,1fr) 42px 48px!important;grid-template-rows:auto!important;min-height:84px!important;padding:10px 12px!important;border-radius:999px!important;gap:0 6px!important}body[data-media-mode="image"] .composer .hint,body[data-media-mode="video"] .composer .hint{font-size:11px!important;text-align:center!important}}
+/* Smoother, more balanced image/video landing cards on narrow displays. */
+@media (max-width:760px){
+  body[data-media-mode="image"] #imageWorkspace,
+  body[data-media-mode="video"] #videoWorkspace {
+    width:calc(100% - 20px)!important;
+    min-height:0!important;
+    margin:12px auto 6px!important;
+    border-radius:24px!important;
+  }
+  body[data-media-mode="image"] .media-gen-inner,
+  body[data-media-mode="video"] .media-gen-inner {
+    width:100%!important;
+    padding:26px 24px!important;
+    box-sizing:border-box!important;
+  }
+  body[data-media-mode="image"] .media-gen-workspace h1,
+  body[data-media-mode="video"] .media-gen-workspace h1 {
+    line-height:1.04!important;
+    overflow-wrap:anywhere!important;
+  }
+  body[data-media-mode="image"] .media-gen-actions,
+  body[data-media-mode="video"] .media-gen-actions {gap:8px!important;}
+  body[data-media-mode="image"] .media-gen-actions button,
+  body[data-media-mode="video"] .media-gen-actions button {
+    min-height:44px!important;
+    flex:1 1 auto!important;
+  }
+}
+
+/* ---------- REWORKED SETTINGS & PROFILE MODALS ---------- */
+    #profileModal, #profileModal{
+      padding: 0 !important;
+      background: rgba(0,0,0,0.85) !important;
+      backdrop-filter: blur(20px) !important;
+      -webkit-backdrop-filter: blur(20px) !important;
+    }#profileModal .card{
+      width: 100vw !important;
+      height: 100vh !important;
+      height: 100dvh !important;
+      max-width: none !important;
+      max-height: none !important;
+      min-height: 0 !important;
+      margin: 0 !important;
+      border-radius: 0 !important;
+      background: #000 !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+    }.profile-meta-grid{
+      display: grid !important;
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      gap: 10px !important;
+      margin: 20px 0 !important;
+    }.profile-meta-item{
+      padding: 14px !important;
+      border-radius: 16px !important;
+      background: rgba(255,255,255,0.035) !important;
+      border: 1px solid rgba(255,255,255,0.08) !important;
+      text-align: center !important;
+    }.profile-option-list{
+      border-radius: 18px !important;
+      border: 1px solid rgba(255,255,255,0.08) !important;
+      background: rgba(255,255,255,0.02) !important;
+      overflow: hidden !important;
+    }.profile-option-row{
+      min-height: 56px !important;
+      padding: 12px 16px !important;
+      border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+    }#profileModal .settings-page{
+      border-radius: 0 !important;
+      background: #09090c !important;
+    }.settings-sidebar{
+      background: #0d0d12 !important;
+      border-right: 1px solid rgba(255,255,255,0.08) !important;
+    }.settings-card{
+      border-radius: 20px !important;
+      background: rgba(255,255,255,0.025) !important;
+      border: 1px solid rgba(255,255,255,0.08) !important;
+      padding: 16px 20px !important;
+    }/* ---------- SMOOTHNESS POLISH & TRANSITIONS ---------- */
+    *{
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }body, .main, .sidebar, .chat, .composer, .bar, .card, .modal{
+      transition-property: background-color, border-color, color, transform, opacity;
+      transition-duration: 0.22s;
+      transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    }/* Hardware acceleration for scroll containers */
+    .chat, .history, .settings-main-scroll, .media-library-grid{
+      transform: translateZ(0);
+      will-change: scroll-position;
+      scroll-behavior: smooth;
+    }/* Smoother button active state */
+    button:active{
+      transform: scale(0.97) !important;
+    }#modelDropdown{
+      position: fixed !important;
+      bottom: 84px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      z-index: 99999 !important;
+      width: min(340px, calc(100vw - 32px)) !important;
+    }.trux-thinking-panel{
+      background: transparent !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+    }.thinking-status-line.compact, .thinking-status-line.full{
+      font-size: 14.5px !important;
+      font-weight: 600 !important;
+      background: linear-gradient(90deg, #999999 0%, #ffffff 50%, #999999 100%) !important;
+      background-size: 200% 100% !important;
+      -webkit-background-clip: text !important;
+      background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      animation: metallicShineGlow 2.8s linear infinite !important;
+    }
+
+    @keyframes metallicShineGlow {
+      0%{ background-position: 200% 0; }
+      100%{ background-position: -200% 0; }
+    }/* ---------- DESKTOP SPLIT-SCREEN SIDEBAR (DOCK LAYOUT) ---------- */
+    @media (min-width: 769px){
+      .sidebar {
+        position: relative !important;
+        inset: auto !important;
+        z-index: 100 !important;
+        width: 260px !important;
+        min-width: 260px !important;
+        max-width: 260px !important;
+        height: 100% !important;
+        min-height: 0 !important;
+        transform: none !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        border-right: 1px solid var(--line) !important;
+        box-shadow: none !important;
+        transition: margin-left 0.3s var(--ease-out), opacity 0.25s var(--ease) !important;
+        padding: 16px 12px 14px !important;
+      }
+
+      .sidebar.collapsed {
+        margin-left: -260px !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+
+      .shell {
+        display: flex !important;
+        flex-direction: row !important;
+        width: 100% !important;
+        height: 100dvh !important;
+        overflow: hidden !important;
+      }
+
+      .main {
+        flex: 1 !important;
+        min-width: 0 !important;
+        height: 100% !important;
+      }
+
+      .sidebar-item {
+        min-height: 42px !important;
+        padding: 0 12px !important;
+        font-size: 13.5px !important;
+        font-weight: 550 !important;
+        border-radius: 12px !important;
+        gap: 12px !important;
+      }
+
+      .sidebar-item svg {
+        width: 18px !important;
+        height: 18px !important;
+        flex: 0 0 18px !important;
+      }
+
+      .hist {
+        min-height: 38px !important;
+        font-size: 13.5px !important;
+        padding: 0 12px !important;
+        border-radius: 10px !important;
+      }
+
+      .sidebar-section-head {
+        font-size: 11px !important;
+        padding: 0 12px 6px !important;
+        font-family: var(--font-mono) !important;
+        letter-spacing: 0.12em !important;
+        text-transform: uppercase !important;
+      }
+
+      .sidebar-overlay {
+        display: none !important;
+      }
+    }/* Preserve the composer grid; align control contents without overriding responsive sizing. */
+    .bar{
+      display: grid !important;
+      align-items: center !important;
+    }.bar > #attachBtn, .bar > #incognitoBtn, .bar > #voiceBtn, .bar > #actionBtn, .bar > .icon-btn, .bar > .send-btn{
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      box-sizing: border-box !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border-radius: 999px !important;
+    }.bar > #attachBtn svg, .bar > #incognitoBtn svg, .bar > #voiceBtn svg, .bar > #actionBtn svg{
+      width: 18px !important;
+      height: 18px !important;
+      display: block !important;
+      margin: auto !important;
+    }/* ---------- CLEAN METALLIC SHINE THINKING BAR WITH REST INTERVALS ---------- */
+    .trux-thinking-panel{
+      position: relative !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      width: fit-content !important;
+      max-width: min(100%, 760px) !important;
+      background: transparent !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      margin: 4px 0 10px 0 !important;
+    }.trux-thinking-panel.expanded{
+      width: min(760px, 100%) !important;
+      align-items: stretch !important;
+    }.trux-thinking-bar{
+      display: flex !important;
+      align-items: center !important;
+      gap: 10px !important;
+      width: fit-content !important;
+      max-width: 100% !important;
+      flex: 0 0 auto !important;
+      background: transparent !important;
+      border: 0 !important;
+      padding: 0 !important;
+    }.thinking-status-line.compact, .thinking-status-line.full{
+      font-size: 14.5px !important;
+      font-weight: 600 !important;
+      color: transparent !important;
+      background-image: linear-gradient(90deg, #888888 0%, #888888 40%, #ffffff 50%, #888888 60%, #888888 100%) !important;
+      background-size: 250% 100% !important;
+      background-position: 100% 50% !important;
+      -webkit-background-clip: text !important;
+      background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      animation: metallicShinePeriodic 3.5s cubic-bezier(0.22, 0.61, 0.36, 1) infinite !important;
+    }.trux-thinking-panel.completed .trux-thinking-spark{display:none!important}.trux-thinking-panel.completed .thinking-status-line.compact, .trux-thinking-panel.completed .thinking-status-line.full{
+      background:none!important;
+      animation:none!important;
+      color:var(--txt-2)!important;
+      -webkit-text-fill-color:currentColor!important;
+    }
+
+    @keyframes metallicShinePeriodic {
+      0%{ background-position: 100% 50%; }
+      35%{ background-position: 0% 50%; }
+      100%{ background-position: 0% 50%; }
+    }/* Keep the prompt in the top grid row and let desktop/mobile rules own its size. */
+    .bar{
+      position: relative !important;
+      display: grid !important;
+    }

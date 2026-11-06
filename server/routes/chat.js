@@ -158,7 +158,9 @@ async function chat(request, { env, url }) {
       ...historyToContents(history, env.TRUX_BUCKET_NAME),
       { role: 'user', parts: await userParts({ uid: user.uid, bucket: env.TRUX_BUCKET_NAME, message, attachments }) }
     ];
-    const model = pickModel({ message, hasMedia: attachments.length > 0, thinking, mode });
+    const ownerModel = user.owner && /^[a-z0-9][a-z0-9.\-]{2,80}$/i.test(String(body.ownerModel || '')) && body.ownerModel !== 'auto'
+      ? String(body.ownerModel) : '';
+    const model = ownerModel || pickModel({ message, hasMedia: attachments.length > 0, thinking, mode });
     writer.update({ model });
     send({ type: 'status', status: mode === 'deep-research' ? 'Researching…' : 'Thinking…', model });
 
