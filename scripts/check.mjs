@@ -22,6 +22,7 @@ const html = fs.readFileSync('public/index.html', 'utf8');
   try { new vm.Script(m[1], { filename: 'index.html:inline-' + (i + 1) }); } catch (error) { failures.push('inline script ' + (i + 1) + ': ' + error.message); }
 });
 for (const m of html.matchAll(/(?:src|href)="(\/[^"?#]+)"/g)) {
+  if (m[1].startsWith('/download/')) continue; // server redirects
   if (!fs.existsSync(path.join('public', m[1]))) failures.push('index.html references missing ' + m[1]);
 }
 

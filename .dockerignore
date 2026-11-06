@@ -30,3 +30,6 @@ pnpm-debug.log*
 coverage
 dist
 build
+
+# Android app (built by GitHub Actions, not part of the server image)
+android

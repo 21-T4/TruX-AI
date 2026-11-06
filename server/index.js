@@ -19,6 +19,7 @@ import { routes as fileRoutes } from './routes/files.js';
 import { routes as homeRoutes } from './routes/home.js';
 import { routes as mediaRoutes } from './routes/media.js';
 import { routes as modelRoutes } from './routes/models.js';
+import { routes as nativeAuthRoutes } from './routes/native-auth.js';
 import { routes as pluginRoutes } from './routes/plugins.js';
 import { routes as pushRoutes } from './routes/push.js';
 import { routes as ttsRoutes } from './routes/tts.js';
@@ -27,7 +28,7 @@ const PORT = Number(process.env.PORT || 8080);
 const PUBLIC_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
 const ROUTES = {
   ...chatRoutes, ...configRoutes, ...feedbackRoutes, ...fileRoutes, ...homeRoutes,
-  ...mediaRoutes, ...modelRoutes, ...pluginRoutes, ...pushRoutes, ...ttsRoutes
+  ...mediaRoutes, ...modelRoutes, ...pluginRoutes, ...pushRoutes, ...ttsRoutes, ...nativeAuthRoutes
 };
 const STREAMED_BODY = new Set(['POST /api/files/upload']);
 const MAX_BODY = 512 * 1024;
@@ -160,6 +161,18 @@ const server = http.createServer((req, res) => {
   let url;
   try { url = new URL(req.url || '/', origin(req)); } catch { res.statusCode = 400; return res.end(); }
   if (url.pathname === '/healthz') { res.statusCode = 200; return res.end('ok'); }
+  if (url.pathname === '/download/android') {
+    // Latest signed APK built by .github/workflows/android.yml.
+    res.statusCode = 302;
+    res.setHeader('Location', process.env.TRUX_ANDROID_APK_URL || 'https://github.com/21-T4/TruX-AI/releases/latest/download/TruX-AI.apk');
+    res.setHeader('Cache-Control', 'no-store');
+    return res.end();
+  }
+  if (url.pathname === '/.well-known/assetlinks.json' && process.env.TRUX_ANDROID_SHA256) {
+    // Lets Android verify https links for the TruX app (optional).
+    res.setHeader('Content-Type', 'application/json');
+    return res.end(JSON.stringify([{ relation: ['delegate_permission/common.handle_all_urls'], target: { namespace: 'android_app', package_name: 'ai.trux.assistant', sha256_cert_fingerprints: [process.env.TRUX_ANDROID_SHA256] } }]));
+  }
   if (url.pathname.startsWith('/api/')) return void handleApi(req, res, url);
   return void serveStatic(req, res, url);
 });

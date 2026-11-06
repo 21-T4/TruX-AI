@@ -8,7 +8,8 @@ import { getDb, requireUser } from '../lib/firebase.js';
 import { HttpError, readJson, sseResponse } from '../lib/http.js';
 import { contextBlock, MODE_HINTS, PERSONA, toolManifest } from '../lib/prompts.js';
 import { memoryPrompt } from '../lib/memory.js';
-import { personalizationPrompt } from '../lib/personalization.js';
+import { personalizationPrompt, presetTemperature } from '../lib/personalization.js';
+import { normalizeDevice } from '../chat/device.js';
 import { getProcessedText } from '../lib/storage.js';
 import { notifyUser } from '../lib/push.js';
 import { addUsage, checkQuota, limitFor } from '../lib/usage.js';
@@ -141,7 +142,7 @@ async function chat(request, { env, url }) {
     const toolbox = new Toolbox({
       env, user, memories: ctx.memories, personalization: ctx.personalization, connectedSlugs: ctx.connectedSlugs,
       attachedImageKey: firstImage?.objectKey, attachedImageMime: firstImage?.mimeType,
-      origin: url.origin, writer, send, canVideo
+      origin: url.origin, writer, send, canVideo, device: normalizeDevice(body.device)
     });
 
     const systemInstruction = [
@@ -149,8 +150,9 @@ async function chat(request, { env, url }) {
       toolManifest(toolbox.capabilities),
       MODE_HINTS[mode] || '',
       contextBlock({ user, location, timeZone: String(body.timeZone || 'UTC').slice(0, 60) }),
-      personalizationPrompt(ctx.personalization),
-      ctx.personalization.memoryEnabled ? memoryPrompt(ctx.memories) : ''
+      ctx.personalization.memoryEnabled ? memoryPrompt(ctx.memories) : '',
+      // Last, so the chosen personality is the freshest instruction.
+      personalizationPrompt(ctx.personalization, 'chat')
     ].filter(Boolean).join('\n\n');
 
     const history = incognito ? sanitizeClientHistory(body.history) : ctx.history;
@@ -167,7 +169,7 @@ async function chat(request, { env, url }) {
     let status = 'done';
     let errorText = '';
     try {
-      const result = await runAgent({ model, thinking, contents, systemInstruction, toolbox, writer, send, signal: controller.signal });
+      const result = await runAgent({ model, thinking, contents, systemInstruction, toolbox, writer, send, signal: controller.signal, temperature: presetTemperature(ctx.personalization) });
       if (!result.text && !writer.state.media.length) {
         writer.appendText('I could not produce a response. Please try again.');
       }

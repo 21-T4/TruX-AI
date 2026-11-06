@@ -38,6 +38,9 @@
     const panel = byId("truxPwaLivePanel");
     if (panel) panel.dataset.state = next;
     if (typeof handleInputChange === "function") handleInputChange();
+    const active = next === "live" || next === "connecting";
+    try { window.TruXAndroid?.liveActive?.(active); } catch {}
+    window.dispatchEvent(new CustomEvent("trux-live-state", { detail: { state: next, active } }));
   }
 
   function setStatus(text) {
@@ -83,7 +86,8 @@
       const span = byId(id + "Label"); if (span && text) span.textContent = text;
     };
     set("truxPwaLiveCamera", videoKind === "camera", videoKind === "camera" ? "Turn camera off" : "Turn camera on", videoKind === "camera" ? "Camera on" : "Camera");
-    set("truxPwaLiveScreen", videoKind === "screen", videoKind === "screen" ? "Stop sharing screen" : "Share screen", videoKind === "screen" ? "Sharing" : "Share");
+    const sharing = videoKind === "screen" || videoKind === "screen-native";
+    set("truxPwaLiveScreen", sharing, sharing ? "Stop sharing screen" : "Share screen", sharing ? "Sharing" : "Share");
     set("truxPwaLiveMic", muted, muted ? "Unmute microphone" : "Mute microphone", muted ? "Mic muted" : "Mic on");
     const mc = byId("truxPwaLiveMenuCamera"); if (mc) mc.textContent = videoKind === "camera" ? "Turn camera off" : "Turn camera on";
     const mm = byId("truxPwaLiveMenuMic"); if (mm) mm.textContent = muted ? "Unmute microphone" : "Mute microphone";
@@ -216,7 +220,17 @@
 
   /* ---------- Camera / screen ---------- */
 
+  // Inside the Android app, screen frames come from MediaProjection (works
+  // across every app, not just this page) via window.truxNativeScreenFrame.
+  const nativeScreen = () => !!window.TruXAndroid?.startScreenShare;
+  window.truxNativeScreenFrame = b64 => {
+    if (videoKind !== "screen-native" || state !== "live" || socket?.readyState !== WebSocket.OPEN || socket.bufferedAmount > 512 * 1024) return;
+    if (b64) socket.send(JSON.stringify({ type: "video", data: String(b64) }));
+  };
+  window.truxNativeScreenStopped = () => { if (videoKind === "screen-native") { videoKind = ""; syncButtons(); } };
+
   function stopVideo() {
+    if (videoKind === "screen-native") { try { window.TruXAndroid.stopScreenShare(); } catch {} }
     clearInterval(frameTimer); frameTimer = null;
     videoStream?.getTracks().forEach(t => t.stop());
     videoStream = null; videoKind = "";
@@ -246,9 +260,16 @@
   }
 
   async function toggleVideo(kind) {
-    if (videoKind === kind) { stopVideo(); return; }
+    if (videoKind === kind || (kind === "screen" && videoKind === "screen-native")) { stopVideo(); return; }
     if (state !== "live" && state !== "connecting") { toast("Start Live first.", "err"); return; }
     stopVideo();
+    if (kind === "screen" && nativeScreen()) {
+      videoKind = "screen-native";
+      try { window.TruXAndroid.startScreenShare(); } catch { videoKind = ""; toast("Screen sharing could not start.", "err"); }
+      setStatus("Sharing your screen. Switch to any app and keep talking.");
+      syncButtons();
+      return;
+    }
     try {
       if (kind === "screen") {
         if (!navigator.mediaDevices?.getDisplayMedia) { toast("Screen sharing isn't supported in this browser.", "err"); return; }
@@ -300,7 +321,8 @@
       const timeout = setTimeout(() => { if (socket === ws && state === "connecting") fail("Live took too long to connect. Try again."); }, 15000);
       ws.onopen = () => {
         const voice = (typeof truxSelectedVoice === "function" ? truxSelectedVoice() : "") || "Kore";
-        ws.send(JSON.stringify({ type: "auth", token, voice }));
+        const device = (() => { try { return window.truxDevice?.info() || null; } catch { return null; } })();
+        ws.send(JSON.stringify({ type: "auth", token, voice, device }));
       };
       ws.onmessage = event => {
         if (socket !== ws) return;
@@ -315,6 +337,7 @@
           case "turnComplete": lines.assistant = null; lines.user = null; break;
           case "tool": if (msg.phase === "start") setStatus(msg.name === "trux_memory_save" ? "Saving to memory…" : "Looking that up…"); else setStatus("Listening"); break;
           case "resumed": setStatus("Listening"); break;
+          case "action": if (msg.action) window.truxDevice?.run(msg.action, { source: "live" }); break;
           case "error": setStatus(msg.message || "Live hit a problem."); break;
           case "ended": stop("ended", msg.reason); break;
           default: break;

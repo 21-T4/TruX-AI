@@ -2,6 +2,7 @@
    helpers, model routing, and media generation (image, video, speech). */
 import { GoogleGenAI } from '@google/genai';
 import { getProjectId, googleApi, VERTEX_LOCATION } from './config.js';
+import { VOICE_IDS } from './personalization.js';
 
 export const MODELS = Object.freeze({
   fast: 'gemini-3.5-flash-lite',
@@ -210,7 +211,7 @@ export async function generateVideo({ prompt, outputGcsUri, aspectRatio = '16:9'
 }
 
 /* ---------- Text to speech (Gemini TTS, streaming PCM) ---------- */
-export const TTS_VOICES = ['Kore', 'Puck', 'Aoede', 'Charon', 'Zephyr', 'Leda', 'Fenrir', 'Orus', 'Sulafat', 'Achernar'];
+export const TTS_VOICES = VOICE_IDS;
 
 /**
  * Streams 24 kHz mono 16-bit PCM for `text`. Calls the REST endpoint

@@ -4,7 +4,7 @@ import { groundingSources, MODELS, streamRound, thinkingConfig } from '../lib/ve
 
 const MAX_ROUNDS = 12;
 
-export async function runAgent({ model, thinking, contents, systemInstruction, toolbox, writer, send, signal }) {
+export async function runAgent({ model, thinking, contents, systemInstruction, toolbox, writer, send, signal, temperature = 0.9 }) {
   const messages = contents.slice();
   const sources = new Map();
   let searchSuggestionHtml = '';
@@ -20,7 +20,7 @@ export async function runAgent({ model, thinking, contents, systemInstruction, t
       contents: messages,
       systemInstruction,
       tools: toolbox.geminiTools(),
-      config: { ...thinkingConfig(currentModel, thinking), temperature: 1 },
+      config: { ...thinkingConfig(currentModel, thinking), temperature },
       signal,
       onText: delta => {
         if (separatorPending) { delta = '\n\n' + delta.replace(/^\s+/, ''); separatorPending = false; }

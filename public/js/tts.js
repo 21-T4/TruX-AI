@@ -1,11 +1,16 @@
 /* Read aloud with Gemini text-to-speech.
  * /api/tts streams raw 24 kHz mono PCM16; chunks are scheduled back to back
  * on one AudioContext so playback starts on the first chunk with no gaps. */
-const TRUX_TTS_VOICES = [
-  ["Kore", "Kore - firm"], ["Puck", "Puck - upbeat"], ["Aoede", "Aoede - breezy"], ["Charon", "Charon - informative"],
-  ["Zephyr", "Zephyr - bright"], ["Leda", "Leda - youthful"], ["Fenrir", "Fenrir - excitable"], ["Orus", "Orus - steady"],
-  ["Sulafat", "Sulafat - warm"], ["Achernar", "Achernar - soft"]
+/* All 30 prebuilt Gemini voices; the same voice is used by read aloud and Live. */
+const TRUX_GEMINI_VOICES = [
+  ["Zephyr", "Bright", "f"], ["Puck", "Upbeat", "m"], ["Charon", "Informative", "m"], ["Kore", "Firm", "f"], ["Fenrir", "Excitable", "m"],
+  ["Leda", "Youthful", "f"], ["Orus", "Firm", "m"], ["Aoede", "Breezy", "f"], ["Callirrhoe", "Easy-going", "f"], ["Autonoe", "Bright", "f"],
+  ["Enceladus", "Breathy", "m"], ["Iapetus", "Clear", "m"], ["Umbriel", "Easy-going", "m"], ["Algieba", "Smooth", "m"], ["Despina", "Smooth", "f"],
+  ["Erinome", "Clear", "f"], ["Algenib", "Gravelly", "m"], ["Rasalgethi", "Informative", "m"], ["Laomedeia", "Upbeat", "f"], ["Achernar", "Soft", "f"],
+  ["Alnilam", "Firm", "m"], ["Schedar", "Even", "m"], ["Gacrux", "Mature", "f"], ["Pulcherrima", "Forward", "f"], ["Achird", "Friendly", "m"],
+  ["Zubenelgenubi", "Casual", "m"], ["Vindemiatrix", "Gentle", "f"], ["Sadachbia", "Lively", "m"], ["Sadaltager", "Knowledgeable", "m"], ["Sulafat", "Warm", "f"]
 ];
+const TRUX_TTS_VOICES = TRUX_GEMINI_VOICES.map(([id, style]) => [id, id + " · " + style]);
 let truxTtsSession = null;
 
 function truxSelectedVoice() {
@@ -22,7 +27,7 @@ function stopSpeaking() {
   s.button?.classList.remove("speaking");
 }
 
-async function speakText(text, button) {
+async function speakText(text, button, options = {}) {
   if (truxTtsSession) {
     const sameButton = truxTtsSession.button && truxTtsSession.button === button;
     stopSpeaking();
@@ -45,7 +50,7 @@ async function speakText(text, button) {
     const res = await truxAuthenticatedFetch("/api/tts", {
       method: "POST", signal: controller.signal,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: content.slice(0, 6000), voice: truxSelectedVoice() })
+      body: JSON.stringify({ text: content.slice(0, 6000), voice: options.voice || truxSelectedVoice() })
     });
     if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || "Read aloud failed."); }
     const reader = res.body.getReader();
@@ -80,6 +85,7 @@ async function speakText(text, button) {
 }
 
 function populateTruxSpeechVoices() {
+  renderTruxVoiceGrid();
   const select = getEl("truxSpeechVoiceSelect");
   if (!select) return;
   const current = truxSelectedVoice();
@@ -96,9 +102,45 @@ function saveSpeechVoice(value) {
   store.setItem("trux_speech_voice", voice);
   // The same voice is used by Live; keep it with the personalization profile.
   try { saveTruxPersonalization({ voice }, { quiet: true }); } catch {}
-  toast("Voice updated.", "ok");
+  const select = getEl("truxSpeechVoiceSelect"); if (select) select.value = voice;
+  syncTruxVoiceGrid();
+  toast(voice + " is now TruX's voice for Live and read aloud.", "ok");
 }
 
-function previewSpeechVoice() {
-  speakText("Hi, I'm TruX. This is how I sound when I read answers aloud.");
+function truxVoicePreviewLine(voice) {
+  const style = (TRUX_GEMINI_VOICES.find(([id]) => id === voice) || [])[1] || "";
+  return `Hi, I'm TruX, speaking as ${voice}${style ? ", my " + style.toLowerCase() + " voice" : ""}. This is how I'll sound in Live and when I read answers aloud.`;
+}
+
+function previewSpeechVoice(voice, button) {
+  const id = voice || getEl("truxSpeechVoiceSelect")?.value || truxSelectedVoice();
+  speakText(truxVoicePreviewLine(id), button || null, { voice: id });
+}
+
+/* Voice cards in Personalization: tap a card to choose, the play button to preview. */
+function renderTruxVoiceGrid() {
+  const host = getEl("truxVoiceGrid");
+  if (!host) return;
+  if (!host.childElementCount) {
+    for (const [id, style, kind] of TRUX_GEMINI_VOICES) {
+      const card = document.createElement("div");
+      card.className = "voice-card"; card.dataset.voice = id; card.dataset.kind = kind;
+      card.innerHTML = `<button type="button" class="voice-pick" role="radio" aria-checked="false"><span class="voice-avatar" aria-hidden="true">${escapeHtml(id[0])}</span><span class="voice-copy"><b>${escapeHtml(id)}</b><small>${escapeHtml(style)}</small></span></button><button type="button" class="voice-play" aria-label="Preview ${escapeHtml(id)}"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button>`;
+      card.querySelector(".voice-pick").onclick = () => saveSpeechVoice(id);
+      const play = card.querySelector(".voice-play");
+      play.onclick = () => previewSpeechVoice(id, play);
+      host.appendChild(card);
+    }
+  }
+  syncTruxVoiceGrid();
+}
+
+function syncTruxVoiceGrid() {
+  const current = truxSelectedVoice();
+  document.querySelectorAll("#truxVoiceGrid .voice-card").forEach(card => {
+    const on = card.dataset.voice === current;
+    card.classList.toggle("active", on);
+    card.querySelector(".voice-pick")?.setAttribute("aria-checked", String(on));
+  });
+  const label = getEl("truxVoiceCurrent"); if (label) label.textContent = current;
 }

@@ -52,6 +52,7 @@
   <link rel="stylesheet" href="/css/extras.css">
   <link rel="stylesheet" href="/css/login.css">
   <link rel="stylesheet" href="/css/live.css">
+  <link rel="stylesheet" href="/css/circle.css">
 
 
 
@@ -573,6 +574,10 @@
                 <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3Z"/></svg>
                 <span class="trux-plus-action-copy"><b>Video</b><small>Generate with Veo</small></span>
               </button>
+              <button type="button" class="trux-plus-action trux-plus-circle" onclick="closeAttachmentMenu();truxCircle.start()" role="menuitem">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5c4.9 0 8.5 3.4 8.5 7.8s-3.8 7.7-8.6 7.7c-4.7 0-8.4-3.2-8.4-7.4 0-3.6 2.6-6.2 6-7"/><path d="m16.5 16.5 4 4"/></svg>
+                <span class="trux-plus-action-copy"><b>Circle to search</b><small>Circle anything on screen</small></span>
+              </button>
               <button type="button" class="trux-plus-action" onclick="openMediaLibrary('video');closeAttachmentMenu()" role="menuitem">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 3h10M7 21h10M10 9l5 3-5 3Z"/></svg>
                 <span class="trux-plus-action-copy"><b>Video library</b><small>View saved videos</small></span>
@@ -649,7 +654,8 @@
       </div>
       <div class="profile-list-group-title">Personalize</div><div class="profile-option-list">
         <button type="button" class="profile-option-row" data-settings-section="appearance"><span class="profile-option-icon">◐</span><span class="profile-option-copy"><b>Appearance</b><small>Theme, accent and visual effects</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-settings-section="personalization"><span class="profile-option-icon">✦</span><span class="profile-option-copy"><b>Responses &amp; memory</b><small>Instructions, tone and saved preferences</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-settings-section="personalization"><span class="profile-option-icon">✦</span><span class="profile-option-copy"><b>Personalization</b><small>Personality, voice, instructions and memory</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-settings-section="assistant"><span class="profile-option-icon">◉</span><span class="profile-option-copy"><b>Assistant</b><small>Hey TruX, circle to search and phone control</small></span><span class="profile-option-chevron">›</span></button>
         <button type="button" class="profile-option-row" data-settings-section="voice"><span class="profile-option-icon">♫</span><span class="profile-option-copy"><b>Voice &amp; notifications</b><small>Speech, dictation and alerts</small></span><span class="profile-option-chevron">›</span></button>
       </div>
       <div class="profile-list-group-title">Account &amp; data</div><div class="profile-option-list">
@@ -723,6 +729,27 @@
               </div>
             </section>
 
+          <section class="settings-section" data-settings-content="assistant">
+              <div class="settings-section-head"><h2>Assistant</h2><p>Use TruX hands-free: wake it with your voice, circle anything on screen, and let it call, text and open apps for you.</p></div>
+              <div class="settings-card assistant-hero" id="truxAssistantAppCard">
+                <div class="assistant-hero-glow" aria-hidden="true"></div>
+                <div class="sect"><h4>TruX for Android</h4>
+                  <p class="mrow-sub">Install the TruX app to make it your phone's digital assistant (works with Samsung's side button). Then hold the side or home button to circle anything, say "Hey TruX" even with the screen off, and let TruX place calls, send texts and open apps.</p>
+                  <a class="mbtn assistant-download" href="/download/android" rel="noopener">Download the Android app</a>
+                  <p class="mrow-sub assistant-fine">After installing, open TruX and tap Set up assistant. Android may ask you to allow installing from your browser first.</p>
+                </div>
+              </div>
+              <div class="settings-card" id="truxAssistantNativeCard" hidden>
+                <div class="mrow"><span><b>Default digital assistant</b><small class="mrow-sub" id="truxAssistantRoleStatus">Checking…</small></span><button type="button" class="mbtn" onclick="truxNative.openAssistantSettings()">Open settings</button></div>
+                <div class="mrow"><span><b>Permissions</b><small class="mrow-sub" id="truxPermissionSummary">Microphone, camera, phone, contacts, notifications, location and display over other apps.</small></span><button type="button" class="mbtn" onclick="truxNative.requestAllPermissions()">Grant all</button></div>
+                <div id="truxPermissionList" class="permission-list"></div>
+              </div>
+              <div class="settings-card">
+                <div class="mrow"><span><b>"Hey TruX" wake word</b><small class="mrow-sub" id="truxWakeStatus">Say "Hey TruX" or "TruX" to start a Live conversation.</small></span><label class="toggle"><input id="truxWakeToggle" type="checkbox" onchange="truxWake.setEnabled(this.checked)"><span class="slider"></span></label></div>
+                <div class="mrow"><span><b>Circle to search</b><small class="mrow-sub" id="truxCircleHint">Circle or tap anything on your screen and ask about it.</small></span><button type="button" class="mbtn" onclick="truxCircle.start()">Try it</button></div>
+                <div class="mrow"><span><b>Phone actions</b><small class="mrow-sub">Ask "call Mom", "text Rahul I'm on my way", "open Spotify" or "set an alarm for 6:30". Calls and texts always show who they go to.</small></span></div>
+              </div></section>
+
           <section class="settings-section" data-settings-content="voice">
               <div class="settings-section-head"><h2>Voice &amp; notifications</h2><p>Speech, dictation, and the alerts this device can actually show.</p></div>
               <div class="settings-card">
@@ -740,7 +767,8 @@
 
           <section class="settings-section" data-settings-content="personalization">
               <div class="settings-section-head"><h2>Personalization</h2><p>Choose a personality, tell TruX about yourself, and manage what it remembers. Changes sync to every device and apply to your next message. <span id="truxPersonalizationStatus" class="trux-save-status" aria-live="polite"></span></p></div>
-              <div class="settings-card"><div class="sect"><h4>Personality</h4><p class="mrow-sub">How TruX sounds in chat and Live.</p><div id="truxPresetGrid" class="preset-grid" role="radiogroup" aria-label="Personality"></div></div></div>
+              <div class="settings-card"><div class="sect"><h4>Personality</h4><p class="mrow-sub">Changes TruX's tone, length and format in chat and Live.</p><div id="truxPresetGrid" class="preset-grid" role="radiogroup" aria-label="Personality"></div><div id="truxPresetSample" class="preset-sample" aria-live="polite"></div></div></div>
+              <div class="settings-card"><div class="sect"><div class="memory-head"><h4>Voice</h4><small class="pfield-count">Current: <b id="truxVoiceCurrent">Kore</b></small></div><p class="mrow-sub">All Gemini voices. Used by TruX Live and read aloud. Tap play to preview.</p><div id="truxVoiceGrid" class="voice-grid" role="radiogroup" aria-label="Voice"></div></div></div>
               <div class="settings-card"><div class="sect"><h4>About you</h4>
                 <label class="profile-field-label" for="truxPNickname">What should TruX call you? <small id="truxPNicknameCount" class="pfield-count">0 / 60</small></label>
                 <input id="truxPNickname" class="instr" data-pfield="nickname" maxlength="60" placeholder="Nickname" oninput="queuePersonalizationField(this)">
@@ -921,7 +949,11 @@
   <script src="/js/subscription.js"></script>
   <script src="/js/boot.js"></script>
   <script src="/js/pwa-diagrams.js"></script>
+  <script src="/js/device.js"></script>
+  <script src="/js/circle-search.js"></script>
+  <script src="/js/wake-word.js"></script>
   <script src="/js/live.js"></script>
+  <script src="/js/native-bridge.js"></script>
   <script src="/js/plugins.js"></script>
 
 

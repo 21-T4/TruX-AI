@@ -38,6 +38,20 @@ gcloud run deploy trux-ai --source . --region us-central1 \
   --no-cpu-throttling --timeout=3600 --allow-unauthenticated
 ```
 
+## One-click setup (no terminal)
+
+`.github/workflows/gcp-setup.yml` does all of the setup below from GitHub:
+
+1. Google Cloud console → IAM & Admin → Service accounts → Create service account (`trux-setup`, role **Owner**) → Keys → Add key → JSON.
+2. GitHub → Settings → Secrets and variables → Actions → New repository secret: `GCP_SA_KEY` = the whole JSON file. Optionally add `COMPOSIO_API_KEY`, `RESEND_API_KEY`, `TRUX_FEEDBACK_FROM_EMAIL`, `FCM_VAPID_PUBLIC_KEY`.
+3. Actions → **Google Cloud setup** → Run workflow. The run summary lists what changed and anything left to do. Delete the key afterwards if you like.
+
+## Android app (digital assistant)
+
+`android/` is a small Kotlin app that loads the web app and registers TruX as an Android **Digital assistant app** (VoiceInteractionService), so it shows up in Settings → Apps → Default apps → Digital assistant app (including Samsung). It adds system-wide Circle to search (hold the side/home button), the "Hey TruX" wake word, phone actions (calls, texts, apps, alarms) and full-screen sharing in Live.
+
+`.github/workflows/android.yml` builds a signed APK and publishes it to GitHub Releases on every change to `android/` on `main`. `/download/android` on the site redirects to the latest APK.
+
 ## Local development
 
 ```

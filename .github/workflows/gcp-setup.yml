@@ -1,0 +1,56 @@
+name: Google Cloud setup
+
+# Run from GitHub: Actions → "Google Cloud setup" → Run workflow.
+# Needs the repository secret GCP_SA_KEY (a service-account JSON key with the
+# Owner role). Optional API keys are copied into Secret Manager when set as
+# repository secrets with the same names.
+on:
+  workflow_dispatch:
+    inputs:
+      project:
+        description: Google Cloud / Firebase project id
+        default: trux-ai
+      service:
+        description: Cloud Run service name (blank = find it)
+        default: ""
+      region:
+        description: Cloud Run region (blank = find it)
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the key secret
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          if [ -z "$GCP_SA_KEY" ]; then
+            echo "::error::Add the GCP_SA_KEY repository secret first (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+          echo "$GCP_SA_KEY" | python3 -c "import json,sys; d=json.load(sys.stdin); assert d.get('type')=='service_account' and d.get('private_key'), 'not a service-account key'" \
+            || { echo "::error::GCP_SA_KEY must be the whole JSON key file (it starts with { and contains \"type\": \"service_account\")."; exit 1; }
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          project_id: ${{ inputs.project }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install --quiet google-auth requests
+      - name: Configure TruX
+        env:
+          PROJECT: ${{ inputs.project }}
+          SERVICE: ${{ inputs.service }}
+          REGION: ${{ inputs.region }}
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          TRUX_FEEDBACK_FROM_EMAIL: ${{ secrets.TRUX_FEEDBACK_FROM_EMAIL }}
+          FCM_VAPID_PUBLIC_KEY: ${{ secrets.FCM_VAPID_PUBLIC_KEY }}
+        run: python3 scripts/gcp_setup.py

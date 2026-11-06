@@ -1,10 +1,52 @@
 /* Personalization, memory and chat-state helpers */
 .preset-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:10px}
-.preset-chip{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-height:64px;padding:11px 12px;border-radius:13px;border:1px solid var(--line-2);background:var(--bg-2);color:var(--txt-2);text-align:left;cursor:pointer;transition:border-color .15s,background .15s}
+.preset-chip{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-height:64px;padding:11px 34px 11px 12px;border-radius:13px;border:1px solid var(--line-2);background:var(--bg-2);color:var(--txt-2);text-align:left;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s;-webkit-tap-highlight-color:transparent}
 .preset-chip b{color:var(--txt);font-size:13.5px;font-weight:600}
 .preset-chip small{color:var(--txt-4);font-size:11.5px;line-height:1.4}
-.preset-chip:hover{border-color:var(--line-3);background:var(--bg-3)}
-.preset-chip.active{border-color:var(--acc-line,rgba(120,135,255,.6));background:var(--acc-soft,rgba(110,125,255,.12))}
+.preset-chip::after{content:"";position:absolute;top:10px;right:10px;width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line-3);box-sizing:border-box;transition:all .15s}
+@media (hover:hover){.preset-chip:not(.active):hover{border-color:var(--line-3);background:var(--bg-3)}}
+.preset-chip:focus{outline:none}.preset-chip:focus-visible{box-shadow:0 0 0 2px var(--acc-line)}
+.preset-chip.active{border-color:var(--acc);background:var(--acc-soft);box-shadow:0 0 0 1px var(--acc) inset}
+.preset-chip.active b{color:var(--acc)}
+.preset-chip.active::after{border-color:var(--acc);background:var(--acc) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.2l2.6 2.5L12 5.3' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/12px no-repeat}
+.preset-sample{margin-top:12px;padding:12px 14px;border-radius:13px;border:1px dashed var(--line-2);background:var(--bg-1);font-size:13px;line-height:1.55;color:var(--txt-2)}
+.preset-sample:empty{display:none}
+.preset-sample-q{display:block;color:var(--txt-4);font-size:12px}
+.preset-sample-label{display:block;margin-top:6px;color:var(--acc);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.preset-sample p{margin:4px 0 0}
+.voice-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:8px;margin-top:10px;max-height:340px;overflow:auto;padding:2px}
+.voice-card{display:flex;align-items:center;gap:4px;border:1px solid var(--line-2);border-radius:13px;background:var(--bg-2);transition:border-color .15s,background .15s}
+.voice-card.active{border-color:var(--acc);background:var(--acc-soft);box-shadow:0 0 0 1px var(--acc) inset}
+.voice-pick{flex:1;min-width:0;display:flex;align-items:center;gap:9px;padding:9px 4px 9px 9px;border:0;background:none;color:inherit;text-align:left;cursor:pointer}
+.voice-avatar{flex:0 0 30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;color:#fff;background:linear-gradient(135deg,#4f8cff,#9b6bff)}
+.voice-card[data-kind="f"] .voice-avatar{background:linear-gradient(135deg,#ff6fa5,#a46bff)}
+.voice-copy{min-width:0;display:flex;flex-direction:column}
+.voice-copy b{font-size:13px;color:var(--txt);font-weight:600}
+.voice-card.active .voice-copy b{color:var(--acc)}
+.voice-copy small{font-size:11px;color:var(--txt-4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.voice-play{flex:0 0 32px;height:32px;margin-right:6px;border-radius:50%;border:1px solid var(--line-2);background:var(--bg-3);color:var(--txt-2);display:grid;place-items:center;cursor:pointer}
+@media (hover:hover){.voice-play:hover{color:var(--acc);border-color:var(--acc-line)}.voice-card:not(.active):hover{border-color:var(--line-3)}}
+.voice-play.speaking,.voice-play.loading{color:var(--acc);border-color:var(--acc)}
+/* Assistant settings */
+.assistant-hero{position:relative;overflow:hidden}
+.assistant-hero-glow{position:absolute;inset:-40% -10% auto auto;width:260px;height:260px;border-radius:50%;background:radial-gradient(closest-side,rgba(155,107,255,.28),transparent);pointer-events:none}
+.assistant-download{display:inline-flex;align-items:center;justify-content:center;width:auto;margin-top:10px;padding:0 16px;text-decoration:none;background:linear-gradient(90deg,#4f8cff,#9b6bff,#ff5fa2);color:#fff;border:0}
+.assistant-fine{margin-top:8px;font-size:11.5px}
+.permission-list{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0 6px}
+.perm-chip{padding:4px 9px;border-radius:999px;font-size:11.5px;border:1px solid var(--line-2);color:var(--txt-4)}
+.perm-chip.on{border-color:rgba(70,200,140,.5);color:#46c88c;background:rgba(70,200,140,.08)}
+.trux-plus-circle svg{color:#9b6bff}
+/* Device action sheet */
+.trux-action-sheet{position:fixed;left:50%;bottom:calc(18px + var(--safe-b,0px));z-index:150000;display:flex;align-items:center;gap:12px;width:min(460px,calc(100vw - 24px));padding:12px;border-radius:18px;border:1px solid var(--line-2);background:var(--bg-2);box-shadow:0 18px 50px rgba(0,0,0,.35);transform:translate(-50%,140%);transition:transform .22s var(--ease-out,ease)}
+.trux-action-sheet.open{transform:translate(-50%,0)}
+.tas-icon{flex:0 0 40px;height:40px;border-radius:12px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#4f8cff,#9b6bff)}
+.tas-icon svg{width:20px;height:20px}
+.tas-copy{flex:1;min-width:0;display:flex;flex-direction:column}
+.tas-copy b{font-size:14px;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tas-copy small{font-size:12px;color:var(--txt-4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tas-cancel,.tas-go{height:36px;padding:0 14px;border-radius:11px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;text-decoration:none;white-space:nowrap}
+.tas-cancel{border:1px solid var(--line-2);background:transparent;color:var(--txt-2)}
+.tas-go{border:0;background:var(--acc);color:#fff}
 .pfield-count{float:right;color:var(--txt-4);font-size:11px;font-weight:450}
 .trux-save-status{display:inline-block;margin-left:6px;color:var(--txt-4);font-size:12px}
 .trux-save-status.err{color:var(--danger)}

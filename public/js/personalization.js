@@ -4,13 +4,13 @@
  * The server reads both on every chat and Live turn, so changes apply to the
  * next message on every device. */
 const TRUX_PERSONALITY_PRESETS = [
-  ["default", "Default", "Balanced, warm and clear."],
-  ["professional", "Professional", "Polished, precise, no slang."],
-  ["friendly", "Friendly", "Warm and conversational."],
-  ["concise", "Concise", "Answer first, minimal words."],
-  ["creative", "Creative", "Imaginative, original angles."],
-  ["mentor", "Mentor", "Explains the why, step by step."],
-  ["witty", "Witty", "Clever and playful, still helpful."]
+  ["default", "Default", "Balanced and clear."],
+  ["professional", "Professional", "Formal, structured, no emoji."],
+  ["friendly", "Friendly", "Casual, upbeat, encouraging."],
+  ["concise", "Concise", "Shortest useful answer."],
+  ["creative", "Creative", "Vivid ideas, fresh angles."],
+  ["mentor", "Mentor", "Teaches the why, step by step."],
+  ["witty", "Witty", "Dry humour, still useful."]
 ];
 const TRUX_PERSONALIZATION_LIMITS = { nickname: 60, occupation: 120, about: 1500, instructions: 3000 };
 let truxPersonalization = { preset: "default", nickname: "", occupation: "", about: "", instructions: "", memoryEnabled: true, voice: "Kore" };
@@ -32,7 +32,7 @@ async function loadTruxPersonalization(force = false) {
       voice: String(raw.voice || store.getItem("trux_speech_voice") || "Kore")
     };
     truxPersonalizationLoadedFor = uid;
-    if (raw.voice) store.setItem("trux_speech_voice", raw.voice);
+    if (raw.voice && TRUX_TTS_VOICES.some(([id]) => id === raw.voice)) store.setItem("trux_speech_voice", raw.voice);
   } catch (error) {
     console.warn("TruX personalization load failed", error?.message || error);
   }
@@ -84,7 +84,25 @@ function selectPersonalityPreset(id) {
     el.classList.toggle("active", on);
     el.setAttribute("aria-checked", String(on));
   });
+  renderPresetSample(id);
   void saveTruxPersonalization({ preset: id });
+}
+
+/* A sample reply per preset so the difference is visible before chatting. */
+const TRUX_PRESET_SAMPLES = {
+  default: "Boil water, lower the eggs in gently and cook 7 minutes for a jammy yolk or 10 for firm. Move them to ice water for a minute so they peel easily.",
+  professional: "Summary: 10 minutes yields a fully set yolk.\n1. Bring water to a rolling boil.\n2. Lower eggs in; cook 7 min (soft) or 10 min (firm).\n3. Transfer to ice water for 60 s before peeling.",
+  friendly: "Ooh, egg time! 🥚 Get your water bubbling, pop the eggs in gently and give them about 7 minutes if you love a jammy middle (10 for firm). A quick ice bath and they'll peel like a dream. What are you making?",
+  concise: "Boiling water. 7 min jammy, 10 min firm. Ice bath, peel.",
+  creative: "Picture a tiny hot spring: eggs slip in, and the clock decides their fate. Seven minutes gives a molten, sunset-orange heart; ten sets it like golden fudge. Then a cold plunge to make the shells let go.",
+  mentor: "Heat sets egg proteins from the outside in, so time controls the yolk.\n1. Start with boiling water so timing is predictable.\n2. 7 minutes: set white, jammy yolk. 10 minutes: firm.\n3. Ice water stops the cooking and shrinks the egg from the shell.\nTry one at 7 and one at 10 — which do you prefer?",
+  witty: "Eggs: the only thing that gets harder the longer it's in hot water. 7 minutes for jammy, 10 for firm, then an ice bath so the shell stops clinging like a bad ex."
+};
+function renderPresetSample(id) {
+  const el = getEl("truxPresetSample");
+  if (!el) return;
+  const preset = TRUX_PERSONALITY_PRESETS.find(([key]) => key === id) || TRUX_PERSONALITY_PRESETS[0];
+  el.innerHTML = `<span class="preset-sample-q">"How long do I boil an egg?"</span><span class="preset-sample-label">${escapeHtml(preset[1])} would say</span><p>${escapeHtml(TRUX_PRESET_SAMPLES[preset[0]] || "").replace(/\n/g, "<br>")}</p>`;
 }
 
 function setMemoryEnabled(on) {
@@ -119,6 +137,8 @@ async function renderPersonalizationForm() {
   });
   const mem = getEl("truxMemoryEnabledToggle"); if (mem) mem.checked = p.memoryEnabled;
   const voice = getEl("truxSpeechVoiceSelect"); if (voice) voice.value = TRUX_TTS_VOICES.some(([id]) => id === p.voice) ? p.voice : "Kore";
+  renderTruxVoiceGrid();
+  renderPresetSample(p.preset);
   await refreshTruxMemoryList();
 }
 
