@@ -62,7 +62,6 @@ function switchSettingsSection(name) {
   const scroller = document.querySelector(".settings-main-scroll");
   if (scroller) scroller.scrollTop = 0;
   const mobileSelect=getEl("settingsMobileSelect"); if(mobileSelect) mobileSelect.value=activeSection;
-  if (activeSection === "assistant") { try { truxNative.refreshAssistantSettings(); } catch {} }
   if (activeSection === "developer" && isTruxDeveloper(auth?.currentUser)) {
     void loadOwnerGeminiModels(false);
   }

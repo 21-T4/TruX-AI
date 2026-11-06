@@ -1,8 +1,7 @@
 /* "Hey TruX" wake word.
- * Android app: a native foreground service listens even when TruX is closed.
- * Browser: the page listens with on-device speech recognition while TruX is
- * open and visible (browsers don't allow background listening). Saying
- * "TruX" / "Hey TruX" opens Live. Listening pauses during Live/dictation. */
+ * The page listens with the browser's speech recognition while TruX is open
+ * and visible (browsers don't allow background listening). Saying "TruX" /
+ * "Hey TruX" opens Live. Listening pauses during Live and dictation. */
 window.truxWake = (() => {
   "use strict";
   const KEY = "trux_wake_word";
@@ -11,13 +10,11 @@ window.truxWake = (() => {
   let enabled = store.getItem(KEY) === "on";
   let recog = null, running = false, restartTimer = null, backoff = 400;
   const pauses = new Set();
-  const native = () => window.TruXAndroid?.setWakeWord ? window.TruXAndroid : null;
 
   function status(text) { const el = getEl("truxWakeStatus"); if (el) el.textContent = text; }
   function describe() {
-    if (native()) return enabled ? "On. Say \"Hey TruX\" anytime, even with TruX closed." : "Say \"Hey TruX\" to start a Live conversation.";
-    if (!SR) return "This browser has no speech recognition. Use Chrome, Edge or the Android app.";
-    if (!enabled) return "Say \"Hey TruX\" while TruX is open to start Live. The Android app listens in the background.";
+    if (!SR) return "This browser has no speech recognition. Try Chrome or Edge.";
+    if (!enabled) return "Say \"Hey TruX\" while TruX is open to start Live.";
     return pauses.size ? "Paused while TruX is listening." : (running ? "Listening for \"Hey TruX\"…" : "Starting…");
   }
   function sync() {
@@ -25,7 +22,7 @@ window.truxWake = (() => {
     status(describe());
   }
 
-  function shouldRun() { return enabled && !native() && SR && !pauses.size && document.visibilityState === "visible" && !!auth?.currentUser; }
+  function shouldRun() { return enabled && SR && !pauses.size && document.visibilityState === "visible" && !!auth?.currentUser; }
 
   function startLoop() {
     clearTimeout(restartTimer);
@@ -63,8 +60,6 @@ window.truxWake = (() => {
   function setEnabled(on) {
     enabled = !!on;
     store.setItem(KEY, enabled ? "on" : "off");
-    const n = native();
-    if (n) { try { n.setWakeWord(enabled); } catch {} sync(); return; }
     if (enabled && !SR) { toast("Speech recognition isn't available in this browser.", "err"); enabled = false; store.setItem(KEY, "off"); sync(); return; }
     enabled ? startLoop() : stopLoop();
   }
@@ -78,11 +73,6 @@ window.truxWake = (() => {
   document.addEventListener("click", e => { if (e.target.closest?.("#voiceBtn")) { pause("dictation"); setTimeout(() => resume("dictation"), 9000); } }, true);
 
   function boot() {
-    const n = native();
-    if (n) {
-      // The app owns the setting; its state arrives a moment after load.
-      window.addEventListener("trux-native-state", () => { try { enabled = !!n.wakeWordEnabled(); store.setItem(KEY, enabled ? "on" : "off"); } catch {} sync(); });
-    }
     sync();
     window.addEventListener("trux-auth", () => (shouldRun() ? startLoop() : stopLoop()));
     startLoop();

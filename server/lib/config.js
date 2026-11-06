@@ -10,17 +10,18 @@ const METADATA_BASE = 'http://metadata.google.internal/computeMetadata/v1';
 const METADATA_HEADERS = { 'Metadata-Flavor': 'Google' };
 
 /* Vertex AI location. Everything runs on the global endpoint except Live,
-   because gemini-3.8-live is only served from regional endpoints. */
+   because the Live model is only served from regional endpoints. */
 export const VERTEX_LOCATION = 'global';
-export const LIVE_LOCATION = (() => {
-  const requested = String(process.env.TRUX_LIVE_LOCATION || 'us-central1').trim().toLowerCase();
-  return ['us-central1', 'us', 'eu'].includes(requested) ? requested : 'us-central1';
-})();
+export const LIVE_LOCATION = 'us-central1';
 
-export const OWNER_EMAIL = String(process.env.TRUX_OWNER_EMAIL || 'ekagraavn2003@gmail.com').trim().toLowerCase();
+/* Fixed app settings (no environment variables needed). */
+export const OWNER_EMAIL = 'ekagraavn2003@gmail.com';
+/* Resend's shared sender works without verifying a domain; mail goes to the
+   Resend account owner, which is the owner address above. */
+export const FEEDBACK_FROM = 'TruX Feedback <onboarding@resend.dev>';
 
-/* Secret names looked up in Secret Manager (same name as the env var). */
-export const SECRET_NAMES = ['COMPOSIO_API_KEY', 'RESEND_API_KEY', 'TRUX_FEEDBACK_FROM_EMAIL', 'FCM_VAPID_PUBLIC_KEY'];
+/* The only values TruX reads from Secret Manager (all optional). */
+export const SECRET_NAMES = ['COMPOSIO_API_KEY', 'RESEND_API_KEY', 'FCM_VAPID_PUBLIC_KEY'];
 
 async function metadata(path, timeoutMs = 3000) {
   const response = await fetch(METADATA_BASE + path, {
@@ -126,8 +127,7 @@ async function discoverFirebaseWebConfig() {
     const appsResponse = await googleApi(base + '/webApps?pageSize=20', { signal: AbortSignal.timeout(6000) });
     if (!appsResponse.ok) throw new Error('webApps HTTP ' + appsResponse.status);
     const apps = (await appsResponse.json())?.apps || [];
-    const preferredId = String(process.env.FIREBASE_WEB_APP_ID || '').trim();
-    const app = apps.find(a => a.appId === preferredId) || apps.find(a => a.state === 'ACTIVE') || apps[0];
+    const app = apps.find(a => a.state === 'ACTIVE') || apps[0];
     if (!app) throw new Error('No Firebase web app is registered in this project.');
     const configResponse = await googleApi(base + '/webApps/' + encodeURIComponent(app.appId) + '/config', { signal: AbortSignal.timeout(6000) });
     if (!configResponse.ok) throw new Error('webApp config HTTP ' + configResponse.status);
@@ -135,18 +135,17 @@ async function discoverFirebaseWebConfig() {
   } catch (error) {
     console.warn('[config] Firebase web config discovery failed:', error?.message || error);
   }
-  const env = process.env;
   const merged = {
-    apiKey: env.FIREBASE_API_KEY || config.apiKey || '',
-    authDomain: env.FIREBASE_AUTH_DOMAIN || config.authDomain || `${project}.firebaseapp.com`,
+    apiKey: config.apiKey || '',
+    authDomain: config.authDomain || `${project}.firebaseapp.com`,
     projectId: project,
-    storageBucket: env.FIREBASE_STORAGE_BUCKET || config.storageBucket || `${project}.firebasestorage.app`,
-    messagingSenderId: env.FIREBASE_MESSAGING_SENDER_ID || config.messagingSenderId || '',
-    appId: env.FIREBASE_APP_ID || config.appId || '',
-    measurementId: env.FIREBASE_MEASUREMENT_ID || config.measurementId || '',
-    databaseURL: env.FIREBASE_DATABASE_URL || config.databaseURL || `https://${project}-default-rtdb.firebaseio.com`
+    storageBucket: config.storageBucket || `${project}.firebasestorage.app`,
+    messagingSenderId: config.messagingSenderId || '',
+    appId: config.appId || '',
+    measurementId: config.measurementId || '',
+    databaseURL: config.databaseURL || `https://${project}-default-rtdb.firebaseio.com`
   };
-  if (!merged.apiKey) throw new Error('Firebase web config is unavailable. Grant the service account Firebase Viewer or set FIREBASE_API_KEY.');
+  if (!merged.apiKey) throw new Error('Firebase web config is unavailable. Grant the Cloud Run service account the Firebase Viewer role.');
   return merged;
 }
 
@@ -162,13 +161,11 @@ export function getFirebaseWebConfig() {
 
 /* The database URL is needed by firebase-admin before the web config is ready. */
 export async function getDatabaseUrl() {
-  if (process.env.FIREBASE_DATABASE_URL) return process.env.FIREBASE_DATABASE_URL;
   try { return (await getFirebaseWebConfig()).databaseURL; }
   catch { return `https://${await getProjectId()}-default-rtdb.firebaseio.com`; }
 }
 
 export async function getBucketName() {
-  if (process.env.TRUX_BUCKET_NAME) return String(process.env.TRUX_BUCKET_NAME).trim();
   return `${await getProjectId()}-bucket`;
 }
 

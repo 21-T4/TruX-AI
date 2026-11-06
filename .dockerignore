@@ -31,5 +31,5 @@ coverage
 dist
 build
 
-# Android app (built by GitHub Actions, not part of the server image)
-android
+# The sandbox is its own Cloud Run service (deployed from sandbox/)
+sandbox

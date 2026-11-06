@@ -64,16 +64,6 @@ function appendToolStatusLine(toolId, tool, detail, phase = "complete", details 
   }
 }
 
-function settleThinkingDetails(toolId) {
-  const wrap = getEl(toolId);
-  if(!wrap) return;
-  wrap.querySelectorAll(".thinking-tool-item.active").forEach(item => item.classList.remove("active"));
-  if(!wrap.children.length) {
-    wrap.hidden = true;
-    wrap.style.display = "none";
-  }
-}
-
 /* Re-runs the last user turn: drops the trailing assistant message from
    history and its row from the DOM, then re-sends. */
 function regenerateLast() {
@@ -391,38 +381,3 @@ function startHomeGreetingPulse() {
 
 window.startHomeGreetingPulse = startHomeGreetingPulse;
 
-function isNetworkFailure(error) {
-  if (!error || error.name === "AbortError") return false;
-  const msg = String(error.message || error || "").toLowerCase();
-  return navigator.onLine === false ||
-    /failed to fetch|networkerror|network error|load failed|err_internet_disconnected|err_network_changed|connection reset|connection closed|fetch failed/i.test(msg);
-}
-
-function waitForInternet(statusId) {
-  return new Promise(resolve => {
-    let pulse;
-    const finish = (restored = true) => {
-      cleanup();
-      if (restored) setThinkingStatus(statusId, "Internet connection restored — continuing…");
-      resolve();
-    };
-    const cleanup = () => {
-      window.removeEventListener("online", finishOnline);
-      if (pulse) clearInterval(pulse);
-    };
-    const finishOnline = () => finish(true);
-
-    setThinkingStatus(statusId, "Waiting for internet connection…");
-    window.addEventListener("online", finishOnline, { once: true });
-
-    pulse = setInterval(() => {
-      if (!isGenerating) {
-        finish(false);
-      } else if (navigator.onLine) {
-        finish(true);
-      } else {
-        setThinkingStatus(statusId, "Still waiting for internet connection…");
-      }
-    }, 1500);
-  });
-}

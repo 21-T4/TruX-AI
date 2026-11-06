@@ -238,36 +238,3 @@ function buildList(items, ordered) {
   return html + closeTag;
 }
 
-let truxMermaidRenderSequence = 0;
-let truxMermaidRenderQueue = Promise.resolve();
-let truxMermaidFallbackPromise = null;
-
-function normalizeTruxMermaidSource(raw){
-  let source=String(raw||"").replace(/^\uFEFF/,"").replace(/\r\n?/g,"\n")
-    .replace(/[\u2018\u2019\u201A\u201B]/g,"'")
-    .replace(/[\u201C\u201D\u201E\u201F]/g,'"').trim();
-  const fence = String.fromCharCode(96).repeat(3);
-  source=source.replace(new RegExp("^\\s*"+fence+"(?:[\\w+#.-]+)?[ \\t]*\\n?","i"),"").replace(new RegExp("\\n?\\s*"+fence+"\\s*$"),"").trim();
-  source=source.replace(/&nbsp;/gi," ").replace(/<br\s*\/?\s*>/gi," ");
-  const lines=source.split("\n");
-  const first=lines.findIndex(line=>/^\s*(?:flowchart|graph|sequenceDiagram|classDiagram|stateDiagram(?:-v2)?|erDiagram|journey|gantt|pie|mindmap|timeline|quadrantChart|xychart-beta|block-beta|architecture-beta|gitGraph|sankey-beta|zenuml|requirementDiagram)\b/i.test(line));
-  if(first>0) source=lines.slice(first).join("\n");
-  return source.trim();
-}
-function repairTruxMermaidSource(raw){
-  let source=normalizeTruxMermaidSource(raw);
-  if(!/^(?:flowchart|graph)\b/i.test(source))return source;
-  // Recover common model-generated flowchart slips without changing valid edge syntax.
-  source=source.replace(/^(\s*(?:flowchart|graph))\s*$/im,"$1 TD");
-  source=source.replace(/(?<![-.])-(?![-.])>/g,"-->");
-  source=source.split("\n").map(line=>line.replace(
-    /^(\s*[A-Za-z_][\w-]*\s*)\[([^\]\n]*)\](.*)$/,
-    (whole,id,label,tail)=>{
-      const value=label.trim();
-      const alreadyQuoted=/^(?:"(?:\\.|[^"\\\\])*"|'(?:\\.|[^'\\\\])*'|`[^`]*`)$/.test(value);
-      return /[():,;|{}]/.test(value)&&!alreadyQuoted
-        ? id+"["+JSON.stringify(value)+"]"+tail : whole;
-    }
-  )).join("\n");
-  return source;
-}

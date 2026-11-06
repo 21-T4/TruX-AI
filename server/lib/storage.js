@@ -75,7 +75,3 @@ export async function getProcessedText(uid, objectKey) {
   return (await downloadBuffer(processedTextKey(uid, objectKey))).toString('utf8');
 }
 
-export async function deletePrefix(prefix) {
-  const bucket = await getBucket();
-  await bucket.deleteFiles({ prefix, force: true }).catch(() => {});
-}

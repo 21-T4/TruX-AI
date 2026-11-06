@@ -20,7 +20,7 @@ import { Toolbox } from '../chat/tools.js';
 import { runAgent } from '../chat/agent.js';
 
 const KEY_RE = /^[-_A-Za-z0-9]{6,40}$/;
-const MODES = new Set(['chat', 'deep-research', 'image', 'video']);
+const MODES = new Set(['chat', 'deep-research', 'video']);
 const INLINE_MIME = /^(image\/(png|jpeg|webp|heic|heif|gif)|audio\/|video\/|application\/pdf$)/;
 
 function queryTokens(query) {
@@ -138,11 +138,10 @@ async function chat(request, { env, url }) {
     }
     const unwatch = writer.watchStop(() => controller.abort());
 
-    const firstImage = attachments.find(a => a.mimeType.startsWith('image/'));
+    const previousImage = [...ctx.history].reverse().flatMap(m => [...(m.media || [])].reverse()).find(m => m?.kind === 'image' && m.objectKey);
     const toolbox = new Toolbox({
-      env, user, memories: ctx.memories, personalization: ctx.personalization, connectedSlugs: ctx.connectedSlugs,
-      attachedImageKey: firstImage?.objectKey, attachedImageMime: firstImage?.mimeType,
-      origin: url.origin, writer, send, canVideo, device: normalizeDevice(body.device)
+      env, user, chatId, memories: ctx.memories, personalization: ctx.personalization, connectedSlugs: ctx.connectedSlugs,
+      attachments, previousImage, origin: url.origin, writer, send, canVideo, device: normalizeDevice(body.device)
     });
 
     const systemInstruction = [
@@ -169,13 +168,26 @@ async function chat(request, { env, url }) {
     let status = 'done';
     let errorText = '';
     try {
-      const result = await runAgent({ model, thinking, contents, systemInstruction, toolbox, writer, send, signal: controller.signal, temperature: presetTemperature(ctx.personalization) });
-      if (!result.text && !writer.state.media.length) {
-        writer.appendText('I could not produce a response. Please try again.');
+      if (mode === 'video') {
+        // Video studio: always produce a video from the brief and options.
+        const options = body.video && typeof body.video === 'object' ? body.video : {};
+        const reference = attachments.some(a => a.mimeType.startsWith('video/')) ? 'edit_video'
+          : attachments.some(a => a.mimeType.startsWith('image/')) ? 'image' : 'none';
+        const { response } = await toolbox.run({ name: 'trux_generate_video', args: { brief: message, length: options.length, aspectRatio: options.aspectRatio, reference } }, controller.signal)
+          .catch(error => { throw controller.signal.aborted ? error : Object.assign(new Error(String(error?.message || 'Video generation failed.').slice(0, 400)), { status: 422 }); });
+        if (response.ok === false) throw Object.assign(new Error(response.error), { status: 400 });
+        const plan = writer.state.storyboard;
+        writer.appendText(`**${plan?.title || 'Your video'}**\n\n` + (plan?.shots || []).map((shot, i) => `${i + 1}. ${shot.caption}`).join('\n') + (response.note && /could not/.test(response.note) ? '\n\n' + response.note.replace(/^Video produced and already displayed to the user\.\s*/, '') : ''));
+        send({ type: 'final', text: writer.state.text, sources: [], media: writer.state.media });
+      } else {
+        const result = await runAgent({ model, thinking, contents, systemInstruction, toolbox, writer, send, signal: controller.signal, temperature: presetTemperature(ctx.personalization) });
+        if (!result.text && !writer.state.media.length) {
+          writer.appendText('I could not produce a response. Please try again.');
+        }
+        send({ type: 'final', text: writer.state.text, sources: result.sources, media: writer.state.media });
+        if (result.usage?.totalTokenCount) addUsage(user.uid, 'tokens', result.usage.totalTokenCount).catch(() => {});
+        if (mode === 'deep-research') addUsage(user.uid, 'deepResearch').catch(() => {});
       }
-      send({ type: 'final', text: writer.state.text, sources: result.sources, media: writer.state.media });
-      if (result.usage?.totalTokenCount) addUsage(user.uid, 'tokens', result.usage.totalTokenCount).catch(() => {});
-      if (mode === 'deep-research') addUsage(user.uid, 'deepResearch').catch(() => {});
     } catch (error) {
       if (controller.signal.aborted) {
         status = 'stopped';

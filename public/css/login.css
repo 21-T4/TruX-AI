@@ -1,12 +1,12 @@
 /* Sign-in page */
-#loginWallModal.login-wall{display:none;position:fixed;inset:0;z-index:999999;width:100vw;height:100dvh;padding:0;overflow:auto;background:#07070a;color:var(--txt);}
+#loginWallModal.login-wall{display:none;position:fixed;inset:0;z-index:999999;width:100vw;height:100dvh;padding:0;overflow:auto;background:var(--bg);color:var(--txt);}
 #loginWallModal.login-wall.active{display:block;animation:fadeIn .2s var(--ease, ease)}
 #loginWallModal .lw-shell{min-height:100dvh;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)}
-#loginWallModal .lw-brand{position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:40px clamp(28px,5vw,64px);background:radial-gradient(120% 90% at 0% 0%,#1b1f4a 0%,#0c0d1c 55%,#07070a 100%);border-right:1px solid rgba(255,255,255,.06)}
-#loginWallModal .lw-brand-top{display:flex;align-items:center;gap:12px;font:650 19px/1 var(--font-disp);color:#fff;position:relative;z-index:1}
+#loginWallModal .lw-brand{position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:40px clamp(28px,5vw,64px);background:radial-gradient(120% 90% at 0% 0%,#1b1f4a 0%,#0c0d1c 55%,var(--bg) 100%);border-right:1px solid rgba(var(--ink),.06)}
+#loginWallModal .lw-brand-top{display:flex;align-items:center;gap:12px;font:650 19px/1 var(--font-disp);color:var(--txt);position:relative;z-index:1}
 #loginWallModal .lw-brand-top img{border-radius:12px}
 #loginWallModal .lw-brand-copy{position:relative;z-index:1;max-width:460px;margin:auto 0}
-#loginWallModal .lw-brand-copy h2{margin:0 0 16px;font:650 clamp(34px,4.2vw,52px)/1.04 var(--font-disp);letter-spacing:-.04em;color:#fff}
+#loginWallModal .lw-brand-copy h2{margin:0 0 16px;font:650 clamp(34px,4.2vw,52px)/1.04 var(--font-disp);letter-spacing:-.04em;color:var(--txt)}
 #loginWallModal .lw-brand-copy p{margin:0 0 26px;color:#b6b8d4;font-size:15px;line-height:1.6}
 #loginWallModal .lw-brand-copy ul{list-style:none;margin:0;padding:0;display:grid;gap:12px}
 #loginWallModal .lw-brand-copy li{display:flex;align-items:center;gap:10px;color:#d9daf0;font-size:14px}
@@ -16,33 +16,33 @@
 #loginWallModal .lw-orb-2{width:300px;height:300px;background:#8a4fd6;left:-120px;bottom:-110px;opacity:.3}
 #loginWallModal .lw-panel{position:relative;display:flex;align-items:center;justify-content:center;padding:48px 24px}
 #loginWallModal .lw-close{position:absolute;top:calc(16px + env(safe-area-inset-top,0px));right:16px;width:38px;height:38px;display:grid;place-items:center;border-radius:12px;border:1px solid var(--line-2);background:transparent;color:var(--txt-2);cursor:pointer}
-#loginWallModal .lw-close:hover{color:var(--txt);background:rgba(255,255,255,.05)}
+#loginWallModal .lw-close:hover{color:var(--txt);background:rgba(var(--ink),.05)}
 #loginWallModal[data-view="verify"] .lw-close{display:none}
 #loginWallModal .lw-card{width:min(400px,100%)}
 #loginWallModal .lw-mobile-brand{display:none;align-items:center;gap:10px;margin-bottom:26px;font:650 17px/1 var(--font-disp);color:var(--txt)}
 #loginWallModal .lw-mobile-brand img{border-radius:10px}
-#loginWallModal .lw-tabs{display:grid;grid-template-columns:1fr 1fr;padding:4px;margin-bottom:26px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--line-2)}
+#loginWallModal .lw-tabs{display:grid;grid-template-columns:1fr 1fr;padding:4px;margin-bottom:26px;border-radius:12px;background:rgba(var(--ink),.05);border:1px solid var(--line-2)}
 #loginWallModal .lw-tab{height:36px;border-radius:9px;border:0;background:transparent;color:var(--txt-3);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,color .15s}
-#loginWallModal[data-view="signin"] .lw-tab[data-tab="signin"],#loginWallModal[data-view="signup"] .lw-tab[data-tab="signup"]{background:#f4f4f6;color:#111}
+#loginWallModal[data-view="signin"] .lw-tab[data-tab="signin"],#loginWallModal[data-view="signup"] .lw-tab[data-tab="signup"]{background:#f4f4f6;color:var(--bg)}
 #loginWallModal[data-view="reset"] .lw-tabs,#loginWallModal[data-view="verify"] .lw-tabs{display:none}
 #loginWallModal .lw-title{margin:0 0 8px;font:650 clamp(26px,5vw,30px)/1.12 var(--font-disp);letter-spacing:-.03em;color:var(--txt)}
 #loginWallModal .lw-sub{margin:0 0 24px;color:var(--txt-3);font-size:14px;line-height:1.55}
-#loginWallModal .lw-google{width:100%;height:48px;display:flex;align-items:center;justify-content:center;gap:11px;border:0;border-radius:12px;background:#fff;color:#111;font-size:14px;font-weight:650;cursor:pointer;transition:transform .15s,background .15s}
+#loginWallModal .lw-google{width:100%;height:48px;display:flex;align-items:center;justify-content:center;gap:11px;border:0;border-radius:12px;background:var(--txt);color:var(--bg);font-size:14px;font-weight:650;cursor:pointer;transition:transform .15s,background .15s}
 #loginWallModal .lw-google:hover{background:#f1f1f3;transform:translateY(-1px)}
 #loginWallModal .lw-divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--txt-4);font-size:12px}
 #loginWallModal .lw-divider::before,#loginWallModal .lw-divider::after{content:"";height:1px;flex:1;background:var(--line-2)}
 #loginWallModal .lw-form{display:grid;gap:14px}
 #loginWallModal .lw-field{display:grid;gap:7px;color:var(--txt-2);font-size:12.5px;font-weight:550}
-#loginWallModal .lw-field input{width:100%;height:46px;padding:0 14px;border:1px solid var(--line-2);border-radius:12px;background:rgba(255,255,255,.03);color:var(--txt);font:inherit;font-size:15px;font-weight:400;outline:none;transition:border-color .15s,box-shadow .15s}
-#loginWallModal .lw-field input:focus{border-color:rgba(140,155,255,.7);box-shadow:0 0 0 3px rgba(110,125,255,.18)}
+#loginWallModal .lw-field input{width:100%;height:46px;padding:0 14px;border:1px solid var(--line-2);border-radius:12px;background:rgba(var(--ink),.03);color:var(--txt);font:inherit;font-size:15px;font-weight:400;outline:none;transition:border-color .15s,box-shadow .15s}
+#loginWallModal .lw-field input:focus{border-color:rgba(140,155,255,.7);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 18%,transparent)}
 #loginWallModal .lw-pass{position:relative;display:block}
 #loginWallModal .lw-pass input{padding-right:64px}
 #loginWallModal .lw-pass-toggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);height:34px;padding:0 10px;border:0;border-radius:9px;background:transparent;color:var(--txt-3);font-size:12px;font-weight:600;cursor:pointer}
 #loginWallModal .lw-pass-toggle:hover{color:var(--txt)}
 #loginWallModal .lw-hint{color:var(--txt-4);font-weight:400;font-size:12px}
-#loginWallModal .lw-submit{width:100%;height:48px;border:0;border-radius:12px;background:linear-gradient(135deg,#6574ff,#8c5cf0);color:#fff;font-size:14px;font-weight:650;cursor:pointer;transition:filter .15s,transform .15s}
+#loginWallModal .lw-submit{width:100%;height:48px;border:0;border-radius:12px;background:linear-gradient(135deg,#6574ff,#8c5cf0);color:var(--txt);font-size:14px;font-weight:650;cursor:pointer;transition:filter .15s,transform .15s}
 #loginWallModal .lw-submit:hover{filter:brightness(1.08);transform:translateY(-1px)}
-#loginWallModal .lw-link{justify-self:start;padding:2px 0;border:0;background:none;color:#a9b4ff;font-size:13px;font-weight:550;cursor:pointer}
+#loginWallModal .lw-link{justify-self:start;padding:2px 0;border:0;background:none;color:var(--acc-2);font-size:13px;font-weight:550;cursor:pointer}
 #loginWallModal .lw-link:hover{text-decoration:underline}
 #loginWallModal.busy .lw-submit,#loginWallModal.busy .lw-google{opacity:.6;pointer-events:none}
 #loginWallModal .lw-only-signup,#loginWallModal .lw-only-reset,#loginWallModal .lw-only-signin{display:none}
@@ -53,22 +53,15 @@
 #loginWallModal .lw-verify{display:none;text-align:center}
 #loginWallModal[data-view="verify"] .lw-auth-views{display:none}
 #loginWallModal[data-view="verify"] .lw-verify{display:grid;gap:16px;justify-items:center}
-#loginWallModal .lw-verify-icon{width:58px;height:58px;display:grid;place-items:center;border-radius:18px;background:rgba(110,125,255,.14);color:#a9b4ff}
+#loginWallModal .lw-verify-icon{width:58px;height:58px;display:grid;place-items:center;border-radius:18px;background:color-mix(in srgb,var(--acc) 14%,transparent);color:var(--acc-2)}
 #loginWallModal .lw-verify p{margin:0;color:var(--txt-2);font-size:14px;line-height:1.6}
 #loginWallModal .lw-verify b{color:var(--txt);word-break:break-all}
 #loginWallModal .lw-verify-row{display:flex;gap:22px;justify-content:center}
-#loginWallModal .lw-message{margin:18px 0 0;padding:11px 13px;border-radius:11px;font-size:13px;line-height:1.5;background:rgba(255,255,255,.05);color:var(--txt-2)}
+#loginWallModal .lw-message{margin:18px 0 0;padding:11px 13px;border-radius:11px;font-size:13px;line-height:1.5;background:rgba(var(--ink),.05);color:var(--txt-2)}
 #loginWallModal .lw-message[data-tone="err"]{background:rgba(255,80,80,.1);color:#ff9d9d}
 #loginWallModal .lw-message[data-tone="ok"]{background:rgba(70,200,130,.1);color:#8be0b0}
 #loginWallModal .lw-legal{margin:22px 0 0;color:var(--txt-4);font-size:11.5px;line-height:1.5;text-align:center}
-@media (max-width:860px){
-  #loginWallModal .lw-shell{grid-template-columns:1fr}
-  #loginWallModal .lw-brand{display:none}
-  #loginWallModal .lw-mobile-brand{display:flex}
-  #loginWallModal .lw-panel{align-items:flex-start;padding:calc(64px + env(safe-area-inset-top,0px)) 20px 32px}
-}
-[data-theme="light"] #loginWallModal.login-wall{background:#f6f6f8}
-[data-theme="light"] #loginWallModal .lw-field input{background:#fff}
-[data-theme="light"] #loginWallModal .lw-google{border:1px solid rgba(0,0,0,.12)}
-[data-theme="light"] #loginWallModal[data-view="signin"] .lw-tab[data-tab="signin"],[data-theme="light"] #loginWallModal[data-view="signup"] .lw-tab[data-tab="signup"]{background:#111;color:#fff}
-[data-theme="light"] #loginWallModal .lw-link{color:#4a55d6}
+@media (max-width:860px){#loginWallModal .lw-shell{grid-template-columns:1fr}
+#loginWallModal .lw-brand{display:none}
+#loginWallModal .lw-mobile-brand{display:flex}
+#loginWallModal .lw-panel{align-items:flex-start;padding:calc(64px + env(safe-area-inset-top,0px)) 20px 32px}}
