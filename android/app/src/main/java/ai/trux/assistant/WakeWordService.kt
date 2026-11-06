@@ -69,7 +69,7 @@ class WakeWordService : Service() {
             override fun onEndOfSpeech() {}
             override fun onError(error: Int) {
                 release()
-                backoff = if (error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) 150 else (backoff * 2).coerceAtMost(15_000)
+                backoff = if (error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) 150L else (backoff * 2).coerceAtMost(15_000L)
                 if (error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) { stopSelf(); return }
                 schedule(backoff)
             }

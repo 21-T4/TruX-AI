@@ -34,7 +34,7 @@ class TruXRecognitionService : RecognitionService() {
         r.startListening(intent)
     }
 
-    private inline fun safe(block: () -> Unit) { try { block() } catch (_: Exception) {} }
+    private fun safe(block: () -> Unit) { try { block() } catch (_: Exception) {} }
 
     override fun onStopListening(listener: Callback) { inner?.stopListening() }
     override fun onCancel(listener: Callback) { inner?.cancel() }

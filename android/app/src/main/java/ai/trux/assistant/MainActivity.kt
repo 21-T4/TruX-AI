@@ -124,7 +124,7 @@ class MainActivity : ComponentActivity() {
                 }
                 callback.invoke(o, ok, false)
             }
-            override fun onShowFileChooser(view: WebView, callback: ValueCallback<Array<Uri>>, params: FileChooserParams): Boolean {
+            override fun onShowFileChooser(view: WebView, callback: ValueCallback<Array<Uri>>, params: WebChromeClient.FileChooserParams): Boolean {
                 fileCallback?.onReceiveValue(null)
                 fileCallback = callback
                 return try { pickFiles.launch(params.createIntent()); true } catch (_: Exception) { fileCallback = null; false }

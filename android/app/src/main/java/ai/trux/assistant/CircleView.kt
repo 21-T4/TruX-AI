@@ -19,7 +19,8 @@ class CircleView(context: Context, private val shot: Bitmap?, private val onSele
     private val path = Path()
     private val points = ArrayList<PointF>()
     private var drawing = false
-    var selection: RectF? = null; private set
+    var selection: RectF? = null
+        private set
     private var angle = 0f
     private var intro = 0f
     private val shotRect = RectF()
