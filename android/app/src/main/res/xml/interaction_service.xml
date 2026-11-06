@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<voice-interaction-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:sessionService="ai.trux.assistant.assist.TruXSessionService"
+    android:recognitionService="ai.trux.assistant.assist.TruXRecognitionService"
+    android:settingsActivity="ai.trux.assistant.MainActivity"
+    android:supportsAssist="true"
+    android:supportsLaunchVoiceAssistFromKeyguard="true"
+    android:supportsLocalInteraction="true" />

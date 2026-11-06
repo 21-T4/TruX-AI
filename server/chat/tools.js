@@ -7,6 +7,7 @@ import { saveBuffer, userMediaKey, userVideoPrefix } from '../lib/storage.js';
 import { generateImage, generateVideo } from '../lib/vertex.js';
 import { downloadBuffer } from '../lib/storage.js';
 import { executeTruxWebTool, TRUX_WEB_TOOL_DECLARATIONS } from '../lib/web-tools.js';
+import { DEVICE_TOOL, deviceLabel, prepareDeviceAction } from './device.js';
 
 const IMAGE_TOOL = {
   name: 'trux_generate_image',
@@ -47,12 +48,13 @@ const LABELS = {
   trux_memory_forget: () => 'Updating memory',
   trux_generate_image: () => 'Generating image',
   trux_generate_video: () => 'Generating video',
-  trux_composio_discover_tools: () => 'Finding app actions'
+  trux_composio_discover_tools: () => 'Finding app actions',
+  trux_device_action: args => deviceLabel(args)
 };
 
 export class Toolbox {
-  constructor({ env, user, memories, personalization, connectedSlugs, attachedImageKey, attachedImageMime, origin, writer, send, canVideo }) {
-    Object.assign(this, { env, user, memories, personalization, connectedSlugs, attachedImageKey, attachedImageMime, origin, writer, send, canVideo });
+  constructor({ env, user, memories, personalization, connectedSlugs, attachedImageKey, attachedImageMime, origin, writer, send, canVideo, device }) {
+    Object.assign(this, { env, user, memories, personalization, connectedSlugs, attachedImageKey, attachedImageMime, origin, writer, send, canVideo, device });
     this.composioMeta = new Map();
     this.dynamic = [];
   }
@@ -62,7 +64,8 @@ export class Toolbox {
       hasComposio: this.connectedSlugs.length > 0,
       canImage: true,
       canVideo: this.canVideo,
-      memoryEnabled: this.personalization.memoryEnabled
+      memoryEnabled: this.personalization.memoryEnabled,
+      device: this.device
     };
   }
 
@@ -71,6 +74,7 @@ export class Toolbox {
     if (this.personalization.memoryEnabled) declarations.push(...MEMORY_TOOL_DECLARATIONS);
     if (this.canVideo) declarations.push(VIDEO_TOOL);
     if (this.connectedSlugs.length) declarations.push(COMPOSIO_DISCOVERY_TOOL);
+    if (this.device) declarations.push(DEVICE_TOOL);
     declarations.push(...this.dynamic);
     return [{ functionDeclarations: declarations }, { googleSearch: {} }];
   }
@@ -101,6 +105,13 @@ export class Toolbox {
       case 'trux_generate_image': return { response: await this.image(args, signal) };
       case 'trux_generate_video': return { response: await this.video(args, signal) };
       case 'trux_composio_discover_tools': return { response: await this.discover(args) };
+      case 'trux_device_action': {
+        // Runs on the user's device: the client receives it over the stream.
+        const prepared = prepareDeviceAction(args, this.device);
+        if (!prepared.ok) return { response: prepared };
+        this.send({ type: 'device_action', action: prepared.action });
+        return { response: { ok: true, status: 'sent_to_device', note: prepared.note } };
+      }
       default:
         if (this.composioMeta.has(call.name)) return this.composio(call);
         return { response: { ok: false, error: 'Unknown tool: ' + call.name } };

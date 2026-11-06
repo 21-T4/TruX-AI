@@ -273,6 +273,7 @@ async function sendPromptImpl() {
     incognito,
     history: incognito ? session.messages.slice(0, userIndex).map(m => ({ role: m.role === "trux" ? "model" : "user", text: m.text })) : undefined,
     notify: true,
+    device: (() => { try { return window.truxDevice?.info() || null; } catch { return null; } })(),
     ...(isTruxDeveloper(user) ? { ownerModel: store.getItem("trux_owner_gemini_model") || "auto" } : {})
   };
 
@@ -345,6 +346,7 @@ async function sendPromptImpl() {
         if (ev.action === "saved") toast("Memory updated", "ok");
         try { refreshTruxMemoryList?.(); } catch {}
         break;
+      case "device_action": if (ev.action) window.truxDevice?.run(ev.action, { source: "chat" }); break;
       case "plugin_auth_required":
         setThinkingStatus(sid, ev.message || ((ev.pluginName || "App") + " needs to be connected."));
         if (ev.redirectUrl && !row.querySelector("[data-plugin-reauth]")) {

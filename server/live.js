@@ -13,7 +13,8 @@ import { getDb, verifyToken } from './lib/firebase.js';
 import { rateLimit } from './lib/ratelimit.js';
 import { LIVE_PERSONA } from './lib/prompts.js';
 import { loadMemories, memoryPrompt, saveMemory, MEMORY_TOOL_DECLARATIONS } from './lib/memory.js';
-import { normalizePersonalization, personalizationPrompt } from './lib/personalization.js';
+import { normalizePersonalization, personalizationPrompt, presetTemperature } from './lib/personalization.js';
+import { DEVICE_TOOL, deviceManifest, normalizeDevice, prepareDeviceAction } from './chat/device.js';
 import { executeTruxWebTool, TRUX_WEB_TOOL_DECLARATIONS } from './lib/web-tools.js';
 import { MODELS, TTS_VOICES } from './lib/vertex.js';
 
@@ -42,6 +43,7 @@ wss.on('connection', (socket, request) => {
   let memories = [];
   let config = null;
   let reconnecting = false;
+  let device = null;
   const authTimer = setTimeout(() => { if (!user) socket.close(1008, 'Authentication timed out'); }, 10_000);
   const lifetime = setTimeout(() => { sendJson(socket, { type: 'ended', reason: 'Session time limit reached.' }); socket.close(1000); }, MAX_SESSION_MS);
 
@@ -61,6 +63,11 @@ wss.on('connection', (socket, request) => {
         sendJson(socket, { type: 'tool', name: call.name, phase: 'start' });
         if (call.name === 'trux_memory_save') response = await saveMemory(user.uid, call.args?.text, memories);
         else if (call.name === 'trux_web_open') response = await executeTruxWebTool({ name: call.name, args: call.args || {} });
+        else if (call.name === 'trux_device_action') {
+          const prepared = prepareDeviceAction(call.args || {}, device);
+          if (prepared.ok) sendJson(socket, { type: 'action', action: prepared.action });
+          response = prepared.ok ? { ok: true, status: 'sent_to_device', note: prepared.note } : prepared;
+        }
         else response = { error: 'Unknown tool.' };
       } catch (error) {
         response = { error: String(error?.message || 'Tool failed').slice(0, 300) };
@@ -155,10 +162,13 @@ wss.on('connection', (socket, request) => {
         memories = mem;
         const personalization = normalizePersonalization(snap?.val() || {});
         const voice = TTS_VOICES.includes(packet.voice) ? packet.voice : personalization.voice;
+        device = normalizeDevice(packet.device);
         const declarations = [...TRUX_WEB_TOOL_DECLARATIONS];
         if (personalization.memoryEnabled) declarations.push(MEMORY_TOOL_DECLARATIONS[0]);
+        if (device) declarations.push(DEVICE_TOOL);
         config = {
           responseModalities: [Modality.AUDIO],
+          temperature: presetTemperature(personalization),
           speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } },
           inputAudioTranscription: {},
           outputAudioTranscription: {},
@@ -167,8 +177,9 @@ wss.on('connection', (socket, request) => {
           systemInstruction: [
             LIVE_PERSONA,
             'Current date/time: ' + new Date().toUTCString(),
-            personalizationPrompt(personalization),
-            personalization.memoryEnabled ? memoryPrompt(memories) + '\nSave durable new facts about the user with trux_memory_save, silently.' : ''
+            device ? deviceManifest(device) : '',
+            personalization.memoryEnabled ? memoryPrompt(memories) + '\nSave durable new facts about the user with trux_memory_save, silently.' : '',
+            personalizationPrompt(personalization, 'live')
           ].filter(Boolean).join('\n\n')
         };
         await connect();

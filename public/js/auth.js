@@ -206,6 +206,7 @@ async function initFirebaseOnce() {
     truxAuthStateReady = true;
     cacheUserForNextBoot(user);
     document.body.classList.toggle("user-signed-in", !!user);
+    window.dispatchEvent(new CustomEvent("trux-auth", { detail: { signedIn: !!user } }));
     updateTruxProfileUI(user);
     try { updateLocationSettingUI(); updateNotificationSettingsUI(); } catch {}
     if (user && truxUserVerified(user)) { try { maybeAskForLocation(); } catch {} }

@@ -46,7 +46,7 @@ function closeProfileModal() {
 }
 function switchSettingsSection(name) {
   if (String(name || "") === "home") { showSettingsHome(); return; }
-  const validSections = ["general","appearance","voice","personalization","usage","data","account","developer"];
+  const validSections = ["general","appearance","assistant","voice","personalization","usage","data","account","developer"];
   const requested = String(name || "general");
   const hasSection = validSections.includes(requested) &&
     Array.from(document.querySelectorAll("[data-settings-content]")).some(section => section.getAttribute("data-settings-content") === requested);
@@ -62,6 +62,7 @@ function switchSettingsSection(name) {
   const scroller = document.querySelector(".settings-main-scroll");
   if (scroller) scroller.scrollTop = 0;
   const mobileSelect=getEl("settingsMobileSelect"); if(mobileSelect) mobileSelect.value=activeSection;
+  if (activeSection === "assistant") { try { truxNative.refreshAssistantSettings(); } catch {} }
   if (activeSection === "developer" && isTruxDeveloper(auth?.currentUser)) {
     void loadOwnerGeminiModels(false);
   }

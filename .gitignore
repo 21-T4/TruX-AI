@@ -29,3 +29,14 @@ coverage/
 dist/
 build/
 .firebase/
+
+# Android
+android/.gradle/
+android/**/build/
+android/local.properties
+*.jks
+*.keystore
+*.p12
+*.apk
+*.aab
+__pycache__/
