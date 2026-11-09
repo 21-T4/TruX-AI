@@ -13,6 +13,8 @@ let truxSyncedUid = "";
 let truxChatsRef = null;
 let truxSyncedMeta = {};          // chatId -> last meta seen in RTDB
 let truxPendingSync = Promise.resolve();
+let truxChatSyncRetried = false;  // one token refresh + re-listen per sign-in
+let truxChatSyncWarned = false;   // one message per sign-in
 const truxSyncedMessageIds = {};  // chatId -> Set of message ids seen in RTDB
 const truxStreamWatchers = {};    // chatId -> unsubscribe fn
 const TRUX_META_FIELDS = ["title", "mode", "notebookId", "pinned", "archived"];
@@ -43,6 +45,8 @@ function onTruxUserChanged(user) {
   document.body.classList.remove("chat-session-active");
   document.body.classList.add("home-active");
   truxSyncedUid = uid;
+  truxChatSyncRetried = false;
+  truxChatSyncWarned = false;
   if (uid) attachChatSync(uid);
   renderSidebar();
 }
@@ -87,7 +91,18 @@ function attachChatSync(uid) {
   }, error => {
     console.warn("TruX chat sync failed", error?.message || error);
     const denied = /permission_denied/i.test(String(error?.code || error?.message));
-    toast(denied ? "Chat history is locked for this account. Verify your email, then sign in again." : "Chat history can't reach the database right now.", "err");
+    // The database checks the verified-email claim in the token. A token minted before verification lacks it, so
+    // refresh it and listen once more before telling anyone anything.
+    if (denied && !truxChatSyncRetried && auth?.currentUser && truxSyncedUid === uid) {
+      truxChatSyncRetried = true;
+      getTruxIdToken(auth.currentUser, true).then(() => { if (truxSyncedUid === uid) { detachChatSync(); attachChatSync(uid); } });
+      return;
+    }
+    if (truxChatSyncWarned) return;
+    truxChatSyncWarned = true;
+    if (!denied) return toast("Chat history can't reach the database right now.", "err");
+    // Still refused after a fresh token: the sign-in is fine, the database rules are what say no.
+    toast(isTruxDeveloper() ? "The database rules are blocking chat history. Deploy database.rules.json (see the server log)." : "Chat history is unavailable right now. Please try again later.", "err");
   });
 }
 

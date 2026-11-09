@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { getDatabaseUrl, getRuntimeEnv } from './lib/config.js';
 import { errorResponse, HttpError } from './lib/http.js';
 import { getAdminApp, getDb } from './lib/firebase.js';
+import { reportDatabaseRules } from './lib/rules.js';
 import { handleLiveUpgrade } from './live.js';
 import { routes as chatRoutes } from './routes/chat.js';
 import { routes as configRoutes } from './routes/config.js';
@@ -187,7 +188,7 @@ server.listen(PORT, '0.0.0.0', () => {
   Promise.all([getRuntimeEnv(), getAdminApp()]).catch(error => console.warn('[startup] warm-up failed:', error?.message));
   // Chats live in the Realtime Database, so say plainly in the log whether it can be reached.
   Promise.all([getDb(), getDatabaseUrl()])
-    .then(async ([db, url]) => { await db.ref('_server/health').get(); console.log('[startup] Realtime Database reachable at ' + url); })
+    .then(async ([db, url]) => { await db.ref('_server/health').get(); console.log('[startup] Realtime Database reachable at ' + url); await reportDatabaseRules(); })
     .catch(error => console.error('[startup] Realtime Database NOT reachable, chats cannot be saved:', error?.message));
 });
 
