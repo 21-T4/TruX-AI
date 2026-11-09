@@ -56,8 +56,8 @@
 }
 
 /* ---------- Accent ---------- */
-body{--acc-base:#6d8cff; --on-acc-base:#ffffff}
-body[data-accent="blue"]{--acc-base:#6d8cff; --on-acc-base:#ffffff}
+body{--acc-base:#4d7dff; --on-acc-base:#ffffff}
+body[data-accent="blue"]{--acc-base:#4d7dff; --on-acc-base:#ffffff}
 body[data-accent="cyan"]{--acc-base:#20d7ff; --on-acc-base:#04161c}
 body[data-accent="purple"]{--acc-base:#9a6cff; --on-acc-base:#ffffff}
 body[data-accent="pink"]{--acc-base:#ff5fb3; --on-acc-base:#ffffff}
@@ -77,7 +77,7 @@ body,body[data-accent]{
 }
 /* Light schemes: deepen the accent so it reads on pale surfaces. */
 :root[data-scheme="light"] body,:root[data-scheme="light"] body[data-accent]{
-  --acc:color-mix(in srgb,var(--acc-base) 74%,#000);
+  --acc:color-mix(in srgb,var(--acc-base) 80%,#06143a);
   --on-acc:#ffffff;
   --acc-soft:color-mix(in srgb,var(--acc) 11%,transparent);
   --acc-line:color-mix(in srgb,var(--acc) 36%,transparent);
