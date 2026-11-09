@@ -35,7 +35,17 @@ Video lengths: 8 s (one Veo shot), 18 s and 28 s (Veo opening shot, then Gemini 
 
 No `.env` file and no environment variables. The project ID comes from Cloud Run, the Firebase web config, database and bucket (`<project>-bucket`) are discovered from the project, Vertex AI uses `location=global`, and Live uses `us-central1` (the Live API has no global endpoint). Feedback mail goes to ekagraavn2003@gmail.com from `onboarding@resend.dev`.
 
-Optional Secret Manager secrets: `COMPOSIO_API_KEY` (plugins), `RESEND_API_KEY` (feedback email), `FCM_VAPID_PUBLIC_KEY` (web push).
+Firebase web config: discovered from the project, with the public values of the shared `trux-ai` project (the same ones TruX Code uses) built in as a fallback, so sign-in and the Realtime Database keep working if the lookup fails. `FIREBASE_*` environment variables (including `FIREBASE_DATABASE_URL` for a regional database) override any value. At startup the log says whether the Realtime Database is reachable.
+
+Optional Secret Manager secrets: `COMPOSIO_API_KEY` (plugins), `RESEND_API_KEY` (feedback email), `FCM_VAPID_PUBLIC_KEY` (web push), `TRUX_SESSION_KEY` (see below).
+
+## Sign-in tokens
+
+After every new sign-in the browser sends its fresh Firebase ID token to `POST /api/session/login`. The server verifies it, encrypts it (AES-256-GCM, a key derived per user and per sign-in) and stores only the sealed text at `_server/sessions/{uid}/{sessionId}`, a path the database rules close to clients. `POST /api/session/verify` opens it again in memory and checks it still belongs to the caller; signing out clears the records. Set `TRUX_SESSION_KEY` (`openssl rand -base64 32 | gcloud secrets create TRUX_SESSION_KEY --data-file=-`). Without it the server generates a key on first use and keeps it in the database, which still encrypts the tokens but is weaker.
+
+## Memory
+
+Like TruX Code, the model decides what to remember and saves short notes with a topic, kind and importance (`users/{uid}/memories`). Secrets are refused, near-duplicates update the existing note, the store is capped at 200, and each turn only sees notes about the topic of the question plus standing instructions.
 
 ## One-click setup (no terminal)
 

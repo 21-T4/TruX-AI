@@ -84,7 +84,11 @@ function attachChatSync(uid) {
     }
     truxSyncedMeta = next;
     queueSidebarSync();
-  }, error => console.warn("TruX chat sync failed", error?.message || error));
+  }, error => {
+    console.warn("TruX chat sync failed", error?.message || error);
+    const denied = /permission_denied/i.test(String(error?.code || error?.message));
+    toast(denied ? "Chat history is locked for this account. Verify your email, then sign in again." : "Chat history can't reach the database right now.", "err");
+  });
 }
 
 function metaOf(session) {

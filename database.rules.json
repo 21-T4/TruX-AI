@@ -31,7 +31,13 @@
           "$memoryId": {
             ".validate": "newData.hasChildren(['text', 'createdAt'])",
             "text": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 300" },
-            "createdAt": { ".validate": "newData.isNumber()" }
+            "createdAt": { ".validate": "newData.isNumber()" },
+            "updatedAt": { ".validate": "newData.isNumber()" },
+            "kind": { ".validate": "newData.isString() && newData.val().length <= 20" },
+            "topic": { ".validate": "newData.isString() && newData.val().length <= 20" },
+            "importance": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 5" },
+            "source": { ".validate": "newData.isString() && newData.val().length <= 20" },
+            "chatId": { ".validate": "newData.isString() && newData.val().length <= 40" }
           }
         },
         "personalization": {
