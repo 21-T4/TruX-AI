@@ -20,8 +20,23 @@ export const OWNER_EMAIL = 'ekagraavn2003@gmail.com';
    Resend account owner, which is the owner address above. */
 export const FEEDBACK_FROM = 'TruX Feedback <onboarding@resend.dev>';
 
-/* The only values TruX reads from Secret Manager (all optional). */
-export const SECRET_NAMES = ['COMPOSIO_API_KEY', 'RESEND_API_KEY', 'FCM_VAPID_PUBLIC_KEY'];
+/* The only values TruX reads from Secret Manager (all optional).
+   TRUX_SESSION_KEY encrypts the stored sign-in tokens (see lib/session-vault.js). */
+export const SECRET_NAMES = ['COMPOSIO_API_KEY', 'RESEND_API_KEY', 'FCM_VAPID_PUBLIC_KEY', 'TRUX_SESSION_KEY'];
+
+/* Firebase web config of project `trux-ai`, the same project TruX Code uses (see its .env.example), so both apps
+   share one account. These are public web-app identifiers, not secrets. They are the fallback when the Firebase
+   Management API cannot be reached, so sign-in and the Realtime Database no longer depend on that lookup.
+   Any FIREBASE_* environment variable overrides the matching value. */
+const SHARED_FIREBASE_CONFIG = Object.freeze({
+  apiKey: 'AIzaSyAs_GDrzlBaucHfiff0Y6cA8GVHjFTA62Q',
+  authDomain: 'trux-ai.firebaseapp.com',
+  projectId: 'trux-ai',
+  storageBucket: 'trux-ai.firebasestorage.app',
+  messagingSenderId: '59313097411',
+  appId: '1:59313097411:web:32e4158bfb733fa7cfb076',
+  measurementId: 'G-C32LC29QHC'
+});
 
 async function metadata(path, timeoutMs = 3000) {
   const response = await fetch(METADATA_BASE + path, {
@@ -135,17 +150,22 @@ async function discoverFirebaseWebConfig() {
   } catch (error) {
     console.warn('[config] Firebase web config discovery failed:', error?.message || error);
   }
+  // Order of precedence: FIREBASE_* environment variable, then what the project reports, then the shared TruX
+  // project config (only when this really is that project).
+  const shared = project === SHARED_FIREBASE_CONFIG.projectId ? SHARED_FIREBASE_CONFIG : {};
+  const pick = (envName, discovered, fallback) => String(process.env[envName] || '').trim() || discovered || fallback || '';
   const merged = {
-    apiKey: config.apiKey || '',
-    authDomain: config.authDomain || `${project}.firebaseapp.com`,
+    apiKey: pick('FIREBASE_API_KEY', config.apiKey, shared.apiKey),
+    authDomain: pick('FIREBASE_AUTH_DOMAIN', config.authDomain, shared.authDomain || `${project}.firebaseapp.com`),
     projectId: project,
-    storageBucket: config.storageBucket || `${project}.firebasestorage.app`,
-    messagingSenderId: config.messagingSenderId || '',
-    appId: config.appId || '',
-    measurementId: config.measurementId || '',
-    databaseURL: config.databaseURL || `https://${project}-default-rtdb.firebaseio.com`
+    storageBucket: pick('FIREBASE_STORAGE_BUCKET', config.storageBucket, shared.storageBucket || `${project}.firebasestorage.app`),
+    messagingSenderId: pick('FIREBASE_MESSAGING_SENDER_ID', config.messagingSenderId, shared.messagingSenderId),
+    appId: pick('FIREBASE_APP_ID', config.appId, shared.appId),
+    measurementId: pick('FIREBASE_MEASUREMENT_ID', config.measurementId, shared.measurementId),
+    // A database created outside us-central1 has a regional URL, so the project's own answer wins over the guess.
+    databaseURL: pick('FIREBASE_DATABASE_URL', config.databaseURL, `https://${project}-default-rtdb.firebaseio.com`)
   };
-  if (!merged.apiKey) throw new Error('Firebase web config is unavailable. Grant the Cloud Run service account the Firebase Viewer role.');
+  if (!merged.apiKey) throw new Error('Firebase web config is unavailable. Set FIREBASE_API_KEY, or grant the Cloud Run service account the Firebase Viewer role.');
   return merged;
 }
 

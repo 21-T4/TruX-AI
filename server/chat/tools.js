@@ -169,12 +169,12 @@ export class Toolbox {
       case 'trux_web_open':
         return { response: await executeTruxWebTool({ name: call.name, args, signal }) };
       case 'trux_memory_save': {
-        const result = await saveMemory(this.user.uid, args.text, this.memories);
+        const result = await saveMemory(this.user.uid, args, this.memories, this.chatId);
         if (result.ok && !result.duplicate) this.send({ type: 'memory', action: 'saved', id: result.id, text: result.text });
         return { response: result };
       }
       case 'trux_memory_forget': {
-        const result = await forgetMemory(this.user.uid, args.id);
+        const result = await forgetMemory(this.user.uid, args, this.memories);
         this.memories = this.memories.filter(m => m.id !== result.id);
         if (result.ok) this.send({ type: 'memory', action: 'forgot', id: result.id });
         return { response: result };

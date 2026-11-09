@@ -8,9 +8,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Readable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
-import { getRuntimeEnv } from './lib/config.js';
+import { getDatabaseUrl, getRuntimeEnv } from './lib/config.js';
 import { errorResponse, HttpError } from './lib/http.js';
-import { getAdminApp } from './lib/firebase.js';
+import { getAdminApp, getDb } from './lib/firebase.js';
 import { handleLiveUpgrade } from './live.js';
 import { routes as chatRoutes } from './routes/chat.js';
 import { routes as configRoutes } from './routes/config.js';
@@ -21,13 +21,14 @@ import { routes as mediaRoutes } from './routes/media.js';
 import { routes as modelRoutes } from './routes/models.js';
 import { routes as pluginRoutes } from './routes/plugins.js';
 import { routes as pushRoutes } from './routes/push.js';
+import { routes as sessionRoutes } from './routes/session.js';
 import { routes as ttsRoutes } from './routes/tts.js';
 
 const PORT = Number(process.env.PORT || 8080);
 const PUBLIC_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
 const ROUTES = {
   ...chatRoutes, ...configRoutes, ...feedbackRoutes, ...fileRoutes, ...homeRoutes,
-  ...mediaRoutes, ...modelRoutes, ...pluginRoutes, ...pushRoutes, ...ttsRoutes
+  ...mediaRoutes, ...modelRoutes, ...pluginRoutes, ...pushRoutes, ...sessionRoutes, ...ttsRoutes
 };
 const STREAMED_BODY = new Set(['POST /api/files/upload']);
 const MAX_BODY = 512 * 1024;
@@ -184,6 +185,10 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`TruX AI listening on ${PORT}`);
   // Warm up credentials, secrets and Firebase Admin so the first user request is fast.
   Promise.all([getRuntimeEnv(), getAdminApp()]).catch(error => console.warn('[startup] warm-up failed:', error?.message));
+  // Chats live in the Realtime Database, so say plainly in the log whether it can be reached.
+  Promise.all([getDb(), getDatabaseUrl()])
+    .then(async ([db, url]) => { await db.ref('_server/health').get(); console.log('[startup] Realtime Database reachable at ' + url); })
+    .catch(error => console.error('[startup] Realtime Database NOT reachable, chats cannot be saved:', error?.message));
 });
 
 for (const signal of ['SIGTERM', 'SIGINT']) {

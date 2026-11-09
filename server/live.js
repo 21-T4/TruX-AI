@@ -61,7 +61,7 @@ wss.on('connection', (socket, request) => {
       let response;
       try {
         sendJson(socket, { type: 'tool', name: call.name, phase: 'start' });
-        if (call.name === 'trux_memory_save') response = await saveMemory(user.uid, call.args?.text, memories);
+        if (call.name === 'trux_memory_save') response = await saveMemory(user.uid, call.args || {}, memories);
         else if (call.name === 'trux_web_open') response = await executeTruxWebTool({ name: call.name, args: call.args || {} });
         else if (call.name === 'trux_device_action') {
           const prepared = prepareDeviceAction(call.args || {}, device);
@@ -178,7 +178,7 @@ wss.on('connection', (socket, request) => {
             LIVE_PERSONA,
             'Current date/time: ' + new Date().toUTCString(),
             device ? deviceManifest(device) : '',
-            personalization.memoryEnabled ? memoryPrompt(memories) + '\nSave durable new facts about the user with trux_memory_save, silently.' : '',
+            personalization.memoryEnabled ? memoryPrompt(memories, null) + '\nSave durable new facts about the user with trux_memory_save, silently.' : '',
             personalizationPrompt(personalization, 'live')
           ].filter(Boolean).join('\n\n')
         };

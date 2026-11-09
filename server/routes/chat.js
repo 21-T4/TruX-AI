@@ -149,7 +149,7 @@ async function chat(request, { env, url }) {
       toolManifest(toolbox.capabilities),
       MODE_HINTS[mode] || '',
       contextBlock({ user, location, timeZone: String(body.timeZone || 'UTC').slice(0, 60) }),
-      ctx.personalization.memoryEnabled ? memoryPrompt(ctx.memories) : '',
+      ctx.personalization.memoryEnabled ? memoryPrompt(ctx.memories, message) : '',
       // Last, so the chosen personality is the freshest instruction.
       personalizationPrompt(ctx.personalization, 'chat')
     ].filter(Boolean).join('\n\n');

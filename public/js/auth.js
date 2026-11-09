@@ -18,7 +18,8 @@ let truxAuthStateReady = false;
 let resolveTruxAuthState = null;
 const truxAuthStatePromise = new Promise(resolve => { resolveTruxAuthState = resolve; });
 const TRUX_DEVELOPER_EMAIL = "ekagraavn2003@gmail.com";
-const TRUX_FIREBASE_CONFIG_KEY = "trux_firebase_config_v2";
+const TRUX_FIREBASE_CONFIG_KEY = "trux_firebase_config_v3";
+const TRUX_SIGNIN_MARK_KEY = "trux_signin_mark";
 let truxLoginView = "signin";
 let truxVerifyPoll = null;
 
@@ -147,6 +148,37 @@ async function saveTruxDisplayName() {
   }
 }
 
+/* ---------- Encrypted sign-in token ----------
+   After every NEW sign-in (not a page reload that restores the same one) the fresh token is sent to the server,
+   which verifies it, encrypts it and stores only the sealed text. The mark below is the sign-in time Firebase
+   reports, so a restored session is not re-sent but a real new sign-in always is. */
+let truxSessionInFlight = "";
+
+function truxSignInMark(user) {
+  return user ? user.uid + ":" + (user.metadata?.lastSignInTime || "") : "";
+}
+
+async function registerTruxSession(user = auth?.currentUser, { force = false } = {}) {
+  if (!user || !truxUserVerified(user)) return false;
+  const mark = truxSignInMark(user);
+  if (!force && (store.getItem(TRUX_SIGNIN_MARK_KEY) === mark || truxSessionInFlight === mark)) return true;
+  truxSessionInFlight = mark;
+  try {
+    // A forced refresh makes sure the token carries the verified-email claim and this sign-in's auth time.
+    await getTruxIdToken(user, true);
+    const res = await truxAuthenticatedFetch("/api/session/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    store.setItem(TRUX_SIGNIN_MARK_KEY, mark);
+    return true;
+  } catch (error) {
+    // Not fatal: chatting still works, and the next load tries again because the mark was not saved.
+    console.warn("TruX could not store the encrypted sign-in", error?.message || error);
+    return false;
+  } finally {
+    if (truxSessionInFlight === mark) truxSessionInFlight = "";
+  }
+}
+
 /* ---------- Firebase bootstrap ---------- */
 
 async function loadFirebaseConfig() {
@@ -219,7 +251,7 @@ async function initFirebaseOnce() {
     }
     if (typeof onTruxUserChanged === "function") onTruxUserChanged(user && truxUserVerified(user) ? user : null);
     if (first) resolveTruxAuthState(user || null);
-    if (user && truxUserVerified(user)) void syncTruxNotificationsSilently();
+    if (user && truxUserVerified(user)) { void registerTruxSession(user); void syncTruxNotificationsSilently(); }
   });
 }
 
@@ -404,6 +436,7 @@ async function checkEmailVerified(silent = false) {
     updateTruxProfileUI(fresh);
     closeLoginWall();
     if (typeof onTruxUserChanged === "function") onTruxUserChanged(fresh);
+    void registerTruxSession(fresh, { force: true });
     void syncTruxNotificationsSilently();
     toast("Email verified. Welcome to TruX.", "ok");
     return true;
@@ -420,6 +453,14 @@ function stopVerifyPoll() { if (truxVerifyPoll) clearInterval(truxVerifyPoll); t
 
 async function truxSignOut() {
   stopVerifyPoll();
+  // Forget the stored encrypted sign-ins while the token is still valid; never block sign-out on it.
+  try {
+    await Promise.race([
+      truxAuthenticatedFetch("/api/session/logout", { method: "POST" }),
+      new Promise(resolve => setTimeout(resolve, 2500))
+    ]);
+  } catch {}
+  store.removeItem(TRUX_SIGNIN_MARK_KEY);
   try { if (typeof onTruxUserChanged === "function") onTruxUserChanged(null); } catch {}
   try { await auth?.signOut(); } catch {}
   cacheUserForNextBoot(null);

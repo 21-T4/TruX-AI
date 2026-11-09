@@ -1,6 +1,6 @@
 /* Personalization and memory, stored per user in Realtime Database:
  *   users/{uid}/personalization  {preset, nickname, occupation, about, instructions, memoryEnabled, voice}
- *   users/{uid}/memories/{id}    {text, createdAt}  (written by the AI, deletable here)
+ *   users/{uid}/memories/{id}    {text, kind, topic, importance, createdAt, updatedAt}  (written by the AI, deletable here)
  * The server reads both on every chat and Live turn, so changes apply to the
  * next message on every device. */
 const TRUX_PERSONALITY_PRESETS = [
@@ -150,7 +150,7 @@ async function refreshTruxMemoryList() {
   try {
     const snap = await rtdb.ref(`users/${uid}/memories`).orderByChild("createdAt").limitToLast(200).get();
     const raw = snap.val() || {};
-    rows = Object.entries(raw).map(([id, m]) => ({ id, text: String(m?.text || ""), createdAt: Number(m?.createdAt) || 0 }))
+    rows = Object.entries(raw).map(([id, m]) => ({ id, text: String(m?.text || ""), topic: String(m?.topic || ""), createdAt: Number(m?.createdAt) || 0 }))
       .sort((a, b) => b.createdAt - a.createdAt);
   } catch {
     list.innerHTML = '<p class="mrow-sub">Could not load memories.</p>';
@@ -165,6 +165,7 @@ async function refreshTruxMemoryList() {
   for (const m of rows) {
     const row = document.createElement("div"); row.className = "memory-item";
     const text = document.createElement("span"); text.textContent = m.text;
+    if (m.topic && m.topic !== "general") { const tag = document.createElement("small"); tag.className = "mrow-sub"; tag.textContent = " · " + m.topic; text.appendChild(tag); }
     const del = document.createElement("button"); del.type = "button"; del.className = "memory-del"; del.title = "Forget this"; del.setAttribute("aria-label", "Forget this memory");
     del.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>';
     del.onclick = async () => {
