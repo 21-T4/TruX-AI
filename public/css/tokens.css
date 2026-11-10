@@ -1,0 +1,200 @@
+/* ============================================================
+   TruX Workspace — design tokens, reset and base elements.
+   Dark only. Every other stylesheet reads these variables.
+
+   Surfaces   --bg (canvas) < --bg-1 (chrome) < --bg-2 (cards/inputs)
+              < --bg-3 (hover) < --bg-4 (pressed / user bubble)
+   Text       --txt, --txt-2, --txt-3, --txt-4
+   Lines      --line, --line-2, --line-3
+   Accent     --acc, --acc-2, --acc-3, --acc-soft, --acc-line, --on-acc
+   Channels   --ink (toward text) / --shade (toward canvas) for rgba(var(--ink), .x)
+   ============================================================ */
+:root{
+  color-scheme: dark;
+
+  /* surfaces */
+  --bg:   #0a0b0e;
+  --bg-1: #0e1014;
+  --bg-2: #13161b;
+  --bg-3: #1a1e25;
+  --bg-4: #232832;
+
+  /* text */
+  --txt:   #e8eaee;
+  --txt-2: #b3b8c2;
+  --txt-3: #7f8590;
+  --txt-4: #595e68;
+
+  /* hairlines + overlay channels */
+  --ink: 255,255,255;
+  --shade: 0,0,0;
+  --line:   rgba(255,255,255,.06);
+  --line-2: rgba(255,255,255,.10);
+  --line-3: rgba(255,255,255,.18);
+
+  --danger: #ff6370;
+  --ok:     #4fd18b;
+  --warn:   #f0b84d;
+
+  /* geometry */
+  --rail: 280px;            /* sidebar width */
+  --panel-w: 400px;         /* right workspace panel width */
+  --measure: 760px;         /* reading column */
+  --topbar-h: 52px;
+  --r-xs: 6px;
+  --r-sm: 9px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 22px;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+
+  /* depth */
+  --shadow-1: 0 1px 2px rgba(0,0,0,.35);
+  --shadow-2: 0 8px 24px rgba(0,0,0,.45), 0 1px 0 rgba(255,255,255,.03) inset;
+  --shadow-3: 0 24px 64px rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.04) inset;
+
+  /* motion */
+  --ease:     cubic-bezier(.22,.61,.36,1);
+  --ease-out: cubic-bezier(.16,1,.3,1);
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --dur-3: 340ms;
+
+  /* stacking */
+  --z-topbar: 20;
+  --z-panel: 30;
+  --z-sidebar: 40;
+  --z-menu: 60;
+  --z-modal: 100;
+  --z-toast: 200;
+  --z-live: 300;
+
+  /* type */
+  --font-ui:   'Google Sans', 'Google Sans Flex', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-body: 'Google Sans Flex', 'Google Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-disp: 'Google Sans', 'Google Sans Flex', system-ui, sans-serif;
+  --font-mono: 'Google Sans Code', ui-monospace, SFMono-Regular, 'JetBrains Mono', Consolas, monospace;
+
+  /* code */
+  --code-bg:  #0b0d11;
+  --code-txt: #d6dae4;
+  --tk-key: #a5b4ff;
+  --tk-str: #8ad6b8;
+  --tk-com: #626875;
+  --tk-num: #e6b98c;
+  --tk-fn:  #8fc0f4;
+  --tk-dec: #c9a9ff;
+}
+
+/* Dark variants (the Appearance setting). All stay dark. */
+:root[data-theme="graphite"]{
+  --bg:#17181b; --bg-1:#1c1d21; --bg-2:#232428; --bg-3:#2b2d32; --bg-4:#34363c;
+  --txt:#ececef; --txt-2:#bcbdc4; --txt-3:#8c8e97; --txt-4:#656770;
+  --code-bg:#131417;
+}
+:root[data-theme="midnight"]{
+  --bg:#080c18; --bg-1:#0c1122; --bg-2:#121932; --bg-3:#19224a; --bg-4:#222d5c;
+  --txt:#e8ecf8; --txt-2:#b8c0dc; --txt-3:#848eb0; --txt-4:#5d678a;
+  --ink:226,232,255; --shade:4,8,20;
+  --line:rgba(226,232,255,.07); --line-2:rgba(226,232,255,.11); --line-3:rgba(226,232,255,.2);
+  --code-bg:#090d1c;
+}
+:root[data-theme="forest"]{
+  --bg:#0a110e; --bg-1:#0e1713; --bg-2:#141f19; --bg-3:#1b2a22; --bg-4:#25382d;
+  --txt:#e6efe9; --txt-2:#b9c9bf; --txt-3:#86998d; --txt-4:#5f7267;
+  --ink:228,245,234; --shade:4,10,7;
+  --line:rgba(228,245,234,.07); --line-2:rgba(228,245,234,.11); --line-3:rgba(228,245,234,.2);
+  --code-bg:#0a100d;
+}
+
+/* Accent (set by applyTruxAccent → body[data-accent]) */
+body{ --acc-base:#6b8cff; --on-acc-base:#ffffff; }
+body[data-accent="blue"]  { --acc-base:#6b8cff; --on-acc-base:#ffffff; }
+body[data-accent="cyan"]  { --acc-base:#2fd4f5; --on-acc-base:#04161c; }
+body[data-accent="purple"]{ --acc-base:#a07cff; --on-acc-base:#ffffff; }
+body[data-accent="pink"]  { --acc-base:#ff6bb8; --on-acc-base:#ffffff; }
+body[data-accent="red"]   { --acc-base:#ff6370; --on-acc-base:#ffffff; }
+body[data-accent="orange"]{ --acc-base:#ff9f4a; --on-acc-base:#1f1203; }
+body[data-accent="yellow"]{ --acc-base:#f1d75a; --on-acc-base:#1d1802; }
+body[data-accent="green"] { --acc-base:#5bd990; --on-acc-base:#05190d; }
+body[data-accent="teal"]  { --acc-base:#3ed3b8; --on-acc-base:#03180f; }
+body[data-accent="white"] { --acc-base:#f2f3f5; --on-acc-base:#111114; }
+body, body[data-accent]{
+  --acc:      var(--acc-base);
+  --on-acc:   var(--on-acc-base);
+  --acc-2:    color-mix(in srgb, var(--acc) 62%, var(--txt));
+  --acc-3:    color-mix(in srgb, var(--acc) 68%, var(--bg));
+  --acc-soft: color-mix(in srgb, var(--acc) 13%, transparent);
+  --acc-line: color-mix(in srgb, var(--acc) 42%, transparent);
+}
+.accent-option[data-accent-option="white"]{ --swatch: var(--txt); }
+
+/* ---------- reset ---------- */
+*, *::before, *::after{ box-sizing: border-box; }
+*{ margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html{
+  height: 100%;
+  background: var(--bg);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  touch-action: pan-x pan-y;
+  overflow-x: clip;
+}
+body{
+  height: 100%;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--txt);
+  font: 450 15px/1.55 var(--font-body);
+  letter-spacing: -.003em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+button, input, textarea, select{
+  font: inherit;
+  font-family: var(--font-ui);
+  color: inherit;
+  border: 0;
+  background: none;
+  outline: none;
+}
+button{ cursor: pointer; touch-action: manipulation; }
+button:disabled{ cursor: not-allowed; }
+img, svg, video{ display: block; max-width: 100%; }
+a{ color: var(--acc-2); text-decoration: none; }
+a:hover{ text-decoration: underline; text-underline-offset: 3px; }
+[hidden]{ display: none !important; }
+pre, code, kbd, samp{ font-family: var(--font-mono); }
+
+/* icon buttons use stroked 24px svgs throughout the app */
+svg:not([fill]):not(.fill){ fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+:focus-visible{ outline: 2px solid var(--acc-line); outline-offset: 2px; border-radius: var(--r-sm); }
+::selection{ background: color-mix(in srgb, var(--acc) 32%, transparent); color: var(--txt); }
+
+/* The app is an interface: UI chrome is not selectable. Reading surfaces re-enable it. */
+body, body *{ -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+input, textarea, select,
+.bubble, .md-stream, .md-block, .md-block *, .bubble *, .code-file pre, .code-file code,
+.settings-content p, .detail-callout *, .help-panel *, .memory-list *, .pin-card p{
+  -webkit-user-select: text; user-select: text;
+}
+
+/* thin scrollbars */
+*{ scrollbar-width: thin; scrollbar-color: rgba(var(--ink),.16) transparent; }
+::-webkit-scrollbar{ width: 10px; height: 10px; }
+::-webkit-scrollbar-track{ background: transparent; }
+::-webkit-scrollbar-thumb{ background: rgba(var(--ink),.12); border-radius: 99px; border: 3px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover{ background: rgba(var(--ink),.24); background-clip: content-box; border: 3px solid transparent; }
+
+/* legacy decorative layers are retired */
+.bg, .colorful-bg, .bg-orb{ display: none !important; }
+
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{ animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+}
