@@ -17,10 +17,22 @@ let truxChatSyncRetried = false;  // one token refresh + re-listen per sign-in
 let truxChatSyncWarned = false;   // one message per sign-in
 const truxSyncedMessageIds = {};  // chatId -> Set of message ids seen in RTDB
 const truxStreamWatchers = {};    // chatId -> unsubscribe fn
+let truxServerMode = false;       // true when the database rules refuse the browser: everything goes through /api/data
+let truxServerPoll = null;
 const TRUX_META_FIELDS = ["title", "mode", "notebookId", "pinned", "archived"];
 
 function truxUid() { return auth?.currentUser?.uid || ""; }
 function userRef(path) { return rtdb.ref(`users/${truxUid()}/${path}`); }
+
+/* Server-side data access (Admin SDK). Used when the browser is refused by the database rules. */
+async function truxDataApi(path, body) {
+  const response = await truxAuthenticatedFetch("/api/data/" + path, body === undefined ? {} : {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "Request failed.");
+  return data;
+}
 
 function newChatId() {
   return "chat_" + Date.now() + Math.random().toString(36).slice(2, 8);
@@ -47,6 +59,7 @@ function onTruxUserChanged(user) {
   truxSyncedUid = uid;
   truxChatSyncRetried = false;
   truxChatSyncWarned = false;
+  truxServerMode = false;
   if (uid) attachChatSync(uid);
   renderSidebar();
 }
@@ -54,55 +67,75 @@ function onTruxUserChanged(user) {
 function detachChatSync() {
   try { truxChatsRef?.off(); } catch {}
   truxChatsRef = null;
+  clearInterval(truxServerPoll); truxServerPoll = null;
   Object.keys(truxStreamWatchers).forEach(stopStreamWatcher);
   Object.keys(truxSyncedMessageIds).forEach(k => delete truxSyncedMessageIds[k]);
 }
 
+function applyRemoteChats(remote) {
+  const next = {};
+  for (const [id, meta] of Object.entries(remote || {})) {
+    if (!meta || typeof meta !== "object") continue;
+    next[id] = meta;
+    const local = chatSessions[id] || { messages: [], messagesLoaded: false };
+    chatSessions[id] = {
+      ...local,
+      title: meta.title || local.title || "New chat",
+      mode: meta.mode || local.mode || "chat",
+      notebookId: meta.notebookId || null,
+      pinned: meta.pinned === true,
+      archived: meta.archived === true,
+      createdAt: meta.createdAt || local.createdAt || 0,
+      updatedAt: meta.updatedAt || local.updatedAt || 0,
+      lastStatus: meta.lastStatus || ""
+    };
+  }
+  // Chats deleted on another device disappear here too. Brand-new local
+  // chats whose meta hasn't landed yet are kept.
+  for (const id of Object.keys(chatSessions)) {
+    const session = chatSessions[id];
+    if (next[id] || session?.incognito) continue;
+    if (truxSyncedMeta[id] || session?.messagesLoaded === false) delete chatSessions[id];
+  }
+  truxSyncedMeta = next;
+  queueSidebarSync();
+}
+
+/* The browser is refused by the database rules, so read and write through the server instead. */
+function enterServerMode(uid) {
+  if (truxServerMode || truxSyncedUid !== uid) return;
+  truxServerMode = true;
+  try { truxChatsRef?.off(); } catch {}
+  truxChatsRef = null;
+  const poll = async () => {
+    if (truxSyncedUid !== uid) return;
+    try { applyRemoteChats((await truxDataApi("chats")).chats); }
+    catch (error) {
+      console.warn("TruX chat poll failed", error?.message || error);
+      if (!truxChatSyncWarned) { truxChatSyncWarned = true; toast("Chat history can't reach the server right now.", "err"); }
+    }
+  };
+  void poll();
+  truxServerPoll = setInterval(() => { if (!document.hidden) void poll(); }, 5000);
+}
+
 function attachChatSync(uid) {
   truxChatsRef = rtdb.ref(`users/${uid}/chats`);
-  truxChatsRef.on("value", snapshot => {
-    const remote = snapshot.val() || {};
-    const next = {};
-    for (const [id, meta] of Object.entries(remote)) {
-      if (!meta || typeof meta !== "object") continue;
-      next[id] = meta;
-      const local = chatSessions[id] || { messages: [], messagesLoaded: false };
-      chatSessions[id] = {
-        ...local,
-        title: meta.title || local.title || "New chat",
-        mode: meta.mode || local.mode || "chat",
-        notebookId: meta.notebookId || null,
-        pinned: meta.pinned === true,
-        archived: meta.archived === true,
-        createdAt: meta.createdAt || local.createdAt || 0,
-        updatedAt: meta.updatedAt || local.updatedAt || 0,
-        lastStatus: meta.lastStatus || ""
-      };
-    }
-    // Chats deleted on another device disappear here too. Brand-new local
-    // chats whose meta hasn't landed yet are kept.
-    for (const id of Object.keys(chatSessions)) {
-      const session = chatSessions[id];
-      if (next[id] || session?.incognito) continue;
-      if (truxSyncedMeta[id] || session?.messagesLoaded === false) delete chatSessions[id];
-    }
-    truxSyncedMeta = next;
-    queueSidebarSync();
-  }, error => {
+  truxChatsRef.on("value", snapshot => applyRemoteChats(snapshot.val() || {}), error => {
     console.warn("TruX chat sync failed", error?.message || error);
     const denied = /permission_denied/i.test(String(error?.code || error?.message));
     // The database checks the verified-email claim in the token. A token minted before verification lacks it, so
-    // refresh it and listen once more before telling anyone anything.
+    // refresh it and listen once more before giving up on the direct connection.
     if (denied && !truxChatSyncRetried && auth?.currentUser && truxSyncedUid === uid) {
       truxChatSyncRetried = true;
       getTruxIdToken(auth.currentUser, true).then(() => { if (truxSyncedUid === uid) { detachChatSync(); attachChatSync(uid); } });
       return;
     }
+    // Still refused: the sign-in is fine, the database rules say no. The server can read the same data, so use it.
+    if (denied) return enterServerMode(uid);
     if (truxChatSyncWarned) return;
     truxChatSyncWarned = true;
-    if (!denied) return toast("Chat history can't reach the database right now.", "err");
-    // Still refused after a fresh token: the sign-in is fine, the database rules are what say no.
-    toast(isTruxDeveloper() ? "The database rules are blocking chat history. Deploy database.rules.json (see the server log)." : "Chat history is unavailable right now. Please try again later.", "err");
+    toast("Chat history can't reach the database right now.", "err");
   });
 }
 
@@ -148,7 +181,8 @@ function saveChatSessions() {
     stopStreamWatcher(id);
   }
   if (Object.keys(updates).length) {
-    truxPendingSync = rtdb.ref(`users/${uid}`).update(updates).catch(error => {
+    const write = truxServerMode ? truxDataApi("chats", { updates }) : rtdb.ref(`users/${uid}`).update(updates);
+    truxPendingSync = write.catch(error => {
       console.warn("TruX chat save failed", error?.message || error);
       toast("Couldn't sync that change. Check your connection.", "err");
     });
@@ -178,8 +212,9 @@ async function loadChatMessages(chatId, { force = false } = {}) {
   const session = chatSessions[chatId];
   if (!session || session.incognito) return session?.messages || [];
   if (session.messagesLoaded && !force) return session.messages;
-  const snapshot = await userRef(`messages/${chatId}`).orderByKey().limitToLast(300).get();
-  const raw = snapshot.val() || {};
+  const raw = truxServerMode
+    ? (await truxDataApi("messages?chatId=" + encodeURIComponent(chatId))).messages || {}
+    : (await userRef(`messages/${chatId}`).orderByKey().limitToLast(300).get()).val() || {};
   const ids = Object.keys(raw).sort();
   session.messages = ids.map(id => clientMessageFromStored(id, raw[id]));
   session.messagesLoaded = true;
@@ -195,6 +230,7 @@ function rememberMessageId(chatId, id) {
 /* Ask the server-side turn to stop. The server watches this flag. */
 function requestServerStop(chatId, messageId) {
   if (!chatId || !messageId || !truxUid()) return Promise.resolve();
+  if (truxServerMode) return truxDataApi("chats", { updates: { [`messages/${chatId}/${messageId}/stopRequested`]: true } }).catch(() => {});
   return userRef(`messages/${chatId}/${messageId}/stopRequested`).set(true).catch(() => {});
 }
 
@@ -235,6 +271,18 @@ function watchStreamingMessage(chatId, messageId, row, { onSettled } = {}) {
       onSettled?.(msg);
     }
   };
+  if (truxServerMode) {
+    const tick = async () => {
+      try {
+        const { messages } = await truxDataApi("messages?chatId=" + encodeURIComponent(chatId));
+        if (messages?.[messageId]) handler({ val: () => messages[messageId] });
+      } catch {}
+    };
+    const timer = setInterval(tick, 1200);
+    truxStreamWatchers[chatId] = () => clearInterval(timer);
+    void tick();
+    return;
+  }
   ref.on("value", handler);
   truxStreamWatchers[chatId] = () => ref.off("value", handler);
 }

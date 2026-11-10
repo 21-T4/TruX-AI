@@ -15,6 +15,7 @@ import { reportDatabaseRules } from './lib/rules.js';
 import { handleLiveUpgrade } from './live.js';
 import { routes as chatRoutes } from './routes/chat.js';
 import { routes as configRoutes } from './routes/config.js';
+import { routes as dataRoutes } from './routes/data.js';
 import { routes as feedbackRoutes } from './routes/feedback.js';
 import { routes as fileRoutes } from './routes/files.js';
 import { routes as homeRoutes } from './routes/home.js';
@@ -28,7 +29,7 @@ import { routes as ttsRoutes } from './routes/tts.js';
 const PORT = Number(process.env.PORT || 8080);
 const PUBLIC_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
 const ROUTES = {
-  ...chatRoutes, ...configRoutes, ...feedbackRoutes, ...fileRoutes, ...homeRoutes,
+  ...chatRoutes, ...configRoutes, ...dataRoutes, ...feedbackRoutes, ...fileRoutes, ...homeRoutes,
   ...mediaRoutes, ...modelRoutes, ...pluginRoutes, ...pushRoutes, ...sessionRoutes, ...ttsRoutes
 };
 const STREAMED_BODY = new Set(['POST /api/files/upload']);

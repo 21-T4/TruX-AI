@@ -63,6 +63,8 @@
   <link rel="stylesheet" href="/css/diagrams.css">
   <link rel="stylesheet" href="/css/themes.css">
   <link rel="stylesheet" href="/css/home.css">
+  <link rel="stylesheet" href="/css/personalization.css">
+  <link rel="stylesheet" href="/css/colour.css">
 
 
 
@@ -779,25 +781,46 @@
               </div></section>
 
           <section class="settings-section" data-settings-content="personalization">
-              <div class="settings-section-head"><h2>Personalization</h2><p>Choose a personality, tell TruX about yourself, and manage what it remembers. Changes sync to every device and apply to your next message. <span id="truxPersonalizationStatus" class="trux-save-status" aria-live="polite"></span></p></div>
-              <div class="settings-card"><div class="sect"><h4>Personality</h4><p class="mrow-sub">Changes TruX's tone, length and format in chat and Live.</p><div id="truxPresetGrid" class="preset-grid" role="radiogroup" aria-label="Personality"></div><div id="truxPresetSample" class="preset-sample" aria-live="polite"></div></div></div>
-              <div class="settings-card"><div class="sect"><div class="memory-head"><h4>Voice</h4><small class="pfield-count">Current: <b id="truxVoiceCurrent">Kore</b></small></div><p class="mrow-sub">All Gemini voices. Used by TruX Live and read aloud. Tap play to preview.</p><div id="truxVoiceGrid" class="voice-grid" role="radiogroup" aria-label="Voice"></div></div></div>
-              <div class="settings-card"><div class="sect"><h4>About you</h4>
-                <label class="profile-field-label" for="truxPNickname">What should TruX call you? <small id="truxPNicknameCount" class="pfield-count">0 / 60</small></label>
-                <input id="truxPNickname" class="instr" data-pfield="nickname" maxlength="60" placeholder="Nickname" oninput="queuePersonalizationField(this)">
-                <label class="profile-field-label" for="truxPOccupation">What do you do? <small id="truxPOccupationCount" class="pfield-count">0 / 120</small></label>
-                <input id="truxPOccupation" class="instr" data-pfield="occupation" maxlength="120" placeholder="Student, engineer, designer…" oninput="queuePersonalizationField(this)">
-                <label class="profile-field-label" for="truxPAbout">Anything else TruX should know? <small id="truxPAboutCount" class="pfield-count">0 / 1500</small></label>
-                <textarea id="truxPAbout" class="instr" data-pfield="about" maxlength="1500" placeholder="Interests, goals, context about your work…" oninput="queuePersonalizationField(this)"></textarea>
-              </div></div>
-              <div class="settings-card"><div class="sect"><h4>Custom instructions</h4>
-                <label class="profile-field-label" for="truxPInstructions">How should TruX respond? <small id="truxPInstructionsCount" class="pfield-count">0 / 3000</small></label>
-                <textarea id="truxPInstructions" class="instr" data-pfield="instructions" maxlength="3000" placeholder="For example: use metric units, keep code in TypeScript, avoid long intros." oninput="queuePersonalizationField(this)"></textarea>
-              </div></div>
-              <div class="settings-card">
-                <div class="mrow"><span><b>Memory</b><small class="mrow-sub">TruX saves useful details on its own while you chat and uses them in later conversations.</small></span><label class="toggle"><input id="truxMemoryEnabledToggle" type="checkbox" onchange="setMemoryEnabled(this.checked)"><span class="slider"></span></label></div>
-                <div class="sect"><div class="memory-head"><h4>Saved memories <small id="truxMemoryCount" class="pfield-count"></small></h4><button type="button" class="mbtn danger" onclick="clearAllMemories()">Clear all</button></div><div id="truxMemoryList" class="memory-list" aria-live="polite"></div></div>
+              <div class="settings-section-head"><h2>Personalization</h2><p>Pick a mode, tell TruX about yourself and manage what it remembers. Changes sync to every device and apply to your next message. <span id="truxPersonalizationStatus" class="trux-save-status" aria-live="polite"></span></p></div>
+
+              <div class="pz-card pz-modes">
+                <div class="pz-title"><span class="pz-step">1</span><div><h4>Personality mode</h4><p>Sets tone, length and format in chat and Live.</p></div></div>
+                <div id="truxModeHero" class="mode-hero" aria-live="polite"></div>
+                <div id="truxPresetGrid" class="mode-grid" role="radiogroup" aria-label="Personality mode"></div>
+                <div id="truxPresetSample" class="mode-preview" aria-live="polite"></div>
               </div>
+
+              <div class="pz-card pz-voice">
+                <div class="pz-title"><span class="pz-step">2</span><div><h4>Voice</h4><p>Used by TruX Live and read aloud. Current: <b id="truxVoiceCurrent">Kore</b>. Tap play to preview.</p></div></div>
+                <div id="truxVoiceGrid" class="voice-grid" role="radiogroup" aria-label="Voice"></div>
+              </div>
+
+              <div class="pz-card pz-about">
+                <div class="pz-title"><span class="pz-step">3</span><div><h4>About you</h4><p>Helps TruX pitch answers at the right level.</p></div></div>
+                <div class="pz-fields">
+                  <label class="pz-field"><span>Call me <small id="truxPNicknameCount" class="pfield-count">0 / 60</small></span>
+                    <input id="truxPNickname" class="instr" data-pfield="nickname" maxlength="60" placeholder="Nickname" oninput="queuePersonalizationField(this)"></label>
+                  <label class="pz-field"><span>I work as <small id="truxPOccupationCount" class="pfield-count">0 / 120</small></span>
+                    <input id="truxPOccupation" class="instr" data-pfield="occupation" maxlength="120" placeholder="Student, engineer, designer…" oninput="queuePersonalizationField(this)"></label>
+                </div>
+                <label class="pz-field"><span>Anything else TruX should know? <small id="truxPAboutCount" class="pfield-count">0 / 1500</small></span>
+                  <textarea id="truxPAbout" class="instr" data-pfield="about" maxlength="1500" placeholder="Interests, goals, context about your work…" oninput="queuePersonalizationField(this)"></textarea></label>
+              </div>
+
+              <div class="pz-card pz-rules">
+                <div class="pz-title"><span class="pz-step">4</span><div><h4>Custom instructions</h4><p>Rules TruX follows in every reply. Tap a suggestion to add it.</p></div></div>
+                <div id="truxInstructionChips" class="snippet-row"></div>
+                <label class="pz-field"><span>How should TruX respond? <small id="truxPInstructionsCount" class="pfield-count">0 / 3000</small></span>
+                  <textarea id="truxPInstructions" class="instr" data-pfield="instructions" maxlength="3000" placeholder="For example: use metric units, keep code in TypeScript, avoid long intros." oninput="queuePersonalizationField(this)"></textarea></label>
+              </div>
+
+              <div class="pz-card pz-memory">
+                <div class="pz-title"><span class="pz-step">5</span><div><h4>Memory</h4><p>TruX saves useful details while you chat and uses them in later conversations.</p></div>
+                  <label class="toggle"><input id="truxMemoryEnabledToggle" type="checkbox" onchange="setMemoryEnabled(this.checked)"><span class="slider"></span></label></div>
+                <div class="memory-head"><h4>Saved memories <small id="truxMemoryCount" class="pfield-count"></small></h4><button type="button" class="mbtn danger" onclick="clearAllMemories()">Clear all</button></div>
+                <div id="truxMemoryList" class="memory-list" aria-live="polite"></div>
+              </div>
+
               <div class="settings-card"><div class="sect"><h4>Time management</h4><div class="mrow"><span><b>Focus break reminder</b><small class="mrow-sub">Shows a reminder while TruX is open.</small></span><label class="toggle"><input id="truxFocusReminderToggle" type="checkbox" onchange="saveProfilePreference('focus_reminder',this.checked);applyTimeManagementSettings()"><span class="slider"></span></label></div><label class="profile-field-label" for="truxFocusInterval">Remind me after</label><select id="truxFocusInterval" class="instr" onchange="saveProfilePreference('focus_interval',this.value);applyTimeManagementSettings()"><option value="25">25 minutes</option><option value="45">45 minutes</option><option value="60">60 minutes</option><option value="90">90 minutes</option></select></div></div></section>
           <section class="settings-section" data-settings-content="usage">
               <div class="settings-section-head"><h2>Usage</h2><p>Your monthly usage. Owner access is unlimited.</p></div>
