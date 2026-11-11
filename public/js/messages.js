@@ -363,8 +363,71 @@ function createStreamRenderer(bubble) {
 
   const REVEAL_INTERVAL_MS = 24;
   const MAX_LINES_PER_TICK = 2;
+  const FADE_MS = 460;               /* keep in step with .rv in chat.css */
   const measureCanvas = document.createElement("canvas");
   const measureContext = measureCanvas.getContext("2d");
+
+  /* ---- line-by-line fade-in ----------------------------------------------
+     The live block is re-rendered on every tick, so a plain CSS animation would
+     restart each time. Instead we remember which text ranges (by character offset
+     in the block's text) were revealed and when, and wrap those still fading in
+     <span class="rv"> with a negative animation-delay. The animation therefore
+     resumes where it was, and finished text stays unwrapped. */
+  let marks = [];                    /* { s, e, t } revealed ranges of the live block */
+  let markedLen = 0;
+  let waitingFade = false;
+
+  function revealTextNodes(root) {
+    const nodes = [];
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        const parent = node.parentElement;
+        return parent && parent.closest("pre, .katex, .code-file, .trux-diagram, script, style")
+          ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    return nodes;
+  }
+
+  function applyReveal(el, now) {
+    if (!el || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) { marks = []; markedLen = 0; return; }
+    const nodes = revealTextNodes(el);
+    let total = 0;
+    for (const n of nodes) total += n.nodeValue.length;
+    if (total < markedLen) { marks = []; markedLen = 0; }          /* block was restructured */
+    if (total > markedLen) { marks.push({ s: markedLen, e: total, t: now }); markedLen = total; }
+    marks = marks.filter(m => now - m.t < FADE_MS);
+    if (!marks.length) return;
+
+    const pieces = [];
+    let pos = 0;
+    nodes.forEach((node, index) => {
+      const a = pos, b = pos + node.nodeValue.length;
+      pos = b;
+      for (const m of marks) {
+        const s = Math.max(m.s, a), e = Math.min(m.e, b);
+        if (e > s) pieces.push({ node, index, s: s - a, e: e - a, t: m.t });
+      }
+    });
+    /* Wrap from the end of each node backwards so earlier offsets stay valid. */
+    pieces.sort((x, y) => x.index - y.index || y.s - x.s);
+    for (const piece of pieces) {
+      const range = document.createRange();
+      range.setStart(piece.node, piece.s);
+      range.setEnd(piece.node, piece.e);
+      const span = document.createElement("span");
+      span.className = "rv";
+      span.style.animationDelay = -Math.round(now - piece.t) + "ms";
+      range.surroundContents(span);
+    }
+  }
+
+  function fadeRemaining(now) {
+    let left = 0;
+    for (const m of marks) left = Math.max(left, FADE_MS - (now - m.t));
+    return left;
+  }
 
   function nextLineEnd(text, from) {
     if (from >= text.length) return -1;
@@ -406,7 +469,9 @@ function createStreamRenderer(bubble) {
     let end = shown;
     let lineCount = 0;
 
-    while (cursor < target.length && lineCount < MAX_LINES_PER_TICK) {
+    /* Reveal more lines per tick when the stream has run ahead, so long answers keep pace. */
+    const maxLines = MAX_LINES_PER_TICK + Math.min(4, Math.floor((target.length - shown) / 900));
+    while (cursor < target.length && lineCount < maxLines) {
       let boundary = nextLineEnd(target, cursor);
       if (boundary <= cursor) {
         /* Only flush an incomplete short final line after stream completion. */
@@ -435,6 +500,7 @@ function createStreamRenderer(bubble) {
     if (!blocks.length) return false;
 
     /* Commit completed Markdown blocks once; refresh only the active tail. */
+    const now = performance.now();
     while (settled < blocks.length - 1) {
       if (liveEl) {
         if (liveEl.parentNode === host) host.removeChild(liveEl);
@@ -442,6 +508,8 @@ function createStreamRenderer(bubble) {
         liveHtml = "";
       }
       const el = commitBlock(renderFormattedText(blocks[settled], false), false);
+      applyReveal(el, now);                 /* carries the fade of the block that just finished */
+      marks = []; markedLen = 0;            /* the next block starts fresh */
       setTimeout(() => el.classList.add("settled"), 400);
       settled++;
     }
@@ -466,6 +534,7 @@ function createStreamRenderer(bubble) {
     }
 
     renderTruxDiagrams(liveEl);
+    applyReveal(liveEl, now);
     liveEl.classList.toggle("single-line", liveEl.offsetHeight < 46);
     return true;
   }
@@ -497,9 +566,14 @@ function createStreamRenderer(bubble) {
     }
 
     if (finished && shown >= target.length) {
-      /* Keep the last lines fading gently after completion; resolve to crisp
-         text over 2.6 seconds instead of clearing the mask abruptly. */
-      host.classList.add("md-stream-fade-settling");
+      /* Let the last lines finish fading in before the final clean re-render. */
+      const left = fadeRemaining(performance.now());
+      if (left > 0) {
+        waitingFade = true;
+        setTimeout(() => { waitingFade = false; start(); }, left + 30);
+        return;
+      }
+      marks = []; markedLen = 0;
       host.innerHTML = renderFormattedText(target, false);
       renderTruxDiagrams(host);
       scheduleTruxMath(host);
@@ -519,7 +593,7 @@ function createStreamRenderer(bubble) {
   }
 
   function start() {
-    if (rafId === null && !stopped) rafId = requestAnimationFrame(tick);
+    if (rafId === null && !stopped && !waitingFade) rafId = requestAnimationFrame(tick);
   }
 
   return {

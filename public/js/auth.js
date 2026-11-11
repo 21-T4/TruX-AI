@@ -35,11 +35,25 @@ function isTruxDeveloper(user = auth?.currentUser) {
   return String(user?.email || "").trim().toLowerCase() === TRUX_DEVELOPER_EMAIL && truxUserVerified(user);
 }
 
+/* uid the server has rejected as "email not verified" even after a token refresh.
+   A Google-linked account can still sign in with its password, and then the token
+   (which the server and database rules read) is unverified, so linking alone isn't proof. */
+let truxUnverifiedUid = "";
+
 /* Google accounts arrive verified; password accounts must click the link. */
 function truxUserVerified(user = auth?.currentUser) {
   if (!user) return false;
   if (user.emailVerified) return true;
+  if (truxUnverifiedUid && truxUnverifiedUid === user.uid) return false;
   return (user.providerData || []).some(p => p?.providerId === "google.com");
+}
+
+/* The server refused the account as unverified: ask for verification instead of failing silently. */
+function truxHandleUnverified(user) {
+  if (!user) return;
+  truxUnverifiedUid = user.uid;
+  try { updateTruxProfileUI(user); } catch {}
+  try { showLoginView("verify"); openLoginWall(); } catch {}
 }
 
 function truxUsesPassword(user = auth?.currentUser) {
@@ -92,7 +106,20 @@ async function truxAuthenticatedFetch(url, options = {}) {
   };
   let response = await send(false);
   if (response.status === 401) response = await send(true);
+  if (response.status === 403 && await truxIsNotVerifiedResponse(response)) {
+    // The token may predate verification: reload the user, mint a fresh token and retry once.
+    try { await user.reload(); } catch {}
+    const fresh = auth?.currentUser || user;
+    response = await send(true);
+    if (response.status === 403 && await truxIsNotVerifiedResponse(response) && !fresh.emailVerified) truxHandleUnverified(fresh);
+    else if (response.ok && truxUnverifiedUid === fresh.uid) truxUnverifiedUid = "";
+  }
   return response;
+}
+
+async function truxIsNotVerifiedResponse(response) {
+  try { return (await response.clone().json())?.code === "auth/email-not-verified"; }
+  catch { return false; }
 }
 
 function updateTruxProfileUI(user) {
@@ -429,6 +456,7 @@ async function checkEmailVerified(silent = false) {
   try { await user.reload(); } catch {}
   const fresh = auth.currentUser;
   if (fresh && truxUserVerified(fresh)) {
+    if (fresh.emailVerified && truxUnverifiedUid === fresh.uid) truxUnverifiedUid = "";
     // Refresh the ID token so the email_verified claim reaches the server and RTDB rules.
     await getTruxIdToken(fresh, true);
     stopVerifyPoll();
