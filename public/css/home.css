@@ -1,77 +1,58 @@
-/* TruX home screen. Loads after themes.css, so it wins ties.
-   One column: the greeting, the suggestions and the composer share the same left and right edge.
-   One blue: everything reads --acc-base, set in themes.css. */
+/* ============================================================
+   TruX Workspace — home: greeting + suggested prompts.
+   ============================================================ */
+.trux-home-v2{
+  align-items: center; justify-content: center;
+  padding: 0 clamp(16px, 4vw, 40px) 4vh;
+  overflow-y: auto;
+}
+.trux-home-content{ width: 100%; max-width: var(--measure); display: flex; flex-direction: column; gap: 28px; }
+.trux-home-sequence{ min-height: 2.6em; }
+.trux-home-sequence-text{
+  margin: 0;
+  font: 650 clamp(28px, 5.2vw, 44px)/1.12 var(--font-disp);
+  letter-spacing: -.03em;
+  color: var(--txt);
+  background: linear-gradient(120deg, var(--txt) 30%, var(--acc-2) 120%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  text-wrap: balance;
+}
+.trux-home-sequence-text[hidden]{ display: none; }
+.trux-home-sequence-text .rv, .trux-home-sequence-text span{ -webkit-text-fill-color: inherit; }
 
-/* The glow: a single horizon rising from behind the composer, replacing the two corner blooms that
-   read as a grey-violet wash on light themes. */
-.main::before{
-  background:
-    radial-gradient(ellipse 78% 56% at 50% 110%,color-mix(in srgb,var(--acc-base) 62%,transparent) 0%,color-mix(in srgb,var(--acc-base) 30%,transparent) 42%,color-mix(in srgb,var(--acc-base) 8%,transparent) 70%,transparent 88%),
-    radial-gradient(ellipse 110% 34% at 50% 102%,color-mix(in srgb,#6fb1ff 40%,transparent) 0%,transparent 74%),
-    linear-gradient(180deg,transparent 52%,color-mix(in srgb,var(--acc-base) 7%,transparent) 100%);
+.trux-home-prompts{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.trux-home-prompts[hidden]{ display: none; }
+.trux-home-prompt{
+  position: relative;
+  display: flex; flex-direction: column; justify-content: space-between; gap: 18px;
+  min-height: 112px; padding: 14px 16px;
+  text-align: left;
+  background: var(--bg-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-lg);
+  color: var(--txt-2);
+  font: 450 14px/1.45 var(--font-ui);
+  animation: truxRowIn var(--dur-3) var(--ease-out) both;
+  transition: background var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease), transform var(--dur-2) var(--ease);
 }
-
-/* Column: the same width as the composer so the three parts line up exactly. */
-body.home-active .trux-home-v2{align-items:stretch!important;justify-content:center!important}
-body.home-active .trux-home-content{
-  position:absolute;inset:0;left:0;right:0;
-  width:min(740px,80vw);margin:0 auto;
-  display:flex;flex-direction:column;justify-content:flex-end;
-  padding:0 0 calc(160px + var(--safe-b));
-}
-
-/* Greeting: left aligned on the column edge. It sits on the bottom and grows upward, so the suggestions and the
-   composer never move when a greeting wraps onto another line. */
-body.home-active .trux-home-sequence{
-  position:static!important;inset:auto!important;display:block!important;padding:0 0 26px!important;
-}
-body.home-active .trux-home-sequence-text{
-  width:100%!important;max-width:16em;
-  font-size:clamp(34px,5.4vw,60px)!important;font-weight:500!important;
-  line-height:1.07!important;letter-spacing:-.032em!important;
-  text-align:left!important;text-wrap:balance;
-}
-
-/* Suggestions: a ruled list on the same column. */
-body.home-active .trux-home-prompts{
-  position:static!important;transform:none!important;left:auto!important;bottom:auto!important;
-  width:100%!important;gap:0!important;border-top:1px solid var(--line-2);
-}
-body.home-active .trux-home-prompts[hidden]{display:none!important}
-body.home-active .trux-home-prompt{
-  gap:14px!important;padding:15px 2px!important;border-bottom:1px solid var(--line)!important;
-  color:var(--txt-2)!important;font-size:clamp(15px,1.6vw,17px)!important;line-height:1.35!important;
-  transform:none!important;transition:color .2s ease!important;
-}
-body.home-active .trux-home-prompt:last-child{border-bottom-color:transparent!important}
-body.home-active .trux-home-prompt:hover,body.home-active .trux-home-prompt:focus-visible{color:var(--txt)!important}
-body.home-active .trux-home-prompt-mark{
-  color:var(--acc)!important;font:500 16px/1 var(--font-body)!important;opacity:1!important;
-  transition:transform .2s ease;
-}
-body.home-active .trux-home-prompt:hover .trux-home-prompt-mark{transform:translate(2px,-2px)}
-
-/* Composer: tinted with the same blue instead of a grey drop shadow. */
-body.home-active .bar{
-  background:color-mix(in srgb,var(--bg) 84%,transparent)!important;
-  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
-  border-color:color-mix(in srgb,var(--acc-base) 22%,var(--line-2))!important;
-  box-shadow:0 1px 0 rgba(var(--ink),.05) inset,0 18px 48px -16px color-mix(in srgb,var(--acc-base) 48%,transparent)!important;
-}
-body.home-active .bar:focus-within{
-  border-color:var(--acc)!important;
-  box-shadow:0 0 0 3px var(--acc-soft),0 20px 54px -16px color-mix(in srgb,var(--acc-base) 56%,transparent)!important;
+.trux-home-prompt:nth-child(2){ animation-delay: 70ms; }
+.trux-home-prompt:nth-child(3){ animation-delay: 140ms; }
+.trux-home-prompt-mark{ order: 2; align-self: flex-end; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: var(--bg-4); color: var(--txt-3); font-size: 14px; }
+.trux-home-prompt-label{ order: 1; }
+.trux-home-prompt:active{ transform: scale(.985); background: var(--bg-3); }
+@media (hover: hover){
+  .trux-home-prompt:hover{ background: var(--bg-3); border-color: var(--line-3); color: var(--txt); }
+  .trux-home-prompt:hover .trux-home-prompt-mark{ background: var(--acc-soft); color: var(--acc-2); }
 }
 
-@media(max-width:700px){
-  /* Pill and text share the same 16px edge on phones (it was 80vw, a wide empty gutter). */
-  body.home-active .compose{width:calc(100vw - 32px)!important;max-width:none!important}
-  body.home-active .trux-home-content{width:calc(100vw - 32px)}
-  body.home-active .trux-home-sequence-text{font-size:clamp(32px,9vw,44px)!important}
+@media (max-width: 720px){
+  .trux-home-v2{ align-items: flex-end; padding-bottom: 8px; }
+  .trux-home-content{ gap: 20px; }
+  .trux-home-prompts{ grid-template-columns: 1fr; gap: 8px; }
+  .trux-home-prompt{ min-height: 0; flex-direction: row; align-items: center; justify-content: flex-start; gap: 12px; padding: 13px 14px; }
+  .trux-home-prompt-mark{ order: 0; align-self: center; flex: none; }
 }
-@media(max-height:650px){
-  body.home-active .trux-home-content{padding-bottom:calc(148px + var(--safe-b))}
-  body.home-active .trux-home-sequence{padding-bottom:16px!important}
-  body.home-active .trux-home-sequence-text{font-size:clamp(28px,4.4vw,40px)!important}
-  body.home-active .trux-home-prompt{padding-top:9px!important;padding-bottom:9px!important}
+@media (min-width: 721px) and (max-width: 999px){
+  .trux-home-prompts{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+@media (prefers-reduced-motion: reduce){ .trux-home-prompt{ animation: none; } }
