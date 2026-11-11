@@ -19,7 +19,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
   <link rel="apple-touch-icon" href="/icon-192.png">
-  <meta name="theme-color" content="#0a0b0e">
+  <meta name="theme-color" content="#faf9f5">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -27,8 +27,7 @@
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@8..144,400..700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&display=swap">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@300..800&display=swap">
 
   <!-- KaTeX: real math rendering happens in the browser. -->
@@ -44,10 +43,11 @@
 
   
   <script>
-    /* Apply the saved theme before first paint. */
-    (function(){try{var t=localStorage.getItem("trux_theme")||"system",map={oled:"dark",dracula:"midnight",nord:"midnight","rose-pine":"midnight",monokai:"graphite",solarized:"forest",hacker:"dark"};t=map[t]||t;
-    var light={light:1,sand:1},r=t==="system"||light[t]?"dark":t;
-    document.documentElement.dataset.theme=r;document.documentElement.dataset.scheme="dark";}catch(e){}})();
+    /* Apply the saved theme before first paint (System follows the device). */
+    (function(){try{var t=localStorage.getItem("trux_theme")||"system",m={oled:"dark",dracula:"dark",nord:"dark","rose-pine":"dark",monokai:"dark",solarized:"dark",hacker:"dark",graphite:"dark",midnight:"dark",forest:"dark",sand:"light"};
+    t=m[t]||t;if(t!=="light"&&t!=="dark")t=(window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches)?"light":"dark";
+    var r=document.documentElement;r.dataset.theme=t;r.dataset.scheme=t;
+    var c=document.querySelector('meta[name="theme-color"]');if(c)c.content=t==="light"?"#faf9f5":"#262624";}catch(e){}})();
   </script>
   <link rel="stylesheet" href="/css/tokens.css">
   <link rel="stylesheet" href="/css/layout.css">
@@ -60,6 +60,7 @@
   <link rel="stylesheet" href="/css/video-studio.css">
   <link rel="stylesheet" href="/css/diagrams.css">
   <link rel="stylesheet" href="/css/personalization.css">
+  <link rel="stylesheet" href="/css/claude.css">
 
 
 
@@ -249,16 +250,6 @@
             <button type="submit" id="loginEmailSubmit" class="lw-submit">Sign in</button>
             <button type="button" class="lw-link lw-only-reset" onclick="showLoginView('signin')">Back to sign in</button>
           </form>
-        </div>
-
-        <div class="lw-verify">
-          <div class="lw-verify-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4 7 8 6 8-6"/></svg></div>
-          <p>We sent a verification link to <b id="loginVerifyEmail">your inbox</b>. Open it, then come back here. This page checks automatically.</p>
-          <button type="button" id="loginVerifyCheckBtn" class="lw-submit" onclick="checkEmailVerified()">I've verified my email</button>
-          <div class="lw-verify-row">
-            <button type="button" class="lw-link" onclick="resendVerificationEmail()">Resend email</button>
-            <button type="button" class="lw-link" onclick="truxSignOut()">Use another account</button>
-          </div>
         </div>
 
         <p id="loginAuthError" class="lw-message" role="alert" aria-live="polite" hidden></p>
@@ -725,7 +716,7 @@
 
           <section class="settings-section" data-settings-content="appearance">
               <div class="settings-section-head"><h2>Appearance</h2><p>Keep the interface calm, responsive, and easy on the eyes.</p></div>
-              <div class="settings-card"><div class="sect"><h4>Theme</h4><label class="profile-field-label" for="truxThemeSelect">App appearance</label><select id="truxThemeSelect" class="instr" onchange="applyTruxTheme(this.value)"><option value="system">System</option><option value="dark">Dark</option><option value="light">Light</option><option value="graphite">Graphite</option><option value="midnight">Midnight</option><option value="forest">Forest</option><option value="sand">Sand</option></select></div></div>
+              <div class="settings-card"><div class="sect"><h4>Theme</h4><label class="profile-field-label" for="truxThemeSelect">App appearance</label><select id="truxThemeSelect" class="instr" onchange="applyTruxTheme(this.value)"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div>
 
               <div class="settings-card">
                 <div class="sect"><div class="accent-palette">
@@ -849,7 +840,6 @@
           <section class="settings-section" data-settings-content="account"><div class="settings-section-head"><h2>Account &amp; security</h2><p>Manage your profile and how you sign in.</p></div>
               <div class="settings-card"><div class="sect"><h4>Display name</h4><input id="truxAccountDisplayName" class="instr" maxlength="60" placeholder="Display name" autocomplete="name"><button type="button" class="mbtn" onclick="saveTruxDisplayName()">Save name</button></div>
                 <div class="mrow"><span>Email</span><b id="truxAccountEmailText">Not signed in</b></div>
-                <div class="mrow"><span>Email verification</span><b id="truxAccountVerifiedText">—</b></div>
                 <div class="mrow"><span>Sign-in methods</span><b id="truxAccountMethodText">—</b></div>
                 <div class="mrow" id="truxAccountPasswordRow" hidden><span><b>Password</b><small class="mrow-sub">We'll email you a secure link to set a new password.</small></span><button type="button" class="mbtn" onclick="handlePasswordReset()">Reset password</button></div>
               </div>

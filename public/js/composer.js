@@ -37,8 +37,7 @@ function launchIncognitoChat() {
   handleInputChange();
 
   const chat = getEl("chatContainer");
-  if (chat) { chat.innerHTML = ""; chat.style.display = "block"; }
-  getEl("welcomeScreen")?.style.setProperty("display","none","important");
+  if (chat) chat.innerHTML = "";
 
   const input = getEl("promptInput");
   if (input) {

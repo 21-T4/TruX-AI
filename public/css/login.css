@@ -17,14 +17,13 @@
 #loginWallModal .lw-panel{position:relative;display:flex;align-items:center;justify-content:center;padding:48px 24px}
 #loginWallModal .lw-close{position:absolute;top:calc(16px + env(safe-area-inset-top,0px));right:16px;width:38px;height:38px;display:grid;place-items:center;border-radius:12px;border:1px solid var(--line-2);background:transparent;color:var(--txt-2);cursor:pointer}
 #loginWallModal .lw-close:hover{color:var(--txt);background:rgba(var(--ink),.05)}
-#loginWallModal[data-view="verify"] .lw-close{display:none}
 #loginWallModal .lw-card{width:min(400px,100%)}
 #loginWallModal .lw-mobile-brand{display:none;align-items:center;gap:10px;margin-bottom:26px;font:650 17px/1 var(--font-disp);color:var(--txt)}
 #loginWallModal .lw-mobile-brand img{border-radius:10px}
 #loginWallModal .lw-tabs{display:grid;grid-template-columns:1fr 1fr;padding:4px;margin-bottom:26px;border-radius:12px;background:rgba(var(--ink),.05);border:1px solid var(--line-2)}
 #loginWallModal .lw-tab{height:36px;border-radius:9px;border:0;background:transparent;color:var(--txt-3);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,color .15s}
 #loginWallModal[data-view="signin"] .lw-tab[data-tab="signin"],#loginWallModal[data-view="signup"] .lw-tab[data-tab="signup"]{background:#f4f4f6;color:var(--bg)}
-#loginWallModal[data-view="reset"] .lw-tabs,#loginWallModal[data-view="verify"] .lw-tabs{display:none}
+#loginWallModal[data-view="reset"] .lw-tabs{display:none}
 #loginWallModal .lw-title{margin:0 0 8px;font:650 clamp(26px,5vw,30px)/1.12 var(--font-disp);letter-spacing:-.03em;color:var(--txt)}
 #loginWallModal .lw-sub{margin:0 0 24px;color:var(--txt-3);font-size:14px;line-height:1.55}
 #loginWallModal .lw-google{width:100%;height:48px;display:flex;align-items:center;justify-content:center;gap:11px;border:0;border-radius:12px;background:var(--txt);color:var(--bg);font-size:14px;font-weight:650;cursor:pointer;transition:transform .15s,background .15s}
@@ -50,13 +49,6 @@
 #loginWallModal[data-view="signup"] small.lw-only-signup{display:block}
 #loginWallModal[data-view="signin"] .lw-only-signin,#loginWallModal[data-view="reset"] .lw-only-reset{display:block}
 #loginWallModal[data-view="reset"] .lw-hide-reset,#loginWallModal[data-view="reset"] .lw-google,#loginWallModal[data-view="reset"] .lw-divider{display:none}
-#loginWallModal .lw-verify{display:none;text-align:center}
-#loginWallModal[data-view="verify"] .lw-auth-views{display:none}
-#loginWallModal[data-view="verify"] .lw-verify{display:grid;gap:16px;justify-items:center}
-#loginWallModal .lw-verify-icon{width:58px;height:58px;display:grid;place-items:center;border-radius:18px;background:color-mix(in srgb,var(--acc) 14%,transparent);color:var(--acc-2)}
-#loginWallModal .lw-verify p{margin:0;color:var(--txt-2);font-size:14px;line-height:1.6}
-#loginWallModal .lw-verify b{color:var(--txt);word-break:break-all}
-#loginWallModal .lw-verify-row{display:flex;gap:22px;justify-content:center}
 #loginWallModal .lw-message{margin:18px 0 0;padding:11px 13px;border-radius:11px;font-size:13px;line-height:1.5;background:rgba(var(--ink),.05);color:var(--txt-2)}
 #loginWallModal .lw-message[data-tone="err"]{background:rgba(255,80,80,.1);color:#ff9d9d}
 #loginWallModal .lw-message[data-tone="ok"]{background:rgba(70,200,130,.1);color:#8be0b0}

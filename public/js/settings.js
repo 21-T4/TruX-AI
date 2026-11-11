@@ -10,25 +10,29 @@ function saveProfilePreference(key, value) {
   if (key === "dictation_history" && !value) store.removeItem("trux_dictation_history_items");
 }
 
-const TRUX_THEMES = { system: "", dark: "dark", light: "light", graphite: "dark", midnight: "dark", forest: "dark", sand: "light" };
-const TRUX_LEGACY_THEMES = { oled: "dark", dracula: "midnight", nord: "midnight", "rose-pine": "midnight", monokai: "graphite", solarized: "forest", hacker: "dark" };
+/* Appearance: System, Light or Dark. Old saved themes migrate to the nearest of the two. */
+const TRUX_THEME_MIGRATION = { oled: "dark", dracula: "dark", nord: "dark", "rose-pine": "dark", monokai: "dark", solarized: "dark", hacker: "dark", graphite: "dark", midnight: "dark", forest: "dark", sand: "light" };
 const truxSystemLight = window.matchMedia ? matchMedia("(prefers-color-scheme: light)") : null;
 
+function truxNormalizeTheme(theme) {
+  const value = TRUX_THEME_MIGRATION[theme] || String(theme || "system");
+  return value === "light" || value === "dark" ? value : "system";
+}
+
 function applyTruxTheme(theme, persist) {
-  let choice = TRUX_LEGACY_THEMES[theme] || String(theme || "system");
-  if (!(choice in TRUX_THEMES)) choice = "system";
+  const choice = truxNormalizeTheme(theme);
   const resolved = choice === "system" ? (truxSystemLight?.matches ? "light" : "dark") : choice;
   const root = document.documentElement;
   root.dataset.theme = resolved;
-  root.dataset.scheme = TRUX_THEMES[resolved];
-  if (persist !== false || TRUX_LEGACY_THEMES[theme]) store.setItem("trux_theme", choice);
+  root.dataset.scheme = resolved;
+  if (persist !== false || choice !== theme) store.setItem("trux_theme", choice);
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.content = getComputedStyle(root).getPropertyValue("--bg").trim() || "#000000";
+  if (meta) meta.content = getComputedStyle(root).getPropertyValue("--bg").trim() || (resolved === "light" ? "#faf9f5" : "#262624");
   const select = getEl("truxThemeSelect"); if (select) select.value = choice;
   window.dispatchEvent(new CustomEvent("trux-theme", { detail: { theme: resolved } }));
 }
 applyTruxTheme(store.getItem("trux_theme") || "system", false);
-truxSystemLight?.addEventListener?.("change", () => { if ((store.getItem("trux_theme") || "system") === "system") applyTruxTheme("system", false); });
+truxSystemLight?.addEventListener?.("change", () => { if (truxNormalizeTheme(store.getItem("trux_theme") || "system") === "system") applyTruxTheme("system", false); });
 
 function saveDictationLanguage(language) {
   const allowed = new Set(["auto", "en-US", "en-GB", "hi-IN", "fr-FR", "es-ES", "de-DE", "ja-JP"]);

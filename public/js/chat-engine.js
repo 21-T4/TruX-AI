@@ -208,7 +208,6 @@ async function sendPromptImpl() {
   }
   const user = auth?.currentUser;
   if (!user) { openLoginWall("signin"); return; }
-  if (!truxUserVerified(user)) { openLoginWall("verify"); return; }
   if (fileAttachments.some(f => f.processing)) { toast("Wait for your files to finish uploading.", "err"); return; }
 
   const promptInput = getEl("promptInput");
@@ -256,9 +255,8 @@ async function sendPromptImpl() {
   const userIndex = session.messages.length - 1;
   queueSidebarSync();
 
-  getEl("welcomeScreen").style.display = "none";
+  document.body.classList.remove("home-active"); document.body.classList.add("chat-session-active");
   const chatContainer = getActiveChatContainer();
-  chatContainer.style.display = "block";
   appendMessageRow("You", typed + attachmentLabel, "user-row", "user-bubble", null, true, undefined, undefined, { messageIndex: userIndex });
   promptInput.value = ""; removeImage(); pastedTextBlocks = []; fileAttachments = []; renderFileChips(); handleInputChange();
 

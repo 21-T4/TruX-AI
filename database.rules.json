@@ -8,8 +8,8 @@
     },
     "users": {
       "$uid": {
-        ".read": "auth != null && auth.uid === $uid && (auth.token.email_verified === true || auth.token.firebase.sign_in_provider === 'google.com')",
-        ".write": "auth != null && auth.uid === $uid && (auth.token.email_verified === true || auth.token.firebase.sign_in_provider === 'google.com')",
+        ".read": "auth != null && auth.uid === $uid && (auth.token.firebase.sign_in_provider === 'google.com' || auth.token.firebase.sign_in_provider === 'password')",
+        ".write": "auth != null && auth.uid === $uid && (auth.token.firebase.sign_in_provider === 'google.com' || auth.token.firebase.sign_in_provider === 'password')",
         "chats": {
           ".indexOn": ["updatedAt"],
           "$chatId": {

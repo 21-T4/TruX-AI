@@ -1,0 +1,122 @@
+/* ============================================================
+   TruX Workspace — Claude-style look. Loads last.
+   Warm paper surfaces, serif reading text, quiet chrome, blue accent.
+   Colours come only from tokens.css, so Light and Dark both work.
+   ============================================================ */
+
+body{ font: 400 15px/1.55 var(--font-body); letter-spacing: 0; }
+
+/* ---------- sidebar ---------- */
+.sidebar{ background: var(--bg-1); border-right: 1px solid var(--line); }
+.sidebar-header{ height: var(--topbar-h); padding: 0 12px 0 18px; }
+.sidebar-brand-mark{ width: 30px; height: 30px; border-radius: 9px; background: var(--acc); border: 0; color: var(--on-acc); }
+.sidebar-brand-mark svg, .sidebar-brand-mark img{ width: 17px; height: 17px; }
+.sidebar-brand-copy b{ font: 600 17px/1.2 var(--font-serif); letter-spacing: -.01em; }
+.sidebar-brand-copy small{ display: none; }
+.sidebar-item{ min-height: 38px; border-radius: 10px; font-weight: 500; color: var(--txt-2); }
+.sidebar-item svg{ color: var(--txt-3); }
+.sidebar-item.active, .sidebar-item[aria-current="page"]{ background: var(--bg-3); }
+.sidebar-section-head{ color: var(--txt-4); letter-spacing: .04em; }
+.hist, .notebook-item{ border-radius: 9px; }
+.hist.active, .notebook-item.active{ background: var(--bg-3); }
+.hist.active::before{ background: var(--acc); }
+.profile{ border-radius: 12px; }
+.sidebar-item-badge{ background: var(--acc-soft); color: var(--acc-2); }
+
+/* ---------- top bar ---------- */
+.topbar{ background: transparent; }
+.model-picker-btn{ height: 38px; padding: 0 10px 0 12px; border-radius: 10px; font: 500 15px/1 var(--font-ui); letter-spacing: 0; color: var(--txt-2); }
+.model-picker-btn:hover, .model-picker-btn[aria-expanded="true"]{ background: var(--bg-3); color: var(--txt); }
+.model-dropdown-menu, .attach-menu{ background: var(--bg-2); border-color: var(--line-2); border-radius: 16px; box-shadow: var(--shadow-3); }
+.model-item.active, .thinking-choice.active{ background: var(--acc-soft); }
+.model-item.active .model-icon{ background: var(--acc); color: var(--on-acc); }
+
+/* ---------- home ---------- */
+.trux-home-v2{ justify-content: center; align-items: center; padding-bottom: 6vh; }
+.trux-home-content{ align-items: center; text-align: center; gap: 26px; max-width: 720px; }
+.trux-home-sequence-text{
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  font: 400 clamp(30px, 5vw, 46px)/1.15 var(--font-serif);
+  letter-spacing: -.02em;
+  color: var(--txt);
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+.trux-home-sequence-text::before{
+  content: ""; width: 38px; height: 38px; background: var(--acc);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1.5l2.2 7.1 7.3 2.2-7.3 2.2L12 20.1l-2.2-7.1L2.5 10.8l7.3-2.2z'/%3E%3C/svg%3E") center/contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1.5l2.2 7.1 7.3 2.2-7.3 2.2L12 20.1l-2.2-7.1L2.5 10.8l7.3-2.2z'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+.trux-home-prompts{ display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.trux-home-prompt{
+  min-height: 0; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px;
+  padding: 9px 16px; border-radius: 999px;
+  background: transparent; border: 1px solid var(--line-2); color: var(--txt-2);
+  font: 450 14px/1.3 var(--font-ui);
+}
+.trux-home-prompt-mark{ display: none; }
+@media (hover: hover){ .trux-home-prompt:hover{ background: var(--bg-3); border-color: var(--line-3); color: var(--txt); } }
+
+/* ---------- conversation ---------- */
+.chat{ padding-top: 4px; }
+.user-bubble{ background: var(--bg-3); border: 0; border-radius: 18px; padding: 10px 16px; font: 400 15.5px/1.55 var(--font-ui); }
+.bubble:not(.user-bubble){ font: 400 16.5px/1.72 var(--font-serif); letter-spacing: 0; }
+.bubble h1, .bubble h2, .bubble h3, .bubble h4{ font-family: var(--font-serif); font-weight: 600; letter-spacing: -.005em; }
+.bubble strong, .bubble b{ font-weight: 600; }
+.bubble blockquote{ border-left-color: var(--acc-line); }
+.bubble :not(pre) > code{ font-size: .86em; background: var(--bg-3); border: 0; }
+.table-wrap, .code-file{ border-color: var(--line-2); }
+.code-file-header, .code-expand{ background: var(--bg-3); }
+.md-block.live::after{ background: var(--acc); }
+.act{ color: var(--txt-3); }
+.trux-thinking-spark{ color: var(--acc); }
+
+/* ---------- composer ---------- */
+.composer{ background: linear-gradient(to top, var(--bg) 62%, transparent); padding-top: 10px; }
+.bar{
+  background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 22px; padding: 8px;
+  box-shadow: 0 2px 10px rgba(var(--ink), .06), 0 0 0 .5px rgba(var(--ink), .04);
+}
+.bar:focus-within{ border-color: var(--acc-line); box-shadow: 0 4px 18px rgba(var(--ink), .08), 0 0 0 3px var(--acc-soft); }
+#promptInput{ font: 400 16px/22px var(--font-ui); padding: 9px 8px; }
+.icon-btn{ border-radius: 10px; width: 38px; height: 38px; }
+.send-btn{ width: 38px; height: 38px; border-radius: 10px; background: var(--bg-4); color: var(--txt-2); }
+.send-btn.ready{ background: var(--acc); color: var(--on-acc); }
+.send-btn.live-active{ background: var(--acc-soft); color: var(--acc-2); }
+.hint{ color: var(--txt-4); }
+
+/* ---------- accents, controls, small surfaces ---------- */
+.accent-option.active{ outline: 2px solid var(--acc); outline-offset: 2px; }
+.tdg-view::after{ background: rgba(31,30,29,.86); color: #fff; }
+.sandbox-iframe{ background: #fff; }
+
+/* ---------- sign-in: one calm centred card ---------- */
+#loginWallModal.login-wall{ background: var(--bg); }
+#loginWallModal .lw-shell{ grid-template-columns: 1fr; }
+#loginWallModal .lw-brand{ display: none; }
+#loginWallModal .lw-mobile-brand{ display: flex; justify-content: center; margin-bottom: 22px; font: 600 22px/1 var(--font-serif); }
+#loginWallModal .lw-panel{ align-items: center; padding: 48px 20px; }
+#loginWallModal .lw-card{ width: min(420px, 100%); padding: 34px 30px 26px; background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 24px; box-shadow: var(--shadow-2); }
+#loginWallModal .lw-title{ font: 400 clamp(26px, 5vw, 32px)/1.15 var(--font-serif); letter-spacing: -.015em; text-align: center; }
+#loginWallModal .lw-sub{ text-align: center; }
+#loginWallModal .lw-tabs{ background: var(--bg-3); border: 0; }
+#loginWallModal[data-view="signin"] .lw-tab[data-tab="signin"],
+#loginWallModal[data-view="signup"] .lw-tab[data-tab="signup"]{ background: var(--bg-2); color: var(--txt); box-shadow: var(--shadow-1); }
+#loginWallModal .lw-google{ background: var(--bg-2); color: var(--txt); border: 1px solid var(--line-3); font-weight: 600; }
+#loginWallModal .lw-google:hover{ background: var(--bg-3); }
+#loginWallModal .lw-field input{ background: var(--bg); border-color: var(--line-2); }
+#loginWallModal .lw-field input:focus{ border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft); }
+#loginWallModal .lw-submit{ background: var(--acc); color: var(--on-acc); }
+#loginWallModal .lw-submit:hover{ filter: brightness(1.06); }
+#loginWallModal .lw-message{ background: var(--bg-3); color: var(--txt-2); }
+#loginWallModal .lw-message[data-tone="err"]{ background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
+#loginWallModal .lw-message[data-tone="ok"]{ background: color-mix(in srgb, var(--ok) 12%, transparent); color: var(--ok); }
+@media (max-width: 520px){
+  #loginWallModal .lw-card{ padding: 26px 20px 20px; border-radius: 20px; }
+}
+
+/* ---------- sidebar notebook rows: older page-level rules in surfaces.css made them card-sized ---------- */
+.sidebar .notebook-item{ min-height: 36px; gap: 10px; padding: 0 8px 0 10px; border-radius: 9px; border: 0; }
+.sidebar .notebook-icon{ width: 18px; height: 18px; border: 0; border-radius: 0; background: none; }
+.sidebar .notebook-icon svg{ width: 18px; height: 18px; }
+.sidebar .notebook-item b{ font-size: 14px; font-weight: 500; }

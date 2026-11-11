@@ -663,7 +663,7 @@ body.developer-mode .profile-owner-only{display:grid}
 .notebook-delete svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .accent-options{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
 .accent-option{width:34px;height:34px;padding:4px;border-radius:50%;border:2px solid transparent;background:transparent;display:grid;place-items:center}
-.accent-option i{display:block;width:100%;height:100%;border-radius:50%;background:var(--swatch,#888);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
+.accent-option i{display:block;width:100%;height:100%;border-radius:50%;background:var(--swatch,#888);box-shadow:inset 0 0 0 1px rgba(var(--ink),.18)}
 .accent-option.active{border-color:var(--txt)}
 .trux-plugins-workspace{display:none;position:relative;width:100%;height:calc(100% - 2px);overflow:auto;background:var(--bg);padding:34px clamp(16px,4vw,46px) 52px;scrollbar-gutter:stable;}
 .trux-plugins-workspace::before{content:"";position:fixed;inset:56px 0 0 0;pointer-events:none;background:radial-gradient(circle at 76% 4%,var(--acc-soft),transparent 31%),radial-gradient(circle at 18% 22%,color-mix(in srgb,var(--acc) 5.5%,transparent),transparent 29%);opacity:.42;}

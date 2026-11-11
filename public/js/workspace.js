@@ -347,7 +347,7 @@ function setWorkspaceMode(mode, options) {
     pastedTextBlocks = []; fileAttachments = []; renderFileChips();
     if (!preserveSession) { currentChatId = null; incognitoMode = false; }
     const chatView = getEl("chatContainer");
-    if (chatView) { chatView.style.display = "none"; chatView.innerHTML = ""; }
+    if (chatView) { chatView.innerHTML = ""; }
     void document.body.offsetHeight;
   }
   workspaceMode = nextMode; document.body.dataset.workspaceMode = workspaceMode;
@@ -356,10 +356,6 @@ function setWorkspaceMode(mode, options) {
   if (isMedia) document.body.dataset.mediaMode = workspaceMode; else document.body.removeAttribute("data-media-mode");
   document.body.classList.toggle("chat-session-active", !!currentChatId && !isMedia);
   document.body.classList.toggle("home-active", !isMedia && !currentChatId);
-  const welcome = getEl("welcomeScreen");
-  if (welcome) { welcome.style.removeProperty("display"); welcome.style.removeProperty("visibility"); welcome.style.removeProperty("pointer-events"); }
-  const chatView = getEl("chatContainer");
-  if (chatView) chatView.style.display = currentChatId && !isMedia ? "block" : "none";
   document.querySelectorAll("[data-trux-menu-mode]").forEach(el => el.classList.toggle("active", el.dataset.truxMenuMode === workspaceMode));
   const prompt = getEl("promptInput");
   const placeholders = { chat: "Ask TruX…", "deep-research": "Research prompt…", video: "Describe a video…" };

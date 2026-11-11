@@ -1,9 +1,9 @@
 /* TruX authentication.
  *
  * Firebase Authentication with two providers only: Google and
- * email/password. Password accounts must verify their email before they can
- * chat; the server and the Realtime Database rules enforce the same check, so
- * skipping this UI gains nothing.
+ * email/password. Neither needs an email-verification step: as soon as
+ * Firebase returns a signed-in user, its ID token is fetched and used for the
+ * API, the Realtime Database and the encrypted session record.
  *
  * Speed: the Firebase web config is cached in localStorage, so a returning
  * visitor initialises Firebase without waiting on /api/config, and Firebase
@@ -21,7 +21,6 @@ const TRUX_DEVELOPER_EMAIL = "ekagraavn2003@gmail.com";
 const TRUX_FIREBASE_CONFIG_KEY = "trux_firebase_config_v3";
 const TRUX_SIGNIN_MARK_KEY = "trux_signin_mark";
 let truxLoginView = "signin";
-let truxVerifyPoll = null;
 
 function waitForTruxAuthState(timeoutMs = 8000) {
   if (truxAuthStateReady) return Promise.resolve(auth?.currentUser || null);
@@ -32,28 +31,14 @@ function waitForTruxAuthState(timeoutMs = 8000) {
 }
 
 function isTruxDeveloper(user = auth?.currentUser) {
-  return String(user?.email || "").trim().toLowerCase() === TRUX_DEVELOPER_EMAIL && truxUserVerified(user);
+  // Developer tools need a proven email: Google proves it, a password account must have verified it.
+  return String(user?.email || "").trim().toLowerCase() === TRUX_DEVELOPER_EMAIL &&
+    (!!user.emailVerified || (user.providerData || []).some(p => p?.providerId === "google.com"));
 }
 
-/* uid the server has rejected as "email not verified" even after a token refresh.
-   A Google-linked account can still sign in with its password, and then the token
-   (which the server and database rules read) is unverified, so linking alone isn't proof. */
-let truxUnverifiedUid = "";
-
-/* Google accounts arrive verified; password accounts must click the link. */
+/* Any signed-in Google or email account is allowed in. Kept as a function because other modules call it. */
 function truxUserVerified(user = auth?.currentUser) {
-  if (!user) return false;
-  if (user.emailVerified) return true;
-  if (truxUnverifiedUid && truxUnverifiedUid === user.uid) return false;
-  return (user.providerData || []).some(p => p?.providerId === "google.com");
-}
-
-/* The server refused the account as unverified: ask for verification instead of failing silently. */
-function truxHandleUnverified(user) {
-  if (!user) return;
-  truxUnverifiedUid = user.uid;
-  try { updateTruxProfileUI(user); } catch {}
-  try { showLoginView("verify"); openLoginWall(); } catch {}
+  return !!user;
 }
 
 function truxUsesPassword(user = auth?.currentUser) {
@@ -82,7 +67,7 @@ function cacheUserForNextBoot(user) {
   if (!user) { store.removeItem("trux_cached_user"); return; }
   store.setItem("trux_cached_user", JSON.stringify({
     uid: user.uid, displayName: user.displayName || "", email: user.email || "",
-    photoURL: user.photoURL || "", emailVerified: truxUserVerified(user)
+    photoURL: user.photoURL || ""
   }));
 }
 
@@ -106,20 +91,7 @@ async function truxAuthenticatedFetch(url, options = {}) {
   };
   let response = await send(false);
   if (response.status === 401) response = await send(true);
-  if (response.status === 403 && await truxIsNotVerifiedResponse(response)) {
-    // The token may predate verification: reload the user, mint a fresh token and retry once.
-    try { await user.reload(); } catch {}
-    const fresh = auth?.currentUser || user;
-    response = await send(true);
-    if (response.status === 403 && await truxIsNotVerifiedResponse(response) && !fresh.emailVerified) truxHandleUnverified(fresh);
-    else if (response.ok && truxUnverifiedUid === fresh.uid) truxUnverifiedUid = "";
-  }
   return response;
-}
-
-async function truxIsNotVerifiedResponse(response) {
-  try { return (await response.clone().json())?.code === "auth/email-not-verified"; }
-  catch { return false; }
 }
 
 function updateTruxProfileUI(user) {
@@ -132,7 +104,6 @@ function updateTruxProfileUI(user) {
   setText("modalName", name);
   setText("modalEmail", signedIn ? email : "");
   setText("truxAccountEmailText", signedIn ? email : "Not signed in");
-  setText("truxAccountVerifiedText", !signedIn ? "-" : (truxUserVerified(user) ? "Verified" : "Not verified"));
   const ids = (user?.providerData || []).map(p => p?.providerId);
   setText("truxAccountMethodText", !signedIn ? "-" :
     [ids.includes("google.com") && "Google", ids.includes("password") && "Email & password"].filter(Boolean).join(" + ") || "Email");
@@ -186,12 +157,12 @@ function truxSignInMark(user) {
 }
 
 async function registerTruxSession(user = auth?.currentUser, { force = false } = {}) {
-  if (!user || !truxUserVerified(user)) return false;
+  if (!user) return false;
   const mark = truxSignInMark(user);
   if (!force && (store.getItem(TRUX_SIGNIN_MARK_KEY) === mark || truxSessionInFlight === mark)) return true;
   truxSessionInFlight = mark;
   try {
-    // A forced refresh makes sure the token carries the verified-email claim and this sign-in's auth time.
+    // A forced refresh fetches this sign-in's own token (fresh auth time) before it is sent.
     await getTruxIdToken(user, true);
     const res = await truxAuthenticatedFetch("/api/session/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
     if (!res.ok) throw new Error("HTTP " + res.status);
@@ -268,17 +239,10 @@ async function initFirebaseOnce() {
     window.dispatchEvent(new CustomEvent("trux-auth", { detail: { signedIn: !!user } }));
     updateTruxProfileUI(user);
     try { updateLocationSettingUI(); updateNotificationSettingsUI(); } catch {}
-    if (user && truxUserVerified(user)) { try { maybeAskForLocation(); } catch {} }
-    if (user && !truxUserVerified(user)) {
-      showLoginView("verify");
-      openLoginWall();
-    } else if (user) {
-      closeLoginWall();
-      stopVerifyPoll();
-    }
-    if (typeof onTruxUserChanged === "function") onTruxUserChanged(user && truxUserVerified(user) ? user : null);
+    if (user) { try { maybeAskForLocation(); } catch {} closeLoginWall(); }
+    if (typeof onTruxUserChanged === "function") onTruxUserChanged(user || null);
     if (first) resolveTruxAuthState(user || null);
-    if (user && truxUserVerified(user)) { void registerTruxSession(user); void syncTruxNotificationsSilently(); }
+    if (user) { void registerTruxSession(user); void syncTruxNotificationsSilently(); }
   });
 }
 
@@ -313,14 +277,13 @@ function friendlyAuthError(error) {
 }
 
 function showLoginView(view) {
-  truxLoginView = ["signin", "signup", "reset", "verify"].includes(view) ? view : "signin";
+  truxLoginView = ["signin", "signup", "reset"].includes(view) ? view : "signin";
   const wall = getEl("loginWallModal");
   if (wall) wall.dataset.view = truxLoginView;
   const titles = {
     signin: ["Welcome back", "Sign in to chat and sync your workspace."],
     signup: ["Create your account", "Start with Google or an email and password."],
-    reset: ["Reset password", "We'll email you a link to choose a new password."],
-    verify: ["Verify your email", "Open the link we sent to finish setting up your account."]
+    reset: ["Reset password", "We'll email you a link to choose a new password."]
   };
   const [title, sub] = titles[truxLoginView];
   const t = getEl("loginTitle"); if (t) t.textContent = title;
@@ -334,10 +297,7 @@ function showLoginView(view) {
     pw.minLength = truxLoginView === "signup" ? 8 : 6;
   }
   const name = getEl("loginName"); if (name) name.required = false;
-  const verifyEmail = getEl("loginVerifyEmail");
-  if (verifyEmail) verifyEmail.textContent = auth?.currentUser?.email || "your inbox";
   setLoginAuthMessage("");
-  if (truxLoginView === "verify") startVerifyPoll(); else stopVerifyPoll();
 }
 
 function openLoginWall(view) {
@@ -349,14 +309,11 @@ function openLoginWall(view) {
   wall.setAttribute("aria-hidden", "false");
   document.body.classList.add("login-wall-open");
   setTimeout(() => {
-    const focusTarget = truxLoginView === "verify" ? getEl("loginVerifyCheckBtn") : getEl("loginEmail");
-    try { focusTarget?.focus({ preventScroll: true }); } catch {}
+    try { getEl("loginEmail")?.focus({ preventScroll: true }); } catch {}
   }, 60);
 }
 
 function closeLoginWall() {
-  // An unverified password account cannot dismiss the verification step.
-  if (auth?.currentUser && !truxUserVerified(auth.currentUser)) return;
   const wall = getEl("loginWallModal");
   if (!wall) return;
   wall.classList.remove("active");
@@ -377,7 +334,9 @@ async function handleGoogleLogin() {
   setLoginBusy(true);
   setLoginAuthMessage("");
   try {
-    await auth.signInWithPopup(provider);
+    const cred = await auth.signInWithPopup(provider);
+    // Fetch this sign-in's token right away; no verification step stands in between.
+    if (cred?.user) { closeLoginWall(); void registerTruxSession(cred.user, { force: true }); }
   } catch (error) {
     if (error?.code === "auth/popup-blocked" || error?.code === "auth/operation-not-supported-in-this-environment") {
       await auth.signInWithRedirect(provider);
@@ -411,10 +370,12 @@ async function handleEmailPasswordAuth(event, switchToSignup) {
       const name = String(getEl("loginName")?.value || "").trim().slice(0, 60);
       const cred = await auth.createUserWithEmailAndPassword(email, password);
       if (name) await cred.user.updateProfile({ displayName: name }).catch(() => {});
-      await cred.user.sendEmailVerification({ url: location.origin + "/" }).catch(() => {});
-      showLoginView("verify");
+      closeLoginWall();
+      void registerTruxSession(cred.user, { force: true });
     } else {
-      await auth.signInWithEmailAndPassword(email, password);
+      const cred = await auth.signInWithEmailAndPassword(email, password);
+      closeLoginWall();
+      void registerTruxSession(cred.user, { force: true });
     }
     const pw = getEl("loginPassword"); if (pw) pw.value = "";
   } catch (error) {
@@ -439,48 +400,7 @@ async function handlePasswordReset() {
   if (getEl("profileModal")?.style.display === "flex") toast("Password reset email sent.", "ok");
 }
 
-async function resendVerificationEmail() {
-  const user = auth?.currentUser;
-  if (!user) return showLoginView("signin");
-  try {
-    await user.sendEmailVerification({ url: location.origin + "/" });
-    setLoginAuthMessage("Verification email sent. Check your inbox and spam folder.", "ok");
-  } catch (error) {
-    setLoginAuthMessage(friendlyAuthError(error), "err");
-  }
-}
-
-async function checkEmailVerified(silent = false) {
-  const user = auth?.currentUser;
-  if (!user) return false;
-  try { await user.reload(); } catch {}
-  const fresh = auth.currentUser;
-  if (fresh && truxUserVerified(fresh)) {
-    if (fresh.emailVerified && truxUnverifiedUid === fresh.uid) truxUnverifiedUid = "";
-    // Refresh the ID token so the email_verified claim reaches the server and RTDB rules.
-    await getTruxIdToken(fresh, true);
-    stopVerifyPoll();
-    cacheUserForNextBoot(fresh);
-    updateTruxProfileUI(fresh);
-    closeLoginWall();
-    if (typeof onTruxUserChanged === "function") onTruxUserChanged(fresh);
-    void registerTruxSession(fresh, { force: true });
-    void syncTruxNotificationsSilently();
-    toast("Email verified. Welcome to TruX.", "ok");
-    return true;
-  }
-  if (!silent) setLoginAuthMessage("Not verified yet. Open the link in the email, then try again.", "err");
-  return false;
-}
-
-function startVerifyPoll() {
-  stopVerifyPoll();
-  truxVerifyPoll = setInterval(() => { if (!document.hidden) void checkEmailVerified(true); }, 5000);
-}
-function stopVerifyPoll() { if (truxVerifyPoll) clearInterval(truxVerifyPoll); truxVerifyPoll = null; }
-
 async function truxSignOut() {
-  stopVerifyPoll();
   // Forget the stored encrypted sign-ins while the token is still valid; never block sign-out on it.
   try {
     await Promise.race([

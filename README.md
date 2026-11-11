@@ -14,7 +14,7 @@ server/
 sandbox/            the trux-sandbox service (bash, curl, Playwright browser, screenshots)
 public/
   index.html        markup only
-  css/              styles; themes.css holds every colour token and loads last
+  css/              styles; tokens.css holds every colour token (Light and Dark), claude.css is the Claude-style look and loads last
   js/               one file per feature, loaded in order at the bottom of index.html
   assetlinks.json   Digital Asset Links for the Play Store app (served at /.well-known/assetlinks.json)
 database.rules.json Realtime Database security rules
@@ -41,7 +41,7 @@ Optional Secret Manager secrets: `COMPOSIO_API_KEY` (plugins), `RESEND_API_KEY` 
 
 ## Sign-in tokens
 
-After every new sign-in the browser sends its fresh Firebase ID token to `POST /api/session/login`. The server verifies it, encrypts it (AES-256-GCM, a key derived per user and per sign-in) and stores only the sealed text at `_server/sessions/{uid}/{sessionId}`, a path the database rules close to clients. `POST /api/session/verify` opens it again in memory and checks it still belongs to the caller; signing out clears the records. Set `TRUX_SESSION_KEY` (`openssl rand -base64 32 | gcloud secrets create TRUX_SESSION_KEY --data-file=-`). Without it the server generates a key on first use and keeps it in the database, which still encrypts the tokens but is weaker.
+Google and email/password accounts get in as soon as Firebase signs them in; there is no email-verification step. After every new sign-in the browser sends its fresh Firebase ID token to `POST /api/session/login`. The server verifies it, encrypts it (AES-256-GCM, a key derived per user and per sign-in) and stores only the sealed text at `_server/sessions/{uid}/{sessionId}`, a path the database rules close to clients. `POST /api/session/verify` opens it again in memory and checks it still belongs to the caller; signing out clears the records. Set `TRUX_SESSION_KEY` (`openssl rand -base64 32 | gcloud secrets create TRUX_SESSION_KEY --data-file=-`). Without it the server generates a key on first use and keeps it in the database, which still encrypts the tokens but is weaker.
 
 ## Memory
 

@@ -45,7 +45,8 @@ function toIdentity(decoded) {
     emailVerified: decoded.email_verified === true,
     name: String(decoded.name || ''),
     provider,
-    owner: !!email && email === OWNER_EMAIL && decoded.email_verified === true,
+    // Owner tools need a proven email: Google proves it, a password account must have verified it.
+    owner: !!email && email === OWNER_EMAIL && (decoded.email_verified === true || provider === 'google.com'),
     tier: String(decoded.truxTier || '').toLowerCase() === 'pro' ? 'pro' : 'base',
     authTime: Number(decoded.auth_time || 0),
     exp: Number(decoded.exp || 0)
@@ -73,10 +74,6 @@ export async function verifyToken(token, { checkRevoked = false } = {}) {
     throw new HttpError(401, revoked ? 'Your session was signed out. Please sign in again.' : 'Your session expired. Please sign in again.', { code: 'auth/invalid-token' });
   }
   const user = toIdentity(decoded);
-  // Password accounts must verify their email before using the app.
-  if (user.provider === 'password' && !user.emailVerified) {
-    throw new HttpError(403, 'Please verify your email address before continuing.', { code: 'auth/email-not-verified' });
-  }
   if (user.provider === 'anonymous' || !user.provider) {
     throw new HttpError(403, 'Sign in with email or Google to continue.');
   }

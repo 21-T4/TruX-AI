@@ -1,69 +1,38 @@
 /* ============================================================
    TruX Workspace — design tokens, reset and base elements.
-   Dark only. Every other stylesheet reads these variables.
+   Claude-style: warm paper neutrals, serif reading text, blue accent.
+   Light and dark are both first-class; html[data-theme] is set before
+   first paint by the inline script in index.html and by applyTruxTheme().
 
-   Surfaces   --bg (canvas) < --bg-1 (chrome) < --bg-2 (cards/inputs)
-              < --bg-3 (hover) < --bg-4 (pressed / user bubble)
+   Surfaces   --bg (canvas) < --bg-1 (sidebar) ; --bg-2 (cards/inputs)
+              --bg-3 (hover) < --bg-4 (pressed / user bubble)
    Text       --txt, --txt-2, --txt-3, --txt-4
    Lines      --line, --line-2, --line-3
    Accent     --acc, --acc-2, --acc-3, --acc-soft, --acc-line, --on-acc
-   Channels   --ink (toward text) / --shade (toward canvas) for rgba(var(--ink), .x)
+   Channels   --ink (toward text) / --shade (toward canvas)
    ============================================================ */
 :root{
-  color-scheme: dark;
-
-  /* surfaces */
-  --bg:   #0a0b0e;
-  --bg-1: #0e1014;
-  --bg-2: #13161b;
-  --bg-3: #1a1e25;
-  --bg-4: #232832;
-
-  /* text */
-  --txt:   #e8eaee;
-  --txt-2: #b3b8c2;
-  --txt-3: #7f8590;
-  --txt-4: #595e68;
-
-  /* hairlines + overlay channels */
-  --ink: 255,255,255;
-  --shade: 0,0,0;
-  --line:   rgba(255,255,255,.06);
-  --line-2: rgba(255,255,255,.10);
-  --line-3: rgba(255,255,255,.18);
-
-  --danger: #ff6370;
-  --ok:     #4fd18b;
-  --warn:   #f0b84d;
-
-  /* geometry */
-  --rail: 280px;            /* sidebar width */
-  --panel-w: 400px;         /* right workspace panel width */
-  --measure: 760px;         /* reading column */
-  --topbar-h: 52px;
+  /* shared geometry, motion, type */
+  --rail: 288px;
+  --panel-w: 400px;
+  --measure: 740px;
+  --topbar-h: 56px;
   --r-xs: 6px;
   --r-sm: 9px;
   --r-md: 12px;
   --r-lg: 16px;
-  --r-xl: 22px;
+  --r-xl: 24px;
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-l: env(safe-area-inset-left, 0px);
   --safe-r: env(safe-area-inset-right, 0px);
 
-  /* depth */
-  --shadow-1: 0 1px 2px rgba(0,0,0,.35);
-  --shadow-2: 0 8px 24px rgba(0,0,0,.45), 0 1px 0 rgba(255,255,255,.03) inset;
-  --shadow-3: 0 24px 64px rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.04) inset;
-
-  /* motion */
   --ease:     cubic-bezier(.22,.61,.36,1);
   --ease-out: cubic-bezier(.16,1,.3,1);
   --dur-1: 120ms;
   --dur-2: 200ms;
   --dur-3: 340ms;
 
-  /* stacking */
   --z-topbar: 20;
   --z-panel: 30;
   --z-sidebar: 40;
@@ -72,65 +41,121 @@
   --z-toast: 200;
   --z-live: 300;
 
-  /* type */
-  --font-ui:   'Google Sans', 'Google Sans Flex', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  --font-body: 'Google Sans Flex', 'Google Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  --font-disp: 'Google Sans', 'Google Sans Flex', system-ui, sans-serif;
+  --font-ui:   'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-disp: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-serif: 'Source Serif 4', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
   --font-mono: 'Google Sans Code', ui-monospace, SFMono-Regular, 'JetBrains Mono', Consolas, monospace;
+}
 
-  /* code */
-  --code-bg:  #0b0d11;
-  --code-txt: #d6dae4;
+/* ---------- Light (default) ---------- */
+:root, :root[data-theme="light"]{
+  color-scheme: light;
+  --bg:   #faf9f5;
+  --bg-1: #f3f1ea;
+  --bg-2: #ffffff;
+  --bg-3: #eeece3;
+  --bg-4: #e4e1d6;
+
+  --txt:   #1f1e1d;
+  --txt-2: #4a4944;
+  --txt-3: #77756d;
+  --txt-4: #9c9a90;
+
+  --ink: 31,30,29;
+  --shade: 31,30,29;
+  --line:   rgba(31,30,29,.08);
+  --line-2: rgba(31,30,29,.13);
+  --line-3: rgba(31,30,29,.22);
+
+  --danger: #c93b3b;
+  --ok:     #1f8f5a;
+  --warn:   #b97a14;
+
+  --shadow-1: 0 1px 2px rgba(31,30,29,.06);
+  --shadow-2: 0 6px 20px rgba(31,30,29,.10), 0 1px 2px rgba(31,30,29,.06);
+  --shadow-3: 0 18px 48px rgba(31,30,29,.16), 0 2px 6px rgba(31,30,29,.06);
+
+  --code-bg:  #f6f4ec;
+  --code-txt: #2b2a27;
+  --tk-key: #3a55c8;
+  --tk-str: #1d7a56;
+  --tk-com: #8d8b82;
+  --tk-num: #a85d12;
+  --tk-fn:  #1f6fb5;
+  --tk-dec: #7a45c9;
+}
+
+/* ---------- Dark ---------- */
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:   #262624;
+  --bg-1: #1f1e1d;
+  --bg-2: #30302e;
+  --bg-3: #3a3a37;
+  --bg-4: #454541;
+
+  --txt:   #f2f1ec;
+  --txt-2: #c9c7bf;
+  --txt-3: #9a988f;
+  --txt-4: #74726a;
+
+  --ink: 255,255,255;
+  --shade: 0,0,0;
+  --line:   rgba(255,255,255,.07);
+  --line-2: rgba(255,255,255,.11);
+  --line-3: rgba(255,255,255,.19);
+
+  --danger: #ff7a7a;
+  --ok:     #4fd18b;
+  --warn:   #f0b84d;
+
+  --shadow-1: 0 1px 2px rgba(0,0,0,.3);
+  --shadow-2: 0 8px 24px rgba(0,0,0,.4);
+  --shadow-3: 0 24px 64px rgba(0,0,0,.55);
+
+  --code-bg:  #1c1b1a;
+  --code-txt: #e4e2da;
   --tk-key: #a5b4ff;
   --tk-str: #8ad6b8;
-  --tk-com: #626875;
+  --tk-com: #78766d;
   --tk-num: #e6b98c;
   --tk-fn:  #8fc0f4;
   --tk-dec: #c9a9ff;
 }
 
-/* Dark variants (the Appearance setting). All stay dark. */
-:root[data-theme="graphite"]{
-  --bg:#17181b; --bg-1:#1c1d21; --bg-2:#232428; --bg-3:#2b2d32; --bg-4:#34363c;
-  --txt:#ececef; --txt-2:#bcbdc4; --txt-3:#8c8e97; --txt-4:#656770;
-  --code-bg:#131417;
-}
-:root[data-theme="midnight"]{
-  --bg:#080c18; --bg-1:#0c1122; --bg-2:#121932; --bg-3:#19224a; --bg-4:#222d5c;
-  --txt:#e8ecf8; --txt-2:#b8c0dc; --txt-3:#848eb0; --txt-4:#5d678a;
-  --ink:226,232,255; --shade:4,8,20;
-  --line:rgba(226,232,255,.07); --line-2:rgba(226,232,255,.11); --line-3:rgba(226,232,255,.2);
-  --code-bg:#090d1c;
-}
-:root[data-theme="forest"]{
-  --bg:#0a110e; --bg-1:#0e1713; --bg-2:#141f19; --bg-3:#1b2a22; --bg-4:#25382d;
-  --txt:#e6efe9; --txt-2:#b9c9bf; --txt-3:#86998d; --txt-4:#5f7267;
-  --ink:228,245,234; --shade:4,10,7;
-  --line:rgba(228,245,234,.07); --line-2:rgba(228,245,234,.11); --line-3:rgba(228,245,234,.2);
-  --code-bg:#0a100d;
-}
+/* ---------- Accent (blue by default; set by applyTruxAccent → body[data-accent]) ---------- */
+body{ --acc-base:#2f6fed; --on-acc-base:#ffffff; --swatch:#2f6fed; }
+:root[data-theme="dark"] body{ --acc-base:#5b92ff; --on-acc-base:#0b1530; --swatch:#5b92ff; }
+body[data-accent="blue"]  { --acc-base:#2f6fed; --on-acc-base:#fff; --swatch:#2f6fed; }
+body[data-accent="cyan"]  { --acc-base:#0e9bbd; --on-acc-base:#fff; --swatch:#0e9bbd; }
+body[data-accent="purple"]{ --acc-base:#7a56e6; --on-acc-base:#fff; --swatch:#7a56e6; }
+body[data-accent="pink"]  { --acc-base:#d9488f; --on-acc-base:#fff; --swatch:#d9488f; }
+body[data-accent="red"]   { --acc-base:#d64545; --on-acc-base:#fff; --swatch:#d64545; }
+body[data-accent="orange"]{ --acc-base:#d9731f; --on-acc-base:#fff; --swatch:#d9731f; }
+body[data-accent="yellow"]{ --acc-base:#c99a0a; --on-acc-base:#1d1802; --swatch:#c99a0a; }
+body[data-accent="green"] { --acc-base:#1f9a5f; --on-acc-base:#fff; --swatch:#1f9a5f; }
+body[data-accent="teal"]  { --acc-base:#16a08c; --on-acc-base:#fff; --swatch:#16a08c; }
+body[data-accent="white"] { --acc-base:#1f1e1d; --on-acc-base:#fff; --swatch:#1f1e1d; }
+:root[data-theme="dark"] body[data-accent="blue"]  { --acc-base:#5b92ff; --on-acc-base:#0b1530; --swatch:#5b92ff; }
+:root[data-theme="dark"] body[data-accent="cyan"]  { --acc-base:#3fc6e6; --on-acc-base:#04161c; --swatch:#3fc6e6; }
+:root[data-theme="dark"] body[data-accent="purple"]{ --acc-base:#a58bff; --on-acc-base:#150c33; --swatch:#a58bff; }
+:root[data-theme="dark"] body[data-accent="pink"]  { --acc-base:#ff7ab8; --on-acc-base:#2b0a1b; --swatch:#ff7ab8; }
+:root[data-theme="dark"] body[data-accent="red"]   { --acc-base:#ff7a7a; --on-acc-base:#2b0808; --swatch:#ff7a7a; }
+:root[data-theme="dark"] body[data-accent="orange"]{ --acc-base:#ffa04d; --on-acc-base:#241203; --swatch:#ffa04d; }
+:root[data-theme="dark"] body[data-accent="yellow"]{ --acc-base:#f1d75a; --on-acc-base:#1d1802; --swatch:#f1d75a; }
+:root[data-theme="dark"] body[data-accent="green"] { --acc-base:#5bd990; --on-acc-base:#05190d; --swatch:#5bd990; }
+:root[data-theme="dark"] body[data-accent="teal"]  { --acc-base:#3ed3b8; --on-acc-base:#03180f; --swatch:#3ed3b8; }
+:root[data-theme="dark"] body[data-accent="white"] { --acc-base:#f2f1ec; --on-acc-base:#1f1e1d; --swatch:#f2f1ec; }
 
-/* Accent (set by applyTruxAccent → body[data-accent]) */
-body{ --acc-base:#6b8cff; --on-acc-base:#ffffff; }
-body[data-accent="blue"]  { --acc-base:#6b8cff; --on-acc-base:#ffffff; }
-body[data-accent="cyan"]  { --acc-base:#2fd4f5; --on-acc-base:#04161c; }
-body[data-accent="purple"]{ --acc-base:#a07cff; --on-acc-base:#ffffff; }
-body[data-accent="pink"]  { --acc-base:#ff6bb8; --on-acc-base:#ffffff; }
-body[data-accent="red"]   { --acc-base:#ff6370; --on-acc-base:#ffffff; }
-body[data-accent="orange"]{ --acc-base:#ff9f4a; --on-acc-base:#1f1203; }
-body[data-accent="yellow"]{ --acc-base:#f1d75a; --on-acc-base:#1d1802; }
-body[data-accent="green"] { --acc-base:#5bd990; --on-acc-base:#05190d; }
-body[data-accent="teal"]  { --acc-base:#3ed3b8; --on-acc-base:#03180f; }
-body[data-accent="white"] { --acc-base:#f2f3f5; --on-acc-base:#111114; }
 body, body[data-accent]{
   --acc:      var(--acc-base);
   --on-acc:   var(--on-acc-base);
-  --acc-2:    color-mix(in srgb, var(--acc) 62%, var(--txt));
+  --acc-2:    color-mix(in srgb, var(--acc) 86%, var(--txt));
   --acc-3:    color-mix(in srgb, var(--acc) 68%, var(--bg));
-  --acc-soft: color-mix(in srgb, var(--acc) 13%, transparent);
-  --acc-line: color-mix(in srgb, var(--acc) 42%, transparent);
+  --acc-soft: color-mix(in srgb, var(--acc) 12%, transparent);
+  --acc-line: color-mix(in srgb, var(--acc) 40%, transparent);
 }
-.accent-option[data-accent-option="white"]{ --swatch: var(--txt); }
 
 /* ---------- reset ---------- */
 *, *::before, *::after{ box-sizing: border-box; }

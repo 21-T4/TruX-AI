@@ -235,6 +235,6 @@ function resetAllSettings() {
   ["trux_auto_read", "trux_ambient_glow", "trux_tts_rate", "trux_home_look", "trux_location_enabled", "trux_location_granted", "trux_location_prompted",
    "trux_avatar_override", "trux_theme", "trux_dictation_language", "trux_speech_voice", "trux_dictation_history", "trux_dictation_history_items",
    "trux_focus_reminder", "trux_focus_interval", ...TRUX_NOTIFICATION_CATEGORIES.map(k => "trux_notification_cat_" + k)].forEach(k => store.removeItem(k));
-  applyTruxTheme("dark", false);
+  applyTruxTheme("system", false);
   loadSettings();
 }
