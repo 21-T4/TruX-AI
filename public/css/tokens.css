@@ -13,9 +13,9 @@
    ============================================================ */
 :root{
   /* shared geometry, motion, type */
-  --rail: 288px;
+  --rail: 320px;
   --panel-w: 400px;
-  --measure: 740px;
+  --measure: 800px;
   --topbar-h: 56px;
   --r-xs: 6px;
   --r-sm: 9px;

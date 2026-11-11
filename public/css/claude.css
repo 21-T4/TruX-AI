@@ -120,3 +120,50 @@ body{ font: 400 15px/1.55 var(--font-body); letter-spacing: 0; }
 .sidebar .notebook-icon{ width: 18px; height: 18px; border: 0; border-radius: 0; background: none; }
 .sidebar .notebook-icon svg{ width: 18px; height: 18px; }
 .sidebar .notebook-item b{ font-size: 14px; font-weight: 500; }
+
+/* ============================================================
+   Roomier sidebar and typing bar
+   ============================================================ */
+.sidebar-header{ height: 64px; padding: 0 14px 0 20px; }
+.sidebar-brand-mark{ width: 34px; height: 34px; border-radius: 10px; }
+.sidebar-brand-mark svg, .sidebar-brand-mark img{ width: 20px; height: 20px; }
+.sidebar-brand-copy b{ font-size: 19px; }
+.sidebar-scroll{ padding: 8px 12px 16px; }
+.sidebar-nav{ gap: 4px; padding-bottom: 14px; }
+.sidebar-item{ min-height: 46px; gap: 14px; padding: 0 14px; border-radius: 12px; font-size: 15px; }
+.sidebar-item svg{ width: 20px; height: 20px; }
+.sidebar-subitem{ min-height: 42px; font-size: 14.5px; }
+.sidebar-item-badge{ min-width: 24px; height: 24px; font-size: 12px; }
+.sidebar-search{ height: 42px; padding: 0 14px; border-radius: 12px; }
+.sidebar-section{ margin-top: 10px; }
+.sidebar-section-head{ padding: 14px 14px 8px; font-size: 12px; }
+.hist-row{ margin: 1px 0; }
+.hist{ min-height: 42px; padding: 0 38px 0 14px; border-radius: 11px; font-size: 14.5px; }
+.sidebar .notebook-item{ min-height: 42px; gap: 12px; padding: 0 10px 0 14px; border-radius: 11px; }
+.sidebar .notebook-icon, .sidebar .notebook-icon svg{ width: 20px; height: 20px; }
+.sidebar .notebook-item b{ font-size: 14.5px; }
+.history .empty{ padding: 16px 14px; font-size: 14px; }
+.sidebar-install{ min-height: 44px; border-radius: 12px; }
+.profile{ margin: 0 12px calc(12px + var(--safe-b)); padding: 12px; gap: 12px; border-radius: 14px; }
+.avatar{ width: 38px; height: 38px; }
+.profile-info b{ font-size: 14.5px; }
+.profile-info small{ font-size: 12.5px; }
+
+.composer{ padding: 10px 20px calc(16px + var(--safe-b)); }
+.compose{ max-width: var(--measure); }
+.bar{ gap: 6px; padding: 14px 14px 14px 16px; border-radius: 28px; min-height: 76px; align-items: flex-end; }
+.bar.multiline{ border-radius: 24px; }
+#promptInput{ min-height: 52px; max-height: 280px; padding: 14px 10px; font-size: 17px; line-height: 26px; }
+.icon-btn{ width: 46px; height: 46px; border-radius: 13px; }
+.icon-btn svg{ width: 22px; height: 22px; }
+.send-btn{ width: 46px; height: 46px; border-radius: 13px; }
+.send-btn svg{ width: 22px; height: 22px; }
+.hint{ padding-top: 10px; font-size: 12px; }
+
+@media (max-width: 720px){
+  .sidebar{ width: min(86vw, 340px); }
+  .composer{ padding: 8px 12px calc(12px + var(--safe-b)); }
+  .bar{ padding: 10px 10px 10px 12px; min-height: 64px; border-radius: 24px; }
+  #promptInput{ min-height: 44px; padding: 10px 8px; font-size: 16px; line-height: 24px; }
+  .icon-btn, .send-btn{ width: 42px; height: 42px; }
+}
