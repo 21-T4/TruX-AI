@@ -264,8 +264,6 @@ function openNotebook(id) {
   document.body.classList.remove("home-active","chat-session-active","plugins-page-active","incognito-mode");
   document.body.removeAttribute("data-media-mode");
   document.body.classList.add("notebook-open");
-  const welcome = getEl("welcomeScreen");
-  if(welcome) welcome.style.display = "none";
   renderNotebookWorkspace(notebook.id);
   renderSidebar();
 }
@@ -579,27 +577,9 @@ function renderSidebar() {
   });
 }
 function enterChatWorkspace() {
-  const body = document.body, welcomeForExit = getEl("welcomeScreen");
-  const leavingHome = body.classList.contains("home-active") && !!welcomeForExit;
-  if (leavingHome) {
-    const rect = welcomeForExit.getBoundingClientRect();
-    if (window.__truxHomeExitTimer) clearTimeout(window.__truxHomeExitTimer);
-    body.classList.remove("home-exiting-fade"); body.classList.add("home-exiting");
-    welcomeForExit.style.setProperty("--trux-home-exit-left", rect.left + "px"); welcomeForExit.style.setProperty("--trux-home-exit-top", rect.top + "px");
-    welcomeForExit.style.setProperty("--trux-home-exit-width", rect.width + "px"); welcomeForExit.style.setProperty("--trux-home-exit-height", rect.height + "px");
-    welcomeForExit.style.removeProperty("opacity"); welcomeForExit.style.removeProperty("transform"); void welcomeForExit.offsetWidth;
-    requestAnimationFrame(() => requestAnimationFrame(() => { if (body.classList.contains("home-exiting")) body.classList.add("home-exiting-fade"); }));
-    window.__truxHomeExitTimer = setTimeout(() => {
-      const returnedHome = body.classList.contains("home-active"); body.classList.remove("home-exiting", "home-exiting-fade");
-      ["--trux-home-exit-left", "--trux-home-exit-top", "--trux-home-exit-width", "--trux-home-exit-height"].forEach(property => welcomeForExit.style.removeProperty(property));
-      welcomeForExit.style.removeProperty("opacity"); welcomeForExit.style.removeProperty("transform");
-      if (returnedHome) welcomeForExit.style.removeProperty("display"); else welcomeForExit.style.setProperty("display", "none");
-      window.__truxHomeExitTimer = null;
-    }, 1050);
-  }
+  const body = document.body;
   body.classList.remove("home-active"); body.classList.add("chat-session-active"); body.removeAttribute("data-media-mode");
-  const welcome = getEl("welcomeScreen"); if (welcome) welcome.style.display = "none";
-  const active = getEl("chatContainer"); if (active) { active.style.display = "block"; active.classList.add("chat-session-view"); }
+  const active = getEl("chatContainer"); if (active) active.classList.add("chat-session-view");
   return active;
 }
 

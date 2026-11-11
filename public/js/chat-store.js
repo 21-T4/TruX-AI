@@ -44,7 +44,7 @@ function chatTimestamp(id) {
   return Number.isFinite(ms) ? ms : 0;
 }
 
-/* Called by auth.js whenever the signed-in (and verified) user changes. */
+/* Called by auth.js whenever the signed-in user changes. */
 function onTruxUserChanged(user) {
   const uid = user?.uid || "";
   if (uid === truxSyncedUid) return;
@@ -53,7 +53,6 @@ function onTruxUserChanged(user) {
   currentChatId = null;
   truxSyncedMeta = {};
   getEl("chatContainer")?.replaceChildren();
-  getEl("welcomeScreen")?.style.setProperty("display", "block", "important");
   document.body.classList.remove("chat-session-active");
   document.body.classList.add("home-active");
   truxSyncedUid = uid;
@@ -124,8 +123,7 @@ function attachChatSync(uid) {
   truxChatsRef.on("value", snapshot => applyRemoteChats(snapshot.val() || {}), error => {
     console.warn("TruX chat sync failed", error?.message || error);
     const denied = /permission_denied/i.test(String(error?.code || error?.message));
-    // The database checks the verified-email claim in the token. A token minted before verification lacks it, so
-    // refresh it and listen once more before giving up on the direct connection.
+    // A stale token can be refused: refresh it and listen once more before giving up on the direct connection.
     if (denied && !truxChatSyncRetried && auth?.currentUser && truxSyncedUid === uid) {
       truxChatSyncRetried = true;
       getTruxIdToken(auth.currentUser, true).then(() => { if (truxSyncedUid === uid) { detachChatSync(); attachChatSync(uid); } });

@@ -281,7 +281,6 @@
     if (state === "live" || state === "connecting") { openPanel(); return; }
     const user = auth?.currentUser;
     if (!user) { openLoginWall("signin"); return; }
-    if (typeof truxUserVerified === "function" && !truxUserVerified(user)) { openLoginWall("verify"); return; }
     if (!navigator.mediaDevices?.getUserMedia || !window.AudioWorkletNode) { toast("Live needs microphone support (try the latest Chrome, Edge or Safari).", "err"); return; }
     const myAttempt = ++attempt;
     openPanel();
