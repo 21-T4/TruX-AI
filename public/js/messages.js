@@ -346,300 +346,158 @@ function splitStreamBlocks(text) {
 }
 
 function createStreamRenderer(bubble) {
-  /* Replace the existing renderer in place. No second layer or duplicate host. */
-  bubble.innerHTML = '<div class="md-stream md-stream-fade-active tail-fade"></div>';
+  /* One renderer owns the answer from the first token through final Markdown. */
+  bubble.innerHTML = '<div class="md-stream"></div>';
   const host = bubble.firstElementChild;
 
   let target = "";
-  let shown = 0;
   let settled = 0;
   let liveEl = null;
   let liveHtml = "";
-  let finished = false;
+  let timerId = null;
+  let frameId = null;
   let stopped = false;
-  let rafId = null;
+  let finished = false;
   let doneCb = null;
-  let lastRevealAt = -Infinity;
+  let lastPaintAt = 0;
+  const FRAME_MS = 48;
 
-  const FADE_MS = 600;               /* keep in step with .rv in chat.css */
-  const TAIL_LINES = 5;              /* the newest lines stay dimmed, then glide to full strength */
-  const TAIL_DIM = 0.1;
-  let lastTickAt = 0;
-  let settleUntil = 0;
-  let budget = 0;                    /* fractional words owed to the reader */
-
-  /* ---- dimmed tail ----------------------------------------------------------
-     A CSS mask darkens the last few lines of the stream. Its position (--tail-y)
-     eases toward the end of the text every frame, so as new lines appear the older
-     ones brighten smoothly instead of stepping. When the stream ends the dimming
-     relaxes to full strength before the final clean render. */
-  let gy = 0, ga = TAIL_DIM, gTargetY = 0, gTargetA = TAIL_DIM, glideId = null, lineH = 0;
-  function measureLine() {
-    if (lineH) return lineH;
-    const cs = getComputedStyle(host);
-    lineH = parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize) || 16) * 1.65;
-    host.style.setProperty("--tail-z", Math.round(lineH * TAIL_LINES) + "px");
-    return lineH;
-  }
-  let glideAt = 0;
-  function glide(ts) {
-    glideId = null;
-    const dtg = glideAt ? Math.min(64, ts - glideAt) : 16;
-    glideAt = ts;
-    const kY = 1 - Math.exp(-dtg / 150), kA = 1 - Math.exp(-dtg / 320);   /* frame-rate independent easing */
-    gy += (gTargetY - gy) * kY;
-    if (Math.abs(gTargetY - gy) < 0.4) gy = gTargetY;
-    ga += (gTargetA - ga) * kA;
-    if (Math.abs(gTargetA - ga) < 0.004) ga = gTargetA;
-    host.style.setProperty("--tail-y", gy.toFixed(1) + "px");
-    host.style.setProperty("--tail-o", (1 - ga).toFixed(3));
-    if (gy !== gTargetY || ga !== gTargetA) glideId = requestAnimationFrame(glide); else glideAt = 0;
-  }
-  function aimTail() {
-    const lh = measureLine();
-    const end = liveEl && liveEl.parentNode === host ? liveEl.offsetTop + liveEl.offsetHeight : host.scrollHeight;
-    if (!gy) gy = Math.max(0, end - lh);
-    gTargetY = end;
-    if (glideId === null) glideId = requestAnimationFrame(glide);
-  }
-  function relaxTail() {
-    gTargetA = 1;
-    if (glideId === null) glideId = requestAnimationFrame(glide);
-  }
-
-  /* ---- line-by-line fade-in ----------------------------------------------
-     The live block is re-rendered on every tick, so a plain CSS animation would
-     restart each time. Instead we remember which text ranges (by character offset
-     in the block's text) were revealed and when, and wrap those still fading in
-     <span class="rv"> with a negative animation-delay. The animation therefore
-     resumes where it was, and finished text stays unwrapped. */
-  let marks = [];                    /* { s, e, t } revealed ranges of the live block */
-  let markedLen = 0;
-  let waitingFade = false;
-
-  function revealTextNodes(root) {
-    const nodes = [];
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-      acceptNode(node) {
-        const parent = node.parentElement;
-        return parent && parent.closest("pre, .katex, .code-file, .trux-diagram, script, style")
-          ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
-      }
-    });
-    while (walker.nextNode()) nodes.push(walker.currentNode);
-    return nodes;
-  }
-
-  function applyReveal(el, now) {
-    if (!el || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) { marks = []; markedLen = 0; return; }
-    const nodes = revealTextNodes(el);
-    let total = 0;
-    for (const n of nodes) total += n.nodeValue.length;
-    if (total < markedLen) { marks = []; markedLen = 0; }          /* block was restructured */
-    if (total > markedLen) { marks.push({ s: markedLen, e: total, t: now }); markedLen = total; }
-    marks = marks.filter(m => now - m.t < FADE_MS);
-    if (!marks.length) return;
-
-    const pieces = [];
-    let pos = 0;
-    nodes.forEach((node, index) => {
-      const a = pos, b = pos + node.nodeValue.length;
-      pos = b;
-      for (const m of marks) {
-        const s = Math.max(m.s, a), e = Math.min(m.e, b);
-        if (e > s) pieces.push({ node, index, s: s - a, e: e - a, t: m.t });
-      }
-    });
-    /* Wrap from the end of each node backwards so earlier offsets stay valid. */
-    pieces.sort((x, y) => x.index - y.index || y.s - x.s);
-    for (const piece of pieces) {
-      const range = document.createRange();
-      range.setStart(piece.node, piece.s);
-      range.setEnd(piece.node, piece.e);
-      const span = document.createElement("span");
-      span.className = "rv";
-      span.style.animationDelay = -Math.round(now - piece.t) + "ms";
-      range.surroundContents(span);
-    }
-  }
-
-  function fadeRemaining(now) {
-    let left = 0;
-    for (const m of marks) left = Math.max(left, FADE_MS - (now - m.t));
-    return left;
-  }
-
-  /* Reveal a few words at a time (more when the stream has run ahead), never a half-received word. */
-  function nextRevealOffset(words = 1) {
-    const backlog = target.length - shown;
-    if (backlog <= 0) return shown;
-    let cursor = shown;
-    let count = 0;
-    while (cursor < target.length && count < words) {
-      let i = cursor;
-      while (i < target.length && /\s/.test(target[i])) i++;
-      while (i < target.length && !/\s/.test(target[i])) i++;
-      if (i >= target.length && !finished) break;      /* the last word may still be arriving */
-      while (i < target.length && /\s/.test(target[i])) i++;
-      cursor = i;
-      count++;
-    }
-    if (cursor <= shown && finished) return target.length;
-    return cursor;
-  }
-
-  function commitBlock(html, isLive) {
+  function commitBlock(html, live = false) {
     const el = document.createElement("div");
-    el.className = "md-block" + (isLive ? " live" : "");
+    el.className = "md-block" + (live ? " live" : " stream-block-enter");
     el.innerHTML = html;
     host.appendChild(el);
     renderTruxDiagrams(el);
     return el;
   }
 
-  function paint() {
-    const visible = target.slice(0, shown);
-    const blocks = splitStreamBlocks(visible);
-    if (!blocks.length) return false;
+  function updateLiveBlock(html) {
+    if (!liveEl) {
+      liveEl = commitBlock(html, true);
+      return;
+    }
 
-    /* Commit completed Markdown blocks once; refresh only the active tail. */
-    const now = performance.now();
-    while (settled < blocks.length - 1) {
-      if (liveEl) {
-        if (liveEl.parentNode === host) host.removeChild(liveEl);
-        liveEl = null;
-        liveHtml = "";
+    /* Keep an unfinished diagram source stable while its Markdown is arriving. */
+    const currentPending = liveEl.querySelector('.trux-diagram[data-trux-diagram-pending="true"]');
+    if (currentPending) {
+      const parsed = document.createElement("div");
+      parsed.innerHTML = html;
+      const nextPending = parsed.querySelector('.trux-diagram[data-trux-diagram-pending="true"]');
+      if (nextPending) {
+        const oldSource = currentPending.querySelector(".trux-diagram-source");
+        const newSource = nextPending.querySelector(".trux-diagram-source");
+        if (oldSource && newSource) oldSource.textContent = newSource.textContent;
+      } else {
+        liveEl.innerHTML = html;
       }
-      const el = commitBlock(renderFormattedText(blocks[settled], false), false);
-      applyReveal(el, now);                 /* carries the fade of the block that just finished */
-      marks = []; markedLen = 0;            /* the next block starts fresh */
-      setTimeout(() => el.classList.add("settled"), 400);
-      settled++;
+    } else {
+      liveEl.innerHTML = html;
     }
-
-    const tail = blocks[blocks.length - 1];
-    const html = renderFormattedText(tail, !finished);
-    if (html === liveHtml) return false;
-    liveHtml = html;
-
-    if (!liveEl) liveEl = commitBlock(html, true);
-    else {
-      const currentPending = liveEl.querySelector('.trux-diagram[data-trux-diagram-pending="true"]');
-      if (currentPending) {
-        const parsed = document.createElement("div"); parsed.innerHTML = html;
-        const nextPending = parsed.querySelector('.trux-diagram[data-trux-diagram-pending="true"]');
-        if (nextPending) {
-          const oldSource = currentPending.querySelector(".trux-diagram-source");
-          const newSource = nextPending.querySelector(".trux-diagram-source");
-          if (oldSource && newSource) oldSource.textContent = newSource.textContent;
-        } else liveEl.innerHTML = html;
-      } else liveEl.innerHTML = html;
-    }
-
     renderTruxDiagrams(liveEl);
-    applyReveal(liveEl, now);
-    liveEl.classList.toggle("single-line", liveEl.offsetHeight < 46);
-    aimTail();
-    return true;
   }
 
-  function tick(timestamp) {
-    rafId = null;
+  function paint() {
     if (stopped) return;
     if (!bubble.isConnected) {
       stopped = true;
       return;
     }
 
-    /* A steady reading pace (words per second) that speeds up gently only when far behind,
-       so a response that arrives all at once is still revealed gradually. */
-    if (lastTickAt && timestamp - lastTickAt < 100) { rafId = requestAnimationFrame(tick); return; }   /* paint a few words at a time, not every frame */
-    const dt = lastTickAt ? Math.min(160, timestamp - lastTickAt) : 16;
-    lastTickAt = timestamp;
-    const backlogWords = (target.length - shown) / 6;
-    const rate = Math.min(finished ? 50 : 40, 18 + backlogWords * (finished ? 0.1 : 0.06));
-    budget += dt * rate / 1000;
     const container = getActiveChatContainer();
-    const stick = isNearBottom(container);
-    let advanced = false;
-    if (budget >= 1 && shown < target.length) {
-      const words = Math.floor(budget);
-      budget -= words;
-      const nextShown = nextRevealOffset(words);
-      if (nextShown > shown) {
-        shown = nextShown;
-        advanced = paint();
-        if (stick) container.scrollTop = container.scrollHeight;
+    const stickToBottom = !!container && isNearBottom(container);
+    const blocks = splitStreamBlocks(target);
+
+    /* Commit complete paragraphs once. Only the unfinished Markdown block is refreshed. */
+    while (settled < blocks.length - 1) {
+      if (liveEl?.parentNode === host) host.removeChild(liveEl);
+      liveEl = null;
+      liveHtml = "";
+      commitBlock(renderFormattedText(blocks[settled], false));
+      settled++;
+    }
+
+    if (blocks.length) {
+      const tail = blocks[blocks.length - 1];
+      const html = renderFormattedText(tail, !finished);
+      if (html !== liveHtml) {
+        liveHtml = html;
+        updateLiveBlock(html);
+      }
+
+      if (finished) {
+        const finalHtml = renderFormattedText(tail, false);
+        if (finalHtml !== liveHtml) {
+          liveHtml = finalHtml;
+          updateLiveBlock(finalHtml);
+        }
+        liveEl?.classList.remove("live");
       }
     }
 
-    if (finished && shown >= target.length) {
-      /* Let the last lines finish fading in before the final clean re-render. */
-      const left = Math.max(fadeRemaining(performance.now()), settleUntil - performance.now());
-      if (!settleUntil) { settleUntil = performance.now() + 900; relaxTail(); }
-      if (left > 0 || performance.now() < settleUntil) {
-        waitingFade = true;
-        setTimeout(() => { waitingFade = false; start(); }, Math.max(left, settleUntil - performance.now()) + 30);
-        return;
-      }
-      marks = []; markedLen = 0;
-      host.classList.remove("tail-fade");
-      host.style.removeProperty("--tail-y"); host.style.removeProperty("--tail-o");
-      host.innerHTML = renderFormattedText(target, false);
-      renderTruxDiagrams(host);
+    if (stickToBottom) container.scrollTop = container.scrollHeight;
+
+    if (finished) {
+      host.classList.remove("streaming");
       scheduleTruxMath(host);
-      if (stick) container.scrollTop = container.scrollHeight;
-      if (doneCb) {
-        const callback = doneCb;
-        doneCb = null;
-        callback();
-      }
-      return;
-    }
-
-    /* Keep going while there is text left to reveal, or while a finished stream settles. */
-    if (shown < target.length || finished) {
-      rafId = requestAnimationFrame(tick);
+      const callback = doneCb;
+      doneCb = null;
+      if (callback) callback();
     }
   }
 
-  function start() {
-    if (rafId === null && !stopped && !waitingFade) rafId = requestAnimationFrame(tick);
+  function schedule() {
+    if (stopped || timerId !== null || frameId !== null) return;
+    const elapsed = lastPaintAt ? performance.now() - lastPaintAt : FRAME_MS;
+    const delay = Math.max(0, FRAME_MS - elapsed);
+    timerId = window.setTimeout(() => {
+      timerId = null;
+      frameId = requestAnimationFrame(() => {
+        frameId = null;
+        lastPaintAt = performance.now();
+        paint();
+      });
+    }, delay);
   }
 
   return {
     push(chunk) {
-      target += chunk;
-      start();
+      if (stopped || finished || !chunk) return;
+      target += String(chunk);
+      schedule();
     },
     setText(text) {
-      target = String(text || "");
-      /* Never let an updated authoritative payload expose half a word. */
-      shown = Math.min(shown, target.length);
-      while (shown > 0 && shown < target.length && !/\s/.test(target.charAt(shown - 1))) {
-        shown--;
+      const next = String(text || "");
+      if (next === target) return;
+      if (!next.startsWith(target)) {
+        host.replaceChildren();
+        settled = 0;
+        liveEl = null;
+        liveHtml = "";
       }
-      start();
+      target = next;
+      schedule();
     },
-    finish(cb) {
-      finished = true;
-      doneCb = cb || null;
-      if (!bubble.isConnected) {
-        stopped = true;
-        if (rafId !== null) cancelAnimationFrame(rafId);
-        rafId = null;
+    finish(callback) {
+      if (stopped) {
+        try { callback?.(); } catch {}
         return;
       }
-      stopped = false;
-      start();
+      finished = true;
+      doneCb = typeof callback === "function" ? callback : null;
+      schedule();
     },
     cancel() {
       stopped = true;
-      if (rafId !== null) cancelAnimationFrame(rafId);
-      rafId = null;
-      host.classList.remove("tail-fade");
-      host.classList.add("md-stream-fade-settling");
-      if (doneCb) { const cb = doneCb; doneCb = null; try { cb(); } catch {} }
+      if (timerId !== null) clearTimeout(timerId);
+      if (frameId !== null) cancelAnimationFrame(frameId);
+      timerId = null;
+      frameId = null;
+      liveEl?.classList.remove("live");
+      if (doneCb) {
+        const callback = doneCb;
+        doneCb = null;
+        try { callback(); } catch {}
+      }
     },
     get received() { return target; }
   };
