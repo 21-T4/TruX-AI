@@ -361,11 +361,8 @@ function createStreamRenderer(bubble) {
   let doneCb = null;
   let lastRevealAt = -Infinity;
 
-  const REVEAL_INTERVAL_MS = 24;
-  const MAX_LINES_PER_TICK = 2;
-  const FADE_MS = 460;               /* keep in step with .rv in chat.css */
-  const measureCanvas = document.createElement("canvas");
-  const measureContext = measureCanvas.getContext("2d");
+  const REVEAL_INTERVAL_MS = 44;     /* a new small group of words every ~44ms */
+  const FADE_MS = 720;               /* keep in step with .rv in chat.css */
 
   /* ---- line-by-line fade-in ----------------------------------------------
      The live block is re-rendered on every tick, so a plain CSS animation would
@@ -429,60 +426,24 @@ function createStreamRenderer(bubble) {
     return left;
   }
 
-  function nextLineEnd(text, from) {
-    if (from >= text.length) return -1;
-
-    const style = window.getComputedStyle(bubble);
-    if (measureContext) {
-      measureContext.font = style.font || (style.fontSize + " " + style.fontFamily);
-    }
-    const width = Math.max(80, (host.clientWidth || bubble.clientWidth || 360) - 10);
-    let lastSpace = -1;
-
-    for (let i = from; i < text.length; i++) {
-      const ch = text[i];
-      if (ch === "\n") return i + 1;
-
-      const sample = text.slice(from, i + 1).replace(/[*_~]/g, "");
-      const sampleWidth = measureContext
-        ? measureContext.measureText(sample).width
-        : sample.length * 8;
-
-      if (sampleWidth > width && i > from) {
-        return lastSpace >= from ? lastSpace + 1 : i;
-      }
-      if (/\s/.test(ch)) lastSpace = i;
-    }
-
-    /* A complete sentence is a natural release point for short prose lines. */
-    const rest = text.slice(from);
-    const punctuation = /[.!?]\s+/.exec(rest);
-    const sentenceThreshold = Math.min(24, Math.floor(width / 8));
-    if (punctuation && punctuation.index >= sentenceThreshold) {
-      return from + punctuation.index + punctuation[0].length;
-    }
-    return -1;
-  }
-
+  /* Reveal a few words at a time (more when the stream has run ahead), never a half-received word. */
   function nextRevealOffset() {
+    const backlog = target.length - shown;
+    if (backlog <= 0) return shown;
+    const words = Math.min(14, 2 + Math.floor(backlog / 140));
     let cursor = shown;
-    let end = shown;
-    let lineCount = 0;
-
-    /* Reveal more lines per tick when the stream has run ahead, so long answers keep pace. */
-    const maxLines = MAX_LINES_PER_TICK + Math.min(4, Math.floor((target.length - shown) / 900));
-    while (cursor < target.length && lineCount < maxLines) {
-      let boundary = nextLineEnd(target, cursor);
-      if (boundary <= cursor) {
-        /* Only flush an incomplete short final line after stream completion. */
-        if (finished) boundary = target.length;
-        else break;
-      }
-      end = boundary;
-      cursor = boundary;
-      lineCount++;
+    let count = 0;
+    while (cursor < target.length && count < words) {
+      let i = cursor;
+      while (i < target.length && /\s/.test(target[i])) i++;
+      while (i < target.length && !/\s/.test(target[i])) i++;
+      if (i >= target.length && !finished) break;      /* the last word may still be arriving */
+      while (i < target.length && /\s/.test(target[i])) i++;
+      cursor = i;
+      count++;
     }
-    return end;
+    if (cursor <= shown && finished) return target.length;
+    return cursor;
   }
 
   function commitBlock(html, isLive) {

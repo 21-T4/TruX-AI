@@ -23,6 +23,10 @@ function applyTruxTheme(theme, persist) {
   const choice = truxNormalizeTheme(theme);
   const resolved = choice === "system" ? (truxSystemLight?.matches ? "light" : "dark") : choice;
   const root = document.documentElement;
+  if (root.dataset.theme && root.dataset.theme !== resolved) {          /* ease between themes */
+    root.classList.add("theme-fade");
+    setTimeout(() => root.classList.remove("theme-fade"), 450);
+  }
   root.dataset.theme = resolved;
   root.dataset.scheme = resolved;
   if (persist !== false || choice !== theme) store.setItem("trux_theme", choice);

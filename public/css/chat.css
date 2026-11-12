@@ -7,9 +7,7 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   scroll-behavior: auto;
-  padding: 8px 16px 28px;
-  -webkit-overflow-scrolling: touch;
-}
+  -webkit-overflow-scrolling: touch;}
 .chat > *{ max-width: var(--measure); margin-left: auto; margin-right: auto; }
 .trux-chat-loading{ padding: 40px 0; text-align: center; color: var(--txt-3); font-size: 14px; }
 
@@ -23,15 +21,9 @@
 .row > .label{ display: none; }
 .user-bubble{
   max-width: min(85%, 620px);
-  padding: 10px 16px;
-  background: var(--bg-3);
-  border: 1px solid var(--line);
-  border-radius: 20px 20px 6px 20px;
   color: var(--txt);
-  font: 450 15.5px/1.55 var(--font-body);
   overflow-wrap: anywhere;
-  user-select: text;
-}
+  user-select: text;}
 .user-message-actions{ margin-top: 4px; opacity: 0; transition: opacity var(--dur-2) var(--ease); }
 .row:hover .user-message-actions, .row.user-actions-visible .user-message-actions{ opacity: 1; }
 @media (hover: none){ .user-message-actions{ opacity: 1; } }
@@ -40,24 +32,18 @@
 .trux-response-stack{ display: flex; flex-direction: column; gap: 10px; width: 100%; min-width: 0; }
 .bubble:not(.user-bubble){
   width: 100%; min-width: 0;
-  color: var(--txt);
-  font: 400 15.5px/1.72 var(--font-body);
   overflow-wrap: anywhere;
-  user-select: text;
-}
+  user-select: text;}
 .trux-stopped-note{ margin-top: 8px; font-size: 12.5px; color: var(--txt-3); }
 
 /* ---------- actions ---------- */
 .actions{ display: flex; flex-wrap: wrap; align-items: center; gap: 2px; min-height: 30px; }
 .actions:empty{ display: none; }
 .act{
-  display: inline-flex; align-items: center; gap: 6px;
-  height: 30px; padding: 0 10px;
+  display: inline-flex; align-items: center; gap: 6px; padding: 0 10px;
   border-radius: var(--r-sm);
   font: 500 12.5px/1 var(--font-ui);
-  color: var(--txt-3);
-  transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
-}
+  transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);}
 .act svg{ width: 15px; height: 15px; }
 .act.done{ color: var(--ok); }
 @media (hover: hover){ .act:hover{ background: var(--bg-3); color: var(--txt); } }
@@ -66,7 +52,7 @@
 .trux-thinking-panel{ border-radius: var(--r-md); }
 .trux-thinking-panel[hidden], .trux-thinking-panel[data-thinking-visible="false"]{ display: none; }
 .trux-thinking-bar{ display: flex; align-items: center; gap: 10px; min-height: 28px; color: var(--txt-3); font-size: 13.5px; }
-.trux-thinking-spark{ width: 18px; height: 18px; flex: none; display: grid; place-items: center; color: var(--acc-2); }
+.trux-thinking-spark{ width: 18px; height: 18px; flex: none; display: grid; place-items: center;}
 .trux-thinking-spark svg{ width: 16px; height: 16px; fill: currentColor; stroke: none; animation: truxSpark 2.4s var(--ease) infinite; }
 @keyframes truxSpark{ 0%,100%{ transform: scale(.82) rotate(0); opacity: .6; } 50%{ transform: scale(1.1) rotate(45deg); opacity: 1; } }
 .trux-thinking-copy{ min-width: 0; flex: 1; }
@@ -94,11 +80,9 @@
 
 .bubble p{ margin: 0 0 .9em; }
 .bubble h1, .bubble h2, .bubble h3, .bubble h4{
-  margin: 1.35em 0 .5em; color: var(--txt);
-  font-family: var(--font-disp); font-weight: 650; letter-spacing: -.012em; line-height: 1.3;
-}
-.bubble h1{ font-size: 1.5em; } .bubble h2{ font-size: 1.28em; } .bubble h3{ font-size: 1.12em; } .bubble h4{ font-size: 1em; color: var(--txt-2); }
-.bubble strong, .bubble b{ font-weight: 650; color: var(--txt); }
+  margin: 1.35em 0 .5em; color: var(--txt); line-height: 1.3;}
+   .bubble h4{ font-size: 1em; color: var(--txt-2); }
+.bubble strong, .bubble b{ color: var(--txt);}
 .bubble em{ font-style: italic; }
 .bubble a{ color: var(--acc-2); text-decoration: underline; text-decoration-color: var(--acc-line); text-underline-offset: 3px; }
 .bubble ul, .bubble ol{ margin: 0 0 .9em; padding-left: 1.5em; }
@@ -108,11 +92,8 @@
 .bubble blockquote{ margin: 0 0 .9em; padding: 2px 0 2px 16px; border-left: 3px solid var(--line-3); color: var(--txt-2); }
 .bubble hr{ border: 0; border-top: 1px solid var(--line-2); margin: 1.4em 0; }
 .bubble :not(pre) > code{
-  padding: .12em .42em; border-radius: 6px;
-  background: var(--bg-3); border: 1px solid var(--line);
   font: 500 .88em/1.4 var(--font-mono); color: var(--txt);
-  overflow-wrap: anywhere;
-}
+  overflow-wrap: anywhere;}
 .bubble img{ max-width: 100%; height: auto; border-radius: var(--r-md); }
 
 /* tables */
@@ -181,38 +162,34 @@
 .gen-image-wrap, .gen-video-wrap{ position: relative; margin: 4px 0 10px; max-width: 560px; border-radius: var(--r-lg); overflow: hidden; background: var(--bg-2); border: 1px solid var(--line-2); }
 .gen-image-wrap img, .gen-video-wrap video{ display: block; width: 100%; height: auto; opacity: 0; transition: opacity var(--dur-3) var(--ease); }
 .gen-image-wrap img.loaded, .gen-video-wrap video{ opacity: 1; }
-.media-error{ padding: 20px; font-size: 13px; color: var(--txt-3); }
-.trux-file-chip{ height: auto; padding: 8px 12px 8px 10px; border-radius: var(--r-md); }
-.tfc-icon{ width: 18px; height: 18px; color: var(--txt-2); }
-.tfc-icon svg{ width: 100%; height: 100%; }
-.tfc-copy{ display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.tfc-copy b{ font: 550 13px/1.2 var(--font-ui); color: var(--txt); }
-.tfc-copy small{ font-size: 11.5px; color: var(--txt-3); }
+.media-error{ padding: 20px;}
+.trux-file-chip{ height: auto;}
+.tfc-icon{ width: 18px;}
+
+.tfc-copy{ gap: 2px;}
+.tfc-copy b{ font: 550 13px/1.2 var(--font-ui);}
 
 /* ---------- smooth line-by-line fade-in ----------
    messages.js wraps each newly revealed run of text in <span class="rv">
    with a negative animation-delay, so a re-render mid-fade resumes instead of
    restarting. Keep the duration in step with FADE_MS (460) in messages.js. */
 .rv{
-  display: inline;
-  animation: truxFadeIn 460ms cubic-bezier(.22,.7,.2,1) both;
-  will-change: opacity;
-}
+  animation: truxFadeIn 720ms cubic-bezier(.25,.6,.3,1) both;
+  will-change: opacity, filter;}
 @keyframes truxFadeIn{
-  from{ opacity: 0; filter: blur(3px); transform: translateY(.35em); }
-  to{ opacity: 1; filter: blur(0); transform: none; }
+  0%{ opacity: 0; filter: blur(5px); transform: translateY(.28em); }
+  55%{ opacity: .7; filter: blur(1.2px); }
+  100%{ opacity: 1; filter: blur(0); transform: none; }
 }
 /* inline spans can't be transformed; give them a block-ish box without breaking wrapping */
 .rv{ display: inline-block; max-width: 100%; white-space: pre-wrap; vertical-align: baseline; }
 .md-block.live::after{
-  content: ""; display: inline-block; width: 7px; height: 7px; margin-left: 4px; border-radius: 50%;
-  background: var(--acc-2); vertical-align: middle; animation: truxSpark 1.2s var(--ease) infinite;
-}
+  content: ""; display: inline-block; width: 7px; height: 7px; margin-left: 4px; border-radius: 50%; vertical-align: middle; animation: truxSpark 1.2s var(--ease) infinite;}
 @media (prefers-reduced-motion: reduce){ .rv, .row.appear{ animation: none !important; } .md-block.live::after{ display: none; } }
 
 /* phone */
 @media (max-width: 720px){
-  .chat{ padding: 4px 14px 20px; }
+  
   .user-bubble{ max-width: 90%; font-size: 16px; }
   .bubble:not(.user-bubble){ font-size: 16px; line-height: 1.68; }
   .code-body code{ font-size: 12.5px; }
