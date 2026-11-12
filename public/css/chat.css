@@ -31,6 +31,34 @@
 
 /* assistant message: full width, no bubble */
 .trux-response-stack{ display: flex; flex-direction: column; gap: 10px; width: 100%; min-width: 0; }
+
+/* Fade only assistant text as it scrolls under the chat's own top edge.
+   Keeping this inside .trux-row prevents it affecting user messages or UI. */
+.row.trux-row::before{
+  content: "";
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  display: block;
+  flex: 0 0 158px;
+  width: 100%;
+  height: 158px;
+  margin-bottom: -158px;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--bg) 82%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 68%, transparent) 28%,
+    color-mix(in srgb, var(--bg) 34%, transparent) 62%,
+    transparent 100%
+  );
+  animation: truxAssistantTopFade 360ms cubic-bezier(.2,.7,.2,1) both;
+}
+@keyframes truxAssistantTopFade{
+  from{ opacity: .35; }
+  to{ opacity: 1; }
+}
+
 .bubble:not(.user-bubble){
   width: 100%; min-width: 0;
   overflow-wrap: anywhere;
