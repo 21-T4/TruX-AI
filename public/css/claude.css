@@ -36,7 +36,7 @@ body.chat-session-active:not(.plugins-page-active) .topbar::after{
   top: calc(100% - 1px);
   left: 0;
   right: 0;
-  height: clamp(136px, 18vh, 184px);
+  height: clamp(150px, 20vh, 196px);
   pointer-events: none;
   background: linear-gradient(
     to bottom,
