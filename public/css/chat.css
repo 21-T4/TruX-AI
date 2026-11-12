@@ -170,21 +170,17 @@
 .tfc-copy{ gap: 2px;}
 .tfc-copy b{ font: 550 13px/1.2 var(--font-ui);}
 
-/* ---------- smooth line-by-line fade-in ----------
-   messages.js wraps each newly revealed run of text in <span class="rv">
-   with a negative animation-delay, so a re-render mid-fade resumes instead of
-   restarting. Keep the duration in step with FADE_MS (460) in messages.js. */
-.rv{
-  animation: truxFadeIn 600ms ease-out both;}
-@keyframes truxFadeIn{
-  0%{ opacity: 0; }
-  100%{ opacity: 1; }
+/* ---------- response streaming ---------- */
+.md-block.stream-block-enter{
+  animation: truxStreamBlockIn 160ms ease-out both;
 }
-/* inline spans can't be transformed; give them a block-ish box without breaking wrapping */
-.rv{ display: inline; white-space: pre-wrap; }
-.md-block.live::after{
-  content: ""; display: inline-block; width: 7px; height: 7px; margin-left: 4px; border-radius: 50%; vertical-align: middle; animation: truxSpark 1.2s var(--ease) infinite;}
-@media (prefers-reduced-motion: reduce){ .rv, .row.appear{ animation: none !important; } .md-block.live::after{ display: none; } }
+@keyframes truxStreamBlockIn{
+  from{ opacity: .72; }
+  to{ opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce){
+  .md-block.stream-block-enter, .row.appear{ animation: none !important; }
+}
 
 /* phone */
 @media (max-width: 720px){
@@ -194,12 +190,3 @@
   .code-body code{ font-size: 12.5px; }
 }
 
-/* dimmed tail while streaming: a small gradient overlay (not a mask on the whole answer, which breaks on tall text)
-   fades the newest ~5 lines toward the page colour; it eases away as more text arrives below. */
-.md-stream{ position: relative; }
-.md-stream.tail-fade::after{
-  content: ""; position: absolute; left: -2px; right: -2px; pointer-events: none;
-  top: calc(var(--tail-y, 0px) - var(--tail-z, 150px)); height: calc(var(--tail-z, 150px) + 2px);
-  background: linear-gradient(to bottom, transparent 0, color-mix(in srgb, var(--bg) calc(var(--tail-o, .9) * 100%), transparent) 100%);
-}
-@media (prefers-reduced-motion: reduce){ .md-stream.tail-fade::after{ display: none; } }
