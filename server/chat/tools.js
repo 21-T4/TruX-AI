@@ -33,7 +33,7 @@ const VIDEO_TOOL = {
     type: 'object',
     properties: {
       brief: { type: 'string', description: 'What the video should show: story, subject, style, mood, dialogue, music. Pass the user\'s idea faithfully; the director expands it.' },
-      length: { type: 'integer', enum: VIDEO_LENGTHS, description: 'Seconds. Omit to let the director choose.' },
+      length: { type: 'integer', description: 'Seconds: use 8, 18, or 28. Omit to let the director choose.' },
       aspectRatio: { type: 'string', enum: ['16:9', '9:16'] },
       reference: { type: 'string', enum: ['none', 'image', 'edit_video'], description: 'image = animate the attached image; edit_video = edit the attached video.' }
     },
