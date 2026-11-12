@@ -6,14 +6,14 @@ async function checkApiLatency() {
 }
 
 function clearAllHistory() {
-  if (!confirm("Delete all chats from your account on every device? This cannot be undone.")) return;
-  saveChatSessions();
+  if (!confirm("Remove all chats from your account on every device?")) return;
   chatSessions = {};
+  saveChatSessions();          /* hides them everywhere; stored data is kept */
   currentChatId = null;
   startNewChat();
   closeSettingsModal();
   renderSidebar();
-  toast("Current session chat history cleared.", "ok");
+  toast("Chat history cleared.", "ok");
 }
 
 async function handleAuthAction() {

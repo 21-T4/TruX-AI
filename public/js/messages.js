@@ -347,7 +347,7 @@ function splitStreamBlocks(text) {
 
 function createStreamRenderer(bubble) {
   /* Replace the existing renderer in place. No second layer or duplicate host. */
-  bubble.innerHTML = '<div class="md-stream md-stream-fade-active"></div>';
+  bubble.innerHTML = '<div class="md-stream md-stream-fade-active tail-fade"></div>';
   const host = bubble.firstElementChild;
 
   let target = "";
@@ -361,8 +361,47 @@ function createStreamRenderer(bubble) {
   let doneCb = null;
   let lastRevealAt = -Infinity;
 
-  const REVEAL_INTERVAL_MS = 30;     /* a new word or two every ~30ms */
-  const FADE_MS = 1100;              /* keep in step with .rv in chat.css */
+  const FADE_MS = 700;               /* keep in step with .rv in chat.css */
+  const TAIL_LINES = 5;              /* the newest lines stay dimmed, then glide to full strength */
+  const TAIL_DIM = 0.32;
+  let lastTickAt = 0;
+  let settleUntil = 0;
+  let budget = 0;                    /* fractional words owed to the reader */
+
+  /* ---- dimmed tail ----------------------------------------------------------
+     A CSS mask darkens the last few lines of the stream. Its position (--tail-y)
+     eases toward the end of the text every frame, so as new lines appear the older
+     ones brighten smoothly instead of stepping. When the stream ends the dimming
+     relaxes to full strength before the final clean render. */
+  let gy = 0, ga = TAIL_DIM, gTargetY = 0, gTargetA = TAIL_DIM, glideId = null, lineH = 0;
+  function measureLine() {
+    if (lineH) return lineH;
+    const cs = getComputedStyle(host);
+    lineH = parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize) || 16) * 1.65;
+    host.style.setProperty("--tail-z", Math.round(lineH * TAIL_LINES) + "px");
+    return lineH;
+  }
+  function glide() {
+    glideId = null;
+    gy += (gTargetY - gy) * 0.14;
+    if (Math.abs(gTargetY - gy) < 0.4) gy = gTargetY;
+    ga += (gTargetA - ga) * 0.07;
+    if (Math.abs(gTargetA - ga) < 0.004) ga = gTargetA;
+    host.style.setProperty("--tail-y", gy.toFixed(1) + "px");
+    host.style.setProperty("--tail-a", ga.toFixed(3));
+    if (gy !== gTargetY || ga !== gTargetA) glideId = requestAnimationFrame(glide);
+  }
+  function aimTail() {
+    const lh = measureLine();
+    const end = liveEl && liveEl.parentNode === host ? liveEl.offsetTop + liveEl.offsetHeight : host.scrollHeight;
+    if (!gy) gy = Math.max(0, end - lh);
+    gTargetY = end;
+    if (glideId === null) glideId = requestAnimationFrame(glide);
+  }
+  function relaxTail() {
+    gTargetA = 1;
+    if (glideId === null) glideId = requestAnimationFrame(glide);
+  }
 
   /* ---- line-by-line fade-in ----------------------------------------------
      The live block is re-rendered on every tick, so a plain CSS animation would
@@ -427,10 +466,9 @@ function createStreamRenderer(bubble) {
   }
 
   /* Reveal a few words at a time (more when the stream has run ahead), never a half-received word. */
-  function nextRevealOffset() {
+  function nextRevealOffset(words = 1) {
     const backlog = target.length - shown;
     if (backlog <= 0) return shown;
-    const words = Math.min(10, 1 + Math.floor(backlog / 160));
     let cursor = shown;
     let count = 0;
     while (cursor < target.length && count < words) {
@@ -497,6 +535,7 @@ function createStreamRenderer(bubble) {
     renderTruxDiagrams(liveEl);
     applyReveal(liveEl, now);
     liveEl.classList.toggle("single-line", liveEl.offsetHeight < 46);
+    aimTail();
     return true;
   }
 
@@ -508,33 +547,39 @@ function createStreamRenderer(bubble) {
       return;
     }
 
-    /* A real, visible cadence is intentional: don't dump the final payload. */
-    if (timestamp - lastRevealAt < REVEAL_INTERVAL_MS) {
-      rafId = requestAnimationFrame(tick);
-      return;
-    }
-
+    /* A steady reading pace (words per second) that speeds up gently only when far behind,
+       so a response that arrives all at once is still revealed gradually. */
+    const dt = lastTickAt ? Math.min(100, timestamp - lastTickAt) : 16;
+    lastTickAt = timestamp;
+    const backlogWords = (target.length - shown) / 6;
+    const rate = Math.min(finished ? 60 : 40, 14 + backlogWords * (finished ? 0.2 : 0.1));
+    budget += dt * rate / 1000;
     const container = getActiveChatContainer();
     const stick = isNearBottom(container);
-    const nextShown = nextRevealOffset();
     let advanced = false;
-
-    if (nextShown > shown) {
-      shown = nextShown;
-      lastRevealAt = timestamp;
-      advanced = paint();
-      if (stick) container.scrollTop = container.scrollHeight;
+    if (budget >= 1 && shown < target.length) {
+      const words = Math.floor(budget);
+      budget -= words;
+      const nextShown = nextRevealOffset(words);
+      if (nextShown > shown) {
+        shown = nextShown;
+        advanced = paint();
+        if (stick) container.scrollTop = container.scrollHeight;
+      }
     }
 
     if (finished && shown >= target.length) {
       /* Let the last lines finish fading in before the final clean re-render. */
-      const left = fadeRemaining(performance.now());
-      if (left > 0) {
+      const left = Math.max(fadeRemaining(performance.now()), settleUntil - performance.now());
+      if (!settleUntil) { settleUntil = performance.now() + 900; relaxTail(); }
+      if (left > 0 || performance.now() < settleUntil) {
         waitingFade = true;
-        setTimeout(() => { waitingFade = false; start(); }, left + 30);
+        setTimeout(() => { waitingFade = false; start(); }, Math.max(left, settleUntil - performance.now()) + 30);
         return;
       }
       marks = []; markedLen = 0;
+      host.classList.remove("tail-fade");
+      host.style.removeProperty("--tail-y"); host.style.removeProperty("--tail-a");
       host.innerHTML = renderFormattedText(target, false);
       renderTruxDiagrams(host);
       scheduleTruxMath(host);
@@ -547,8 +592,8 @@ function createStreamRenderer(bubble) {
       return;
     }
 
-    /* Continue only while a full line is ready, or while draining a finished stream. */
-    if (nextRevealOffset() > shown || finished) {
+    /* Keep going while there is text left to reveal, or while a finished stream settles. */
+    if (shown < target.length || finished) {
       rafId = requestAnimationFrame(tick);
     }
   }
@@ -587,6 +632,7 @@ function createStreamRenderer(bubble) {
       stopped = true;
       if (rafId !== null) cancelAnimationFrame(rafId);
       rafId = null;
+      host.classList.remove("tail-fade");
       host.classList.add("md-stream-fade-settling");
     },
     get received() { return target; }

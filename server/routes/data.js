@@ -11,7 +11,7 @@ import { normalizePersonalization } from '../lib/personalization.js';
 
 const LIMIT = { name: 'data', capacity: 120, refillPerSecond: 4 };
 const ID = /^[A-Za-z0-9_-]{1,80}$/;
-const META_KEYS = new Set(['title', 'mode', 'notebookId', 'pinned', 'archived']);
+const META_KEYS = new Set(['title', 'mode', 'notebookId', 'pinned', 'archived', 'deleted', 'deletedAt']);
 
 const asId = value => {
   const id = String(value ?? '');
@@ -77,13 +77,15 @@ function checkedUpdates(raw) {
     const parts = path.split('/');
     const [kind, chatId, a, b] = parts;
     if (!['chats', 'messages'].includes(kind) || !ID.test(chatId || '')) throw new HttpError(400, 'Unsupported update.');
-    if (kind === 'chats' && parts.length === 2 && value === null) out[path] = null;
+    /* Chats are never erased on request from the app: "delete" only hides them (kept for retention). */
+    if (kind === 'chats' && parts.length === 2 && value === null) { out[`chats/${chatId}/deleted`] = true; out[`chats/${chatId}/deletedAt`] = Date.now(); }
     else if (kind === 'chats' && parts.length === 3 && META_KEYS.has(a)) {
-      if (a === 'pinned' || a === 'archived') out[path] = value === true;
+      if (a === 'pinned' || a === 'archived' || a === 'deleted') out[path] = value === true;
+      else if (a === 'deletedAt') out[path] = Number(value) || Date.now();
       else if (a === 'notebookId') out[path] = value ? String(value).slice(0, 80) : null;
       else out[path] = String(value ?? '').slice(0, a === 'title' ? 120 : 20);
     }
-    else if (kind === 'messages' && parts.length === 2 && value === null) out[path] = null;
+    else if (kind === 'messages' && parts.length === 2 && value === null) continue; /* kept: whole-chat message history is never wiped */
     else if (kind === 'messages' && parts.length === 3 && ID.test(a) && value === null) out[path] = null;
     else if (kind === 'messages' && parts.length === 4 && ID.test(a) && b === 'stopRequested') out[path] = value === true;
     else throw new HttpError(400, 'Unsupported update.');
