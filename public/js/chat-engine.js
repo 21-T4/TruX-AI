@@ -317,14 +317,28 @@ async function sendPromptImpl() {
     if (ctx.settled) return;
     ctx.settled = true;
     row.querySelector(".trux-storyboard")?.remove();
-    if (streamer) { try { streamer.setText(msg.text || ""); streamer.finish(); } catch {} }
     if (activeStreamer === streamer) activeStreamer = null;
     const stored = { id: ctx.messageId, role: "trux", text: msg.text || "", sources: msg.sources || ctx.sources, media: msg.media || ctx.media, status: msg.status || "done", error: msg.error || "", incomplete: msg.status !== "done" };
     if (ctx.messageId) {
       const idx = session.messages.findIndex(m => m.id === ctx.messageId);
       if (idx >= 0) session.messages[idx] = stored; else session.messages.push(stored);
     } else session.messages.push(stored);
-    if (isCurrent()) {
+    /* A finished answer is usually fully received long before it has been revealed. Let the stream
+       renderer keep revealing it at reading pace and only then swap in the final markup, instead of
+       replacing the bubble with the whole text the moment the server says "done". */
+    const drain = !!(streamer && stored.status === "done" && stored.text);
+    if (drain && isCurrent()) {
+      activeAbortController = null;
+      if (activeTurnContext === ctx) activeTurnContext = null;
+      setComposerGenerating(false);
+      try {
+        streamer.setText(stored.text);
+        streamer.finish(() => { if (row.isConnected) settleAssistantRow(row, stored); });
+      } catch { settleAssistantRow(row, stored); }
+      if (voice || getEl("autoReadToggle")?.checked) speakText(stored.text);
+      for (const m of stored.media || []) { if (m.kind !== "image" && m.kind !== "video") continue; try { saveGeneratedMedia?.({ type: m.kind, objectKey: m.objectKey, prompt: m.prompt || typed }); } catch {} }
+    } else if (isCurrent()) {
+      if (streamer) { try { streamer.cancel(); } catch {} }
       settleAssistantRow(row, stored);
       activeAbortController = null;
       if (activeTurnContext === ctx) activeTurnContext = null;

@@ -175,7 +175,7 @@
    with a negative animation-delay, so a re-render mid-fade resumes instead of
    restarting. Keep the duration in step with FADE_MS (460) in messages.js. */
 .rv{
-  animation: truxFadeIn 700ms cubic-bezier(.4,0,.2,1) both;}
+  animation: truxFadeIn 600ms ease-out both;}
 @keyframes truxFadeIn{
   0%{ opacity: 0; }
   100%{ opacity: 1; }

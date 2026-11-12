@@ -361,7 +361,7 @@ function createStreamRenderer(bubble) {
   let doneCb = null;
   let lastRevealAt = -Infinity;
 
-  const FADE_MS = 700;               /* keep in step with .rv in chat.css */
+  const FADE_MS = 600;               /* keep in step with .rv in chat.css */
   const TAIL_LINES = 5;              /* the newest lines stay dimmed, then glide to full strength */
   const TAIL_DIM = 0.1;
   let lastTickAt = 0;
@@ -381,15 +381,19 @@ function createStreamRenderer(bubble) {
     host.style.setProperty("--tail-z", Math.round(lineH * TAIL_LINES) + "px");
     return lineH;
   }
-  function glide() {
+  let glideAt = 0;
+  function glide(ts) {
     glideId = null;
-    gy += (gTargetY - gy) * 0.14;
+    const dtg = glideAt ? Math.min(64, ts - glideAt) : 16;
+    glideAt = ts;
+    const kY = 1 - Math.exp(-dtg / 150), kA = 1 - Math.exp(-dtg / 320);   /* frame-rate independent easing */
+    gy += (gTargetY - gy) * kY;
     if (Math.abs(gTargetY - gy) < 0.4) gy = gTargetY;
-    ga += (gTargetA - ga) * 0.07;
+    ga += (gTargetA - ga) * kA;
     if (Math.abs(gTargetA - ga) < 0.004) ga = gTargetA;
     host.style.setProperty("--tail-y", gy.toFixed(1) + "px");
     host.style.setProperty("--tail-o", (1 - ga).toFixed(3));
-    if (gy !== gTargetY || ga !== gTargetA) glideId = requestAnimationFrame(glide);
+    if (gy !== gTargetY || ga !== gTargetA) glideId = requestAnimationFrame(glide); else glideAt = 0;
   }
   function aimTail() {
     const lh = measureLine();
@@ -549,11 +553,11 @@ function createStreamRenderer(bubble) {
 
     /* A steady reading pace (words per second) that speeds up gently only when far behind,
        so a response that arrives all at once is still revealed gradually. */
-    if (lastTickAt && timestamp - lastTickAt < 70) { rafId = requestAnimationFrame(tick); return; }   /* paint a few words at a time, not every frame */
+    if (lastTickAt && timestamp - lastTickAt < 100) { rafId = requestAnimationFrame(tick); return; }   /* paint a few words at a time, not every frame */
     const dt = lastTickAt ? Math.min(160, timestamp - lastTickAt) : 16;
     lastTickAt = timestamp;
     const backlogWords = (target.length - shown) / 6;
-    const rate = Math.min(finished ? 55 : 45, 16 + backlogWords * (finished ? 0.15 : 0.08));
+    const rate = Math.min(finished ? 50 : 40, 18 + backlogWords * (finished ? 0.1 : 0.06));
     budget += dt * rate / 1000;
     const container = getActiveChatContainer();
     const stick = isNearBottom(container);
@@ -635,6 +639,7 @@ function createStreamRenderer(bubble) {
       rafId = null;
       host.classList.remove("tail-fade");
       host.classList.add("md-stream-fade-settling");
+      if (doneCb) { const cb = doneCb; doneCb = null; try { cb(); } catch {} }
     },
     get received() { return target; }
   };
