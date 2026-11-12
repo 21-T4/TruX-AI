@@ -24,9 +24,10 @@
   color: var(--txt);
   overflow-wrap: anywhere;
   user-select: text;}
-.user-message-actions{ margin-top: 4px; opacity: 0; transition: opacity var(--dur-2) var(--ease); }
-.row:hover .user-message-actions, .row.user-actions-visible .user-message-actions{ opacity: 1; }
-@media (hover: none){ .user-message-actions{ opacity: 1; } }
+.actions.user-message-actions{ margin-top: 2px; display: none; }
+.row.user-actions-visible .actions.user-message-actions{ display: flex; animation: truxActIn .35s var(--ease-out) both; }
+@keyframes truxActIn{ from{ opacity: 0; transform: translateY(-4px); } to{ opacity: 1; transform: none; } }
+.user-row .user-bubble{ cursor: pointer; }
 
 /* assistant message: full width, no bubble */
 .trux-response-stack{ display: flex; flex-direction: column; gap: 10px; width: 100%; min-width: 0; }
@@ -174,11 +175,10 @@
    with a negative animation-delay, so a re-render mid-fade resumes instead of
    restarting. Keep the duration in step with FADE_MS (460) in messages.js. */
 .rv{
-  animation: truxFadeIn 720ms cubic-bezier(.25,.6,.3,1) both;
+  animation: truxFadeIn 1300ms cubic-bezier(.33,.1,.25,1) both;
   will-change: opacity, filter;}
 @keyframes truxFadeIn{
-  0%{ opacity: 0; filter: blur(5px); transform: translateY(.28em); }
-  55%{ opacity: .7; filter: blur(1.2px); }
+  0%{ opacity: 0; filter: blur(6px); transform: translateY(.16em); }
   100%{ opacity: 1; filter: blur(0); transform: none; }
 }
 /* inline spans can't be transformed; give them a block-ish box without breaking wrapping */
