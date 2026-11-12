@@ -194,10 +194,12 @@
   .code-body code{ font-size: 12.5px; }
 }
 
-/* dimmed tail while streaming: the newest ~5 lines are darker, easing to full strength behind the cursor */
+/* dimmed tail while streaming: a small gradient overlay (not a mask on the whole answer, which breaks on tall text)
+   fades the newest ~5 lines toward the page colour; it eases away as more text arrives below. */
 .md-stream{ position: relative; }
-.md-stream.tail-fade{
-  -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(var(--tail-y, 0px) - var(--tail-z, 150px)), rgba(0,0,0,var(--tail-a, .32)) var(--tail-y, 0px), rgba(0,0,0,var(--tail-a, .32)) 100%);
-          mask-image: linear-gradient(to bottom, #000 0, #000 calc(var(--tail-y, 0px) - var(--tail-z, 150px)), rgba(0,0,0,var(--tail-a, .32)) var(--tail-y, 0px), rgba(0,0,0,var(--tail-a, .32)) 100%);
+.md-stream.tail-fade::after{
+  content: ""; position: absolute; left: -2px; right: -2px; pointer-events: none;
+  top: calc(var(--tail-y, 0px) - var(--tail-z, 150px)); height: calc(var(--tail-z, 150px) + 2px);
+  background: linear-gradient(to bottom, transparent 0, color-mix(in srgb, var(--bg) calc(var(--tail-o, .9) * 100%), transparent) 100%);
 }
-@media (prefers-reduced-motion: reduce){ .md-stream.tail-fade{ -webkit-mask-image: none; mask-image: none; } }
+@media (prefers-reduced-motion: reduce){ .md-stream.tail-fade::after{ display: none; } }
