@@ -361,7 +361,7 @@ function createStreamRenderer(bubble) {
 
   function commitBlock(html, live = false) {
     const el = document.createElement("div");
-    el.className = "md-block" + (live ? " live" : " stream-enter");
+    el.className = "md-block stream-enter" + (live ? " live" : "");
     el.innerHTML = html;
     host.appendChild(el);
     if (html.includes("trux-diagram")) renderTruxDiagrams(el);
