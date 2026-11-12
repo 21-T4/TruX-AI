@@ -336,6 +336,7 @@ async function sendPromptImpl() {
   };
 
   const onEvent = ev => {
+    ctx.lastEventAt = Date.now();
     if (!isCurrent() && ev.type !== "start") return;
     switch (ev.type) {
       case "start":
@@ -427,6 +428,8 @@ async function sendPromptImpl() {
 }
 
 function followServerTurn(ctx, session, getStreamer) {
+  if (ctx.following) return;
+  ctx.following = true;
   try { getStreamer()?.cancel(); } catch {}
   if (activeStreamer === getStreamer()) activeStreamer = null;
   watchStreamingMessage(ctx.chatId, ctx.messageId, ctx.row, {
@@ -542,3 +545,31 @@ async function deleteChat(id) {
   renderSidebar();
   if (notebookWasOpen) renderNotebookWorkspace(openNotebookId);
 }
+
+
+/* ---------- background / offline recovery ----------
+   The server keeps generating after the app is backgrounded or closed and stores the reply.
+   When the phone wakes up (or the network returns) and the live stream has gone quiet,
+   follow the stored reply instead of waiting on a connection the OS may have frozen. */
+(function () {
+  let hiddenAt = 0;
+  function recover(reason) {
+    const ctx = activeTurnContext;
+    if (!ctx || ctx.settled || ctx.incognito || !ctx.messageId || ctx.following) return;
+    const since = Date.now();
+    setTimeout(() => {
+      if (activeTurnContext !== ctx || ctx.settled || ctx.following) return;
+      if ((ctx.lastEventAt || 0) > since) return;               /* the live stream is still delivering */
+      try { setThinkingStatus(ctx.row?.querySelector(".status-msg")?.id, "Catching up…"); } catch {}
+      const streamer = activeStreamer;
+      followServerTurn(ctx, chatSessions[ctx.chatId], () => streamer);
+      try { activeAbortController?.abort(); } catch {}
+    }, reason === "online" ? 800 : 1800);
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) { hiddenAt = Date.now(); return; }
+    if (Date.now() - hiddenAt > 2500) recover("visible");
+  });
+  window.addEventListener("pageshow", e => { if (e.persisted) recover("visible"); });
+  window.addEventListener("online", () => recover("online"));
+})();

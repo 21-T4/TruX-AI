@@ -82,3 +82,7 @@ npm run check
 ```
 
 To try the sandbox locally run `cd sandbox && npm install && node server.mjs` and start TruX with `TRUX_SANDBOX_URL=http://localhost:8080`.
+
+## Background answers
+
+Answers keep generating on the server after the app is closed or backgrounded. The reply is stored as it is written, the app follows it again when it is reopened (or the network returns), and a push notification is sent when it finishes. If you host on Cloud Run, deploy with CPU always allocated (`--no-cpu-throttling`) so the instance keeps working after the client disconnects.

@@ -252,6 +252,7 @@ function watchStreamingMessage(chatId, messageId, row, { onSettled } = {}) {
   const bubble = row?.querySelector(".bubble");
   let lastText = null;
   let raf = 0;
+  let streamer = null;               /* reveals the stored reply smoothly, same as a live stream */
   const handler = snapshot => {
     const m = snapshot.val();
     if (!m) return;
@@ -265,14 +266,21 @@ function watchStreamingMessage(chatId, messageId, row, { onSettled } = {}) {
       lastText = msg.text;
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
-        const container = getActiveChatContainer();
-        const stick = container ? isNearBottom(container) : false;
-        bubble.innerHTML = renderFormattedText(msg.text || "", false);
-        if (stick && container) container.scrollTop = container.scrollHeight;
+        if (!msg.text) return;
+        try {
+          if (!streamer) { try { dismissThinkingPanel(row); } catch {} streamer = createStreamRenderer(bubble); }
+          streamer.setText(msg.text);
+        } catch {
+          bubble.innerHTML = renderFormattedText(msg.text || "", false);
+        }
       });
     }
     if (msg.status !== "streaming") {
       stopStreamWatcher(chatId);
+      if (streamer) {
+        const s = streamer; streamer = null;
+        try { s.setText(msg.text || ""); s.finish(() => onSettled?.(msg)); return; } catch {}
+      }
       onSettled?.(msg);
     }
   };
