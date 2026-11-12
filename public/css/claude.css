@@ -413,14 +413,15 @@ html.theme-fade, html.theme-fade *, html.theme-fade *::before, html.theme-fade *
 /* message actions: even buttons that never push the page sideways */
 .chat{ overflow-x: hidden; }
 .row{ max-width: 100%; }
-.actions{ gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.actions{ gap: 2px; flex-wrap: wrap; margin-top: 6px; }
+/* small icon-only buttons, no fill: they blend into the page and light up on hover */
 .act{
-  width: auto; height: 34px; min-height: 0; padding: 0 12px; gap: 6px; white-space: nowrap; flex: none;
-  font: 500 13px/1 var(--font-ui); color: var(--txt-2);
-  background: var(--bg-3); border: 1px solid var(--line-2); border-radius: 999px;
+  width: 34px; height: 34px; min-height: 0; padding: 0; flex: none;
+  display: inline-grid; place-items: center; gap: 0; font-size: 0; line-height: 0; white-space: nowrap;
+  color: var(--txt-3); background: transparent; border: 0; border-radius: 10px;
 }
-.act svg{ width: 15px; height: 15px; flex: none; }
-@media (hover: hover){ .act:hover{ background: var(--bg-4); border-color: var(--line-3); color: var(--txt); } }
-.act:active{ transform: scale(.96); }
-@media (max-width: 720px){ .act{ height: 36px; padding: 0 11px; font-size: 12.5px; } .actions{ gap: 5px; } }
+.act svg{ width: 18px; height: 18px; flex: none; }
+.act:not(:has(svg)){ width: auto; padding: 0 10px; font: 500 13px/1 var(--font-ui); }
+@media (hover: hover){ .act:hover{ background: var(--bg-3); color: var(--txt); } }
+.act:active{ transform: scale(.92); }
 .user-message-actions{ justify-content: flex-end; }
