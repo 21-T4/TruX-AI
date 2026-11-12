@@ -363,7 +363,7 @@ function createStreamRenderer(bubble) {
 
   const FADE_MS = 700;               /* keep in step with .rv in chat.css */
   const TAIL_LINES = 5;              /* the newest lines stay dimmed, then glide to full strength */
-  const TAIL_DIM = 0.32;
+  const TAIL_DIM = 0.1;
   let lastTickAt = 0;
   let settleUntil = 0;
   let budget = 0;                    /* fractional words owed to the reader */
@@ -388,7 +388,7 @@ function createStreamRenderer(bubble) {
     ga += (gTargetA - ga) * 0.07;
     if (Math.abs(gTargetA - ga) < 0.004) ga = gTargetA;
     host.style.setProperty("--tail-y", gy.toFixed(1) + "px");
-    host.style.setProperty("--tail-a", ga.toFixed(3));
+    host.style.setProperty("--tail-o", (1 - ga).toFixed(3));
     if (gy !== gTargetY || ga !== gTargetA) glideId = requestAnimationFrame(glide);
   }
   function aimTail() {
@@ -549,10 +549,11 @@ function createStreamRenderer(bubble) {
 
     /* A steady reading pace (words per second) that speeds up gently only when far behind,
        so a response that arrives all at once is still revealed gradually. */
-    const dt = lastTickAt ? Math.min(100, timestamp - lastTickAt) : 16;
+    if (lastTickAt && timestamp - lastTickAt < 70) { rafId = requestAnimationFrame(tick); return; }   /* paint a few words at a time, not every frame */
+    const dt = lastTickAt ? Math.min(160, timestamp - lastTickAt) : 16;
     lastTickAt = timestamp;
     const backlogWords = (target.length - shown) / 6;
-    const rate = Math.min(finished ? 60 : 40, 14 + backlogWords * (finished ? 0.2 : 0.1));
+    const rate = Math.min(finished ? 55 : 45, 16 + backlogWords * (finished ? 0.15 : 0.08));
     budget += dt * rate / 1000;
     const container = getActiveChatContainer();
     const stick = isNearBottom(container);
@@ -579,7 +580,7 @@ function createStreamRenderer(bubble) {
       }
       marks = []; markedLen = 0;
       host.classList.remove("tail-fade");
-      host.style.removeProperty("--tail-y"); host.style.removeProperty("--tail-a");
+      host.style.removeProperty("--tail-y"); host.style.removeProperty("--tail-o");
       host.innerHTML = renderFormattedText(target, false);
       renderTruxDiagrams(host);
       scheduleTruxMath(host);
