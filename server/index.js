@@ -90,6 +90,15 @@ async function writeResponse(res, response) {
   res.statusCode = response.status;
   response.headers.forEach((value, key) => res.setHeader(key, value));
   if (!response.body) return res.end();
+
+  const isEventStream = String(response.headers.get('content-type') || '').toLowerCase().startsWith('text/event-stream');
+  if (isEventStream) {
+    // SSE carries many small token events. Avoid delayed headers and Nagle
+    // coalescing so each model chunk can reach the browser as soon as written.
+    res.socket?.setNoDelay(true);
+    res.flushHeaders?.();
+  }
+
   const reader = response.body.getReader();
   res.on('close', () => { if (!res.writableEnded) reader.cancel().catch(() => {}); });
   try {
