@@ -171,16 +171,8 @@
 .tfc-copy b{ font: 550 13px/1.2 var(--font-ui);}
 
 /* ---------- response streaming ---------- */
-.md-block.stream-block-enter{
-  animation: truxStreamBlockIn 160ms ease-out both;
-}
-@keyframes truxStreamBlockIn{
-  from{ opacity: .72; }
-  to{ opacity: 1; }
-}
-@media (prefers-reduced-motion: reduce){
-  .md-block.stream-block-enter, .row.appear{ animation: none !important; }
-}
+.md-stream{ contain: layout style; }
+.md-block.live{ min-height: 1em; }
 
 /* phone */
 @media (max-width: 720px){
