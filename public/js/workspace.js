@@ -2,6 +2,10 @@
 function positionModelDropdown() {
   const dropdown = getEl("modelDropdown"), button = getEl("modelPickerBtn");
   if (!dropdown || !button || !dropdown.classList.contains("open")) return;
+  if (window.matchMedia("(max-width: 720px)").matches) {   /* phones: CSS shows it as a bottom sheet */
+    ["position","width","max-width","max-height","left","right","top","bottom","transform"].forEach(k => dropdown.style.removeProperty(k));
+    return;
+  }
   const rect = button.getBoundingClientRect();
   const width = Math.min(360, Math.max(260, window.innerWidth - 20));
   const fromComposer = !!button.closest(".bar");          /* the picker lives in the typing bar: open upward, right-aligned */
