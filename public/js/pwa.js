@@ -5,14 +5,33 @@
   let deferredInstallPrompt = null;
   const byId = id => document.getElementById(id);
 
+  const INSTALLED_KEY = "trux_pwa_installed";
+  const isStandalone = () => !!(window.matchMedia?.("(display-mode: standalone)").matches ||
+    window.matchMedia?.("(display-mode: fullscreen)").matches || navigator.standalone === true);
+  const readInstalled = () => { try { return localStorage.getItem(INSTALLED_KEY) === "1"; } catch { return false; } };
+  const markInstalled = () => { try { localStorage.setItem(INSTALLED_KEY, "1"); } catch {} };
+
+  /* The install button exists only while the app is not installed (never inside the installed app). */
+  function syncInstallButton() {
+    const button = byId("homeInstallBtn");
+    if (!button) return;
+    if (isStandalone()) markInstalled();
+    button.hidden = isStandalone() || readInstalled();
+  }
+
   window.addEventListener("beforeinstallprompt", event => {
     event.preventDefault();
     deferredInstallPrompt = event;
+    try { localStorage.removeItem(INSTALLED_KEY); } catch {}   /* the browser offers it again, so it was removed */
+    syncInstallButton();
   });
   window.addEventListener("appinstalled", () => {
     deferredInstallPrompt = null;
+    markInstalled();
+    syncInstallButton();
     window.toast?.("TruX-Omni is installed.", "ok");
   });
+  window.matchMedia?.("(display-mode: standalone)").addEventListener?.("change", syncInstallButton);
 
   function closeInstallHelp() {
     byId("truxPwaInstallHelp")?.remove();
@@ -68,12 +87,13 @@
   }
 
   function bindInstallButton() {
-    const button = byId("sidebarInstallBtn");
+    const button = byId("homeInstallBtn");
     if (!button || button.dataset.pwaInstallBound === "true") return;
     button.dataset.pwaInstallBound = "true";
     button.setAttribute("aria-label", "Install TruX-Omni");
     button.title = "Install TruX-Omni";
     button.addEventListener("click", installPwa);
+    syncInstallButton();
   }
 
   function run() {

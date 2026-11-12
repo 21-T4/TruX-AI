@@ -248,6 +248,7 @@ function renderHomePrompts(prompts) {
     }))];
   if (cleanPrompts.length !== 3) return false;
 
+  let buttons_index = 0;
   const buttons = cleanPrompts.map(cleanPrompt => {
     const button = document.createElement("button");
     button.type = "button";
@@ -255,11 +256,12 @@ function renderHomePrompts(prompts) {
     const mark = document.createElement("span");
     mark.className = "trux-home-prompt-mark";
     mark.setAttribute("aria-hidden", "true");
-    mark.textContent = "↗";
+    mark.innerHTML = '<svg viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></svg>';
     const label = document.createElement("span");
     label.className = "trux-home-prompt-label";
     label.textContent = cleanPrompt;
-    button.append(mark, label);
+    button.style.setProperty("--i", String(buttons_index++));
+    button.append(label, mark);
     button.addEventListener("click", () => quickPrompt(cleanPrompt));
     return button;
   });

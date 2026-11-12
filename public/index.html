@@ -324,12 +324,6 @@
         </section>
       </div>
 
-      <div class="sidebar-install-wrap">
-        <button type="button" class="sidebar-install" id="sidebarInstallBtn" aria-label="Install TruX-Omni" title="Install TruX-Omni">
-          <svg viewBox="0 0 24 24"><path d="M12 3v11m0 0-4-4m4 4 4-4"/><path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/></svg>
-        </button>
-      </div>
-
       <div class="profile" onclick="handleAuthAction()">
         <img class="avatar" id="userAvatar" src="https://ui-avatars.com/api/?name=Guest+User&background=111111&color=fff">
         <div class="profile-info">
@@ -476,7 +470,6 @@
           <div class="trux-home-sequence" aria-live="polite">
             <h1 class="trux-home-sequence-text" id="truxHomeSequenceText" aria-label="AI-generated home greeting" hidden></h1>
           </div>
-          <div class="trux-home-prompts" id="truxHomePrompts" aria-label="AI-generated suggested prompts" hidden></div>
         </div>
       </section>
 
@@ -552,6 +545,14 @@
             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14m0 0-5-5m5 5 5-5"/></svg>
             Jump to latest
           </button>
+
+          <div class="home-suggest" id="homeSuggest">
+            <div class="trux-home-prompts" id="truxHomePrompts" aria-label="Suggested prompts" hidden></div>
+            <button type="button" class="home-install" id="homeInstallBtn" aria-label="Install TruX-Omni" title="Install TruX-Omni" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0-4-4m4 4 4-4"/><path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/></svg>
+              <span>Install app</span>
+            </button>
+          </div>
 
           <div class="composer-attachments" id="composerAttachments">
             <div class="chip-container" id="chipContainer" style="display:none"></div>
@@ -663,23 +664,23 @@
         <div style="min-width:0"><div class="mtitle" id="modalName">User Name</div><div class="msub" id="modalEmail">user@email.com</div><div style="margin-top:6px;color:var(--txt-3);font-size:12px">Your workspace</div></div>
       </div>
       <div class="profile-list-group-title">Workspace</div><div class="profile-option-list">
-        <button type="button" class="profile-option-row" data-settings-section="general"><span class="profile-option-icon">⌘</span><span class="profile-option-copy"><b>Workspace defaults</b><small>Core behavior and feedback</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-settings-section="usage"><span class="profile-option-icon">◔</span><span class="profile-option-copy"><b>Usage &amp; plan</b><small>Usage allowances and workspace limits</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-settings-section="general"><span class="profile-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></span><span class="profile-option-copy"><b>Workspace defaults</b><small>Core behavior and feedback</small></span><span class="profile-option-chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></button>
+        <button type="button" class="profile-option-row" data-settings-section="usage"><span class="profile-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></span><span class="profile-option-copy"><b>Usage &amp; plan</b><small>Usage allowances and workspace limits</small></span><span class="profile-option-chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></button>
       </div>
       <div class="profile-list-group-title">Personalize</div><div class="profile-option-list">
-        <button type="button" class="profile-option-row" data-settings-section="appearance"><span class="profile-option-icon">◐</span><span class="profile-option-copy"><b>Appearance</b><small>Theme, accent and visual effects</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-settings-section="personalization"><span class="profile-option-icon">✦</span><span class="profile-option-copy"><b>Personalization</b><small>Personality, voice, instructions and memory</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-settings-section="assistant"><span class="profile-option-icon">◉</span><span class="profile-option-copy"><b>Assistant</b><small>Hey TruX, circle to search and phone control</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-settings-section="voice"><span class="profile-option-icon">♫</span><span class="profile-option-copy"><b>Voice &amp; notifications</b><small>Speech, dictation and alerts</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-settings-section="appearance"><span class="profile-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.7-.8 1.7-1.6 0-.5-.3-.9-.5-1.3-.3-.5-.1-1.3.8-1.3H17a4 4 0 0 0 4-4c0-5-4-9.8-9-9.8Z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10.5" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/></svg></span><span class="profile-option-copy"><b>Appearance</b><small>Theme, accent and visual effects</small></span><span class="profile-option-chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></button>
+        <button type="button" class="profile-option-row" data-settings-section="personalization"><span class="profile-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7z"/></svg></span><span class="profile-option-copy"><b>Personalization</b><small>Personality, voice, instructions and memory</small></span><span class="profile-option-chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></button>
+        <button type="button" class="profile-option-row" data-settings-section="assistant"><span class="profile-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3"/></svg></span><span class="profile-option-copy"><b>Assistant</b><small>Hey TruX, circle to search and phone control</small></span><span class="profile-option-chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></button>
+        <button type="button" class="profile-option-row" data-settings-section="voice"><span class="profile-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6L8 10z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/></svg></span><span class="profile-option-copy"><b>Voice &amp; notifications</b><small>Speech, dictation and alerts</small></span><span class="profile-option-chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></button>
       </div>
       <div class="profile-list-group-title">Account &amp; data</div><div class="profile-option-list">
-        <button type="button" class="profile-option-row" data-settings-section="account"><span class="profile-option-icon">◎</span><span class="profile-option-copy"><b>Account &amp; security</b><small>Profile details and sign-in settings</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-settings-section="data"><span class="profile-option-icon">▤</span><span class="profile-option-copy"><b>Data &amp; privacy</b><small>Chats, exports, location and connected tools</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-settings-section="account"><span class="profile-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></span><span class="profile-option-copy"><b>Account &amp; security</b><small>Profile details and sign-in settings</small></span><span class="profile-option-chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></button>
+        <button type="button" class="profile-option-row" data-settings-section="data"><span class="profile-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6z"/><path d="m9 12 2.2 2.2L15.5 10"/></svg></span><span class="profile-option-copy"><b>Data &amp; privacy</b><small>Chats, exports, location and connected tools</small></span><span class="profile-option-chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></button>
       </div>
       <div class="profile-list-group-title">Tools &amp; support</div><div class="profile-option-list">
-        <button type="button" class="profile-option-row" data-profile-page="plugins"><span class="profile-option-icon">⠿</span><span class="profile-option-copy"><b>Plugins &amp; integrations</b><small>Connect external workspace tools</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row" data-profile-page="help"><span class="profile-option-icon">?</span><span class="profile-option-copy"><b>Help &amp; feedback</b><small>Get help or send a bug report</small></span><span class="profile-option-chevron">›</span></button>
-        <button type="button" class="profile-option-row profile-owner-only" data-settings-section="developer"><span class="profile-option-icon">⌘</span><span class="profile-option-copy"><b>Developer workspace</b><small>Owner-only model controls</small></span><span class="profile-option-chevron">›</span></button>
+        <button type="button" class="profile-option-row" data-profile-page="plugins"><span class="profile-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v4M15 4v4M7 8h10v4a5 5 0 0 1-10 0zM12 17v3"/></svg></span><span class="profile-option-copy"><b>Plugins &amp; integrations</b><small>Connect external workspace tools</small></span><span class="profile-option-chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></button>
+        <button type="button" class="profile-option-row" data-profile-page="help"><span class="profile-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.6 2.2c-.8.5-1.2 1-1.2 1.9M12 16.8v.1"/></svg></span><span class="profile-option-copy"><b>Help &amp; feedback</b><small>Get help or send a bug report</small></span><span class="profile-option-chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></button>
+        <button type="button" class="profile-option-row profile-owner-only" data-settings-section="developer"><span class="profile-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/></svg></span><span class="profile-option-copy"><b>Developer workspace</b><small>Owner-only model controls</small></span><span class="profile-option-chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></button>
       </div>
       <section class="profile-detail-view" id="profileDetailView" hidden><button type="button" class="profile-detail-back" onclick="closeProfileOption()">‹ <span>Profile</span></button><div class="profile-detail-title" id="profileDetailTitle">Details</div><div class="profile-detail-subtitle" id="profileDetailSubtitle"></div><div class="profile-detail-body" id="profileDetailBody"></div></section>
       <div id="profileActionsRow" style="display:flex;gap:8px;margin-top:18px;margin-bottom:24px;flex-wrap:wrap">

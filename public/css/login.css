@@ -1,8 +1,8 @@
 /* Sign-in page */
-#loginWallModal.login-wall{display:none;position:fixed;inset:0;z-index:999999;width:100vw;height:100dvh;padding:0;overflow:auto;background:var(--bg);color:var(--txt);}
+#loginWallModal.login-wall{display:none;position:fixed;inset:0;z-index:999999;width:100vw;height:100dvh;padding:0;overflow:auto;color:var(--txt);}
 #loginWallModal.login-wall.active{display:block;animation:fadeIn .2s var(--ease, ease)}
-#loginWallModal .lw-shell{min-height:100dvh;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)}
-#loginWallModal .lw-brand{position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:40px clamp(28px,5vw,64px);background:radial-gradient(120% 90% at 0% 0%,#1b1f4a 0%,#0c0d1c 55%,var(--bg) 100%);border-right:1px solid rgba(var(--ink),.06)}
+#loginWallModal .lw-shell{min-height:100dvh;display:grid;}
+#loginWallModal .lw-brand{position:relative;overflow:hidden;flex-direction:column;justify-content:space-between;padding:40px clamp(28px,5vw,64px);background:radial-gradient(120% 90% at 0% 0%,#1b1f4a 0%,#0c0d1c 55%,var(--bg) 100%);border-right:1px solid rgba(var(--ink),.06)}
 #loginWallModal .lw-brand-top{display:flex;align-items:center;gap:12px;font:650 19px/1 var(--font-disp);color:var(--txt);position:relative;z-index:1}
 #loginWallModal .lw-brand-top img{border-radius:12px}
 #loginWallModal .lw-brand-copy{position:relative;z-index:1;max-width:460px;margin:auto 0}
@@ -14,33 +14,33 @@
 #loginWallModal .lw-orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:.45;pointer-events:none}
 #loginWallModal .lw-orb-1{width:380px;height:380px;background:#4f5dff;right:-140px;top:18%}
 #loginWallModal .lw-orb-2{width:300px;height:300px;background:#8a4fd6;left:-120px;bottom:-110px;opacity:.3}
-#loginWallModal .lw-panel{position:relative;display:flex;align-items:center;justify-content:center;padding:48px 24px}
+#loginWallModal .lw-panel{position:relative;display:flex;justify-content:center;}
 #loginWallModal .lw-close{position:absolute;top:calc(16px + env(safe-area-inset-top,0px));right:16px;width:38px;height:38px;display:grid;place-items:center;border-radius:12px;border:1px solid var(--line-2);background:transparent;color:var(--txt-2);cursor:pointer}
 #loginWallModal .lw-close:hover{color:var(--txt);background:rgba(var(--ink),.05)}
-#loginWallModal .lw-card{width:min(400px,100%)}
-#loginWallModal .lw-mobile-brand{display:none;align-items:center;gap:10px;margin-bottom:26px;font:650 17px/1 var(--font-disp);color:var(--txt)}
+
+#loginWallModal .lw-mobile-brand{align-items:center;gap:10px;color:var(--txt)}
 #loginWallModal .lw-mobile-brand img{border-radius:10px}
-#loginWallModal .lw-tabs{display:grid;grid-template-columns:1fr 1fr;padding:4px;margin-bottom:26px;border-radius:12px;background:rgba(var(--ink),.05);border:1px solid var(--line-2)}
+#loginWallModal .lw-tabs{display:grid;grid-template-columns:1fr 1fr;padding:4px;margin-bottom:26px;border-radius:12px;}
 #loginWallModal .lw-tab{height:36px;border-radius:9px;border:0;background:transparent;color:var(--txt-3);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,color .15s}
 #loginWallModal[data-view="signin"] .lw-tab[data-tab="signin"],#loginWallModal[data-view="signup"] .lw-tab[data-tab="signup"]{background:#f4f4f6;color:var(--bg)}
 #loginWallModal[data-view="reset"] .lw-tabs{display:none}
-#loginWallModal .lw-title{margin:0 0 8px;font:650 clamp(26px,5vw,30px)/1.12 var(--font-disp);letter-spacing:-.03em;color:var(--txt)}
+#loginWallModal .lw-title{margin:0 0 8px;color:var(--txt)}
 #loginWallModal .lw-sub{margin:0 0 24px;color:var(--txt-3);font-size:14px;line-height:1.55}
-#loginWallModal .lw-google{width:100%;height:48px;display:flex;align-items:center;justify-content:center;gap:11px;border:0;border-radius:12px;background:var(--txt);color:var(--bg);font-size:14px;font-weight:650;cursor:pointer;transition:transform .15s,background .15s}
-#loginWallModal .lw-google:hover{background:#f1f1f3;transform:translateY(-1px)}
+#loginWallModal .lw-google{width:100%;height:48px;display:flex;align-items:center;justify-content:center;gap:11px;border-radius:12px;font-size:14px;cursor:pointer;transition:transform .15s,background .15s}
+#loginWallModal .lw-google:hover{transform:translateY(-1px)}
 #loginWallModal .lw-divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--txt-4);font-size:12px}
 #loginWallModal .lw-divider::before,#loginWallModal .lw-divider::after{content:"";height:1px;flex:1;background:var(--line-2)}
 #loginWallModal .lw-form{display:grid;gap:14px}
 #loginWallModal .lw-field{display:grid;gap:7px;color:var(--txt-2);font-size:12.5px;font-weight:550}
-#loginWallModal .lw-field input{width:100%;height:46px;padding:0 14px;border:1px solid var(--line-2);border-radius:12px;background:rgba(var(--ink),.03);color:var(--txt);font:inherit;font-size:15px;font-weight:400;outline:none;transition:border-color .15s,box-shadow .15s}
-#loginWallModal .lw-field input:focus{border-color:rgba(140,155,255,.7);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 18%,transparent)}
+#loginWallModal .lw-field input{width:100%;height:46px;padding:0 14px;border:1px solid var(--line-2);border-radius:12px;color:var(--txt);font:inherit;font-size:15px;font-weight:400;outline:none;transition:border-color .15s,box-shadow .15s}
+
 #loginWallModal .lw-pass{position:relative;display:block}
 #loginWallModal .lw-pass input{padding-right:64px}
 #loginWallModal .lw-pass-toggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);height:34px;padding:0 10px;border:0;border-radius:9px;background:transparent;color:var(--txt-3);font-size:12px;font-weight:600;cursor:pointer}
 #loginWallModal .lw-pass-toggle:hover{color:var(--txt)}
 #loginWallModal .lw-hint{color:var(--txt-4);font-weight:400;font-size:12px}
-#loginWallModal .lw-submit{width:100%;height:48px;border:0;border-radius:12px;background:linear-gradient(135deg,#6574ff,#8c5cf0);color:var(--txt);font-size:14px;font-weight:650;cursor:pointer;transition:filter .15s,transform .15s}
-#loginWallModal .lw-submit:hover{filter:brightness(1.08);transform:translateY(-1px)}
+#loginWallModal .lw-submit{width:100%;height:48px;border:0;border-radius:12px;font-size:14px;font-weight:650;cursor:pointer;transition:filter .15s,transform .15s}
+#loginWallModal .lw-submit:hover{transform:translateY(-1px)}
 #loginWallModal .lw-link{justify-self:start;padding:2px 0;border:0;background:none;color:var(--acc-2);font-size:13px;font-weight:550;cursor:pointer}
 #loginWallModal .lw-link:hover{text-decoration:underline}
 #loginWallModal.busy .lw-submit,#loginWallModal.busy .lw-google{opacity:.6;pointer-events:none}
@@ -49,11 +49,6 @@
 #loginWallModal[data-view="signup"] small.lw-only-signup{display:block}
 #loginWallModal[data-view="signin"] .lw-only-signin,#loginWallModal[data-view="reset"] .lw-only-reset{display:block}
 #loginWallModal[data-view="reset"] .lw-hide-reset,#loginWallModal[data-view="reset"] .lw-google,#loginWallModal[data-view="reset"] .lw-divider{display:none}
-#loginWallModal .lw-message{margin:18px 0 0;padding:11px 13px;border-radius:11px;font-size:13px;line-height:1.5;background:rgba(var(--ink),.05);color:var(--txt-2)}
-#loginWallModal .lw-message[data-tone="err"]{background:rgba(255,80,80,.1);color:#ff9d9d}
-#loginWallModal .lw-message[data-tone="ok"]{background:rgba(70,200,130,.1);color:#8be0b0}
+#loginWallModal .lw-message{margin:18px 0 0;padding:11px 13px;border-radius:11px;font-size:13px;line-height:1.5;}
+
 #loginWallModal .lw-legal{margin:22px 0 0;color:var(--txt-4);font-size:11.5px;line-height:1.5;text-align:center}
-@media (max-width:860px){#loginWallModal .lw-shell{grid-template-columns:1fr}
-#loginWallModal .lw-brand{display:none}
-#loginWallModal .lw-mobile-brand{display:flex}
-#loginWallModal .lw-panel{align-items:flex-start;padding:calc(64px + env(safe-area-inset-top,0px)) 20px 32px}}

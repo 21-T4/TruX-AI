@@ -2,57 +2,15 @@
    TruX Workspace — home: greeting + suggested prompts.
    ============================================================ */
 .trux-home-v2{
-  align-items: center; justify-content: center;
-  padding: 0 clamp(16px, 4vw, 40px) 4vh;
-  overflow-y: auto;
-}
-.trux-home-content{ width: 100%; max-width: var(--measure); display: flex; flex-direction: column; gap: 28px; }
+  overflow-y: auto;}
+.trux-home-content{ width: 100%; display: flex; flex-direction: column; gap: 28px;}
 .trux-home-sequence{ min-height: 2.6em; }
 .trux-home-sequence-text{
-  margin: 0;
-  font: 650 clamp(28px, 5.2vw, 44px)/1.12 var(--font-disp);
-  letter-spacing: -.03em;
-  color: var(--txt);
-  background: linear-gradient(120deg, var(--txt) 30%, var(--acc-2) 120%);
-  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-  text-wrap: balance;
-}
+  -webkit-background-clip: text; background-clip: text;
+  text-wrap: balance;}
 .trux-home-sequence-text[hidden]{ display: none; }
 .trux-home-sequence-text .rv, .trux-home-sequence-text span{ -webkit-text-fill-color: inherit; }
 
-.trux-home-prompts{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.trux-home-prompts[hidden]{ display: none; }
-.trux-home-prompt{
-  position: relative;
-  display: flex; flex-direction: column; justify-content: space-between; gap: 18px;
-  min-height: 112px; padding: 14px 16px;
-  text-align: left;
-  background: var(--bg-2);
-  border: 1px solid var(--line-2);
-  border-radius: var(--r-lg);
-  color: var(--txt-2);
-  font: 450 14px/1.45 var(--font-ui);
-  animation: truxRowIn var(--dur-3) var(--ease-out) both;
-  transition: background var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease), transform var(--dur-2) var(--ease);
-}
-.trux-home-prompt:nth-child(2){ animation-delay: 70ms; }
-.trux-home-prompt:nth-child(3){ animation-delay: 140ms; }
-.trux-home-prompt-mark{ order: 2; align-self: flex-end; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: var(--bg-4); color: var(--txt-3); font-size: 14px; }
-.trux-home-prompt-label{ order: 1; }
-.trux-home-prompt:active{ transform: scale(.985); background: var(--bg-3); }
-@media (hover: hover){
-  .trux-home-prompt:hover{ background: var(--bg-3); border-color: var(--line-3); color: var(--txt); }
-  .trux-home-prompt:hover .trux-home-prompt-mark{ background: var(--acc-soft); color: var(--acc-2); }
-}
-
 @media (max-width: 720px){
-  .trux-home-v2{ align-items: flex-end; padding-bottom: 8px; }
   .trux-home-content{ gap: 20px; }
-  .trux-home-prompts{ grid-template-columns: 1fr; gap: 8px; }
-  .trux-home-prompt{ min-height: 0; flex-direction: row; align-items: center; justify-content: flex-start; gap: 12px; padding: 13px 14px; }
-  .trux-home-prompt-mark{ order: 0; align-self: center; flex: none; }
 }
-@media (min-width: 721px) and (max-width: 999px){
-  .trux-home-prompts{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-@media (prefers-reduced-motion: reduce){ .trux-home-prompt{ animation: none; } }

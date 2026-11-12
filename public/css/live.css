@@ -30,7 +30,7 @@
 #truxPwaLivePanel .trux-live-control[aria-pressed="true"]{background:#3a4164;color:#fff}
 #truxPwaLivePanel .trux-live-control.trux-live-end{background:#242428;color:#f5dfe2}
 #truxPwaLivePanel .trux-live-control.trux-live-end:hover{background:#632e3a}
-#truxPwaLivePanel .trux-live-center-pill{display:flex;flex:0 1 210px;min-width:88px;max-width:210px;height:76px;align-items:center;justify-content:center;flex-direction:column;gap:7px;overflow:hidden;border:1px solid rgba(203,216,255,.10);border-radius:999px;background:linear-gradient(180deg,#020307 0%,#050917 48%,#263868 77%,#dde6ff 100%);box-shadow:0 9px 28px rgba(4,10,38,.35),inset 0 1px 8px rgba(255,255,255,.05);color:#e8ecff}
+#truxPwaLivePanel .trux-live-center-pill{display:flex;flex:0 1 210px;min-width:88px;max-width:210px;height:76px;align-items:center;justify-content:center;flex-direction:column;gap:7px;overflow:hidden;border:1px solid rgba(203,216,255,.10);border-radius:999px;box-shadow:0 9px 28px rgba(4,10,38,.35),inset 0 1px 8px rgba(255,255,255,.05);color:#e8ecff}
 #truxPwaLivePanel .trux-live-center-pill span{font-size:10px;line-height:1;color:#d8def3}
 #truxPwaLivePanel .trux-live-center-pill{position:relative;background:#03050c!important}
 #truxPwaLivePanel .trux-live-voice-color{position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:var(--trux-live-level,0);background:radial-gradient(ellipse at var(--trux-live-tone,50%) 110%,rgba(74,118,255,.96) 0%,rgba(41,75,190,.74) 36%,rgba(6,12,38,0) 76%);transition:opacity .08s linear,background .08s linear}

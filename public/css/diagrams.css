@@ -9,7 +9,7 @@
 .tdg-status[hidden]{display:none}
 .tdg-spinner{width:16px;height:16px;border-radius:50%;border:2px solid var(--line-3);border-top-color:var(--acc);animation:tdgSpin .8s linear infinite}
 @keyframes tdgSpin{to{transform:rotate(360deg)}}
-.tdg-view::after{content:"Ctrl + scroll or pinch to zoom";position:absolute;left:50%;bottom:12px;transform:translateX(-50%);padding:6px 12px;border-radius:999px;background:rgba(var(--shade),.82);color:var(--txt);font-size:12px;white-space:nowrap;opacity:0;transition:opacity .2s;pointer-events:none}
+.tdg-view::after{content:"Ctrl + scroll or pinch to zoom";position:absolute;left:50%;bottom:12px;transform:translateX(-50%);padding:6px 12px;border-radius:999px;font-size:12px;white-space:nowrap;opacity:0;transition:opacity .2s;pointer-events:none}
 .tdg-view.tdg-hint::after{opacity:1}
 .tdg-view.tdg-failed{display:none}
 .trux-diagram:has(.tdg-failed) .tdg-bar>:not([data-trux-diagram-action="edit"]){display:none}
