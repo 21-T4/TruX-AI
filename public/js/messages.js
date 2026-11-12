@@ -346,18 +346,25 @@ function splitStreamBlocks(text) {
 }
 
 function createStreamRenderer(bubble) {
-  /* One renderer owns the answer from the first token through final Markdown. */
+  /* Buffer model tokens, then reveal at a steady word-aware cadence. */
   bubble.innerHTML = '<div class="md-stream"></div>';
   const host = bubble.firstElementChild;
 
-  let target = "";
+  let receivedText = "";
+  let visibleLength = 0;
   let settled = 0;
   let liveEl = null;
   let liveHtml = "";
   let frameId = null;
+  let timerId = null;
   let stopped = false;
-  let finished = false;
+  let finishRequested = false;
   let doneCb = null;
+  let lastStepAt = 0;
+
+  // About 20 words per second on normal prose: not raw token bursts or a slow typewriter.
+  const TICK_MS = 26;
+  const CHARS_PER_SECOND = 118;
 
   function commitBlock(html, live = false) {
     const el = document.createElement("div");
@@ -373,9 +380,8 @@ function createStreamRenderer(bubble) {
       (a.nodeType !== Node.ELEMENT_NODE || a.tagName === b.tagName);
   }
 
-  /* Reconcile the parsed Markdown with the visible DOM instead of replacing
-     innerHTML on every token. Existing text nodes keep their prefix and only
-     receive the new suffix; unchanged elements and their layout are retained. */
+  /* Reconcile parsed Markdown with the visible DOM. Existing text nodes keep
+     their prefix and only receive the new suffix; no whole-block replacement. */
   function patchChildren(currentParent, nextParent) {
     let current = currentParent.firstChild;
     for (const next of nextParent.childNodes) {
@@ -453,10 +459,11 @@ function createStreamRenderer(bubble) {
 
     const container = getActiveChatContainer();
     const stickToBottom = !!container && isNearBottom(container);
-    const blocks = splitStreamBlocks(target);
+    const visibleText = receivedText.slice(0, visibleLength);
+    const blocks = splitStreamBlocks(visibleText);
+    const drained = finishRequested && visibleLength >= receivedText.length;
 
-    /* Freeze a paragraph in place when the next paragraph begins. Do not
-       remove and rebuild the visible block; that produced a visible jump. */
+    /* Freeze completed paragraphs in place; never remove and recreate them. */
     while (settled < blocks.length - 1) {
       const html = renderFormattedText(blocks[settled], false);
       if (liveEl?.parentNode === host) {
@@ -472,13 +479,13 @@ function createStreamRenderer(bubble) {
 
     if (blocks.length) {
       const tail = blocks[blocks.length - 1];
-      const html = renderFormattedText(tail, !finished);
+      const html = renderFormattedText(tail, !drained);
       if (html !== liveHtml) {
         liveHtml = html;
         updateLiveBlock(html);
       }
 
-      if (finished) {
+      if (drained) {
         const finalHtml = renderFormattedText(tail, false);
         if (finalHtml !== liveHtml) {
           liveHtml = finalHtml;
@@ -490,7 +497,7 @@ function createStreamRenderer(bubble) {
 
     if (stickToBottom) container.scrollTop = container.scrollHeight;
 
-    if (finished) {
+    if (drained) {
       host.classList.remove("streaming");
       scheduleTruxMath(host);
       const callback = doneCb;
@@ -500,31 +507,56 @@ function createStreamRenderer(bubble) {
   }
 
   function schedule() {
-    // Coalesce tokens into the next paint only. A fixed timer throttled the UI
-    // to ~20fps and added an avoidable delay before the first visible text.
-    if (stopped || frameId !== null) return;
-    frameId = requestAnimationFrame(() => {
-      frameId = null;
-      paint();
-    });
+    if (stopped || timerId !== null || frameId !== null) return;
+    if (visibleLength >= receivedText.length && !finishRequested) return;
+
+    timerId = window.setTimeout(() => {
+      timerId = null;
+      if (visibleLength < receivedText.length) {
+        const now = performance.now();
+        const elapsed = lastStepAt
+          ? Math.min((now - lastStepAt) / 1000, 0.08)
+          : TICK_MS / 1000;
+        lastStepAt = now;
+
+        const advance = Math.max(1, Math.floor(elapsed * CHARS_PER_SECOND));
+        let next = Math.min(receivedText.length, visibleLength + advance);
+
+        // Prefer complete word boundaries when the next space is close.
+        // Very long words still progress instead of waiting indefinitely.
+        if (next < receivedText.length) {
+          const boundary = receivedText.indexOf(" ", next);
+          if (boundary >= 0 && boundary - visibleLength <= 18) next = boundary + 1;
+        }
+        visibleLength = Math.max(visibleLength, next);
+      }
+
+      frameId = requestAnimationFrame(() => {
+        frameId = null;
+        paint();
+        if (visibleLength < receivedText.length) schedule();
+      });
+    }, TICK_MS);
   }
 
   return {
     push(chunk) {
-      if (stopped || finished || !chunk) return;
-      target += String(chunk);
+      if (stopped || finishRequested || !chunk) return;
+      receivedText += String(chunk);
       schedule();
     },
     setText(text) {
       const next = String(text || "");
-      if (next === target) return;
-      if (!next.startsWith(target)) {
+      if (next === receivedText) return;
+      if (!next.startsWith(receivedText)) {
         host.replaceChildren();
         settled = 0;
         liveEl = null;
         liveHtml = "";
+        visibleLength = 0;
+        lastStepAt = 0;
       }
-      target = next;
+      receivedText = next;
       schedule();
     },
     finish(callback) {
@@ -532,13 +564,15 @@ function createStreamRenderer(bubble) {
         try { callback?.(); } catch {}
         return;
       }
-      finished = true;
+      finishRequested = true;
       doneCb = typeof callback === "function" ? callback : null;
       schedule();
     },
     cancel() {
       stopped = true;
+      if (timerId !== null) clearTimeout(timerId);
       if (frameId !== null) cancelAnimationFrame(frameId);
+      timerId = null;
       frameId = null;
       liveEl?.classList.remove("live");
       if (doneCb) {
@@ -547,6 +581,6 @@ function createStreamRenderer(bubble) {
         try { callback(); } catch {}
       }
     },
-    get received() { return target; }
+    get received() { return receivedText; }
   };
 }
