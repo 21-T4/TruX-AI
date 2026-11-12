@@ -317,12 +317,16 @@ function sanitizeGeminiSchema(value, fallbackType = 'string') {
   if (value.description) out.description = String(value.description);
   if (value.format) out.format = String(value.format);
 
-  // Preserve enum scalar types. Converting numbers/booleans to strings can
-  // make an otherwise valid function schema incompatible with Vertex.
+  // Vertex/Gemini function declarations require enum entries to be strings.
+  // Composio schemas can include null, numbers, or booleans; null is represented
+  // with nullable, while scalar choices are normalized to the API's string form.
   if (Array.isArray(value.enum)) {
-    out.enum = value.enum
-      .filter(v => v == null || ['string','number','boolean'].includes(typeof v))
+    const enumValues = value.enum
+      .filter(v => ['string', 'number', 'boolean'].includes(typeof v))
+      .map(v => String(v))
       .slice(0, 256);
+    if (enumValues.length) out.enum = enumValues;
+    if (value.enum.some(v => v === null)) out.nullable = true;
   }
 
   if (value.items && typeof value.items === 'object') {
