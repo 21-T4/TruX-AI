@@ -323,9 +323,8 @@ async function sendPromptImpl() {
       const idx = session.messages.findIndex(m => m.id === ctx.messageId);
       if (idx >= 0) session.messages[idx] = stored; else session.messages.push(stored);
     } else session.messages.push(stored);
-    /* A finished answer is usually fully received long before it has been revealed. Let the stream
-       renderer keep revealing it at reading pace and only then swap in the final markup, instead of
-       replacing the bubble with the whole text the moment the server says "done". */
+    /* Flush the final authoritative text through the same live renderer. It
+       completes any queued animation frame without switching to a separate reveal animation. */
     const drain = !!(streamer && stored.status === "done" && stored.text);
     if (drain && isCurrent()) {
       activeAbortController = null;
