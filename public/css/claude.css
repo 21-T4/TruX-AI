@@ -26,36 +26,6 @@ body{ font: 400 15px/1.55 var(--font-body); letter-spacing: 0; }
 /* ---------- top bar ---------- */
 .topbar{ background: transparent; }
 
-/* In the reference, the first 5–6 answer lines pass underneath a dark,
-   soft-edged fade attached to the fixed header. The text becomes clear as
-   it moves below this gradient; this is not a fade on every whole paragraph. */
-body.chat-session-active:not(.plugins-page-active) .topbar::after{
-  content: "";
-  position: absolute;
-  z-index: 0;
-  top: calc(100% - 1px);
-  left: 0;
-  right: 0;
-  height: clamp(150px, 20vh, 196px);
-  pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    var(--bg) 0%,
-    color-mix(in srgb, var(--bg) 90%, transparent) 28%,
-    color-mix(in srgb, var(--bg) 56%, transparent) 62%,
-    transparent 100%
-  );
-  animation: truxChatTopFadeIn 420ms cubic-bezier(.2,.7,.2,1) both;
-}
-body.chat-session-active:not(.plugins-page-active) .topbar > *{
-  position: relative;
-  z-index: 1;
-}
-@keyframes truxChatTopFadeIn{
-  from{ opacity: 0; }
-  to{ opacity: 1; }
-}
-
 .model-picker-btn{ height: 38px; padding: 0 10px 0 12px; border-radius: 10px; font: 500 15px/1 var(--font-ui); letter-spacing: 0; color: var(--txt-2); }
 .model-picker-btn:hover, .model-picker-btn[aria-expanded="true"]{ background: var(--bg-3); color: var(--txt); }
 .model-dropdown-menu, .attach-menu{ background: var(--bg-2); border-color: var(--line-2); border-radius: 16px; box-shadow: var(--shadow-3); }
