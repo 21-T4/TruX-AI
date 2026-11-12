@@ -526,7 +526,7 @@ function createStreamRenderer(bubble) {
         // Very long words still progress instead of waiting indefinitely.
         if (next < receivedText.length) {
           const boundary = receivedText.indexOf(" ", next);
-          if (boundary >= 0 && boundary - visibleLength <= 18) next = boundary + 1;
+          if (boundary >= 0 && boundary - next <= 3) next = boundary + 1;
         }
         visibleLength = Math.max(visibleLength, next);
       }
