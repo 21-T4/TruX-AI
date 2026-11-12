@@ -27,7 +27,7 @@
 .actions.user-message-actions{ margin-top: 2px; display: none; }
 .row.user-actions-visible .actions.user-message-actions{ display: flex; animation: truxActIn .35s var(--ease-out) both; }
 @keyframes truxActIn{ from{ opacity: 0; transform: translateY(-4px); } to{ opacity: 1; transform: none; } }
-.user-row .user-bubble{ cursor: pointer; }
+.user-row .user-bubble{ -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 
 /* assistant message: full width, no bubble */
 .trux-response-stack{ display: flex; flex-direction: column; gap: 10px; width: 100%; min-width: 0; }
@@ -175,14 +175,13 @@
    with a negative animation-delay, so a re-render mid-fade resumes instead of
    restarting. Keep the duration in step with FADE_MS (460) in messages.js. */
 .rv{
-  animation: truxFadeIn 1300ms cubic-bezier(.33,.1,.25,1) both;
-  will-change: opacity, filter;}
+  animation: truxFadeIn 1100ms cubic-bezier(.4,0,.2,1) both;}
 @keyframes truxFadeIn{
-  0%{ opacity: 0; filter: blur(6px); transform: translateY(.16em); }
-  100%{ opacity: 1; filter: blur(0); transform: none; }
+  0%{ opacity: 0; }
+  100%{ opacity: 1; }
 }
 /* inline spans can't be transformed; give them a block-ish box without breaking wrapping */
-.rv{ display: inline-block; max-width: 100%; white-space: pre-wrap; vertical-align: baseline; }
+.rv{ display: inline; white-space: pre-wrap; }
 .md-block.live::after{
   content: ""; display: inline-block; width: 7px; height: 7px; margin-left: 4px; border-radius: 50%; vertical-align: middle; animation: truxSpark 1.2s var(--ease) infinite;}
 @media (prefers-reduced-motion: reduce){ .rv, .row.appear{ animation: none !important; } .md-block.live::after{ display: none; } }

@@ -228,14 +228,6 @@ function attachUserMessageActions(userRow, messageIndex, promptText) {
     userRow.addEventListener("pointerup", clearHoldTimer);
     userRow.addEventListener("pointercancel", clearHoldTimer);
     userRow.addEventListener("pointerleave", clearHoldTimer);
-    userRow.addEventListener("click", event => {
-      const target = event.target;
-      if (!(target instanceof Element) || !target.closest(".user-bubble")) return;
-      if (window.getSelection && String(window.getSelection()).length) return;
-      const show = !userRow.classList.contains("user-actions-visible");
-      document.querySelectorAll(".user-row.user-actions-visible").forEach(o => o.classList.remove("user-actions-visible"));
-      if (show) userRow.classList.add("user-actions-visible");
-    });
     userRow.addEventListener("contextmenu", event => {
       const target = event.target;
       if (target instanceof Element && target.closest(".user-bubble")) event.preventDefault();
@@ -369,8 +361,8 @@ function createStreamRenderer(bubble) {
   let doneCb = null;
   let lastRevealAt = -Infinity;
 
-  const REVEAL_INTERVAL_MS = 44;     /* a new small group of words every ~44ms */
-  const FADE_MS = 1300;              /* keep in step with .rv in chat.css */
+  const REVEAL_INTERVAL_MS = 30;     /* a new word or two every ~30ms */
+  const FADE_MS = 1100;              /* keep in step with .rv in chat.css */
 
   /* ---- line-by-line fade-in ----------------------------------------------
      The live block is re-rendered on every tick, so a plain CSS animation would
@@ -438,7 +430,7 @@ function createStreamRenderer(bubble) {
   function nextRevealOffset() {
     const backlog = target.length - shown;
     if (backlog <= 0) return shown;
-    const words = Math.min(14, 2 + Math.floor(backlog / 140));
+    const words = Math.min(10, 1 + Math.floor(backlog / 160));
     let cursor = shown;
     let count = 0;
     while (cursor < target.length && count < words) {
