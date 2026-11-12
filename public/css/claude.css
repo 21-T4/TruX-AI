@@ -499,3 +499,21 @@ body{ position: fixed; inset: 0; width: 100%; }
 }
 .source-chip img, .source-chip .sc-dot{ width: 16px; height: 16px; max-width: 16px; max-height: 16px; border-radius: 50%; object-fit: cover; display: block; }
 @media (hover: hover){ .source-chip:hover{ background: var(--bg-4); transform: translateY(-1px); } }
+
+/* ---------- Round 6: Google Sans everywhere, much larger reading text ---------- */
+body{ font-size: 17px; }
+.bubble:not(.user-bubble){ font: 400 20px/1.7 var(--font-body); letter-spacing: 0; }
+.bubble h1, .bubble h2, .bubble h3, .bubble h4{ font-family: var(--font-body); font-weight: 600; letter-spacing: -.01em; }
+.user-bubble{ font: 400 19px/1.55 var(--font-ui); }
+#promptInput{ font-size: 19px; line-height: 28px; }
+.hint{ font-size: 13.5px; }
+.table-wrap th, .table-wrap td, .md-table, .bubble table{ font-size: 16px; }
+.code-body code, .bubble pre code{ font-size: 15px; }
+@media (max-width: 720px){
+  .bubble:not(.user-bubble){ font-size: 20.5px; line-height: 1.68; }
+  .user-bubble{ font-size: 19.5px; max-width: 90%; }
+  #promptInput{ font-size: 19px; line-height: 27px; }
+  .code-body code, .bubble pre code{ font-size: 14.5px; }
+  .trux-home-prompt{ font-size: 17px; }
+  .sidebar .history-item, .sidebar-item{ font-size: 18px; }
+}

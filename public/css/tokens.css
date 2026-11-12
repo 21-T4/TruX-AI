@@ -41,10 +41,10 @@
   --z-toast: 200;
   --z-live: 300;
 
-  --font-ui:   'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  --font-disp: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  --font-serif: 'Source Serif 4', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+  --font-ui:   'Google Sans Flex', 'Google Sans', 'Google Sans Text', 'Product Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-body: 'Google Sans Flex', 'Google Sans', 'Google Sans Text', 'Product Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-disp: 'Google Sans Flex', 'Google Sans', 'Google Sans Text', 'Product Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-serif: 'Google Sans Flex', 'Google Sans', 'Google Sans Text', 'Product Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;   /* Gemini-style: one sans family everywhere */
   --font-mono: 'Google Sans Code', ui-monospace, SFMono-Regular, 'JetBrains Mono', Consolas, monospace;
 }
 
