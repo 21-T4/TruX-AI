@@ -513,8 +513,6 @@ async function loadChatSession(id) {
   incognitoMode = false;
   currentChatId = id;
   setWorkspaceMode(chatSessions[id].mode === "coding" ? "chat" : (chatSessions[id].mode || "chat"), { reload: false, preserveSession: true });
-  const welcome = getEl("welcomeScreen");
-  if (welcome) welcome.style.display = "none";
   const container = enterChatWorkspace();
   if (!chatSessions[id].messagesLoaded) container.innerHTML = '<div class="trux-chat-loading" role="status">Loading chat…</div>';
   renderSidebar(); if (innerWidth <= 768) closeSidebar(); else setSidebarOpen(true);

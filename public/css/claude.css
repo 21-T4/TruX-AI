@@ -42,7 +42,6 @@ body{ font: 400 15px/1.55 var(--font-body); letter-spacing: 0; }
 .table-wrap, .code-file{ border-color: var(--line-2); }
 .code-file-header, .code-expand{ background: var(--bg-3); }
 .md-block.live::after{ background: var(--acc); }
-.act{ color: var(--txt-3); }
 .trux-thinking-spark{ color: var(--acc); }
 
 /* ---------- composer ---------- */
@@ -143,7 +142,6 @@ body{ font-size: 16px; -webkit-font-smoothing: antialiased; text-rendering: opti
 .bubble :not(pre) > code{ font-size: .82em; padding: .12em .4em; border-radius: 6px; }
 .code-body code, .bubble pre code{ font-size: 14px; line-height: 1.65; }
 .table-wrap th, .table-wrap td{ font: 400 16px/1.5 var(--font-ui); padding: 10px 14px; }
-.act{ width: 36px; height: 36px; }
 @media (max-width: 720px){
   .chat{ padding: 6px 16px 24px; }
   .user-bubble{ font-size: 17.5px; max-width: 92%; }
@@ -172,8 +170,10 @@ body{ font-size: 16px; -webkit-font-smoothing: antialiased; text-rendering: opti
 }
 
 /* ---------- home: greeting centred, no star ---------- */
-.trux-home-v2{ justify-content: center; align-items: center; padding: 0 24px 12vh; }
-.trux-home-content{ align-items: center; text-align: center; max-width: 780px; }
+/* the home view is a normal flex child: greeting sits right above the suggestions and typing bar, same width as the bar */
+#welcomeScreen.trux-home-v2{ position: relative; flex-direction: column; justify-content: flex-end; align-items: center; padding: 0 18px 8px; overflow: hidden; }
+.trux-home-content{ align-items: center; text-align: center; width: 100%; max-width: var(--measure); }
+.trux-home-sequence{ min-height: 0; }
 .trux-home-sequence-text{
   display: block; margin: 0; text-align: center;
   font: 400 clamp(34px, 5.4vw, 54px)/1.15 var(--font-serif);
@@ -252,7 +252,6 @@ body.home-active:not(.chat-session-active) .home-suggest{ display: flex; }
   .bar{ padding: 14px 10px 10px 14px; border-radius: 26px; }
   #promptInput{ min-height: 52px; padding: 2px 4px 10px; font-size: 17.5px; line-height: 26px; }
   .icon-btn, .send-btn{ width: 44px; height: 44px; }
-  .trux-home-v2{ padding: 0 18px 10vh; }
   .trux-home-prompt{ padding: 12px 12px; font-size: 16.5px; }
 }
 
@@ -392,9 +391,7 @@ html.theme-fade, html.theme-fade *, html.theme-fade *::before, html.theme-fade *
    ============================================================ */
 /* The home view no longer takes part in the column; it is centred on the whole screen,
    and the composer (with the suggestions) always sits at the bottom. */
-.trux-home-v2{ position: absolute; inset: 0; padding: 0 24px; min-height: 0; overflow: hidden; pointer-events: none; }
-.trux-home-v2 > *{ pointer-events: auto; }
-.composer{ margin-top: auto; }
+@media (min-width: 1000px) and (min-height: 760px){ body.home-active:not(.chat-session-active) .composer{ margin-bottom: 10vh; } }
 .trux-home-prompt-label{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .trux-home-prompt{ padding: 10px 12px; }
 @media (max-height: 760px){ .trux-home-sequence-text{ font-size: clamp(28px, 7vw, 40px); } }
@@ -416,6 +413,14 @@ html.theme-fade, html.theme-fade *, html.theme-fade *::before, html.theme-fade *
 /* message actions: even buttons that never push the page sideways */
 .chat{ overflow-x: hidden; }
 .row{ max-width: 100%; }
-.actions{ gap: 4px; }
-.act{ width: auto; height: auto; min-height: 36px; padding: 0 12px; font-size: 13.5px; }
+.actions{ gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.act{
+  width: auto; height: 34px; min-height: 0; padding: 0 12px; gap: 6px; white-space: nowrap; flex: none;
+  font: 500 13px/1 var(--font-ui); color: var(--txt-2);
+  background: var(--bg-3); border: 1px solid var(--line-2); border-radius: 999px;
+}
+.act svg{ width: 15px; height: 15px; flex: none; }
+@media (hover: hover){ .act:hover{ background: var(--bg-4); border-color: var(--line-3); color: var(--txt); } }
+.act:active{ transform: scale(.96); }
+@media (max-width: 720px){ .act{ height: 36px; padding: 0 11px; font-size: 12.5px; } .actions{ gap: 5px; } }
 .user-message-actions{ justify-content: flex-end; }
