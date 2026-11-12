@@ -361,11 +361,63 @@ function createStreamRenderer(bubble) {
 
   function commitBlock(html, live = false) {
     const el = document.createElement("div");
-    el.className = "md-block" + (live ? " live" : "");
+    el.className = "md-block" + (live ? " live" : " stream-enter");
     el.innerHTML = html;
     host.appendChild(el);
-    renderTruxDiagrams(el);
+    if (html.includes("trux-diagram")) renderTruxDiagrams(el);
     return el;
+  }
+
+  function sameNodeKind(a, b) {
+    return a.nodeType === b.nodeType &&
+      (a.nodeType !== Node.ELEMENT_NODE || a.tagName === b.tagName);
+  }
+
+  /* Reconcile the parsed Markdown with the visible DOM instead of replacing
+     innerHTML on every token. Existing text nodes keep their prefix and only
+     receive the new suffix; unchanged elements and their layout are retained. */
+  function patchChildren(currentParent, nextParent) {
+    let current = currentParent.firstChild;
+    for (const next of nextParent.childNodes) {
+      if (!current) {
+        currentParent.appendChild(next.cloneNode(true));
+        continue;
+      }
+
+      if (!sameNodeKind(current, next)) {
+        const replacement = next.cloneNode(true);
+        currentParent.replaceChild(replacement, current);
+        current = replacement;
+      } else if (current.nodeType === Node.TEXT_NODE) {
+        const before = current.nodeValue || "";
+        const after = next.nodeValue || "";
+        if (after.startsWith(before)) current.appendData(after.slice(before.length));
+        else if (before !== after) current.nodeValue = after;
+      } else if (current.nodeType === Node.ELEMENT_NODE) {
+        for (const attr of Array.from(current.attributes)) {
+          if (!next.hasAttribute(attr.name)) current.removeAttribute(attr.name);
+        }
+        for (const attr of Array.from(next.attributes)) {
+          if (current.getAttribute(attr.name) !== attr.value) current.setAttribute(attr.name, attr.value);
+        }
+        patchChildren(current, next);
+      }
+
+      current = current.nextSibling;
+    }
+
+    while (current) {
+      const following = current.nextSibling;
+      currentParent.removeChild(current);
+      current = following;
+    }
+  }
+
+  function patchBlock(el, html) {
+    const parsed = document.createElement("div");
+    parsed.innerHTML = html;
+    patchChildren(el, parsed);
+    if (html.includes("trux-diagram")) renderTruxDiagrams(el);
   }
 
   function updateLiveBlock(html) {
@@ -385,12 +437,11 @@ function createStreamRenderer(bubble) {
         const newSource = nextPending.querySelector(".trux-diagram-source");
         if (oldSource && newSource) oldSource.textContent = newSource.textContent;
       } else {
-        liveEl.innerHTML = html;
+        patchBlock(liveEl, html);
       }
     } else {
-      liveEl.innerHTML = html;
+      patchBlock(liveEl, html);
     }
-    renderTruxDiagrams(liveEl);
   }
 
   function paint() {
@@ -404,12 +455,18 @@ function createStreamRenderer(bubble) {
     const stickToBottom = !!container && isNearBottom(container);
     const blocks = splitStreamBlocks(target);
 
-    /* Commit complete paragraphs once. Only the unfinished Markdown block is refreshed. */
+    /* Freeze a paragraph in place when the next paragraph begins. Do not
+       remove and rebuild the visible block; that produced a visible jump. */
     while (settled < blocks.length - 1) {
-      if (liveEl?.parentNode === host) host.removeChild(liveEl);
-      liveEl = null;
-      liveHtml = "";
-      commitBlock(renderFormattedText(blocks[settled], false));
+      const html = renderFormattedText(blocks[settled], false);
+      if (liveEl?.parentNode === host) {
+        patchBlock(liveEl, html);
+        liveEl.classList.remove("live");
+        liveEl = null;
+        liveHtml = "";
+      } else {
+        commitBlock(html);
+      }
       settled++;
     }
 
