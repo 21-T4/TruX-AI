@@ -358,7 +358,10 @@ async function sendPromptImpl() {
         userMessage.id = ev.userMessageId;
         rememberMessageId(chatId, ev.userMessageId); rememberMessageId(chatId, ev.messageId);
         row.dataset.messageId = ev.messageId;
-        if (generationStopRequested && !incognito) requestServerStop(chatId, ev.messageId);
+        if (generationStopRequested && !incognito) {
+          setThinkingStatus(sid, "Stopping…");
+          requestServerStop(chatId, ev.messageId);
+        }
         break;
       case "status":
         if (!streamer) setThinkingStatus(sid, ev.status || "");
@@ -459,12 +462,20 @@ function followServerTurn(ctx, session, getStreamer) {
 }
 
 function markGenerationStopped() {
+  if (generationStopRequested) return;
   const ctx = activeTurnContext;
   generationStopRequested = true;
-  if (ctx && !ctx.incognito && ctx.messageId) {
-    // The server owns the turn; ask it to stop and let it report back.
-    requestServerStop(ctx.chatId, ctx.messageId);
-    if (!activeAbortController) setThinkingStatus(ctx.row?.querySelector(".status-msg")?.id, "Stopping…");
+
+  const button = getEl("actionBtn");
+  if (button) {
+    button.title = "Stopping…";
+    button.setAttribute("aria-label", "Stopping…");
+  }
+  if (ctx?.row) setThinkingStatus(ctx.row.querySelector(".status-msg")?.id, "Stopping…");
+
+  if (ctx && !ctx.incognito) {
+    /* Keep SSE open so the persistent server turn can receive its stop flag. */
+    if (ctx.messageId) requestServerStop(ctx.chatId, ctx.messageId);
     return;
   }
   try { activeAbortController?.abort(); } catch {}
