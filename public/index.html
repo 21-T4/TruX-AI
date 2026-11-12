@@ -342,28 +342,7 @@
             <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
           </button>
 
-          <div class="topbar-model-slot" id="topbarModelSlot"><div class="model-picker-container" id="modelPickerContainer">
-              <button type="button" id="modelPickerBtn" class="model-picker-btn" onclick="toggleModelDropdown(event)" aria-haspopup="menu" aria-expanded="false" aria-label="Model selection with automatic routing"><span id="modelPickerLabel">Models</span></button>
-              <div class="model-dropdown-menu" id="modelDropdown" role="menu" aria-label="Automatic model routing">
-                <button type="button" class="model-item active" data-model="auto" onclick="selectModel('auto',event);closeModelDropdown()">
-                  <span class="model-icon">✧</span>
-                  <span class="model-info"><b>Auto</b><small>Chooses the best model according to your request</small></span>
-                  <span class="model-check">✓</span>
-                </button>
-                <div class="thinking-choice-wrap">
-                  <div class="thinking-choice-title">Thinking</div>
-                  <button type="button" class="thinking-choice active" data-thinking-level="low" onclick="setThinkingLevel('low',event)">
-                    <span><b>Low</b><small>Fastest responses</small></span><span class="thinking-check">✓</span>
-                  </button>
-                  <button type="button" class="thinking-choice" data-thinking-level="medium" onclick="setThinkingLevel('medium',event)">
-                    <span><b>Medium</b><small>Balanced reasoning</small></span><span class="thinking-check"></span>
-                  </button>
-                  <button type="button" class="thinking-choice" data-thinking-level="extended" onclick="setThinkingLevel('extended',event)">
-                    <span><b>Extended</b><small>Deepest reasoning</small></span><span class="thinking-check"></span>
-                  </button>
-                </div>
-              </div>
-            </div></div>
+
         </div>
         <div class="topbar-center">
           <div class="trux-incognito-top" id="truxIncognitoTop" aria-label="Incognito chat">
@@ -619,6 +598,28 @@
             
             <textarea id="promptInput" rows="1" placeholder="Message TruX…" oninput="handleInputChange()"></textarea>
 
+            <div class="model-picker-container" id="modelPickerContainer">
+              <button type="button" id="modelPickerBtn" class="model-picker-btn" onclick="toggleModelDropdown(event)" aria-haspopup="menu" aria-expanded="false" aria-label="Model selection with automatic routing"><span id="modelPickerLabel">Models</span></button>
+              <div class="model-dropdown-menu" id="modelDropdown" role="menu" aria-label="Automatic model routing">
+                <button type="button" class="model-item active" data-model="auto" onclick="selectModel('auto',event);closeModelDropdown()">
+                  <span class="model-icon">✧</span>
+                  <span class="model-info"><b>Auto</b><small>Chooses the best model according to your request</small></span>
+                  <span class="model-check">✓</span>
+                </button>
+                <div class="thinking-choice-wrap">
+                  <div class="thinking-choice-title">Thinking</div>
+                  <button type="button" class="thinking-choice active" data-thinking-level="low" onclick="setThinkingLevel('low',event)">
+                    <span><b>Low</b><small>Fastest responses</small></span><span class="thinking-check">✓</span>
+                  </button>
+                  <button type="button" class="thinking-choice" data-thinking-level="medium" onclick="setThinkingLevel('medium',event)">
+                    <span><b>Medium</b><small>Balanced reasoning</small></span><span class="thinking-check"></span>
+                  </button>
+                  <button type="button" class="thinking-choice" data-thinking-level="extended" onclick="setThinkingLevel('extended',event)">
+                    <span><b>Extended</b><small>Deepest reasoning</small></span><span class="thinking-check"></span>
+                  </button>
+                </div>
+              </div>
+            </div>
             <button class="send-btn live" id="actionBtn" data-action-mode="live" onclick="handleActionButton()" title="Start Live assistant" aria-label="Start Live assistant">
               <svg id="btnIcon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
                 <path d="M6 9v6 M12 4v16 M18 9v6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>

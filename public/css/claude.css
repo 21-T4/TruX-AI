@@ -362,3 +362,60 @@ html.theme-fade, html.theme-fade *, html.theme-fade *::before, html.theme-fade *
 
 /* profile avatar: round, Google-style (surfaces.css sized it as a rounded square) */
 #profileModal .modal-avatar{ width: 76px; height: 76px; border-radius: 50%; box-shadow: none; border: 1px solid var(--line-2); object-fit: cover; }
+
+/* accent swatches: each button shows its own colour */
+.accent-option[data-accent-option="blue"]{ --swatch: #2f6fed; }
+.accent-option[data-accent-option="cyan"]{ --swatch: #0e9bbd; }
+.accent-option[data-accent-option="purple"]{ --swatch: #7a56e6; }
+.accent-option[data-accent-option="pink"]{ --swatch: #d9488f; }
+.accent-option[data-accent-option="red"]{ --swatch: #d64545; }
+.accent-option[data-accent-option="orange"]{ --swatch: #d9731f; }
+.accent-option[data-accent-option="yellow"]{ --swatch: #c99a0a; }
+.accent-option[data-accent-option="green"]{ --swatch: #1f9a5f; }
+.accent-option[data-accent-option="teal"]{ --swatch: #16a08c; }
+.accent-option[data-accent-option="white"]{ --swatch: #1f1e1d; }
+:root[data-theme="dark"] .accent-option[data-accent-option="blue"]{ --swatch: #5b92ff; }
+:root[data-theme="dark"] .accent-option[data-accent-option="cyan"]{ --swatch: #3fc6e6; }
+:root[data-theme="dark"] .accent-option[data-accent-option="purple"]{ --swatch: #a58bff; }
+:root[data-theme="dark"] .accent-option[data-accent-option="pink"]{ --swatch: #ff7ab8; }
+:root[data-theme="dark"] .accent-option[data-accent-option="red"]{ --swatch: #ff7a7a; }
+:root[data-theme="dark"] .accent-option[data-accent-option="orange"]{ --swatch: #ffa04d; }
+:root[data-theme="dark"] .accent-option[data-accent-option="yellow"]{ --swatch: #f1d75a; }
+:root[data-theme="dark"] .accent-option[data-accent-option="green"]{ --swatch: #5bd990; }
+:root[data-theme="dark"] .accent-option[data-accent-option="teal"]{ --swatch: #3ed3b8; }
+:root[data-theme="dark"] .accent-option[data-accent-option="white"]{ --swatch: #f2f1ec; }
+.accent-option i{ background: var(--swatch); }
+.accent-option.active{ border-color: var(--txt); outline: 0; }
+
+/* ============================================================
+   Round 4 — fits any phone, model picker in the bar, centred greeting, tidy actions
+   ============================================================ */
+/* The home view no longer takes part in the column; it is centred on the whole screen,
+   and the composer (with the suggestions) always sits at the bottom. */
+.trux-home-v2{ position: absolute; inset: 0; padding: 0 24px; min-height: 0; overflow: hidden; pointer-events: none; }
+.trux-home-v2 > *{ pointer-events: auto; }
+.composer{ margin-top: auto; }
+.trux-home-prompt-label{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trux-home-prompt{ padding: 10px 12px; }
+@media (max-height: 760px){ .trux-home-sequence-text{ font-size: clamp(28px, 7vw, 40px); } }
+@media (max-height: 600px){ .home-suggest{ display: none !important; } }   /* keyboard open / very short window */
+
+/* model picker lives in the typing bar */
+.bar{
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+  grid-template-areas: "input input input input input" "plus mic . model send";
+}
+.bar .model-picker-container{ grid-area: model; justify-self: end; margin-right: 4px; }
+.bar .model-picker-btn{ height: 44px; padding: 0 14px; border-radius: 999px; font: 500 15.5px/1 var(--font-ui); color: var(--txt-2); gap: 6px; }
+.bar .model-picker-btn::after{
+  content: ""; width: 7px; height: 7px; margin: -3px 0 0 6px; border: solid currentColor; border-width: 0 1.8px 1.8px 0; transform: rotate(45deg); opacity: .7; transition: transform .25s var(--ease-out);
+}
+.bar .model-picker-btn[aria-expanded="true"]::after{ transform: rotate(225deg) translate(-2px, -2px); }
+.model-dropdown-menu{ transform-origin: bottom right; }
+
+/* message actions: even buttons that never push the page sideways */
+.chat{ overflow-x: hidden; }
+.row{ max-width: 100%; }
+.actions{ gap: 4px; }
+.act{ width: auto; height: auto; min-height: 36px; padding: 0 12px; font-size: 13.5px; }
+.user-message-actions{ justify-content: flex-end; }

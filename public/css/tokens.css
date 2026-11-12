@@ -125,28 +125,28 @@
 }
 
 /* ---------- Accent (blue by default; set by applyTruxAccent → body[data-accent]) ---------- */
-body{ --acc-base:#2f6fed; --on-acc-base:#ffffff; --swatch:#2f6fed; }
-:root[data-theme="dark"] body{ --acc-base:#5b92ff; --on-acc-base:#0b1530; --swatch:#5b92ff; }
-body[data-accent="blue"]  { --acc-base:#2f6fed; --on-acc-base:#fff; --swatch:#2f6fed; }
-body[data-accent="cyan"]  { --acc-base:#0e9bbd; --on-acc-base:#fff; --swatch:#0e9bbd; }
-body[data-accent="purple"]{ --acc-base:#7a56e6; --on-acc-base:#fff; --swatch:#7a56e6; }
-body[data-accent="pink"]  { --acc-base:#d9488f; --on-acc-base:#fff; --swatch:#d9488f; }
-body[data-accent="red"]   { --acc-base:#d64545; --on-acc-base:#fff; --swatch:#d64545; }
-body[data-accent="orange"]{ --acc-base:#d9731f; --on-acc-base:#fff; --swatch:#d9731f; }
-body[data-accent="yellow"]{ --acc-base:#c99a0a; --on-acc-base:#1d1802; --swatch:#c99a0a; }
-body[data-accent="green"] { --acc-base:#1f9a5f; --on-acc-base:#fff; --swatch:#1f9a5f; }
-body[data-accent="teal"]  { --acc-base:#16a08c; --on-acc-base:#fff; --swatch:#16a08c; }
-body[data-accent="white"] { --acc-base:#1f1e1d; --on-acc-base:#fff; --swatch:#1f1e1d; }
-:root[data-theme="dark"] body[data-accent="blue"]  { --acc-base:#5b92ff; --on-acc-base:#0b1530; --swatch:#5b92ff; }
-:root[data-theme="dark"] body[data-accent="cyan"]  { --acc-base:#3fc6e6; --on-acc-base:#04161c; --swatch:#3fc6e6; }
-:root[data-theme="dark"] body[data-accent="purple"]{ --acc-base:#a58bff; --on-acc-base:#150c33; --swatch:#a58bff; }
-:root[data-theme="dark"] body[data-accent="pink"]  { --acc-base:#ff7ab8; --on-acc-base:#2b0a1b; --swatch:#ff7ab8; }
-:root[data-theme="dark"] body[data-accent="red"]   { --acc-base:#ff7a7a; --on-acc-base:#2b0808; --swatch:#ff7a7a; }
-:root[data-theme="dark"] body[data-accent="orange"]{ --acc-base:#ffa04d; --on-acc-base:#241203; --swatch:#ffa04d; }
-:root[data-theme="dark"] body[data-accent="yellow"]{ --acc-base:#f1d75a; --on-acc-base:#1d1802; --swatch:#f1d75a; }
-:root[data-theme="dark"] body[data-accent="green"] { --acc-base:#5bd990; --on-acc-base:#05190d; --swatch:#5bd990; }
-:root[data-theme="dark"] body[data-accent="teal"]  { --acc-base:#3ed3b8; --on-acc-base:#03180f; --swatch:#3ed3b8; }
-:root[data-theme="dark"] body[data-accent="white"] { --acc-base:#f2f1ec; --on-acc-base:#1f1e1d; --swatch:#f2f1ec; }
+body{ --acc-base:#2f6fed; --on-acc-base:#ffffff; }
+:root[data-theme="dark"] body{ --acc-base:#5b92ff; --on-acc-base:#0b1530; }
+body[data-accent="blue"]  { --acc-base:#2f6fed; --on-acc-base:#fff; }
+body[data-accent="cyan"]  { --acc-base:#0e9bbd; --on-acc-base:#fff; }
+body[data-accent="purple"]{ --acc-base:#7a56e6; --on-acc-base:#fff; }
+body[data-accent="pink"]  { --acc-base:#d9488f; --on-acc-base:#fff; }
+body[data-accent="red"]   { --acc-base:#d64545; --on-acc-base:#fff; }
+body[data-accent="orange"]{ --acc-base:#d9731f; --on-acc-base:#fff; }
+body[data-accent="yellow"]{ --acc-base:#c99a0a; --on-acc-base:#1d1802; }
+body[data-accent="green"] { --acc-base:#1f9a5f; --on-acc-base:#fff; }
+body[data-accent="teal"]  { --acc-base:#16a08c; --on-acc-base:#fff; }
+body[data-accent="white"] { --acc-base:#1f1e1d; --on-acc-base:#fff; }
+:root[data-theme="dark"] body[data-accent="blue"]  { --acc-base:#5b92ff; --on-acc-base:#0b1530; }
+:root[data-theme="dark"] body[data-accent="cyan"]  { --acc-base:#3fc6e6; --on-acc-base:#04161c; }
+:root[data-theme="dark"] body[data-accent="purple"]{ --acc-base:#a58bff; --on-acc-base:#150c33; }
+:root[data-theme="dark"] body[data-accent="pink"]  { --acc-base:#ff7ab8; --on-acc-base:#2b0a1b; }
+:root[data-theme="dark"] body[data-accent="red"]   { --acc-base:#ff7a7a; --on-acc-base:#2b0808; }
+:root[data-theme="dark"] body[data-accent="orange"]{ --acc-base:#ffa04d; --on-acc-base:#241203; }
+:root[data-theme="dark"] body[data-accent="yellow"]{ --acc-base:#f1d75a; --on-acc-base:#1d1802; }
+:root[data-theme="dark"] body[data-accent="green"] { --acc-base:#5bd990; --on-acc-base:#05190d; }
+:root[data-theme="dark"] body[data-accent="teal"]  { --acc-base:#3ed3b8; --on-acc-base:#03180f; }
+:root[data-theme="dark"] body[data-accent="white"] { --acc-base:#f2f1ec; --on-acc-base:#1f1e1d; }
 
 body, body[data-accent]{
   --acc:      var(--acc-base);
