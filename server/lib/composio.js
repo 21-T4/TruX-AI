@@ -192,14 +192,14 @@ async function deleteConnectedAccount(env, connectedAccountId) {
   );
 }
 
-async function listConnectedAccounts(env, userId, toolkitSlug = '') {
+async function listConnectedAccounts(env, userId, toolkitSlug = '', signal) {
   const query = new URLSearchParams();
   query.set('user_ids', userId);
   query.set('statuses', 'ACTIVE');
   query.set('limit', '200');
   if (toolkitSlug) query.set('toolkit_slugs', toolkitSlug);
 
-  const payload = await composioRequest(env, '/connected_accounts?' + query.toString());
+  const payload = await composioRequest(env, '/connected_accounts?' + query.toString(), { signal });
   return Array.isArray(payload?.items) ? payload.items : [];
 }
 
@@ -380,7 +380,7 @@ function schemaFromInputParameters(input) {
   };
 }
 
-async function getComposioGeminiTools(env, enabledToolkitSlugs, queryText = '') {
+async function getComposioGeminiTools(env, enabledToolkitSlugs, queryText = '', signal) {
   const slugs = [...new Set(
     (enabledToolkitSlugs || []).filter(Boolean).map(String)
   )];
@@ -403,7 +403,7 @@ async function getComposioGeminiTools(env, enabledToolkitSlugs, queryText = '') 
   // Do not turn API/auth/version failures into an empty discovery result.
   // The chat tool runner surfaces real errors so the agent can explain the
   // integration problem instead of claiming that no actions exist.
-  const payload = await composioRequest(env, '/tools?' + params.toString());
+  const payload = await composioRequest(env, '/tools?' + params.toString(), { signal });
 
   const items = [];
   const seenItems = new Set();
@@ -456,12 +456,12 @@ async function getComposioGeminiTools(env, enabledToolkitSlugs, queryText = '') 
   return { declarations, metadata };
 }
 
-async function executeComposioTool(env, userId, toolSlug, args, metadata = null, callbackUrl = '') {
+async function executeComposioTool(env, userId, toolSlug, args, metadata = null, callbackUrl = '', signal) {
   const toolkitSlug = String(metadata?.toolkitSlug || '').trim();
 
   const accounts = toolkitSlug
-    ? await listConnectedAccounts(env, userId, toolkitSlug)
-    : await listConnectedAccounts(env, userId);
+    ? await listConnectedAccounts(env, userId, toolkitSlug, signal)
+    : await listConnectedAccounts(env, userId, '', signal);
 
   const account = accounts.find(item =>
     String(item?.toolkit?.slug || item?.toolkit_slug || '').trim().toLowerCase() ===
@@ -469,6 +469,7 @@ async function executeComposioTool(env, userId, toolSlug, args, metadata = null,
   );
   const connectedAccountId = getConnectedAccountId(account);
 
+  if (signal?.aborted) throw signal.reason || Object.assign(new Error("Generation stopped."), { name: "AbortError" });
   if (!connectedAccountId) {
     const reconnectUrl = await createReconnectUrl(env, userId, toolkitSlug, callbackUrl);
     return {
@@ -492,7 +493,7 @@ async function executeComposioTool(env, userId, toolSlug, args, metadata = null,
     const result = await composioRequest(
       env,
       '/tools/execute/' + encodeURIComponent(toolSlug),
-      { method: 'POST', body: JSON.stringify(body) }
+      { method: 'POST', body: JSON.stringify(body), signal }
     );
 
     const success =
