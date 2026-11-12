@@ -478,3 +478,24 @@ body{ position: fixed; inset: 0; width: 100%; }
   #attachmentMenu .plus-menu-handle{ position: absolute; top: 0; left: 0; right: 0; height: 22px; }
   #contextMenu .context-action{ min-height: 52px; font-size: 16px; }
 }
+
+/* ---------- thinking indicator: three dots circling (no sparkle) ---------- */
+.trux-thinking-spark{ width: 20px; height: 20px; }
+.trux-orbit{ position: relative; display: block; width: 20px; height: 20px; animation: truxOrbit 1.15s linear infinite; }
+.trux-orbit i{
+  position: absolute; left: 50%; top: 50%; width: 5.5px; height: 5.5px; margin: -2.75px 0 0 -2.75px; border-radius: 50%;
+  background: var(--acc); transform: rotate(var(--a)) translateY(-7px);
+}
+.trux-orbit i:nth-child(1){ opacity: 1; } .trux-orbit i:nth-child(2){ opacity: .62; } .trux-orbit i:nth-child(3){ opacity: .3; }
+@keyframes truxOrbit{ to{ transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce){ .trux-orbit{ animation-duration: 3s; } }
+
+/* ---------- source pills: small round favicons under the answer ---------- */
+.sources{ display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 2px; }
+.source-chip{
+  width: 28px; height: 28px; min-width: 28px; padding: 0; gap: 0; justify-content: center; border-radius: 50%;
+  background: var(--bg-3); border: 1px solid var(--line-2); overflow: hidden; flex: none;
+  transition: transform var(--dur-2) var(--ease), background var(--dur-2) var(--ease);
+}
+.source-chip img, .source-chip .sc-dot{ width: 16px; height: 16px; max-width: 16px; max-height: 16px; border-radius: 50%; object-fit: cover; display: block; }
+@media (hover: hover){ .source-chip:hover{ background: var(--bg-4); transform: translateY(-1px); } }

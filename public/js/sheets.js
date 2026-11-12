@@ -55,6 +55,52 @@
   scrim.addEventListener("click", closeAll);
   scrim.addEventListener("touchmove", e => e.preventDefault(), { passive: false });
 
+  /* ---------- swipe a sheet down to dismiss (context + model sheets; the plus menu has its own) ---------- */
+  function bindSwipe(el, close) {
+    if (!el || el.dataset.swipeBound) return;
+    el.dataset.swipeBound = "1";
+    let g = null;
+    el.addEventListener("touchstart", e => {
+      if (!phone.matches || e.touches.length !== 1) return;
+      g = { y: e.touches[0].clientY, last: e.touches[0].clientY, t: Date.now(), dy: 0, drag: false, top: el.scrollTop <= 0 };
+    }, { passive: true });
+    el.addEventListener("touchmove", e => {
+      if (!g) return;
+      const y = e.touches[0].clientY;
+      const dy = y - g.y;
+      if (!g.drag) {
+        if (dy <= 6 || !g.top || el.scrollTop > 0) { if (dy < 0) g = null; return; }
+        g.drag = true;
+        el.style.transition = "none";
+        el.style.animation = "none";
+      }
+      g.dy = Math.max(0, dy);
+      g.last = y;
+      el.style.transform = "translateY(" + g.dy + "px)";
+      scrim.style.opacity = String(Math.max(0, 1 - g.dy / (el.offsetHeight || 400)));
+      e.preventDefault();
+    }, { passive: false });
+    const end = () => {
+      if (!g) return;
+      const { drag, dy, t } = g; g = null;
+      if (!drag) return;
+      const fast = dy / Math.max(1, Date.now() - t) > 0.6;
+      el.style.transition = "transform .28s var(--ease-out)";
+      scrim.style.opacity = "";
+      if (dy > 90 || fast) {
+        el.style.transform = "translateY(100%)";
+        setTimeout(() => { close(); el.style.transition = ""; el.style.transform = ""; el.style.animation = ""; sync(); }, 220);
+      } else {
+        el.style.transform = "translateY(0)";
+        setTimeout(() => { el.style.transition = ""; el.style.transform = ""; el.style.animation = ""; }, 300);
+      }
+    };
+    el.addEventListener("touchend", end, { passive: true });
+    el.addEventListener("touchcancel", end, { passive: true });
+  }
+  bindSwipe(document.getElementById("contextMenu"), () => { try { closeChatContextMenu(); } catch {} });
+  bindSwipe(document.getElementById("modelDropdown"), () => { try { closeModelDropdown(); } catch {} });
+
   const observer = new MutationObserver(sync);
   menus().forEach(m => observer.observe(m.el, { attributes: true, attributeFilter: ["class", "style"] }));
   (phone.addEventListener ? phone.addEventListener.bind(phone, "change") : phone.addListener.bind(phone))(sync);

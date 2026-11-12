@@ -76,6 +76,8 @@ function applyRemoteChats(remote) {
   for (const [id, meta] of Object.entries(remote || {})) {
     if (!meta || typeof meta !== "object") continue;
     next[id] = meta;
+    /* Chats the user deleted are only hidden: the data stays in the database (retention). */
+    if (meta.deleted === true) { delete chatSessions[id]; continue; }
     const local = chatSessions[id] || { messages: [], messagesLoaded: false };
     chatSessions[id] = {
       ...local,
@@ -93,7 +95,7 @@ function applyRemoteChats(remote) {
   // chats whose meta hasn't landed yet are kept.
   for (const id of Object.keys(chatSessions)) {
     const session = chatSessions[id];
-    if (next[id] || session?.incognito) continue;
+    if ((next[id] && next[id].deleted !== true) || session?.incognito) continue;
     if (truxSyncedMeta[id] || session?.messagesLoaded === false) delete chatSessions[id];
   }
   truxSyncedMeta = next;
@@ -171,10 +173,15 @@ function saveChatSessions() {
       }
     }
   }
+  /* Deleting a chat only hides it (deleted flag). Nothing is removed from the database;
+     the owner can ask for real deletion by email. */
   for (const id of Object.keys(truxSyncedMeta)) {
     if (chatSessions[id]) continue;
-    updates[`chats/${id}`] = null;
-    updates[`messages/${id}`] = null;
+    if (truxSyncedMeta[id]?.deleted !== true) {
+      updates[`chats/${id}/deleted`] = true;
+      updates[`chats/${id}/deletedAt`] = Date.now();
+      truxSyncedMeta[id] = { ...truxSyncedMeta[id], deleted: true };
+    }
     delete truxSyncedMessageIds[id];
     stopStreamWatcher(id);
   }

@@ -41,7 +41,7 @@ function buildAssistantRow({ animate = true } = {}) {
   row.innerHTML = `<div class="trux-response-stack">
     <div class="trux-thinking-panel trux-chat-thinking" id="${ids.thid}" data-thinking-visible="true">
       <div class="trux-thinking-bar">
-        <span class="trux-thinking-spark trux-thinking-chat-spark" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 1.5C13.45 7.95 16.05 10.55 22.5 12C16.05 13.45 13.45 16.05 12 22.5C10.55 16.05 7.95 13.45 1.5 12C7.95 10.55 10.55 7.95 12 1.5Z"/></svg></span>
+        <span class="trux-thinking-spark trux-thinking-chat-spark" aria-hidden="true"><span class="trux-orbit"><i style="--a:0deg"></i><i style="--a:120deg"></i><i style="--a:240deg"></i></span></span>
         <div class="trux-thinking-copy"><span class="status-msg" id="${ids.sid}" role="status" aria-live="polite"><span class="thinking-status-line compact"></span><span class="thinking-status-line full"></span></span></div>
         <button type="button" class="trux-thinking-toggle" hidden onclick="toggleThinkingDetails('${ids.thid}')" aria-expanded="false" aria-label="Expand AI activity" title="Expand AI activity"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></button>
       </div>

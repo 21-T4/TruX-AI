@@ -175,7 +175,7 @@
    with a negative animation-delay, so a re-render mid-fade resumes instead of
    restarting. Keep the duration in step with FADE_MS (460) in messages.js. */
 .rv{
-  animation: truxFadeIn 1100ms cubic-bezier(.4,0,.2,1) both;}
+  animation: truxFadeIn 700ms cubic-bezier(.4,0,.2,1) both;}
 @keyframes truxFadeIn{
   0%{ opacity: 0; }
   100%{ opacity: 1; }
@@ -193,3 +193,11 @@
   .bubble:not(.user-bubble){ font-size: 16px; line-height: 1.68; }
   .code-body code{ font-size: 12.5px; }
 }
+
+/* dimmed tail while streaming: the newest ~5 lines are darker, easing to full strength behind the cursor */
+.md-stream{ position: relative; }
+.md-stream.tail-fade{
+  -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(var(--tail-y, 0px) - var(--tail-z, 150px)), rgba(0,0,0,var(--tail-a, .32)) var(--tail-y, 0px), rgba(0,0,0,var(--tail-a, .32)) 100%);
+          mask-image: linear-gradient(to bottom, #000 0, #000 calc(var(--tail-y, 0px) - var(--tail-z, 150px)), rgba(0,0,0,var(--tail-a, .32)) var(--tail-y, 0px), rgba(0,0,0,var(--tail-a, .32)) 100%);
+}
+@media (prefers-reduced-motion: reduce){ .md-stream.tail-fade{ -webkit-mask-image: none; mask-image: none; } }
