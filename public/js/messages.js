@@ -354,17 +354,14 @@ function createStreamRenderer(bubble) {
   let settled = 0;
   let liveEl = null;
   let liveHtml = "";
-  let timerId = null;
   let frameId = null;
   let stopped = false;
   let finished = false;
   let doneCb = null;
-  let lastPaintAt = 0;
-  const FRAME_MS = 48;
 
   function commitBlock(html, live = false) {
     const el = document.createElement("div");
-    el.className = "md-block" + (live ? " live" : " stream-block-enter");
+    el.className = "md-block" + (live ? " live" : "");
     el.innerHTML = html;
     host.appendChild(el);
     renderTruxDiagrams(el);
@@ -446,17 +443,13 @@ function createStreamRenderer(bubble) {
   }
 
   function schedule() {
-    if (stopped || timerId !== null || frameId !== null) return;
-    const elapsed = lastPaintAt ? performance.now() - lastPaintAt : FRAME_MS;
-    const delay = Math.max(0, FRAME_MS - elapsed);
-    timerId = window.setTimeout(() => {
-      timerId = null;
-      frameId = requestAnimationFrame(() => {
-        frameId = null;
-        lastPaintAt = performance.now();
-        paint();
-      });
-    }, delay);
+    // Coalesce tokens into the next paint only. A fixed timer throttled the UI
+    // to ~20fps and added an avoidable delay before the first visible text.
+    if (stopped || frameId !== null) return;
+    frameId = requestAnimationFrame(() => {
+      frameId = null;
+      paint();
+    });
   }
 
   return {
@@ -488,9 +481,7 @@ function createStreamRenderer(bubble) {
     },
     cancel() {
       stopped = true;
-      if (timerId !== null) clearTimeout(timerId);
       if (frameId !== null) cancelAnimationFrame(frameId);
-      timerId = null;
       frameId = null;
       liveEl?.classList.remove("live");
       if (doneCb) {
