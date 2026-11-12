@@ -34,7 +34,7 @@ const PLAN_SCHEMA = {
   properties: {
     title: { type: 'STRING' },
     aspectRatio: { type: 'STRING', enum: ['16:9', '9:16'] },
-    length: { type: 'INTEGER', enum: VIDEO_LENGTHS },
+    length: { type: 'INTEGER', description: 'Duration in seconds: 8, 18, or 28.' },
     look: { type: 'STRING' },
     shots: {
       type: 'ARRAY',
@@ -82,7 +82,8 @@ export async function planVideo({ brief, length = 0, aspectRatio = '', hasImage 
       signal
     });
     const plan = JSON.parse(text);
-    const count = editing ? 1 : Math.round(((length || plan.length || 8) - 8) / OMNI_STEP_SECONDS) + 1;
+    const chosenLength = VIDEO_LENGTHS.includes(Number(length)) ? Number(length) : (VIDEO_LENGTHS.includes(Number(plan.length)) ? Number(plan.length) : 8);
+    const count = editing ? 1 : Math.round((chosenLength - 8) / OMNI_STEP_SECONDS) + 1;
     const shots = (plan.shots || []).filter(s => s?.prompt).slice(0, count);
     if (!shots.length) throw new Error('empty plan');
     return {
