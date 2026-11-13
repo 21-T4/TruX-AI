@@ -33,7 +33,7 @@ const VIDEO_TOOL = {
     type: 'object',
     properties: {
       brief: { type: 'string', description: 'What the video should show: story, subject, style, mood, dialogue, music. Pass the user\'s idea faithfully; the director expands it.' },
-      length: { type: 'integer', enum: VIDEO_LENGTHS, description: 'Seconds. Omit to let the director choose.' },
+      length: { type: 'integer', description: 'Seconds: use 8, 18, or 28. Omit to let the director choose.' },
       aspectRatio: { type: 'string', enum: ['16:9', '9:16'] },
       reference: { type: 'string', enum: ['none', 'image', 'edit_video'], description: 'image = animate the attached image; edit_video = edit the attached video.' }
     },
@@ -181,7 +181,7 @@ export class Toolbox {
       }
       case 'trux_generate_image': return { response: await this.image(args, signal) };
       case 'trux_generate_video': return { response: await this.video(args, signal) };
-      case 'trux_composio_discover_tools': return { response: await this.discover(args) };
+      case 'trux_composio_discover_tools': return { response: await this.discover(args, signal) };
       case 'trux_bash': return this.bash(args, signal);
       case 'trux_browser': return this.browser(args, signal);
       case 'trux_screenshot': return this.browser({ actions: [{ type: 'goto', url: args.url }], fullPage: args.fullPage, showUser: true }, signal);
@@ -194,7 +194,7 @@ export class Toolbox {
         return { response: { ok: true, status: 'sent_to_device', note: prepared.note } };
       }
       default:
-        if (this.composioMeta.has(call.name)) return this.composio(call);
+        if (this.composioMeta.has(call.name)) return this.composio(call, signal);
         return { response: { ok: false, error: 'Unknown tool: ' + call.name } };
     }
   }
@@ -304,10 +304,10 @@ export class Toolbox {
     return { response: { ok: true, note: `${file.name} is now shown to the user.` } };
   }
 
-  async discover(args) {
+  async discover(args, signal) {
     const query = String(args.query || '').trim();
     if (!query) return { ok: false, error: 'Describe the action you want to find.' };
-    const found = await getComposioGeminiTools(this.env, this.connectedSlugs, query);
+    const found = await getComposioGeminiTools(this.env, this.connectedSlugs, query, signal);
     const known = new Set(this.dynamic.map(d => d.name));
     for (const declaration of found.declarations || []) {
       if (!known.has(declaration.name) && this.dynamic.length < 60) this.dynamic.push(declaration);
@@ -320,11 +320,11 @@ export class Toolbox {
     };
   }
 
-  async composio(call) {
+  async composio(call, signal) {
     const meta = this.composioMeta.get(call.name);
     const plugin = PLUGIN_CATALOG.find(p => p.slugs.includes(meta.toolkitSlug));
     const callbackUrl = this.origin + '/?trux_plugins=1&plugin=' + encodeURIComponent(plugin?.id || '') + '&composio_callback=1';
-    const result = await executeComposioTool(this.env, this.user.uid, call.name, call.args || {}, meta, callbackUrl);
+    const result = await executeComposioTool(this.env, this.user.uid, call.name, call.args || {}, meta, callbackUrl, signal);
     if (result?.authRequired) {
       this.send({
         type: 'plugin_auth_required',

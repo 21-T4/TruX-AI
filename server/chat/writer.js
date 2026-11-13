@@ -18,7 +18,7 @@ export class MessageWriter {
     if (!this.enabled) return;
     const db = await getDb();
     this.ref = db.ref(this.path);
-    await this.ref.set(this.state);
+    await this.ref.update(this.state);
   }
 
   update(patch) {

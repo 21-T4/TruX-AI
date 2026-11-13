@@ -25,6 +25,7 @@ body{ font: 400 15px/1.55 var(--font-body); letter-spacing: 0; }
 
 /* ---------- top bar ---------- */
 .topbar{ background: transparent; }
+
 .model-picker-btn{ height: 38px; padding: 0 10px 0 12px; border-radius: 10px; font: 500 15px/1 var(--font-ui); letter-spacing: 0; color: var(--txt-2); }
 .model-picker-btn:hover, .model-picker-btn[aria-expanded="true"]{ background: var(--bg-3); color: var(--txt); }
 .model-dropdown-menu, .attach-menu{ background: var(--bg-2); border-color: var(--line-2); border-radius: 16px; box-shadow: var(--shadow-3); }
