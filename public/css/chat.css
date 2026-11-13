@@ -169,11 +169,13 @@
 /* ---------- smooth line-by-line fade-in ----------
    messages.js wraps each newly revealed run of text in <span class="rv">
    with a negative animation-delay, so a re-render mid-fade resumes instead of
-   restarting. Keep the duration in step with FADE_MS (460) in messages.js. */
+   restarting. Keep the duration in step with FADE_MS in messages.js.
+   New words fade in to a soft grey, then glide up to full colour. */
 .rv{
-  animation: truxFadeIn 650ms ease-out both;}
+  animation: truxFadeIn 1500ms linear both;}
 @keyframes truxFadeIn{
-  0%{ opacity: 0; }
+  0%{ opacity: 0; animation-timing-function: cubic-bezier(.25,.6,.35,1); }
+  28%{ opacity: .38; animation-timing-function: cubic-bezier(.3,.1,.3,1); }
   100%{ opacity: 1; }
 }
 /* inline spans can't be transformed; give them a block-ish box without breaking wrapping */
@@ -189,13 +191,3 @@
   .bubble:not(.user-bubble){ font-size: 16px; line-height: 1.68; }
   .code-body code{ font-size: 12.5px; }
 }
-
-/* dimmed tail while streaming: a small gradient overlay (not a mask on the whole answer, which breaks on tall text)
-   fades the newest ~5 lines toward the page colour; it eases away as more text arrives below. */
-.md-stream{ position: relative; }
-.md-stream.tail-fade::after{
-  content: ""; position: absolute; left: -2px; right: -2px; pointer-events: none;
-  top: calc(var(--tail-y, 0px) - var(--tail-z, 150px)); height: calc(var(--tail-z, 150px) + 2px);
-  background: linear-gradient(to bottom, transparent 0, color-mix(in srgb, var(--bg) calc(var(--tail-o, .9) * 100%), transparent) 100%);
-}
-@media (prefers-reduced-motion: reduce){ .md-stream.tail-fade::after{ display: none; } }

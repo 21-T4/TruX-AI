@@ -89,7 +89,7 @@ Answers keep generating on the server after the app is closed or backgrounded. T
 
 ## Answer streaming and Stop
 
-Text appears the way modern chat apps show it: the newest ~5 lines fade in softly, and the lines above them settle into normal text. The renderer (`createStreamRenderer` in `public/js/messages.js`) reveals words at a reading pace (roughly 45–120 words a second, speeding up only when a backlog builds), eases the scroll position instead of jumping, and keeps going after the server says "done" so a long answer is never dumped at once. The fade timing lives in two places that must stay in step: `FADE_MS` in `messages.js` and the `.rv` animation in `public/css/chat.css`.
+Text appears the way modern chat apps show it: each newly revealed run of words fades in to a soft grey and then glides up to full colour, so only the newest few lines look dull and everything above them is already normal text. Only the text itself is dimmed; there is no overlay on the page. The renderer (`createStreamRenderer` in `public/js/messages.js`) reveals words at a quick reading pace (about 95–320 words a second, faster when a backlog builds), eases the scroll position instead of jumping, and keeps going after the server says "done" so a long answer is never dumped at once. The fade timing lives in two places that must stay in step: `FADE_MS` in `messages.js` and the `.rv` animation in `public/css/chat.css`.
 
 The send button turns into a Stop button while an answer is being generated and also while an already-received answer is still being revealed. Stopping keeps exactly the text that was shown, marks the message as stopped and re-enables the composer.
 

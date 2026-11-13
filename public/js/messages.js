@@ -347,7 +347,7 @@ function splitStreamBlocks(text) {
 
 function createStreamRenderer(bubble) {
   /* Replace the existing renderer in place. No second layer or duplicate host. */
-  bubble.innerHTML = '<div class="md-stream md-stream-fade-active tail-fade"></div>';
+  bubble.innerHTML = '<div class="md-stream"></div>';
   const host = bubble.firstElementChild;
 
   let target = "";
@@ -359,54 +359,17 @@ function createStreamRenderer(bubble) {
   let stopped = false;
   let rafId = null;
   let doneCb = null;
-  let lastRevealAt = -Infinity;
 
-  const FADE_MS = 650;               /* keep in step with .rv in chat.css */
-  const TAIL_LINES = 5;              /* the newest lines stay dimmed, then glide to full strength */
-  const TAIL_DIM = 0.28;
+  const FADE_MS = 1500;              /* keep in step with .rv in chat.css */
   let lastTickAt = 0;
   let settleUntil = 0;
   let budget = 0;                    /* fractional words owed to the reader */
 
-  /* ---- dimmed tail ----------------------------------------------------------
-     A CSS mask darkens the last few lines of the stream. Its position (--tail-y)
-     eases toward the end of the text every frame, so as new lines appear the older
-     ones brighten smoothly instead of stepping. When the stream ends the dimming
-     relaxes to full strength before the final clean render. */
-  let gy = 0, ga = TAIL_DIM, gTargetY = 0, gTargetA = TAIL_DIM, glideId = null, lineH = 0;
-  function measureLine() {
-    if (lineH) return lineH;
-    const cs = getComputedStyle(host);
-    lineH = parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize) || 16) * 1.65;
-    host.style.setProperty("--tail-z", Math.round(lineH * TAIL_LINES) + "px");
-    return lineH;
-  }
-  let glideAt = 0;
-  function glide(ts) {
-    glideId = null;
-    const dtg = glideAt ? Math.min(64, ts - glideAt) : 16;
-    glideAt = ts;
-    const kY = 1 - Math.exp(-dtg / 150), kA = 1 - Math.exp(-dtg / 320);   /* frame-rate independent easing */
-    gy += (gTargetY - gy) * kY;
-    if (Math.abs(gTargetY - gy) < 0.4) gy = gTargetY;
-    ga += (gTargetA - ga) * kA;
-    if (Math.abs(gTargetA - ga) < 0.004) ga = gTargetA;
-    host.style.setProperty("--tail-y", gy.toFixed(1) + "px");
-    host.style.setProperty("--tail-o", (1 - ga).toFixed(3));
-    if (gy !== gTargetY || ga !== gTargetA) glideId = requestAnimationFrame(glide); else glideAt = 0;
-  }
-  function aimTail() {
-    const lh = measureLine();
-    const end = liveEl && liveEl.parentNode === host ? liveEl.offsetTop + liveEl.offsetHeight : host.scrollHeight;
-    if (!gy) gy = Math.max(0, end - lh);
-    gTargetY = end;
-    if (glideId === null) glideId = requestAnimationFrame(glide);
-  }
-  function relaxTail() {
-    gTargetA = 1;
-    if (glideId === null) glideId = requestAnimationFrame(glide);
-  }
-
+  /* ---- dulled newest text ----------------------------------------------------
+     Only the freshly revealed words are dimmed (never a layer over the page): each run of
+     words fades in from nothing, rests at a soft grey for a moment and then glides up to the
+     normal text colour, so roughly the newest 4-5 lines are dull and everything above them
+     has already turned into regular text. */
   /* ---- line-by-line fade-in ----------------------------------------------
      The live block is re-rendered on every tick, so a plain CSS animation would
      restart each time. Instead we remember which text ranges (by character offset
@@ -539,7 +502,6 @@ function createStreamRenderer(bubble) {
     renderTruxDiagrams(liveEl);
     applyReveal(liveEl, now);
     liveEl.classList.toggle("single-line", liveEl.offsetHeight < 46);
-    aimTail();
     return true;
   }
 
@@ -567,11 +529,11 @@ function createStreamRenderer(bubble) {
 
     /* A steady reading pace (words per second) that speeds up gently only when far behind,
        so a response that arrives all at once is still revealed gradually. */
-    if (lastTickAt && timestamp - lastTickAt < 110) { rafId = requestAnimationFrame(tick); return; }   /* reveal about a line at a time */
-    const dt = lastTickAt ? Math.min(180, timestamp - lastTickAt) : 16;
+    if (lastTickAt && timestamp - lastTickAt < 55) { rafId = requestAnimationFrame(tick); return; }   /* reveal about a line at a time */
+    const dt = lastTickAt ? Math.min(150, timestamp - lastTickAt) : 16;
     lastTickAt = timestamp;
     const backlogWords = (target.length - shown) / 6;
-    const rate = Math.min(finished ? 150 : 120, 45 + backlogWords * (finished ? 0.6 : 0.4));   /* words per second */
+    const rate = Math.min(finished ? 320 : 240, 95 + backlogWords * (finished ? 1.2 : 0.9));   /* words per second */
     budget += dt * rate / 1000;
     const container = getActiveChatContainer();
     const stick = isNearBottom(container);
@@ -589,16 +551,14 @@ function createStreamRenderer(bubble) {
 
     if (finished && shown >= target.length) {
       /* Let the last lines finish fading in before the final clean re-render. */
-      const left = Math.max(fadeRemaining(performance.now()), settleUntil - performance.now());
-      if (!settleUntil) { settleUntil = performance.now() + 700; relaxTail(); }
+      const left = Math.max(fadeRemaining(performance.now()) - 260, settleUntil - performance.now());
+      if (!settleUntil) settleUntil = performance.now() + 120;
       if (left > 0 || performance.now() < settleUntil) {
         waitingFade = true;
         setTimeout(() => { waitingFade = false; start(); }, Math.max(left, settleUntil - performance.now()) + 30);
         return;
       }
       marks = []; markedLen = 0;
-      host.classList.remove("tail-fade");
-      host.style.removeProperty("--tail-y"); host.style.removeProperty("--tail-o");
       host.innerHTML = renderFormattedText(target, false);
       renderTruxDiagrams(host);
       scheduleTruxMath(host);
@@ -651,8 +611,6 @@ function createStreamRenderer(bubble) {
       stopped = true;
       if (rafId !== null) cancelAnimationFrame(rafId);
       rafId = null;
-      host.classList.remove("tail-fade");
-      host.classList.add("md-stream-fade-settling");
       if (doneCb) { const cb = doneCb; doneCb = null; try { cb(); } catch {} }
     },
     revealedText() { return target.slice(0, shown); },
