@@ -29,13 +29,13 @@ async function handleAuthAction() {
   const user = auth.currentUser;
   updateTruxProfileUI(user);
   const modal = getEl("profileModal");
-  if(modal){ modal.removeAttribute("data-settings-view"); modal.style.display = "flex"; modal.setAttribute("aria-hidden","false"); }
+  if(modal){ modal.removeAttribute("data-settings-view"); showOverlay(modal); modal.setAttribute("aria-hidden","false"); }
   void refreshTruxProfileInfo(user);
 }
 function closeProfileModal() {
   const modal=getEl("profileModal");
   if(!modal) return;
-  modal.style.display="none";
+  hideOverlay(modal);
   modal.removeAttribute("data-settings-view");
   modal.setAttribute("aria-hidden","true");
   closeProfileOption();
@@ -78,7 +78,7 @@ function openSettingsModal(section) {
     toast("Settings could not load. Please refresh TruX and try again.", "err");
     return;
   }
-  modal.style.display = "flex";
+  showOverlay(modal);
   modal.setAttribute("aria-hidden", "false");
   const requested = String(section || "home");
   try {
@@ -132,6 +132,6 @@ function openCodeSandbox(codeId, extension) {
     // Full HTML previews execute inside the same restricted iframe.
     frame.srcdoc = codeText;
   }
-  getEl("sandboxModal").style.display = "flex";
+  showOverlay(getEl("sandboxModal"));
 }
-function closeSandboxModal() { getEl("sandboxModal").style.display = "none"; }
+function closeSandboxModal() { hideOverlay(getEl("sandboxModal")); }

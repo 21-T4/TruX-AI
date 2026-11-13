@@ -300,7 +300,7 @@ function openLoginWall(view) {
   if (!wall) return;
   if (view) showLoginView(view);
   else if (!wall.dataset.view) showLoginView("signin");
-  wall.classList.add("active");
+  setOverlayActive(wall, true);
   wall.setAttribute("aria-hidden", "false");
   document.body.classList.add("login-wall-open");
   setTimeout(() => {
@@ -311,7 +311,7 @@ function openLoginWall(view) {
 function closeLoginWall() {
   const wall = getEl("loginWallModal");
   if (!wall) return;
-  wall.classList.remove("active");
+  setOverlayActive(wall, false);
   wall.setAttribute("aria-hidden", "true");
   document.body.classList.remove("login-wall-open");
   setLoginAuthMessage("");

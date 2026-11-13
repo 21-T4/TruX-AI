@@ -225,7 +225,7 @@ function getTruxLocationForTurn(){
 
 function dismissLocationConsent(useLocation){
   store.setItem("trux_location_prompted","true");
-  getEl("locationConsentModal") && getEl("locationConsentModal").classList.remove("active");
+  setOverlayActive(getEl("locationConsentModal"), false);
   if(useLocation){ store.setItem("trux_location_enabled","true"); requestTruxLocation({interactive:true,force:true}); }
   else { store.setItem("trux_location_enabled","false"); truxLocationCache=null; updateLocationSettingUI(); }
 }
@@ -234,7 +234,7 @@ function maybeAskForLocation(){
   if(!auth || !auth.currentUser) return;
   if(store.getItem("trux_location_prompted")==="true" || store.getItem("trux_location_enabled")==="false") return;
   if(!("geolocation" in navigator)){ store.setItem("trux_location_prompted","true"); return; }
-  setTimeout(function(){ const el=getEl("locationConsentModal"); if(el) el.classList.add("active"); },380);
+  setTimeout(function(){ const el=getEl("locationConsentModal"); if(el) setOverlayActive(el, true); },380);
 }
 
 function applyStoredAvatar(user){

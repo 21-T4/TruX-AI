@@ -28,10 +28,10 @@
   --safe-r: env(safe-area-inset-right, 0px);
 
   --ease:     cubic-bezier(.22,.61,.36,1);
-  --ease-out: cubic-bezier(.16,1,.3,1);
-  --dur-1: 120ms;
-  --dur-2: 200ms;
-  --dur-3: 340ms;
+  --ease-out: cubic-bezier(.22,1,.36,1);
+  --dur-1: 160ms;
+  --dur-2: 260ms;
+  --dur-3: 420ms;
 
   --z-topbar: 20;
   --z-panel: 30;
@@ -213,3 +213,11 @@ input, textarea, select,
 /* legacy decorative layers are retired */
 .bg, .colorful-bg, .bg-orb{ display: none !important; }
 
+
+/* Baseline: every interactive control eases its colour, border, shadow and press feedback the same way.
+   :where() keeps specificity at zero so any component can still define its own transition. */
+:where(button, a, summary, select, input:not([type="range"]), textarea, label.toggle .slider, .slider::before){
+  transition: background-color var(--dur-2) var(--ease), color var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease),
+              box-shadow var(--dur-2) var(--ease), opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease-out);
+}
+:where(button:not(:disabled):active){ transform: scale(.97); transition-duration: var(--dur-1); }

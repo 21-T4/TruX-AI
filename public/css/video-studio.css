@@ -10,7 +10,7 @@ body[data-media-mode="video"] .video-studio{display:flex;flex:1 1 auto;min-heigh
 .vs-opt{display:flex;flex-direction:column;gap:6px}
 .vs-opt-label{font-size:12px;color:var(--txt-4)}
 .vs-seg{display:inline-flex;padding:3px;border-radius:12px;background:var(--bg-2);gap:2px}
-.vs-seg button{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:0;border-radius:9px;background:transparent;color:var(--txt-3);font:500 13px var(--font-ui);cursor:pointer;transition:background .15s,color .15s}
+.vs-seg button{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:0;border-radius:9px;background:transparent;color:var(--txt-3);font:500 13px var(--font-ui);cursor:pointer;transition:background var(--dur-1),color var(--dur-1)}
 .vs-seg button.on{background:var(--bg-4);color:var(--txt);box-shadow:0 1px 2px rgba(var(--shade),.18)}
 @media (hover:hover){.vs-seg button:not(.on):hover{color:var(--txt)}}
 .vs-ar{display:inline-block;border:1.5px solid currentColor;border-radius:2px}
