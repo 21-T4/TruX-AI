@@ -63,8 +63,6 @@ function closeModelDropdown() {
 function selectModel(m, e) {
         e?.stopPropagation();
   // Auto is the only Chat model selection; account entitlements remain separate.
-  const modelEl = getEl("profileModelText");
-  if(modelEl) modelEl.innerText = "Auto";
   const pickerLabel = getEl("modelPickerLabel");
   if(pickerLabel) pickerLabel.textContent = "Models";
   document.querySelectorAll("[data-model]").forEach(x => {
@@ -91,8 +89,6 @@ function setThinkingLevel(level, e) {
 function syncModelPickerUI() {
   const pickerLabel = getEl("modelPickerLabel");
   if(pickerLabel) pickerLabel.textContent = "Models";
-  const modelEl = getEl("profileModelText");
-  if(modelEl) modelEl.innerText = "Auto";
   document.querySelectorAll("[data-model]").forEach(x => {
     x.classList.toggle("active", x.dataset.model === "auto");
     const check = x.querySelector(".model-check");
@@ -310,9 +306,8 @@ function openProfileOption(key){
   const data=profileDetailData(key);
   document.querySelectorAll("#profileModal .profile-option-list").forEach(el=>el.style.display="none");
   document.querySelectorAll("#profileModal .profile-list-group-title").forEach(el=>el.style.display="none");
-  const hero=getEl("profileHero"), summary=getEl("profileMetaSummary"), actions=getEl("profileActionsRow");
+  const hero=getEl("profileHero"), actions=getEl("profileActionsRow");
   if(hero) hero.style.display="none";
-  if(summary) summary.style.display="none";
   if(actions) actions.style.display="none";
   if(detail){ detail.hidden=false; getEl("profileDetailTitle").textContent=data.title; getEl("profileDetailSubtitle").textContent=data.subtitle; getEl("profileDetailBody").innerHTML=data.html; }
   const scroller=getEl("profileModal"); if(scroller) scroller.scrollTop=0;
@@ -322,9 +317,8 @@ function closeProfileOption(){
   currentProfileOption=null;
   document.querySelectorAll("#profileModal .profile-option-list").forEach(el=>el.style.display="");
   document.querySelectorAll("#profileModal .profile-list-group-title").forEach(el=>el.style.display="");
-  const hero=getEl("profileHero"), summary=getEl("profileMetaSummary"), actions=getEl("profileActionsRow");
+  const hero=getEl("profileHero"), actions=getEl("profileActionsRow");
   if(hero) hero.style.display="";
-  if(summary) summary.style.display="";
   if(actions) actions.style.display="";
   const detail=getEl("profileDetailView");
   if(detail) detail.hidden=true;
@@ -523,7 +517,4 @@ function updateAllUsageUI() {
   getEl("imageUsageBarFill").style.width = Math.min(100, (iU.count / 15) * 100) + "%";
   getEl("imageUsageText").innerText = owner ? `${iU.count} / 15 Images · Owner access` : `${iU.count} / 15 Images`;
 
-  const plan = getEl("profilePlanText"), limit = getEl("profileLimitText");
-  if(plan) plan.innerText = owner ? "Owner" : (currentPlanTier === "pro" ? "Pro" : "Core");
-  if(limit) limit.innerText = "Unlimited";
 }

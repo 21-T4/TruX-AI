@@ -361,9 +361,9 @@ function createStreamRenderer(bubble) {
   let doneCb = null;
   let lastRevealAt = -Infinity;
 
-  const FADE_MS = 600;               /* keep in step with .rv in chat.css */
+  const FADE_MS = 650;               /* keep in step with .rv in chat.css */
   const TAIL_LINES = 5;              /* the newest lines stay dimmed, then glide to full strength */
-  const TAIL_DIM = 0.1;
+  const TAIL_DIM = 0.28;
   let lastTickAt = 0;
   let settleUntil = 0;
   let budget = 0;                    /* fractional words owed to the reader */
@@ -543,6 +543,20 @@ function createStreamRenderer(bubble) {
     return true;
   }
 
+  /* the view follows the growing text with an eased glide instead of jumping a line at a time */
+  let scrollId = null;
+  function easeScroll() {
+    if (scrollId !== null) return;
+    const step = () => {
+      scrollId = null;
+      const c = getActiveChatContainer();
+      if (!c || stopped) return;
+      const d = (c.scrollHeight - c.clientHeight) - c.scrollTop;
+      if (d > 1) { c.scrollTop += Math.max(1, d * 0.16); scrollId = requestAnimationFrame(step); }
+    };
+    scrollId = requestAnimationFrame(step);
+  }
+
   function tick(timestamp) {
     rafId = null;
     if (stopped) return;
@@ -553,11 +567,11 @@ function createStreamRenderer(bubble) {
 
     /* A steady reading pace (words per second) that speeds up gently only when far behind,
        so a response that arrives all at once is still revealed gradually. */
-    if (lastTickAt && timestamp - lastTickAt < 100) { rafId = requestAnimationFrame(tick); return; }   /* paint a few words at a time, not every frame */
-    const dt = lastTickAt ? Math.min(160, timestamp - lastTickAt) : 16;
+    if (lastTickAt && timestamp - lastTickAt < 110) { rafId = requestAnimationFrame(tick); return; }   /* reveal about a line at a time */
+    const dt = lastTickAt ? Math.min(180, timestamp - lastTickAt) : 16;
     lastTickAt = timestamp;
     const backlogWords = (target.length - shown) / 6;
-    const rate = Math.min(finished ? 50 : 40, 18 + backlogWords * (finished ? 0.1 : 0.06));
+    const rate = Math.min(finished ? 150 : 120, 45 + backlogWords * (finished ? 0.6 : 0.4));   /* words per second */
     budget += dt * rate / 1000;
     const container = getActiveChatContainer();
     const stick = isNearBottom(container);
@@ -569,14 +583,14 @@ function createStreamRenderer(bubble) {
       if (nextShown > shown) {
         shown = nextShown;
         advanced = paint();
-        if (stick) container.scrollTop = container.scrollHeight;
+        if (stick) easeScroll();
       }
     }
 
     if (finished && shown >= target.length) {
       /* Let the last lines finish fading in before the final clean re-render. */
       const left = Math.max(fadeRemaining(performance.now()), settleUntil - performance.now());
-      if (!settleUntil) { settleUntil = performance.now() + 900; relaxTail(); }
+      if (!settleUntil) { settleUntil = performance.now() + 700; relaxTail(); }
       if (left > 0 || performance.now() < settleUntil) {
         waitingFade = true;
         setTimeout(() => { waitingFade = false; start(); }, Math.max(left, settleUntil - performance.now()) + 30);
@@ -641,6 +655,7 @@ function createStreamRenderer(bubble) {
       host.classList.add("md-stream-fade-settling");
       if (doneCb) { const cb = doneCb; doneCb = null; try { cb(); } catch {} }
     },
+    revealedText() { return target.slice(0, shown); },
     get received() { return target; }
   };
 }

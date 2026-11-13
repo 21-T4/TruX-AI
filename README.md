@@ -86,3 +86,21 @@ To try the sandbox locally run `cd sandbox && npm install && node server.mjs` an
 ## Background answers
 
 Answers keep generating on the server after the app is closed or backgrounded. The reply is stored as it is written, the app follows it again when it is reopened (or the network returns), and a push notification is sent when it finishes. If you host on Cloud Run, deploy with CPU always allocated (`--no-cpu-throttling`) so the instance keeps working after the client disconnects.
+
+## Answer streaming and Stop
+
+Text appears the way modern chat apps show it: the newest ~5 lines fade in softly, and the lines above them settle into normal text. The renderer (`createStreamRenderer` in `public/js/messages.js`) reveals words at a reading pace (roughly 45–120 words a second, speeding up only when a backlog builds), eases the scroll position instead of jumping, and keeps going after the server says "done" so a long answer is never dumped at once. The fade timing lives in two places that must stay in step: `FADE_MS` in `messages.js` and the `.rv` animation in `public/css/chat.css`.
+
+The send button turns into a Stop button while an answer is being generated and also while an already-received answer is still being revealed. Stopping keeps exactly the text that was shown, marks the message as stopped and re-enables the composer.
+
+## Chats and deleting
+
+Deleting a chat (or "Remove all chats") only hides it: the chat is flagged `deleted`/`deletedAt` in the Realtime Database and the server ignores requests that would wipe message history. Nothing is lost from the database by a delete in the UI.
+
+## Front end notes
+
+- Scripts are classic scripts sharing globals; the order in `index.html` matters.
+- Font: Google Sans (with Google Sans Flex / Code) via the font tokens in `tokens.css`.
+- On phones the model picker and the message menu open as bottom sheets (`sheets.js`) that can be dismissed by swiping down. `--app-h` follows the visual viewport so the keyboard does not resize the page.
+- Bump `CACHE_NAME` in `public/sw.js` whenever front-end files change so installed apps pick up the update.
+- Final audit: dead CSS rules, references to removed UI elements (profile summary fields, chat help modal), unused helpers and duplicate code were removed. Lint is clean apart from three guarded `typeof` references that are defined at runtime by `plugins.js`/`live.js`.
