@@ -4,7 +4,7 @@
  * - /api/ is never touched.
  * - Push messages from FCM are shown directly from the raw `push` event, so the
  *   worker doesn't need to load the Firebase SDK or embed any config. */
-const CACHE_NAME = 'trux-ai-v50';
+const CACHE_NAME = 'trux-ai-v51';
 const ASSETS_TO_CACHE = ['/manifest.json', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', (event) => {

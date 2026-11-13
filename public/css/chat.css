@@ -169,10 +169,10 @@
 /* ---------- smooth line-by-line fade-in ----------
    messages.js wraps each newly revealed run of text in <span class="rv">
    with a negative animation-delay, so a re-render mid-fade resumes instead of
-   restarting. Keep the duration in step with FADE_MS in messages.js.
+   restarting. messages.js sets the real duration inline (it adapts to the streaming speed); 900ms is only the fallback.
    New words fade in to a soft grey, then glide up to full colour. */
 .rv{
-  animation: truxFadeIn 1500ms linear both;}
+  animation: truxFadeIn 900ms linear both;}
 @keyframes truxFadeIn{
   0%{ opacity: 0; animation-timing-function: cubic-bezier(.25,.6,.35,1); }
   28%{ opacity: .38; animation-timing-function: cubic-bezier(.3,.1,.3,1); }
@@ -180,9 +180,7 @@
 }
 /* inline spans can't be transformed; give them a block-ish box without breaking wrapping */
 .rv{ display: inline; white-space: pre-wrap; }
-.md-block.live::after{
-  content: ""; display: inline-block; width: 7px; height: 7px; margin-left: 4px; border-radius: 50%; vertical-align: middle; animation: truxSpark 1.2s var(--ease) infinite;}
-@media (prefers-reduced-motion: reduce){ .rv, .row.appear{ animation: none !important; } .md-block.live::after{ display: none; } }
+@media (prefers-reduced-motion: reduce){ .row.appear{ animation: none !important; } }
 
 /* phone */
 @media (max-width: 720px){

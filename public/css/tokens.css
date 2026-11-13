@@ -213,6 +213,3 @@ input, textarea, select,
 /* legacy decorative layers are retired */
 .bg, .colorful-bg, .bg-orb{ display: none !important; }
 
-@media (prefers-reduced-motion: reduce){
-  *, *::before, *::after{ animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
-}

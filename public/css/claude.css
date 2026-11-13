@@ -40,7 +40,6 @@ body{ font: 400 15px/1.55 var(--font-body); letter-spacing: 0; }
 .bubble :not(pre) > code{ background: var(--bg-3); border: 0;}
 .table-wrap, .code-file{ border-color: var(--line-2); }
 .code-file-header, .code-expand{ background: var(--bg-3); }
-.md-block.live::after{ background: var(--acc); }
 .trux-thinking-spark{ color: var(--acc); }
 
 /* ---------- composer ---------- */
@@ -273,8 +272,11 @@ body.chat-session-active #chatContainer{ animation: truxFade .4s var(--ease) bot
 html.theme-fade, html.theme-fade *, html.theme-fade *::before, html.theme-fade *::after{
   transition: background-color .35s var(--ease), color .35s var(--ease), border-color .35s var(--ease), fill .35s, stroke .35s !important;
 }
+/* Decorative motion is skipped for people who ask for reduced motion, but the answer text always fades in
+   (.rv): many phones report "reduce motion" when battery saver or "remove animations" is on, and that must
+   not turn the streaming effect off. */
 @media (prefers-reduced-motion: reduce){
-  *, *::before, *::after{ animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; }
+  *:not(.rv), *:not(.rv)::before, *:not(.rv)::after{ animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; }
 }
 
 /* ---------- settings, Gemini-style: big calm rounded cards, round icon chips, pill nav ---------- */

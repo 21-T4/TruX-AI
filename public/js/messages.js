@@ -360,7 +360,10 @@ function createStreamRenderer(bubble) {
   let rafId = null;
   let doneCb = null;
 
-  const FADE_MS = 1500;              /* keep in step with .rv in chat.css */
+  const TAIL_LINES = 5;              /* how many of the newest lines stay dull */
+  const FADE_MIN = 650, FADE_MAX = 1500;
+  let fadeMs = 900;                  /* adapts so that about TAIL_LINES lines are dull at any speed */
+  let growRate = 0, lastGrowH = 0, lastGrowAt = 0, lineH = 0;
   let lastTickAt = 0;
   let settleUntil = 0;
   let budget = 0;                    /* fractional words owed to the reader */
@@ -393,14 +396,29 @@ function createStreamRenderer(bubble) {
     return nodes;
   }
 
+  /* Measure how fast the text grows (lines per second) and size the fade so the dull zone stays ~5 lines. */
+  function adaptFade(now) {
+    if (!lineH) {
+      const cs = getComputedStyle(host);
+      lineH = parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize) || 16) * 1.65;
+    }
+    const h = host.offsetHeight;
+    if (lastGrowAt && now > lastGrowAt) {
+      const inst = Math.max(0, h - lastGrowH) / (now - lastGrowAt) * 1000 / lineH;   /* lines per second */
+      growRate = growRate ? growRate * 0.8 + inst * 0.2 : inst;
+    }
+    lastGrowH = h; lastGrowAt = now;
+    if (growRate > 0.3) fadeMs = Math.max(FADE_MIN, Math.min(FADE_MAX, TAIL_LINES / growRate * 1000));
+  }
+
   function applyReveal(el, now) {
-    if (!el || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) { marks = []; markedLen = 0; return; }
+    if (!el) { marks = []; markedLen = 0; return; }
     const nodes = revealTextNodes(el);
     let total = 0;
     for (const n of nodes) total += n.nodeValue.length;
     if (total < markedLen) { marks = []; markedLen = 0; }          /* block was restructured */
-    if (total > markedLen) { marks.push({ s: markedLen, e: total, t: now }); markedLen = total; }
-    marks = marks.filter(m => now - m.t < FADE_MS);
+    if (total > markedLen) { marks.push({ s: markedLen, e: total, t: now, d: Math.round(fadeMs) }); markedLen = total; }
+    marks = marks.filter(m => now - m.t < m.d);
     if (!marks.length) return;
 
     const pieces = [];
@@ -410,7 +428,7 @@ function createStreamRenderer(bubble) {
       pos = b;
       for (const m of marks) {
         const s = Math.max(m.s, a), e = Math.min(m.e, b);
-        if (e > s) pieces.push({ node, index, s: s - a, e: e - a, t: m.t });
+        if (e > s) pieces.push({ node, index, s: s - a, e: e - a, t: m.t, d: m.d });
       }
     });
     /* Wrap from the end of each node backwards so earlier offsets stay valid. */
@@ -421,6 +439,7 @@ function createStreamRenderer(bubble) {
       range.setEnd(piece.node, piece.e);
       const span = document.createElement("span");
       span.className = "rv";
+      span.style.animationDuration = piece.d + "ms";
       span.style.animationDelay = -Math.round(now - piece.t) + "ms";
       range.surroundContents(span);
     }
@@ -428,7 +447,7 @@ function createStreamRenderer(bubble) {
 
   function fadeRemaining(now) {
     let left = 0;
-    for (const m of marks) left = Math.max(left, FADE_MS - (now - m.t));
+    for (const m of marks) left = Math.max(left, m.d - (now - m.t));
     return left;
   }
 
@@ -500,6 +519,7 @@ function createStreamRenderer(bubble) {
     }
 
     renderTruxDiagrams(liveEl);
+    adaptFade(now);
     applyReveal(liveEl, now);
     liveEl.classList.toggle("single-line", liveEl.offsetHeight < 46);
     return true;
