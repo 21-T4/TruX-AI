@@ -31,34 +31,6 @@
 
 /* assistant message: full width, no bubble */
 .trux-response-stack{ display: flex; flex-direction: column; gap: 10px; width: 100%; min-width: 0; }
-
-/* Fade only assistant text as it scrolls under the chat's own top edge.
-   Keeping this inside .trux-row prevents it affecting user messages or UI. */
-.row.trux-row::before{
-  content: "";
-  position: sticky;
-  z-index: 2;
-  top: 0;
-  display: block;
-  flex: 0 0 158px;
-  width: 100%;
-  height: 158px;
-  margin-bottom: -158px;
-  pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--bg) 82%, transparent) 0%,
-    color-mix(in srgb, var(--bg) 68%, transparent) 28%,
-    color-mix(in srgb, var(--bg) 34%, transparent) 62%,
-    transparent 100%
-  );
-  animation: truxAssistantTopFade 360ms cubic-bezier(.2,.7,.2,1) both;
-}
-@keyframes truxAssistantTopFade{
-  from{ opacity: .35; }
-  to{ opacity: 1; }
-}
-
 .bubble:not(.user-bubble){
   width: 100%; min-width: 0;
   overflow-wrap: anywhere;
@@ -194,19 +166,21 @@
 .tfc-copy{ gap: 2px;}
 .tfc-copy b{ font: 550 13px/1.2 var(--font-ui);}
 
-/* ---------- response streaming ---------- */
-.md-stream{ contain: layout style; }
-.md-block.live{ min-height: 1em; }
-.md-block.stream-enter{
-  animation: truxStreamTextIn 240ms cubic-bezier(.2,.7,.2,1) both;
+/* ---------- smooth line-by-line fade-in ----------
+   messages.js wraps each newly revealed run of text in <span class="rv">
+   with a negative animation-delay, so a re-render mid-fade resumes instead of
+   restarting. messages.js sets the real duration inline (it adapts to the streaming speed); 900ms is only the fallback.
+   New words fade in to a soft grey, then glide up to full colour. */
+.rv{
+  animation: truxFadeIn 900ms linear both;}
+@keyframes truxFadeIn{
+  0%{ opacity: 0; animation-timing-function: cubic-bezier(.25,.6,.35,1); }
+  28%{ opacity: .38; animation-timing-function: cubic-bezier(.3,.1,.3,1); }
+  100%{ opacity: 1; }
 }
-@keyframes truxStreamTextIn{
-  from{ opacity: .42; filter: blur(.2px); transform: translateY(1px); }
-  to{ opacity: 1; filter: blur(0); transform: none; }
-}
-@media (prefers-reduced-motion: reduce){
-  .md-block.live, .md-block.stream-enter{ animation: none !important; }
-}
+/* inline spans can't be transformed; give them a block-ish box without breaking wrapping */
+.rv{ display: inline; white-space: pre-wrap; }
+@media (prefers-reduced-motion: reduce){ .row.appear{ animation: none !important; } }
 
 /* phone */
 @media (max-width: 720px){
@@ -215,4 +189,3 @@
   .bubble:not(.user-bubble){ font-size: 16px; line-height: 1.68; }
   .code-body code{ font-size: 12.5px; }
 }
-

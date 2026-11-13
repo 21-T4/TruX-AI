@@ -346,241 +346,294 @@ function splitStreamBlocks(text) {
 }
 
 function createStreamRenderer(bubble) {
-  /* Buffer model tokens, then reveal at a steady word-aware cadence. */
+  /* Replace the existing renderer in place. No second layer or duplicate host. */
   bubble.innerHTML = '<div class="md-stream"></div>';
   const host = bubble.firstElementChild;
 
-  let receivedText = "";
-  let visibleLength = 0;
+  let target = "";
+  let shown = 0;
   let settled = 0;
   let liveEl = null;
   let liveHtml = "";
-  let frameId = null;
-  let timerId = null;
+  let finished = false;
   let stopped = false;
-  let finishRequested = false;
+  let rafId = null;
   let doneCb = null;
-  let lastStepAt = 0;
 
-  // About 20 words per second on normal prose: not raw token bursts or a slow typewriter.
-  const TICK_MS = 26;
-  const CHARS_PER_SECOND = 118;
+  const TAIL_LINES = 5;              /* how many of the newest lines stay dull */
+  const FADE_MIN = 650, FADE_MAX = 1500;
+  let fadeMs = 900;                  /* adapts so that about TAIL_LINES lines are dull at any speed */
+  let growRate = 0, lastGrowH = 0, lastGrowAt = 0, lineH = 0;
+  let lastTickAt = 0;
+  let settleUntil = 0;
+  let budget = 0;                    /* fractional words owed to the reader */
 
-  function commitBlock(html, live = false) {
+  /* ---- dulled newest text ----------------------------------------------------
+     Only the freshly revealed words are dimmed (never a layer over the page): each run of
+     words fades in from nothing, rests at a soft grey for a moment and then glides up to the
+     normal text colour, so roughly the newest 4-5 lines are dull and everything above them
+     has already turned into regular text. */
+  /* ---- line-by-line fade-in ----------------------------------------------
+     The live block is re-rendered on every tick, so a plain CSS animation would
+     restart each time. Instead we remember which text ranges (by character offset
+     in the block's text) were revealed and when, and wrap those still fading in
+     <span class="rv"> with a negative animation-delay. The animation therefore
+     resumes where it was, and finished text stays unwrapped. */
+  let marks = [];                    /* { s, e, t } revealed ranges of the live block */
+  let markedLen = 0;
+  let waitingFade = false;
+
+  function revealTextNodes(root) {
+    const nodes = [];
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        const parent = node.parentElement;
+        return parent && parent.closest("pre, .katex, .code-file, .trux-diagram, script, style")
+          ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    return nodes;
+  }
+
+  /* Measure how fast the text grows (lines per second) and size the fade so the dull zone stays ~5 lines. */
+  function adaptFade(now) {
+    if (!lineH) {
+      const cs = getComputedStyle(host);
+      lineH = parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize) || 16) * 1.65;
+    }
+    const h = host.offsetHeight;
+    if (lastGrowAt && now > lastGrowAt) {
+      const inst = Math.max(0, h - lastGrowH) / (now - lastGrowAt) * 1000 / lineH;   /* lines per second */
+      growRate = growRate ? growRate * 0.8 + inst * 0.2 : inst;
+    }
+    lastGrowH = h; lastGrowAt = now;
+    if (growRate > 0.3) fadeMs = Math.max(FADE_MIN, Math.min(FADE_MAX, TAIL_LINES / growRate * 1000));
+  }
+
+  function applyReveal(el, now) {
+    if (!el) { marks = []; markedLen = 0; return; }
+    const nodes = revealTextNodes(el);
+    let total = 0;
+    for (const n of nodes) total += n.nodeValue.length;
+    if (total < markedLen) { marks = []; markedLen = 0; }          /* block was restructured */
+    if (total > markedLen) { marks.push({ s: markedLen, e: total, t: now, d: Math.round(fadeMs) }); markedLen = total; }
+    marks = marks.filter(m => now - m.t < m.d);
+    if (!marks.length) return;
+
+    const pieces = [];
+    let pos = 0;
+    nodes.forEach((node, index) => {
+      const a = pos, b = pos + node.nodeValue.length;
+      pos = b;
+      for (const m of marks) {
+        const s = Math.max(m.s, a), e = Math.min(m.e, b);
+        if (e > s) pieces.push({ node, index, s: s - a, e: e - a, t: m.t, d: m.d });
+      }
+    });
+    /* Wrap from the end of each node backwards so earlier offsets stay valid. */
+    pieces.sort((x, y) => x.index - y.index || y.s - x.s);
+    for (const piece of pieces) {
+      const range = document.createRange();
+      range.setStart(piece.node, piece.s);
+      range.setEnd(piece.node, piece.e);
+      const span = document.createElement("span");
+      span.className = "rv";
+      span.style.animationDuration = piece.d + "ms";
+      span.style.animationDelay = -Math.round(now - piece.t) + "ms";
+      range.surroundContents(span);
+    }
+  }
+
+  function fadeRemaining(now) {
+    let left = 0;
+    for (const m of marks) left = Math.max(left, m.d - (now - m.t));
+    return left;
+  }
+
+  /* Reveal a few words at a time (more when the stream has run ahead), never a half-received word. */
+  function nextRevealOffset(words = 1) {
+    const backlog = target.length - shown;
+    if (backlog <= 0) return shown;
+    let cursor = shown;
+    let count = 0;
+    while (cursor < target.length && count < words) {
+      let i = cursor;
+      while (i < target.length && /\s/.test(target[i])) i++;
+      while (i < target.length && !/\s/.test(target[i])) i++;
+      if (i >= target.length && !finished) break;      /* the last word may still be arriving */
+      while (i < target.length && /\s/.test(target[i])) i++;
+      cursor = i;
+      count++;
+    }
+    if (cursor <= shown && finished) return target.length;
+    return cursor;
+  }
+
+  function commitBlock(html, isLive) {
     const el = document.createElement("div");
-    el.className = "md-block stream-enter" + (live ? " live" : "");
+    el.className = "md-block" + (isLive ? " live" : "");
     el.innerHTML = html;
     host.appendChild(el);
-    if (html.includes("trux-diagram")) renderTruxDiagrams(el);
+    renderTruxDiagrams(el);
     return el;
   }
 
-  function sameNodeKind(a, b) {
-    return a.nodeType === b.nodeType &&
-      (a.nodeType !== Node.ELEMENT_NODE || a.tagName === b.tagName);
-  }
-
-  /* Reconcile parsed Markdown with the visible DOM. Existing text nodes keep
-     their prefix and only receive the new suffix; no whole-block replacement. */
-  function patchChildren(currentParent, nextParent) {
-    let current = currentParent.firstChild;
-    for (const next of nextParent.childNodes) {
-      if (!current) {
-        currentParent.appendChild(next.cloneNode(true));
-        continue;
-      }
-
-      if (!sameNodeKind(current, next)) {
-        const replacement = next.cloneNode(true);
-        currentParent.replaceChild(replacement, current);
-        current = replacement;
-      } else if (current.nodeType === Node.TEXT_NODE) {
-        const before = current.nodeValue || "";
-        const after = next.nodeValue || "";
-        if (after.startsWith(before)) current.appendData(after.slice(before.length));
-        else if (before !== after) current.nodeValue = after;
-      } else if (current.nodeType === Node.ELEMENT_NODE) {
-        for (const attr of Array.from(current.attributes)) {
-          if (!next.hasAttribute(attr.name)) current.removeAttribute(attr.name);
-        }
-        for (const attr of Array.from(next.attributes)) {
-          if (current.getAttribute(attr.name) !== attr.value) current.setAttribute(attr.name, attr.value);
-        }
-        patchChildren(current, next);
-      }
-
-      current = current.nextSibling;
-    }
-
-    while (current) {
-      const following = current.nextSibling;
-      currentParent.removeChild(current);
-      current = following;
-    }
-  }
-
-  function patchBlock(el, html) {
-    const parsed = document.createElement("div");
-    parsed.innerHTML = html;
-    patchChildren(el, parsed);
-    if (html.includes("trux-diagram")) renderTruxDiagrams(el);
-  }
-
-  function updateLiveBlock(html) {
-    if (!liveEl) {
-      liveEl = commitBlock(html, true);
-      return;
-    }
-
-    /* Keep an unfinished diagram source stable while its Markdown is arriving. */
-    const currentPending = liveEl.querySelector('.trux-diagram[data-trux-diagram-pending="true"]');
-    if (currentPending) {
-      const parsed = document.createElement("div");
-      parsed.innerHTML = html;
-      const nextPending = parsed.querySelector('.trux-diagram[data-trux-diagram-pending="true"]');
-      if (nextPending) {
-        const oldSource = currentPending.querySelector(".trux-diagram-source");
-        const newSource = nextPending.querySelector(".trux-diagram-source");
-        if (oldSource && newSource) oldSource.textContent = newSource.textContent;
-      } else {
-        patchBlock(liveEl, html);
-      }
-    } else {
-      patchBlock(liveEl, html);
-    }
-  }
-
   function paint() {
+    const visible = target.slice(0, shown);
+    const blocks = splitStreamBlocks(visible);
+    if (!blocks.length) return false;
+
+    /* Commit completed Markdown blocks once; refresh only the active tail. */
+    const now = performance.now();
+    while (settled < blocks.length - 1) {
+      if (liveEl) {
+        if (liveEl.parentNode === host) host.removeChild(liveEl);
+        liveEl = null;
+        liveHtml = "";
+      }
+      const el = commitBlock(renderFormattedText(blocks[settled], false), false);
+      applyReveal(el, now);                 /* carries the fade of the block that just finished */
+      marks = []; markedLen = 0;            /* the next block starts fresh */
+      setTimeout(() => el.classList.add("settled"), 400);
+      settled++;
+    }
+
+    const tail = blocks[blocks.length - 1];
+    const html = renderFormattedText(tail, !finished);
+    if (html === liveHtml) return false;
+    liveHtml = html;
+
+    if (!liveEl) liveEl = commitBlock(html, true);
+    else {
+      const currentPending = liveEl.querySelector('.trux-diagram[data-trux-diagram-pending="true"]');
+      if (currentPending) {
+        const parsed = document.createElement("div"); parsed.innerHTML = html;
+        const nextPending = parsed.querySelector('.trux-diagram[data-trux-diagram-pending="true"]');
+        if (nextPending) {
+          const oldSource = currentPending.querySelector(".trux-diagram-source");
+          const newSource = nextPending.querySelector(".trux-diagram-source");
+          if (oldSource && newSource) oldSource.textContent = newSource.textContent;
+        } else liveEl.innerHTML = html;
+      } else liveEl.innerHTML = html;
+    }
+
+    renderTruxDiagrams(liveEl);
+    adaptFade(now);
+    applyReveal(liveEl, now);
+    liveEl.classList.toggle("single-line", liveEl.offsetHeight < 46);
+    return true;
+  }
+
+  /* the view follows the growing text with an eased glide instead of jumping a line at a time */
+  let scrollId = null;
+  function easeScroll() {
+    if (scrollId !== null) return;
+    const step = () => {
+      scrollId = null;
+      const c = getActiveChatContainer();
+      if (!c || stopped) return;
+      const d = (c.scrollHeight - c.clientHeight) - c.scrollTop;
+      if (d > 1) { c.scrollTop += Math.max(1, d * 0.16); scrollId = requestAnimationFrame(step); }
+    };
+    scrollId = requestAnimationFrame(step);
+  }
+
+  function tick(timestamp) {
+    rafId = null;
     if (stopped) return;
     if (!bubble.isConnected) {
       stopped = true;
       return;
     }
 
+    /* A steady reading pace (words per second) that speeds up gently only when far behind,
+       so a response that arrives all at once is still revealed gradually. */
+    if (lastTickAt && timestamp - lastTickAt < 55) { rafId = requestAnimationFrame(tick); return; }   /* reveal about a line at a time */
+    const dt = lastTickAt ? Math.min(150, timestamp - lastTickAt) : 16;
+    lastTickAt = timestamp;
+    const backlogWords = (target.length - shown) / 6;
+    const rate = Math.min(finished ? 320 : 240, 95 + backlogWords * (finished ? 1.2 : 0.9));   /* words per second */
+    budget += dt * rate / 1000;
     const container = getActiveChatContainer();
-    const stickToBottom = !!container && isNearBottom(container);
-    const visibleText = receivedText.slice(0, visibleLength);
-    const blocks = splitStreamBlocks(visibleText);
-    const drained = finishRequested && visibleLength >= receivedText.length;
-
-    /* Freeze completed paragraphs in place; never remove and recreate them. */
-    while (settled < blocks.length - 1) {
-      const html = renderFormattedText(blocks[settled], false);
-      if (liveEl?.parentNode === host) {
-        patchBlock(liveEl, html);
-        liveEl.classList.remove("live");
-        liveEl = null;
-        liveHtml = "";
-      } else {
-        commitBlock(html);
-      }
-      settled++;
-    }
-
-    if (blocks.length) {
-      const tail = blocks[blocks.length - 1];
-      const html = renderFormattedText(tail, !drained);
-      if (html !== liveHtml) {
-        liveHtml = html;
-        updateLiveBlock(html);
-      }
-
-      if (drained) {
-        const finalHtml = renderFormattedText(tail, false);
-        if (finalHtml !== liveHtml) {
-          liveHtml = finalHtml;
-          updateLiveBlock(finalHtml);
-        }
-        liveEl?.classList.remove("live");
+    const stick = isNearBottom(container);
+    let advanced = false;
+    if (budget >= 1 && shown < target.length) {
+      const words = Math.floor(budget);
+      budget -= words;
+      const nextShown = nextRevealOffset(words);
+      if (nextShown > shown) {
+        shown = nextShown;
+        advanced = paint();
+        if (stick) easeScroll();
       }
     }
 
-    if (stickToBottom) container.scrollTop = container.scrollHeight;
-
-    if (drained) {
-      host.classList.remove("streaming");
+    if (finished && shown >= target.length) {
+      /* Let the last lines finish fading in before the final clean re-render. */
+      const left = Math.max(fadeRemaining(performance.now()) - 260, settleUntil - performance.now());
+      if (!settleUntil) settleUntil = performance.now() + 120;
+      if (left > 0 || performance.now() < settleUntil) {
+        waitingFade = true;
+        setTimeout(() => { waitingFade = false; start(); }, Math.max(left, settleUntil - performance.now()) + 30);
+        return;
+      }
+      marks = []; markedLen = 0;
+      host.innerHTML = renderFormattedText(target, false);
+      renderTruxDiagrams(host);
       scheduleTruxMath(host);
-      const callback = doneCb;
-      doneCb = null;
-      if (callback) callback();
+      if (stick) container.scrollTop = container.scrollHeight;
+      if (doneCb) {
+        const callback = doneCb;
+        doneCb = null;
+        callback();
+      }
+      return;
+    }
+
+    /* Keep going while there is text left to reveal, or while a finished stream settles. */
+    if (shown < target.length || finished) {
+      rafId = requestAnimationFrame(tick);
     }
   }
 
-  function schedule() {
-    if (stopped || timerId !== null || frameId !== null) return;
-    if (visibleLength >= receivedText.length && !finishRequested) return;
-
-    timerId = window.setTimeout(() => {
-      timerId = null;
-      if (visibleLength < receivedText.length) {
-        const now = performance.now();
-        const elapsed = lastStepAt
-          ? Math.min((now - lastStepAt) / 1000, 0.08)
-          : TICK_MS / 1000;
-        lastStepAt = now;
-
-        const advance = Math.max(1, Math.floor(elapsed * CHARS_PER_SECOND));
-        let next = Math.min(receivedText.length, visibleLength + advance);
-
-        // Prefer complete word boundaries when the next space is close.
-        // Very long words still progress instead of waiting indefinitely.
-        if (next < receivedText.length) {
-          const boundary = receivedText.indexOf(" ", next);
-          if (boundary >= 0 && boundary - next <= 3) next = boundary + 1;
-        }
-        visibleLength = Math.max(visibleLength, next);
-      }
-
-      frameId = requestAnimationFrame(() => {
-        frameId = null;
-        paint();
-        if (visibleLength < receivedText.length) schedule();
-      });
-    }, TICK_MS);
+  function start() {
+    if (rafId === null && !stopped && !waitingFade) rafId = requestAnimationFrame(tick);
   }
 
   return {
     push(chunk) {
-      if (stopped || finishRequested || !chunk) return;
-      receivedText += String(chunk);
-      schedule();
+      target += chunk;
+      start();
     },
     setText(text) {
-      const next = String(text || "");
-      if (next === receivedText) return;
-      if (!next.startsWith(receivedText)) {
-        host.replaceChildren();
-        settled = 0;
-        liveEl = null;
-        liveHtml = "";
-        visibleLength = 0;
-        lastStepAt = 0;
+      target = String(text || "");
+      /* Never let an updated authoritative payload expose half a word. */
+      shown = Math.min(shown, target.length);
+      while (shown > 0 && shown < target.length && !/\s/.test(target.charAt(shown - 1))) {
+        shown--;
       }
-      receivedText = next;
-      schedule();
+      start();
     },
-    finish(callback) {
-      if (stopped) {
-        try { callback?.(); } catch {}
+    finish(cb) {
+      finished = true;
+      doneCb = cb || null;
+      if (!bubble.isConnected) {
+        stopped = true;
+        if (rafId !== null) cancelAnimationFrame(rafId);
+        rafId = null;
         return;
       }
-      finishRequested = true;
-      doneCb = typeof callback === "function" ? callback : null;
-      schedule();
+      stopped = false;
+      start();
     },
     cancel() {
       stopped = true;
-      if (timerId !== null) clearTimeout(timerId);
-      if (frameId !== null) cancelAnimationFrame(frameId);
-      timerId = null;
-      frameId = null;
-      liveEl?.classList.remove("live");
-      if (doneCb) {
-        const callback = doneCb;
-        doneCb = null;
-        try { callback(); } catch {}
-      }
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      rafId = null;
+      if (doneCb) { const cb = doneCb; doneCb = null; try { cb(); } catch {} }
     },
-    get received() { return receivedText; }
+    revealedText() { return target.slice(0, shown); },
+    get received() { return target; }
   };
 }

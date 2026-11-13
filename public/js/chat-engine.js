@@ -327,8 +327,9 @@ async function sendPromptImpl() {
       const idx = session.messages.findIndex(m => m.id === ctx.messageId);
       if (idx >= 0) session.messages[idx] = stored; else session.messages.push(stored);
     } else session.messages.push(stored);
-    /* Flush the final authoritative text through the same live renderer. It
-       completes any queued animation frame without switching to a separate reveal animation. */
+    /* A finished answer is usually fully received long before it has been revealed. Let the stream
+       renderer keep revealing it at reading pace and only then swap in the final markup, instead of
+       replacing the bubble with the whole text the moment the server says "done". */
     const drain = !!(streamer && stored.status === "done" && stored.text);
     if (drain && isCurrent()) {
       activeAbortController = null;
@@ -472,6 +473,16 @@ function followServerTurn(ctx, session, getStreamer) {
 }
 
 function markGenerationStopped() {
+  if (activeDrain) {
+    /* Stop while the finished answer is still appearing: keep exactly what has been shown. */
+    const { streamer, stored } = activeDrain;
+    stored.text = streamer.revealedText().trimEnd();
+    stored.status = "stopped";
+    stored.incomplete = true;
+    streamer.cancel();            /* runs the completion callback, which settles the row */
+    queueSidebarSync();
+    return;
+  }
   if (generationStopRequested) return;
   const ctx = activeTurnContext;
   generationStopRequested = true;
