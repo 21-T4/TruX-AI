@@ -216,7 +216,7 @@
 
   /* The voice colour follows a smoothed level (quick to rise, slow to fall) and drifts gently, so it
      breathes instead of flickering with every audio buffer. */
-  let inTarget = 0, shownLevel = 0, levelLoop = 0, levelLast = 0;
+  let inTarget = 0, shownIn = 0, shownOut = 0, levelLoop = 0, levelLast = 0;
   function setLevel(inLevel) { inTarget = Math.max(inTarget, inLevel); }
   function levelFrame(ts) {
     levelLoop = 0;
@@ -224,16 +224,18 @@
     if (!panel || panel.hidden) return;
     const dt = levelLast ? Math.min(64, ts - levelLast) : 16;
     levelLast = ts;
-    const target = Math.min(1, Math.max(inTarget * 2.2, outLevel * 1.6));
+    const tIn = Math.min(1, inTarget * 2.2), tOut = Math.min(1, outLevel * 1.6);
     inTarget *= Math.exp(-dt / 90); outLevel *= Math.exp(-dt / 90);
-    const k = target > shownLevel ? 1 - Math.exp(-dt / 70) : 1 - Math.exp(-dt / 260);
-    shownLevel += (target - shownLevel) * k;
-    panel.style.setProperty("--trux-live-level", shownLevel.toFixed(3));
-    panel.style.setProperty("--trux-live-tone", (50 + 24 * Math.sin(ts / 1700) + 10 * Math.sin(ts / 610)).toFixed(1) + "%");
+    const ease = (cur, target) => cur + (target - cur) * (target > cur ? 1 - Math.exp(-dt / 70) : 1 - Math.exp(-dt / 280));
+    shownIn = ease(shownIn, tIn); shownOut = ease(shownOut, tOut);
+    const st = panel.style;
+    st.setProperty("--trux-live-in", shownIn.toFixed(3));        /* your voice */
+    st.setProperty("--trux-live-out", shownOut.toFixed(3));      /* TruX speaking */
+    st.setProperty("--trux-live-level", Math.max(shownIn * .8, shownOut).toFixed(3));
     levelLoop = requestAnimationFrame(levelFrame);
   }
   function startLevelLoop() { if (!levelLoop) { levelLast = 0; levelLoop = requestAnimationFrame(levelFrame); } }
-  function stopLevelLoop() { if (levelLoop) cancelAnimationFrame(levelLoop); levelLoop = 0; shownLevel = 0; inTarget = 0; }
+  function stopLevelLoop() { if (levelLoop) cancelAnimationFrame(levelLoop); levelLoop = 0; shownIn = 0; shownOut = 0; inTarget = 0; }
 
   function stopMic() {
     try { micNode?.port.close(); micNode?.disconnect(); } catch {}
