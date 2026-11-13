@@ -327,9 +327,8 @@ async function sendPromptImpl() {
       const idx = session.messages.findIndex(m => m.id === ctx.messageId);
       if (idx >= 0) session.messages[idx] = stored; else session.messages.push(stored);
     } else session.messages.push(stored);
-    /* A finished answer is usually fully received long before it has been revealed. Let the stream
-       renderer keep revealing it at reading pace and only then swap in the final markup, instead of
-       replacing the bubble with the whole text the moment the server says "done". */
+    /* Flush the final authoritative text through the same live renderer. It
+       completes any queued animation frame without switching to a separate reveal animation. */
     const drain = !!(streamer && stored.status === "done" && stored.text);
     if (drain && isCurrent()) {
       activeAbortController = null;
@@ -369,7 +368,10 @@ async function sendPromptImpl() {
         userMessage.id = ev.userMessageId;
         rememberMessageId(chatId, ev.userMessageId); rememberMessageId(chatId, ev.messageId);
         row.dataset.messageId = ev.messageId;
-        if (generationStopRequested && !incognito) requestServerStop(chatId, ev.messageId);
+        if (generationStopRequested && !incognito) {
+          setThinkingStatus(sid, "Stopping…");
+          requestServerStop(chatId, ev.messageId);
+        }
         break;
       case "status":
         if (!streamer) setThinkingStatus(sid, ev.status || "");
@@ -470,22 +472,20 @@ function followServerTurn(ctx, session, getStreamer) {
 }
 
 function markGenerationStopped() {
-  if (activeDrain) {
-    /* Stop while the finished answer is still appearing: keep exactly what has been shown. */
-    const { streamer, stored } = activeDrain;
-    stored.text = streamer.revealedText().trimEnd();
-    stored.status = "stopped";
-    stored.incomplete = true;
-    streamer.cancel();            /* runs the completion callback, which settles the row */
-    queueSidebarSync();
-    return;
-  }
+  if (generationStopRequested) return;
   const ctx = activeTurnContext;
   generationStopRequested = true;
-  if (ctx && !ctx.incognito && ctx.messageId) {
-    // The server owns the turn; ask it to stop and let it report back.
-    requestServerStop(ctx.chatId, ctx.messageId);
-    if (!activeAbortController) setThinkingStatus(ctx.row?.querySelector(".status-msg")?.id, "Stopping…");
+
+  const button = getEl("actionBtn");
+  if (button) {
+    button.title = "Stopping…";
+    button.setAttribute("aria-label", "Stopping…");
+  }
+  if (ctx?.row) setThinkingStatus(ctx.row.querySelector(".status-msg")?.id, "Stopping…");
+
+  if (ctx && !ctx.incognito) {
+    /* Keep SSE open so the persistent server turn can receive its stop flag. */
+    if (ctx.messageId) requestServerStop(ctx.chatId, ctx.messageId);
     return;
   }
   try { activeAbortController?.abort(); } catch {}

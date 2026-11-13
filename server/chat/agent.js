@@ -4,6 +4,11 @@ import { groundingSources, MODELS, streamRound, thinkingConfig } from '../lib/ve
 
 const MAX_ROUNDS = 30;
 
+function throwIfAborted(signal) {
+  if (!signal?.aborted) return;
+  throw signal.reason || Object.assign(new Error("Generation stopped."), { name: "AbortError" });
+}
+
 export async function runAgent({ model, thinking, contents, systemInstruction, toolbox, writer, send, signal, temperature = 0.9 }) {
   const messages = contents.slice();
   const sources = new Map();
@@ -13,7 +18,7 @@ export async function runAgent({ model, thinking, contents, systemInstruction, t
   let currentModel = model;
 
   for (let round = 0; round < MAX_ROUNDS; round++) {
-    if (signal.aborted) break;
+    throwIfAborted(signal);
     let separatorPending = text.length > 0;
     const result = await streamRound({
       model: currentModel,
@@ -29,6 +34,7 @@ export async function runAgent({ model, thinking, contents, systemInstruction, t
         send({ type: 'chunk', text: delta });
       }
     });
+    throwIfAborted(signal);
     if (result.usage) usage = result.usage;
 
     for (const source of groundingSources(result.grounding, 12)) sources.set(source.uri, source);
@@ -67,6 +73,7 @@ export async function runAgent({ model, thinking, contents, systemInstruction, t
       // Gemini 3 accepts images inside function responses (e.g. browser screenshots).
       return { functionResponse: { ...(call.id ? { id: call.id } : {}), name: call.name, response: { output: response }, ...(parts.length ? { parts } : {}) } };
     }));
+    throwIfAborted(signal);
     messages.push({ role: 'user', parts: responses });
     // After tools, the cheapest model may struggle to synthesise; step up once.
     if (currentModel === MODELS.fast) currentModel = MODELS.balanced;
