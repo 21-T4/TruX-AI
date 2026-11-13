@@ -28,10 +28,6 @@ async function handleAuthAction() {
   closeProfileOption();
   const user = auth.currentUser;
   updateTruxProfileUI(user);
-  const plan = getEl("profilePlanText");
-  if(plan) plan.innerText = isTruxDeveloper(user) ? "Owner" : (currentPlanTier === "pro" ? "Pro" : "Core");
-  const model = getEl("profileModelText"); if(model) model.innerText = "Auto";
-  const limit = getEl("profileLimitText"); if(limit) limit.innerText = "Unlimited";
   const modal = getEl("profileModal");
   if(modal){ modal.removeAttribute("data-settings-view"); modal.style.display = "flex"; modal.setAttribute("aria-hidden","false"); }
   void refreshTruxProfileInfo(user);
@@ -61,7 +57,6 @@ function switchSettingsSection(name) {
   });
   const scroller = document.querySelector(".settings-main-scroll");
   if (scroller) scroller.scrollTop = 0;
-  const mobileSelect=getEl("settingsMobileSelect"); if(mobileSelect) mobileSelect.value=activeSection;
   if (activeSection === "developer" && isTruxDeveloper(auth?.currentUser)) {
     void loadOwnerGeminiModels(false);
   }

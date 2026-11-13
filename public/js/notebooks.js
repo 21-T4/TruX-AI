@@ -344,19 +344,12 @@ function removeChatFromNotebook(id) {
 
 function openChatHelp() {
   closeChatContextMenu();
-  const oldHelp = getEl("chatHelpModal");
-  if (oldHelp) oldHelp.style.display = "none";
   closeSettingsModal();
   const profileModal = getEl("profileModal");
   if (!profileModal) return toast("The Help page could not be opened. Please refresh TruX and try again.", "err");
   closeProfileOption();
   profileModal.style.display = "flex";
   openProfileOption("help");
-}
-
-function closeChatHelp() {
-  const modal = getEl("chatHelpModal");
-  if(modal) modal.style.display = "none";
 }
 
 function openConversationFeedback(id) {

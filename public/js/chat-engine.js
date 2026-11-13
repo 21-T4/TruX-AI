@@ -11,6 +11,8 @@
 const TRUX_SEND_ICON = '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>';
 const TRUX_STOP_ICON = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>';
 
+let activeDrain = null;      /* a finished answer that is still being revealed */
+
 function setComposerGenerating(on) {
   isGenerating = !!on;
   const icon = getEl("btnIcon");
@@ -25,9 +27,11 @@ function detachActiveTurn() {
   generationEpoch += 1;
   try { activeAbortController?.abort(); } catch {}
   try { activeStreamer?.cancel(); } catch {}
+  try { activeDrain?.streamer.cancel(); } catch {}
   activeAbortController = null;
   activeStreamer = null;
   activeTurnContext = null;
+  activeDrain = null;
   generationStopRequested = false;
   if (currentChatId) stopStreamWatcher(currentChatId);
   setComposerGenerating(false);
@@ -328,12 +332,19 @@ async function sendPromptImpl() {
     const drain = !!(streamer && stored.status === "done" && stored.text);
     if (drain && isCurrent()) {
       activeAbortController = null;
-      if (activeTurnContext === ctx) activeTurnContext = null;
-      setComposerGenerating(false);
+      /* The Stop button stays available while the already-generated answer is still being revealed. */
+      const complete = () => {
+        if (activeDrain && activeDrain.streamer === streamer) activeDrain = null;
+        if (activeTurnContext === ctx) activeTurnContext = null;
+        if (!activeTurnContext && !activeDrain) setComposerGenerating(false);
+        if (row.isConnected) settleAssistantRow(row, stored);
+      };
+      activeDrain = { streamer, stored };
+      setComposerGenerating(true);
       try {
         streamer.setText(stored.text);
-        streamer.finish(() => { if (row.isConnected) settleAssistantRow(row, stored); });
-      } catch { settleAssistantRow(row, stored); }
+        streamer.finish(complete);
+      } catch { complete(); }
       if (voice || getEl("autoReadToggle")?.checked) speakText(stored.text);
       for (const m of stored.media || []) { if (m.kind !== "image" && m.kind !== "video") continue; try { saveGeneratedMedia?.({ type: m.kind, objectKey: m.objectKey, prompt: m.prompt || typed }); } catch {} }
     } else if (isCurrent()) {

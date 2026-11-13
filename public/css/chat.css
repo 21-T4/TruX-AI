@@ -66,14 +66,12 @@
 .trux-stopped-note{ margin-top: 8px; font-size: 12.5px; color: var(--txt-3); }
 
 /* ---------- actions ---------- */
-.actions{ display: flex; flex-wrap: wrap; align-items: center; gap: 2px; min-height: 30px; }
+.actions{ display: flex; align-items: center; min-height: 30px;}
 .actions:empty{ display: none; }
-.act{
-  display: inline-flex; align-items: center; gap: 6px; padding: 0 10px;
-  border-radius: var(--r-sm);
+.act{ align-items: center;
   font: 500 12.5px/1 var(--font-ui);
   transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);}
-.act svg{ width: 15px; height: 15px; }
+
 .act.done{ color: var(--ok); }
 @media (hover: hover){ .act:hover{ background: var(--bg-3); color: var(--txt); } }
 
@@ -81,7 +79,7 @@
 .trux-thinking-panel{ border-radius: var(--r-md); }
 .trux-thinking-panel[hidden], .trux-thinking-panel[data-thinking-visible="false"]{ display: none; }
 .trux-thinking-bar{ display: flex; align-items: center; gap: 10px; min-height: 28px; color: var(--txt-3); font-size: 13.5px; }
-.trux-thinking-spark{ width: 18px; height: 18px; flex: none; display: grid; place-items: center;}
+.trux-thinking-spark{ flex: none; display: grid; place-items: center;}
 .trux-thinking-spark svg{ width: 16px; height: 16px; fill: currentColor; stroke: none; animation: truxSpark 2.4s var(--ease) infinite; }
 @keyframes truxSpark{ 0%,100%{ transform: scale(.82) rotate(0); opacity: .6; } 50%{ transform: scale(1.1) rotate(45deg); opacity: 1; } }
 .trux-thinking-copy{ min-width: 0; flex: 1; }
@@ -181,12 +179,10 @@
 .katex{ color: var(--txt); }
 
 /* sources, generated media, file chips */
-.sources{ display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.sources{ margin-top: 6px;}
 .source-chip{
-  display: inline-flex; align-items: center; gap: 8px; max-width: 100%; height: 30px; padding: 0 12px 0 8px;
-  border-radius: 99px; background: var(--bg-2); border: 1px solid var(--line-2);
-  font-size: 12.5px; color: var(--txt-2); overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-}
+  display: inline-flex; align-items: center; max-width: 100%;
+  font-size: 12.5px; color: var(--txt-2); white-space: nowrap; text-overflow: ellipsis;}
 .sc-dot{ width: 16px; height: 16px; flex: none; border-radius: 50%; background: var(--bg-4); object-fit: cover; }
 .gen-image-wrap, .gen-video-wrap{ position: relative; margin: 4px 0 10px; max-width: 560px; border-radius: var(--r-lg); overflow: hidden; background: var(--bg-2); border: 1px solid var(--line-2); }
 .gen-image-wrap img, .gen-video-wrap video{ display: block; width: 100%; height: auto; opacity: 0; transition: opacity var(--dur-3) var(--ease); }

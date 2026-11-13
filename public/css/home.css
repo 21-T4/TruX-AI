@@ -1,8 +1,8 @@
 /* ============================================================
    TruX Workspace — home: greeting + suggested prompts.
    ============================================================ */
-.trux-home-content{ width: 100%; display: flex; flex-direction: column; gap: 28px;}
-.trux-home-sequence{ min-height: 2.6em; }
+.trux-home-content{ display: flex; flex-direction: column; gap: 28px;}
+
 .trux-home-sequence-text{
   -webkit-background-clip: text; background-clip: text;
   text-wrap: balance;}

@@ -36,11 +36,6 @@ function isTruxDeveloper(user = auth?.currentUser) {
     (!!user.emailVerified || (user.providerData || []).some(p => p?.providerId === "google.com"));
 }
 
-/* Any signed-in Google or email account is allowed in. Kept as a function because other modules call it. */
-function truxUserVerified(user = auth?.currentUser) {
-  return !!user;
-}
-
 function truxUsesPassword(user = auth?.currentUser) {
   return (user?.providerData || []).some(p => p?.providerId === "password");
 }

@@ -35,7 +35,7 @@ getEl("sandboxModal")?.addEventListener("click", e => { if(e.target === getEl("s
 getEl("pinnedModal")?.addEventListener("click", e => { if(e.target === getEl("pinnedModal")) closePinnedModal(); });
 getEl("loginWallModal")?.addEventListener("click", e => { if(e.target === getEl("loginWallModal")) closeLoginWall(); });
 
-addEventListener("keydown", e => { if(e.key === "Escape") { closeMediaLibrary(); closeProfileModal(); closeSettingsModal(); closeSandboxModal(); closePinnedModal(); closeLoginWall(); closeChatContextMenu(); closeChatHelp(); closeSidebar(); closeModelDropdown(); closeAttachmentMenu(); } });
+addEventListener("keydown", e => { if(e.key === "Escape") { closeMediaLibrary(); closeProfileModal(); closeSettingsModal(); closeSandboxModal(); closePinnedModal(); closeLoginWall(); closeChatContextMenu(); closeSidebar(); closeModelDropdown(); closeAttachmentMenu(); } });
 
 
 /* SETTINGS / PROFILE EVENT DELEGATION */

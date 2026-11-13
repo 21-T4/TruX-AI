@@ -278,11 +278,6 @@ function pluginDetailForResolved(resolved, connectedAccounts) {
  * Composio's input metadata is richer (examples, human_* fields, defaults,
  * internal metadata, etc.). Never forward that metadata verbatim.
  */
-const GEMINI_SCHEMA_KEYS = new Set([
-  'type','nullable','required','format','description','properties',
-  'items','enum','anyOf','$ref','$defs'
-]);
-
 function sanitizeGeminiSchema(value, fallbackType = 'string') {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return { type: fallbackType };

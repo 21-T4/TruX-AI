@@ -9,7 +9,7 @@ body{ font: 400 15px/1.55 var(--font-body); letter-spacing: 0; }
 /* ---------- sidebar ---------- */
 .sidebar{ background: var(--bg-1); border-right: 1px solid var(--line); }
 
-.sidebar-brand-mark{ background: var(--acc); border: 0; color: var(--on-acc);}
+.sidebar-brand-mark{ color: var(--on-acc);}
 
 .sidebar-brand-copy b{ font: 600 17px/1.2 var(--font-serif); letter-spacing: -.01em; }
 .sidebar-brand-copy small{ display: none; }
@@ -35,8 +35,7 @@ body{ font: 400 15px/1.55 var(--font-body); letter-spacing: 0; }
 /* ---------- conversation ---------- */
 .chat{ padding-top: 4px; }
 .user-bubble{ background: var(--bg-3); border: 0;}
-.bubble:not(.user-bubble){ letter-spacing: 0;}
-.bubble h1, .bubble h2, .bubble h3, .bubble h4{ font-family: var(--font-serif); font-weight: 600; letter-spacing: -.005em; }
+
 .bubble strong, .bubble b{ font-weight: 600; }
 .bubble blockquote{ border-left-color: var(--acc-line); }
 .bubble :not(pre) > code{ background: var(--bg-3); border: 0;}
@@ -53,7 +52,7 @@ body{ font: 400 15px/1.55 var(--font-body); letter-spacing: 0; }
 .send-btn.live-active{ background: var(--acc-soft); color: var(--acc-2); }
 
 /* ---------- accents, controls, small surfaces ---------- */
-.accent-option.active{ outline: 2px solid var(--acc); outline-offset: 2px; }
+.accent-option.active{ outline-offset: 2px;}
 .tdg-view::after{ background: rgba(31,30,29,.86); color: #fff; }
 .sandbox-iframe{ background: #fff; }
 
@@ -92,7 +91,7 @@ body{ font: 400 15px/1.55 var(--font-body); letter-spacing: 0; }
    Roomier sidebar and typing bar
    ============================================================ */
 .sidebar-header{ height: 64px; padding: 0 14px 0 20px; }
-.sidebar-brand-mark{ width: 34px; height: 34px; border-radius: 10px; }
+
 .sidebar-brand-mark svg, .sidebar-brand-mark img{ width: 20px; height: 20px; }
 
 .sidebar-scroll{ padding: 8px 12px 16px; }
@@ -112,14 +111,12 @@ body{ font: 400 15px/1.55 var(--font-body); letter-spacing: 0; }
 .history .empty{ padding: 16px 14px;}
 .profile{ margin: 0 12px calc(12px + var(--safe-b)); padding: 12px; gap: 12px; border-radius: 14px; }
 
-#promptInput{ font-size: 17px; line-height: 26px;}
-
 .hint{ padding-top: 10px;}
 
 @media (max-width: 720px){
   
   
-  #promptInput{ font-size: 16px; line-height: 24px;}
+  
   .icon-btn, .send-btn{ width: 42px; height: 42px; }
 }
 
@@ -128,12 +125,12 @@ body{ font: 400 15px/1.55 var(--font-body); letter-spacing: 0; }
    suggestions above the bar, install button, motion, settings
    ============================================================ */
 html{ -webkit-text-size-adjust: 100%; }
-body{ font-size: 16px; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+body{ -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;}
 
 /* ---------- readable conversation text ---------- */
 .chat{ padding: 8px 20px 28px; }
-.user-bubble{ font: 400 17.5px/1.6 var(--font-ui); padding: 12px 18px; border-radius: 20px; }
-.bubble:not(.user-bubble){ font: 400 19px/1.78 var(--font-serif); color: var(--txt); }
+.user-bubble{ padding: 12px 18px; border-radius: 20px;}
+.bubble:not(.user-bubble){ color: var(--txt);}
 .bubble:not(.user-bubble) p{ margin: 0 0 1em; }
 .bubble:not(.user-bubble) li{ margin: .35em 0; }
 .bubble:not(.user-bubble) ul, .bubble:not(.user-bubble) ol{ padding-left: 1.4em; margin: .4em 0 1em; }
@@ -141,13 +138,13 @@ body{ font-size: 16px; -webkit-font-smoothing: antialiased; text-rendering: opti
 .bubble h2{ font-size: 1.35em; margin: 1.15em 0 .45em; }
 .bubble h3{ font-size: 1.15em; margin: 1.1em 0 .4em; }
 .bubble :not(pre) > code{ font-size: .82em; padding: .12em .4em; border-radius: 6px; }
-.code-body code, .bubble pre code{ font-size: 14px; line-height: 1.65; }
+.code-body code, .bubble pre code{ line-height: 1.65;}
 .table-wrap th, .table-wrap td{ font: 400 16px/1.5 var(--font-ui); padding: 10px 14px; }
 @media (max-width: 720px){
   .chat{ padding: 6px 16px 24px; }
   .user-bubble{ font-size: 17.5px; max-width: 92%; }
   .bubble:not(.user-bubble){ font-size: 18.5px; line-height: 1.75; }
-  .code-body code, .bubble pre code{ font-size: 13.5px; }
+  
 }
 
 /* ---------- sidebar: wider, larger type ---------- */
@@ -197,11 +194,9 @@ body.home-active:not(.chat-session-active) .home-suggest{ display: flex; }
   background: none; border: 0; border-radius: 0; box-shadow: none; overflow: visible;
 }
 .trux-home-prompt{
-  width: 100%; min-height: 0; display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 16px;
-  padding: 12px 14px; border: 0; border-radius: 14px; background: transparent; text-align: left;
+  width: 100%; min-height: 0; display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 16px; border: 0; border-radius: 14px; background: transparent; text-align: left;
   color: var(--txt-2); font: 450 17px/1.4 var(--font-ui);
-  animation: truxRise .55s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 90ms + 120ms);
-}
+  animation: truxRise .55s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 90ms + 120ms);}
 .trux-home-prompt-label{ min-width: 0; }
 .trux-home-prompt-mark{ display: grid; place-items: center; flex: none; width: 30px; height: 30px; border-radius: 50%; color: var(--txt-4); transition: transform .25s var(--ease-out), color .2s, background-color .2s; }
 .trux-home-prompt-mark svg{ width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
@@ -226,12 +221,9 @@ body.home-active:not(.chat-session-active) .home-suggest{ display: flex; }
 .compose{ max-width: var(--measure); }
 .bar{
   display: grid; align-items: center; gap: 2px 6px;
-  grid-template-columns: auto auto minmax(0, 1fr) auto;
-  grid-template-areas: "input input input input" "plus mic . send";
   min-height: 0; padding: 16px 14px 12px 16px; border-radius: 28px;
   background: var(--bg-2); border: 1px solid var(--line-2);
-  box-shadow: 0 4px 22px rgba(var(--ink), .07), 0 0 0 .5px rgba(var(--ink), .05);
-}
+  box-shadow: 0 4px 22px rgba(var(--ink), .07), 0 0 0 .5px rgba(var(--ink), .05);}
 .bar.multiline{ border-radius: 28px; }
 .bar:focus-within{ border-color: var(--acc-line); box-shadow: 0 6px 28px rgba(var(--ink), .1), 0 0 0 3px var(--acc-soft); }
 #promptInput{
@@ -247,13 +239,13 @@ body.home-active:not(.chat-session-active) .home-suggest{ display: flex; }
 @media (hover: hover){ .icon-btn:hover{ background: var(--bg-3); color: var(--txt); } }
 .send-btn{ width: 44px; height: 44px; border-radius: 14px; }
 .send-btn svg{ width: 22px; height: 22px; }
-.hint{ display: block; padding: 12px 8px 0; font-size: 13px; line-height: 1.4; color: var(--txt-4); text-align: center; }
+.hint{ display: block; padding: 12px 8px 0; line-height: 1.4; color: var(--txt-4); text-align: center;}
 @media (max-width: 720px){
   .composer{ padding: 6px 12px max(18px, calc(10px + var(--safe-b))); }
   .bar{ padding: 14px 10px 10px 14px; border-radius: 26px; }
-  #promptInput{ min-height: 52px; padding: 2px 4px 10px; font-size: 17.5px; line-height: 26px; }
+  #promptInput{ min-height: 52px; padding: 2px 4px 10px;}
   .icon-btn, .send-btn{ width: 44px; height: 44px; }
-  .trux-home-prompt{ padding: 12px 12px; font-size: 16.5px; }
+  .trux-home-prompt{ font-size: 16.5px;}
 }
 
 /* ---------- motion: everything eases ---------- */
