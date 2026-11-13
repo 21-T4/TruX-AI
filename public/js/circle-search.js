@@ -10,6 +10,10 @@
 window.truxCircle = (() => {
   "use strict";
   let root = null, shot = null, points = [], drawing = false, box = null, recog = null;
+  /* Everything the canvas shows is eased toward a target on every frame, so strokes, the dimmed
+     surround and the corner brackets glide instead of snapping. */
+  let view = null, dim = 0, brackA = 0, strokeA = 0, frameId = null, lastFrame = 0;
+  const COLORS = ["#8fb0ff", "#b6a0ff", "#eea6c9", "#f1cf9a"];       /* soft, not neon */
   const $ = sel => root?.querySelector(sel);
 
   async function captureBrowserFrame() {
@@ -63,6 +67,7 @@ window.truxCircle = (() => {
     root.setAttribute("aria-label", "Circle to search");
     root.innerHTML = `
       <div class="tc-stage"><img class="tc-shot" alt="Your screen"><canvas class="tc-ink"></canvas></div>
+      <div class="tc-aura" aria-hidden="true"></div>
       <div class="tc-glow" aria-hidden="true"></div>
       <div class="tc-top"><button type="button" class="tc-x" aria-label="Close">×</button><span class="tc-hint">Circle or tap anything to search</span></div>
       <form class="tc-bar" autocomplete="off">
@@ -111,12 +116,17 @@ window.truxCircle = (() => {
     e.currentTarget.setPointerCapture?.(e.pointerId);
     drawing = true; points = [[e.clientX, e.clientY]]; box = null;
     root.classList.remove("selected");
-    paint();
+    strokeA = 1;
+    schedulePaint();
   }
   function move(e) {
     if (!drawing) return;
-    const last = points[points.length - 1];
-    if (Math.hypot(e.clientX - last[0], e.clientY - last[1]) > 2) { points.push([e.clientX, e.clientY]); paint(); }
+    const list = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    for (const ev of (list.length ? list : [e])) {
+      const last = points[points.length - 1];
+      if (Math.hypot(ev.clientX - last[0], ev.clientY - last[1]) > 2.5) points.push([ev.clientX, ev.clientY]);
+    }
+    schedulePaint();
   }
   function up() {
     if (!drawing) return;
@@ -131,53 +141,96 @@ window.truxCircle = (() => {
     }
     const pad = 10;
     box = { x0: Math.max(0, x0 - pad), y0: Math.max(0, y0 - pad), x1: Math.min(innerWidth, x1 + pad), y1: Math.min(innerHeight, y1 + pad) };
+    if (!view) view = { x0: (box.x0 + box.x1) / 2, y0: (box.y0 + box.y1) / 2, x1: (box.x0 + box.x1) / 2, y1: (box.y0 + box.y1) / 2 };   /* grows out of its centre */
     root.classList.add("selected");
-    $(".tc-hint").textContent = "Ask anything, or circle again";
-    paint();
+    setHint("Ask anything, or circle again");
     const thumb = $(".tc-thumb"); const crop = cropDataUrl(360);
     if (thumb && crop) { thumb.src = crop; thumb.hidden = false; }
     $(".tc-input").placeholder = "Ask about this…";
     if (navigator.vibrate) navigator.vibrate(8);
     if (matchMedia("(hover: hover)").matches) $(".tc-input").focus();
+    schedulePaint();
   }
 
-  function paint() {
+  function setHint(text) {
+    const hint = $(".tc-hint"); if (!hint || hint.textContent === text) return;
+    hint.classList.add("swap");
+    setTimeout(() => { if (hint.isConnected) { hint.textContent = text; hint.classList.remove("swap"); } }, 180);
+  }
+
+  /* ---- one animation loop for the whole overlay ---- */
+  function schedulePaint() { if (frameId === null && root) frameId = requestAnimationFrame(frame); }
+  const approach = (cur, target, dt, ms) => cur + (target - cur) * (1 - Math.exp(-dt / ms));
+
+  function frame(ts) {
+    frameId = null;
+    if (!root) return;
+    const dt = lastFrame ? Math.min(48, ts - lastFrame) : 16;
+    lastFrame = ts;
+    const selected = !!box && !drawing;
+    dim = approach(dim, selected ? 1 : 0, dt, 170);
+    brackA = approach(brackA, selected ? 1 : 0, dt, 220);
+    strokeA = approach(strokeA, drawing ? 1 : 0, dt, drawing ? 60 : 260);
+    if (box && view) for (const k of ["x0", "y0", "x1", "y1"]) view[k] = approach(view[k], box[k], dt, 110);
+    if (!box) view = null;
+    draw();
+    const settling = selected
+      ? (Math.abs(1 - dim) > .01 || Math.abs(1 - brackA) > .01 || strokeA > .01 || (view && ["x0", "y0", "x1", "y1"].some(k => Math.abs(view[k] - box[k]) > .3)))
+      : (dim > .01 || brackA > .01 || strokeA > .01);
+    if (drawing || settling) { schedulePaint(); }
+    else { lastFrame = 0; if (!drawing && strokeA <= .01 && !box) points = []; }
+  }
+
+  function roundRectPath(g, x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+  }
+
+  function paint() { schedulePaint(); }
+  function draw() {
     const ink = $(".tc-ink"); if (!ink) return;
     const g = ink.getContext("2d");
     g.clearRect(0, 0, innerWidth, innerHeight);
-    if (box && !drawing) {
-      g.fillStyle = "rgba(4,6,14,.55)";
-      g.fillRect(0, 0, innerWidth, innerHeight);
-      g.clearRect(box.x0, box.y0, box.x1 - box.x0, box.y1 - box.y0);
-      brackets(g, box);
+    if (view && dim > .005) {
+      g.save();
+      g.fillStyle = `rgba(4,6,14,${(.52 * dim).toFixed(3)})`;
+      g.beginPath(); g.rect(0, 0, innerWidth, innerHeight);
+      roundRectPath(g, view.x0, view.y0, Math.max(1, view.x1 - view.x0), Math.max(1, view.y1 - view.y0), 16);
+      g.fill("evenodd");
+      g.restore();
     }
-    if (points.length > 1) {
+    if (view && brackA > .005) brackets(g, view, brackA);
+    if (points.length > 1 && strokeA > .005) {
       const grad = g.createLinearGradient(0, 0, innerWidth, innerHeight);
-      grad.addColorStop(0, "#4f8cff"); grad.addColorStop(.4, "#9b6bff"); grad.addColorStop(.7, "#ff5fa2"); grad.addColorStop(1, "#ffb347");
-      g.lineCap = "round"; g.lineJoin = "round";
-      g.shadowColor = "rgba(150,120,255,.9)"; g.shadowBlur = 18;
-      g.strokeStyle = grad; g.lineWidth = drawing ? 7 : 5;
-      g.globalAlpha = drawing ? 1 : .85;
-      g.beginPath(); g.moveTo(points[0][0], points[0][1]);
-      for (let i = 1; i < points.length; i++) {
-        const [x, y] = points[i], [px, py] = points[i - 1];
-        g.quadraticCurveTo(px, py, (x + px) / 2, (y + py) / 2);
+      grad.addColorStop(0, COLORS[0]); grad.addColorStop(.4, COLORS[1]); grad.addColorStop(.7, COLORS[2]); grad.addColorStop(1, COLORS[3]);
+      const path = new Path2D();
+      path.moveTo(points[0][0], points[0][1]);
+      for (let i = 1; i < points.length - 1; i++) {
+        const [x, y] = points[i], [nx, ny] = points[i + 1];
+        path.quadraticCurveTo(x, y, (x + nx) / 2, (y + ny) / 2);
       }
-      g.stroke();
-      g.shadowBlur = 0; g.globalAlpha = 1;
-      g.strokeStyle = "rgba(255,255,255,.85)"; g.lineWidth = 1.5; g.stroke();
+      const lastPt = points[points.length - 1]; path.lineTo(lastPt[0], lastPt[1]);
+      g.lineCap = "round"; g.lineJoin = "round";
+      g.strokeStyle = grad;
+      g.globalAlpha = .16 * strokeA; g.lineWidth = 16; g.stroke(path);       /* soft halo without costly blur */
+      g.globalAlpha = .30 * strokeA; g.lineWidth = 9; g.stroke(path);
+      g.globalAlpha = .92 * strokeA; g.lineWidth = 4.5; g.stroke(path);
+      g.strokeStyle = "#fff"; g.globalAlpha = .55 * strokeA; g.lineWidth = 1.4; g.stroke(path);
+      g.globalAlpha = 1;
     }
   }
 
-  function brackets(g, b) {
-    const len = Math.min(28, (b.x1 - b.x0) / 3, (b.y1 - b.y0) / 3);
-    g.strokeStyle = "#fff"; g.lineWidth = 4; g.lineCap = "round";
-    g.shadowColor = "rgba(120,140,255,.9)"; g.shadowBlur = 12;
+  function brackets(g, b, alpha) {
+    const w = b.x1 - b.x0, h = b.y1 - b.y0;
+    const len = Math.max(6, Math.min(28, w / 3, h / 3));
+    g.save();
+    g.globalAlpha = alpha; g.strokeStyle = "rgba(255,255,255,.95)"; g.lineWidth = 3.5; g.lineCap = "round"; g.lineJoin = "round";
     const c = [[b.x0, b.y0, 1, 1], [b.x1, b.y0, -1, 1], [b.x0, b.y1, 1, -1], [b.x1, b.y1, -1, -1]];
     for (const [x, y, dx, dy] of c) {
       g.beginPath(); g.moveTo(x, y + dy * len); g.lineTo(x, y); g.lineTo(x + dx * len, y); g.stroke();
     }
-    g.shadowBlur = 0;
+    g.restore();
   }
 
   function cropDataUrl(maxSide = 1600) {
@@ -200,11 +253,9 @@ window.truxCircle = (() => {
     recog = new SR();
     recog.lang = navigator.language || "en-US"; recog.interimResults = true;
     const mic = $(".tc-mic"); mic?.classList.add("on");
-    try { window.truxWake?.pause("circle"); } catch {}
     recog.onresult = e => { let t = ""; for (const r of e.results) t += r[0].transcript; const input = $(".tc-input"); if (input) input.value = t; };
     recog.onend = () => {
       mic?.classList.remove("on"); recog = null;
-      try { window.truxWake?.resume("circle"); } catch {}
       if ($(".tc-input")?.value.trim()) submit();
     };
     try { recog.start(); } catch { recog = null; mic?.classList.remove("on"); }
@@ -237,10 +288,12 @@ window.truxCircle = (() => {
     window.removeEventListener("resize", layout);
     document.removeEventListener("keydown", onKey);
     const el = root; root = null; shot = null; points = []; box = null; drawing = false;
+    view = null; dim = 0; brackA = 0; strokeA = 0; lastFrame = 0;
+    if (frameId !== null) { cancelAnimationFrame(frameId); frameId = null; }
     if (!el) return;
     el.classList.remove("open");
     el.classList.add("closing");
-    setTimeout(() => el.remove(), 260);
+    setTimeout(() => el.remove(), 420);
   }
 
   return { start, open, close, attachAndSend };

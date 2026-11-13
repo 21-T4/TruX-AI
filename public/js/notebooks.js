@@ -348,7 +348,7 @@ function openChatHelp() {
   const profileModal = getEl("profileModal");
   if (!profileModal) return toast("The Help page could not be opened. Please refresh TruX and try again.", "err");
   closeProfileOption();
-  profileModal.style.display = "flex";
+  showOverlay(profileModal);
   openProfileOption("help");
 }
 
@@ -480,7 +480,7 @@ function openMoveChatToNotebook(chatId) {
   }
   const modal = getEl("notebookMoveModal");
   if(modal) {
-    modal.classList.add("active");
+    setOverlayActive(modal, true);
     modal.setAttribute("aria-hidden","false");
   }
 }
@@ -488,7 +488,7 @@ function openMoveChatToNotebook(chatId) {
 function closeNotebookMoveModal() {
   const modal = getEl("notebookMoveModal");
   if(modal) {
-    modal.classList.remove("active");
+    setOverlayActive(modal, false);
     modal.setAttribute("aria-hidden","true");
   }
   notebookMoveTargetId = null;

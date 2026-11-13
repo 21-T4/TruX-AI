@@ -1,15 +1,21 @@
-#truxPwaLivePanel{position:fixed!important;inset:0!important;z-index:10050!important;display:flex;flex-direction:column;width:100vw;height:100vh;height:100dvh;max-width:none;max-height:none;margin:0;padding:calc(18px + env(safe-area-inset-top,0px)) 20px calc(18px + env(safe-area-inset-bottom,0px));overflow:hidden;border:0;border-radius:0;background:#000;color:#ededed;box-shadow:none;font-family:var(--font-body,Arial,sans-serif);isolation:isolate}
+#truxPwaLivePanel{position:fixed!important;inset:0!important;z-index:10050!important;display:flex;flex-direction:column;width:100vw;height:100vh;height:100dvh;max-width:none;max-height:none;margin:0;padding:calc(18px + env(safe-area-inset-top,0px)) 20px calc(18px + env(safe-area-inset-bottom,0px));overflow:hidden;border:0;border-radius:0;background:#000;color:#ededed;box-shadow:none;font-family:var(--font-body,Arial,sans-serif);isolation:isolate;opacity:0;transform:scale(1.025);transition:opacity .45s var(--ease,cubic-bezier(.22,.61,.36,1)),transform .7s var(--ease-out,cubic-bezier(.16,1,.3,1))}
+#truxPwaLivePanel.is-open{opacity:1;transform:none}
+#truxPwaLivePanel.is-closing{opacity:0;transform:scale(1.015);transition-duration:.34s}
 #truxPwaLivePanel[hidden],#truxPwaLivePanel [hidden]{display:none!important}
-#truxPwaLivePanel .trux-live-glow{position:absolute;z-index:-1;pointer-events:none;inset:24% -30% -15%;background:radial-gradient(ellipse at 50% 100%,rgba(25,55,145,.84) 0%,rgba(18,35,93,.54) 36%,rgba(0,0,0,0) 72%)}
+#truxPwaLivePanel .trux-live-glow{position:absolute;z-index:-1;pointer-events:none;inset:24% -30% -15%;background:radial-gradient(ellipse at 50% 100%,rgba(28,56,140,.74) 0%,rgba(18,35,93,.46) 36%,rgba(0,0,0,0) 72%);opacity:.0;transition:opacity 1.2s var(--ease,ease);animation:trux-live-breathe 7s ease-in-out infinite}
+#truxPwaLivePanel.is-open .trux-live-glow{opacity:1}
 #truxPwaLivePanel .trux-live-topbar{position:relative;z-index:3;display:flex;align-items:center;gap:16px;min-height:52px;flex:0 0 auto}
 #truxPwaLivePanel .trux-live-top-button{display:grid;place-items:center;width:46px;height:46px;flex:0 0 46px;border:0;border-radius:50%;background:transparent;color:#e7e7ec;cursor:pointer}
 #truxPwaLivePanel .trux-live-top-button svg{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#truxPwaLivePanel .trux-live-top-button{transition:background .25s var(--ease,ease),transform .25s var(--ease,ease)}
+#truxPwaLivePanel .trux-live-top-button:active{transform:scale(.92)}
 #truxPwaLivePanel .trux-live-top-button:hover,#truxPwaLivePanel .trux-live-top-button[aria-pressed="true"]{background:rgba(255,255,255,.09)}
 #truxPwaLivePanel .trux-live-brand{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
 #truxPwaLivePanel .trux-live-brand b{font-size:15px;font-weight:600;letter-spacing:.01em}
 #truxPwaLivePanel .trux-live-brand span{font-size:11px;color:#a4a8ba}
-#truxPwaLivePanel .trux-live-menu{position:absolute;z-index:5;top:calc(18px + env(safe-area-inset-top,0px) + 52px);left:20px;width:min(260px,calc(100vw - 40px));padding:8px;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:rgba(22,23,31,.97);box-shadow:0 14px 50px rgba(0,0,0,.5);backdrop-filter:blur(18px)}
-#truxPwaLivePanel .trux-live-menu button{display:block;width:100%;padding:12px 13px;border:0;border-radius:9px;background:transparent;color:#e9e9ef;text-align:left;font:inherit;font-size:13px;cursor:pointer}
+#truxPwaLivePanel .trux-live-menu{position:absolute;z-index:5;top:calc(18px + env(safe-area-inset-top,0px) + 52px);left:20px;width:min(260px,calc(100vw - 40px));padding:8px;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:rgba(22,23,31,.97);box-shadow:0 14px 50px rgba(0,0,0,.5);backdrop-filter:blur(18px);opacity:0;transform:translateY(-8px) scale(.97);transform-origin:top left;transition:opacity .24s var(--ease,ease),transform .32s var(--ease-out,cubic-bezier(.16,1,.3,1))}
+#truxPwaLivePanel .trux-live-menu.open{opacity:1;transform:none}
+#truxPwaLivePanel .trux-live-menu button{transition:background .2s var(--ease,ease);display:block;width:100%;padding:12px 13px;border:0;border-radius:9px;background:transparent;color:#e9e9ef;text-align:left;font:inherit;font-size:13px;cursor:pointer}
 #truxPwaLivePanel .trux-live-menu button:hover{background:rgba(255,255,255,.08)}
 #truxPwaLivePanel .trux-live-stage{position:relative;display:flex;flex:1;min-height:0;flex-direction:column;align-items:center;justify-content:center;padding:18px 0 24px;text-align:center}
 #truxPwaLivePanel .trux-live-stage h1{max-width:620px;margin:0 14px 10px;color:#eeeef4;font-size:clamp(28px,5.5vw,54px);font-weight:400;line-height:1.15;letter-spacing:-.035em}
@@ -23,17 +29,18 @@
 #truxPwaLivePanel .trux-live-line:last-child{margin-bottom:0}
 #truxPwaLivePanel .trux-live-line b{display:block;margin-bottom:4px;color:#aebdfb;font-size:11px;font-weight:600}
 #truxPwaLivePanel .trux-live-controls{position:relative;z-index:2;display:flex;flex:0 0 auto;align-items:center;justify-content:center;gap:clamp(6px,2.4vw,20px);padding:10px 0 4px}
-#truxPwaLivePanel .trux-live-control{display:flex;flex:0 0 clamp(48px,6vw,66px);flex-direction:column;align-items:center;justify-content:center;gap:5px;width:clamp(48px,6vw,66px);height:clamp(58px,7vw,78px);padding:0;border:0;border-radius:999px;background:rgba(33,34,40,.96);color:#ededf3;cursor:pointer;transition:background .15s ease,transform .15s ease}
+#truxPwaLivePanel .trux-live-control{display:flex;flex:0 0 clamp(48px,6vw,66px);flex-direction:column;align-items:center;justify-content:center;gap:5px;width:clamp(48px,6vw,66px);height:clamp(58px,7vw,78px);padding:0;border:0;border-radius:999px;background:rgba(33,34,40,.96);color:#ededf3;cursor:pointer;transition:background .3s var(--ease,ease),color .3s var(--ease,ease),transform .3s var(--ease-out,cubic-bezier(.16,1,.3,1))}
 #truxPwaLivePanel .trux-live-control svg{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 #truxPwaLivePanel .trux-live-control span{font-size:10px;line-height:1;color:#c4c6d0}
 #truxPwaLivePanel .trux-live-control:hover{background:#343644;transform:translateY(-1px)}
+#truxPwaLivePanel .trux-live-control:active{transform:scale(.94);transition-duration:.12s}
 #truxPwaLivePanel .trux-live-control[aria-pressed="true"]{background:#3a4164;color:#fff}
 #truxPwaLivePanel .trux-live-control.trux-live-end{background:#242428;color:#f5dfe2}
 #truxPwaLivePanel .trux-live-control.trux-live-end:hover{background:#632e3a}
 #truxPwaLivePanel .trux-live-center-pill{display:flex;flex:0 1 210px;min-width:88px;max-width:210px;height:76px;align-items:center;justify-content:center;flex-direction:column;gap:7px;overflow:hidden;border:1px solid rgba(203,216,255,.10);border-radius:999px;box-shadow:0 9px 28px rgba(4,10,38,.35),inset 0 1px 8px rgba(255,255,255,.05);color:#e8ecff}
 #truxPwaLivePanel .trux-live-center-pill span{font-size:10px;line-height:1;color:#d8def3}
 #truxPwaLivePanel .trux-live-center-pill{position:relative;background:#03050c!important}
-#truxPwaLivePanel .trux-live-voice-color{position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:var(--trux-live-level,0);background:radial-gradient(ellipse at var(--trux-live-tone,50%) 110%,rgba(74,118,255,.96) 0%,rgba(41,75,190,.74) 36%,rgba(6,12,38,0) 76%);transition:opacity .08s linear,background .08s linear}
+#truxPwaLivePanel .trux-live-voice-color{position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:var(--trux-live-level,0);background:radial-gradient(ellipse at var(--trux-live-tone,50%) 110%,rgba(86,122,235,.85) 0%,rgba(48,78,175,.62) 36%,rgba(6,12,38,0) 76%);will-change:opacity}
 #truxPwaLivePanel .trux-live-center-pill span{position:relative;z-index:1}
 #truxPwaLivePanel .trux-live-stage h1:empty{display:none!important}
 #truxPwaLivePanel.trux-live-heard-user .trux-live-stage h1,#truxPwaLivePanel.trux-live-heard-user .trux-live-stage>p{display:none!important}
@@ -51,5 +58,18 @@
 #truxPwaLivePanel .trux-live-camera-preview{top:0;right:0;width:clamp(78px,21vw,110px);border-radius:12px}
 #truxPwaLivePanel .trux-live-transcript{max-height:24vh;padding:10px 12px}
 }
-@media(prefers-reduced-motion:reduce){#truxPwaLivePanel *,#truxPwaLivePanel *:before{animation:none!important;transition:none!important}
-}
+/* Smooth text swaps, entrances and idle breathing */
+#truxPwaLivePanel .trux-live-stage h1,#truxPwaLivePanel .trux-live-stage>p{transition:opacity .17s var(--ease,ease)}
+#truxPwaLivePanel .trux-live-stage h1.swap,#truxPwaLivePanel .trux-live-stage>p.swap{opacity:0}
+#truxPwaLivePanel .trux-live-topbar,#truxPwaLivePanel .trux-live-stage>*,#truxPwaLivePanel .trux-live-controls{opacity:0;transform:translateY(10px);transition:opacity .6s var(--ease,ease),transform .8s var(--ease-out,cubic-bezier(.16,1,.3,1))}
+#truxPwaLivePanel.is-open .trux-live-topbar{opacity:1;transform:none;transition-delay:.08s}
+#truxPwaLivePanel.is-open .trux-live-stage>*{opacity:1;transform:none;transition-delay:.16s}
+#truxPwaLivePanel.is-open .trux-live-controls{opacity:1;transform:none;transition-delay:.24s}
+#truxPwaLivePanel .trux-live-line{animation:trux-live-line-in .45s var(--ease-out,cubic-bezier(.16,1,.3,1)) both}
+#truxPwaLivePanel .trux-live-transcript:not([hidden]),#truxPwaLivePanel .trux-live-camera-preview:not([hidden]),#truxPwaLivePanel .trux-live-retry:not([hidden]){animation:trux-live-pop .45s var(--ease-out,cubic-bezier(.16,1,.3,1)) both}
+.trux-live-center-pill{animation:trux-live-pill 5.5s ease-in-out infinite}
+@keyframes trux-live-line-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes trux-live-pop{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes trux-live-breathe{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}
+@keyframes trux-live-pill{0%,100%{box-shadow:0 9px 28px rgba(4,10,38,.35),inset 0 1px 8px rgba(255,255,255,.05)}50%{box-shadow:0 9px 34px rgba(30,50,140,.32),inset 0 1px 10px rgba(255,255,255,.08)}}
+@media(prefers-reduced-motion:reduce){#truxPwaLivePanel .trux-live-glow,.trux-live-center-pill{animation:none}}

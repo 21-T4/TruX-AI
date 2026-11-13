@@ -180,7 +180,6 @@
 }
 /* inline spans can't be transformed; give them a block-ish box without breaking wrapping */
 .rv{ display: inline; white-space: pre-wrap; }
-@media (prefers-reduced-motion: reduce){ .row.appear{ animation: none !important; } }
 
 /* phone */
 @media (max-width: 720px){

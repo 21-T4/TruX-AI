@@ -29,7 +29,6 @@
   let muted = false;
   let attempt = 0;
   let lines = { user: null, assistant: null };
-  let levelRaf = 0;
   let outLevel = 0;
 
   function setState(next) {
@@ -42,29 +41,56 @@
     window.dispatchEvent(new CustomEvent("trux-live-state", { detail: { state: next, active } }));
   }
 
-  function setStatus(text) {
-    const el = byId("truxPwaLiveStatus");
-    if (el) el.textContent = text || "";
+  /* Text changes cross-fade instead of snapping. */
+  const swapTimers = new WeakMap();
+  function swapText(el, text) {
+    if (!el) return;
+    const next = text || "";
+    if (el.textContent === next) return;
+    clearTimeout(swapTimers.get(el));
+    if (!next || el.closest("[hidden]") || !el.textContent) { el.textContent = next; el.classList.remove("swap"); return; }
+    el.classList.add("swap");
+    swapTimers.set(el, setTimeout(() => { el.textContent = next; el.classList.remove("swap"); }, 170));
   }
+  function setStatus(text) { swapText(byId("truxPwaLiveStatus"), text); }
 
   function openPanel() {
     const panel = byId("truxPwaLivePanel");
     if (!panel) return null;
+    clearTimeout(panel._closeTimer);
+    panel.classList.remove("is-closing");
     panel.hidden = false;
     document.body.classList.add("trux-live-open");
+    void panel.offsetWidth;                       /* start the transition from the hidden state */
+    panel.classList.add("is-open");
+    startLevelLoop();
     return panel;
   }
 
   function closePanel() {
     const panel = byId("truxPwaLivePanel");
-    if (panel) { panel.hidden = true; panel.classList.remove("trux-live-heard-user"); }
     document.body.classList.remove("trux-live-open");
+    if (!panel) return;
+    closeMenu();
+    panel.classList.remove("is-open");
+    panel.classList.add("is-closing");
+    clearTimeout(panel._closeTimer);
+    panel._closeTimer = setTimeout(() => {
+      panel.hidden = true; panel.classList.remove("is-closing", "trux-live-heard-user");
+      stopLevelLoop();
+    }, 420);
+  }
+
+  function setMenu(open) {
+    const menu = byId("truxPwaLiveMenu"); if (!menu) return;
+    clearTimeout(menu._t);
+    byId("truxPwaLiveMenuButton")?.setAttribute("aria-expanded", String(open));
+    if (open) { menu.hidden = false; void menu.offsetWidth; menu.classList.add("open"); }
+    else if (!menu.hidden) { menu.classList.remove("open"); menu._t = setTimeout(() => { menu.hidden = true; }, 260); }
   }
 
   function closeMenu() {
-    const menu = byId("truxPwaLiveMenu");
-    if (menu) menu.hidden = true;
-    byId("truxPwaLiveMenuButton")?.setAttribute("aria-expanded", "false");
+    setMenu(false);
   }
 
   function toggleTranscript() {
@@ -188,16 +214,26 @@
     source.connect(micNode);
   }
 
-  function setLevel(inLevel) {
-    if (levelRaf) return;
-    levelRaf = requestAnimationFrame(() => {
-      levelRaf = 0;
-      const level = Math.min(1, Math.max(inLevel * 2.2, outLevel * 1.6));
-      outLevel *= 0.6;
-      const pill = byId("truxPwaLivePanel");
-      pill?.style.setProperty("--trux-live-level", level.toFixed(2));
-    });
+  /* The voice colour follows a smoothed level (quick to rise, slow to fall) and drifts gently, so it
+     breathes instead of flickering with every audio buffer. */
+  let inTarget = 0, shownLevel = 0, levelLoop = 0, levelLast = 0;
+  function setLevel(inLevel) { inTarget = Math.max(inTarget, inLevel); }
+  function levelFrame(ts) {
+    levelLoop = 0;
+    const panel = byId("truxPwaLivePanel");
+    if (!panel || panel.hidden) return;
+    const dt = levelLast ? Math.min(64, ts - levelLast) : 16;
+    levelLast = ts;
+    const target = Math.min(1, Math.max(inTarget * 2.2, outLevel * 1.6));
+    inTarget *= Math.exp(-dt / 90); outLevel *= Math.exp(-dt / 90);
+    const k = target > shownLevel ? 1 - Math.exp(-dt / 70) : 1 - Math.exp(-dt / 260);
+    shownLevel += (target - shownLevel) * k;
+    panel.style.setProperty("--trux-live-level", shownLevel.toFixed(3));
+    panel.style.setProperty("--trux-live-tone", (50 + 24 * Math.sin(ts / 1700) + 10 * Math.sin(ts / 610)).toFixed(1) + "%");
+    levelLoop = requestAnimationFrame(levelFrame);
   }
+  function startLevelLoop() { if (!levelLoop) { levelLast = 0; levelLoop = requestAnimationFrame(levelFrame); } }
+  function stopLevelLoop() { if (levelLoop) cancelAnimationFrame(levelLoop); levelLoop = 0; shownLevel = 0; inTarget = 0; }
 
   function stopMic() {
     try { micNode?.port.close(); micNode?.disconnect(); } catch {}
@@ -367,8 +403,7 @@
     on("truxPwaLiveEnd", () => stop("stopped"));
     on("truxPwaLiveMenuButton", () => {
       const menu = byId("truxPwaLiveMenu"); if (!menu) return;
-      menu.hidden = !menu.hidden;
-      byId("truxPwaLiveMenuButton").setAttribute("aria-expanded", String(!menu.hidden));
+      setMenu(menu.hidden || !menu.classList.contains("open"));
     });
     on("truxPwaLiveTranscriptToggle", toggleTranscript);
     on("truxPwaLiveMenuTranscript", () => { toggleTranscript(); closeMenu(); });

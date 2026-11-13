@@ -26,7 +26,7 @@
 .mode-card{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:14px 12px 13px;border-radius:16px;text-align:left;cursor:pointer;color:var(--txt-2);
   border:1px solid color-mix(in srgb,var(--mc) 28%,var(--line-2));
   background:linear-gradient(160deg,color-mix(in srgb,var(--mc) 16%,var(--bg-2)),var(--bg-2) 70%);
-  transition:transform .15s,border-color .15s,box-shadow .15s;-webkit-tap-highlight-color:transparent}
+  transition:transform var(--dur-1),border-color var(--dur-1),box-shadow var(--dur-1);-webkit-tap-highlight-color:transparent}
 .mode-card-glyph{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-size:18px;margin-bottom:6px;background:color-mix(in srgb,var(--mc) 28%,transparent)}
 .mode-card b{font-size:14px;color:var(--txt);font-weight:600}
 .mode-card small{font-size:11.5px;line-height:1.4;color:var(--txt-3)}
@@ -60,7 +60,7 @@
 .pz-field>span{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;font-size:12.5px;font-weight:600;color:var(--txt-2)}
 .pz-card .instr:focus{border-color:var(--mode)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--mode) 22%,transparent)!important;outline:none}
 .snippet-row{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:4px}
-.snippet-chip{padding:6px 11px;border-radius:999px;font-size:12px;font-weight:500;cursor:pointer;color:var(--mode);border:1px solid color-mix(in srgb,var(--mode) 40%,transparent);background:color-mix(in srgb,var(--mode) 10%,transparent);transition:background .15s}
+.snippet-chip{padding:6px 11px;border-radius:999px;font-size:12px;font-weight:500;cursor:pointer;color:var(--mode);border:1px solid color-mix(in srgb,var(--mode) 40%,transparent);background:color-mix(in srgb,var(--mode) 10%,transparent);transition:background var(--dur-1)}
 .snippet-chip:hover{background:color-mix(in srgb,var(--mode) 22%,transparent)}
 
 /* Memory */

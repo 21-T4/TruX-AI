@@ -15,14 +15,14 @@ function openPinnedInsightsModal() {
       return `<div class="pin-card"><p>${escapeHtml(clean.slice(0, 190))}${clean.length > 190 ? "…" : ""}</p><button class="pin-remove" onclick="removePinnedInsight(${idx})">${ICON.trash}Remove</button></div>`;
     }).join('');
   }
-  getEl("pinnedModal").style.display = "flex";
+  showOverlay(getEl("pinnedModal"));
 }
 function removePinnedInsight(idx) {
   pinnedInsights.splice(idx, 1);
   store.setItem("trux_pinned", JSON.stringify(pinnedInsights));
   openPinnedInsightsModal();
 }
-function closePinnedModal() { getEl("pinnedModal").style.display = "none"; }
+function closePinnedModal() { hideOverlay(getEl("pinnedModal")); }
 
 function setSidebarOpen(open) {
   const s = getEl("sidebarNode"), overlay = getEl("sidebarOverlay");

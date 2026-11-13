@@ -1,6 +1,6 @@
 /* Sign-in page */
 #loginWallModal.login-wall{display:none;position:fixed;inset:0;z-index:999999;width:100vw;height:100dvh;padding:0;overflow:auto;color:var(--txt);}
-#loginWallModal.login-wall.active{display:block;animation:fadeIn .2s var(--ease, ease)}
+#loginWallModal.login-wall.active{display:block;animation:fadeIn var(--dur-2) var(--ease, ease) both}
 #loginWallModal .lw-shell{min-height:100dvh;display:grid;}
 #loginWallModal .lw-brand{position:relative;overflow:hidden;flex-direction:column;justify-content:space-between;padding:40px clamp(28px,5vw,64px);background:radial-gradient(120% 90% at 0% 0%,#1b1f4a 0%,#0c0d1c 55%,var(--bg) 100%);border-right:1px solid rgba(var(--ink),.06)}
 #loginWallModal .lw-brand-top{display:flex;align-items:center;gap:12px;font:650 19px/1 var(--font-disp);color:var(--txt);position:relative;z-index:1}
@@ -21,25 +21,25 @@
 #loginWallModal .lw-mobile-brand{align-items:center;gap:10px;color:var(--txt)}
 #loginWallModal .lw-mobile-brand img{border-radius:10px}
 #loginWallModal .lw-tabs{display:grid;grid-template-columns:1fr 1fr;padding:4px;margin-bottom:26px;border-radius:12px;}
-#loginWallModal .lw-tab{height:36px;border-radius:9px;border:0;background:transparent;color:var(--txt-3);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,color .15s}
+#loginWallModal .lw-tab{height:36px;border-radius:9px;border:0;background:transparent;color:var(--txt-3);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background var(--dur-1),color var(--dur-1)}
 #loginWallModal[data-view="signin"] .lw-tab[data-tab="signin"],#loginWallModal[data-view="signup"] .lw-tab[data-tab="signup"]{background:#f4f4f6;color:var(--bg)}
 #loginWallModal[data-view="reset"] .lw-tabs{display:none}
 #loginWallModal .lw-title{margin:0 0 8px;color:var(--txt)}
 #loginWallModal .lw-sub{margin:0 0 24px;color:var(--txt-3);font-size:14px;line-height:1.55}
-#loginWallModal .lw-google{width:100%;height:48px;display:flex;align-items:center;justify-content:center;gap:11px;border-radius:12px;font-size:14px;cursor:pointer;transition:transform .15s,background .15s}
+#loginWallModal .lw-google{width:100%;height:48px;display:flex;align-items:center;justify-content:center;gap:11px;border-radius:12px;font-size:14px;cursor:pointer;transition:transform var(--dur-1),background var(--dur-1)}
 #loginWallModal .lw-google:hover{transform:translateY(-1px)}
 #loginWallModal .lw-divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--txt-4);font-size:12px}
 #loginWallModal .lw-divider::before,#loginWallModal .lw-divider::after{content:"";height:1px;flex:1;background:var(--line-2)}
 #loginWallModal .lw-form{display:grid;gap:14px}
 #loginWallModal .lw-field{display:grid;gap:7px;color:var(--txt-2);font-size:12.5px;font-weight:550}
-#loginWallModal .lw-field input{width:100%;height:46px;padding:0 14px;border:1px solid var(--line-2);border-radius:12px;color:var(--txt);font:inherit;font-size:15px;font-weight:400;outline:none;transition:border-color .15s,box-shadow .15s}
+#loginWallModal .lw-field input{width:100%;height:46px;padding:0 14px;border:1px solid var(--line-2);border-radius:12px;color:var(--txt);font:inherit;font-size:15px;font-weight:400;outline:none;transition:border-color var(--dur-1),box-shadow var(--dur-1)}
 
 #loginWallModal .lw-pass{position:relative;display:block}
 #loginWallModal .lw-pass input{padding-right:64px}
 #loginWallModal .lw-pass-toggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);height:34px;padding:0 10px;border:0;border-radius:9px;background:transparent;color:var(--txt-3);font-size:12px;font-weight:600;cursor:pointer}
 #loginWallModal .lw-pass-toggle:hover{color:var(--txt)}
 #loginWallModal .lw-hint{color:var(--txt-4);font-weight:400;font-size:12px}
-#loginWallModal .lw-submit{width:100%;height:48px;border:0;border-radius:12px;font-size:14px;font-weight:650;cursor:pointer;transition:filter .15s,transform .15s}
+#loginWallModal .lw-submit{width:100%;height:48px;border:0;border-radius:12px;font-size:14px;font-weight:650;cursor:pointer;transition:filter var(--dur-1),transform var(--dur-1)}
 #loginWallModal .lw-submit:hover{transform:translateY(-1px)}
 #loginWallModal .lw-link{justify-self:start;padding:2px 0;border:0;background:none;color:var(--acc-2);font-size:13px;font-weight:550;cursor:pointer}
 #loginWallModal .lw-link:hover{text-decoration:underline}

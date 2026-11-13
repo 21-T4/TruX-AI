@@ -89,7 +89,7 @@ Answers keep generating on the server after the app is closed or backgrounded. T
 
 ## Answer streaming and Stop
 
-Text appears the way modern chat apps show it: each newly revealed run of words fades in to a soft grey and then glides up to full colour, so only the newest ~5 lines look dull (the fade length adapts to how fast the text arrives) and everything above them is already normal text. Only the text itself is dimmed; there is no overlay on the page. The fade also runs when the phone reports "reduce motion"; other decorative animation is skipped in that mode. The renderer (`createStreamRenderer` in `public/js/messages.js`) reveals words at a quick reading pace (about 95–320 words a second, faster when a backlog builds), eases the scroll position instead of jumping, and keeps going after the server says "done" so a long answer is never dumped at once. The `.rv` keyframes live in `public/css/chat.css`; `messages.js` sets each run's duration inline.
+Text appears the way modern chat apps show it: each newly revealed run of words fades in to a soft grey and then glides up to full colour, so only the newest ~5 lines look dull (the fade length adapts to how fast the text arrives) and everything above them is already normal text. Only the text itself is dimmed; there is no overlay on the page. The app does not switch its motion off wholesale when the phone reports "reduce motion" (phones set it with battery saver); only endless decorative loops are calmed. The renderer (`createStreamRenderer` in `public/js/messages.js`) reveals words every frame at a quick reading pace (about 95–320 words a second, faster when a backlog builds; slow devices step a little less often), eases the scroll position instead of jumping, and keeps going after the server says "done" so a long answer is never dumped at once. The `.rv` keyframes live in `public/css/chat.css`; `messages.js` sets each run's duration inline.
 
 The send button turns into a Stop button while an answer is being generated and also while an already-received answer is still being revealed. Stopping keeps exactly the text that was shown, marks the message as stopped and re-enables the composer.
 
@@ -104,3 +104,10 @@ Deleting a chat (or "Remove all chats") only hides it: the chat is flagged `dele
 - On phones the model picker and the message menu open as bottom sheets (`sheets.js`) that can be dismissed by swiping down. `--app-h` follows the visual viewport so the keyboard does not resize the page.
 - Bump `CACHE_NAME` in `public/sw.js` whenever front-end files change so installed apps pick up the update.
 - Final audit: dead CSS rules, references to removed UI elements (profile summary fields, chat help modal), unused helpers and duplicate code were removed. Lint is clean apart from three guarded `typeof` references that are defined at runtime by `plugins.js`/`live.js`.
+
+## Motion
+
+- All transitions use the shared tokens in `tokens.css` (`--ease`, `--ease-out`, `--dur-1/2/3` = 160 / 260 / 420 ms). A zero-specificity baseline rule gives buttons, links and inputs the same colour/shadow/press easing.
+- Overlays fade and scale out as well as in: use `showOverlay` / `hideOverlay` (inline `display`) or `setOverlayActive` (`.active` class) from `core.js` instead of toggling `display` directly.
+- Circle to Search (`circle-search.js`, `circle.css`) draws through one eased animation loop (stroke, dim, corner brackets and selection box all glide) with soft colours; only transform/opacity animate in CSS.
+- Live (`live.js`, `live.css`) fades in and out, staggers its sections, cross-fades status text and drives the voice glow from a smoothed level. The "Hey TruX" wake-word feature was removed.

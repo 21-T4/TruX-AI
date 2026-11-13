@@ -197,7 +197,7 @@ body.home-active:not(.chat-session-active) .home-suggest{ display: flex; }
   color: var(--txt-2); font: 450 17px/1.4 var(--font-ui);
   animation: truxRise .55s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 90ms + 120ms);}
 .trux-home-prompt-label{ min-width: 0; }
-.trux-home-prompt-mark{ display: grid; place-items: center; flex: none; width: 30px; height: 30px; border-radius: 50%; color: var(--txt-4); transition: transform .25s var(--ease-out), color .2s, background-color .2s; }
+.trux-home-prompt-mark{ display: grid; place-items: center; flex: none; width: 30px; height: 30px; border-radius: 50%; color: var(--txt-4); transition: transform var(--dur-2) var(--ease-out), color var(--dur-2), background-color var(--dur-2); }
 .trux-home-prompt-mark svg{ width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 @media (hover: hover){
   .trux-home-prompt:hover{ background: var(--bg-3); color: var(--txt); }
@@ -250,35 +250,37 @@ body.home-active:not(.chat-session-active) .home-suggest{ display: flex; }
 /* ---------- motion: everything eases ---------- */
 :where(button, a, input, select, textarea, .sidebar-item, .hist, .notebook-item, .profile, .model-item, .mbtn,
        .profile-option-row, .settings-nav button, .settings-card, .accent-option, .act){
-  transition: background-color .22s var(--ease), color .22s var(--ease), border-color .22s var(--ease),
-              box-shadow .28s var(--ease), transform .22s var(--ease-out), opacity .22s var(--ease), filter .22s var(--ease);
+  transition: background-color var(--dur-2) var(--ease), color var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease),
+              box-shadow var(--dur-2) var(--ease), transform var(--dur-2) var(--ease-out), opacity var(--dur-2) var(--ease), filter var(--dur-2) var(--ease);
 }
-.bar{ transition: border-color .25s var(--ease), box-shadow .3s var(--ease), transform .3s var(--ease-out); }
+.bar{ transition: border-color var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease), transform var(--dur-2) var(--ease-out); }
 :where(button, .sidebar-item, .hist, .notebook-item, .profile-option-row, .trux-home-prompt):active{ transform: scale(.975); }
 .send-btn:active, .icon-btn:active{ transform: scale(.92); }
-.sidebar{ transition: transform .42s cubic-bezier(.32,.72,0,1), box-shadow .42s var(--ease); }
-.sidebar-overlay{ transition: opacity .38s var(--ease); }
-.sidebar-item svg, .sidebar-brand-mark{ transition: transform .25s var(--ease-out), color .2s; }
+.sidebar{ transition: transform var(--dur-3) cubic-bezier(.32,.72,0,1), box-shadow var(--dur-3) var(--ease); }
+.sidebar-overlay{ transition: opacity var(--dur-3) var(--ease); }
+.sidebar-item svg, .sidebar-brand-mark{ transition: transform var(--dur-2) var(--ease-out), color var(--dur-2); }
 @media (hover: hover){ .sidebar-item:hover svg{ transform: scale(1.08); } }
 .row.appear, .row{ animation: truxRowIn .55s var(--ease-out) both; }
 @keyframes truxRowIn{ from{ opacity: 0; transform: translateY(12px); } to{ opacity: 1; transform: none; } }
 body.chat-session-active #chatContainer{ animation: truxFade .4s var(--ease) both; }
 .trux-home-v2{ animation: truxFade .5s var(--ease) both; }
 @keyframes truxFade{ from{ opacity: 0; } to{ opacity: 1; } }
-.modal.active{ animation: truxFade .28s var(--ease) both; }
-.modal.active > .card, .modal.active > .consent-card{ animation: truxCardIn .42s var(--ease-out) both; }
+.modal{ animation: truxFade var(--dur-2) var(--ease) both; }
+.modal > .card, .modal > .consent-card{ animation: truxCardIn var(--dur-3) var(--ease-out) both; }
+.is-leaving{ pointer-events: none; }
+.modal.is-leaving, #loginWallModal.login-wall.is-leaving{ animation: truxFadeOut var(--dur-2) var(--ease) both; }
+.modal.is-leaving > .card, .modal.is-leaving > .consent-card{ animation: truxCardOut var(--dur-2) var(--ease) both; }
+@keyframes truxFadeOut{ from{ opacity: 1; } to{ opacity: 0; } }
+@keyframes truxCardOut{ from{ opacity: 1; transform: none; } to{ opacity: 0; transform: translateY(10px) scale(.98); } }
 @keyframes truxCardIn{ from{ opacity: 0; transform: translateY(16px) scale(.97); } to{ opacity: 1; transform: none; } }
 .model-dropdown-menu, .attach-menu{ transform-origin: top left; }
 .toast, .trux-toast{ animation: truxCardIn .4s var(--ease-out) both; }
 html.theme-fade, html.theme-fade *, html.theme-fade *::before, html.theme-fade *::after{
-  transition: background-color .35s var(--ease), color .35s var(--ease), border-color .35s var(--ease), fill .35s, stroke .35s !important;
+  transition: background-color var(--dur-3) var(--ease), color var(--dur-3) var(--ease), border-color var(--dur-3) var(--ease), fill var(--dur-3), stroke var(--dur-3) !important;
 }
-/* Decorative motion is skipped for people who ask for reduced motion, but the answer text always fades in
-   (.rv): many phones report "reduce motion" when battery saver or "remove animations" is on, and that must
-   not turn the streaming effect off. */
-@media (prefers-reduced-motion: reduce){
-  *:not(.rv), *:not(.rv)::before, *:not(.rv)::after{ animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; }
-}
+/* Motion is part of how this app feels, so it is not switched off wholesale by the system "reduce motion"
+   flag (phones set it with battery saver or "remove animations"). Only the endless decorative loops
+   (spinners' glow, breathing, orbit) calm down; see the per-feature rules. */
 
 /* ---------- settings, Gemini-style: big calm rounded cards, round icon chips, pill nav ---------- */
 #profileModal{ background: var(--bg); -webkit-backdrop-filter: none; backdrop-filter: none; }
@@ -308,7 +310,7 @@ html.theme-fade, html.theme-fade *, html.theme-fade *::before, html.theme-fade *
 .profile-option-copy{ flex: 1 1 auto; min-width: 0; }
 .profile-option-copy b{ display: block; font: 500 17px/1.3 var(--font-ui); color: var(--txt); }
 .profile-option-copy small{ display: block; margin-top: 3px; font: 400 14.5px/1.4 var(--font-ui); color: var(--txt-3); }
-.profile-option-chevron{ flex: none; display: grid; place-items: center; color: var(--txt-4); font-size: 0; transition: transform .25s var(--ease-out), color .2s; }
+.profile-option-chevron{ flex: none; display: grid; place-items: center; color: var(--txt-4); font-size: 0; transition: transform var(--dur-2) var(--ease-out), color var(--dur-2); }
 .profile-option-chevron svg{ width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 @media (hover: hover){ .profile-option-row:hover .profile-option-chevron{ transform: translateX(3px); color: var(--txt-2); } }
 
@@ -400,7 +402,7 @@ html.theme-fade, html.theme-fade *, html.theme-fade *::before, html.theme-fade *
 .bar .model-picker-container{ grid-area: model; justify-self: end; margin-right: 4px; }
 .bar .model-picker-btn{ height: 44px; padding: 0 14px; border-radius: 999px; font: 500 15.5px/1 var(--font-ui); color: var(--txt-2); gap: 6px; }
 .bar .model-picker-btn::after{
-  content: ""; width: 7px; height: 7px; margin: -3px 0 0 6px; border: solid currentColor; border-width: 0 1.8px 1.8px 0; transform: rotate(45deg); opacity: .7; transition: transform .25s var(--ease-out);
+  content: ""; width: 7px; height: 7px; margin: -3px 0 0 6px; border: solid currentColor; border-width: 0 1.8px 1.8px 0; transform: rotate(45deg); opacity: .7; transition: transform var(--dur-2) var(--ease-out);
 }
 .bar .model-picker-btn[aria-expanded="true"]::after{ transform: rotate(225deg) translate(-2px, -2px); }
 .model-dropdown-menu{ transform-origin: bottom right; }
@@ -451,7 +453,7 @@ body{ position: fixed; inset: 0; width: 100%; }
 .sidebar-brand-mark img{ width: 100%; height: 100%; object-fit: contain; border-radius: 10px; display: block; }
 
 /* bottom sheets on phones */
-#sheetScrim{ position: fixed; inset: 0; z-index: 59; background: rgba(0,0,0,.42); opacity: 0; pointer-events: none; transition: opacity .28s var(--ease); }
+#sheetScrim{ position: fixed; inset: 0; z-index: 59; background: rgba(0,0,0,.42); opacity: 0; pointer-events: none; transition: opacity var(--dur-2) var(--ease); }
 #sheetScrim.on{ opacity: 1; pointer-events: auto; }
 @keyframes truxSheetUp{ from{ transform: translateY(100%); } to{ transform: none; } }
 @media (max-width: 720px){
@@ -464,7 +466,7 @@ body{ position: fixed; inset: 0; width: 100%; }
     background: var(--bg-2); box-shadow: 0 -12px 40px rgba(0,0,0,.35) !important; backdrop-filter: none;
     z-index: 61 !important; transform-origin: bottom center;
   }
-  #attachmentMenu{ transform: translateY(100%); opacity: 1; transition: transform .34s var(--ease-out), visibility .34s; }
+  #attachmentMenu{ transform: translateY(100%); opacity: 1; transition: transform var(--dur-3) var(--ease-out), visibility var(--dur-3); }
   #attachmentMenu.open{ transform: none; }
   #contextMenu[style*="block"], #modelDropdown.open{ animation: truxSheetUp .34s var(--ease-out) both; }
   #contextMenu::before, #modelDropdown::before{

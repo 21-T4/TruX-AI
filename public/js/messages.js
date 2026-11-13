@@ -367,6 +367,7 @@ function createStreamRenderer(bubble) {
   let lastTickAt = 0;
   let settleUntil = 0;
   let budget = 0;                    /* fractional words owed to the reader */
+  let costEma = 3;                   /* ms one paint takes; slower devices step a little less often */
 
   /* ---- dulled newest text ----------------------------------------------------
      Only the freshly revealed words are dimmed (never a layer over the page): each run of
@@ -529,12 +530,18 @@ function createStreamRenderer(bubble) {
   let scrollId = null;
   function easeScroll() {
     if (scrollId !== null) return;
-    const step = () => {
+    let prev = 0;
+    const step = ts => {
       scrollId = null;
       const c = getActiveChatContainer();
       if (!c || stopped) return;
+      const dt = prev ? Math.min(64, ts - prev) : 16;
+      prev = ts;
       const d = (c.scrollHeight - c.clientHeight) - c.scrollTop;
-      if (d > 1) { c.scrollTop += Math.max(1, d * 0.16); scrollId = requestAnimationFrame(step); }
+      if (d > 0.5) {
+        c.scrollTop += d * (1 - Math.exp(-dt / 140));        /* frame-rate independent glide */
+        scrollId = requestAnimationFrame(step);
+      }
     };
     scrollId = requestAnimationFrame(step);
   }
@@ -549,7 +556,8 @@ function createStreamRenderer(bubble) {
 
     /* A steady reading pace (words per second) that speeds up gently only when far behind,
        so a response that arrives all at once is still revealed gradually. */
-    if (lastTickAt && timestamp - lastTickAt < 55) { rafId = requestAnimationFrame(tick); return; }   /* reveal about a line at a time */
+    const gate = Math.max(15, Math.min(70, costEma * 2.5));      /* ~every frame on fast devices */
+    if (lastTickAt && timestamp - lastTickAt < gate - 3) { rafId = requestAnimationFrame(tick); return; }   /* reveal about a line at a time */
     const dt = lastTickAt ? Math.min(150, timestamp - lastTickAt) : 16;
     lastTickAt = timestamp;
     const backlogWords = (target.length - shown) / 6;
@@ -564,14 +572,16 @@ function createStreamRenderer(bubble) {
       const nextShown = nextRevealOffset(words);
       if (nextShown > shown) {
         shown = nextShown;
+        const t0 = performance.now();
         advanced = paint();
+        costEma = costEma * 0.85 + (performance.now() - t0) * 0.15;
         if (stick) easeScroll();
       }
     }
 
     if (finished && shown >= target.length) {
       /* Let the last lines finish fading in before the final clean re-render. */
-      const left = Math.max(fadeRemaining(performance.now()) - 260, settleUntil - performance.now());
+      const left = Math.max(fadeRemaining(performance.now()), settleUntil - performance.now());
       if (!settleUntil) settleUntil = performance.now() + 120;
       if (left > 0 || performance.now() < settleUntil) {
         waitingFade = true;

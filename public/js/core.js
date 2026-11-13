@@ -78,3 +78,29 @@ const store = (() => {
     }
   };
 })();
+
+/* Smooth show/hide for overlays. Showing is instant (the CSS entrance animation plays);
+   hiding plays a short exit animation before the element is really removed from layout. */
+const OVERLAY_EXIT_MS = 300;
+function showOverlay(el) {
+  if (!el) return;
+  clearTimeout(el._exitTimer);
+  el.classList.remove("is-leaving");
+  el.style.display = "flex";
+}
+function hideOverlay(el) {
+  if (!el) return;
+  if (el.style.display === "none" || (!el.style.display && getComputedStyle(el).display === "none")) return;
+  el.classList.add("is-leaving");
+  clearTimeout(el._exitTimer);
+  el._exitTimer = setTimeout(() => { el.style.display = "none"; el.classList.remove("is-leaving"); }, OVERLAY_EXIT_MS);
+}
+/* Same idea for overlays that are shown by an `.active` class. */
+function setOverlayActive(el, on) {
+  if (!el) return;
+  clearTimeout(el._exitTimer);
+  if (on) { el.classList.remove("is-leaving"); el.classList.add("active"); return; }
+  if (!el.classList.contains("active")) return;
+  el.classList.add("is-leaving");
+  el._exitTimer = setTimeout(() => { el.classList.remove("active", "is-leaving"); }, OVERLAY_EXIT_MS);
+}
