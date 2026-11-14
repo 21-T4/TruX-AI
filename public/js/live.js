@@ -217,8 +217,8 @@
   /* The voice colour follows a smoothed level (quick to rise, slow to fall) and drifts gently, so it
      breathes instead of flickering with every audio buffer. */
   /* ---- voice waves on the circle's own edge ----
-     There is only ever ONE circle. It is drawn here: a thin ring at rest, a smooth cool-blue wave travelling
-     around its circumference while YOU speak, and orange lines radiating out of it while TRUX speaks. */
+     There is only ever ONE circle. It is drawn here: a thin ring at rest, blue lines radiating from a glowing ball at its
+     centre while YOU speak, and orange lines radiating out of its edge while TRUX speaks. */
   let wavePhase = 0;
   let auraSize = null;
   function drawAura(canvas, panel, vin, vout, phase, ts) {
@@ -245,33 +245,34 @@
     g.lineWidth = 1.6; g.strokeStyle = ring;
     g.beginPath(); g.arc(cx, cy, R, 0, TAU); g.stroke();
 
-    /* your voice: the edge itself ripples in smooth blue waves */
+    /* your voice: a glowing blue ball at the centre, with blue lines radiating from it inside the circle */
     if (vin > 0.01) {
-      const layers = [
-        { k: 3, sp: 1.0, a: 1.0, lw: 2.6, al: 1.0 },
-        { k: 5, sp: -1.25, a: .66, lw: 1.8, al: .72 },
-        { k: 7, sp: 1.6, a: .4, lw: 1.3, al: .5 }
-      ];
-      const steps = 200;
+      const ballR = R * (0.13 + 0.05 * vin);
+      const n = 72, maxLen = R * 0.6;
       g.save();
-      g.globalCompositeOperation = "lighter";
-      g.lineJoin = "round";
-      for (const L of layers) {
-        const amp = R * (0.012 + 0.085 * vin) * L.a;
-        g.beginPath();
-        for (let i = 0; i <= steps; i++) {
-          const th = i / steps * TAU;
-          const r = R + amp * (Math.sin(th * L.k + phase * L.sp) * .62 + Math.sin(th * (L.k + 2) - phase * L.sp * 1.4 + 1.3) * .38);
-          const x = cx + Math.cos(th) * r, y = cy + Math.sin(th) * r;
-          i ? g.lineTo(x, y) : g.moveTo(x, y);
-        }
-        g.closePath();
-        const al = Math.min(1, .25 + vin * 1.3) * L.al;
-        g.strokeStyle = "rgba(96,176,255," + al.toFixed(3) + ")";
-        g.lineWidth = L.lw + vin * 1.6;
-        g.shadowColor = "rgba(70,150,255,.95)"; g.shadowBlur = 8 + vin * 16;
-        g.stroke();
+      g.lineCap = "round";
+      for (let i = 0; i < n; i++) {
+        const th = i / n * TAU;
+        const travel = .5 + .5 * Math.sin(th * 3 + phase * 1.7);
+        const ripple = .6 + .4 * Math.sin(th * 7 - phase * 1.15 + 0.8);
+        const len = 2 + maxLen * vin * (.25 + .75 * travel * ripple);
+        const r0 = ballR + 6, r1 = r0 + len;
+        const al = Math.min(1, .3 + vin * 1.2) * (.5 + .5 * travel);
+        const cos = Math.cos(th), sin = Math.sin(th);
+        const grad = g.createLinearGradient(cx + cos * r0, cy + sin * r0, cx + cos * r1, cy + sin * r1);
+        grad.addColorStop(0, "rgba(96,176,255," + al.toFixed(3) + ")");
+        grad.addColorStop(1, "rgba(140,210,255," + (al * .3).toFixed(3) + ")");
+        g.strokeStyle = grad; g.lineWidth = 2.4;
+        g.beginPath(); g.moveTo(cx + cos * r0, cy + sin * r0); g.lineTo(cx + cos * r1, cy + sin * r1); g.stroke();
       }
+      const glow = g.createRadialGradient(cx, cy, 0, cx, cy, ballR * 2.6);
+      const ba = Math.min(1, .35 + vin * 1.1);
+      glow.addColorStop(0, "rgba(190,230,255," + ba + ")");
+      glow.addColorStop(.32, "rgba(80,160,255," + (ba * .9) + ")");
+      glow.addColorStop(.38, "rgba(60,130,255," + (ba * .35) + ")");
+      glow.addColorStop(1, "rgba(60,130,255,0)");
+      g.fillStyle = glow;
+      g.beginPath(); g.arc(cx, cy, ballR * 2.6, 0, TAU); g.fill();
       g.restore();
     }
 
