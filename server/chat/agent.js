@@ -75,8 +75,8 @@ export async function runAgent({ model, thinking, contents, systemInstruction, t
     }));
     throwIfAborted(signal);
     messages.push({ role: 'user', parts: responses });
-    // After tools, the cheapest model may struggle to synthesise; step up once.
-    if (currentModel === MODELS.fast) currentModel = MODELS.balanced;
+    // Long tool chains or failed tools mean the task is harder than it looked: hand it to Argon.
+    if (currentModel === MODELS.hydrogen && (round >= 3 || responses.some(r => r.functionResponse?.response?.output?.ok === false))) currentModel = MODELS.argon;
   }
 
   return { text, sources: [...sources.values()], usage, model: currentModel };

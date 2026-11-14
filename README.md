@@ -24,10 +24,17 @@ database.rules.json Realtime Database security rules
 
 | Feature | Model |
 | --- | --- |
-| Images (in normal chat) | `gemini-3-pro-image` (Nano Banana Pro) |
+| Light and moderately complex chat | `gemini-4-hydrogen` |
+| Complex, multi-step and deep-research chat | `gemini-4-argon` |
 | Video shot planning | `gemini-4-argon` |
+| Images (in normal chat) | `gemini-3-pro-image` (Nano Banana Pro) |
 | Video shots | `veo-3.1-generate-001` (1080p, with sound) |
 | Longer cuts and video edits | `gemini-omni-1.2-flash` |
+| Speech / Live voice | `gemini-3.8-flash-tts` / `gemini-3.8-live` (different modalities, unchanged) |
+
+### Auto routing
+
+`routeModel()` in `server/lib/vertex.js` scores every chat request on independent signals (hard-topic terms, code size and stack traces, "build an app/system" briefs, maths or proofs, request length, many-part lists, several questions, many attachments, max-thinking). A score of 4 or more goes to Argon, everything else to Hydrogen; deep research always uses Argon. Hydrogen thinks little for plain chat and a medium amount for slightly complex asks; Argon never thinks less than medium. During an agent run Hydrogen is handed to Argon after three tool rounds or a failed tool. Small helpers (chat titles, home-screen copy) use Hydrogen. Set `TRUX_LOG_ROUTING=1` to log each decision with its reasons. The owner-only model picker still overrides routing.
 
 Video lengths: 8 s (one Veo shot), 18 s and 28 s (Veo opening shot, then Gemini Omni extensions).
 
@@ -110,4 +117,4 @@ Deleting a chat (or "Remove all chats") only hides it: the chat is flagged `dele
 - All transitions use the shared tokens in `tokens.css` (`--ease`, `--ease-out`, `--dur-1/2/3` = 160 / 260 / 420 ms). A zero-specificity baseline rule gives buttons, links and inputs the same colour/shadow/press easing.
 - Overlays fade and scale out as well as in: use `showOverlay` / `hideOverlay` (inline `display`) or `setOverlayActive` (`.active` class) from `core.js` instead of toggling `display` directly.
 - Circle to Search (`circle-search.js`, `circle.css`) draws through one eased animation loop (stroke, dim, corner brackets and selection box all glide) with soft colours; only transform/opacity animate in CSS.
-- Live (`live.js`, `live.css`) is a dark, calm screen (near-black with champagne / dusty-rose accents, no blue): a voice-reactive orb in the middle (your voice swells it softly, TruX's voice warms the glow), a slim top bar with a live-status dot and a floating glass control dock. It fades in and out, staggers its sections, cross-fades status text and drives the orb from smoothed `--trux-live-in` / `--trux-live-out` levels. The "Hey TruX" wake-word feature was removed.
+- Live (`live.js`, `live.css`) is a dark, calm screen (near-black with champagne / dusty-rose accents, no blue): a voice-reactive orb in the middle (your voice swells it softly, TruX's voice warms the glow), a slim top bar with a live-status dot and a floating glass control dock. It fades in and out, staggers its sections, cross-fades status text and drives the orb from smoothed `--trux-live-in` / `--trux-live-out` levels: a cool-blue wave moves inside the orb while you speak, and a row of orange lines above the orb moves while TruX speaks (both drawn on canvases in `live.js`). The "Hey TruX" wake-word feature was removed.

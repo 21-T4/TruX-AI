@@ -20,7 +20,7 @@ async function home(request) {
   if (!rateLimit('home:' + ip, { capacity: 5, refillPerSecond: 0.05 })) return json(cache.value || FALLBACK);
   try {
     const { text } = await generateOnce({
-      model: MODELS.fast,
+      model: MODELS.hydrogen,
       contents: [{ role: 'user', parts: [{ text: 'Generate home-screen copy for an AI assistant. JSON: {"greetings": five distinct welcoming headlines of 4-10 words, "prompts": three short example requests of 3-7 words}. No emojis, no "Ask anything". Nonce ' + Date.now() }] }],
       config: { temperature: 1, maxOutputTokens: 300, responseMimeType: 'application/json', thinkingConfig: { thinkingBudget: 0 } }
     });
