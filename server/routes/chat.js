@@ -13,7 +13,7 @@ import { normalizeDevice } from '../chat/device.js';
 import { getProcessedText } from '../lib/storage.js';
 import { notifyUser } from '../lib/push.js';
 import { addUsage, checkQuota, limitFor } from '../lib/usage.js';
-import { generateOnce, MODELS, pickModel } from '../lib/vertex.js';
+import { generateOnce, MODELS, routeModel } from '../lib/vertex.js';
 import { historyToContents, loadTurnContext, sanitizeClientHistory } from '../chat/context.js';
 import { MessageWriter } from '../chat/writer.js';
 import { Toolbox } from '../chat/tools.js';
@@ -78,7 +78,7 @@ async function userParts({ uid, bucket, message, attachments }) {
 async function generateTitle(message) {
   try {
     const { text } = await generateOnce({
-      model: MODELS.fast,
+      model: MODELS.hydrogen,
       contents: [{ role: 'user', parts: [{ text: 'Write a short, specific title (3-6 words, no quotes, no trailing punctuation) for a chat that starts with:\n\n' + String(message).slice(0, 2000) }] }],
       config: { maxOutputTokens: 30, temperature: 0.4, thinkingConfig: { thinkingBudget: 0 } }
     });
@@ -96,7 +96,7 @@ async function chat(request, { env, url }) {
   const message = String(body.message || '').slice(0, 100_000).trim();
   const attachments = cleanAttachments(user.uid, body.attachments);
   if (!message && !attachments.length) throw new HttpError(400, 'Message is empty.');
-  const thinking = ['low', 'medium', 'high'].includes(body.thinking) ? body.thinking : 'low';
+  let thinking = ['low', 'medium', 'high'].includes(body.thinking) ? body.thinking : 'low';
   const canVideo = limitFor(user, 'videos') === Infinity;
   if (mode === 'video' && !canVideo) throw new HttpError(403, 'Video generation is available on the Pro plan.');
   if (mode === 'deep-research') {
@@ -161,8 +161,11 @@ async function chat(request, { env, url }) {
     ];
     const ownerModel = user.owner && /^[a-z0-9][a-z0-9.\-]{2,80}$/i.test(String(body.ownerModel || '')) && body.ownerModel !== 'auto'
       ? String(body.ownerModel) : '';
-    const model = ownerModel || pickModel({ message, hasMedia: attachments.length > 0, thinking, mode });
+    const route = routeModel({ message, hasMedia: attachments.length > 0, attachmentCount: attachments.length, thinking, mode });
+    const model = ownerModel || route.model;
+    if (!ownerModel) thinking = route.thinking;     // the router raises thinking for harder requests, never lowers a user's choice
     writer.update({ model });
+    if (process.env.TRUX_LOG_ROUTING) console.log('[route]', route.tier, 'score', route.score, route.reasons.join(', '));
     send({ type: 'status', status: mode === 'deep-research' ? 'Researching…' : 'Thinking…', model });
 
     let status = 'done';

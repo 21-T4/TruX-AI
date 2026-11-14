@@ -5,14 +5,12 @@ import { getProjectId, googleApi, VERTEX_LOCATION } from './config.js';
 import { VOICE_IDS } from './personalization.js';
 
 export const MODELS = Object.freeze({
-  fast: 'gemini-3.5-flash-lite',
-  balanced: 'gemini-3.6-flash',
-  smart: 'gemini-3.8-flash',
-  research: 'gemini-3.1-pro-preview',
+  hydrogen: 'gemini-4-hydrogen',      // light and moderately complex work
+  argon: 'gemini-4-argon',            // complex, multi-step and deep-research work
   image: 'gemini-3-pro-image',       // Nano Banana Pro
   video: 'veo-3.1-generate-001',      // Veo 3.1 (full quality)
   omni: 'gemini-omni-1.2-flash',      // Gemini Omni: video extension and editing
-  director: 'gemini-4-argon',         // shot planning / prompt design
+  director: 'gemini-4-argon',         // shot planning / prompt design (same model as argon)
   tts: 'gemini-3.8-flash-tts',
   live: 'gemini-3.8-live'
 });
@@ -141,26 +139,75 @@ export function groundingSources(grounding, limit = 8) {
   return sources;
 }
 
-/* ---------- Model routing ---------- */
+/* ---------- Model routing ----------
+   Two text models: Gemini 4 Hydrogen answers everyday and moderately complex requests quickly; Gemini 4 Argon
+   takes the hard ones. routeModel() scores the request on several independent signals and sends it to Argon
+   once the score reaches ARGON_THRESHOLD, so one weak signal ("debug" in a one-liner) stays on Hydrogen while a
+   long, multi-part, code-heavy or proof-style request goes to Argon. */
 const CODE_RE = /\b(code|coding|program|script|function|class|bug|debug|refactor|implement|compile|api|endpoint|javascript|typescript|python|java|html|css|react|node|sql|regex|github|repo|codebase|stack trace|exception|dependency)\b/i;
-const HARD_RE = /\b(debug|refactor|architect|architecture|root cause|race condition|security|migrat|integrat|optimi[sz]|performance|multi[- ]file|end[- ]to[- ]end|unit tests?|full[- ]stack|step[- ]by[- ]step|multi[- ]step|in[- ]depth|prove|proof|derive|trade[- ]offs?|system design|theorem|calculus|differential)\b/i;
-const REASON_RE = /\b(reason|analy[sz]e|analysis|evaluate|compare|contrast|justify|strategy|solve|calculate)\b/i;
+const HARD_RE = /\b(debug|refactor|architect|architecture|root cause|race condition|deadlock|concurren\w*|security|vulnerab\w*|migrat\w*|integrat\w*|optimi[sz]\w*|performance|multi[- ]file|end[- ]to[- ]end|unit tests?|full[- ]stack|step[- ]by[- ]step|multi[- ]step|in[- ]depth|prove|proof|derive|derivation|trade[- ]offs?|system design|distributed|scalab\w*|algorithm\w*|complexity|theorem|calculus|differential|eigen\w*|probabilit\w*|statistic\w*|regression)\b/i;
+const HARD_RE_G = new RegExp(HARD_RE.source, 'gi');
+const REASON_RE = /\b(reason|analy[sz]e|analysis|evaluate|compare|contrast|justify|strategy|solve|calculate|explain why|pros and cons|plan|summari[sz]e|outline|review|critique|rewrite|translate)\b/i;
+const BUILD_RE = /\b(build|create|make|write|develop|design|implement|generate)\b[^.?!\n]{0,60}\b(app|application|website|web ?app|backend|frontend|service|system|game|compiler|interpreter|framework|library|pipeline|platform|dashboard|bot|extension|database schema|architecture)\b/i;
+const MATH_RE = /(\bprove\b|\bderive\b|\btheorem\b|\bintegral\b|\bintegrate\b|\bdifferentiate\b|\bmatrix\b|\beigen|\blimit as\b|[∫∑∏√≤≥≈∞∂]|\\(frac|int|sum|lim)\b|\d\s*[\^*/]\s*\d.*=)/i;
+const TRACE_RE = /(\bat\s+\S+\s*\(\S+:\d+:\d+\)|Traceback \(most recent call last\)|\bException in thread|\bUncaught \w*Error|\bSegmentation fault|^\s+at .+\.(js|ts|py|java|go|rs):\d+)/m;
+const CHEAP_RE = /^(hi|hello|hey|thanks|thank you|ok|okay|yes|no|good (morning|night|evening)|who are you|what('| i)?s your name)\b[\s!.?]*$/i;
 
-/** Picks the fastest model that can handle the request well. */
-export function pickModel({ message = '', hasMedia = false, thinking = 'low', mode = 'chat' }) {
-  if (mode === 'deep-research') return MODELS.research;
+export const ARGON_THRESHOLD = 4;
+
+/**
+ * Scores one request and returns { model, tier, score, thinking, reasons }.
+ * `thinking` is the level the router suggests; an explicit higher level chosen in the app always wins.
+ */
+export function routeModel({ message = '', hasMedia = false, attachmentCount = 0, thinking = 'low', mode = 'chat' } = {}) {
   const text = String(message || '');
+  const reasons = [];
+  let score = 0;
+  const add = (points, why) => { score += points; reasons.push(why + ' +' + points); };
+
+  if (mode === 'deep-research') return { model: MODELS.argon, tier: 'argon', score: 99, thinking: thinking === 'low' ? 'medium' : thinking, reasons: ['deep research'] };
+  if (thinking === 'high') add(ARGON_THRESHOLD, 'max thinking requested');
+  if (CHEAP_RE.test(text.trim())) return { model: MODELS.hydrogen, tier: 'hydrogen', score: 0, thinking: 'low', reasons: ['small talk'] };
+
   const words = text.split(/\s+/).filter(Boolean).length;
-  if (thinking === 'high' || HARD_RE.test(text) || (CODE_RE.test(text) && words > 30)) return MODELS.smart;
-  if (CODE_RE.test(text) || REASON_RE.test(text) || words > 60 || thinking === 'medium') return MODELS.balanced;
-  if (hasMedia) return MODELS.balanced;
-  return MODELS.fast;
+  const hasFence = /```/.test(text);
+  const codeLines = hasFence ? (text.match(/\n/g) || []).length : 0;
+  const hardHits = (text.match(HARD_RE_G) || []).length;
+  const hasCode = hasFence || CODE_RE.test(text);
+  const listItems = (text.match(/^\s*(?:\d+[.)]|[-*•])\s+\S/gm) || []).length;
+  const questions = (text.match(/\?/g) || []).length;
+
+  if (hardHits >= 4) add(4, 'many hard-topic terms');
+  else if (hardHits >= 2) add(3, 'several hard-topic terms');
+  else if (hardHits === 1) add(2, 'hard-topic term');
+  if (hasCode && words > 80) add(2, 'code with a long brief');
+  else if (hasCode && words > 30) add(1, 'code request');
+  if (hasFence && codeLines > 25) add(3, 'large code block');
+  else if (hasFence && codeLines > 8) add(1, 'code block');
+  if (TRACE_RE.test(text)) add(2, 'stack trace');
+  if (BUILD_RE.test(text)) add(3, 'build a system or app');
+  if (MATH_RE.test(text)) add(2, 'maths or proof');
+  if (words > 600) add(4, 'very long request');
+  else if (words > 250) add(2, 'long request');
+  if (listItems >= 4) add(2, 'many-part request');
+  if (questions >= 3) add(1, 'several questions');
+  if (attachmentCount >= 3) add(1, 'many attachments');
+  if (hasMedia && (REASON_RE.test(text) || hardHits)) add(1, 'analysing attachments');
+
+  if (score >= ARGON_THRESHOLD) return { model: MODELS.argon, tier: 'argon', score, thinking: thinking === 'low' ? 'medium' : thinking, reasons };
+
+  /* Hydrogen: choose how much it should think. Plain chat needs none; slightly complex asks get a little. */
+  const moderate = score >= 2 || hasCode || REASON_RE.test(text) || words > 60 || hasMedia || thinking === 'medium';
+  return { model: MODELS.hydrogen, tier: 'hydrogen', score, thinking: thinking === 'high' ? 'high' : (moderate ? 'medium' : 'low'), reasons };
 }
 
+/** Backwards-compatible helper: just the model id. */
+export function pickModel(args) { return routeModel(args).model; }
+
 export function thinkingConfig(model, level) {
-  if (model === MODELS.research) return {};
   const normalized = { high: 'HIGH', medium: 'MEDIUM' }[level] || 'LOW';
-  if (model === MODELS.fast && normalized === 'LOW') return { thinkingConfig: { thinkingBudget: 0 } };
+  /* Hydrogen is the quick model: for plain chat skip thinking entirely so the first token arrives sooner. */
+  if (model === MODELS.hydrogen && normalized === 'LOW') return { thinkingConfig: { thinkingBudget: 0 } };
   return { thinkingConfig: { thinkingLevel: normalized } };
 }
 
