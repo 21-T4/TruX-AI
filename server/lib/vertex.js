@@ -204,10 +204,13 @@ export function routeModel({ message = '', hasMedia = false, attachmentCount = 0
 /** Backwards-compatible helper: just the model id. */
 export function pickModel(args) { return routeModel(args).model; }
 
+/** Lightest thinking, for small helper calls (titles, home-screen copy). */
+export const QUICK_THINKING = Object.freeze({ thinkingConfig: { thinkingLevel: 'LOW' } });
+
 export function thinkingConfig(model, level) {
   const normalized = { high: 'HIGH', medium: 'MEDIUM' }[level] || 'LOW';
-  /* Hydrogen is the quick model: for plain chat skip thinking entirely so the first token arrives sooner. */
-  if (model === MODELS.hydrogen && normalized === 'LOW') return { thinkingConfig: { thinkingBudget: 0 } };
+  /* Gemini 4 models reject thinkingBudget ("use thinking level instead"), so every call uses thinkingLevel.
+     LOW is the lightest level, so plain chat on Hydrogen stays quick. */
   return { thinkingConfig: { thinkingLevel: normalized } };
 }
 

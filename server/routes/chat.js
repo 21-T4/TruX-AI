@@ -13,7 +13,7 @@ import { normalizeDevice } from '../chat/device.js';
 import { getProcessedText } from '../lib/storage.js';
 import { notifyUser } from '../lib/push.js';
 import { addUsage, checkQuota, limitFor } from '../lib/usage.js';
-import { generateOnce, MODELS, routeModel } from '../lib/vertex.js';
+import { generateOnce, MODELS, QUICK_THINKING, routeModel } from '../lib/vertex.js';
 import { historyToContents, loadTurnContext, sanitizeClientHistory } from '../chat/context.js';
 import { MessageWriter } from '../chat/writer.js';
 import { Toolbox } from '../chat/tools.js';
@@ -80,7 +80,7 @@ async function generateTitle(message) {
     const { text } = await generateOnce({
       model: MODELS.hydrogen,
       contents: [{ role: 'user', parts: [{ text: 'Write a short, specific title (3-6 words, no quotes, no trailing punctuation) for a chat that starts with:\n\n' + String(message).slice(0, 2000) }] }],
-      config: { maxOutputTokens: 30, temperature: 0.4, thinkingConfig: { thinkingBudget: 0 } }
+      config: { maxOutputTokens: 400, temperature: 0.4, ...QUICK_THINKING }
     });
     return text.replace(/^["'\s]+|["'.\s]+$/g, '').slice(0, 80) || '';
   } catch { return ''; }
