@@ -234,8 +234,14 @@ function scheduleHomeGreeting(fn, delay) {
 function cleanHomeGreeting(value) {
   const greeting = String(value || "").replace(/\s+/g, " ").trim().replace(/^["'“”]+|["'“”]+$/g, "");
   const words = greeting ? greeting.split(/\s+/).length : 0;
-  return greeting.length >= 16 && greeting.length <= 100 && words >= 4 && words <= 14 ? greeting : "";
+  return greeting.length >= 10 && greeting.length <= 100 && words >= 3 && words <= 14 ? greeting : "";
 }
+
+/* Shown whenever the server copy is missing or unusable, so the title and suggestions are never blank. */
+const HOME_FALLBACK = Object.freeze({
+  greetings: ["What are we building today?", "Ready when you are.", "Got a question? Let's dig in.", "Let's make something great.", "Where should we start?"],
+  prompts: ["Plan a weekend trip", "Explain a tricky concept", "Review my code"]
+});
 
 function renderHomePrompts(prompts) {
   const panel = getEl("truxHomePrompts");
@@ -244,8 +250,8 @@ function renderHomePrompts(prompts) {
     .map(prompt => String(prompt || "").replace(/\s+/g, " ").trim())
     .filter(prompt => {
       const words = prompt ? prompt.split(/\s+/).length : 0;
-      return prompt.length >= 8 && prompt.length <= 100 && words >= 3 && words <= 10;
-    }))];
+      return prompt.length >= 6 && prompt.length <= 100 && words >= 2 && words <= 10;
+    }))].slice(0, 3);
   if (cleanPrompts.length !== 3) return false;
 
   let buttons_index = 0;
@@ -302,6 +308,13 @@ async function loadHomeContent({ prefetch = false } = {}) {
     return true;
   })().catch(error => {
     console.debug("TruX AI-generated home content unavailable:", error?.message || error);
+    /* Nothing left to show? Use the built-in copy right away instead of leaving the screen empty. */
+    if (document.body.classList.contains("home-active") && truxHomeGreetingIndex >= truxHomeGreetingQueue.length && !truxHomePendingGreetings.length) {
+      renderHomePrompts(HOME_FALLBACK.prompts);
+      truxHomeGreetingQueue = HOME_FALLBACK.greetings.filter(g => g.toLocaleLowerCase() !== truxHomeLastGreeting.toLocaleLowerCase());
+      truxHomeGreetingIndex = 0;
+      return true;
+    }
     if (document.body.classList.contains("home-active") && truxHomeContentRetryCount < 2) {
       truxHomeContentRetryCount += 1;
       const retryAsPrefetch = prefetch && truxHomeGreetingIndex < truxHomeGreetingQueue.length;
