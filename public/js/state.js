@@ -20,7 +20,7 @@ let currentPlanTier = "base",
     isScrolledUp = false,
     activeStreamer = null,
     advancedThinkingEnabled = false,
-    advancedThinkingLevel = "low",
+    advancedThinkingLevel = "auto",
     incognitoMode = false,
     generationEpoch = 0,
     activeTurnContext = null,
@@ -31,6 +31,6 @@ try {
   const savedPlanTier = store.getItem("trux_plan_tier");
   currentPlanTier = ["base","pro"].includes(savedPlanTier) ? savedPlanTier : "base";
   store.setItem("trux_plan_tier", currentPlanTier);
-  advancedThinkingLevel = ["low","medium","extended"].includes(store.getItem("trux_thinking_level")) ? store.getItem("trux_thinking_level") : "low";
+  advancedThinkingLevel = ["auto","low","medium","extended"].includes(store.getItem("trux_thinking_level")) ? store.getItem("trux_thinking_level") : "auto";
   advancedThinkingEnabled = advancedThinkingLevel === "extended";
 } catch (_) {}

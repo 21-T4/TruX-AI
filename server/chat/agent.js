@@ -1,6 +1,6 @@
 /* The agent loop: stream a model round, run any tool calls the model chose,
    feed results back, repeat until the model answers. */
-import { groundingSources, MODELS, streamRound, thinkingConfig } from '../lib/vertex.js';
+import { groundingSources, streamRound, thinkingConfig } from '../lib/vertex.js';
 
 const MAX_ROUNDS = 30;
 
@@ -9,13 +9,13 @@ function throwIfAborted(signal) {
   throw signal.reason || Object.assign(new Error("Generation stopped."), { name: "AbortError" });
 }
 
-export async function runAgent({ model, thinking, contents, systemInstruction, toolbox, writer, send, signal, temperature = 0.9 }) {
+export async function runAgent({ model, thinking, simple = false, contents, systemInstruction, toolbox, writer, send, signal, temperature = 0.9 }) {
   const messages = contents.slice();
   const sources = new Map();
   let searchSuggestionHtml = '';
   let text = '';
   let usage = null;
-  let currentModel = model;
+  const currentModel = model;
 
   for (let round = 0; round < MAX_ROUNDS; round++) {
     throwIfAborted(signal);
@@ -24,8 +24,8 @@ export async function runAgent({ model, thinking, contents, systemInstruction, t
       model: currentModel,
       contents: messages,
       systemInstruction,
-      tools: toolbox.geminiTools(),
-      config: { ...thinkingConfig(currentModel, thinking), temperature },
+      tools: simple ? [] : toolbox.geminiTools(),           // small talk needs no tools, which makes the reply start faster
+      config: { ...thinkingConfig(currentModel, thinking, { minimal: simple && round === 0 }), temperature },
       signal,
       onText: delta => {
         if (separatorPending) { delta = '\n\n' + delta.replace(/^\s+/, ''); separatorPending = false; }
@@ -75,8 +75,6 @@ export async function runAgent({ model, thinking, contents, systemInstruction, t
     }));
     throwIfAborted(signal);
     messages.push({ role: 'user', parts: responses });
-    // Long tool chains or failed tools mean the task is harder than it looked: hand it to Argon.
-    if (currentModel === MODELS.hydrogen && (round >= 3 || responses.some(r => r.functionResponse?.response?.output?.ok === false))) currentModel = MODELS.argon;
   }
 
   return { text, sources: [...sources.values()], usage, model: currentModel };

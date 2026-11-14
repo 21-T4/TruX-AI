@@ -605,19 +605,22 @@
               <div class="model-dropdown-menu" id="modelDropdown" role="menu" aria-label="Automatic model routing">
                 <button type="button" class="model-item active" data-model="auto" onclick="selectModel('auto',event);closeModelDropdown()">
                   <span class="model-icon">✧</span>
-                  <span class="model-info"><b>Auto</b><small>Chooses the best model according to your request</small></span>
+                  <span class="model-info"><b>Auto</b><small>Hydrogen for everyday asks, Argon for very long or very hard coding</small></span>
                   <span class="model-check">✓</span>
                 </button>
                 <div class="thinking-choice-wrap">
                   <div class="thinking-choice-title">Thinking</div>
-                  <button type="button" class="thinking-choice active" data-thinking-level="low" onclick="setThinkingLevel('low',event)">
-                    <span><b>Low</b><small>Fastest responses</small></span><span class="thinking-check">✓</span>
+                  <button type="button" class="thinking-choice active" data-thinking-level="auto" onclick="setThinkingLevel('auto',event)">
+                    <span><b>Auto</b><small>Fast by default, thinks more when needed</small></span><span class="thinking-check">✓</span>
+                  </button>
+                  <button type="button" class="thinking-choice" data-thinking-level="low" onclick="setThinkingLevel('low',event)">
+                    <span><b>Low</b><small>Fastest · Gemini 4 Hydrogen</small></span><span class="thinking-check"></span>
                   </button>
                   <button type="button" class="thinking-choice" data-thinking-level="medium" onclick="setThinkingLevel('medium',event)">
-                    <span><b>Medium</b><small>Balanced reasoning</small></span><span class="thinking-check"></span>
+                    <span><b>Medium</b><small>Balanced · Gemini 4 Hydrogen</small></span><span class="thinking-check"></span>
                   </button>
                   <button type="button" class="thinking-choice" data-thinking-level="extended" onclick="setThinkingLevel('extended',event)">
-                    <span><b>Extended</b><small>Deepest reasoning</small></span><span class="thinking-check"></span>
+                    <span><b>Extended</b><small>Deepest · Gemini 4 Argon</small></span><span class="thinking-check"></span>
                   </button>
                 </div>
               </div>

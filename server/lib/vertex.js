@@ -72,7 +72,16 @@ export async function streamRound({ model, contents, systemInstruction, tools, c
   let finishReason = '';
   let usage = null;
 
-  const stream = await client.models.generateContentStream({ model, contents, config: request });
+  let stream;
+  try {
+    stream = await client.models.generateContentStream({ model, contents, config: request });
+  } catch (error) {
+    /* A model that does not know the MINIMAL thinking level: retry once with LOW. */
+    if (request.thinkingConfig?.thinkingLevel === 'MINIMAL' && /thinking|level|minimal|INVALID_ARGUMENT/i.test(String(error?.message || '')) && !signal?.aborted) {
+      request.thinkingConfig = { thinkingLevel: 'LOW' };
+      stream = await client.models.generateContentStream({ model, contents, config: request });
+    } else throw error;
+  }
   for await (const chunk of stream) {
     const candidate = chunk?.candidates?.[0];
     if (chunk?.usageMetadata) usage = chunk.usageMetadata;
@@ -140,65 +149,68 @@ export function groundingSources(grounding, limit = 8) {
 }
 
 /* ---------- Model routing ----------
-   Two text models: Gemini 4 Hydrogen answers everyday and moderately complex requests quickly; Gemini 4 Argon
-   takes the hard ones. routeModel() scores the request on several independent signals and sends it to Argon
-   once the score reaches ARGON_THRESHOLD, so one weak signal ("debug" in a one-liner) stays on Hydrogen while a
-   long, multi-part, code-heavy or proof-style request goes to Argon. */
+   Gemini 4 Hydrogen is the default for everything, including hard-ish questions: it is the fast model. Gemini 4
+   Argon is reserved for the genuinely heavy cases: very long prompts and very hard coding tasks (plus deep research
+   and an explicit "Extended" thinking choice). routeModel() scores independent signals and needs ARGON_THRESHOLD
+   points, so one or two hard-sounding words never move a request off Hydrogen. */
 const CODE_RE = /\b(code|coding|program|script|function|class|bug|debug|refactor|implement|compile|api|endpoint|javascript|typescript|python|java|html|css|react|node|sql|regex|github|repo|codebase|stack trace|exception|dependency)\b/i;
-const HARD_RE = /\b(debug|refactor|architect|architecture|root cause|race condition|deadlock|concurren\w*|security|vulnerab\w*|migrat\w*|integrat\w*|optimi[sz]\w*|performance|multi[- ]file|end[- ]to[- ]end|unit tests?|full[- ]stack|step[- ]by[- ]step|multi[- ]step|in[- ]depth|prove|proof|derive|derivation|trade[- ]offs?|system design|distributed|scalab\w*|algorithm\w*|complexity|theorem|calculus|differential|eigen\w*|probabilit\w*|statistic\w*|regression)\b/i;
+const HARD_RE = /\b(refactor|architect|architecture|root cause|race condition|deadlock|concurren\w*|vulnerab\w*|migrat\w*|multi[- ]file|end[- ]to[- ]end|full[- ]stack|system design|distributed|scalab\w*|algorithm\w*|compiler|interpreter|memory leak|performance bottleneck|optimi[sz]\w*|prove|proof|derive|theorem)\b/i;
 const HARD_RE_G = new RegExp(HARD_RE.source, 'gi');
-const REASON_RE = /\b(reason|analy[sz]e|analysis|evaluate|compare|contrast|justify|strategy|solve|calculate|explain why|pros and cons|plan|summari[sz]e|outline|review|critique|rewrite|translate)\b/i;
-const BUILD_RE = /\b(build|create|make|write|develop|design|implement|generate)\b[^.?!\n]{0,60}\b(app|application|website|web ?app|backend|frontend|service|system|game|compiler|interpreter|framework|library|pipeline|platform|dashboard|bot|extension|database schema|architecture)\b/i;
-const MATH_RE = /(\bprove\b|\bderive\b|\btheorem\b|\bintegral\b|\bintegrate\b|\bdifferentiate\b|\bmatrix\b|\beigen|\blimit as\b|[∫∑∏√≤≥≈∞∂]|\\(frac|int|sum|lim)\b|\d\s*[\^*/]\s*\d.*=)/i;
+const REASON_RE = /\b(reason|analy[sz]e|analysis|evaluate|compare|contrast|justify|strategy|solve|calculate|explain why|pros and cons|plan|summari[sz]e|outline|review|critique|rewrite|translate|explain|difference|how does|how do)\b/i;
+const BUILD_RE = /\b(build|create|make|write|develop|design|implement|generate)\b[^.?!\n]{0,60}\b(app|application|website|web ?app|backend|frontend|service|system|game|compiler|interpreter|framework|library|pipeline|platform|dashboard|extension|architecture)\b/i;
 const TRACE_RE = /(\bat\s+\S+\s*\(\S+:\d+:\d+\)|Traceback \(most recent call last\)|\bException in thread|\bUncaught \w*Error|\bSegmentation fault|^\s+at .+\.(js|ts|py|java|go|rs):\d+)/m;
-const CHEAP_RE = /^(hi|hello|hey|thanks|thank you|ok|okay|yes|no|good (morning|night|evening)|who are you|what('| i)?s your name)\b[\s!.?]*$/i;
+/* Greetings, thanks and one-word replies: answer instantly, no thinking, no tools. */
+const SMALL_TALK_RE = /^(hi+|hello+|hey+|hola|yo|sup|thanks?|thank you|thx|ok(ay)?|cool|nice|great|yes|no|yep|nope|good (morning|night|evening|afternoon)|how are you|who are you|what('| i)?s your name|what can you do)\b[\s!.?,]*[\w\s,'!?.]{0,30}$/i;
 
-export const ARGON_THRESHOLD = 4;
+export const ARGON_THRESHOLD = 6;
 
 /**
- * Scores one request and returns { model, tier, score, thinking, reasons }.
- * `thinking` is the level the router suggests; an explicit higher level chosen in the app always wins.
+ * Scores one request and returns { model, tier, score, thinking, simple, reasons }.
+ * `thinking` is the app's setting: 'auto' (let the router choose) or an explicit 'low' | 'medium' | 'high'.
+ * An explicit level is always used exactly as chosen; only 'auto' is adjusted by the router.
  */
-export function routeModel({ message = '', hasMedia = false, attachmentCount = 0, thinking = 'low', mode = 'chat' } = {}) {
+export function routeModel({ message = '', hasMedia = false, attachmentCount = 0, thinking = 'auto', mode = 'chat' } = {}) {
   const text = String(message || '');
+  const explicit = ['low', 'medium', 'high'].includes(thinking) ? thinking : '';
   const reasons = [];
   let score = 0;
   const add = (points, why) => { score += points; reasons.push(why + ' +' + points); };
 
-  if (mode === 'deep-research') return { model: MODELS.argon, tier: 'argon', score: 99, thinking: thinking === 'low' ? 'medium' : thinking, reasons: ['deep research'] };
-  if (thinking === 'high') add(ARGON_THRESHOLD, 'max thinking requested');
-  if (CHEAP_RE.test(text.trim())) return { model: MODELS.hydrogen, tier: 'hydrogen', score: 0, thinking: 'low', reasons: ['small talk'] };
+  if (mode === 'deep-research') return { model: MODELS.argon, tier: 'argon', score: 99, thinking: explicit || 'medium', simple: false, reasons: ['deep research'] };
+  if (explicit === 'high') return { model: MODELS.argon, tier: 'argon', score: 99, thinking: 'high', simple: false, reasons: ['extended thinking chosen'] };
 
-  const words = text.split(/\s+/).filter(Boolean).length;
+  const trimmed = text.trim();
+  const words = trimmed.split(/\s+/).filter(Boolean).length;
+  if (!hasMedia && words <= 8 && SMALL_TALK_RE.test(trimmed)) {
+    return { model: MODELS.hydrogen, tier: 'hydrogen', score: 0, thinking: explicit || 'low', simple: true, reasons: ['small talk'] };
+  }
+
   const hasFence = /```/.test(text);
   const codeLines = hasFence ? (text.match(/\n/g) || []).length : 0;
   const hardHits = (text.match(HARD_RE_G) || []).length;
   const hasCode = hasFence || CODE_RE.test(text);
   const listItems = (text.match(/^\s*(?:\d+[.)]|[-*•])\s+\S/gm) || []).length;
-  const questions = (text.match(/\?/g) || []).length;
 
-  if (hardHits >= 4) add(4, 'many hard-topic terms');
-  else if (hardHits >= 2) add(3, 'several hard-topic terms');
-  else if (hardHits === 1) add(2, 'hard-topic term');
-  if (hasCode && words > 80) add(2, 'code with a long brief');
-  else if (hasCode && words > 30) add(1, 'code request');
-  if (hasFence && codeLines > 25) add(3, 'large code block');
-  else if (hasFence && codeLines > 8) add(1, 'code block');
-  if (TRACE_RE.test(text)) add(2, 'stack trace');
-  if (BUILD_RE.test(text)) add(3, 'build a system or app');
-  if (MATH_RE.test(text)) add(2, 'maths or proof');
-  if (words > 600) add(4, 'very long request');
-  else if (words > 250) add(2, 'long request');
-  if (listItems >= 4) add(2, 'many-part request');
-  if (questions >= 3) add(1, 'several questions');
-  if (attachmentCount >= 3) add(1, 'many attachments');
-  if (hasMedia && (REASON_RE.test(text) || hardHits)) add(1, 'analysing attachments');
+  /* very long prompts */
+  if (words > 900) add(6, 'very long prompt');
+  else if (words > 500) add(4, 'long prompt');
+  else if (words > 300) add(2, 'lengthy prompt');
+  if (listItems >= 8) add(2, 'many-part request');
 
-  if (score >= ARGON_THRESHOLD) return { model: MODELS.argon, tier: 'argon', score, thinking: thinking === 'low' ? 'medium' : thinking, reasons };
+  /* very hard coding: hard terms only count when the request is about code */
+  if (hasCode && hardHits >= 3) add(4, 'many hard coding terms');
+  else if (hasCode && hardHits === 2) add(2, 'hard coding terms');
+  if (hasFence && codeLines > 60) add(3, 'very large code block');
+  else if (hasFence && codeLines > 25) add(1, 'large code block');
+  if (TRACE_RE.test(text) && hardHits) add(2, 'stack trace with a hard problem');
+  if (BUILD_RE.test(text) && hasCode && words > 40) add(3, 'build a whole system');
+  if (attachmentCount >= 4) add(1, 'many attachments');
 
-  /* Hydrogen: choose how much it should think. Plain chat needs none; slightly complex asks get a little. */
-  const moderate = score >= 2 || hasCode || REASON_RE.test(text) || words > 60 || hasMedia || thinking === 'medium';
-  return { model: MODELS.hydrogen, tier: 'hydrogen', score, thinking: thinking === 'high' ? 'high' : (moderate ? 'medium' : 'low'), reasons };
+  if (score >= ARGON_THRESHOLD) return { model: MODELS.argon, tier: 'argon', score, thinking: explicit || 'medium', simple: false, reasons };
+
+  /* Hydrogen answers everything else. Auto keeps thinking low unless the request clearly needs some. */
+  const needsSome = score >= 2 || (hasCode && words > 40) || (REASON_RE.test(text) && words > 25) || (hasMedia && words > 6);
+  return { model: MODELS.hydrogen, tier: 'hydrogen', score, thinking: explicit || (needsSome ? 'medium' : 'low'), simple: false, reasons };
 }
 
 /** Backwards-compatible helper: just the model id. */
@@ -207,10 +219,11 @@ export function pickModel(args) { return routeModel(args).model; }
 /** Lightest thinking, for small helper calls (titles, home-screen copy). */
 export const QUICK_THINKING = Object.freeze({ thinkingConfig: { thinkingLevel: 'LOW' } });
 
-export function thinkingConfig(model, level) {
+export function thinkingConfig(model, level, { minimal = false } = {}) {
+  /* Gemini 4 models reject thinkingBudget ("use thinking level instead"), so only thinkingLevel is ever sent.
+     `minimal` (small talk) asks for the lightest level; streamRound falls back to LOW if the model refuses it. */
+  if (minimal) return { thinkingConfig: { thinkingLevel: 'MINIMAL' } };
   const normalized = { high: 'HIGH', medium: 'MEDIUM' }[level] || 'LOW';
-  /* Gemini 4 models reject thinkingBudget ("use thinking level instead"), so every call uses thinkingLevel.
-     LOW is the lightest level, so plain chat on Hydrogen stays quick. */
   return { thinkingConfig: { thinkingLevel: normalized } };
 }
 

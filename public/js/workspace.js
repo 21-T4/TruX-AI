@@ -75,7 +75,7 @@ function selectModel(m, e) {
 
 function setThinkingLevel(level, e) {
   e?.stopPropagation();
-  const next = ["low","medium","extended"].includes(level) ? level : "medium";
+  const next = ["auto","low","medium","extended"].includes(level) ? level : "auto";
   advancedThinkingLevel = next;
   advancedThinkingEnabled = next === "extended";
   try { store.setItem("trux_thinking_level", next); } catch (_) {}

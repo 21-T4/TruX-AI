@@ -96,7 +96,8 @@ async function chat(request, { env, url }) {
   const message = String(body.message || '').slice(0, 100_000).trim();
   const attachments = cleanAttachments(user.uid, body.attachments);
   if (!message && !attachments.length) throw new HttpError(400, 'Message is empty.');
-  let thinking = ['low', 'medium', 'high'].includes(body.thinking) ? body.thinking : 'low';
+  const thinkingChoice = ['auto', 'low', 'medium', 'high'].includes(body.thinking) ? body.thinking : 'auto';
+  let thinking = thinkingChoice;
   const canVideo = limitFor(user, 'videos') === Infinity;
   if (mode === 'video' && !canVideo) throw new HttpError(403, 'Video generation is available on the Pro plan.');
   if (mode === 'deep-research') {
@@ -161,9 +162,9 @@ async function chat(request, { env, url }) {
     ];
     const ownerModel = user.owner && /^[a-z0-9][a-z0-9.\-]{2,80}$/i.test(String(body.ownerModel || '')) && body.ownerModel !== 'auto'
       ? String(body.ownerModel) : '';
-    const route = routeModel({ message, hasMedia: attachments.length > 0, attachmentCount: attachments.length, thinking, mode });
+    const route = routeModel({ message, hasMedia: attachments.length > 0, attachmentCount: attachments.length, thinking: thinkingChoice, mode });
     const model = ownerModel || route.model;
-    if (!ownerModel) thinking = route.thinking;     // the router raises thinking for harder requests, never lowers a user's choice
+    thinking = route.thinking;      // explicit choices are kept exactly; "auto" is decided by the router
     writer.update({ model });
     if (process.env.TRUX_LOG_ROUTING) console.log('[route]', route.tier, 'score', route.score, route.reasons.join(', '));
     send({ type: 'status', status: mode === 'deep-research' ? 'Researching…' : 'Thinking…', model });
@@ -183,7 +184,7 @@ async function chat(request, { env, url }) {
         writer.appendText(`**${plan?.title || 'Your video'}**\n\n` + (plan?.shots || []).map((shot, i) => `${i + 1}. ${shot.caption}`).join('\n') + (response.note && /could not/.test(response.note) ? '\n\n' + response.note.replace(/^Video produced and already displayed to the user\.\s*/, '') : ''));
         send({ type: 'final', text: writer.state.text, sources: [], media: writer.state.media });
       } else {
-        const result = await runAgent({ model, thinking, contents, systemInstruction, toolbox, writer, send, signal: controller.signal, temperature: presetTemperature(ctx.personalization) });
+        const result = await runAgent({ model, thinking, simple: route.simple, contents, systemInstruction, toolbox, writer, send, signal: controller.signal, temperature: presetTemperature(ctx.personalization) });
         if (!result.text && !writer.state.media.length) {
           writer.appendText('I could not produce a response. Please try again.');
         }
