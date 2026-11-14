@@ -176,7 +176,8 @@ async function uploadTurnBlob(blob, name) {
 
 function thinkingParam() {
   if (workspaceMode === "deep-research") return "high";
-  return advancedThinkingLevel === "extended" ? "high" : advancedThinkingLevel === "medium" ? "medium" : "low";
+  /* "auto" lets the server decide (low for quick asks); the other levels are used exactly as chosen. */
+  return advancedThinkingLevel === "extended" ? "high" : advancedThinkingLevel === "medium" ? "medium" : advancedThinkingLevel === "low" ? "low" : "auto";
 }
 
 function serverMode() {

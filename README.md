@@ -32,11 +32,11 @@ database.rules.json Realtime Database security rules
 | Longer cuts and video edits | `gemini-omni-1.2-flash` |
 | Speech / Live voice | `gemini-3.8-flash-tts` / `gemini-3.8-live` (different modalities, unchanged) |
 
-### Auto routing
+### Auto routing and thinking
 
-`routeModel()` in `server/lib/vertex.js` scores every chat request on independent signals (hard-topic terms, code size and stack traces, "build an app/system" briefs, maths or proofs, request length, many-part lists, several questions, many attachments, max-thinking). A score of 4 or more goes to Argon, everything else to Hydrogen; deep research always uses Argon. Hydrogen thinks at the lowest level for plain chat and a medium amount for slightly complex asks (the Gemini 4 models reject `thinkingBudget`, so only `thinkingLevel` is ever sent); Argon never thinks less than medium. During an agent run Hydrogen is handed to Argon after three tool rounds or a failed tool. Small helpers (chat titles, home-screen copy) use Hydrogen. Set `TRUX_LOG_ROUTING=1` to log each decision with its reasons. The owner-only model picker still overrides routing.
+Gemini 4 Hydrogen is the default for everything, including hard-sounding questions. Gemini 4 Argon is reserved for very long prompts, very hard coding tasks (several hard coding terms plus code, very large code blocks, "build a whole system" briefs), deep research, and an explicit **Extended** thinking choice. `routeModel()` in `server/lib/vertex.js` scores independent signals and needs 6 points to pick Argon, so one or two hard words never leave Hydrogen. Greetings, thanks and other small talk go to Hydrogen with minimal thinking and no tools, so "hello" answers immediately.
 
-Video lengths: 8 s (one Veo shot), 18 s and 28 s (Veo opening shot, then Gemini Omni extensions).
+The **Thinking** menu in the model picker is paired with the router: **Auto** (default) lets the router choose (Low for quick asks, Medium when the request clearly needs it), **Low** and **Medium** use Hydrogen, **Extended** uses Argon with the deepest thinking. Any explicit level is used exactly as chosen and can be changed at any time; the choice is remembered. The Gemini 4 models reject `thinkingBudget`, so only `thinkingLevel` is ever sent (small talk asks for `MINIMAL` and falls back to `LOW` if the model refuses it). Small helpers (chat titles, home-screen copy) use Hydrogen at Low. Set `TRUX_LOG_ROUTING=1` to log each routing decision with its reasons. The owner-only model picker still overrides the model.
 
 ## Configuration
 
@@ -118,3 +118,7 @@ Deleting a chat (or "Remove all chats") only hides it: the chat is flagged `dele
 - Overlays fade and scale out as well as in: use `showOverlay` / `hideOverlay` (inline `display`) or `setOverlayActive` (`.active` class) from `core.js` instead of toggling `display` directly.
 - Circle to Search (`circle-search.js`, `circle.css`) draws through one eased animation loop (stroke, dim, corner brackets and selection box all glide) with soft colours; only transform/opacity animate in CSS.
 - Live (`live.js`, `live.css`) is a dark, calm screen (near-black with champagne / dusty-rose accents, no blue): a voice-reactive orb in the middle (your voice swells it softly, TruX's voice warms the glow), a slim top bar with a live-status dot and a floating glass control dock. It fades in and out, staggers its sections, cross-fades status text and drives the orb from smoothed `--trux-live-in` / `--trux-live-out` levels: blue lines radiate from a glowing ball at the centre of the orb while you speak (inside the circle), and orange lines radiate out of its edge while TruX speaks (one canvas, `drawAura` in `live.js`; there is only one circle). The "Hey TruX" wake-word feature was removed.
+
+## Home screen copy
+
+The greeting and the three suggestions come from `GET /api/home` (Gemini 4 Hydrogen, cached 10 minutes). The server times the model out after 8 s, parses its JSON leniently, applies the same length/word limits the app uses, and falls back to built-in copy (cached 30 s) if anything is off. The app also keeps its own built-in copy (`HOME_FALLBACK` in `thinking-home.js`), so the title and suggestions are never blank even if the request fails.
