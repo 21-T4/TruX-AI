@@ -216,82 +216,85 @@
 
   /* The voice colour follows a smoothed level (quick to rise, slow to fall) and drifts gently, so it
      breathes instead of flickering with every audio buffer. */
-  /* ---- voice waves ----
-     Inside the orb a smooth blue wave follows YOUR voice; above the orb, a row of thin orange lines
-     follows TruX's voice. Both read the same smoothed levels that drive the glow. */
+  /* ---- voice waves on the circle's own edge ----
+     There is only ever ONE circle. It is drawn here: a thin ring at rest, a smooth cool-blue wave travelling
+     around its circumference while YOU speak, and orange lines radiating out of it while TRUX speaks. */
   let wavePhase = 0;
-  const canvasState = new WeakMap();
-  function fitCanvas(canvas) {
+  let auraSize = null;
+  function drawAura(canvas, panel, vin, vout, phase, ts) {
     const w = canvas.clientWidth, h = canvas.clientHeight;
-    if (!w || !h) return null;
+    if (!w || !h) return;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    let st = canvasState.get(canvas);
-    if (!st || st.w !== w || st.h !== h || st.dpr !== dpr) {
+    if (!auraSize || auraSize.w !== w || auraSize.h !== h || auraSize.dpr !== dpr) {
       canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
-      st = { w, h, dpr, g: canvas.getContext("2d") };
-      canvasState.set(canvas, st);
+      auraSize = { w, h, dpr, g: canvas.getContext("2d") };
     }
-    st.g.setTransform(st.dpr, 0, 0, st.dpr, 0, 0);
-    st.g.clearRect(0, 0, w, h);
-    return st;
-  }
+    const g = auraSize.g;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, w, h);
+    const cx = w / 2, cy = h / 2;
+    const R = (canvas.parentElement?.clientWidth || w / 1.7) / 2 - 1;        /* the orb's own radius */
+    const state = panel.dataset.state;
+    const TAU = Math.PI * 2;
 
-  function drawInnerWave(canvas, amp, phase) {
-    const st = fitCanvas(canvas); if (!st) return;
-    const { g, w, h } = st;
-    const mid = h / 2;
-    const base = 0.05 + amp * 0.36;                      /* resting ripple grows with your voice */
-    const layers = [
-      { k: 1.7, sp: 1.00, a: 1.00, lw: 3.0, al: .95, off: 0.0 },
-      { k: 2.4, sp: -1.35, a: .72, lw: 2.2, al: .70, off: 1.7 },
-      { k: 3.3, sp: 1.8, a: .46, lw: 1.6, al: .5, off: 3.1 }
-    ];
-    g.save();
-    g.globalCompositeOperation = "lighter";
-    g.lineCap = "round"; g.lineJoin = "round";
-    for (const L of layers) {
-      const grad = g.createLinearGradient(0, 0, w, 0);
-      grad.addColorStop(0, "rgba(70,150,255,0)");
-      grad.addColorStop(.22, "rgba(78,168,255," + L.al + ")");
-      grad.addColorStop(.5, "rgba(150,222,255," + L.al + ")");
-      grad.addColorStop(.78, "rgba(78,168,255," + L.al + ")");
-      grad.addColorStop(1, "rgba(70,150,255,0)");
-      g.beginPath();
-      const steps = Math.max(24, Math.round(w / 5));
-      for (let i = 0; i <= steps; i++) {
-        const t = i / steps, x = t * w;
-        const env = Math.pow(Math.sin(Math.PI * t), 1.35);                 /* ribbons meet at the circle's edge */
-        const y = mid + Math.sin(t * Math.PI * 2 * L.k + phase * L.sp + L.off) * h * base * L.a * env
-                      + Math.sin(t * Math.PI * 5 + phase * 0.7 + L.off) * h * base * .12 * env;
-        i ? g.lineTo(x, y) : g.moveTo(x, y);
+    /* the circle itself */
+    const calm = Math.max(0, 1 - Math.max(vin, vout) * 2.2);
+    let ring = "rgba(230,194,154," + (0.22 + 0.5 * calm) + ")";
+    if (state === "error") ring = "rgba(201,96,106,.8)";
+    else if (state === "connecting") ring = "rgba(230,194,154," + (0.3 + 0.35 * (0.5 + 0.5 * Math.sin(ts / 380))) + ")";
+    g.lineWidth = 1.6; g.strokeStyle = ring;
+    g.beginPath(); g.arc(cx, cy, R, 0, TAU); g.stroke();
+
+    /* your voice: the edge itself ripples in smooth blue waves */
+    if (vin > 0.01) {
+      const layers = [
+        { k: 3, sp: 1.0, a: 1.0, lw: 2.6, al: 1.0 },
+        { k: 5, sp: -1.25, a: .66, lw: 1.8, al: .72 },
+        { k: 7, sp: 1.6, a: .4, lw: 1.3, al: .5 }
+      ];
+      const steps = 200;
+      g.save();
+      g.globalCompositeOperation = "lighter";
+      g.lineJoin = "round";
+      for (const L of layers) {
+        const amp = R * (0.012 + 0.085 * vin) * L.a;
+        g.beginPath();
+        for (let i = 0; i <= steps; i++) {
+          const th = i / steps * TAU;
+          const r = R + amp * (Math.sin(th * L.k + phase * L.sp) * .62 + Math.sin(th * (L.k + 2) - phase * L.sp * 1.4 + 1.3) * .38);
+          const x = cx + Math.cos(th) * r, y = cy + Math.sin(th) * r;
+          i ? g.lineTo(x, y) : g.moveTo(x, y);
+        }
+        g.closePath();
+        const al = Math.min(1, .25 + vin * 1.3) * L.al;
+        g.strokeStyle = "rgba(96,176,255," + al.toFixed(3) + ")";
+        g.lineWidth = L.lw + vin * 1.6;
+        g.shadowColor = "rgba(70,150,255,.95)"; g.shadowBlur = 8 + vin * 16;
+        g.stroke();
       }
-      g.strokeStyle = grad;
-      g.lineWidth = L.lw + amp * 2.2;
-      g.shadowColor = "rgba(90,170,255,.9)"; g.shadowBlur = 10 + amp * 14;
-      g.stroke();
+      g.restore();
     }
-    g.restore();
-  }
 
-  function drawOutLines(canvas, amp, phase) {
-    const st = fitCanvas(canvas); if (!st) return;
-    const { g, w, h } = st;
-    const n = Math.max(21, Math.min(47, Math.round(w / 8)));
-    const gap = w / n, bar = Math.max(2.2, Math.min(3.6, gap * .36)), mid = h / 2;
-    g.lineCap = "round";
-    for (let i = 0; i < n; i++) {
-      const t = (i + .5) / n;
-      const env = Math.pow(Math.sin(Math.PI * t), 1.15);
-      const travel = .55 + .45 * Math.sin(i * .62 - phase * 2.1);
-      const ripple = .7 + .3 * Math.sin(i * 1.37 + phase * 1.3);
-      const half = 1.6 + (h / 2 - 3) * amp * env * travel * ripple;
-      const alpha = .22 + .78 * Math.min(1, amp * 1.4 + .15) * (.5 + .5 * env);
-      const grad = g.createLinearGradient(0, mid - half, 0, mid + half);
-      grad.addColorStop(0, "rgba(255,190,120," + alpha + ")");
-      grad.addColorStop(.5, "rgba(255,138,61," + alpha + ")");
-      grad.addColorStop(1, "rgba(255,190,120," + alpha + ")");
-      g.strokeStyle = grad; g.lineWidth = bar;
-      g.beginPath(); g.moveTo(i * gap + gap / 2, mid - half); g.lineTo(i * gap + gap / 2, mid + half); g.stroke();
+    /* TruX's voice: orange lines radiate from the edge, their length travelling around the circle */
+    if (vout > 0.01) {
+      const n = 84, maxLen = R * 0.27;
+      g.save();
+      g.lineCap = "round";
+      for (let i = 0; i < n; i++) {
+        const th = i / n * TAU;
+        const travel = .5 + .5 * Math.sin(th * 3 - phase * 1.7);
+        const ripple = .6 + .4 * Math.sin(th * 7 + phase * 1.15 + 0.8);
+        const len = 2 + maxLen * vout * (.25 + .75 * travel * ripple);
+        const r0 = R + 5, r1 = r0 + len;
+        const al = Math.min(1, .3 + vout * 1.2) * (.5 + .5 * travel);
+        const cos = Math.cos(th), sin = Math.sin(th);
+        const grad = g.createLinearGradient(cx + cos * r0, cy + sin * r0, cx + cos * r1, cy + sin * r1);
+        grad.addColorStop(0, "rgba(255,150,70," + al.toFixed(3) + ")");
+        grad.addColorStop(1, "rgba(255,196,130," + (al * .35).toFixed(3) + ")");
+        g.strokeStyle = grad; g.lineWidth = 2.4;
+        g.beginPath(); g.moveTo(cx + cos * r0, cy + sin * r0); g.lineTo(cx + cos * r1, cy + sin * r1); g.stroke();
+      }
+      g.restore();
     }
   }
 
@@ -312,13 +315,12 @@
     st.setProperty("--trux-live-out", shownOut.toFixed(3));      /* TruX speaking */
     st.setProperty("--trux-live-level", Math.max(shownIn * .8, shownOut).toFixed(3));
     wavePhase += dt / 1000 * (1.1 + shownIn * 3 + shownOut * 2.2);
-    const wave = panel.querySelector(".o-wave"), lines = panel.querySelector(".o-lines");
-    if (wave) drawInnerWave(wave, shownIn, wavePhase);
-    if (lines) drawOutLines(lines, shownOut, wavePhase);
+    const aura = panel.querySelector(".o-aura");
+    if (aura) drawAura(aura, panel, shownIn, shownOut, wavePhase, ts);
     levelLoop = requestAnimationFrame(levelFrame);
   }
   function startLevelLoop() { if (!levelLoop) { levelLast = 0; levelLoop = requestAnimationFrame(levelFrame); } }
-  function stopLevelLoop() { if (levelLoop) cancelAnimationFrame(levelLoop); levelLoop = 0; shownIn = 0; shownOut = 0; inTarget = 0; }
+  function stopLevelLoop() { if (levelLoop) cancelAnimationFrame(levelLoop); levelLoop = 0; shownIn = 0; shownOut = 0; inTarget = 0; auraSize = null; }
 
   function stopMic() {
     try { micNode?.port.close(); micNode?.disconnect(); } catch {}

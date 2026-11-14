@@ -1,6 +1,6 @@
 /* Fresh home-screen greetings and prompt ideas (cached for 10 minutes). */
 import { json } from '../lib/http.js';
-import { generateOnce, MODELS } from '../lib/vertex.js';
+import { generateOnce, MODELS, QUICK_THINKING } from '../lib/vertex.js';
 import { rateLimit } from '../lib/ratelimit.js';
 
 let cache = { value: null, at: 0 };
@@ -22,7 +22,7 @@ async function home(request) {
     const { text } = await generateOnce({
       model: MODELS.hydrogen,
       contents: [{ role: 'user', parts: [{ text: 'Generate home-screen copy for an AI assistant. JSON: {"greetings": five distinct welcoming headlines of 4-10 words, "prompts": three short example requests of 3-7 words}. No emojis, no "Ask anything". Nonce ' + Date.now() }] }],
-      config: { temperature: 1, maxOutputTokens: 300, responseMimeType: 'application/json', thinkingConfig: { thinkingBudget: 0 } }
+      config: { temperature: 1, maxOutputTokens: 1500, responseMimeType: 'application/json', ...QUICK_THINKING }
     });
     const parsed = JSON.parse(text);
     const value = { greetings: cleanList(parsed.greetings, 12, 90, 5), prompts: cleanList(parsed.prompts, 6, 54, 3) };
