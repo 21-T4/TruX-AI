@@ -22,46 +22,22 @@ addEventListener("click", e => {
 });
 
 getEl("promptInput").addEventListener("keydown", e => {
-  if(e.key === "Enter" && !e.shiftKey) {
-    let isMobile = window.innerWidth <= 768 || ('ontouchstart' in window && navigator.maxTouchPoints > 0);
-    if(isMobile) return;
-    e.preventDefault();
-    handleActionButton();
-  }
+  if(e.key !== "Enter" || e.isComposing) return;
+  let isMobile = window.innerWidth <= 768 || ('ontouchstart' in window && navigator.maxTouchPoints > 0);
+  if(isMobile) return;
+  /* Settings → General → "Press Enter to send": when off, Ctrl or Cmd + Enter sends and Enter adds a new line. */
+  const send = truxEnterToSend() ? !e.shiftKey : (e.ctrlKey || e.metaKey);
+  if(!send) return;
+  e.preventDefault();
+  handleActionButton();
 });
 
-getEl("profileModal").addEventListener("click", e => { if(e.target === getEl("profileModal")) closeProfileModal(); });
 getEl("sandboxModal")?.addEventListener("click", e => { if(e.target === getEl("sandboxModal")) closeSandboxModal(); });
 getEl("pinnedModal")?.addEventListener("click", e => { if(e.target === getEl("pinnedModal")) closePinnedModal(); });
 getEl("loginWallModal")?.addEventListener("click", e => { if(e.target === getEl("loginWallModal")) closeLoginWall(); });
 
-addEventListener("keydown", e => { if(e.key === "Escape") { closeMediaLibrary(); closeProfileModal(); closeSettingsModal(); closeSandboxModal(); closePinnedModal(); closeLoginWall(); closeChatContextMenu(); closeSidebar(); closeModelDropdown(); closeAttachmentMenu(); } });
+addEventListener("keydown", e => { if(e.key === "Escape") { closeMediaLibrary(); closeSandboxModal(); closePinnedModal(); closeLoginWall(); closeChatContextMenu(); closeSidebar(); closeModelDropdown(); closeAttachmentMenu(); } });
 
-
-/* SETTINGS / PROFILE EVENT DELEGATION */
-const settingsModalNode=getEl("profileModal");
-if(settingsModalNode){
-  settingsModalNode.addEventListener("click",function(event){
-    const nav=event.target && event.target.closest ? event.target.closest("[data-settings-section]") : null;
-    if(nav && settingsModalNode.contains(nav)){
-      event.preventDefault();
-      event.stopPropagation();
-      switchSettingsSection(nav.getAttribute("data-settings-section"));
-    }
-  },true);
-}
-
-const profileModalNode=getEl("profileModal");
-if(profileModalNode){
-  profileModalNode.addEventListener("click",function(event){
-    const route=event.target && event.target.closest ? event.target.closest("[data-profile-page]") : null;
-    if(route && profileModalNode.contains(route)){
-      event.preventDefault();
-      event.stopPropagation();
-      openProfileOption(route.getAttribute("data-profile-page"));
-    }
-  },true);
-}
 
 const startupWorkspaceMode = "chat";
 try {
@@ -73,7 +49,7 @@ try {
   loadSettings();
   renderNotebooks();
   renderSidebar();
-  updateAllUsageUI();
+  renderModelPicker();
   handleInputChange();
   setWorkspaceMode(startupWorkspaceMode, {reload:false,preserveSession:false});
   

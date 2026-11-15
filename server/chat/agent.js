@@ -9,12 +9,13 @@ function throwIfAborted(signal) {
   throw signal.reason || Object.assign(new Error("Generation stopped."), { name: "AbortError" });
 }
 
-export async function runAgent({ model, thinking, simple = false, contents, systemInstruction, toolbox, writer, send, signal, temperature = 0.9 }) {
+export async function runAgent({ model, thinking, simple = false, contents, systemInstruction, toolbox, writer, send, signal, temperature = 0.9, onUsage = null }) {
   const messages = contents.slice();
   const sources = new Map();
   let searchSuggestionHtml = '';
   let text = '';
-  let usage = null;
+  /* Token totals across every round of the turn. Thinking tokens are counted separately from the visible output. */
+  const usage = { promptTokens: 0, outputTokens: 0, thinkingTokens: 0, totalTokens: 0 };
   const currentModel = model;
 
   for (let round = 0; round < MAX_ROUNDS; round++) {
@@ -35,7 +36,14 @@ export async function runAgent({ model, thinking, simple = false, contents, syst
       }
     });
     throwIfAborted(signal);
-    if (result.usage) usage = result.usage;
+    if (result.usage) {
+      const u = result.usage;
+      usage.promptTokens += Number(u.promptTokenCount || 0) + Number(u.toolUsePromptTokenCount || 0);
+      usage.outputTokens += Number(u.candidatesTokenCount || 0);
+      usage.thinkingTokens += Number(u.thoughtsTokenCount || 0);
+      usage.totalTokens += Number(u.totalTokenCount || 0);
+      onUsage?.({ promptTokens: Number(u.promptTokenCount || 0) + Number(u.toolUsePromptTokenCount || 0), outputTokens: Number(u.candidatesTokenCount || 0), thinkingTokens: Number(u.thoughtsTokenCount || 0) });
+    }
 
     for (const source of groundingSources(result.grounding, 12)) sources.set(source.uri, source);
     if (result.grounding?.searchEntryPoint?.renderedContent) searchSuggestionHtml = result.grounding.searchEntryPoint.renderedContent;

@@ -81,7 +81,7 @@ function startNewChat() {
   // Reset the active Chat workspace and restore the normal home UI.
   setWorkspaceMode("chat", {reload:false,preserveSession:false,forceReset:true});
 
-  isScrolledUp = false;
+  isScrolledUp = false; truxAutoFollow = true;
   getEl("scrollDownBtn")?.classList.remove("visible");
   document.body.classList.remove("scrolled");
 }
@@ -351,7 +351,7 @@ async function handleFileUpload(e) {
     if(file.type.startsWith("image/")) {
       await new Promise(resolve => {
         const reader = new FileReader();
-        reader.onload = ev => { selectedImageBase64 = ev.target.result; getEl("imagePreview").src = ev.target.result; getEl("imagePreviewContainer").classList.add("visible"); resolve(); };
+        reader.onload = ev => { selectedImageBase64 = ev.target.result; getEl("imagePreview").src = ev.target.result; getEl("imagePreviewContainer").classList.add("visible"); updateComposerAttachments(); handleInputChange(); resolve(); };
         reader.onerror = () => { toast("Could not read " + file.name + ".", "err"); resolve(); };
         reader.readAsDataURL(file);
       });

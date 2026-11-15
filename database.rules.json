@@ -47,7 +47,10 @@
           "about": { ".validate": "newData.isString() && newData.val().length <= 1500" },
           "instructions": { ".validate": "newData.isString() && newData.val().length <= 3000" },
           "memoryEnabled": { ".validate": "newData.isBoolean()" },
-          "voice": { ".validate": "newData.isString() && newData.val().length <= 20" }
+          "voice": { ".validate": "newData.isString() && newData.val().length <= 20" },
+          "language": { ".validate": "newData.isString() && newData.val().length <= 8" },
+          "length": { ".validate": "newData.isString() && newData.val().length <= 12" },
+          "emoji": { ".validate": "newData.isString() && newData.val().length <= 12" }
         },
         "notebooks": {
           "$notebookId": {

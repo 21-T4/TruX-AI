@@ -61,8 +61,9 @@
   <link rel="stylesheet" href="/css/circle.css">
   <link rel="stylesheet" href="/css/video-studio.css">
   <link rel="stylesheet" href="/css/diagrams.css">
-  <link rel="stylesheet" href="/css/personalization.css">
   <link rel="stylesheet" href="/css/claude.css">
+  <link rel="stylesheet" href="/css/models.css">
+  <link rel="stylesheet" href="/css/settings.css">
 
 
 
@@ -462,7 +463,7 @@
           <button type="button" class="subscription-back" onclick="closeSubscriptionPage()" aria-label="Back to workspace">← <span>Workspace</span></button>
           <div class="subscription-page-label">TRUX MEMBERSHIP</div>
           <h1>Plans built for every level of work.</h1>
-          <p>Auto model selection is included with every plan. Compare the upcoming chat, image, and video allowances below.</p>
+          <p>Every plan includes TruX-2 Spark, Quasar and Aegis. Compare the upcoming chat, image, and video allowances below.</p>
         </div>
         <div class="subscription-launch-note" role="note" aria-label="Plan implementation date">
           <strong>Effective December 1, 2026</strong>
@@ -473,7 +474,7 @@
             <div class="subscription-plan-top"><span>PERSONAL</span><strong>Free</strong></div>
             <h2>Free</h2><p>Everyday chat and creative essentials.</p>
             <ul>
-              <li>Auto model selection</li>
+              <li>TruX-2 Spark, Quasar and Aegis</li>
               <li>1,000,000 chat tokens per day across all models</li>
               <li>5 images per day</li>
               <li>Video generation not included</li>
@@ -484,7 +485,7 @@
             <div class="subscription-plan-top"><span>MORE CAPACITY</span><strong>₹250/month</strong></div>
             <h2>Plus</h2><p>More room for chat and creation.</p>
             <ul>
-              <li>Auto model selection</li>
+              <li>TruX-2 Spark, Quasar and Aegis</li>
               <li>2× chat usage — 2,000,000 tokens per day across all models</li>
               <li>10 images per day</li>
               <li>1 video per day</li>
@@ -495,7 +496,7 @@
             <div class="subscription-plan-top"><span>FOR POWER USERS</span><strong>₹1,000/month</strong></div>
             <h2>Pro</h2><p>Higher limits for demanding daily work.</p>
             <ul>
-              <li>Auto model selection</li>
+              <li>TruX-2 Spark, Quasar and Aegis</li>
               <li>4× chat usage — 4,000,000 tokens per day across all models</li>
               <li>20 images per day</li>
               <li>10 videos per day</li>
@@ -506,7 +507,7 @@
             <div class="subscription-plan-top"><span>FLAGSHIP ACCESS</span><strong>₹3,000/month</strong></div>
             <h2>TruX AI Edge</h2><p>Our highest-capacity plan, built for early access.</p>
             <ul>
-              <li>Auto model selection with flagship model access</li>
+              <li>Every model, including TruX-2 Oracle</li>
               <li>6× chat usage — 6,000,000 tokens per day across all models</li>
               <li>Expanded model choices and new models first</li>
               <li>30 images per day</li>
@@ -601,28 +602,11 @@
             <textarea id="promptInput" rows="1" placeholder="Message TruX…" oninput="handleInputChange()"></textarea>
 
             <div class="model-picker-container" id="modelPickerContainer">
-              <button type="button" id="modelPickerBtn" class="model-picker-btn" onclick="toggleModelDropdown(event)" aria-haspopup="menu" aria-expanded="false" aria-label="Model selection with automatic routing"><span id="modelPickerLabel">Models</span></button>
-              <div class="model-dropdown-menu" id="modelDropdown" role="menu" aria-label="Automatic model routing">
-                <button type="button" class="model-item active" data-model="auto" onclick="selectModel('auto',event);closeModelDropdown()">
-                  <span class="model-icon">✧</span>
-                  <span class="model-info"><b>Auto</b><small>Hydrogen for everyday asks, Argon for very long or very hard coding</small></span>
-                  <span class="model-check">✓</span>
-                </button>
-                <div class="thinking-choice-wrap">
-                  <div class="thinking-choice-title">Thinking</div>
-                  <button type="button" class="thinking-choice active" data-thinking-level="auto" onclick="setThinkingLevel('auto',event)">
-                    <span><b>Auto</b><small>Fast by default, thinks more when needed</small></span><span class="thinking-check">✓</span>
-                  </button>
-                  <button type="button" class="thinking-choice" data-thinking-level="low" onclick="setThinkingLevel('low',event)">
-                    <span><b>Low</b><small>Fastest · Gemini 4 Hydrogen</small></span><span class="thinking-check"></span>
-                  </button>
-                  <button type="button" class="thinking-choice" data-thinking-level="medium" onclick="setThinkingLevel('medium',event)">
-                    <span><b>Medium</b><small>Balanced · Gemini 4 Hydrogen</small></span><span class="thinking-check"></span>
-                  </button>
-                  <button type="button" class="thinking-choice" data-thinking-level="extended" onclick="setThinkingLevel('extended',event)">
-                    <span><b>Extended</b><small>Deepest · Gemini 4 Argon</small></span><span class="thinking-check"></span>
-                  </button>
-                </div>
+              <button type="button" id="modelPickerBtn" class="model-picker-btn" onclick="toggleModelDropdown(event)" aria-haspopup="menu" aria-expanded="false" aria-label="Choose a model"><span id="modelPickerLabel">Quasar</span></button>
+              <div class="model-dropdown-menu" id="modelDropdown" role="menu" aria-label="Choose a model">
+                <div class="mp-title">Model</div>
+                <div class="mp-list" id="modelList"></div>
+                <p class="mp-foot" id="modelFootNote" hidden></p>
               </div>
             </div>
             <button class="send-btn live" id="actionBtn" data-action-mode="live" onclick="handleActionButton()" title="Start Live assistant" aria-label="Start Live assistant">
@@ -661,230 +645,6 @@
       <div class="media-library-grid" id="mediaLibraryGrid"></div>
     </div>
   </div>
-  <div class="modal" id="profileModal" aria-label="Profile and settings">
-    <div class="card profile-upgrade-card">
-      <div class="profile-home-page" id="profileHomePage">
-      <button class="close" type="button" onclick="closeProfileModal()" aria-label="Close profile and settings">×</button>
-      <div id="profileHero" style="display:flex;align-items:center;gap:14px;padding:30px 0 22px;padding-right:42px">
-        <img class="modal-avatar" id="modalAvatar" alt="" referrerpolicy="no-referrer">
-        <div style="min-width:0"><div class="mtitle" id="modalName">User Name</div><div class="msub" id="modalEmail">user@email.com</div><div style="margin-top:6px;color:var(--txt-3);font-size:12px">Your workspace</div></div>
-      </div>
-      <div class="profile-list-group-title">Workspace</div><div class="profile-option-list">
-        <button type="button" class="profile-option-row" data-settings-section="general"><span class="profile-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></span><span class="profile-option-copy"><b>Workspace defaults</b><small>Core behavior and feedback</small></span><span class="profile-option-chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></button>
-        <button type="button" class="profile-option-row" data-settings-section="usage"><span class="profile-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></span><span class="profile-option-copy"><b>Usage &amp; plan</b><small>Usage allowances and workspace limits</small></span><span class="profile-option-chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></button>
-      </div>
-      <div class="profile-list-group-title">Personalize</div><div class="profile-option-list">
-        <button type="button" class="profile-option-row" data-settings-section="appearance"><span class="profile-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.7-.8 1.7-1.6 0-.5-.3-.9-.5-1.3-.3-.5-.1-1.3.8-1.3H17a4 4 0 0 0 4-4c0-5-4-9.8-9-9.8Z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10.5" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/></svg></span><span class="profile-option-copy"><b>Appearance</b><small>Theme, accent and visual effects</small></span><span class="profile-option-chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></button>
-        <button type="button" class="profile-option-row" data-settings-section="personalization"><span class="profile-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7z"/></svg></span><span class="profile-option-copy"><b>Personalization</b><small>Personality, voice, instructions and memory</small></span><span class="profile-option-chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></button>
-        <button type="button" class="profile-option-row" data-settings-section="assistant"><span class="profile-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3"/></svg></span><span class="profile-option-copy"><b>Assistant</b><small>Hey TruX, circle to search and phone control</small></span><span class="profile-option-chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></button>
-        <button type="button" class="profile-option-row" data-settings-section="voice"><span class="profile-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6L8 10z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/></svg></span><span class="profile-option-copy"><b>Voice &amp; notifications</b><small>Speech, dictation and alerts</small></span><span class="profile-option-chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></button>
-      </div>
-      <div class="profile-list-group-title">Account &amp; data</div><div class="profile-option-list">
-        <button type="button" class="profile-option-row" data-settings-section="account"><span class="profile-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></span><span class="profile-option-copy"><b>Account &amp; security</b><small>Profile details and sign-in settings</small></span><span class="profile-option-chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></button>
-        <button type="button" class="profile-option-row" data-settings-section="data"><span class="profile-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6z"/><path d="m9 12 2.2 2.2L15.5 10"/></svg></span><span class="profile-option-copy"><b>Data &amp; privacy</b><small>Chats, exports, location and connected tools</small></span><span class="profile-option-chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></button>
-      </div>
-      <div class="profile-list-group-title">Tools &amp; support</div><div class="profile-option-list">
-        <button type="button" class="profile-option-row" data-profile-page="plugins"><span class="profile-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v4M15 4v4M7 8h10v4a5 5 0 0 1-10 0zM12 17v3"/></svg></span><span class="profile-option-copy"><b>Plugins &amp; integrations</b><small>Connect external workspace tools</small></span><span class="profile-option-chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></button>
-        <button type="button" class="profile-option-row" data-profile-page="help"><span class="profile-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.6 2.2c-.8.5-1.2 1-1.2 1.9M12 16.8v.1"/></svg></span><span class="profile-option-copy"><b>Help &amp; feedback</b><small>Get help or send a bug report</small></span><span class="profile-option-chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></button>
-        <button type="button" class="profile-option-row profile-owner-only" data-settings-section="developer"><span class="profile-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/></svg></span><span class="profile-option-copy"><b>Developer workspace</b><small>Owner-only model controls</small></span><span class="profile-option-chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></button>
-      </div>
-      <section class="profile-detail-view" id="profileDetailView" hidden><button type="button" class="profile-detail-back" onclick="closeProfileOption()">‹ <span>Profile</span></button><div class="profile-detail-title" id="profileDetailTitle">Details</div><div class="profile-detail-subtitle" id="profileDetailSubtitle"></div><div class="profile-detail-body" id="profileDetailBody"></div></section>
-      <div id="profileActionsRow" style="display:flex;gap:8px;margin-top:18px;margin-bottom:24px;flex-wrap:wrap">
-        <button class="mbtn" type="button" onclick="closeProfileModal();openPinnedInsightsModal()">Pinned insights</button>
-        <button class="mbtn danger" type="button" onclick="confirmSignOut()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17l5-5-5-5M20 12H9M12 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6"/></svg>Sign out</button>
-      </div>
-    </div><!-- end profile home -->
-<div class="settings-page">
-      
-
-      <section class="settings-main">
-        <header class="settings-topbar">
-          <button type="button" class="settings-back-btn" id="settingsBackBtn" onclick="handleSettingsBack()" aria-label="Back">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          </button>
-          <div class="settings-title" aria-hidden="true">
-            <div class="mtitle" id="settingsPageTitle">Settings</div>
-            <div class="msub" id="settingsPageSubtitle">Your TruX workspace preferences.</div>
-          </div>
-<button class="close" type="button" onclick="closeProfileModal()" aria-label="Close profile and settings">×</button>
-        </header>
-
-        <div class="settings-main-scroll">
-        <div class="settings-content">
-          <section class="settings-section active" data-settings-content="general">
-              <div class="settings-section-head"><h2>General</h2><p>Core behavior and account-facing controls.</p></div>
-              <div class="settings-card">
-                <div class="mrow"><span>Auto Read Answers</span><label class="toggle"><input id="autoReadToggle" type="checkbox" onchange="store.setItem('trux_auto_read', this.checked ? 'true' : 'false')"><span class="slider"></span></label></div>
-              </div>
-              <div class="settings-card">
-                <div class="sect"><h4>Send Feedback & Bug Reports</h4><p class="utxt">Bug reports and suggestions are emailed directly to the founder.</p><label for="feedbackType" class="feedback-label">Feedback type</label><select id="feedbackType" class="feedback-type-select"><option value="bug-report">Bug or issue report</option><option value="product-feedback">General feedback</option><option value="feature-request">Feature request</option><option value="general-feedback">Other</option></select><label for="feedbackSubject" class="feedback-label">Subject (optional)</label><input id="feedbackSubject" type="text" maxlength="160" placeholder="Short title"><textarea id="feedbackInput" class="instr" placeholder="Tell us what can be improved…"></textarea><button id="feedbackSubmitBtn" class="mbtn" type="button" onclick="submitFeedback()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5 12 13l8-5.5"/><rect x="3.5" y="5" width="17" height="14" rx="2.5"/></svg>Submit feedback</button><div class="utxt" id="feedbackCounterText">A success message appears only after the email is accepted for delivery.</div></div>
-              </div>
-            </section>
-
-          <section class="settings-section" data-settings-content="appearance">
-              <div class="settings-section-head"><h2>Appearance</h2><p>Keep the interface calm, responsive, and easy on the eyes.</p></div>
-              <div class="settings-card"><div class="sect"><h4>Theme</h4><label class="profile-field-label" for="truxThemeSelect">App appearance</label><select id="truxThemeSelect" class="instr" onchange="applyTruxTheme(this.value)"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div>
-
-              <div class="settings-card">
-                <div class="sect"><div class="accent-palette">
-                    <h4>Accent colour</h4>
-                    <div class="accent-options">
-                      <button type="button" class="accent-option" data-accent-option="blue" onclick="applyTruxAccent(&quot;blue&quot;)" aria-label="Blue"><i></i></button>
-                      <button type="button" class="accent-option" data-accent-option="cyan" onclick="applyTruxAccent(&quot;cyan&quot;)" aria-label="Cyan"><i></i></button>
-                      <button type="button" class="accent-option" data-accent-option="purple" onclick="applyTruxAccent(&quot;purple&quot;)" aria-label="Purple"><i></i></button>
-                      <button type="button" class="accent-option" data-accent-option="pink" onclick="applyTruxAccent(&quot;pink&quot;)" aria-label="Pink"><i></i></button>
-                      <button type="button" class="accent-option" data-accent-option="red" onclick="applyTruxAccent(&quot;red&quot;)" aria-label="Red"><i></i></button>
-                      <button type="button" class="accent-option" data-accent-option="orange" onclick="applyTruxAccent(&quot;orange&quot;)" aria-label="Orange"><i></i></button>
-                      <button type="button" class="accent-option" data-accent-option="yellow" onclick="applyTruxAccent(&quot;yellow&quot;)" aria-label="Yellow"><i></i></button>
-                      <button type="button" class="accent-option" data-accent-option="green" onclick="applyTruxAccent(&quot;green&quot;)" aria-label="Green"><i></i></button>
-                      <button type="button" class="accent-option" data-accent-option="teal" onclick="applyTruxAccent(&quot;teal&quot;)" aria-label="Teal"><i></i></button>
-                      <button type="button" class="accent-option" data-accent-option="white" onclick="applyTruxAccent(&quot;white&quot;)" aria-label="White"><i></i></button>
-                    </div>
-                  </div>
-                  <div class="setting-note">Saved on this device and restored automatically when TruX opens.</div>
-                </div>
-              </div>
-
-              <div class="settings-card">
-                <div class="mrow"><span>Ambient Glow</span><label class="toggle"><input id="neonGlowToggle" type="checkbox" checked onchange="toggleAmbientGlow(this)"><span class="slider"></span></label></div>
-              </div>
-            </section>
-
-          <section class="settings-section" data-settings-content="assistant">
-              <div class="settings-section-head"><h2>Assistant</h2><p>Use TruX hands-free: circle anything on screen, and let it start calls, texts, emails and navigation for you.</p></div>
-              <div class="settings-card">
-                <div class="mrow"><span><b>Circle to search</b><small class="mrow-sub" id="truxCircleHint">Circle or tap anything on your screen and ask about it.</small></span><button type="button" class="mbtn" onclick="truxCircle.start()">Try it</button></div>
-                <div class="mrow"><span><b>Phone actions</b><small class="mrow-sub">Ask "call +91 98…", "text Rahul I'm on my way", "navigate to the airport" or "play lo-fi on YouTube". TruX opens the right app and you confirm there.</small></span></div>
-              </div></section>
-
-          <section class="settings-section" data-settings-content="voice">
-              <div class="settings-section-head"><h2>Voice &amp; notifications</h2><p>Speech, dictation, and the alerts this device can actually show.</p></div>
-              <div class="settings-card">
-                <div class="sect"><h4>Text-to-Speech Speed</h4><select id="ttsRateSelect" class="instr" style="height:44px" onchange="saveTTSRate(this.value)"><option value="0.8">0.8x · Slower</option><option value="1.0" selected>1.0x · Normal</option><option value="1.2">1.2x · Fast</option><option value="1.5">1.5x · Express</option></select></div>
-              </div>
-              <div class="settings-card"><div class="sect"><h4>Speech and dictation</h4>
-                <label class="profile-field-label" for="truxSpeechVoiceSelect">Speech voice</label><div class="trux-voice-row"><select id="truxSpeechVoiceSelect" class="instr" onchange="saveSpeechVoice(this.value)"></select><button type="button" class="mbtn" onclick="previewSpeechVoice()">Preview</button></div>
-                <label class="profile-field-label" for="truxDictationLanguage">Dictation language</label><select id="truxDictationLanguage" class="instr" onchange="saveDictationLanguage(this.value)"><option value="auto">Auto-detect (device language)</option><option value="en-US">English (United States)</option><option value="en-GB">English (United Kingdom)</option><option value="hi-IN">Hindi</option><option value="fr-FR">French</option><option value="es-ES">Spanish</option><option value="de-DE">German</option><option value="ja-JP">Japanese</option></select>
-                <div class="mrow"><span><b>Save dictation history on this device</b><small class="mrow-sub">Off by default. Only final recognized phrases are saved, up to 30 entries.</small></span><label class="toggle"><input id="truxDictationHistoryToggle" type="checkbox" onchange="saveProfilePreference('dictation_history',this.checked)"><span class="slider"></span></label></div><button class="mbtn" type="button" onclick="showDictationHistory()">View dictation history</button><div id="truxDictationHistoryList" class="dictation-history-list" aria-live="polite"></div>
-              </div></div>
-              <div class="settings-card">
-                <div class="mrow"><span><b>Response notifications</b><small class="mrow-sub">Text, image and video completion alerts.</small></span><label class="toggle"><input id="notificationsToggle" type="checkbox" onchange="toggleTruxNotificationsSetting(this.checked)"><span class="slider"></span></label></div>
-                <div class="location-status" id="notificationStatusText">Checking notification permission…</div>
-              </div></section>
-
-          <section class="settings-section" data-settings-content="personalization">
-              <div class="settings-section-head"><h2>Personalization</h2><p>Pick a mode, tell TruX about yourself and manage what it remembers. Changes sync to every device and apply to your next message. <span id="truxPersonalizationStatus" class="trux-save-status" aria-live="polite"></span></p></div>
-
-              <div class="pz-card pz-modes">
-                <div class="pz-title"><span class="pz-step">1</span><div><h4>Personality mode</h4><p>Sets tone, length and format in chat and Live.</p></div></div>
-                <div id="truxModeHero" class="mode-hero" aria-live="polite"></div>
-                <div id="truxPresetGrid" class="mode-grid" role="radiogroup" aria-label="Personality mode"></div>
-                <div id="truxPresetSample" class="mode-preview" aria-live="polite"></div>
-              </div>
-
-              <div class="pz-card pz-voice">
-                <div class="pz-title"><span class="pz-step">2</span><div><h4>Voice</h4><p>Used by TruX Live and read aloud. Current: <b id="truxVoiceCurrent">Kore</b>. Tap play to preview.</p></div></div>
-                <div id="truxVoiceGrid" class="voice-grid" role="radiogroup" aria-label="Voice"></div>
-              </div>
-
-              <div class="pz-card pz-about">
-                <div class="pz-title"><span class="pz-step">3</span><div><h4>About you</h4><p>Helps TruX pitch answers at the right level.</p></div></div>
-                <div class="pz-fields">
-                  <label class="pz-field"><span>Call me <small id="truxPNicknameCount" class="pfield-count">0 / 60</small></span>
-                    <input id="truxPNickname" class="instr" data-pfield="nickname" maxlength="60" placeholder="Nickname" oninput="queuePersonalizationField(this)"></label>
-                  <label class="pz-field"><span>I work as <small id="truxPOccupationCount" class="pfield-count">0 / 120</small></span>
-                    <input id="truxPOccupation" class="instr" data-pfield="occupation" maxlength="120" placeholder="Student, engineer, designer…" oninput="queuePersonalizationField(this)"></label>
-                </div>
-                <label class="pz-field"><span>Anything else TruX should know? <small id="truxPAboutCount" class="pfield-count">0 / 1500</small></span>
-                  <textarea id="truxPAbout" class="instr" data-pfield="about" maxlength="1500" placeholder="Interests, goals, context about your work…" oninput="queuePersonalizationField(this)"></textarea></label>
-              </div>
-
-              <div class="pz-card pz-rules">
-                <div class="pz-title"><span class="pz-step">4</span><div><h4>Custom instructions</h4><p>Rules TruX follows in every reply. Tap a suggestion to add it.</p></div></div>
-                <div id="truxInstructionChips" class="snippet-row"></div>
-                <label class="pz-field"><span>How should TruX respond? <small id="truxPInstructionsCount" class="pfield-count">0 / 3000</small></span>
-                  <textarea id="truxPInstructions" class="instr" data-pfield="instructions" maxlength="3000" placeholder="For example: use metric units, keep code in TypeScript, avoid long intros." oninput="queuePersonalizationField(this)"></textarea></label>
-              </div>
-
-              <div class="pz-card pz-memory">
-                <div class="pz-title"><span class="pz-step">5</span><div><h4>Memory</h4><p>TruX saves useful details while you chat and uses them in later conversations.</p></div>
-                  <label class="toggle"><input id="truxMemoryEnabledToggle" type="checkbox" onchange="setMemoryEnabled(this.checked)"><span class="slider"></span></label></div>
-                <div class="memory-head"><h4>Saved memories <small id="truxMemoryCount" class="pfield-count"></small></h4><button type="button" class="mbtn danger" onclick="clearAllMemories()">Clear all</button></div>
-                <div id="truxMemoryList" class="memory-list" aria-live="polite"></div>
-              </div>
-
-              <div class="settings-card"><div class="sect"><h4>Time management</h4><div class="mrow"><span><b>Focus break reminder</b><small class="mrow-sub">Shows a reminder while TruX is open.</small></span><label class="toggle"><input id="truxFocusReminderToggle" type="checkbox" onchange="saveProfilePreference('focus_reminder',this.checked);applyTimeManagementSettings()"><span class="slider"></span></label></div><label class="profile-field-label" for="truxFocusInterval">Remind me after</label><select id="truxFocusInterval" class="instr" onchange="saveProfilePreference('focus_interval',this.value);applyTimeManagementSettings()"><option value="25">25 minutes</option><option value="45">45 minutes</option><option value="60">60 minutes</option><option value="90">90 minutes</option></select></div></div></section>
-          <section class="settings-section" data-settings-content="usage">
-              <div class="settings-section-head"><h2>Usage</h2><p>Your monthly usage. Owner access is unlimited.</p></div>
-              <div class="settings-card">
-                <div class="sect"><h4>Standard models</h4><div class="usage"><i id="coreUsageBarFill"></i></div><div class="utxt" id="coreUsageText">Unlimited</div></div>
-                <div class="sect"><h4>Pro models · Monthly tokens</h4><div class="usage"><i id="proUsageBarFill"></i></div><div class="utxt" id="proUsageText">0 / 1,000,000 Tokens</div></div>
-                <div class="sect"><h4>Image Generation · Monthly Limit</h4><div class="usage"><i id="imageUsageBarFill"></i></div><div class="utxt" id="imageUsageText">0 / 15 Images</div></div>
-              </div>
-            </section>
-
-          <section class="settings-section" data-settings-content="data">
-              <div class="settings-section-head"><h2>Data &amp; privacy</h2><p>Manage chat history, exports, storage, location access, and connected tools.</p></div>
-              <div class="settings-card"><div class="sect"><h4>Connected tools</h4>
-                
-                
-                <div class="mrow"><span><b>Apps with access</b><small class="mrow-sub">Review connected services in Plugins. TruX does not sync your contacts.</small></span><button class="mbtn" type="button" onclick="openPluginsFromSettings()">Open plugins</button></div>
-              </div></div>
-              <div class="settings-card"><div class="sect"><h4>Chat history</h4><button class="mbtn" type="button" onclick="viewArchivedChats()">View archived chats</button><button class="mbtn" type="button" onclick="archiveAllHistory()">Archive chat history</button><button class="mbtn danger" type="button" onclick="clearAllHistory()">Clear chat history</button><div id="archivedChatsList" class="archived-chats-list" aria-live="polite"></div></div></div>
-              <div class="settings-card"><div class="sect"><h4>Export data</h4><button class="mbtn" type="button" onclick="exportTruxMemory()">Export workspace data</button><button class="mbtn" type="button" onclick="exportChatData()">Export chats only</button></div></div>
-            
-
-<div class="settings-card">
-                <div class="sect"><h4>Location access</h4>
-                  <div class="mrow"><span><b>Let TruX use your location</b><small class="mrow-sub">Used for location-aware answers and research.</small></span><label class="toggle"><input id="locationAccessToggle" type="checkbox" onchange="toggleTruxLocationAccess(this.checked)"><span class="slider"></span></label></div>
-                  <div class="location-status" id="locationStatusText">Checking location permission…</div>
-                  <button class="mbtn" type="button" onclick="requestTruxLocation({interactive:true,force:true})">Refresh location access</button>
-                </div>
-              </div>
-<div class="settings-card"><div class="sect"><h4>Workspace tools</h4><button class="mbtn" type="button" onclick="checkApiLatency()">Check API status</button><button class="mbtn danger" type="button" onclick="resetAllSettings()">Reset settings</button></div></div></section>
-
-          <section class="settings-section" data-settings-content="account"><div class="settings-section-head"><h2>Account &amp; security</h2><p>Manage your profile and how you sign in.</p></div>
-              <div class="settings-card"><div class="sect"><h4>Display name</h4><input id="truxAccountDisplayName" class="instr" maxlength="60" placeholder="Display name" autocomplete="name"><button type="button" class="mbtn" onclick="saveTruxDisplayName()">Save name</button></div>
-                <div class="mrow"><span>Email</span><b id="truxAccountEmailText">Not signed in</b></div>
-                <div class="mrow"><span>Sign-in methods</span><b id="truxAccountMethodText">—</b></div>
-                <div class="mrow" id="truxAccountPasswordRow" hidden><span><b>Password</b><small class="mrow-sub">We'll email you a secure link to set a new password.</small></span><button type="button" class="mbtn" onclick="handlePasswordReset()">Reset password</button></div>
-              </div>
-              <div class="settings-card"><div class="sect"><h4>Workspace</h4><p id="truxWorkspaceSummary" class="mrow-sub">Personal TruX workspace</p><button type="button" class="mbtn" onclick="switchSettingsSection('usage')">Usage &amp; limits</button><button type="button" class="mbtn" onclick="confirmSignOut()">Log out</button></div></div>
-              <div class="settings-card"><div class="sect"><h4>Profile photo</h4><p class="mrow-sub">Choose an image for your workspace or reset it to the photo from your Google account.</p><button type="button" class="mbtn" onclick="openAvatarPicker()">Choose photo</button><button type="button" class="mbtn" onclick="resetAvatarOverride()">Reset photo</button></div></div>
-              <div class="settings-card"><div class="sect"><h4>Account deletion</h4><p class="mrow-sub">To permanently delete your account and all chats, memories and files, contact support and we'll remove everything.</p><button type="button" class="mbtn danger" onclick="openChatHelp()">Get account deletion help</button></div></div></section>
-          <section class="settings-section" data-settings-content="developer">
-              <div class="settings-section-head"><h2>Developer</h2><p>Developer-specific identity and workspace state.</p></div>
-              <div class="developer-banner">
-                <div class="developer-icon">&lt;/&gt;</div>
-                <div><b>Developer recognition enabled</b><span>This account is recognized as the TruX developer.</span><div class="developer-email" id="developerEmailText">ekagraavn2003@gmail.com</div></div>
-              </div>
-              <div class="settings-card">
-                <div class="sect">
-                  <h4>Gemini model selection</h4>
-                  <p class="mrow-sub" style="margin:-3px 0 12px">Choose from Google Cloud Vertex AI's currently listed Gemini models. Auto keeps automatic model routing.</p>
-                  <div class="mrow" style="border-bottom:0;padding-top:6px"><span>Selected model</span><b id="ownerModelStateText">Auto · automatic routing</b></div>
-                  <select id="ownerGeminiModelSelect" class="instr" style="height:44px" aria-label="Owner Gemini model" onchange="saveOwnerGeminiModel(this.value)">
-                    <option value="auto">Auto — automatic routing</option>
-                  </select>
-                  <div class="mrow" style="border-bottom:0;gap:12px;align-items:center">
-                    <button class="mbtn" type="button" onclick="loadOwnerGeminiModels(true)">Refresh available models</button>
-                    <span class="utxt" id="ownerGeminiModelStatus">Open Developer settings to load the catalog.</span>
-                  </div>
-                </div>
-              </div>
-              <div class="settings-card">
-                <div class="sect"><h4>Developer account</h4><div class="mrow" style="border-bottom:0"><span>Authorized identity</span><b style="color:#fff">ekagraavn2003@gmail.com</b></div></div>
-                
-              </div>
-            </section>
-
-          </div>
-        </div>
-      </section>
-    </div>
-    </div>
-  </div>
-
 <div class="modal" id="sandboxModal">
     <div class="card" style="width: min(720px, 100%);">
       <button class="close" onclick="closeSandboxModal()">×</button>
@@ -920,21 +680,21 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 4.3 4.3-.8L20 7.5 16.5 4 4 16.5Z"/><path d="m14.5 6 3.5 3.5"/></svg><span class="context-label">Rename</span>
     </div>
     <div class="context-separator" role="separator"></div>
-    <div class="context-action" id="contextMenuHelpBtn" role="menuitem" tabindex="0">
+    <div class="context-action" data-ctx="topbar-only" id="contextMenuHelpBtn" role="menuitem" tabindex="0">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9a2.5 2.5 0 1 1 4.3 1.7c-1.3 1-1.9 1.5-1.9 3"/><path d="M12 17.4h.01"/></svg><span class="context-label">Help</span>
     </div>
-    <div class="context-action" id="contextMenuFeedbackBtn" role="menuitem" tabindex="0">
+    <div class="context-action" data-ctx="topbar-only" id="contextMenuFeedbackBtn" role="menuitem" tabindex="0">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h14A2.5 2.5 0 0 1 21.5 7v9a2.5 2.5 0 0 1-2.5 2.5H9l-5.5 3V7A2.5 2.5 0 0 1 5 4.5Z"/><path d="M12 8v4"/><path d="M12 15.5h.01"/></svg><span class="context-label">Feedback</span>
     </div>
-    <div class="context-separator" role="separator"></div>
-    <div class="context-action" id="contextMenuPlansBtn" role="menuitem" tabindex="0" onclick="openSubscriptionPage()">
+    <div class="context-separator" data-ctx="topbar-only" role="separator"></div>
+    <div class="context-action" data-ctx="topbar-only" id="contextMenuPlansBtn" role="menuitem" tabindex="0" onclick="openSubscriptionPage()">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16l-1.5 13h-13L4 7Z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg><span class="context-label">Plans &amp; upgrades</span>
     </div>
-    <div class="context-separator" role="separator"></div>
-    <div class="context-action" id="contextMenuIncognitoBtn" role="menuitem" tabindex="0">
+    <div class="context-separator" data-ctx="topbar-only" role="separator"></div>
+    <div class="context-action" data-ctx="topbar-only" id="contextMenuIncognitoBtn" role="menuitem" tabindex="0">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5h16"/><path d="m6 10.5 1.5-4h9l1.5 4"/><circle cx="8" cy="14.5" r="2.3"/><circle cx="16" cy="14.5" r="2.3"/><path d="M10.3 14.5h3.4"/></svg><span class="context-label">New incognito chat</span>
     </div>
-    <div class="context-separator" role="separator"></div>
+    <div class="context-separator" data-ctx="topbar-only" role="separator"></div>
     <div class="del context-action" id="contextMenuDeleteBtn" role="menuitem" tabindex="0">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5M14 11v5"/></svg><span class="context-label">Delete</span>
     </div>
@@ -960,7 +720,9 @@
   <script src="/js/settings.js"></script>
   <script src="/js/personalization.js"></script>
   <script src="/js/tts.js"></script>
+  <script src="/js/models.js"></script>
   <script src="/js/settings-modal.js"></script>
+  <script src="/js/settings-ui.js"></script>
   <script src="/js/sidebar.js"></script>
   <script src="/js/composer.js"></script>
   <script src="/js/render-code.js"></script>

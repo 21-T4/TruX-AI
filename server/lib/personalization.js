@@ -102,6 +102,22 @@ export function normalizeVoice(value) {
   return VOICE_IDS.includes(value) ? value : DEFAULT_VOICE;
 }
 
+/* Extra response preferences chosen in Settings. Every value is an enum so nothing free-form reaches the prompt. */
+export const RESPONSE_LANGUAGES = Object.freeze({
+  auto: '', en: 'English', hi: 'Hindi', bn: 'Bengali', ta: 'Tamil', te: 'Telugu', mr: 'Marathi', gu: 'Gujarati', pa: 'Punjabi',
+  es: 'Spanish', fr: 'French', de: 'German', pt: 'Portuguese', it: 'Italian', ja: 'Japanese', ko: 'Korean', zh: 'Chinese', ar: 'Arabic', ru: 'Russian'
+});
+export const RESPONSE_LENGTHS = Object.freeze({
+  default: '',
+  short: 'Keep replies short: lead with the answer and stop once the question is answered.',
+  detailed: 'Give thorough, well-organised answers with reasoning, examples and edge cases, unless the question is trivial.'
+});
+export const EMOJI_LEVELS = Object.freeze({
+  default: '',
+  never: 'Never use emojis.',
+  often: 'Use emojis freely where they fit the tone.'
+});
+
 function clean(value, max) {
   return String(value ?? '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').trim().slice(0, max);
 }
@@ -115,7 +131,10 @@ export function normalizePersonalization(raw = {}) {
     about: clean(raw?.about, 1500),
     instructions: clean(raw?.instructions, 3000),
     memoryEnabled: raw?.memoryEnabled !== false,
-    voice: normalizeVoice(clean(raw?.voice, 20))
+    voice: normalizeVoice(clean(raw?.voice, 20)),
+    language: Object.hasOwn(RESPONSE_LANGUAGES, raw?.language) ? raw.language : 'auto',
+    length: Object.hasOwn(RESPONSE_LENGTHS, raw?.length) ? raw.length : 'default',
+    emoji: Object.hasOwn(EMOJI_LEVELS, raw?.emoji) ? raw.emoji : 'default'
   };
 }
 
@@ -136,6 +155,11 @@ export function personalizationPrompt(p, surface = 'chat') {
   if (p.occupation) about.push('- The user\'s occupation: ' + p.occupation + '. Pitch examples and depth to it when relevant.');
   if (p.about) about.push('- About the user, in their words: ' + p.about);
   if (about.length) lines.push('', 'ABOUT THE USER', ...about);
+  const prefs = [];
+  if (RESPONSE_LANGUAGES[p.language]) prefs.push('- Reply in ' + RESPONSE_LANGUAGES[p.language] + ' unless the user writes to you in another language.');
+  if (RESPONSE_LENGTHS[p.length]) prefs.push('- ' + RESPONSE_LENGTHS[p.length]);
+  if (EMOJI_LEVELS[p.emoji]) prefs.push('- ' + EMOJI_LEVELS[p.emoji]);
+  if (prefs.length) lines.push('', 'RESPONSE PREFERENCES (chosen by the user in Settings; these override the personality above)', ...prefs);
   if (p.instructions) {
     lines.push('', 'USER\'S CUSTOM INSTRUCTIONS — follow these closely; they take priority over the personality above when they conflict (but never over the safety and honesty rules):', p.instructions);
   }

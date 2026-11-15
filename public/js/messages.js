@@ -534,7 +534,7 @@ function createStreamRenderer(bubble) {
     const step = ts => {
       scrollId = null;
       const c = getActiveChatContainer();
-      if (!c || stopped) return;
+      if (!c || stopped || !truxAutoFollow) return;       /* a touch or scroll up ends the glide on the spot */
       const dt = prev ? Math.min(64, ts - prev) : 16;
       prev = ts;
       const d = (c.scrollHeight - c.clientHeight) - c.scrollTop;
@@ -564,7 +564,8 @@ function createStreamRenderer(bubble) {
     const rate = Math.min(finished ? 320 : 240, 95 + backlogWords * (finished ? 1.2 : 0.9));   /* words per second */
     budget += dt * rate / 1000;
     const container = getActiveChatContainer();
-    const stick = isNearBottom(container);
+    const stick = truxAutoFollow;
+    if (!stick) syncScrollDownBtn(container);       /* new text arrives below the fold: offer "Jump to latest" */
     let advanced = false;
     if (budget >= 1 && shown < target.length) {
       const words = Math.floor(budget);
@@ -592,7 +593,7 @@ function createStreamRenderer(bubble) {
       host.innerHTML = renderFormattedText(target, false);
       renderTruxDiagrams(host);
       scheduleTruxMath(host);
-      if (stick) container.scrollTop = container.scrollHeight;
+      if (truxAutoFollow) container.scrollTop = container.scrollHeight;
       if (doneCb) {
         const callback = doneCb;
         doneCb = null;

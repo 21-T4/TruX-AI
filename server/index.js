@@ -25,12 +25,13 @@ import { routes as pluginRoutes } from './routes/plugins.js';
 import { routes as pushRoutes } from './routes/push.js';
 import { routes as sessionRoutes } from './routes/session.js';
 import { routes as ttsRoutes } from './routes/tts.js';
+import { routes as usageRoutes } from './routes/usage.js';
 
 const PORT = Number(process.env.PORT || 8080);
 const PUBLIC_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
 const ROUTES = {
   ...chatRoutes, ...configRoutes, ...dataRoutes, ...feedbackRoutes, ...fileRoutes, ...homeRoutes,
-  ...mediaRoutes, ...modelRoutes, ...pluginRoutes, ...pushRoutes, ...sessionRoutes, ...ttsRoutes
+  ...mediaRoutes, ...modelRoutes, ...pluginRoutes, ...pushRoutes, ...sessionRoutes, ...ttsRoutes, ...usageRoutes
 };
 const STREAMED_BODY = new Set(['POST /api/files/upload']);
 const MAX_BODY = 512 * 1024;

@@ -344,29 +344,21 @@ function removeChatFromNotebook(id) {
 
 function openChatHelp() {
   closeChatContextMenu();
-  closeSettingsModal();
-  const profileModal = getEl("profileModal");
-  if (!profileModal) return toast("The Help page could not be opened. Please refresh TruX and try again.", "err");
-  closeProfileOption();
-  showOverlay(profileModal);
-  openProfileOption("help");
+  openSettings("help");
 }
 
 function openConversationFeedback(id) {
   closeChatContextMenu();
   const chat = id && chatSessions[id] && !chatSessions[id].incognito ? chatSessions[id] : null;
-  openChatHelp();
+  openSettings("help");
   setTimeout(() => {
-    const body = getEl("profileDetailBody");
-    const section = body?.querySelector("#helpFeedbackSection");
-    if (!section) return;
-    const subjectField = section.querySelector('[name="subject"]');
-    if (chat && subjectField && !subjectField.value.trim()) {
-      subjectField.value = 'Feedback about "' + (chat.title || "Untitled chat") + '"';
-    }
-    section.scrollIntoView({ behavior: "smooth", block: "start" });
-    section.querySelector('[name="message"]')?.focus({ preventScroll: true });
-  }, 0);
+    const form = getEl("sxContent")?.querySelector(".sx-form");
+    if (!form) return;
+    const subjectField = form.querySelector('[name="subject"]');
+    if (chat && subjectField && !subjectField.value.trim()) subjectField.value = 'Feedback about "' + (chat.title || "Untitled chat") + '"';
+    form.scrollIntoView({ behavior: "smooth", block: "start" });
+    form.querySelector('[name="message"]')?.focus({ preventScroll: true });
+  }, 60);
 }
 
 function closeChatContextMenu() {
@@ -399,6 +391,8 @@ function showChatContextMenu(id, x, y, source) {
   if(source !== "topbar" && !chat) return;
   contextMenuTargetId = chat ? id : null;
   menu.dataset.source = source;
+  /* Help, feedback, plans and incognito live in the top bar menu only; the sidebar menu is just chat actions. */
+  menu.querySelectorAll('[data-ctx="topbar-only"]').forEach(el => { el.style.display = source === "topbar" ? "" : "none"; });
 
   const hasChat = !!chat;
   const hasNotebook = !!(chat && chat.notebookId && getNotebooks().some(notebook => notebook && notebook.id === chat.notebookId));

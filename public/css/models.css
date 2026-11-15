@@ -1,0 +1,74 @@
+/* Model picker (message bar) and the Edge label. Loads after claude.css. */
+.model-picker-btn #modelPickerLabel{ font-weight: 500; }
+
+.model-dropdown-menu{
+  padding: 8px;
+  gap: 2px;
+  width: min(372px, calc(100vw - 20px));
+  border-radius: 18px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-2);
+  box-shadow: var(--shadow-3);
+}
+.mp-title{
+  padding: 8px 12px 6px;
+  font: 600 12px/1 var(--font-ui);
+  letter-spacing: .01em;
+  color: var(--txt-3);
+}
+.mp-list{ display: flex; flex-direction: column; gap: 2px; }
+.mp-item{
+  display: flex; align-items: center; gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  text-align: left;
+  color: var(--txt);
+}
+@media (hover: hover){ .mp-item:hover{ background: var(--bg-3); } }
+.mp-item.active{ background: var(--bg-3); }
+.mp-copy{ flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.mp-name{ display: flex; align-items: center; gap: 8px; font: 600 14.5px/1.2 var(--font-ui); color: var(--txt); }
+.mp-desc{ font: 400 13px/1.35 var(--font-ui); color: var(--txt-3); }
+.mp-side{ display: flex; align-items: center; gap: 10px; flex: none; color: var(--txt-3); }
+.mp-note{ font: 400 12px/1 var(--font-ui); color: var(--txt-3); white-space: nowrap; }
+.mp-check{ width: 18px; height: 18px; color: var(--acc-2); opacity: 0; }
+.mp-item.active .mp-check{ opacity: 1; }
+.mp-side > svg:not(.mp-check){ width: 16px; height: 16px; }
+.mp-item.locked .mp-name, .mp-item.locked .mp-desc{ opacity: .62; }
+.mp-item.exhausted .mp-name, .mp-item.exhausted .mp-desc{ opacity: .6; }
+.mp-item.exhausted .mp-note{ color: var(--warn); opacity: 1; }
+.mp-foot{
+  margin: 6px 0 0;
+  padding: 10px 12px 6px;
+  border-top: 1px solid var(--line);
+  font: 400 12px/1.45 var(--font-ui);
+  color: var(--txt-3);
+}
+
+/* "Edge" label: small, with a slow glow */
+.edge-tag{
+  display: inline-block;
+  padding: 2px 6px 2px;
+  border-radius: 6px;
+  font: 700 9.5px/1.2 var(--font-ui);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #c9a2ff;
+  background: rgba(168,120,255,.14);
+  box-shadow: 0 0 0 1px rgba(168,120,255,.28), 0 0 10px rgba(168,120,255,.38);
+  text-shadow: 0 0 8px rgba(190,150,255,.9);
+  animation: truxEdgeGlow 2.8s ease-in-out infinite;
+  opacity: 1 !important;
+}
+:root[data-theme="light"] .edge-tag{
+  color: #6a3fd1;
+  background: rgba(122,86,230,.10);
+  box-shadow: 0 0 0 1px rgba(122,86,230,.26), 0 0 10px rgba(122,86,230,.30);
+  text-shadow: 0 0 6px rgba(122,86,230,.35);
+}
+@keyframes truxEdgeGlow{
+  0%, 100%{ filter: brightness(1); box-shadow: 0 0 0 1px rgba(168,120,255,.26), 0 0 6px rgba(168,120,255,.28); }
+  50%{ filter: brightness(1.18); box-shadow: 0 0 0 1px rgba(168,120,255,.42), 0 0 14px rgba(168,120,255,.6); }
+}
+@media (prefers-reduced-motion: reduce){ .edge-tag{ animation: none; } }

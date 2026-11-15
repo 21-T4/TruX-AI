@@ -66,11 +66,34 @@ function closeSidebarChatSearch() {
   if(input && input.value) { input.value = ""; renderSidebar(); }
 }
 
+/* Auto-follow: while an answer is being written the view stays pinned to its end. Any sign that the
+   person wants to look elsewhere (a touch, wheel up, arrow/page keys, dragging the scrollbar) turns it
+   off at once, and it comes back only when they scroll to the bottom again or tap "Jump to latest". */
+function releaseAutoFollow() { truxAutoFollow = false; }
+
+function syncScrollDownBtn(container = getActiveChatContainer()) {
+  if (!container) return;
+  const far = (container.scrollHeight - container.scrollTop - container.clientHeight) > 80;
+  isScrolledUp = far;
+  getEl("scrollDownBtn")?.classList.toggle("visible", far && container.children.length > 0);
+}
+
 function bindChatScroll(container) {
-  container?.addEventListener("scroll", function() {
-    if(this !== getActiveChatContainer()) return;
-    isScrolledUp = (this.scrollHeight - this.scrollTop - this.clientHeight) > 80;
-    getEl("scrollDownBtn").classList.toggle("visible", isScrolledUp && this.children.length > 0);
+  if (!container) return;
+  let touching = false;
+  const release = () => releaseAutoFollow();
+  container.addEventListener("touchstart", () => { touching = true; release(); }, { passive: true });
+  container.addEventListener("touchend", () => { touching = false; }, { passive: true });
+  container.addEventListener("touchcancel", () => { touching = false; }, { passive: true });
+  container.addEventListener("wheel", e => { if (e.deltaY < 0) release(); }, { passive: true });
+  container.addEventListener("pointerdown", e => {
+    if (e.pointerType === "mouse" && e.target === container && e.offsetX >= container.clientWidth) release();   /* scrollbar drag */
+  }, { passive: true });
+  container.addEventListener("keydown", e => { if (["ArrowUp", "PageUp", "Home"].includes(e.key)) release(); });
+  container.addEventListener("scroll", function() {
+    if (this !== getActiveChatContainer()) return;
+    syncScrollDownBtn(this);
+    if (!touching && (this.scrollHeight - this.scrollTop - this.clientHeight) <= 48) truxAutoFollow = true;
     document.body.classList.toggle("scrolled", this.scrollTop > 4);
   });
 }
@@ -78,6 +101,7 @@ bindChatScroll(getEl("chatContainer"));
 
 function scrollToBottom() {
   const container = getActiveChatContainer();
+  truxAutoFollow = true;
   container?.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
   getEl("scrollDownBtn").classList.remove("visible");
 }

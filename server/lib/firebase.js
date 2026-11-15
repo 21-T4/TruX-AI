@@ -47,7 +47,7 @@ function toIdentity(decoded) {
     provider,
     // Owner tools need a proven email: Google proves it, a password account must have verified it.
     owner: !!email && email === OWNER_EMAIL && (decoded.email_verified === true || provider === 'google.com'),
-    tier: String(decoded.truxTier || '').toLowerCase() === 'pro' ? 'pro' : 'base',
+    tier: ['plus', 'pro', 'edge'].includes(String(decoded.truxTier || '').toLowerCase()) ? String(decoded.truxTier).toLowerCase() : 'base',
     authTime: Number(decoded.auth_time || 0),
     exp: Number(decoded.exp || 0)
   };

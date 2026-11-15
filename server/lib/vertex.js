@@ -76,10 +76,17 @@ export async function streamRound({ model, contents, systemInstruction, tools, c
   try {
     stream = await client.models.generateContentStream({ model, contents, config: request });
   } catch (error) {
-    /* A model that does not know the MINIMAL thinking level: retry once with LOW. */
-    if (request.thinkingConfig?.thinkingLevel === 'MINIMAL' && /thinking|level|minimal|INVALID_ARGUMENT/i.test(String(error?.message || '')) && !signal?.aborted) {
+    /* A model that does not know the MINIMAL thinking level: retry with LOW, then with the model's own default. */
+    const thinkingRejected = /thinking|level|minimal|INVALID_ARGUMENT/i.test(String(error?.message || ''));
+    if (request.thinkingConfig?.thinkingLevel === 'MINIMAL' && thinkingRejected && !signal?.aborted) {
       request.thinkingConfig = { thinkingLevel: 'LOW' };
-      stream = await client.models.generateContentStream({ model, contents, config: request });
+      try {
+        stream = await client.models.generateContentStream({ model, contents, config: request });
+      } catch (second) {
+        if (!thinkingRejected || signal?.aborted) throw second;
+        delete request.thinkingConfig;
+        stream = await client.models.generateContentStream({ model, contents, config: request });
+      }
     } else throw error;
   }
   for await (const chunk of stream) {
@@ -222,7 +229,7 @@ export const QUICK_THINKING = Object.freeze({ thinkingConfig: { thinkingLevel: '
 export function thinkingConfig(model, level, { minimal = false } = {}) {
   /* Gemini 4 models reject thinkingBudget ("use thinking level instead"), so only thinkingLevel is ever sent.
      `minimal` (small talk) asks for the lightest level; streamRound falls back to LOW if the model refuses it. */
-  if (minimal) return { thinkingConfig: { thinkingLevel: 'MINIMAL' } };
+  if (minimal || level === 'minimal') return { thinkingConfig: { thinkingLevel: 'MINIMAL' } };
   const normalized = { high: 'HIGH', medium: 'MEDIUM' }[level] || 'LOW';
   return { thinkingConfig: { thinkingLevel: normalized } };
 }

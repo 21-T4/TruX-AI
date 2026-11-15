@@ -29,8 +29,6 @@ body{ font: 400 15px/1.55 var(--font-body); letter-spacing: 0; }
 .model-picker-btn{ height: 38px; padding: 0 10px 0 12px; border-radius: 10px; font: 500 15px/1 var(--font-ui); letter-spacing: 0; color: var(--txt-2); }
 .model-picker-btn:hover, .model-picker-btn[aria-expanded="true"]{ background: var(--bg-3); color: var(--txt); }
 .model-dropdown-menu, .attach-menu{ background: var(--bg-2); border-color: var(--line-2); border-radius: 16px; box-shadow: var(--shadow-3); }
-.model-item.active, .thinking-choice.active{ background: var(--acc-soft); }
-.model-item.active .model-icon{ background: var(--acc); color: var(--on-acc); }
 
 /* ---------- conversation ---------- */
 .chat{ padding-top: 4px; }
@@ -168,7 +166,7 @@ body{ -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;}
 
 /* ---------- home: greeting centred, no star ---------- */
 /* the home view is a normal flex child: greeting sits right above the suggestions and typing bar, same width as the bar */
-#welcomeScreen.trux-home-v2{ position: relative; flex-direction: column; justify-content: flex-end; align-items: center; padding: 0 18px 8px; overflow: hidden; }
+#welcomeScreen.trux-home-v2{ position: relative; flex-direction: column; justify-content: flex-end; align-items: center; padding: 0 18px clamp(34px, 8vh, 84px); overflow: hidden; }   /* greeting sits a little above the suggestions */
 .trux-home-content{ align-items: center; text-align: center; width: 100%; max-width: var(--measure); }
 .trux-home-sequence{ min-height: 0; }
 .trux-home-sequence-text{
@@ -440,13 +438,6 @@ body{ position: fixed; inset: 0; width: 100%; }
 }
 .scroll-down-btn.visible{ transform: translate(-50%, 0); }
 .scroll-down-btn svg{ width: 15px; height: 15px; flex: none; }
-
-/* model menu: label above description, never squashed together */
-.thinking-choice{ align-items: center; padding: 10px 12px; }
-.thinking-choice > span:first-child{ display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.thinking-choice b{ font: 600 14.5px/1.2 var(--font-ui); color: var(--txt); }
-.thinking-choice small{ font: 400 12.5px/1.3 var(--font-ui); color: var(--txt-3); }
-.thinking-choice-title{ padding: 0 12px 6px; }
 
 /* sidebar logo: just the logo, no coloured tile around it */
 .sidebar-brand-mark{ width: 38px; height: 38px; border-radius: 0; background: transparent; border: 0; box-shadow: none; padding: 0; overflow: visible; }

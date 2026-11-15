@@ -57,7 +57,7 @@ function appendToolStatusLine(toolId, tool, detail, phase = "complete", details 
   if (toggle) toggle.hidden = false;
 
   const container = getActiveChatContainer();
-  if (phase === "start" && container && isNearBottom(container, 140)) {
+  if (phase === "start" && container && truxAutoFollow) {
     requestAnimationFrame(() => {
       if (container === getActiveChatContainer()) container.scrollTop = container.scrollHeight;
     });
