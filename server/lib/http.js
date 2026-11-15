@@ -18,7 +18,7 @@ export function errorResponse(error) {
   const status = Number(error?.status) || 500;
   if (status >= 500) console.error('[api]', error?.stack || error?.message || error);
   const message = status >= 500 ? 'Something went wrong on the server. Please try again.' : String(error?.message || 'Request failed.');
-  return json({ error: message, ...(error?.code ? { code: error.code } : {}) }, status);
+  return json({ error: message, ...(error?.code ? { code: error.code } : {}), ...(error?.resetsAt ? { resetsAt: error.resetsAt } : {}), ...(error?.model ? { model: error.model } : {}) }, status);
 }
 
 /* Reads a JSON body with a hard size cap. */

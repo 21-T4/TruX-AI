@@ -1,16 +1,10 @@
-/* Device-local settings: theme, dictation, read-aloud speed, focus reminders,
-   archive. Personalization and memory live in personalization.js (RTDB). */
-const TRUX_LOCAL_PREFERENCES = ["dictation_history", "focus_reminder", "focus_interval"];
+/* Device preferences: theme, text size, glow, send key, read-aloud, dictation, focus reminders, archive helpers.
+   These live in localStorage on this device. Account-wide preferences (personality, memory, voice) are in
+   personalization.js; the Settings screen itself is in settings-ui.js. */
 const TRUX_NOTIFICATION_CATEGORIES = ["responses"];
 let truxFocusReminderTimer = null;
 
-function saveProfilePreference(key, value) {
-  if (!TRUX_LOCAL_PREFERENCES.includes(key)) return;
-  store.setItem("trux_" + key, typeof value === "boolean" ? (value ? "true" : "false") : String(value ?? ""));
-  if (key === "dictation_history" && !value) store.removeItem("trux_dictation_history_items");
-}
-
-/* Appearance: System, Light or Dark. Old saved themes migrate to the nearest of the two. */
+/* ---------- appearance: System, Light or Dark. Old saved themes migrate to the nearest of the two ---------- */
 const TRUX_THEME_MIGRATION = { oled: "dark", dracula: "dark", nord: "dark", "rose-pine": "dark", monokai: "dark", solarized: "dark", hacker: "dark", graphite: "dark", midnight: "dark", forest: "dark", sand: "light" };
 const truxSystemLight = window.matchMedia ? matchMedia("(prefers-color-scheme: light)") : null;
 
@@ -32,43 +26,54 @@ function applyTruxTheme(theme, persist) {
   if (persist !== false || choice !== theme) store.setItem("trux_theme", choice);
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = getComputedStyle(root).getPropertyValue("--bg").trim() || (resolved === "light" ? "#faf9f5" : "#262624");
-  const select = getEl("truxThemeSelect"); if (select) select.value = choice;
-  window.dispatchEvent(new CustomEvent("trux-theme", { detail: { theme: resolved } }));
+  window.dispatchEvent(new CustomEvent("trux-theme", { detail: { theme: resolved, choice } }));
 }
 applyTruxTheme(store.getItem("trux_theme") || "system", false);
 truxSystemLight?.addEventListener?.("change", () => { if (truxNormalizeTheme(store.getItem("trux_theme") || "system") === "system") applyTruxTheme("system", false); });
 
+/* ---------- reading size ---------- */
+const TRUX_TEXT_SIZES = ["small", "default", "large"];
+function applyTruxTextSize(size, persist) {
+  const next = TRUX_TEXT_SIZES.includes(size) ? size : "default";
+  document.documentElement.dataset.textSize = next;
+  if (persist !== false) store.setItem("trux_text_size", next);
+}
+applyTruxTextSize(store.getItem("trux_text_size") || "default", false);
+
+/* ---------- glow, send key, read aloud ---------- */
+function applyAmbientGlow(on, persist) {
+  const bg = getEl("bg");
+  if (bg) bg.style.display = on ? "block" : "none";
+  if (persist !== false) store.setItem("trux_ambient_glow", on ? "true" : "false");
+}
+const truxEnterToSend = () => store.getItem("trux_enter_to_send") !== "false";
+const truxAutoRead = () => store.getItem("trux_auto_read") === "true";
+function saveTTSRate(value) { store.setItem("trux_tts_rate", String(value)); }
+
+/* ---------- dictation ---------- */
+const TRUX_DICTATION_LANGUAGES = [
+  ["auto", "Same as my device"], ["en-US", "English (United States)"], ["en-GB", "English (United Kingdom)"], ["en-IN", "English (India)"],
+  ["hi-IN", "Hindi"], ["fr-FR", "French"], ["es-ES", "Spanish"], ["de-DE", "German"], ["ja-JP", "Japanese"]
+];
 function saveDictationLanguage(language) {
-  const allowed = new Set(["auto", "en-US", "en-GB", "hi-IN", "fr-FR", "es-ES", "de-DE", "ja-JP"]);
-  const next = allowed.has(language) ? language : "auto";
+  const next = TRUX_DICTATION_LANGUAGES.some(([id]) => id === language) ? language : "auto";
   store.setItem("trux_dictation_language", next);
   if (recognition) recognition.lang = next === "auto" ? (navigator.language || "en-US") : next;
 }
 
+function dictationHistoryItems() {
+  const rows = store.json("trux_dictation_history_items", []);
+  return Array.isArray(rows) ? rows : [];
+}
+
 function storeDictationHistory(text) {
   if (store.getItem("trux_dictation_history") !== "true" || !String(text || "").trim()) return;
-  const rows = store.json("trux_dictation_history_items", []);
-  const list = Array.isArray(rows) ? rows : [];
+  const list = dictationHistoryItems();
   list.unshift({ text: String(text).trim().slice(0, 1000), at: new Date().toISOString() });
   store.setItem("trux_dictation_history_items", JSON.stringify(list.slice(0, 30)));
 }
 
-function showDictationHistory() {
-  const host = getEl("truxDictationHistoryList"); if (!host) return;
-  host.replaceChildren();
-  const rows = store.json("trux_dictation_history_items", []);
-  const list = Array.isArray(rows) ? rows : [];
-  const note = document.createElement("p"); note.className = "mrow-sub";
-  note.textContent = store.getItem("trux_dictation_history") === "true" ? "Saved locally on this device." : "History saving is off. Turn it on to keep future recognized phrases.";
-  host.appendChild(note);
-  list.forEach(row => { const item = document.createElement("p"); item.className = "dictation-history-item"; item.textContent = (row.at ? new Date(row.at).toLocaleString() + " - " : "") + String(row.text || ""); host.appendChild(item); });
-  if (list.length) {
-    const clear = document.createElement("button"); clear.type = "button"; clear.className = "mbtn danger"; clear.textContent = "Delete dictation history";
-    clear.onclick = () => { store.removeItem("trux_dictation_history_items"); showDictationHistory(); };
-    host.appendChild(clear);
-  }
-}
-
+/* ---------- focus reminders ---------- */
 function applyTimeManagementSettings() {
   if (truxFocusReminderTimer) { clearTimeout(truxFocusReminderTimer); truxFocusReminderTimer = null; }
   if (store.getItem("trux_focus_reminder") !== "true") return;
@@ -79,56 +84,62 @@ function applyTimeManagementSettings() {
   }, minutes * 60000);
 }
 
-function openPluginsFromSettings() {
-  closeProfileModal();
-  if (typeof openPluginsPage === "function") openPluginsPage(); else toast("Plugins are not available right now. Please refresh TruX.", "err");
-}
-
-function viewArchivedChats() {
-  const host = getEl("archivedChatsList"); if (!host) return;
-  host.replaceChildren();
-  const rows = Object.entries(chatSessions || {}).filter(([, chat]) => chat && chat.archived && !chat.incognito);
-  const title = document.createElement("p"); title.className = "mrow-sub"; title.textContent = rows.length ? "Archived conversations" : "No archived chats.";
-  host.appendChild(title);
-  rows.forEach(([id, chat]) => {
-    const row = document.createElement("div"); row.className = "archived-chat-row";
-    const label = document.createElement("span"); label.textContent = chat.title || "Untitled chat";
-    const restore = document.createElement("button"); restore.type = "button"; restore.className = "mbtn"; restore.textContent = "Restore";
-    restore.onclick = () => restoreArchivedChat(id);
-    row.append(label, restore); host.appendChild(row);
-  });
+/* ---------- chat history helpers ---------- */
+function archivedChatList() {
+  return Object.entries(chatSessions || {}).filter(([, chat]) => chat && chat.archived && !chat.incognito);
 }
 
 function restoreArchivedChat(id) {
-  const chat = chatSessions && chatSessions[id]; if (!chat || !chat.archived) return;
-  chat.archived = false; saveChatSessions(); renderSidebar(); viewArchivedChats(); toast("Chat restored to history.", "ok");
+  const chat = chatSessions && chatSessions[id];
+  if (!chat || !chat.archived) return;
+  chat.archived = false;
+  saveChatSessions();
+  renderSidebar();
+  toast("Chat restored to history.", "ok");
 }
 
 function archiveAllHistory() {
   const entries = Object.entries(chatSessions || {}).filter(([, chat]) => chat && !chat.incognito && !chat.archived);
-  if (!entries.length) { toast("There are no active chats to archive."); viewArchivedChats(); return; }
-  if (!confirm("Archive all regular chat history? You can restore archived chats later.")) return;
+  if (!entries.length) { toast("There are no active chats to archive."); return false; }
+  if (!confirm("Archive all chats? You can restore them later from Settings.")) return false;
   entries.forEach(([, chat]) => { chat.archived = true; });
   saveChatSessions();
   if (currentChatId && chatSessions[currentChatId]?.archived) { currentChatId = null; startNewChat(); }
-  renderSidebar(); viewArchivedChats(); toast("Chat history archived.", "ok");
+  renderSidebar();
+  toast("Chat history archived.", "ok");
+  return true;
 }
 
-function saveTTSRate(val) { store.setItem("trux_tts_rate", val); }
-function toggleAmbientGlow(el) { const bg = getEl("bg"); if (bg) bg.style.display = el.checked ? "block" : "none"; store.setItem("trux_ambient_glow", el.checked ? "true" : "false"); }
+function clearAllHistory() {
+  if (!confirm("Remove all chats from your account on every device?")) return false;
+  chatSessions = {};
+  saveChatSessions();          /* hides them everywhere; stored data is kept */
+  currentChatId = null;
+  startNewChat();
+  renderSidebar();
+  toast("Chat history cleared.", "ok");
+  return true;
+}
 
+/* ---------- start-up: apply everything saved on this device ---------- */
 function loadSettings() {
-  const nT = getEl("neonGlowToggle"), aR = getEl("autoReadToggle"), tts = getEl("ttsRateSelect");
-  if (nT) { nT.checked = store.getItem("trux_ambient_glow") !== "false"; toggleAmbientGlow(nT); }
-  if (aR) aR.checked = store.getItem("trux_auto_read") === "true";
-  if (tts) tts.value = store.getItem("trux_tts_rate") || "1.0";
-  const values = { truxThemeSelect: ["trux_theme", "system"], truxDictationLanguage: ["trux_dictation_language", "auto"], truxFocusInterval: ["trux_focus_interval", "45"] };
-  Object.entries(values).forEach(([id, [key, fallback]]) => { const el = getEl(id); if (el) el.value = store.getItem(key) ?? fallback; });
-  const checks = { truxDictationHistoryToggle: ["trux_dictation_history", false], truxFocusReminderToggle: ["trux_focus_reminder", false] };
-  Object.entries(checks).forEach(([id, [key, fallback]]) => { const el = getEl(id); if (el) el.checked = store.getItem(key) == null ? fallback : store.getItem(key) === "true"; });
-  populateTruxSpeechVoices();
-  updateLocationSettingUI();
-  updateNotificationSettingsUI();
+  applyAmbientGlow(store.getItem("trux_ambient_glow") !== "false", false);
+  applyTruxTextSize(store.getItem("trux_text_size") || "default", false);
   applyTimeManagementSettings();
-  try { renderPersonalizationForm(); } catch {}
+}
+
+function resetAllSettings() {
+  if (!confirm("Reset the settings stored on this device? Your account, chats and memory are not affected.")) return false;
+  ["trux_auto_read", "trux_ambient_glow", "trux_tts_rate", "trux_home_look", "trux_location_enabled", "trux_location_granted", "trux_location_prompted",
+   "trux_avatar_override", "trux_theme", "trux_accent", "trux_text_size", "trux_enter_to_send", "trux_model", "trux_dictation_language", "trux_speech_voice",
+   "trux_dictation_history", "trux_dictation_history_items", "trux_focus_reminder", "trux_focus_interval", "trux_owner_gemini_model",
+   ...TRUX_NOTIFICATION_CATEGORIES.map(k => "trux_notification_cat_" + k)].forEach(k => store.removeItem(k));
+  applyTruxTheme("system", false);
+  applyTruxAccent("blue", false);
+  applyTruxTextSize("default", false);
+  truxLoadSelectedModel();
+  renderModelPicker();
+  loadSettings();
+  try { applyStoredAvatar(auth?.currentUser); } catch {}
+  return true;
 }

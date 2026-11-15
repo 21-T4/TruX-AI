@@ -14,7 +14,7 @@ server/
 sandbox/            the trux-sandbox service (bash, curl, Playwright browser, screenshots)
 public/
   index.html        markup only
-  css/              styles; tokens.css holds every colour token (Light and Dark), claude.css is the Claude-style look and loads last
+  css/              styles; tokens.css holds every colour token (Light and Dark), claude.css is the Claude-style look; models.css (model picker) and settings.css (Settings screen) load after it
   js/               one file per feature, loaded in order at the bottom of index.html
   assetlinks.json   Digital Asset Links for the Play Store app (served at /.well-known/assetlinks.json)
 database.rules.json Realtime Database security rules

@@ -7,6 +7,6 @@ export const routes = {
   'GET /api/models': async request => {
     const user = await requireUser(request);
     if (!user.owner) throw new HttpError(403, 'Only the owner can list models.');
-    return json(await listAvailableGeminiModels());
+    return json({ models: await listAvailableGeminiModels() });
   }
 };

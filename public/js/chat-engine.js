@@ -175,9 +175,8 @@ async function uploadTurnBlob(blob, name) {
 }
 
 function thinkingParam() {
-  if (workspaceMode === "deep-research") return "high";
-  /* "auto" lets the server decide (low for quick asks); the other levels are used exactly as chosen. */
-  return advancedThinkingLevel === "extended" ? "high" : advancedThinkingLevel === "medium" ? "medium" : advancedThinkingLevel === "low" ? "low" : "auto";
+  /* Reasoning depth belongs to the chosen TruX model (decided on the server); Deep Research always thinks hard. */
+  return workspaceMode === "deep-research" ? "high" : "auto";
 }
 
 function serverMode() {
@@ -218,6 +217,10 @@ async function sendPromptImpl() {
   const promptInput = getEl("promptInput");
   const typed = promptInput.value.trim();
   if (!typed && !selectedImageBase64 && !fileAttachments.length && !pastedTextBlocks.length) return;
+  if (workspaceMode === "chat") {
+    const blocked = truxModelBlockReason(truxSelectedModel);
+    if (blocked) { toast(blocked, "err"); toggleModelDropdown?.(); return; }
+  }
 
   // Pasted blocks travel inline; very large ones become uploaded text files.
   let message = typed;
@@ -238,7 +241,7 @@ async function sendPromptImpl() {
   activeStreamer = null;
   generationStopRequested = false;
   const turnId = ++generationEpoch;
-  isScrolledUp = false;
+  isScrolledUp = false; truxAutoFollow = true;
   setComposerGenerating(true);
   const voice = wasInputByVoice; wasInputByVoice = false;
 
@@ -294,6 +297,7 @@ async function sendPromptImpl() {
     mode: serverMode(),
     attachments,
     thinking: thinkingParam(),
+    model: truxSelectedModel,
     location: location ? { latitude: location.latitude ?? location.lat, longitude: location.longitude ?? location.lng } : null,
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
     incognito,
@@ -347,7 +351,7 @@ async function sendPromptImpl() {
         streamer.setText(stored.text);
         streamer.finish(complete);
       } catch { complete(); }
-      if (voice || getEl("autoReadToggle")?.checked) speakText(stored.text);
+      if (voice || truxAutoRead()) speakText(stored.text);
       for (const m of stored.media || []) { if (m.kind !== "image" && m.kind !== "video") continue; try { saveGeneratedMedia?.({ type: m.kind, objectKey: m.objectKey, prompt: m.prompt || typed }); } catch {} }
     } else if (isCurrent()) {
       if (streamer) { try { streamer.cancel(); } catch {} }
@@ -355,10 +359,11 @@ async function sendPromptImpl() {
       activeAbortController = null;
       if (activeTurnContext === ctx) activeTurnContext = null;
       setComposerGenerating(false);
-      if (stored.status === "done" && stored.text && (voice || getEl("autoReadToggle")?.checked)) speakText(stored.text);
+      if (stored.status === "done" && stored.text && (voice || truxAutoRead())) speakText(stored.text);
       for (const m of stored.media || []) { if (m.kind !== "image" && m.kind !== "video") continue; try { saveGeneratedMedia?.({ type: m.kind, objectKey: m.objectKey, prompt: m.prompt || typed }); } catch {} }
     }
     queueSidebarSync();
+    if (stored.status === "done") void refreshTruxUsage();   /* throttled; keeps Settings and the picker honest */
   };
 
   const onEvent = ev => {
@@ -403,6 +408,7 @@ async function sendPromptImpl() {
         if (ev.action === "saved") toast("Memory updated", "ok");
         try { refreshTruxMemoryList?.(); } catch {}
         break;
+      case "usage": applyTruxUsageEvent(ev); break;
       case "device_action": if (ev.action) window.truxDevice?.run(ev.action, { source: "chat" }); break;
       case "plugin_auth_required":
         setThinkingStatus(sid, ev.message || ((ev.pluginName || "App") + " needs to be connected."));
@@ -432,6 +438,7 @@ async function sendPromptImpl() {
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
+      if (res.status === 429 || res.status === 403) void refreshTruxUsage({ force: true });
       throw new Error(data.error || "Request failed (" + res.status + ")");
     }
     await readSseStream(res, onEvent, controller.signal);
@@ -548,6 +555,7 @@ function renderStoredMessages(chatId) {
     }
   });
   container.scrollTop = container.scrollHeight;
+  truxAutoFollow = true;
   if (streamingRow && streamingId) {
     const ctx = { turnId: generationEpoch, chatId, row: streamingRow, messageId: streamingId, incognito: false, settled: false, text: "", sources: [], media: [] };
     activeTurnContext = ctx;

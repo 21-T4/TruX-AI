@@ -12,7 +12,8 @@ import { personalizationPrompt, presetTemperature } from '../lib/personalization
 import { normalizeDevice } from '../chat/device.js';
 import { getProcessedText } from '../lib/storage.js';
 import { notifyUser } from '../lib/push.js';
-import { addUsage, checkQuota, limitFor } from '../lib/usage.js';
+import { addDailyTokens, addUsage, checkDailyTokens, checkQuota, limitFor } from '../lib/usage.js';
+import { COUNT_INPUT_TOKENS, canUseModel, resolveModel } from '../lib/models.js';
 import { generateOnce, MODELS, QUICK_THINKING, routeModel } from '../lib/vertex.js';
 import { historyToContents, loadTurnContext, sanitizeClientHistory } from '../chat/context.js';
 import { MessageWriter } from '../chat/writer.js';
@@ -105,6 +106,15 @@ async function chat(request, { env, url }) {
     if (!quota.ok) throw new HttpError(429, `You have used all ${quota.limit} Deep Research runs this month.`);
   }
 
+  /* The model is exactly what the user picked: no automatic routing. Oracle needs the Edge plan (owners can use everything). */
+  const picked = resolveModel(String(body.model || ''));
+  if (!canUseModel(user, picked)) throw new HttpError(403, `${picked.name} is available on the Edge plan.`);
+  const dailyLimitHit = mode === 'chat' ? await checkDailyTokens(user, picked) : null;
+  if (dailyLimitHit && !dailyLimitHit.ok) {
+    const resets = new Date(dailyLimitHit.resetsAt).toISOString();
+    throw new HttpError(429, `You have used all ${dailyLimitHit.limit.toLocaleString('en-US')} daily tokens on ${picked.name}. Switch to another model or try again after the daily reset.`, { code: 'trux/daily-limit', model: picked.id, resetsAt: resets });
+  }
+
   const db = await getDb();
   const messagesRef = db.ref(`users/${user.uid}/messages/${chatId || '_incognito'}`);
   const userMessageId = messagesRef.push().key;
@@ -162,15 +172,21 @@ async function chat(request, { env, url }) {
     ];
     const ownerModel = user.owner && /^[a-z0-9][a-z0-9.\-]{2,80}$/i.test(String(body.ownerModel || '')) && body.ownerModel !== 'auto'
       ? String(body.ownerModel) : '';
-    const route = routeModel({ message, hasMedia: attachments.length > 0, attachmentCount: attachments.length, thinking: thinkingChoice, mode });
-    const model = ownerModel || route.model;
-    thinking = route.thinking;      // explicit choices are kept exactly; "auto" is decided by the router
-    writer.update({ model });
+    /* routeModel is only used to size the reasoning of Quasar and to spot small talk; it never picks the model. */
+    const route = routeModel({ message, hasMedia: attachments.length > 0, attachmentCount: attachments.length, thinking: 'auto', mode });
+    const model = ownerModel || (mode === 'deep-research' ? resolveModel('aegis').vertex : picked.vertex);
+    thinking = mode === 'deep-research' ? (thinkingChoice === 'auto' ? 'medium' : thinkingChoice)
+      : picked.thinking === 'auto' ? route.thinking : picked.thinking;
+    const simple = picked.thinking === 'minimal' ? false : route.simple;
+    writer.update({ model: picked.id });
     if (process.env.TRUX_LOG_ROUTING) console.log('[route]', route.tier, 'score', route.score, route.reasons.join(', '));
-    send({ type: 'status', status: mode === 'deep-research' ? 'Researching…' : 'Thinking…', model });
+    send({ type: 'status', status: mode === 'deep-research' ? 'Researching…' : 'Thinking…', model: picked.id });
 
     let status = 'done';
     let errorText = '';
+    /* Tokens generated this turn (thinking included). Counted from the usage the model reports, so it adds no latency. */
+    let countedTokens = 0;
+    const onUsage = u => { countedTokens += u.outputTokens + u.thinkingTokens + (COUNT_INPUT_TOKENS ? u.promptTokens : 0); };
     try {
       if (mode === 'video') {
         // Video studio: always produce a video from the brief and options.
@@ -184,12 +200,12 @@ async function chat(request, { env, url }) {
         writer.appendText(`**${plan?.title || 'Your video'}**\n\n` + (plan?.shots || []).map((shot, i) => `${i + 1}. ${shot.caption}`).join('\n') + (response.note && /could not/.test(response.note) ? '\n\n' + response.note.replace(/^Video produced and already displayed to the user\.\s*/, '') : ''));
         send({ type: 'final', text: writer.state.text, sources: [], media: writer.state.media });
       } else {
-        const result = await runAgent({ model, thinking, simple: route.simple, contents, systemInstruction, toolbox, writer, send, signal: controller.signal, temperature: presetTemperature(ctx.personalization) });
+        const result = await runAgent({ model, thinking, simple, contents, systemInstruction, toolbox, writer, send, signal: controller.signal, temperature: presetTemperature(ctx.personalization), onUsage });
         if (!result.text && !writer.state.media.length) {
           writer.appendText('I could not produce a response. Please try again.');
         }
         send({ type: 'final', text: writer.state.text, sources: result.sources, media: writer.state.media });
-        if (result.usage?.totalTokenCount) addUsage(user.uid, 'tokens', result.usage.totalTokenCount).catch(() => {});
+        if (result.usage?.totalTokens) addUsage(user.uid, 'tokens', result.usage.totalTokens).catch(() => {});
         if (mode === 'deep-research') addUsage(user.uid, 'deepResearch').catch(() => {});
       }
     } catch (error) {
@@ -204,6 +220,10 @@ async function chat(request, { env, url }) {
       }
     } finally {
       unwatch();
+      if (mode === 'chat' && countedTokens && !user.owner) {
+        const used = addDailyTokens(user.uid, picked.id, countedTokens);
+        if (used !== null && picked.dailyTokens) send({ type: 'usage', model: picked.id, used, limit: picked.dailyTokens });
+      }
     }
     await writer.finish(status, errorText ? { error: errorText } : {});
 

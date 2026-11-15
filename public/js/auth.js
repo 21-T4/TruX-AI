@@ -45,7 +45,6 @@ function applyDeveloperIdentity(user) {
   document.body.classList.toggle("developer-mode", owner);
   const emailEl = getEl("developerEmailText");
   if (emailEl) emailEl.textContent = owner ? TRUX_DEVELOPER_EMAIL : "Developer access available to the authorized account";
-  try { updateAllUsageUI(); } catch {}
 }
 
 /* Paint the last signed-in identity immediately; Firebase confirms it later. */
@@ -109,14 +108,7 @@ function updateTruxProfileUI(user) {
   try { applyStoredAvatar(user); } catch {}
   const ownerBadge = document.querySelector(".owner-profile-badge");
   if (ownerBadge) ownerBadge.style.display = isTruxDeveloper(user) ? "inline-flex" : "none";
-  try {
-    if (typeof currentProfileOption !== "undefined" && currentProfileOption === "account" && getEl("profileDetailBody")) {
-      const data = profileDetailData("account");
-      setText("profileDetailTitle", data.title);
-      setText("profileDetailSubtitle", data.subtitle);
-      getEl("profileDetailBody").innerHTML = data.html;
-    }
-  } catch {}
+  window.dispatchEvent(new CustomEvent("trux-profile"));
   applyDeveloperIdentity(user);
 }
 
@@ -392,7 +384,6 @@ async function handlePasswordReset() {
   }
   // Same message either way so the form never reveals which emails exist.
   setLoginAuthMessage("If an account exists for that email, a reset link is on its way.", "ok");
-  if (getEl("profileModal")?.style.display === "flex") toast("Password reset email sent.", "ok");
 }
 
 async function truxSignOut() {

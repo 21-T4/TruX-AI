@@ -19,18 +19,14 @@ let currentPlanTier = "base",
     isRecording = false,
     isScrolledUp = false,
     activeStreamer = null,
-    advancedThinkingEnabled = false,
-    advancedThinkingLevel = "auto",
     incognitoMode = false,
     generationEpoch = 0,
     activeTurnContext = null,
     generationStopRequested = false,
     truxLocationCache = null,
-    currentProfileOption = null;
+    truxAutoFollow = true;      /* the answer being written keeps the view pinned to its end until the user scrolls or touches */
 try {
   const savedPlanTier = store.getItem("trux_plan_tier");
-  currentPlanTier = ["base","pro"].includes(savedPlanTier) ? savedPlanTier : "base";
+  currentPlanTier = ["base","plus","pro","edge"].includes(savedPlanTier) ? savedPlanTier : "base";
   store.setItem("trux_plan_tier", currentPlanTier);
-  advancedThinkingLevel = ["auto","low","medium","extended"].includes(store.getItem("trux_thinking_level")) ? store.getItem("trux_thinking_level") : "auto";
-  advancedThinkingEnabled = advancedThinkingLevel === "extended";
 } catch (_) {}

@@ -1,21 +1,11 @@
-/* Settings and profile modal, chat history actions, sign-out, code sandbox. */
+/* Sign-in entry point, backend check and the code sandbox. The Settings screen itself is settings-ui.js. */
 
 async function checkApiLatency() {
   let t = performance.now();
   try { await fetch("/healthz", { cache: "no-store" }); toast(`Backend reachable - ${Math.round(performance.now() - t)} ms`, "ok"); } catch { toast("Backend check failed.", "err"); }
 }
 
-function clearAllHistory() {
-  if (!confirm("Remove all chats from your account on every device?")) return;
-  chatSessions = {};
-  saveChatSessions();          /* hides them everywhere; stored data is kept */
-  currentChatId = null;
-  startNewChat();
-  closeSettingsModal();
-  renderSidebar();
-  toast("Chat history cleared.", "ok");
-}
-
+/* The profile button: open Settings when signed in, otherwise the sign-in wall. */
 async function handleAuthAction() {
   if (!truxAuthStateReady) {
     const restoredUser = await waitForTruxAuthState();
@@ -25,84 +15,10 @@ async function handleAuthAction() {
     }
   }
   if (!auth?.currentUser) return openLoginWall();
-  closeProfileOption();
-  const user = auth.currentUser;
-  updateTruxProfileUI(user);
-  const modal = getEl("profileModal");
-  if(modal){ modal.removeAttribute("data-settings-view"); showOverlay(modal); modal.setAttribute("aria-hidden","false"); }
-  void refreshTruxProfileInfo(user);
+  openSettings();
 }
-function closeProfileModal() {
-  const modal=getEl("profileModal");
-  if(!modal) return;
-  hideOverlay(modal);
-  modal.removeAttribute("data-settings-view");
-  modal.setAttribute("aria-hidden","true");
-  closeProfileOption();
-}
-function switchSettingsSection(name) {
-  if (String(name || "") === "home") { showSettingsHome(); return; }
-  const validSections = ["general","appearance","assistant","voice","personalization","usage","data","account","developer"];
-  const requested = String(name || "general");
-  const hasSection = validSections.includes(requested) &&
-    Array.from(document.querySelectorAll("[data-settings-content]")).some(section => section.getAttribute("data-settings-content") === requested);
-  const activeSection = hasSection ? requested : "general";
-  const settingsModal = getEl("profileModal");
-  if (settingsModal) settingsModal.dataset.settingsView = "section";
-  document.querySelectorAll("[data-settings-content]").forEach(section => {
-    section.classList.toggle("active", section.getAttribute("data-settings-content") === activeSection);
-  });
-  document.querySelectorAll(".settings-nav button[data-settings-section]").forEach(btn => {
-    btn.classList.toggle("active", btn.getAttribute("data-settings-section") === activeSection);
-  });
-  const scroller = document.querySelector(".settings-main-scroll");
-  if (scroller) scroller.scrollTop = 0;
-  if (activeSection === "developer" && isTruxDeveloper(auth?.currentUser)) {
-    void loadOwnerGeminiModels(false);
-  }
-}
-function showSettingsHome() {
-  closeSettingsModal();
-}
-function handleSettingsBack() {
-  const modal = getEl("profileModal");
-  if (modal && modal.dataset.settingsView === "section") {
-    showSettingsHome();
-    return;
-  }
-  closeSettingsModal();
-}
-function openSettingsModal(section) {
-  const modal = getEl("profileModal");
-  if (!modal) {
-    toast("Settings could not load. Please refresh TruX and try again.", "err");
-    return;
-  }
-  showOverlay(modal);
-  modal.setAttribute("aria-hidden", "false");
-  const requested = String(section || "home");
-  try {
-    if (requested === "home") closeSettingsModal();
-    else switchSettingsSection(requested);
-  } catch (error) {
-    console.error("TruX Settings navigation failed:", error);
-    try { showSettingsHome(); } catch {}
-  }
-  try { updateAllUsageUI(); } catch (error) { console.warn("Settings usage refresh deferred:", error); }
-  try { loadSettings(); } catch (error) { console.warn("Settings preferences refresh deferred:", error); }
-  try { updateLocationSettingUI(); } catch (error) { console.warn("Settings location refresh deferred:", error); }
-  try { updateNotificationSettingsUI(); } catch (error) { console.warn("Settings notifications refresh deferred:", error); }
-}
-function closeSettingsModal() {
-  const modal = getEl("profileModal");
-  if (!modal) return;
-  modal.removeAttribute("data-settings-view");
-  modal.setAttribute("aria-hidden", "false");
-  const scroller = document.querySelector(".settings-main-scroll");
-  if (scroller) scroller.scrollTop = 0;
-  closeProfileOption();
-}
-function confirmSignOut() { truxSignOut().then(() => { closeProfileModal(); closeSettingsModal?.(); openLoginWall("signin"); }); }
+
+function confirmSignOut() { truxSignOut().then(() => { closeSettings(); openLoginWall("signin"); }); }
 
 function openCodeSandbox(codeId, extension) {
   const source = getEl(codeId);

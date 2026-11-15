@@ -84,26 +84,12 @@ async function speakText(text, button, options = {}) {
   }
 }
 
-function populateTruxSpeechVoices() {
-  renderTruxVoiceGrid();
-  const select = getEl("truxSpeechVoiceSelect");
-  if (!select) return;
-  const current = truxSelectedVoice();
-  select.innerHTML = "";
-  for (const [id, label] of TRUX_TTS_VOICES) {
-    const option = document.createElement("option");
-    option.value = id; option.textContent = label; option.selected = id === current;
-    select.appendChild(option);
-  }
-}
-
 function saveSpeechVoice(value) {
   const voice = TRUX_TTS_VOICES.some(([id]) => id === value) ? value : "Kore";
   store.setItem("trux_speech_voice", voice);
   // The same voice is used by Live; keep it with the personalization profile.
   try { saveTruxPersonalization({ voice }, { quiet: true }); } catch {}
-  const select = getEl("truxSpeechVoiceSelect"); if (select) select.value = voice;
-  syncTruxVoiceGrid();
+  window.dispatchEvent(new CustomEvent("trux-voice", { detail: { voice } }));
   toast(voice + " is now TruX's voice for Live and read aloud.", "ok");
 }
 
@@ -113,34 +99,6 @@ function truxVoicePreviewLine(voice) {
 }
 
 function previewSpeechVoice(voice, button) {
-  const id = voice || getEl("truxSpeechVoiceSelect")?.value || truxSelectedVoice();
+  const id = voice || truxSelectedVoice();
   speakText(truxVoicePreviewLine(id), button || null, { voice: id });
-}
-
-/* Voice cards in Personalization: tap a card to choose, the play button to preview. */
-function renderTruxVoiceGrid() {
-  const host = getEl("truxVoiceGrid");
-  if (!host) return;
-  if (!host.childElementCount) {
-    for (const [id, style, kind] of TRUX_GEMINI_VOICES) {
-      const card = document.createElement("div");
-      card.className = "voice-card"; card.dataset.voice = id; card.dataset.kind = kind;
-      card.innerHTML = `<button type="button" class="voice-pick" role="radio" aria-checked="false"><span class="voice-avatar" aria-hidden="true">${escapeHtml(id[0])}</span><span class="voice-copy"><b>${escapeHtml(id)}</b><small>${escapeHtml(style)}</small></span></button><button type="button" class="voice-play" aria-label="Preview ${escapeHtml(id)}"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button>`;
-      card.querySelector(".voice-pick").onclick = () => saveSpeechVoice(id);
-      const play = card.querySelector(".voice-play");
-      play.onclick = () => previewSpeechVoice(id, play);
-      host.appendChild(card);
-    }
-  }
-  syncTruxVoiceGrid();
-}
-
-function syncTruxVoiceGrid() {
-  const current = truxSelectedVoice();
-  document.querySelectorAll("#truxVoiceGrid .voice-card").forEach(card => {
-    const on = card.dataset.voice === current;
-    card.classList.toggle("active", on);
-    card.querySelector(".voice-pick")?.setAttribute("aria-checked", String(on));
-  });
-  const label = getEl("truxVoiceCurrent"); if (label) label.textContent = current;
 }
