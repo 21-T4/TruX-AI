@@ -40,12 +40,7 @@ function applyTruxTextSize(size, persist) {
 }
 applyTruxTextSize(store.getItem("trux_text_size") || "default", false);
 
-/* ---------- glow, send key, read aloud ---------- */
-function applyAmbientGlow(on, persist) {
-  const bg = getEl("bg");
-  if (bg) bg.style.display = on ? "block" : "none";
-  if (persist !== false) store.setItem("trux_ambient_glow", on ? "true" : "false");
-}
+/* ---------- send key, read aloud ---------- */
 const truxEnterToSend = () => store.getItem("trux_enter_to_send") !== "false";
 const truxAutoRead = () => store.getItem("trux_auto_read") === "true";
 function saveTTSRate(value) { store.setItem("trux_tts_rate", String(value)); }
@@ -123,14 +118,13 @@ function clearAllHistory() {
 
 /* ---------- start-up: apply everything saved on this device ---------- */
 function loadSettings() {
-  applyAmbientGlow(store.getItem("trux_ambient_glow") !== "false", false);
   applyTruxTextSize(store.getItem("trux_text_size") || "default", false);
   applyTimeManagementSettings();
 }
 
 function resetAllSettings() {
   if (!confirm("Reset the settings stored on this device? Your account, chats and memory are not affected.")) return false;
-  ["trux_auto_read", "trux_ambient_glow", "trux_tts_rate", "trux_home_look", "trux_location_enabled", "trux_location_granted", "trux_location_prompted",
+  ["trux_auto_read", "trux_tts_rate", "trux_home_look", "trux_location_enabled", "trux_location_granted", "trux_location_prompted",
    "trux_avatar_override", "trux_theme", "trux_accent", "trux_text_size", "trux_enter_to_send", "trux_model", "trux_dictation_language", "trux_speech_voice",
    "trux_dictation_history", "trux_dictation_history_items", "trux_focus_reminder", "trux_focus_interval", "trux_owner_gemini_model",
    ...TRUX_NOTIFICATION_CATEGORIES.map(k => "trux_notification_cat_" + k)].forEach(k => store.removeItem(k));
