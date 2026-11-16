@@ -211,7 +211,7 @@ input, textarea, select,
 ::-webkit-scrollbar-thumb:hover{ background: rgba(var(--ink),.24); background-clip: content-box; border: 3px solid transparent; }
 
 /* legacy decorative layers are retired */
-.bg, .colorful-bg, .bg-orb{ display: none !important; }
+.colorful-bg{ display: none !important; }
 
 
 /* Baseline: every interactive control eases its colour, border, shadow and press feedback the same way.

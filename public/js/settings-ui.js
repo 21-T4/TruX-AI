@@ -412,8 +412,7 @@ function sxAppearance() {
 
   page.append(sxGroup("Reading", null,
     sxRow("Text size", "Changes the size of messages and menus.",
-      sxSegmented([["small", "Small"], ["default", "Default"], ["large", "Large"]], store.getItem("trux_text_size") || "default", size => applyTruxTextSize(size), "Text size")),
-    sxRow("Ambient glow", "A soft coloured glow behind the chat.", sxSwitch(store.getItem("trux_ambient_glow") !== "false", on => applyAmbientGlow(on), "Ambient glow"))));
+      sxSegmented([["small", "Small"], ["default", "Default"], ["large", "Large"]], store.getItem("trux_text_size") || "default", size => applyTruxTextSize(size), "Text size"))));
   return page;
 }
 
