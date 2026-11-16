@@ -214,7 +214,9 @@ async function chat(request, { env, url }) {
         send({ type: 'stopped' });
       } else {
         status = 'error';
-        errorText = Number(error?.status) < 500 ? String(error.message) : 'The response could not be completed. Please try again.';
+        const raw = String(error?.message || '');
+        const readable = Number(error?.status) < 500 && raw && raw.length <= 220 && !/^\s*[{\[]|INVALID_ARGUMENT|googleapis|projects\//.test(raw);
+        errorText = readable ? raw : (/tool|function|search|ground/i.test(raw) ? 'A tool step failed. Please send your message again.' : 'The response could not be completed. Please try again.');
         console.error('[chat]', error?.stack || error?.message || error);
         send({ type: 'error', error: errorText });
       }

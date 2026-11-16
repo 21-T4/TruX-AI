@@ -16,17 +16,17 @@
 /* ---------- section list ---------- */
 .sx-nav{ display: flex; flex-direction: column; min-height: 0; background: var(--bg-1); border-right: 1px solid var(--line); padding-top: var(--safe-t); }
 .sx-nav-head{ display: flex; align-items: center; gap: 8px; padding: 18px 16px 10px; }
-.sx-nav-head h1{ font-size: 21px; font-weight: 600; color: var(--txt); }
-.sx-nav-list{ flex: 1; overflow-y: auto; padding: 6px 12px calc(16px + var(--safe-b)); display: flex; flex-direction: column; gap: 2px; }
+.sx-nav-head h1{ font-size: 24px; font-weight: 600; color: var(--txt); }
+.sx-nav-list{ flex: 1; overflow-y: auto; padding: 8px 12px calc(20px + var(--safe-b)); display: flex; flex-direction: column; gap: 8px; }
 .sx-nav-item{
   display: flex; align-items: center; gap: 12px; width: 100%;
-  padding: 10px 12px; border-radius: 12px; text-align: left; color: var(--txt-2);
+  padding: 14px 14px; border-radius: 14px; text-align: left; color: var(--txt-2);
 }
-.sx-nav-icon{ width: 34px; height: 34px; flex: none; display: grid; place-items: center; border-radius: 10px; background: var(--bg-3); color: var(--txt-2); }
-.sx-nav-icon svg{ width: 18px; height: 18px; }
-.sx-nav-copy{ flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.sx-nav-label{ font-size: 15px; font-weight: 500; color: var(--txt); }
-.sx-nav-hint{ font-size: 12.5px; color: var(--txt-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sx-nav-icon{ width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 10px; background: var(--bg-3); color: var(--txt-2); }
+.sx-nav-icon svg{ width: 21px; height: 21px; }
+.sx-nav-copy{ flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.sx-nav-label{ font-size: 17px; font-weight: 500; color: var(--txt); }
+.sx-nav-hint{ font-size: 14px; color: var(--txt-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sx-nav-chev{ display: none; width: 18px; height: 18px; color: var(--txt-4); }
 @media (hover: hover){ .sx-nav-item:hover{ background: var(--bg-3); } }
 .sx-nav-item.active{ background: var(--bg-3); }
@@ -235,7 +235,12 @@ body.settings-open{ overflow: hidden; }
   .sx-nav{ border-right: 0; background: var(--bg); }
   .sx-nav-head{ padding: 14px 12px 8px; }
   .sx-nav-chev{ display: block; }
-  .sx-nav-item{ padding: 12px 10px; }
+  .sx-nav-list{ gap: 12px; padding: 10px 14px calc(28px + var(--safe-b)); }
+  .sx-nav-item{ padding: 17px 14px; gap: 14px; }
+  .sx-nav-label{ font-size: 18.5px; }
+  .sx-nav-hint{ font-size: 15px; }
+  .sx-nav-icon{ width: 44px; height: 44px; }
+  .sx-nav-head h1{ font-size: 26px; }
   .sx-main-head{ display: flex; }
   .sx-back{ visibility: visible; }
   .sx-content{ padding: 20px 16px calc(48px + var(--safe-b)); }

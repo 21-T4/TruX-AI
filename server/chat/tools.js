@@ -6,7 +6,7 @@ import { rateLimit } from '../lib/ratelimit.js';
 import { callSandbox, sandboxSession } from '../lib/sandbox.js';
 import { addUsage, checkQuota } from '../lib/usage.js';
 import { saveBuffer, userMediaKey, userVideoPrefix } from '../lib/storage.js';
-import { generateImage, IMAGE_RATIOS } from '../lib/vertex.js';
+import { generateImage, generateOnce, groundingSources, IMAGE_RATIOS, MODELS, QUICK_THINKING } from '../lib/vertex.js';
 import { cleanLength, produceVideo, VIDEO_LENGTHS } from '../lib/video.js';
 import { executeTruxWebTool, TRUX_WEB_TOOL_DECLARATIONS } from '../lib/web-tools.js';
 import { DEVICE_TOOL, deviceLabel, prepareDeviceAction } from './device.js';
@@ -102,6 +102,14 @@ const SHARE_FILE_TOOL = {
   }
 };
 
+/* Only offered when the model refuses to combine Google Search with function tools: the search then runs as a function. */
+const WEB_SEARCH_TOOL = {
+  name: 'trux_web_search',
+  description: 'Search the web with Google for current or uncertain facts (news, prices, releases, people, local info) and get a short grounded answer with sources. Use a natural search query; open specific results afterwards with trux_web_open.',
+  parameters: { type: 'object', properties: { query: { type: 'string', description: 'What to look up, phrased as a search query.' } }, required: ['query'] }
+};
+const SEARCH_ALIASES = new Set(['google_search', 'googlesearch', 'google', 'web_search', 'websearch', 'search', 'search_web', 'internet_search', 'trux_web_search']);
+
 const COMPOSIO_DISCOVERY_TOOL = {
   name: 'trux_composio_discover_tools',
   description: 'Find callable actions in the user\'s connected apps. Describe the desired outcome; matching real actions become callable on your next step. Discovery does not perform anything.',
@@ -109,6 +117,7 @@ const COMPOSIO_DISCOVERY_TOOL = {
 };
 
 const LABELS = {
+  trux_web_search: () => 'Searching the web',
   trux_web_open: args => 'Reading ' + (() => { try { return new URL(args?.url).hostname; } catch { return 'page'; } })(),
   trux_memory_save: () => 'Saving to memory',
   trux_memory_forget: () => 'Updating memory',
@@ -146,13 +155,14 @@ export class Toolbox {
     };
   }
 
-  geminiTools() {
+  geminiTools({ searchAsFunction = false } = {}) {
     const declarations = [...TRUX_WEB_TOOL_DECLARATIONS, IMAGE_TOOL, BASH_TOOL, BROWSER_TOOL, SCREENSHOT_TOOL, SHARE_FILE_TOOL];
     if (this.personalization.memoryEnabled) declarations.push(...MEMORY_TOOL_DECLARATIONS);
     if (this.canVideo) declarations.push(VIDEO_TOOL);
     if (this.connectedSlugs.length) declarations.push(COMPOSIO_DISCOVERY_TOOL);
     if (this.device) declarations.push(DEVICE_TOOL);
     declarations.push(...this.dynamic);
+    if (searchAsFunction || this.searchAsFunction) return [{ functionDeclarations: [...declarations, WEB_SEARCH_TOOL] }];
     return [{ functionDeclarations: declarations }, { googleSearch: {} }];
   }
 
@@ -195,13 +205,28 @@ export class Toolbox {
       }
       default:
         if (this.composioMeta.has(call.name)) return this.composio(call, signal);
-        return { response: { ok: false, error: 'Unknown tool: ' + call.name } };
+        /* Google Search is built in, not a function, but models sometimes try to call it by name: just do the search. */
+        if (SEARCH_ALIASES.has(String(call.name).toLowerCase())) return { response: await this.search(args, signal) };
+        return { response: { ok: false, error: 'Unknown tool "' + call.name + '". Use only the declared tools; Google Search happens automatically and web pages are read with trux_web_open.' } };
     }
   }
 
   addMedia(media) {
     this.writer.update({ media: [...this.writer.state.media, media] });
     this.send({ type: 'media', media });
+  }
+
+  async search(args, signal) {
+    const query = String(args.query || args.q || (Array.isArray(args.queries) ? args.queries[0] : '') || '').trim().slice(0, 400);
+    if (!query) return { ok: false, error: 'Give a search query.' };
+    const { text, response } = await generateOnce({
+      model: MODELS.hydrogen,
+      contents: [{ role: 'user', parts: [{ text: query }] }],
+      config: { tools: [{ googleSearch: {} }], ...QUICK_THINKING },
+      signal
+    });
+    const sources = groundingSources(response?.candidates?.[0]?.groundingMetadata, 8);
+    return { ok: true, answer: text.slice(0, 6000), sources: sources.map(({ title, uri }) => ({ title, url: uri })) };
   }
 
   async image(args, signal) {
