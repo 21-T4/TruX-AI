@@ -1,0 +1,40 @@
+/* Typing bar: one-line pill by default, grows into the full bar when you tap it (Claude-style). Loads after claude.css. */
+.bar{
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  grid-template-areas: "plus mic input send";
+  align-items: center;
+  gap: 2px 4px;
+  padding: 8px 10px 8px 8px;
+  border-radius: 34px;
+  transition: border-color var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease), border-radius var(--dur-3) var(--ease-out);
+}
+.bar:not(.expanded) .model-picker-container{ display: none; }
+.bar:not(.expanded) #promptInput{
+  min-height: 0; height: 28px; max-height: 28px; padding: 0 6px; overflow: hidden;
+  font-size: 18px; line-height: 28px; cursor: text;
+}
+.bar:not(.expanded) .icon-btn, .bar:not(.expanded) .send-btn{ width: 44px; height: 44px; }
+
+.bar.expanded{
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+  grid-template-areas: "input input input input input" "plus mic . model send";
+  padding: 16px 14px 12px 16px;
+  border-radius: 28px;
+}
+.bar.expanded .model-picker-container{ display: block; animation: composerChipIn var(--dur-3) var(--ease-out) both; }
+.bar.expanded #promptInput{ min-height: 56px; padding: 4px 6px 12px; }
+@keyframes composerChipIn{ from{ opacity: 0; transform: translateY(4px); } to{ opacity: 1; transform: none; } }
+
+/* model chip: name, then the thinking level in a quieter tone ("Quasar  Adaptive") */
+.bar .model-picker-btn{ gap: 8px; }
+.model-picker-btn .mp-think{ font-weight: 400; color: var(--txt-3); }
+.model-picker-btn .mp-think:empty{ display: none; }
+
+@media (max-width: 720px){
+  .bar{ padding: 7px 8px 7px 6px; border-radius: 32px; }
+  .bar.expanded{ padding: 14px 10px 10px 14px; border-radius: 26px; }
+  .bar:not(.expanded) #promptInput{ min-height: 0; padding: 0 4px; font-size: 18px; }
+  .bar.expanded #promptInput{ min-height: 52px; padding: 2px 4px 10px; }
+  .bar .model-picker-btn{ padding: 0 10px; gap: 6px; font-size: 15px; }
+}
+@media (prefers-reduced-motion: reduce){ .bar, .bar.expanded .model-picker-container{ transition: none; animation: none; } }

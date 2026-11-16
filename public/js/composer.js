@@ -60,7 +60,7 @@ function closeIncognitoChat() {
   const input = getEl("promptInput");
   if (input) {
     input.value = "";
-    input.placeholder = "Message TruX…";
+    input.placeholder = "Ask TruX…";
   }
   startNewChat();
 }
@@ -87,15 +87,49 @@ function startNewChat() {
 }
 function quickPrompt(txt) { getEl("promptInput").value = txt; getEl("promptInput").focus(); handleInputChange(); }
 
+/* ---------- typing bar: a one-line pill that grows into the full bar (like Claude's) ----------
+   Collapsed: + , mic, text, send. Expanded (focused, has a draft or attachment, or the model menu is open):
+   text on top, tools and the model chip underneath. The height eases between the two. */
+function composerHasDraft() {
+  const p = getEl("promptInput");
+  return !!(p?.value.trim() || selectedImageBase64 || pastedTextBlocks.length || fileAttachments.length);
+}
+function composerWantsExpanded() {
+  const p = getEl("promptInput");
+  return document.activeElement === p || composerHasDraft() || getEl("modelDropdown")?.classList.contains("open");
+}
+function sizePromptInput() {
+  const p = getEl("promptInput");
+  if (!p) return;
+  const bar = p.closest(".bar");
+  if (bar && !bar.classList.contains("expanded")) { p.style.removeProperty("height"); return; }   /* the pill is a single line */
+  p.style.setProperty("height", "auto", "important");
+  const contentHeight = p.scrollHeight;
+  p.style.setProperty("height", Math.max(44, Math.min(contentHeight, 200)) + "px", "important");
+  p.style.removeProperty("overflow-y");
+}
+function setComposerExpanded(on) {
+  const bar = getEl("promptInput")?.closest(".bar");
+  if (!bar || bar.classList.contains("expanded") === !!on) return;
+  const from = bar.offsetHeight;
+  bar.classList.toggle("expanded", !!on);
+  sizePromptInput();
+  const to = bar.offsetHeight;
+  bar.__truxBarAnim?.cancel();
+  if (from === to || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches || !bar.animate) return;
+  bar.style.overflow = "hidden";
+  const anim = bar.animate([{ height: from + "px" }, { height: to + "px" }], { duration: 240, easing: "cubic-bezier(.2,.8,.2,1)" });
+  bar.__truxBarAnim = anim;
+  const done = () => { bar.style.removeProperty("overflow"); bar.__truxBarAnim = null; };
+  anim.onfinish = done; anim.oncancel = done;
+}
+function syncComposerExpanded() { setComposerExpanded(composerWantsExpanded()); }
+
 function handleInputChange() {
   const p = getEl("promptInput");
   if (!p) return;
-  const minComposerHeight = 44;
-  const maxComposerHeight = 200
-  p.style.setProperty("height", "auto", "important");
-  const contentHeight = p.scrollHeight;
-  p.style.setProperty("height", Math.max(minComposerHeight, Math.min(contentHeight, maxComposerHeight)) + "px", "important");
-  p.style.removeProperty("overflow-y");
+  syncComposerExpanded();
+  sizePromptInput();
   const bar = p.closest(".bar");
   if (bar) bar.classList.remove("multiline");
 
@@ -391,3 +425,20 @@ if("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
 }
 function toggleVoiceInput() { if(!recognition) return toast("Speech recognition is not supported in this browser.", "err"); isRecording ? recognition.stop() : (wasInputByVoice = true, recognition.start()); }
 function stopVoiceInput() { isRecording = false; getEl("voiceBtn").classList.remove("recording"); }
+
+(function bindComposerExpand() {
+  const input = getEl("promptInput"), bar = input?.closest(".bar");
+  if (!bar) return;
+  let timer = null;
+  input.addEventListener("focus", () => { clearTimeout(timer); syncComposerExpanded(); sizePromptInput(); });
+  bar.addEventListener("focusout", event => {
+    if (bar.contains(event.relatedTarget)) return;        /* moving to a button inside the bar keeps it open */
+    clearTimeout(timer);
+    timer = setTimeout(syncComposerExpanded, 140);
+  });
+  document.addEventListener("pointerdown", event => {
+    /* tapping the model menu's trigger keeps the bar open; tapping elsewhere lets it settle */
+    if (!bar.contains(event.target) && !event.target.closest?.(".model-dropdown-menu")) { clearTimeout(timer); timer = setTimeout(syncComposerExpanded, 160); }
+  }, true);
+  syncComposerExpanded();
+})();

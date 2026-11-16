@@ -17,6 +17,9 @@ export async function runAgent({ model, thinking, simple = false, contents, syst
   /* Token totals across every round of the turn. Thinking tokens are counted separately from the visible output. */
   const usage = { promptTokens: 0, outputTokens: 0, thinkingTokens: 0, totalTokens: 0 };
   const currentModel = model;
+  let toolsOff = false;        // set when the model refused every tool setup; the rest of the turn is plain text
+  let repairs = 0;             // retries after a malformed tool call
+  let repairNote = '';
 
   for (let round = 0; round < MAX_ROUNDS; round++) {
     throwIfAborted(signal);
@@ -24,8 +27,9 @@ export async function runAgent({ model, thinking, simple = false, contents, syst
     const result = await streamRound({
       model: currentModel,
       contents: messages,
-      systemInstruction,
-      tools: simple ? [] : toolbox.geminiTools(),           // small talk needs no tools, which makes the reply start faster
+      systemInstruction: repairNote ? systemInstruction + '\n\n' + repairNote : systemInstruction,
+      tools: simple || toolsOff ? [] : toolbox.geminiTools(),           // small talk needs no tools, which makes the reply start faster
+      fallbackTools: simple || toolsOff ? null : toolbox.geminiTools({ searchAsFunction: true }),
       config: { ...thinkingConfig(currentModel, thinking, { minimal: simple && round === 0 }), temperature },
       signal,
       onText: delta => {
@@ -36,6 +40,8 @@ export async function runAgent({ model, thinking, simple = false, contents, syst
       }
     });
     throwIfAborted(signal);
+    if (result.degraded === 'functions-only') toolbox.searchAsFunction = true;      // Google Search stays available as a function
+    if (result.degraded === 'no-tools') toolsOff = true;
     if (result.usage) {
       const u = result.usage;
       usage.promptTokens += Number(u.promptTokenCount || 0) + Number(u.toolUsePromptTokenCount || 0);
@@ -52,6 +58,20 @@ export async function runAgent({ model, thinking, simple = false, contents, syst
       writer.update({ sources: list });
       send({ type: 'grounding', sources: list, searchSuggestionHtml });
     }
+
+    /* A tool call the model could not form properly (invalid JSON, wrong tool) is not the user's problem:
+       tell the model what went wrong and let it try again, then fall back to answering without tools. */
+    if (!result.functionCalls.length && /MALFORMED_FUNCTION_CALL|UNEXPECTED_TOOL_CALL|TOO_MANY_TOOL_CALLS/.test(result.finishReason || '') && !result.text.trim()) {
+      repairs++;
+      if (repairs > 3) throw Object.assign(new Error('TruX could not finish that tool step. Please try again, or rephrase the request.'), { status: 422 });
+      if (repairs === 3) toolsOff = true;
+      repairNote = toolsOff
+        ? 'NOTE: tools are unavailable for the rest of this answer. Answer in plain text using what you already know and the results so far; do not attempt tool calls.'
+        : 'NOTE: your previous tool call was malformed and was not run. Call the tool again using exactly the declared name and one valid JSON object of arguments that matches its schema (all required fields, correct types, no extra keys, no prose in values), or answer without a tool.';
+      send({ type: 'status', status: 'Retrying that step…' });
+      continue;
+    }
+    repairNote = '';
 
     if (!result.functionCalls.length || !result.modelContent) {
       if (!text && result.finishReason && result.finishReason !== 'STOP') {

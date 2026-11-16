@@ -283,7 +283,7 @@ function sxProfile() {
     sxDetail("Plan", sxIsOwner() ? "Owner (all models, no limits)" : (SX_PLAN_NAMES[plan] || "Free")),
     sxDetail("Account created", sxDate(user.metadata?.creationTime)),
     sxDetail("Last sign-in", sxDate(user.metadata?.lastSignInTime)),
-    sxDetail("User ID", user.uid, null, () => { navigator.clipboard?.writeText(user.uid).then(() => toast("User ID copied.", "ok"), () => toast("Couldn't copy.", "err")); })));
+    sxAccountIdRow(user)));
 
   const actions = [];
   actions.push(sxRow("Plans", "Compare what each plan includes.", sxButton("View plans", () => { closeSettings(); openSubscriptionPage(); })));
@@ -295,6 +295,57 @@ function sxProfile() {
   actions.push(sxRow("Sign out", "You'll need to sign in again on this device.", sxButton("Sign out", () => { if (confirm("Sign out of TruX on this device?")) confirmSignOut(); }, "danger")));
   page.append(sxGroup("Account", null, ...actions));
   return page;
+}
+/* The account ID is never shown as stored. By default it is hidden; revealing it asks the person to sign in
+   again, and what appears is a one-way reference (SHA-256 of the ID), not the ID itself. It hides again after 30 s. */
+async function sxAccountReference(uid) {
+  const bytes = new TextEncoder().encode("trux-account-reference:" + uid);
+  const hash = await crypto.subtle.digest("SHA-256", bytes);
+  const hex = [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 16).toUpperCase();
+  return "TX-" + hex.match(/.{4}/g).join("-");
+}
+function sxAccountIdRow(user) {
+  const row = sxEl("div", { class: "sx-row" });
+  const paintHidden = () => {
+    const reveal = sxButton("Show", () => paintConfirm());
+    row.replaceChildren(
+      sxEl("div", { class: "sx-row-copy" }, sxEl("div", { class: "sx-row-title", text: "Account ID" }),
+        sxEl("div", { class: "sx-row-desc", text: "Hidden for your privacy. Sign in again to show it." })),
+      sxEl("div", { class: "sx-row-control" }, sxEl("span", { class: "sx-detail-value", "aria-label": "Hidden", text: "\u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022" }), reveal));
+  };
+  const paintShown = async () => {
+    const ref = await sxAccountReference(user.uid);
+    const timer = setTimeout(() => { if (row.isConnected) paintHidden(); }, 30000);
+    row.replaceChildren(
+      sxEl("div", { class: "sx-row-copy" }, sxEl("div", { class: "sx-row-title", text: "Account ID" }),
+        sxEl("div", { class: "sx-row-desc", text: "Share this with support if asked. It hides again in 30 seconds." })),
+      sxEl("div", { class: "sx-row-control" }, sxEl("span", { class: "sx-detail-value sx-selectable", text: ref }),
+        sxButton("Copy", () => navigator.clipboard?.writeText(ref).then(() => toast("Account ID copied.", "ok"), () => toast("Couldn't copy.", "err")), "quiet"),
+        sxButton("Hide", () => { clearTimeout(timer); paintHidden(); }, "quiet")));
+  };
+  const paintConfirm = () => {
+    const fail = error => toast(friendlyAuthError(error), "err");
+    if (truxUsesPassword(user)) {
+      const pw = sxEl("input", { class: "sx-input", type: "password", placeholder: "Your password", autocomplete: "current-password", "aria-label": "Password" });
+      const go = async () => {
+        if (!pw.value) return;
+        try { await user.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(user.email, pw.value)); await paintShown(); }
+        catch (error) { pw.value = ""; fail(error); }
+      };
+      pw.addEventListener("keydown", e => { if (e.key === "Enter") go(); });
+      row.replaceChildren(
+        sxEl("div", { class: "sx-row-copy" }, sxEl("div", { class: "sx-row-title", text: "Confirm it's you" }), sxEl("div", { class: "sx-row-desc", text: "Enter your password to show your account ID." })),
+        sxEl("div", { class: "sx-row-control" }, pw, sxButton("Confirm", go, "primary"), sxButton("Cancel", paintHidden, "quiet")));
+      pw.focus();
+    } else {
+      row.replaceChildren(sxEl("div", { class: "sx-row-copy" }, sxEl("div", { class: "sx-row-title", text: "Confirm it's you" }), sxEl("div", { class: "sx-row-desc", text: "Sign in with Google again to show your account ID." })),
+        sxEl("div", { class: "sx-row-control" }, sxButton("Sign in again", async () => {
+          try { await user.reauthenticateWithPopup(new firebase.auth.GoogleAuthProvider()); await paintShown(); } catch (error) { fail(error); }
+        }, "primary"), sxButton("Cancel", paintHidden, "quiet")));
+    }
+  };
+  paintHidden();
+  return row;
 }
 function sxDetail(label, value, id, onCopy) {
   const val = sxEl("div", { class: "sx-detail-value sx-selectable", id, text: value });

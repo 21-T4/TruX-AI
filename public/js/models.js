@@ -4,10 +4,10 @@
  * /api/usage returns the plan, which models are locked and how many tokens were used today. It is cached
  * briefly and refreshed after each turn, so the picker and Settings → Usage & limits always agree. */
 const TRUX_MODELS = [
-  { id: "spark",  name: "TruX-2 Spark",  short: "Spark",  description: "Fastest answers, no reasoning" },
-  { id: "quasar", name: "TruX-2 Quasar", short: "Quasar", description: "Everyday tasks, quick and capable" },
-  { id: "aegis",  name: "TruX-2 Aegis",  short: "Aegis",  description: "Complex reasoning and multi-step work" },
-  { id: "oracle", name: "TruX-2 Oracle", short: "Oracle", description: "Toughest problems, frontier reasoning", plan: "edge" }
+  { id: "spark",  name: "TruX-2 Spark",  short: "Spark",  description: "Fastest answers, no reasoning", think: "Instant" },
+  { id: "quasar", name: "TruX-2 Quasar", short: "Quasar", description: "Everyday tasks, quick and capable", think: "Adaptive" },
+  { id: "aegis",  name: "TruX-2 Aegis",  short: "Aegis",  description: "Complex reasoning and multi-step work", think: "Extended" },
+  { id: "oracle", name: "TruX-2 Oracle", short: "Oracle", description: "Toughest problems, frontier reasoning", think: "Max", plan: "edge" }
 ];
 const TRUX_DEFAULT_MODEL = "quasar";
 const TRUX_FALLBACK_LIMITS = { quasar: 100000, aegis: 50000 };   // shown until the server answers
@@ -109,6 +109,8 @@ function renderModelPicker() {
   const label = getEl("modelPickerLabel");
   const model = truxModelById(truxSelectedModel) || truxModelById(TRUX_DEFAULT_MODEL);
   if (label) label.textContent = model.short;
+  const think = getEl("modelPickerThink");
+  if (think) think.textContent = model.think || "";
   const list = getEl("modelList");
   if (!list) return;
   const frag = document.createDocumentFragment();

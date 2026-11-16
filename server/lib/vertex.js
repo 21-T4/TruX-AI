@@ -58,7 +58,19 @@ function mergeGrounding(previous, incoming) {
  * Returns the full model content (with thought signatures intact, which
  * Gemini 3 requires when function calls are sent back) plus any calls.
  */
-export async function streamRound({ model, contents, systemInstruction, tools, config = {}, signal, onText }) {
+/* True when a failed request looks like the tool setup was refused (not a network or quota problem). */
+const TOOL_SETUP_ERROR = /tool|function|search|ground|server.?side|combin|unsupported|not supported|INVALID_ARGUMENT|400/i;
+
+/**
+ * Streams one model round. Text is forwarded through onText as it arrives.
+ * Returns the full model content (with thought signatures intact, which
+ * Gemini 3 requires when function calls are sent back) plus any calls.
+ *
+ * If the model refuses the tool setup (for example Google Search combined with function tools), the round is
+ * retried with a simpler setup instead of failing: first allowing built-in and function tools together, then
+ * function tools only (`fallbackTools`, which carries a search function), then no tools. `degraded` says which.
+ */
+export async function streamRound({ model, contents, systemInstruction, tools, fallbackTools = null, config = {}, signal, onText }) {
   const client = await getVertexClient();
   const request = { ...config };
   if (systemInstruction) request.systemInstruction = systemInstruction;
@@ -71,23 +83,37 @@ export async function streamRound({ model, contents, systemInstruction, tools, c
   let grounding = null;
   let finishReason = '';
   let usage = null;
+  let degraded = '';
+
+  const open = () => client.models.generateContentStream({ model, contents, config: request });
+  const hasBuiltIn = !!tools?.some(t => t.googleSearch);
+  const hasFunctions = !!tools?.some(t => t.functionDeclarations);
+  const fallbacks = [];
+  if (hasBuiltIn && hasFunctions) fallbacks.push(() => { request.toolConfig = { includeServerSideToolInvocations: true }; });
+  if (hasFunctions) fallbacks.push(() => { delete request.toolConfig; request.tools = fallbackTools || tools.filter(t => !t.googleSearch); degraded = 'functions-only'; });
+  if (tools?.length) fallbacks.push(() => { delete request.toolConfig; delete request.tools; degraded = 'no-tools'; });
 
   let stream;
-  try {
-    stream = await client.models.generateContentStream({ model, contents, config: request });
-  } catch (error) {
-    /* A model that does not know the MINIMAL thinking level: retry with LOW, then with the model's own default. */
-    const thinkingRejected = /thinking|level|minimal|INVALID_ARGUMENT/i.test(String(error?.message || ''));
-    if (request.thinkingConfig?.thinkingLevel === 'MINIMAL' && thinkingRejected && !signal?.aborted) {
-      request.thinkingConfig = { thinkingLevel: 'LOW' };
-      try {
-        stream = await client.models.generateContentStream({ model, contents, config: request });
-      } catch (second) {
-        if (!thinkingRejected || signal?.aborted) throw second;
-        delete request.thinkingConfig;
-        stream = await client.models.generateContentStream({ model, contents, config: request });
+  let thinkingTried = false;
+  for (;;) {
+    try {
+      stream = await open();
+      break;
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      const message = String(error?.message || '');
+      /* A model that does not know the MINIMAL thinking level: retry with LOW, then with the model's own default. */
+      if (request.thinkingConfig?.thinkingLevel === 'MINIMAL' && /thinking|level|minimal|INVALID_ARGUMENT/i.test(message)) {
+        request.thinkingConfig = { thinkingLevel: 'LOW' };
+        thinkingTried = true;
+        continue;
       }
-    } else throw error;
+      if (thinkingTried && request.thinkingConfig && /thinking|level/i.test(message)) { delete request.thinkingConfig; thinkingTried = false; continue; }
+      const step = Number(error?.status) >= 500 || Number(error?.status) === 429 ? null : (TOOL_SETUP_ERROR.test(message) ? fallbacks.shift() : null);
+      if (!step) throw error;
+      console.warn('[vertex] tool setup refused by', model, '-', message.slice(0, 200), '- retrying with a simpler tool setup');
+      step();
+    }
   }
   for await (const chunk of stream) {
     const candidate = chunk?.candidates?.[0];
@@ -123,7 +149,8 @@ export async function streamRound({ model, contents, systemInstruction, tools, c
     modelContent: parts.length ? { role: 'model', parts } : null,
     grounding,
     finishReason,
-    usage
+    usage,
+    degraded
   };
 }
 

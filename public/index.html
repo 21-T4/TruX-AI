@@ -64,6 +64,7 @@
   <link rel="stylesheet" href="/css/claude.css">
   <link rel="stylesheet" href="/css/models.css">
   <link rel="stylesheet" href="/css/settings.css">
+  <link rel="stylesheet" href="/css/composer.css">
 
 
 
@@ -599,10 +600,10 @@
             <input id="cameraUpload" type="file" accept="image/*" capture="environment" hidden onchange="handleImageUpload(event)">
             <input id="fileUpload" type="file" accept=".txt,.md,.markdown,.json,.csv,.log,.js,.jsx,.ts,.tsx,.html,.css,.xml,.py,.java,.c,.cpp,.h,.hpp,.cs,.go,.rs,.sql,.sh,.yaml,.yml,.toml,.ini,.env,.pdf,.zip,image/*,video/mp4,video/webm,video/quicktime" hidden multiple onchange="handleFileUpload(event)">
             
-            <textarea id="promptInput" rows="1" placeholder="Message TruX…" oninput="handleInputChange()"></textarea>
+            <textarea id="promptInput" rows="1" placeholder="Ask TruX…" oninput="handleInputChange()"></textarea>
 
             <div class="model-picker-container" id="modelPickerContainer">
-              <button type="button" id="modelPickerBtn" class="model-picker-btn" onclick="toggleModelDropdown(event)" aria-haspopup="menu" aria-expanded="false" aria-label="Choose a model"><span id="modelPickerLabel">Quasar</span></button>
+              <button type="button" id="modelPickerBtn" class="model-picker-btn" onclick="toggleModelDropdown(event)" aria-haspopup="menu" aria-expanded="false" aria-label="Choose a model"><span id="modelPickerLabel">Quasar</span><span class="mp-think" id="modelPickerThink">Adaptive</span></button>
               <div class="model-dropdown-menu" id="modelDropdown" role="menu" aria-label="Choose a model">
                 <div class="mp-title">Model</div>
                 <div class="mp-list" id="modelList"></div>
