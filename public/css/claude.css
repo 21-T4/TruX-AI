@@ -389,8 +389,6 @@ html.theme-fade, html.theme-fade *, html.theme-fade *::before, html.theme-fade *
 @media (min-width: 1000px) and (min-height: 760px){ body.home-active:not(.chat-session-active) .composer{ margin-bottom: 10vh; } }
 .trux-home-prompt-label{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .trux-home-prompt{ padding: 10px 12px; }
-@media (max-height: 760px){ .trux-home-sequence-text{ font-size: clamp(28px, 7vw, 40px); } }
-@media (max-height: 600px){ .home-suggest{ display: none !important; } }   /* keyboard open / very short window */
 
 /* model picker lives in the typing bar */
 .bar{

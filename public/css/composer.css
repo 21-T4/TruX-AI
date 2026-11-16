@@ -38,3 +38,33 @@
   .bar .model-picker-btn{ padding: 0 10px; gap: 6px; font-size: 15px; }
 }
 @media (prefers-reduced-motion: reduce){ .bar, .bar.expanded .model-picker-container{ transition: none; animation: none; } }
+
+/* ============================================================
+   Home view follows the typing bar.
+   The suggestions float over the free space just above the bar, so only the bar's own height takes room from the greeting.
+   The greeting sits centred in the space above the bar (lifted into the upper third) and takes its size from that space,
+   so it glides higher and a little smaller as the bar grows, and back as it settles. Suggestions fade and slide away while
+   the bar is open and return when it closes. Everything runs on the same 360ms curve.
+   ============================================================ */
+body.home-active:not(.chat-session-active) #welcomeScreen.trux-home-v2{
+  container-type: size;
+  justify-content: center;
+  padding: 0 18px;
+  overflow: visible;
+}
+.trux-home-content{ gap: 0; margin-bottom: 40cqh; }
+.trux-home-sequence-text{
+  font-size: clamp(24px, min(7.5cqh, 5.4vw), 54px);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 720px){ .trux-home-sequence-text{ font-size: clamp(24px, min(5cqh, 8.5vw), 40px); } }
+
+.home-suggest{
+  position: absolute; left: 0; right: 0; bottom: 100%;
+  margin: 0 0 14px;
+  transition: opacity 260ms var(--ease), transform 360ms var(--ease-out);
+}
+body.composer-open .home-suggest{ opacity: 0; transform: translateY(14px); pointer-events: none; }
+@media (max-height: 480px){ .home-suggest{ display: none !important; } }
+@media (prefers-reduced-motion: reduce){ .home-suggest{ transition: none; } }

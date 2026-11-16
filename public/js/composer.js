@@ -113,12 +113,13 @@ function setComposerExpanded(on) {
   if (!bar || bar.classList.contains("expanded") === !!on) return;
   const from = bar.offsetHeight;
   bar.classList.toggle("expanded", !!on);
+  document.body.classList.toggle("composer-open", !!on);   // lets the home view (greeting, suggestions) follow the bar
   sizePromptInput();
   const to = bar.offsetHeight;
   bar.__truxBarAnim?.cancel();
   if (from === to || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches || !bar.animate) return;
   bar.style.overflow = "hidden";
-  const anim = bar.animate([{ height: from + "px" }, { height: to + "px" }], { duration: 240, easing: "cubic-bezier(.2,.8,.2,1)" });
+  const anim = bar.animate([{ height: from + "px" }, { height: to + "px" }], { duration: 360, easing: "cubic-bezier(.22,1,.36,1)" });
   bar.__truxBarAnim = anim;
   const done = () => { bar.style.removeProperty("overflow"); bar.__truxBarAnim = null; };
   anim.onfinish = done; anim.oncancel = done;
