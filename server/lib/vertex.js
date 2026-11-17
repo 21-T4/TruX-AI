@@ -5,6 +5,7 @@ import { getProjectId, googleApi, VERTEX_LOCATION } from './config.js';
 import { VOICE_IDS } from './personalization.js';
 
 export const MODELS = Object.freeze({
+  flashLite: 'gemini-3.5-flash-lite', // TruX-2 Spark; also writes the home-screen greeting and suggestions
   hydrogen: 'gemini-4-hydrogen',      // light and moderately complex work
   argon: 'gemini-4-argon',            // complex, multi-step and deep-research work
   image: 'gemini-3-pro-image',       // Nano Banana Pro

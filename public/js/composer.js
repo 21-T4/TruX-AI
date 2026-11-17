@@ -108,22 +108,60 @@ function sizePromptInput() {
   p.style.setProperty("height", Math.max(44, Math.min(contentHeight, 200)) + "px", "important");
   p.style.removeProperty("overflow-y");
 }
+/* Opening and closing the bar is one choreographed motion on a single curve: the bar's height, every control gliding from
+   where it was to where it lands (FLIP), and the model chip fading in or out. Nothing jumps. */
+const COMPOSER_MOTION_MS = 380;
+const COMPOSER_MOTION_EASE = "cubic-bezier(.22,1,.36,1)";
+
 function setComposerExpanded(on) {
   const bar = getEl("promptInput")?.closest(".bar");
   if (!bar || bar.classList.contains("expanded") === !!on) return;
+  const animate = !!bar.animate && !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  const movers = animate ? ["attachBtn", "voiceBtn", "actionBtn", "promptInput"].map(getEl).filter(Boolean) : [];
   const from = bar.offsetHeight;
+  const firstRects = movers.map(el => el.getBoundingClientRect());
+  const chip = getEl("modelPickerContainer");
+  const ghost = animate && !on && chip && chip.offsetParent ? chip.cloneNode(true) : null;   // the chip fades out instead of vanishing
+  const chipRect = ghost ? chip.getBoundingClientRect() : null;
+  const barRect = bar.getBoundingClientRect();
+
   bar.classList.toggle("expanded", !!on);
   document.body.classList.toggle("composer-open", !!on);   // lets the home view (greeting, suggestions) follow the bar
   sizePromptInput();
   const to = bar.offsetHeight;
-  bar.__truxBarAnim?.cancel();
-  if (from === to || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches || !bar.animate) return;
+  (bar.__truxMotion || []).forEach(a => { try { a.cancel(); } catch {} });
+  bar.__truxMotion = [];
+  if (!animate) return;
+
+  const opts = { duration: COMPOSER_MOTION_MS, easing: COMPOSER_MOTION_EASE };
+  const running = bar.__truxMotion;
   bar.style.overflow = "hidden";
-  const anim = bar.animate([{ height: from + "px" }, { height: to + "px" }], { duration: 360, easing: "cubic-bezier(.22,1,.36,1)" });
-  bar.__truxBarAnim = anim;
-  const done = () => { bar.style.removeProperty("overflow"); bar.__truxBarAnim = null; };
-  anim.onfinish = done; anim.oncancel = done;
+  if (from !== to) running.push(bar.animate([{ height: from + "px" }, { height: to + "px" }], opts));
+  movers.forEach((el, i) => {
+    const last = el.getBoundingClientRect(), first = firstRects[i];
+    const dx = first.left - last.left, dy = first.top - last.top;
+    if (Math.abs(dx) < .5 && Math.abs(dy) < .5) return;
+    running.push(el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], opts));
+  });
+  if (ghost) {
+    ghost.removeAttribute("id");
+    ghost.querySelectorAll("[id]").forEach(n => n.removeAttribute("id"));
+    ghost.setAttribute("aria-hidden", "true");
+    if (getComputedStyle(bar).position === "static") bar.style.position = "relative";
+    Object.assign(ghost.style, { position: "absolute", left: (chipRect.left - barRect.left) + "px", top: (chipRect.top - barRect.top) + "px", margin: "0", pointerEvents: "none", display: "block", animation: "none" });
+    bar.appendChild(ghost);
+    running.push(ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: "ease-out", fill: "forwards" }));
+  }
+  const finish = () => {
+    if (bar.__truxMotion !== running) return;
+    bar.__truxMotion = null;
+    bar.style.removeProperty("overflow");
+    bar.querySelectorAll(":scope > .model-picker-container[aria-hidden]").forEach(n => n.remove());
+    if (bar.style.position === "relative") bar.style.removeProperty("position");
+  };
+  Promise.allSettled(running.map(a => a.finished)).then(finish);
 }
+
 function syncComposerExpanded() { setComposerExpanded(composerWantsExpanded()); }
 
 function handleInputChange() {
@@ -150,6 +188,8 @@ function handleInputChange() {
       icon.innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>';
       icon.style.opacity = "1";
       icon.style.transform = "translateY(0) scale(1)";
+      btn.dataset.iconShown = "stop";
+      btn.__iconPending = null;
     }
   } else if (btn) {
     const wasStopping = btn.classList.contains("stop");
@@ -163,8 +203,11 @@ function handleInputChange() {
     btn.title = hasDraft ? "Send message" : (liveActive ? "Stop Live assistant" : "Start Live assistant");
     btn.setAttribute("aria-label", btn.title);
     const icon = getEl("btnIcon");
-    if (icon && btn.dataset.actionMode !== nextMode) {
+    /* Repaint whenever the icon on screen is not the one this state needs (not only when the mode changed), so a stale
+       icon left by a finished turn, an error or a mode switch always corrects itself. */
+    if (icon && (btn.dataset.actionMode !== nextMode || (btn.dataset.iconShown !== nextMode && btn.__iconPending !== nextMode))) {
       btn.dataset.actionMode = nextMode;
+      btn.__iconPending = nextMode;
       const icons = {
         send: '<path fill="currentColor" d="M2 21 23 12 2 3 2 10l15 2-15 2z"/>',
         live: '<path d="M6 9v6 M12 4v16 M18 9v6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>',
@@ -173,9 +216,11 @@ function handleInputChange() {
       icon.style.opacity = "0";
       icon.style.transform = nextMode === "send" ? "translateY(3px) scale(.78)" : "translateY(-3px) scale(.78)";
       requestAnimationFrame(() => {
-        if (!btn.isConnected || btn.dataset.actionMode !== nextMode) return;
+        if (!btn.isConnected || btn.dataset.actionMode !== nextMode) { if (btn.__iconPending === nextMode) btn.__iconPending = null; return; }
         icon.innerHTML = icons[nextMode];
+        btn.dataset.iconShown = nextMode;
         requestAnimationFrame(() => {
+          if (btn.__iconPending === nextMode) btn.__iconPending = null;
           if (!btn.isConnected || btn.dataset.actionMode !== nextMode) return;
           icon.style.opacity = "1";
           icon.style.transform = "translateY(0) scale(1)";

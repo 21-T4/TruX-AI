@@ -22,6 +22,7 @@ import { runAgent } from '../chat/agent.js';
 
 const KEY_RE = /^[-_A-Za-z0-9]{6,40}$/;
 const MODES = new Set(['chat', 'deep-research', 'video']);
+const THINKING_LEVELS = ['auto', 'minimal', 'low', 'medium', 'high'];
 const INLINE_MIME = /^(image\/(png|jpeg|webp|heic|heif|gif)|audio\/|video\/|application\/pdf$)/;
 
 function queryTokens(query) {
@@ -175,9 +176,13 @@ async function chat(request, { env, url }) {
     /* routeModel is only used to size the reasoning of Quasar and to spot small talk; it never picks the model. */
     const route = routeModel({ message, hasMedia: attachments.length > 0, attachmentCount: attachments.length, thinking: 'auto', mode });
     const model = ownerModel || (mode === 'deep-research' ? resolveModel('aegis').vertex : picked.vertex);
+    /* Every model offers five thinking levels; the person's choice wins, otherwise the model's own default.
+       Adaptive ('auto') lets the router size the reasoning for each question. */
+    const chosenLevel = THINKING_LEVELS.includes(body.thinkingLevel) ? body.thinkingLevel : '';
+    const level = chosenLevel || picked.thinking;
     thinking = mode === 'deep-research' ? (thinkingChoice === 'auto' ? 'medium' : thinkingChoice)
-      : picked.thinking === 'auto' ? route.thinking : picked.thinking;
-    const simple = picked.thinking === 'minimal' ? false : route.simple;
+      : level === 'auto' ? route.thinking : level;
+    const simple = level === 'minimal' || (chosenLevel && chosenLevel !== picked.thinking) ? false : route.simple;
     writer.update({ model: picked.id });
     if (process.env.TRUX_LOG_ROUTING) console.log('[route]', route.tier, 'score', route.score, route.reasons.join(', '));
     send({ type: 'status', status: mode === 'deep-research' ? 'Researching…' : 'Thinking…', model: picked.id });
