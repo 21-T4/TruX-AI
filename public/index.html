@@ -606,6 +606,14 @@
               <div class="model-dropdown-menu" id="modelDropdown" role="menu" aria-label="Choose a model">
                 <div class="mp-title">Model</div>
                 <div class="mp-list" id="modelList"></div>
+                <div class="mp-think-section" id="thinkSection">
+                  <button type="button" class="mp-think-head" id="thinkHead" onclick="toggleThinkingLevels(event)" aria-expanded="false" aria-controls="thinkList">
+                    <span class="mp-think-title">Thinking level</span>
+                    <span class="mp-think-current" id="thinkCurrent">Adaptive</span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5"/></svg>
+                  </button>
+                  <div class="mp-think-body"><div class="mp-list mp-think-list" id="thinkList" role="menu" aria-label="Thinking level"></div></div>
+                </div>
                 <p class="mp-foot" id="modelFootNote" hidden></p>
               </div>
             </div>

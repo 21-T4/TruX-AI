@@ -15,10 +15,10 @@ let activeDrain = null;      /* a finished answer that is still being revealed *
 
 function setComposerGenerating(on) {
   isGenerating = !!on;
-  const icon = getEl("btnIcon");
   const btn = getEl("actionBtn");
-  if (icon) icon.innerHTML = on ? TRUX_STOP_ICON : TRUX_SEND_ICON;
-  if (btn) { btn.classList.toggle("stop", !!on); if (on) btn.classList.remove("ready"); }
+  /* The icon is painted only by handleInputChange(), from the current state. Writing a send arrow here used to leave it
+     on screen when the button was already in "voice" mode, because handleInputChange() saw no change and skipped the repaint. */
+  if (btn) { btn.classList.toggle("stop", !!on); if (on) btn.classList.remove("ready"); if (!on) btn.dataset.iconShown = ""; }
   handleInputChange();
 }
 
@@ -298,6 +298,7 @@ async function sendPromptImpl() {
     attachments,
     thinking: thinkingParam(),
     model: truxSelectedModel,
+    thinkingLevel: truxThinkingFor(truxSelectedModel),
     location: location ? { latitude: location.latitude ?? location.lat, longitude: location.longitude ?? location.lng } : null,
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
     incognito,

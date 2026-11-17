@@ -72,3 +72,20 @@
   50%{ filter: brightness(1.18); box-shadow: 0 0 0 1px rgba(168,120,255,.42), 0 0 14px rgba(168,120,255,.6); }
 }
 @media (prefers-reduced-motion: reduce){ .edge-tag{ animation: none; } }
+
+/* Thinking level: a row under the model list showing the current level; it opens the five choices. */
+.mp-think-section{ margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
+.mp-think-head{
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 11px 12px; border-radius: 12px; text-align: left; color: var(--txt);
+}
+@media (hover: hover){ .mp-think-head:hover{ background: var(--bg-3); } }
+.mp-think-title{ flex: 1; font: 600 14.5px/1.2 var(--font-ui); }
+.mp-think-current{ font: 400 13.5px/1 var(--font-ui); color: var(--txt-3); }
+.mp-think-head svg{ width: 18px; height: 18px; flex: none; fill: none; stroke: var(--txt-3); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform 320ms var(--ease-out); }
+.mp-think-section.open .mp-think-head svg{ transform: rotate(180deg); }
+.mp-think-body{ display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows 320ms var(--ease-out), opacity 220ms var(--ease); }
+.mp-think-section.open .mp-think-body{ grid-template-rows: 1fr; opacity: 1; }
+.mp-think-list{ min-height: 0; overflow: hidden; }
+.mp-level{ padding: 9px 12px; }
+@media (prefers-reduced-motion: reduce){ .mp-think-body, .mp-think-head svg{ transition: none; } }

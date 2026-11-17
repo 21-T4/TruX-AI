@@ -52,7 +52,7 @@ body.home-active:not(.chat-session-active) #welcomeScreen.trux-home-v2{
   padding: 0 18px;
   overflow: visible;
 }
-.trux-home-content{ gap: 0; margin-bottom: 40cqh; }
+.trux-home-content{ gap: 0; margin-bottom: 34cqh; }
 .trux-home-sequence-text{
   font-size: clamp(24px, min(7.5cqh, 5.4vw), 54px);
   text-wrap: balance;

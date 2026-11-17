@@ -4,12 +4,35 @@
  * /api/usage returns the plan, which models are locked and how many tokens were used today. It is cached
  * briefly and refreshed after each turn, so the picker and Settings → Usage & limits always agree. */
 const TRUX_MODELS = [
-  { id: "spark",  name: "TruX-2 Spark",  short: "Spark",  description: "Fastest answers, no reasoning", think: "Instant" },
-  { id: "quasar", name: "TruX-2 Quasar", short: "Quasar", description: "Everyday tasks, quick and capable", think: "Adaptive" },
-  { id: "aegis",  name: "TruX-2 Aegis",  short: "Aegis",  description: "Complex reasoning and multi-step work", think: "Extended" },
-  { id: "oracle", name: "TruX-2 Oracle", short: "Oracle", description: "Toughest problems, frontier reasoning", think: "Max", plan: "edge" }
+  { id: "spark",  name: "TruX-2 Spark",  short: "Spark",  description: "Fastest answers, no reasoning", thinking: "minimal" },
+  { id: "quasar", name: "TruX-2 Quasar", short: "Quasar", description: "Everyday tasks, quick and capable", thinking: "auto" },
+  { id: "aegis",  name: "TruX-2 Aegis",  short: "Aegis",  description: "Complex reasoning and multi-step work", thinking: "medium" },
+  { id: "oracle", name: "TruX-2 Oracle", short: "Oracle", description: "Toughest problems, frontier reasoning", thinking: "high", plan: "edge" }
 ];
 const TRUX_DEFAULT_MODEL = "quasar";
+/* Thinking levels every model offers. The level you pick is remembered per model; each model starts at its own default. */
+const TRUX_THINKING_LEVELS = [
+  { id: "auto",    label: "Adaptive", description: "Thinks only as much as each question needs" },
+  { id: "minimal", label: "Instant",  description: "Answers right away, no thinking" },
+  { id: "low",     label: "Light",    description: "A little thinking for quick, solid answers" },
+  { id: "medium",  label: "Extended", description: "More thinking for multi-step work" },
+  { id: "high",    label: "Max",      description: "Deepest thinking, slowest answers" }
+];
+const truxThinkingLevelById = id => TRUX_THINKING_LEVELS.find(l => l.id === id) || null;
+
+/** The level in use for a model: what you chose for it, otherwise the model's own default. */
+function truxThinkingFor(modelId) {
+  const model = truxModelById(modelId);
+  const saved = store.getItem("trux_thinking_" + modelId);
+  return truxThinkingLevelById(saved) ? saved : (model?.thinking || "auto");
+}
+function setTruxThinking(modelId, level) {
+  if (!truxThinkingLevelById(level)) return;
+  if (level === truxModelById(modelId)?.thinking) store.removeItem("trux_thinking_" + modelId);
+  else store.setItem("trux_thinking_" + modelId, level);
+  renderModelPicker();
+  try { if (typeof renderSettingsGeneral === "function") renderSettingsGeneral(); } catch {}
+}
 const TRUX_FALLBACK_LIMITS = { quasar: 100000, aegis: 50000 };   // shown until the server answers
 let truxUsage = null;                 // last /api/usage payload
 let truxUsageAt = 0;
@@ -109,8 +132,10 @@ function renderModelPicker() {
   const label = getEl("modelPickerLabel");
   const model = truxModelById(truxSelectedModel) || truxModelById(TRUX_DEFAULT_MODEL);
   if (label) label.textContent = model.short;
+  const level = truxThinkingFor(model.id);
   const think = getEl("modelPickerThink");
-  if (think) think.textContent = model.think || "";
+  if (think) think.textContent = truxThinkingLevelById(level)?.label || "";
+  renderThinkingLevels(model.id, level);
   const list = getEl("modelList");
   if (!list) return;
   const frag = document.createDocumentFragment();
@@ -168,6 +193,37 @@ function renderModelPicker() {
     foot.hidden = !limited;
     if (limited) foot.textContent = "Quasar and Aegis have daily token limits that include thinking. Resets at " + truxResetLabel() + ".";
   }
+}
+
+/* "Thinking level" under the model list: one row showing the current level that opens the five choices. */
+function renderThinkingLevels(modelId, level) {
+  const current = getEl("thinkCurrent");
+  if (current) current.textContent = truxThinkingLevelById(level)?.label || "";
+  const list = getEl("thinkList");
+  if (!list) return;
+  const frag = document.createDocumentFragment();
+  for (const l of TRUX_THINKING_LEVELS) {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "mp-item mp-level" + (l.id === level ? " active" : "");
+    row.setAttribute("role", "menuitemradio");
+    row.setAttribute("aria-checked", String(l.id === level));
+    row.innerHTML = '<span class="mp-copy"><span class="mp-name"></span><span class="mp-desc"></span></span><span class="mp-side"><svg class="mp-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>';
+    row.querySelector(".mp-name").textContent = l.label + (l.id === truxModelById(modelId)?.thinking ? " · default" : "");
+    row.querySelector(".mp-desc").textContent = l.description;
+    row.addEventListener("click", event => { event.stopPropagation(); setTruxThinking(modelId, l.id); });
+    frag.appendChild(row);
+  }
+  list.replaceChildren(frag);
+}
+
+function toggleThinkingLevels(event) {
+  event?.stopPropagation();
+  const section = getEl("thinkSection");
+  if (!section) return;
+  const open = section.classList.toggle("open");
+  getEl("thinkHead")?.setAttribute("aria-expanded", String(open));
+  if (open) setTimeout(() => getEl("thinkList")?.scrollIntoView({ block: "nearest", behavior: "smooth" }), 120);
 }
 
 function selectModel(id, event) {
