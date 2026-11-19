@@ -603,19 +603,6 @@
 
             <div class="model-picker-container" id="modelPickerContainer">
               <button type="button" id="modelPickerBtn" class="model-picker-btn" onclick="toggleModelDropdown(event)" aria-haspopup="menu" aria-expanded="false" aria-label="Choose a model"><span id="modelPickerLabel">Quasar</span><span class="mp-think" id="modelPickerThink">Adaptive</span></button>
-              <div class="model-dropdown-menu" id="modelDropdown" role="menu" aria-label="Choose a model">
-                <div class="mp-title">Model</div>
-                <div class="mp-list" id="modelList"></div>
-                <div class="mp-think-section" id="thinkSection">
-                  <button type="button" class="mp-think-head" id="thinkHead" onclick="toggleThinkingLevels(event)" aria-expanded="false" aria-controls="thinkList">
-                    <span class="mp-think-title">Thinking level</span>
-                    <span class="mp-think-current" id="thinkCurrent">Adaptive</span>
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5"/></svg>
-                  </button>
-                  <div class="mp-think-body"><div class="mp-list mp-think-list" id="thinkList" role="menu" aria-label="Thinking level"></div></div>
-                </div>
-                <p class="mp-foot" id="modelFootNote" hidden></p>
-              </div>
             </div>
             <button class="send-btn live" id="actionBtn" data-action-mode="live" onclick="handleActionButton()" title="Start Live assistant" aria-label="Start Live assistant">
               <svg id="btnIcon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
@@ -629,6 +616,40 @@
     </main>
   </div>
 
+
+  <!-- Model selection: a full page on phones, a split-screen dialog on larger screens. "Thinking level" opens a subpage. -->
+  <div class="mpage" id="modelPage" role="dialog" aria-modal="true" aria-label="Choose a model" hidden>
+    <div class="mpage-scrim" onclick="closeModelDropdown()"></div>
+    <div class="mpage-card" id="modelPageCard">
+      <section class="mpage-pane mpage-models" id="modelsPane" aria-label="Models">
+        <header class="mpage-head">
+          <span class="mpage-title">Model</span>
+          <button type="button" class="mpage-x" onclick="closeModelDropdown()" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </header>
+        <div class="mpage-body">
+          <div class="mp-list" id="modelList" role="menu" aria-label="Models"></div>
+          <button type="button" class="mp-think-head" id="thinkHead" onclick="openThinkingPage(event)" aria-expanded="false" aria-controls="thinkPane">
+            <span class="mp-think-title">Thinking level</span>
+            <span class="mp-think-current" id="thinkCurrent">Adaptive</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+          </button>
+          <p class="mp-foot" id="modelFootNote" hidden></p>
+        </div>
+      </section>
+      <section class="mpage-pane mpage-think" id="thinkPane" aria-label="Thinking level">
+        <header class="mpage-head">
+          <button type="button" class="mpage-back" onclick="closeThinkingPage()" aria-label="Back to models"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
+          <span class="mpage-title">Thinking level</span>
+          <button type="button" class="mpage-x" onclick="closeModelDropdown()" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </header>
+        <div class="mpage-body">
+          <p class="mpage-sub" id="thinkFor">How much TruX thinks before it answers.</p>
+          <div class="mp-list" id="thinkList" role="menu" aria-label="Thinking level"></div>
+        </div>
+        <div class="mpage-empty" id="thinkEmpty"><b>Thinking level</b><span>Choose "Thinking level" to set how long this model thinks before it answers.</span></div>
+      </section>
+    </div>
+  </div>
 
   <div class="modal trux-consent-modal" id="locationConsentModal" aria-label="Location access">
     <div class="consent-card">

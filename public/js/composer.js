@@ -96,7 +96,7 @@ function composerHasDraft() {
 }
 function composerWantsExpanded() {
   const p = getEl("promptInput");
-  return document.activeElement === p || composerHasDraft() || getEl("modelDropdown")?.classList.contains("open");
+  return document.activeElement === p || composerHasDraft() || getEl("modelPage")?.classList.contains("open");
 }
 function sizePromptInput() {
   const p = getEl("promptInput");

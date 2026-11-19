@@ -15,7 +15,7 @@ import { notifyUser } from '../lib/push.js';
 import { addDailyTokens, addUsage, checkDailyTokens, checkQuota, limitFor } from '../lib/usage.js';
 import { COUNT_INPUT_TOKENS, canUseModel, resolveModel } from '../lib/models.js';
 import { generateOnce, MODELS, QUICK_THINKING, routeModel } from '../lib/vertex.js';
-import { historyToContents, loadTurnContext, sanitizeClientHistory } from '../chat/context.js';
+import { dropReplacedTurns, historyToContents, loadTurnContext, sanitizeClientHistory, withoutRepeatedPrompt } from '../chat/context.js';
 import { MessageWriter } from '../chat/writer.js';
 import { Toolbox } from '../chat/tools.js';
 import { runAgent } from '../chat/agent.js';
@@ -123,7 +123,10 @@ async function chat(request, { env, url }) {
   const location = body.location && Number.isFinite(+body.location.latitude) && Number.isFinite(+body.location.longitude)
     ? { latitude: +body.location.latitude, longitude: +body.location.longitude } : null;
 
-  const contextPromise = loadTurnContext({ env, uid: user.uid, chatId, incognito });
+  /* Resend / Regenerate name the saved message they replace; it and everything after it leave the history first. */
+  const replaceFrom = !incognito && KEY_RE.test(String(body.replaceFrom || '')) ? String(body.replaceFrom) : '';
+  const contextPromise = (replaceFrom ? dropReplacedTurns(user.uid, chatId, replaceFrom).catch(() => {}) : Promise.resolve())
+    .then(() => loadTurnContext({ env, uid: user.uid, chatId, incognito }));
   const controller = new AbortController();
   // Incognito turns are not stored, so they stop with the connection.
   if (incognito) request.signal?.addEventListener('abort', () => controller.abort(), { once: true });
@@ -166,7 +169,7 @@ async function chat(request, { env, url }) {
       personalizationPrompt(ctx.personalization, 'chat')
     ].filter(Boolean).join('\n\n');
 
-    const history = incognito ? sanitizeClientHistory(body.history) : ctx.history;
+    const history = withoutRepeatedPrompt(incognito ? sanitizeClientHistory(body.history) : ctx.history, message);
     const contents = [
       ...historyToContents(history, env.TRUX_BUCKET_NAME),
       { role: 'user', parts: await userParts({ uid: user.uid, bucket: env.TRUX_BUCKET_NAME, message, attachments }) }

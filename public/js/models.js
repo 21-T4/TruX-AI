@@ -201,6 +201,8 @@ function renderThinkingLevels(modelId, level) {
   if (current) current.textContent = truxThinkingLevelById(level)?.label || "";
   const list = getEl("thinkList");
   if (!list) return;
+  const forModel = getEl("thinkFor");
+  if (forModel) forModel.textContent = "How long " + (truxModelById(modelId)?.name || "TruX") + " thinks before it answers.";
   const frag = document.createDocumentFragment();
   for (const l of TRUX_THINKING_LEVELS) {
     const row = document.createElement("button");
@@ -211,20 +213,46 @@ function renderThinkingLevels(modelId, level) {
     row.innerHTML = '<span class="mp-copy"><span class="mp-name"></span><span class="mp-desc"></span></span><span class="mp-side"><svg class="mp-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>';
     row.querySelector(".mp-name").textContent = l.label + (l.id === truxModelById(modelId)?.thinking ? " · default" : "");
     row.querySelector(".mp-desc").textContent = l.description;
-    row.addEventListener("click", event => { event.stopPropagation(); setTruxThinking(modelId, l.id); });
+    row.addEventListener("click", event => {
+      event.stopPropagation();
+      setTruxThinking(modelId, l.id);
+      /* On a phone the subpage is a full page: go back to the model page once a level is chosen. */
+      if (!truxSplitLayout()) setTimeout(() => closeThinkingPage(), 160);
+    });
     frag.appendChild(row);
   }
   list.replaceChildren(frag);
 }
 
-function toggleThinkingLevels(event) {
+/* The model page is split screen on wide displays (models left, thinking level right) and a stack of pages on phones. */
+function truxSplitLayout() { return window.matchMedia("(min-width: 821px)").matches; }
+
+/* "Thinking level" opens its own subpage: it slides in over the model list on phones and fills the right half on wide screens. */
+function openThinkingPage(event) {
   event?.stopPropagation();
-  const section = getEl("thinkSection");
-  if (!section) return;
-  const open = section.classList.toggle("open");
-  getEl("thinkHead")?.setAttribute("aria-expanded", String(open));
-  if (open) setTimeout(() => getEl("thinkList")?.scrollIntoView({ block: "nearest", behavior: "smooth" }), 120);
+  const card = getEl("modelPageCard");
+  if (!card) return;
+  card.classList.add("think-open");
+  getEl("thinkHead")?.setAttribute("aria-expanded", "true");
+  setTimeout(() => (getEl("thinkList")?.querySelector(".mp-item.active") || getEl("thinkList")?.querySelector(".mp-item"))?.focus({ preventScroll: true }), 60);
 }
+function closeThinkingPage({ instant = false } = {}) {
+  const card = getEl("modelPageCard");
+  if (!card) return;
+  const was = card.classList.contains("think-open");
+  card.classList.toggle("instant", instant);
+  card.classList.remove("think-open");
+  getEl("thinkHead")?.setAttribute("aria-expanded", "false");
+  if (instant) requestAnimationFrame(() => card.classList.remove("instant"));
+  else if (was) getEl("thinkHead")?.focus({ preventScroll: true });
+}
+/* Escape steps back from the subpage first, then closes the page. */
+document.addEventListener("keydown", event => {
+  if (event.key !== "Escape" || getEl("modelPage")?.hidden !== false) return;
+  event.stopPropagation();
+  if (getEl("modelPageCard")?.classList.contains("think-open") && !truxSplitLayout()) closeThinkingPage();
+  else closeModelDropdown();
+}, true);
 
 function selectModel(id, event) {
   event?.stopPropagation();

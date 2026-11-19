@@ -29,14 +29,9 @@
   scrim.setAttribute("aria-hidden", "true");
   document.body.appendChild(scrim);
 
-  /* a fixed menu inside the (transformed) composer would be sized against the bar, not the screen */
-  const dd = document.getElementById("modelDropdown");
-  if (dd && dd.parentElement !== document.body) document.body.appendChild(dd);
-
   const menus = () => [
     { el: document.getElementById("attachmentMenu"), open: el => el.classList.contains("open") },
     { el: document.getElementById("contextMenu"), open: el => el.style.display === "block" },
-    { el: document.getElementById("modelDropdown"), open: el => el.classList.contains("open") },
   ].filter(m => m.el);
 
   function sync() {
@@ -48,7 +43,6 @@
   function closeAll() {
     try { if (typeof closeAttachmentMenu === "function") closeAttachmentMenu(); } catch {}
     try { if (typeof closeChatContextMenu === "function") closeChatContextMenu(); } catch {}
-    try { if (typeof closeModelDropdown === "function") closeModelDropdown(); } catch {}
     sync();
   }
 
@@ -99,7 +93,6 @@
     el.addEventListener("touchcancel", end, { passive: true });
   }
   bindSwipe(document.getElementById("contextMenu"), () => { try { closeChatContextMenu(); } catch {} });
-  bindSwipe(document.getElementById("modelDropdown"), () => { try { closeModelDropdown(); } catch {} });
 
   const observer = new MutationObserver(sync);
   menus().forEach(m => observer.observe(m.el, { attributes: true, attributeFilter: ["class", "style"] }));

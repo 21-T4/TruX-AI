@@ -162,6 +162,7 @@ function attachUserMessageActions(userRow, messageIndex, promptText) {
     // Replace this turn and any later turns, then submit the same prompt
     // again so the transcript never contains duplicate user messages.
     
+    pendingReplaceFrom = String(message.id || "");
     session.messages.splice(index);
     saveChatSessions();
     let node = userRow;

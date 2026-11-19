@@ -1,21 +1,6 @@
 /* Model picker (message bar) and the Edge label. Loads after claude.css. */
 .model-picker-btn #modelPickerLabel{ font-weight: 500; }
 
-.model-dropdown-menu{
-  padding: 8px;
-  gap: 2px;
-  width: min(372px, calc(100vw - 20px));
-  border-radius: 18px;
-  background: var(--bg-2);
-  border: 1px solid var(--line-2);
-  box-shadow: var(--shadow-3);
-}
-.mp-title{
-  padding: 8px 12px 6px;
-  font: 600 12px/1 var(--font-ui);
-  letter-spacing: .01em;
-  color: var(--txt-3);
-}
 .mp-list{ display: flex; flex-direction: column; gap: 2px; }
 .mp-item{
   display: flex; align-items: center; gap: 12px;
@@ -73,19 +58,73 @@
 }
 @media (prefers-reduced-motion: reduce){ .edge-tag{ animation: none; } }
 
-/* Thinking level: a row under the model list showing the current level; it opens the five choices. */
-.mp-think-section{ margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
+/* ---------- Model selection page ----------
+   Phones: a full page; "Thinking level" slides in as a subpage on top of it.
+   Wide screens: a split-screen dialog, models on the left and the thinking-level subpage on the right. */
+body.model-page-open{ overflow: hidden; }
+.mpage{ position: fixed; inset: 0; z-index: 6000; display: flex; align-items: stretch; justify-content: center; }
+.mpage[hidden]{ display: none; }
+.mpage-scrim{ position: absolute; inset: 0; background: rgba(0,0,0,.5); opacity: 0; transition: opacity var(--dur-2) var(--ease); }
+.mpage.open .mpage-scrim{ opacity: 1; }
+.mpage-card{
+  position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--bg-2); color: var(--txt);
+  transform: translateY(24px); opacity: 0; transition: transform var(--dur-3) var(--ease-out), opacity var(--dur-2) var(--ease);
+}
+.mpage.open .mpage-card{ transform: none; opacity: 1; }
+.mpage-pane{
+  position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg-2);
+  transition: transform var(--dur-3) var(--ease-out), opacity var(--dur-2) var(--ease), visibility 0s linear;
+}
+.mpage-think{ transform: translateX(100%); visibility: hidden; transition-delay: 0s, 0s, var(--dur-3); }
+.mpage-card.think-open .mpage-think{ transform: none; visibility: visible; transition-delay: 0s; }
+.mpage-card.think-open .mpage-models{ transform: translateX(-24%); opacity: .35; pointer-events: none; }
+.mpage-card.instant .mpage-pane{ transition: none !important; }
+.mpage-head{
+  flex: none; display: flex; align-items: center; gap: 6px;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 10px; border-bottom: 1px solid var(--line);
+}
+.mpage-title{ flex: 1; font: 600 16px/1.2 var(--font-ui); padding: 0 6px; }
+.mpage-x, .mpage-back{ display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; color: var(--txt-2); }
+@media (hover: hover){ .mpage-x:hover, .mpage-back:hover{ background: var(--bg-3); color: var(--txt); } }
+.mpage-x svg, .mpage-back svg{ width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.mpage-body{ flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 10px 12px calc(16px + var(--safe-b)); }
+.mpage-sub{ margin: 4px 12px 10px; font: 400 13.5px/1.45 var(--font-ui); color: var(--txt-3); }
+.mpage-empty{ display: none; }
+
+/* the "Thinking level" row under the model list opens the subpage */
 .mp-think-head{
-  display: flex; align-items: center; gap: 10px; width: 100%;
-  padding: 11px 12px; border-radius: 12px; text-align: left; color: var(--txt);
+  display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 8px; padding: 13px 12px;
+  border-radius: 12px; border: 1px solid var(--line-2); text-align: left; color: var(--txt);
 }
 @media (hover: hover){ .mp-think-head:hover{ background: var(--bg-3); } }
+.mp-think-head[aria-expanded="true"]{ background: var(--bg-3); }
 .mp-think-title{ flex: 1; font: 600 14.5px/1.2 var(--font-ui); }
 .mp-think-current{ font: 400 13.5px/1 var(--font-ui); color: var(--txt-3); }
-.mp-think-head svg{ width: 18px; height: 18px; flex: none; fill: none; stroke: var(--txt-3); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform 320ms var(--ease-out); }
-.mp-think-section.open .mp-think-head svg{ transform: rotate(180deg); }
-.mp-think-body{ display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows 320ms var(--ease-out), opacity 220ms var(--ease); }
-.mp-think-section.open .mp-think-body{ grid-template-rows: 1fr; opacity: 1; }
-.mp-think-list{ min-height: 0; overflow: hidden; }
-.mp-level{ padding: 9px 12px; }
-@media (prefers-reduced-motion: reduce){ .mp-think-body, .mp-think-head svg{ transition: none; } }
+.mp-think-head svg{ width: 18px; height: 18px; flex: none; fill: none; stroke: var(--txt-3); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.mp-level{ padding: 12px; }
+.mp-foot{ border-top: 0; margin-top: 4px; }
+
+@media (min-width: 821px){
+  .mpage{ align-items: center; padding: 24px; }
+  .mpage-card{
+    width: min(820px, 100%); height: min(560px, calc(100dvh - 48px)); border-radius: 22px;
+    border: 1px solid var(--line-2); box-shadow: var(--shadow-3);
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .mpage-pane{ position: relative; inset: auto; transition: none; }
+  .mpage-think{ transform: none; visibility: visible; border-left: 1px solid var(--line); }
+  .mpage-card.think-open .mpage-models{ transform: none; opacity: 1; pointer-events: auto; }
+  .mpage-back{ display: none; }
+  .mpage-models .mpage-head{ padding-top: 10px; }
+  /* before "Thinking level" is clicked the right half only says what it is for */
+  .mpage-think .mpage-head, .mpage-think .mpage-body{ opacity: 0; pointer-events: none; transition: opacity var(--dur-2) var(--ease); }
+  .mpage-card.think-open .mpage-think .mpage-head, .mpage-card.think-open .mpage-think .mpage-body{ opacity: 1; pointer-events: auto; }
+  .mpage-think .mpage-head .mpage-x{ visibility: hidden; }
+  .mpage-empty{
+    position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    padding: 32px; text-align: center; color: var(--txt-3); font: 400 13.5px/1.5 var(--font-ui); transition: opacity var(--dur-2) var(--ease);
+  }
+  .mpage-empty b{ font: 600 15px/1.2 var(--font-ui); color: var(--txt-2); }
+  .mpage-card.think-open .mpage-empty{ opacity: 0; pointer-events: none; }
+}
+@media (prefers-reduced-motion: reduce){ .mpage-card, .mpage-pane, .mpage-scrim{ transition: none; } }

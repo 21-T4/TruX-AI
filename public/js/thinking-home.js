@@ -73,6 +73,7 @@ function regenerateLast() {
   let lastUser = [...msgs].reverse().find(m => m.role === "user");
   if(!lastUser?.text) return toast("Nothing to regenerate.");
   while(msgs.length && msgs[msgs.length - 1].role !== "user") msgs.pop();
+  pendingReplaceFrom = String(msgs[msgs.length - 1]?.id || "");
   msgs.pop();
   saveChatSessions();
   let rows = getActiveChatContainer().querySelectorAll(".row");

@@ -25,7 +25,7 @@ export const TRUX_MODELS = Object.freeze({
   oracle: Object.freeze({
     id: 'oracle', name: 'TruX-2 Oracle', short: 'Oracle',
     description: 'Toughest problems, frontier reasoning',
-    vertex: 'gemini-4-carbon', thinking: 'high', dailyTokens: null, plan: 'edge'
+    vertex: 'gemini-4-neon', thinking: 'high', dailyTokens: null, plan: 'edge'
   })
 });
 
