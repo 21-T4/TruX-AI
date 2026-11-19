@@ -26,6 +26,17 @@ async function connectedApps(env, uid) {
   }
 }
 
+/* Removes a message and everything after it from a saved chat. Resend and Regenerate replace a turn, so the old
+   message and its reply must not stay behind as history while the same message is sent again (the model would read
+   it twice). Message ids are Realtime Database push keys, which sort in the order they were written. */
+export async function dropReplacedTurns(uid, chatId, fromId) {
+  const ref = (await getDb()).ref(`users/${uid}/messages/${chatId}`);
+  const snapshot = await ref.orderByKey().startAt(fromId).get();
+  const updates = {};
+  snapshot.forEach(child => { updates[child.key] = null; });
+  if (Object.keys(updates).length) await ref.update(updates);
+}
+
 async function loadHistory(uid, chatId) {
   const snapshot = await (await getDb()).ref(`users/${uid}/messages/${chatId}`).orderByKey().limitToLast(HISTORY_MESSAGES).get();
   const items = [];
@@ -48,6 +59,16 @@ export function sanitizeClientHistory(history) {
 }
 
 /** Converts stored messages into Gemini contents; recent images go by gs:// reference. */
+/* A user message that is already the last thing in the history, with no reply after it, is the unanswered first
+   attempt of the message being sent now (the answer failed or was stopped). Sending it again must not make the model
+   read the same message twice. */
+export function withoutRepeatedPrompt(history, message) {
+  const last = history[history.length - 1];
+  const text = String(message || '').trim();
+  if (last && last.role === 'user' && text && last.text.trim() === text) return history.slice(0, -1);
+  return history;
+}
+
 export function historyToContents(messages, bucket) {
   const out = [];
   let budget = HISTORY_CHARS;

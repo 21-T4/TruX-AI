@@ -204,7 +204,13 @@ async function readSseStream(response, onEvent, signal) {
   }
 }
 
+/* Set by Resend / Regenerate: the saved message this send replaces. The server drops it and its reply from the chat's
+   history so the model does not see the same message twice. */
+let pendingReplaceFrom = "";
+
 async function sendPromptImpl() {
+  const replaceFrom = pendingReplaceFrom;
+  pendingReplaceFrom = "";
   try { if (typeof navigator.vibrate === "function") navigator.vibrate(0); } catch {}
   if (!truxAuthStateReady) {
     const restored = await waitForTruxAuthState();
@@ -302,6 +308,7 @@ async function sendPromptImpl() {
     location: location ? { latitude: location.latitude ?? location.lat, longitude: location.longitude ?? location.lng } : null,
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
     incognito,
+    replaceFrom: !incognito && replaceFrom ? replaceFrom : undefined,
     history: incognito ? session.messages.slice(0, userIndex).map(m => ({ role: m.role === "trux" ? "model" : "user", text: m.text })) : undefined,
     notify: true,
     video: workspaceMode === "video" ? window.truxVideoStudio?.options() : undefined,
