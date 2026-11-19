@@ -18,7 +18,6 @@ bindContextMenuAction("contextMenuDeleteBtn", id => {
 addEventListener("click", e => {
   let ctx = getEl("contextMenu"); if(ctx && !ctx.contains(e.target)) closeChatContextMenu();
   let menu = getEl("attachmentMenu"); if(menu && !menu.contains(e.target) && !getEl("attachBtn").contains(e.target)) closeAttachmentMenu();
-  let modelPicker = getEl("modelDropdown"), modelPickerBtn = getEl("modelPickerBtn"); if(modelPicker && modelPickerBtn && !modelPicker.contains(e.target) && !modelPickerBtn.contains(e.target)) closeModelDropdown();
 });
 
 getEl("promptInput").addEventListener("keydown", e => {

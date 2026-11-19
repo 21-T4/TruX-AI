@@ -1,63 +1,31 @@
 /* Workspace chrome: model picker, accent, location, avatar, profile pages, workspace modes, feedback, usage. */
-function positionModelDropdown() {
-  const dropdown = getEl("modelDropdown"), button = getEl("modelPickerBtn");
-  if (!dropdown || !button || !dropdown.classList.contains("open")) return;
-  if (window.matchMedia("(max-width: 720px)").matches) {   /* phones: CSS shows it as a bottom sheet */
-    ["position","width","max-width","max-height","left","right","top","bottom","transform"].forEach(k => dropdown.style.removeProperty(k));
-    return;
-  }
-  const rect = button.getBoundingClientRect();
-  const width = Math.min(360, Math.max(260, window.innerWidth - 20));
-  const fromComposer = !!button.closest(".bar");          /* the picker lives in the typing bar: open upward, right-aligned */
-  const left = fromComposer
-    ? Math.min(Math.max(10, rect.right - width), Math.max(10, window.innerWidth - width - 10))
-    : Math.min(Math.max(10, rect.left), Math.max(10, window.innerWidth - width - 10));
-  const top = Math.max(8, rect.bottom + 8);
-  const maxHeight = fromComposer
-    ? Math.max(160, Math.min(540, rect.top - 20))
-    : Math.max(160, Math.min(540, window.innerHeight - top - 12));
-  dropdown.style.setProperty("position", "fixed", "important");
-  dropdown.style.setProperty("width", width + "px", "important");
-  dropdown.style.setProperty("max-width", "calc(100vw - 20px)", "important");
-  dropdown.style.setProperty("max-height", maxHeight + "px", "important");
-  dropdown.style.setProperty("left", left + "px", "important");
-  dropdown.style.setProperty("right", "auto", "important");
-  if (fromComposer) {
-    dropdown.style.setProperty("bottom", Math.max(8, window.innerHeight - rect.top + 8) + "px", "important");
-    dropdown.style.setProperty("top", "auto", "important");
-  } else {
-    dropdown.style.setProperty("top", top + "px", "important");
-    dropdown.style.setProperty("bottom", "auto", "important");
-  }
-  dropdown.style.setProperty("transform", "none", "important");
-}
-window.positionModelDropdown = positionModelDropdown;
-window.addEventListener("resize", () => {
-  if (getEl("modelDropdown")?.classList.contains("open")) positionModelDropdown();
-}, { passive: true });
-
+/* Model selection is a page (#modelPage), not a dropdown: full screen on phones, split screen on larger displays.
+   The names stay toggleModelDropdown / closeModelDropdown because the rest of the app already calls them. */
 function toggleModelDropdown(e) {
-        e?.stopPropagation();
-  const dropdown = getEl("modelDropdown"), button = getEl("modelPickerBtn");
-  if(!dropdown || !button) return;
+  e?.stopPropagation();
+  const page = getEl("modelPage");
+  if (!page) return;
+  if (!page.hidden) { closeModelDropdown(); return; }
   closeAttachmentMenu();
-  const open = dropdown.classList.toggle("open");
-  button.closest(".model-picker-container")?.classList.toggle("open", open);
-  button.setAttribute("aria-expanded", open ? "true" : "false");
-  if(open) requestAnimationFrame(positionModelDropdown);
+  closeThinkingPage?.({ instant: true });
+  page.hidden = false;
+  document.body.classList.add("model-page-open");
+  getEl("modelPickerBtn")?.setAttribute("aria-expanded", "true");
+  requestAnimationFrame(() => {
+    page.classList.add("open");
+    (page.querySelector(".mp-item.active") || page.querySelector(".mp-item"))?.focus({ preventScroll: true });
+  });
+  try { if (typeof refreshTruxUsage === "function") void refreshTruxUsage(); } catch {}
 }
 function closeModelDropdown() {
-  const dropdown = getEl("modelDropdown");
-  dropdown?.classList.remove("open");
-  if(dropdown){
-    dropdown.style.removeProperty("top"); dropdown.style.removeProperty("bottom");
-    dropdown.style.removeProperty("left"); dropdown.style.removeProperty("right");
-    dropdown.style.removeProperty("width"); dropdown.style.removeProperty("max-height");
-    dropdown.style.removeProperty("transform");
+  const page = getEl("modelPage");
+  if (page && !page.hidden) {
+    page.classList.remove("open");
+    page.hidden = true;
+    closeThinkingPage?.({ instant: true });
+    document.body.classList.remove("model-page-open");
   }
-  const button = getEl("modelPickerBtn");
-  button?.closest(".model-picker-container")?.classList.remove("open");
-  button?.setAttribute("aria-expanded", "false");
+  getEl("modelPickerBtn")?.setAttribute("aria-expanded", "false");
 }
 
 async function loadOwnerGeminiModels(forceRefresh = false) {
