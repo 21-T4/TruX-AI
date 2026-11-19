@@ -614,13 +614,13 @@ function sxUsage() {
     const title = sxEl("div", { class: "sx-use-title" }, m.name, m.plan ? sxEl("span", { class: "edge-tag", text: "Edge" }) : null);
     let body;
     if (locked) body = sxEl("div", { class: "sx-use-body" }, sxEl("div", { class: "sx-use-line", text: "Included with the Edge plan." }), sxButton("Upgrade to Edge", () => { closeSettings(); openSubscriptionPage(); }, "quiet"));
-    else if (u.limit === null) body = sxEl("div", { class: "sx-use-body" }, sxEl("div", { class: "sx-use-line", text: m.id === "spark" ? "No daily limit." : "No daily limit on your plan." }));
+    else if (u.limit === null) body = sxEl("div", { class: "sx-use-body" }, sxEl("div", { class: "sx-use-line", text: "No daily limit on your plan." }));
     else body = sxEl("div", { class: "sx-use-body" }, sxMeter(u.used, u.limit),
       sxEl("div", { class: "sx-use-line" }, sxEl("b", { text: truxFormatTokens(u.used) }), " of " + truxFormatTokens(u.limit) + " tokens used today",
         sxEl("span", { class: "sx-use-left", text: u.remaining <= 0 ? "Limit reached" : truxFormatTokens(u.remaining) + " left" })));
     rows.push(sxEl("div", { class: "sx-use" }, sxEl("div", { class: "sx-use-head" }, title, sxEl("div", { class: "sx-use-desc", text: m.description })), body));
   }
-  page.append(sxGroup("Daily model limits", "Quasar and Aegis have a daily token allowance. Tokens are the words TruX writes, plus the thinking it does before answering. Resets every day at " + truxResetLabel() + ".", ...rows));
+  page.append(sxGroup("Daily model limits", "Spark, Quasar and Aegis have a daily token allowance. Tokens are the words TruX writes, plus the thinking it does before answering. Resets every day at " + truxResetLabel() + ".", ...rows));
 
   const monthly = truxUsage?.monthly;
   const tool = (label, desc, data) => {
@@ -675,7 +675,7 @@ function sxHelp() {
   const faq = (q, a) => sxEl("details", { class: "sx-faq" }, sxEl("summary", { text: q }), sxEl("p", { text: a }));
   page.append(sxGroup("Using TruX", null, sxEl("div", { class: "sx-pad flush" },
     faq("Which model should I pick?", "Spark is the fastest and doesn't reason. Quasar suits everyday tasks. Aegis is for complex, multi-step reasoning. Oracle, on the Edge plan, is for the toughest problems."),
-    faq("How do daily limits work?", "Quasar has 100,000 tokens a day and Aegis has 50,000. Tokens count the words TruX writes plus its thinking. Spark has no daily limit. Limits reset every day, and Usage & limits shows what's left."),
+    faq("How do daily limits work?", "Spark has 250,000 tokens a day, Quasar has 100,000 and Aegis has 50,000. Tokens count the words TruX writes plus its thinking. Limits reset every day, and Usage & limits shows what's left."),
     faq("What can I do with the + menu?", "Attach photos and files, take a picture, start Deep Research or create images. Tell TruX what you want done with an attachment."),
     faq("How do I use Live?", "Tap the wave button in the message bar to talk with TruX. Allow the microphone, and camera or screen only when you want TruX to see them."),
     faq("Where is my data stored?", "Chats, personalization and memories are tied to your account. You can export or delete them any time in Data & privacy."))));

@@ -10,7 +10,7 @@ export const TRUX_MODELS = Object.freeze({
   spark: Object.freeze({
     id: 'spark', name: 'TruX-2 Spark', short: 'Spark',
     description: 'Fastest answers, no reasoning',
-    vertex: 'gemini-3.5-flash-lite', thinking: 'minimal', dailyTokens: null, plan: null
+    vertex: 'gemini-3.5-flash-lite', thinking: 'minimal', dailyTokens: 250_000, plan: null
   }),
   quasar: Object.freeze({
     id: 'quasar', name: 'TruX-2 Quasar', short: 'Quasar',
