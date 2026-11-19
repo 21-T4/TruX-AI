@@ -33,7 +33,7 @@ function setTruxThinking(modelId, level) {
   renderModelPicker();
   try { if (typeof renderSettingsGeneral === "function") renderSettingsGeneral(); } catch {}
 }
-const TRUX_FALLBACK_LIMITS = { quasar: 100000, aegis: 50000 };   // shown until the server answers
+const TRUX_FALLBACK_LIMITS = { spark: 250000, quasar: 100000, aegis: 50000 };   // shown until the server answers
 let truxUsage = null;                 // last /api/usage payload
 let truxUsageAt = 0;
 let truxUsageInFlight = null;
@@ -188,10 +188,9 @@ function renderModelPicker() {
   list.replaceChildren(frag);
   const foot = getEl("modelFootNote");
   if (foot) {
-    const quasar = truxModelUsage("quasar"), aegis = truxModelUsage("aegis");
-    const limited = quasar.limit !== null || aegis.limit !== null;
+    const limited = ["spark", "quasar", "aegis"].some(id => truxModelUsage(id).limit !== null);
     foot.hidden = !limited;
-    if (limited) foot.textContent = "Quasar and Aegis have daily token limits that include thinking. Resets at " + truxResetLabel() + ".";
+    if (limited) foot.textContent = "Spark, Quasar and Aegis have daily token limits that include thinking. Resets at " + truxResetLabel() + ".";
   }
 }
 
