@@ -38,6 +38,7 @@ async function speakText(text, button, options = {}) {
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
   if (!AudioCtx) { toast("Audio playback is not supported here.", "err"); return; }
   const ctx = new AudioCtx({ sampleRate: 24000 });
+  try { void ctx.resume(); } catch {}   // iOS/Safari start suspended; this runs inside the tap
   const controller = new AbortController();
   const session = { ctx, controller, button };
   truxTtsSession = session;

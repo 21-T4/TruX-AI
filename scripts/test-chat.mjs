@@ -3,6 +3,8 @@
 import assert from 'node:assert/strict';
 import { MessageWriter, abandonActiveWriters } from '../server/chat/writer.js';
 import { runAgent } from '../server/chat/agent.js';
+import { MODEL_ORDER, TRUX_MODELS, levelFor, publicCatalog } from '../server/lib/models.js';
+import { thinkingConfig } from '../server/lib/vertex.js';
 
 /* A tiny fake of the Admin SDK's database: ref(path).update(), root multi-path update, child(), on/off. */
 function fakeDb({ failFirst = 0, rejectUndefined = true } = {}) {
@@ -125,6 +127,20 @@ const chunk = (parts, extra = {}) => ({ candidates: [{ content: { parts }, ...ex
   const out = await runAgent({ model: 'm', thinking: 'low', contents: [], systemInstruction: '', toolbox: { geminiTools: () => [], label: () => '', run: async () => ({}) }, writer: w, send() {}, signal: new AbortController().signal, client });
   assert.equal(out.text, 'ok'); assert.deepEqual(seen, [true, false]);
 }
+
+/* Thinking levels are real per model: Spark and Quasar have three, Aegis and Oracle four (Max = XHIGH). */
+assert.deepEqual(TRUX_MODELS.spark.levels, ['low', 'medium', 'high']);
+assert.deepEqual(TRUX_MODELS.quasar.levels, ['low', 'medium', 'high']);
+assert.deepEqual(TRUX_MODELS.aegis.levels, ['low', 'medium', 'high', 'max']);
+assert.deepEqual(TRUX_MODELS.oracle.levels, ['low', 'medium', 'high', 'max']);
+assert.deepEqual(MODEL_ORDER.map(id => TRUX_MODELS[id].vertex), ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-4-hydrogen', 'gemini-4-neon']);
+for (const id of MODEL_ORDER) assert.ok(TRUX_MODELS[id].levels.includes(TRUX_MODELS[id].thinking), id + ' default is one of its levels');
+assert.equal(levelFor(TRUX_MODELS.spark, 'max'), TRUX_MODELS.spark.thinking, 'Spark has no Max');
+assert.equal(levelFor(TRUX_MODELS.aegis, 'max'), 'max');
+assert.equal(levelFor(TRUX_MODELS.quasar, 'auto'), 'medium');
+assert.equal(thinkingConfig('max').thinkingConfig.thinkingLevel, 'XHIGH');
+assert.equal(thinkingConfig('low').thinkingConfig.thinkingLevel, 'LOW');
+assert.deepEqual(publicCatalog({}).find(m => m.id === 'oracle').levels, ['low', 'medium', 'high', 'max']);
 
 console.log('chat storage tests passed');
 process.exit(0);

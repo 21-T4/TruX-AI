@@ -1,11 +1,12 @@
-/* Typing bar: square-cornered one-line bar by default, grows into the full bar when you tap it. Loads after claude.css. */
+/* Typing bar: a square-ish bar with smooth rounded corners, one line by default, grows into the full bar when you tap it. Loads after claude.css. */
+:root{ --bar-radius: 18px; }
 .bar{
   grid-template-columns: auto auto minmax(0, 1fr) auto;
   grid-template-areas: "plus mic input send";
   align-items: center;
   gap: 2px 4px;
   padding: 8px 10px 8px 8px;
-  border-radius: 0;
+  border-radius: var(--bar-radius);
   transition: border-color var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease), border-radius var(--dur-3) var(--ease-out);
 }
 .bar:not(.expanded) .model-picker-container{ display: none; }
@@ -19,7 +20,7 @@
   grid-template-columns: auto auto minmax(0, 1fr) auto auto;
   grid-template-areas: "input input input input input" "plus mic . model send";
   padding: 16px 14px 12px 16px;
-  border-radius: 0;
+  border-radius: var(--bar-radius);
 }
 .bar.expanded .model-picker-container{ display: block; animation: composerChipIn var(--dur-3) var(--ease-out) both; }
 .bar.expanded #promptInput{ min-height: 56px; padding: 4px 6px 12px; }
@@ -31,14 +32,14 @@
 .model-picker-btn .mp-think:empty{ display: none; }
 
 @media (max-width: 720px){
-  .bar{ padding: 7px 8px 7px 6px; border-radius: 0; }
-  .bar.expanded{ padding: 14px 10px 10px 14px; border-radius: 0; }
+  .bar{ padding: 7px 8px 7px 6px; }
+  .bar.expanded{ padding: 14px 10px 10px 14px; }
   .bar:not(.expanded) #promptInput{ min-height: 0; padding: 0 4px; font-size: 18px; }
   .bar.expanded #promptInput{ min-height: 52px; padding: 2px 4px 10px; }
   .bar .model-picker-btn{ padding: 0 10px; gap: 6px; font-size: 15px; }
 }
-/* the square corners win over claude.css (multiline state and phone sizes) */
-.bar, .bar.expanded, .bar.multiline{ border-radius: 0; }
+/* the soft corners win over claude.css (multiline state and phone sizes) */
+.bar, .bar.expanded, .bar.multiline{ border-radius: var(--bar-radius); }
 @media (prefers-reduced-motion: reduce){ .bar, .bar.expanded .model-picker-container{ transition: none; animation: none; } }
 
 /* ============================================================
@@ -70,3 +71,41 @@ body.home-active:not(.chat-session-active) #welcomeScreen.trux-home-v2{
 body.composer-open .home-suggest{ opacity: 0; transform: translateY(14px); pointer-events: none; }
 @media (max-height: 480px){ .home-suggest{ display: none !important; } }
 @media (prefers-reduced-motion: reduce){ .home-suggest{ transition: none; } }
+
+/* ============================================================
+   Fading top bar and floating typing bar.
+   The conversation runs underneath both bars. Instead of an opaque layer, the text simply dulls the closer it gets to the
+   top or to the typing bar and is nearly gone behind the "AI can make mistakes" line, which stays readable.
+   --composer-h (kept up to date by composer.js) is the height of the typing bar area.
+   ============================================================ */
+:root{ --composer-h: 132px; --top-fade-h: calc(var(--topbar-h) + var(--safe-t)); }
+.topbar{ pointer-events: none; }                     /* the empty part of the top bar must not block scrolling */
+.topbar-left > *, .topbar-center > *, .topbar-right > *{ pointer-events: auto; }
+.composer{ background: transparent; z-index: 5; }
+.bar{ box-shadow: 0 8px 30px rgba(var(--ink), .12), 0 0 0 .5px rgba(var(--ink), .06); }
+.hint{ position: relative; }
+
+body.chat-session-active #chatContainer{
+  margin-top: calc(-1 * var(--top-fade-h));
+  margin-bottom: calc(-1 * var(--composer-h));
+  padding-top: calc(var(--top-fade-h) + 26px);
+  padding-bottom: calc(var(--composer-h) + 28px);
+  -webkit-mask-image: linear-gradient(to bottom,
+    transparent 0,
+    rgba(0,0,0,.14) calc(var(--safe-t) + 12px),
+    rgba(0,0,0,.5) calc(var(--top-fade-h) - 4px),
+    #000 calc(var(--top-fade-h) + 28px),
+    #000 calc(100% - var(--composer-h) - 40px),
+    rgba(0,0,0,.3) calc(100% - 56px),
+    rgba(0,0,0,.04) calc(100% - 28px),
+    transparent 100%);
+  mask-image: linear-gradient(to bottom,
+    transparent 0,
+    rgba(0,0,0,.14) calc(var(--safe-t) + 12px),
+    rgba(0,0,0,.5) calc(var(--top-fade-h) - 4px),
+    #000 calc(var(--top-fade-h) + 28px),
+    #000 calc(100% - var(--composer-h) - 40px),
+    rgba(0,0,0,.3) calc(100% - 56px),
+    rgba(0,0,0,.04) calc(100% - 28px),
+    transparent 100%);
+}

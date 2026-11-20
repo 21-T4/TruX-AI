@@ -24,19 +24,18 @@ database.rules.json Realtime Database security rules
 
 | Feature | Model |
 | --- | --- |
-| Light and moderately complex chat | `gemini-4-hydrogen` |
-| Complex, multi-step and deep-research chat | `gemini-4-argon` |
-| Video shot planning | `gemini-4-argon` |
+| TruX-2 Spark | `gemini-3.5-flash-lite` (levels: Low, Medium, High) |
+| TruX-2 Quasar (default), chat titles | `gemini-3.8-flash` (levels: Low, Medium, High) |
+| TruX-2 Aegis, deep research, video shot planning | `gemini-4-hydrogen` (levels: Low, Medium, High, Max) |
+| TruX-2 Oracle (Edge plan) | `gemini-4-neon` (levels: Low, Medium, High, Max) |
 | Images (in normal chat) | `gemini-3-pro-image` (Nano Banana Pro) |
 | Video shots | `veo-3.1-generate-001` (1080p, with sound) |
 | Longer cuts and video edits | `gemini-omni-1.2-flash` |
 | Speech / Live voice | `gemini-3.8-flash-tts` / `gemini-3.8-live` (different modalities, unchanged) |
 
-### Auto routing and thinking
+### Models and thinking levels
 
-Gemini 4 Hydrogen is the default for everything, including hard-sounding questions. Gemini 4 Argon is reserved for very long prompts, very hard coding tasks (several hard coding terms plus code, very large code blocks, "build a whole system" briefs), deep research, and an explicit **Extended** thinking choice. `routeModel()` in `server/lib/vertex.js` scores independent signals and needs 6 points to pick Argon, so one or two hard words never leave Hydrogen. Greetings, thanks and other small talk go to Hydrogen with minimal thinking and no tools, so "hello" answers immediately.
-
-The **Thinking** menu in the model picker is paired with the router: **Auto** (default) lets the router choose (Low for quick asks, Medium when the request clearly needs it), **Low** and **Medium** use Hydrogen, **Extended** uses Argon with the deepest thinking. Any explicit level is used exactly as chosen and can be changed at any time; the choice is remembered. The Gemini 4 models reject `thinkingBudget`, so only `thinkingLevel` is ever sent (small talk asks for `MINIMAL` and falls back to `LOW` if the model refuses it). Small helpers (chat titles, home-screen copy) use Hydrogen at Low. Set `TRUX_LOG_ROUTING=1` to log each routing decision with its reasons. The owner-only model picker still overrides the model.
+The person picks the model; nothing is routed automatically. Each model offers only the thinking levels it really supports (`levels` in `server/lib/models.js`): Spark and Quasar have Low, Medium and High; Aegis and Oracle add **Max**, which is sent to Vertex as `XHIGH`. The choice is sent with every message, validated against the model's own list (anything else falls back to the model's default), and remembered per model. Only `thinkingLevel` is ever sent because these models reject `thinkingBudget`; if a model refuses `XHIGH` the round steps down to `HIGH`. Deep research runs on Aegis at High. Small helpers (chat titles, home-screen copy, search) use a Low level. The owner-only model picker still overrides the model.
 
 ## Configuration
 

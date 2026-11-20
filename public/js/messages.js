@@ -333,10 +333,6 @@ function truxFinishReveal(streamer, text, done) {
   try { streamer.finish(once); } catch { once(); }
 }
 
-function isNearBottom(el, slack) {
-  return (el.scrollHeight - el.scrollTop - el.clientHeight) <= (slack || 120);
-}
-
 /* Split into top-level blocks on blank lines, but never inside a fence. */
 function splitStreamBlocks(text) {
   let lines = text.split("\n");

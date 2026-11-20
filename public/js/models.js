@@ -3,32 +3,34 @@
  * Four TruX-2 models; the Gemini model behind each one is decided on the server and never shown here.
  * /api/usage returns the plan, which models are locked and how many tokens were used today. It is cached
  * briefly and refreshed after each turn, so the picker and Settings → Usage & limits always agree. */
+/* Thinking levels each model really supports (the server enforces the same lists). "Max" is the Gemini 4 top level. */
+const TRUX_LEVELS_3 = ["low", "medium", "high"];
+const TRUX_LEVELS_4 = ["low", "medium", "high", "max"];
 const TRUX_MODELS = [
-  { id: "spark",  name: "TruX-2 Spark",  short: "Spark",  description: "Fastest answers, no reasoning", thinking: "minimal" },
-  { id: "quasar", name: "TruX-2 Quasar", short: "Quasar", description: "Everyday tasks, quick and capable", thinking: "auto" },
-  { id: "aegis",  name: "TruX-2 Aegis",  short: "Aegis",  description: "Complex reasoning and multi-step work", thinking: "medium" },
-  { id: "oracle", name: "TruX-2 Oracle", short: "Oracle", description: "Toughest problems, frontier reasoning", thinking: "high", plan: "edge" }
+  { id: "spark",  name: "TruX-2 Spark",  short: "Spark",  description: "Fastest answers, light reasoning", levels: TRUX_LEVELS_3, thinking: "low" },
+  { id: "quasar", name: "TruX-2 Quasar", short: "Quasar", description: "Everyday tasks, quick and capable", levels: TRUX_LEVELS_3, thinking: "medium" },
+  { id: "aegis",  name: "TruX-2 Aegis",  short: "Aegis",  description: "Complex reasoning and multi-step work", levels: TRUX_LEVELS_4, thinking: "medium" },
+  { id: "oracle", name: "TruX-2 Oracle", short: "Oracle", description: "Toughest problems, frontier reasoning", levels: TRUX_LEVELS_4, thinking: "high", plan: "edge" }
 ];
 const TRUX_DEFAULT_MODEL = "quasar";
-/* Thinking levels every model offers. The level you pick is remembered per model; each model starts at its own default. */
 const TRUX_THINKING_LEVELS = [
-  { id: "auto",    label: "Adaptive", description: "Thinks only as much as each question needs" },
-  { id: "minimal", label: "Instant",  description: "Answers right away, no thinking" },
-  { id: "low",     label: "Light",    description: "A little thinking for quick, solid answers" },
-  { id: "medium",  label: "Extended", description: "More thinking for multi-step work" },
-  { id: "high",    label: "Max",      description: "Deepest thinking, slowest answers" }
+  { id: "low",    label: "Low",    description: "A little thinking for quick, solid answers" },
+  { id: "medium", label: "Medium", description: "Balanced thinking for most questions" },
+  { id: "high",   label: "High",   description: "More thinking for multi-step work" },
+  { id: "max",    label: "Max",    description: "Deepest thinking, slowest answers" }
 ];
 const truxThinkingLevelById = id => TRUX_THINKING_LEVELS.find(l => l.id === id) || null;
 
-/** The level in use for a model: what you chose for it, otherwise the model's own default. */
+/** The level in use for a model: what you chose for it (if that model offers it), otherwise the model's own default. */
 function truxThinkingFor(modelId) {
   const model = truxModelById(modelId);
   const saved = store.getItem("trux_thinking_" + modelId);
-  return truxThinkingLevelById(saved) ? saved : (model?.thinking || "auto");
+  return model?.levels.includes(saved) ? saved : (model?.thinking || "medium");
 }
 function setTruxThinking(modelId, level) {
-  if (!truxThinkingLevelById(level)) return;
-  if (level === truxModelById(modelId)?.thinking) store.removeItem("trux_thinking_" + modelId);
+  const model = truxModelById(modelId);
+  if (!model?.levels.includes(level)) return;
+  if (level === model.thinking) store.removeItem("trux_thinking_" + modelId);
   else store.setItem("trux_thinking_" + modelId, level);
   renderModelPicker();
   try { if (typeof renderSettingsGeneral === "function") renderSettingsGeneral(); } catch {}
@@ -194,63 +196,37 @@ function renderModelPicker() {
   }
 }
 
-/* "Thinking level" under the model list: one row showing the current level that opens the five choices. */
+/* The thinking levels of the selected model, shown as one row of choices under the model list. */
 function renderThinkingLevels(modelId, level) {
-  const current = getEl("thinkCurrent");
-  if (current) current.textContent = truxThinkingLevelById(level)?.label || "";
+  const model = truxModelById(modelId);
   const list = getEl("thinkList");
-  if (!list) return;
+  if (!list || !model) return;
   const forModel = getEl("thinkFor");
-  if (forModel) forModel.textContent = "How long " + (truxModelById(modelId)?.name || "TruX") + " thinks before it answers.";
+  if (forModel) forModel.textContent = model.short;
+  const desc = getEl("thinkDesc");
+  if (desc) desc.textContent = truxThinkingLevelById(level)?.description || "";
   const frag = document.createDocumentFragment();
-  for (const l of TRUX_THINKING_LEVELS) {
-    const row = document.createElement("button");
-    row.type = "button";
-    row.className = "mp-item mp-level" + (l.id === level ? " active" : "");
-    row.setAttribute("role", "menuitemradio");
-    row.setAttribute("aria-checked", String(l.id === level));
-    row.innerHTML = '<span class="mp-copy"><span class="mp-name"></span><span class="mp-desc"></span></span><span class="mp-side"><svg class="mp-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>';
-    row.querySelector(".mp-name").textContent = l.label + (l.id === truxModelById(modelId)?.thinking ? " · default" : "");
-    row.querySelector(".mp-desc").textContent = l.description;
-    row.addEventListener("click", event => {
-      event.stopPropagation();
-      setTruxThinking(modelId, l.id);
-      /* On a phone the subpage is a full page: go back to the model page once a level is chosen. */
-      if (!truxSplitLayout()) setTimeout(() => closeThinkingPage(), 160);
-    });
-    frag.appendChild(row);
+  for (const id of model.levels) {
+    const info = truxThinkingLevelById(id);
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "mp-level" + (id === level ? " active" : "");
+    chip.setAttribute("role", "radio");
+    chip.setAttribute("aria-checked", String(id === level));
+    chip.textContent = info.label;
+    chip.title = info.description + (id === model.thinking ? " (default)" : "");
+    chip.addEventListener("click", event => { event.stopPropagation(); setTruxThinking(modelId, id); });
+    frag.appendChild(chip);
   }
+  list.style.setProperty("--levels", String(model.levels.length));
   list.replaceChildren(frag);
 }
 
-/* The model page is split screen on wide displays (models left, thinking level right) and a stack of pages on phones. */
-function truxSplitLayout() { return window.matchMedia("(min-width: 821px)").matches; }
-
-/* "Thinking level" opens its own subpage: it slides in over the model list on phones and fills the right half on wide screens. */
-function openThinkingPage(event) {
-  event?.stopPropagation();
-  const card = getEl("modelPageCard");
-  if (!card) return;
-  card.classList.add("think-open");
-  getEl("thinkHead")?.setAttribute("aria-expanded", "true");
-  setTimeout(() => (getEl("thinkList")?.querySelector(".mp-item.active") || getEl("thinkList")?.querySelector(".mp-item"))?.focus({ preventScroll: true }), 60);
-}
-function closeThinkingPage({ instant = false } = {}) {
-  const card = getEl("modelPageCard");
-  if (!card) return;
-  const was = card.classList.contains("think-open");
-  card.classList.toggle("instant", instant);
-  card.classList.remove("think-open");
-  getEl("thinkHead")?.setAttribute("aria-expanded", "false");
-  if (instant) requestAnimationFrame(() => card.classList.remove("instant"));
-  else if (was) getEl("thinkHead")?.focus({ preventScroll: true });
-}
-/* Escape steps back from the subpage first, then closes the page. */
+/* Escape closes the model sheet. */
 document.addEventListener("keydown", event => {
   if (event.key !== "Escape" || getEl("modelPage")?.hidden !== false) return;
   event.stopPropagation();
-  if (getEl("modelPageCard")?.classList.contains("think-open") && !truxSplitLayout()) closeThinkingPage();
-  else closeModelDropdown();
+  closeModelDropdown();
 }, true);
 
 function selectModel(id, event) {

@@ -1,5 +1,5 @@
 /* Workspace chrome: model picker, accent, location, avatar, profile pages, workspace modes, feedback, usage. */
-/* Model selection is a page (#modelPage), not a dropdown: full screen on phones, split screen on larger displays.
+/* Model selection is a half-screen bottom sheet (#modelPage), not a dropdown.
    The names stay toggleModelDropdown / closeModelDropdown because the rest of the app already calls them. */
 function toggleModelDropdown(e) {
   e?.stopPropagation();
@@ -7,7 +7,6 @@ function toggleModelDropdown(e) {
   if (!page) return;
   if (!page.hidden) { closeModelDropdown(); return; }
   closeAttachmentMenu();
-  closeThinkingPage?.({ instant: true });
   page.hidden = false;
   document.body.classList.add("model-page-open");
   getEl("modelPickerBtn")?.setAttribute("aria-expanded", "true");
@@ -22,8 +21,7 @@ function closeModelDropdown() {
   if (page && !page.hidden) {
     page.classList.remove("open");
     page.hidden = true;
-    closeThinkingPage?.({ instant: true });
-    document.body.classList.remove("model-page-open");
+      document.body.classList.remove("model-page-open");
   }
   getEl("modelPickerBtn")?.setAttribute("aria-expanded", "false");
 }

@@ -58,73 +58,52 @@
 }
 @media (prefers-reduced-motion: reduce){ .edge-tag{ animation: none; } }
 
-/* ---------- Model selection page ----------
-   Phones: a full page; "Thinking level" slides in as a subpage on top of it.
-   Wide screens: a split-screen dialog, models on the left and the thinking-level subpage on the right. */
+/* ---------- Model selection: half-screen bottom sheet ----------
+   About half the screen high. The model list scrolls; the thinking levels of the chosen model stay pinned underneath. */
 body.model-page-open{ overflow: hidden; }
-.mpage{ position: fixed; inset: 0; z-index: 6000; display: flex; align-items: stretch; justify-content: center; }
-.mpage[hidden]{ display: none; }
-.mpage-scrim{ position: absolute; inset: 0; background: rgba(0,0,0,.5); opacity: 0; transition: opacity var(--dur-2) var(--ease); }
-.mpage.open .mpage-scrim{ opacity: 1; }
-.mpage-card{
-  position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--bg-2); color: var(--txt);
-  transform: translateY(24px); opacity: 0; transition: transform var(--dur-3) var(--ease-out), opacity var(--dur-2) var(--ease);
+.msheet{ position: fixed; inset: 0; z-index: 6000; display: flex; align-items: flex-end; justify-content: center; }
+.msheet[hidden]{ display: none; }
+.msheet-scrim{ position: absolute; inset: 0; background: rgba(0,0,0,.45); opacity: 0; transition: opacity var(--dur-2) var(--ease); }
+.msheet.open .msheet-scrim{ opacity: 1; }
+.msheet-card{
+  position: relative; display: flex; flex-direction: column;
+  width: min(520px, 100%); height: min(56dvh, 560px); min-height: min(420px, 100dvh);
+  background: var(--bg-2); color: var(--txt);
+  border-radius: 22px 22px 0 0; border: 1px solid var(--line-2); border-bottom: 0;
+  box-shadow: var(--shadow-3);
+  transform: translateY(100%); transition: transform var(--dur-3) var(--ease-out);
 }
-.mpage.open .mpage-card{ transform: none; opacity: 1; }
-.mpage-pane{
-  position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg-2);
-  transition: transform var(--dur-3) var(--ease-out), opacity var(--dur-2) var(--ease), visibility 0s linear;
-}
-.mpage-think{ transform: translateX(100%); visibility: hidden; transition-delay: 0s, 0s, var(--dur-3); }
-.mpage-card.think-open .mpage-think{ transform: none; visibility: visible; transition-delay: 0s; }
-.mpage-card.think-open .mpage-models{ transform: translateX(-24%); opacity: .35; pointer-events: none; }
-.mpage-card.instant .mpage-pane{ transition: none !important; }
-.mpage-head{
-  flex: none; display: flex; align-items: center; gap: 6px;
-  padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 10px; border-bottom: 1px solid var(--line);
-}
-.mpage-title{ flex: 1; font: 600 16px/1.2 var(--font-ui); padding: 0 6px; }
-.mpage-x, .mpage-back{ display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; color: var(--txt-2); }
-@media (hover: hover){ .mpage-x:hover, .mpage-back:hover{ background: var(--bg-3); color: var(--txt); } }
-.mpage-x svg, .mpage-back svg{ width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.mpage-body{ flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 10px 12px calc(16px + var(--safe-b)); }
-.mpage-sub{ margin: 4px 12px 10px; font: 400 13.5px/1.45 var(--font-ui); color: var(--txt-3); }
-.mpage-empty{ display: none; }
+.msheet.open .msheet-card{ transform: none; }
+.msheet-grab{ flex: none; width: 38px; height: 4px; margin: 8px auto 0; border-radius: 4px; background: var(--line-2); }
+.msheet-head{ flex: none; display: flex; align-items: center; gap: 6px; padding: 4px 10px 6px 18px; }
+.msheet-title{ flex: 1; font: 600 16px/1.2 var(--font-ui); }
+.msheet-x{ display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; color: var(--txt-2); }
+@media (hover: hover){ .msheet-x:hover{ background: var(--bg-3); color: var(--txt); } }
+.msheet-x svg{ width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.msheet-body{ flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 2px 10px 8px; }
+.mp-foot{ border-top: 0; margin: 4px 0 0; }
 
-/* the "Thinking level" row under the model list opens the subpage */
-.mp-think-head{
-  display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 8px; padding: 13px 12px;
-  border-radius: 12px; border: 1px solid var(--line-2); text-align: left; color: var(--txt);
+.msheet-think{
+  flex: none; padding: 12px 14px calc(14px + var(--safe-b)); border-top: 1px solid var(--line);
 }
-@media (hover: hover){ .mp-think-head:hover{ background: var(--bg-3); } }
-.mp-think-head[aria-expanded="true"]{ background: var(--bg-3); }
-.mp-think-title{ flex: 1; font: 600 14.5px/1.2 var(--font-ui); }
-.mp-think-current{ font: 400 13.5px/1 var(--font-ui); color: var(--txt-3); }
-.mp-think-head svg{ width: 18px; height: 18px; flex: none; fill: none; stroke: var(--txt-3); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.mp-level{ padding: 12px; }
-.mp-foot{ border-top: 0; margin-top: 4px; }
+.msheet-think-head{ display: flex; align-items: baseline; gap: 8px; margin: 0 4px 9px; }
+.msheet-think-title{ font: 600 14px/1.2 var(--font-ui); }
+.msheet-think-for{ font: 400 13px/1.2 var(--font-ui); color: var(--txt-3); }
+.mp-levels{ display: grid; grid-template-columns: repeat(var(--levels, 3), minmax(0, 1fr)); gap: 6px; }
+.mp-level{
+  padding: 10px 4px; border-radius: 12px; border: 1px solid var(--line-2);
+  font: 500 14px/1 var(--font-ui); color: var(--txt-2); text-align: center;
+  transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
+}
+@media (hover: hover){ .mp-level:hover{ background: var(--bg-3); color: var(--txt); } }
+.mp-level.active{ background: var(--bg-3); color: var(--txt); border-color: var(--acc-2); font-weight: 600; }
+.msheet-think-desc{ min-height: 1.4em; margin: 9px 4px 0; font: 400 12.5px/1.4 var(--font-ui); color: var(--txt-3); }
 
 @media (min-width: 821px){
-  .mpage{ align-items: center; padding: 24px; }
-  .mpage-card{
-    width: min(820px, 100%); height: min(560px, calc(100dvh - 48px)); border-radius: 22px;
-    border: 1px solid var(--line-2); box-shadow: var(--shadow-3);
-    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-  .mpage-pane{ position: relative; inset: auto; transition: none; }
-  .mpage-think{ transform: none; visibility: visible; border-left: 1px solid var(--line); }
-  .mpage-card.think-open .mpage-models{ transform: none; opacity: 1; pointer-events: auto; }
-  .mpage-back{ display: none; }
-  .mpage-models .mpage-head{ padding-top: 10px; }
-  /* before "Thinking level" is clicked the right half only says what it is for */
-  .mpage-think .mpage-head, .mpage-think .mpage-body{ opacity: 0; pointer-events: none; transition: opacity var(--dur-2) var(--ease); }
-  .mpage-card.think-open .mpage-think .mpage-head, .mpage-card.think-open .mpage-think .mpage-body{ opacity: 1; pointer-events: auto; }
-  .mpage-think .mpage-head .mpage-x{ visibility: hidden; }
-  .mpage-empty{
-    position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-    padding: 32px; text-align: center; color: var(--txt-3); font: 400 13.5px/1.5 var(--font-ui); transition: opacity var(--dur-2) var(--ease);
-  }
-  .mpage-empty b{ font: 600 15px/1.2 var(--font-ui); color: var(--txt-2); }
-  .mpage-card.think-open .mpage-empty{ opacity: 0; pointer-events: none; }
+  .msheet{ align-items: center; padding: 24px; }
+  .msheet-card{ height: min(520px, calc(100dvh - 48px)); border-radius: 22px; border-bottom: 1px solid var(--line-2); transform: translateY(24px); opacity: 0; transition: transform var(--dur-3) var(--ease-out), opacity var(--dur-2) var(--ease); }
+  .msheet.open .msheet-card{ opacity: 1; }
+  .msheet-grab{ display: none; }
+  .msheet-head{ padding-top: 12px; }
 }
-@media (prefers-reduced-motion: reduce){ .mpage-card, .mpage-pane, .mpage-scrim{ transition: none; } }
+@media (prefers-reduced-motion: reduce){ .msheet-card, .msheet-scrim{ transition: none; } }

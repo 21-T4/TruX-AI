@@ -9,7 +9,7 @@ function throwIfAborted(signal) {
   throw signal.reason || Object.assign(new Error("Generation stopped."), { name: "AbortError" });
 }
 
-export async function runAgent({ model, thinking, simple = false, contents, systemInstruction, toolbox, writer, send, signal, temperature = 0.9, onUsage = null, client = null }) {
+export async function runAgent({ model, thinking, contents, systemInstruction, toolbox, writer, send, signal, temperature = 0.9, onUsage = null, client = null }) {
   const messages = contents.slice();
   const sources = new Map();
   let searchSuggestionHtml = '';
@@ -30,9 +30,9 @@ export async function runAgent({ model, thinking, simple = false, contents, syst
       model: currentModel,
       contents: messages,
       systemInstruction: repairNote ? systemInstruction + '\n\n' + repairNote : systemInstruction,
-      tools: simple || toolsOff ? [] : toolbox.geminiTools(),           // small talk needs no tools, which makes the reply start faster
-      fallbackTools: simple || toolsOff ? null : toolbox.geminiTools({ searchAsFunction: true }),
-      config: { ...thinkingConfig(currentModel, emptyRetries ? 'low' : thinking, { minimal: simple && round === 0 && !emptyRetries }), temperature },
+      tools: toolsOff ? [] : toolbox.geminiTools(),
+      fallbackTools: toolsOff ? null : toolbox.geminiTools({ searchAsFunction: true }),
+      config: { ...thinkingConfig(emptyRetries ? 'low' : thinking), temperature },
       signal,
       client,
       /* Thinking summaries are streamed to the thinking bar and stored on their own; they never join the answer. */

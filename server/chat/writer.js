@@ -15,7 +15,7 @@ import { getDb } from '../lib/firebase.js';
 const PROGRESS_MIN_MS = 1500;      // at most one progress write per this long
 const HEARTBEAT_MS = 20_000;       // keeps `updatedAt` moving on long turns so other screens can tell the turn is alive
 const MAX_TEXT = 390_000;          // database rules allow 400 000 characters
-const MAX_THINKING = 90_000;       // rules allow 100 000
+const MAX_THINKING = 30_000;       // rules allow 100 000
 const FINAL_ATTEMPTS = 3;
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
