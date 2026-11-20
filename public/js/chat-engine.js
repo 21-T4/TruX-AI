@@ -190,11 +190,6 @@ async function uploadTurnBlob(blob, name) {
   return { objectKey: data.objectKey, name: data.name || name, mimeType: data.mimeType || blob.type, size: data.size || blob.size };
 }
 
-function thinkingParam() {
-  /* Reasoning depth belongs to the chosen TruX model (decided on the server); Deep Research always thinks hard. */
-  return workspaceMode === "deep-research" ? "high" : "auto";
-}
-
 function serverMode() {
   return ["deep-research", "video"].includes(workspaceMode) ? workspaceMode : "chat";
 }
@@ -330,7 +325,6 @@ async function sendPromptImpl(releaseSendLock = () => {}) {
     message,
     mode: serverMode(),
     attachments,
-    thinking: thinkingParam(),
     model: truxSelectedModel,
     thinkingLevel: truxThinkingFor(truxSelectedModel),
     location: location ? { latitude: location.latitude ?? location.lat, longitude: location.longitude ?? location.lng } : null,

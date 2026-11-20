@@ -488,3 +488,18 @@ function stopVoiceInput() { isRecording = false; getEl("voiceBtn").classList.rem
   }, true);
   syncComposerExpanded();
 })();
+
+
+/* The conversation scrolls underneath the floating typing bar, so the page needs to know how tall that area is (--composer-h). */
+(function trackComposerHeight() {
+  const start = () => {
+    const el = document.querySelector(".composer");
+    if (!el) return;
+    const apply = () => document.documentElement.style.setProperty("--composer-h", Math.ceil(el.getBoundingClientRect().height) + "px");
+    apply();
+    if (typeof ResizeObserver === "function") new ResizeObserver(apply).observe(el);
+    window.addEventListener("resize", apply);
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start, { once: true });
+  else start();
+})();

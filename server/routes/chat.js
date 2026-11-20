@@ -13,8 +13,8 @@ import { normalizeDevice } from '../chat/device.js';
 import { getProcessedText } from '../lib/storage.js';
 import { notifyUser } from '../lib/push.js';
 import { addDailyTokens, addUsage, checkDailyTokens, checkQuota, limitFor } from '../lib/usage.js';
-import { COUNT_INPUT_TOKENS, canUseModel, resolveModel } from '../lib/models.js';
-import { generateOnce, MODELS, QUICK_THINKING, routeModel } from '../lib/vertex.js';
+import { COUNT_INPUT_TOKENS, canUseModel, levelFor, resolveModel } from '../lib/models.js';
+import { generateOnce, MODELS, QUICK_THINKING } from '../lib/vertex.js';
 import { dropReplacedTurns, historyToContents, loadTurnContext, sanitizeClientHistory, withoutRepeatedPrompt } from '../chat/context.js';
 import { MessageWriter } from '../chat/writer.js';
 import { Toolbox } from '../chat/tools.js';
@@ -22,7 +22,6 @@ import { runAgent } from '../chat/agent.js';
 
 const KEY_RE = /^[-_A-Za-z0-9]{6,40}$/;
 const MODES = new Set(['chat', 'deep-research', 'video']);
-const THINKING_LEVELS = ['auto', 'minimal', 'low', 'medium', 'high'];
 const INLINE_MIME = /^(image\/(png|jpeg|webp|heic|heif|gif)|audio\/|video\/|application\/pdf$)/;
 
 function queryTokens(query) {
@@ -80,7 +79,7 @@ async function userParts({ uid, bucket, message, attachments }) {
 async function generateTitle(message) {
   try {
     const { text } = await generateOnce({
-      model: MODELS.hydrogen,
+      model: MODELS.flash,
       contents: [{ role: 'user', parts: [{ text: 'Write a short, specific title (3-6 words, no quotes, no trailing punctuation) for a chat that starts with:\n\n' + String(message).slice(0, 2000) }] }],
       config: { maxOutputTokens: 400, temperature: 0.4, ...QUICK_THINKING },
       signal: AbortSignal.timeout(20_000)
@@ -99,8 +98,6 @@ async function chat(request, { env, url }) {
   const message = String(body.message || '').slice(0, 100_000).trim();
   const attachments = cleanAttachments(user.uid, body.attachments);
   if (!message && !attachments.length) throw new HttpError(400, 'Message is empty.');
-  const thinkingChoice = ['auto', 'low', 'medium', 'high'].includes(body.thinking) ? body.thinking : 'auto';
-  let thinking = thinkingChoice;
   const canVideo = limitFor(user, 'videos') === Infinity;
   if (mode === 'video' && !canVideo) throw new HttpError(403, 'Video generation is available on the Pro plan.');
   if (mode === 'deep-research') {
@@ -192,18 +189,11 @@ async function chat(request, { env, url }) {
       ];
       const ownerModel = user.owner && /^[a-z0-9][a-z0-9.\-]{2,80}$/i.test(String(body.ownerModel || '')) && body.ownerModel !== 'auto'
         ? String(body.ownerModel) : '';
-      /* routeModel is only used to size the reasoning of Quasar and to spot small talk; it never picks the model. */
-      const route = routeModel({ message, hasMedia: attachments.length > 0, attachmentCount: attachments.length, thinking: 'auto', mode });
       const model = ownerModel || (mode === 'deep-research' ? resolveModel('aegis').vertex : picked.vertex);
-      /* Every model offers five thinking levels; the person's choice wins, otherwise the model's own default.
-         Adaptive ('auto') lets the router size the reasoning for each question. */
-      const chosenLevel = THINKING_LEVELS.includes(body.thinkingLevel) ? body.thinkingLevel : '';
-      const level = chosenLevel || picked.thinking;
-      thinking = mode === 'deep-research' ? (thinkingChoice === 'auto' ? 'medium' : thinkingChoice)
-        : level === 'auto' ? route.thinking : level;
-      const simple = level === 'minimal' || (chosenLevel && chosenLevel !== picked.thinking) ? false : route.simple;
+      /* Each model has its own real set of thinking levels; the person's choice wins, otherwise the model's default.
+         Deep research always reasons at 'high' on Aegis. */
+      const thinking = mode === 'deep-research' ? 'high' : levelFor(picked, body.thinkingLevel);
       writer.update({ model: picked.id });
-      if (process.env.TRUX_LOG_ROUTING) console.log('[route]', route.tier, 'score', route.score, route.reasons.join(', '));
       send({ type: 'status', status: mode === 'deep-research' ? 'Researching…' : 'Thinking…', model: picked.id });
 
       if (mode === 'video') {
@@ -218,7 +208,7 @@ async function chat(request, { env, url }) {
         writer.appendText(`**${plan?.title || 'Your video'}**\n\n` + (plan?.shots || []).map((shot, i) => `${i + 1}. ${shot.caption}`).join('\n') + (response.note && /could not/.test(response.note) ? '\n\n' + response.note.replace(/^Video produced and already displayed to the user\.\s*/, '') : ''));
         outcome = { type: 'final', text: writer.state.text, sources: [], media: writer.state.media };
       } else {
-        const result = await runAgent({ model, thinking, simple, contents, systemInstruction, toolbox, writer, send, signal: controller.signal, temperature: presetTemperature(ctx.personalization), onUsage });
+        const result = await runAgent({ model, thinking, contents, systemInstruction, toolbox, writer, send, signal: controller.signal, temperature: presetTemperature(ctx.personalization), onUsage });
         if (!result.text && !writer.state.media.length) {
           writer.appendText('I could not produce a response. Please try again.');
         }

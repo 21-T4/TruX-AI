@@ -6,26 +6,30 @@
  */
 export const COUNT_INPUT_TOKENS = false;
 
+/* Thinking levels each model really supports. 'max' is sent to Vertex as XHIGH, which only Gemini 4 models accept. */
+const LEVELS_3 = Object.freeze(['low', 'medium', 'high']);
+const LEVELS_4 = Object.freeze(['low', 'medium', 'high', 'max']);
+
 export const TRUX_MODELS = Object.freeze({
   spark: Object.freeze({
     id: 'spark', name: 'TruX-2 Spark', short: 'Spark',
-    description: 'Fastest answers, no reasoning',
-    vertex: 'gemini-3.5-flash-lite', thinking: 'minimal', dailyTokens: 250_000, plan: null
+    description: 'Fastest answers, light reasoning',
+    vertex: 'gemini-3.5-flash-lite', levels: LEVELS_3, thinking: 'low', dailyTokens: 250_000, plan: null
   }),
   quasar: Object.freeze({
     id: 'quasar', name: 'TruX-2 Quasar', short: 'Quasar',
     description: 'Everyday tasks, quick and capable',
-    vertex: 'gemini-4-hydrogen', thinking: 'auto', dailyTokens: 100_000, plan: null
+    vertex: 'gemini-3.8-flash', levels: LEVELS_3, thinking: 'medium', dailyTokens: 100_000, plan: null
   }),
   aegis: Object.freeze({
     id: 'aegis', name: 'TruX-2 Aegis', short: 'Aegis',
     description: 'Complex reasoning and multi-step work',
-    vertex: 'gemini-4-argon', thinking: 'medium', dailyTokens: 50_000, plan: null
+    vertex: 'gemini-4-hydrogen', levels: LEVELS_4, thinking: 'medium', dailyTokens: 50_000, plan: null
   }),
   oracle: Object.freeze({
     id: 'oracle', name: 'TruX-2 Oracle', short: 'Oracle',
     description: 'Toughest problems, frontier reasoning',
-    vertex: 'gemini-4-neon', thinking: 'high', dailyTokens: null, plan: 'edge'
+    vertex: 'gemini-4-neon', levels: LEVELS_4, thinking: 'high', dailyTokens: null, plan: 'edge'
   })
 });
 
@@ -52,6 +56,7 @@ export function publicCatalog(user) {
     const limit = dailyLimitFor(user, m);
     return {
       id: m.id, name: m.name, short: m.short, description: m.description,
+      levels: [...m.levels], defaultLevel: m.thinking,
       plan: m.plan, locked: !canUseModel(user, m),
       dailyLimit: Number.isFinite(limit) ? limit : null
     };
@@ -60,4 +65,9 @@ export function publicCatalog(user) {
 
 export function resolveModel(id) {
   return Object.hasOwn(TRUX_MODELS, id) ? TRUX_MODELS[id] : TRUX_MODELS[DEFAULT_MODEL];
+}
+
+/** The thinking level to use: the person's choice when this model offers it, otherwise the model's default. */
+export function levelFor(model, requested) {
+  return model.levels.includes(requested) ? requested : model.thinking;
 }

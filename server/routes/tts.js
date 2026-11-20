@@ -15,7 +15,7 @@ function speakable(markdown) {
 }
 
 async function speak(request) {
-  const user = await requireUser(request, { limit: { name: 'tts', capacity: 20, refillPerSecond: 0.2 } });
+  await requireUser(request, { limit: { name: 'tts', capacity: 20, refillPerSecond: 0.2 } });
   const body = await readJson(request, 64 * 1024);
   const text = speakable(body?.text).slice(0, 6000);
   if (!text) throw new HttpError(400, 'Nothing to read.');
@@ -23,8 +23,13 @@ async function speak(request) {
   request.signal?.addEventListener('abort', () => controller.abort(), { once: true });
   const iterator = streamSpeech({ text, voice: body?.voice, style: body?.style || 'Read this naturally and warmly, at a comfortable pace.', signal: controller.signal });
   // Pull the first chunk before responding so errors become proper HTTP errors.
-  const first = await iterator.next();
-  void user;
+  let first;
+  try { first = await iterator.next(); }
+  catch (error) {
+    if (controller.signal.aborted) throw error;
+    throw new HttpError(502, 'Read aloud is unavailable right now: ' + String(error?.message || error).slice(0, 240));
+  }
+  if (first.done) throw new HttpError(502, 'Read aloud returned no audio. Please try again.');
   const stream = new ReadableStream({
     start(c) { if (!first.done) c.enqueue(new Uint8Array(first.value)); },
     async pull(c) {

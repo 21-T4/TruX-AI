@@ -6,13 +6,14 @@ import { VOICE_IDS } from './personalization.js';
 
 export const MODELS = Object.freeze({
   flashLite: 'gemini-3.5-flash-lite', // TruX-2 Spark; also writes the home-screen greeting and suggestions
-  hydrogen: 'gemini-4-hydrogen',      // light and moderately complex work
-  argon: 'gemini-4-argon',            // complex, multi-step and deep-research work
+  flash: 'gemini-3.8-flash',          // TruX-2 Quasar; also writes chat titles
+  hydrogen: 'gemini-4-hydrogen',      // TruX-2 Aegis and deep research
   image: 'gemini-3-pro-image',       // Nano Banana Pro
   video: 'veo-3.1-generate-001',      // Veo 3.1 (full quality)
   omni: 'gemini-omni-1.2-flash',      // Gemini Omni: video extension and editing
-  director: 'gemini-4-argon',         // shot planning / prompt design (same model as argon)
-  tts: 'gemini-3.8-flash-tts',
+  director: 'gemini-4-hydrogen',      // shot planning / prompt design
+  tts: 'gemini-3.8-flash-tts',          // read aloud (Gemini 3.8 Flash TTS, not the retired preview model)
+  ttsLite: 'gemini-3.8-flash-lite-tts', // used when the main TTS model is unavailable
   live: 'gemini-3.8-live'
 });
 
@@ -111,9 +112,9 @@ export async function streamRound({ model, contents, systemInstruction, tools, f
         thoughtsDropped = true;
         continue;
       }
-      /* A model that does not know the MINIMAL thinking level: retry with LOW, then with the model's own default. */
-      if (request.thinkingConfig?.thinkingLevel === 'MINIMAL' && /thinking|level|minimal|INVALID_ARGUMENT/i.test(message)) {
-        request.thinkingConfig = { thinkingLevel: 'LOW', ...(thoughtsDropped ? {} : { includeThoughts: true }) };
+      /* A model that does not know the XHIGH level steps down to HIGH, then to the model's own default. */
+      if (request.thinkingConfig?.thinkingLevel === 'XHIGH' && /thinking|level|xhigh|INVALID_ARGUMENT/i.test(message)) {
+        request.thinkingConfig = { thinkingLevel: 'HIGH', ...(thoughtsDropped ? {} : { includeThoughts: true }) };
         thinkingTried = true;
         continue;
       }
@@ -196,83 +197,15 @@ export function groundingSources(grounding, limit = 8) {
   return sources;
 }
 
-/* ---------- Model routing ----------
-   Gemini 4 Hydrogen is the default for everything, including hard-ish questions: it is the fast model. Gemini 4
-   Argon is reserved for the genuinely heavy cases: very long prompts and very hard coding tasks (plus deep research
-   and an explicit "Extended" thinking choice). routeModel() scores independent signals and needs ARGON_THRESHOLD
-   points, so one or two hard-sounding words never move a request off Hydrogen. */
-const CODE_RE = /\b(code|coding|program|script|function|class|bug|debug|refactor|implement|compile|api|endpoint|javascript|typescript|python|java|html|css|react|node|sql|regex|github|repo|codebase|stack trace|exception|dependency)\b/i;
-const HARD_RE = /\b(refactor|architect|architecture|root cause|race condition|deadlock|concurren\w*|vulnerab\w*|migrat\w*|multi[- ]file|end[- ]to[- ]end|full[- ]stack|system design|distributed|scalab\w*|algorithm\w*|compiler|interpreter|memory leak|performance bottleneck|optimi[sz]\w*|prove|proof|derive|theorem)\b/i;
-const HARD_RE_G = new RegExp(HARD_RE.source, 'gi');
-const REASON_RE = /\b(reason|analy[sz]e|analysis|evaluate|compare|contrast|justify|strategy|solve|calculate|explain why|pros and cons|plan|summari[sz]e|outline|review|critique|rewrite|translate|explain|difference|how does|how do)\b/i;
-const BUILD_RE = /\b(build|create|make|write|develop|design|implement|generate)\b[^.?!\n]{0,60}\b(app|application|website|web ?app|backend|frontend|service|system|game|compiler|interpreter|framework|library|pipeline|platform|dashboard|extension|architecture)\b/i;
-const TRACE_RE = /(\bat\s+\S+\s*\(\S+:\d+:\d+\)|Traceback \(most recent call last\)|\bException in thread|\bUncaught \w*Error|\bSegmentation fault|^\s+at .+\.(js|ts|py|java|go|rs):\d+)/m;
-/* Greetings, thanks and one-word replies: answer instantly, no thinking, no tools. */
-const SMALL_TALK_RE = /^(hi+|hello+|hey+|hola|yo|sup|thanks?|thank you|thx|ok(ay)?|cool|nice|great|yes|no|yep|nope|good (morning|night|evening|afternoon)|how are you|who are you|what('| i)?s your name|what can you do)\b[\s!.?,]*[\w\s,'!?.]{0,30}$/i;
-
-export const ARGON_THRESHOLD = 6;
-
-/**
- * Scores one request and returns { model, tier, score, thinking, simple, reasons }.
- * `thinking` is the app's setting: 'auto' (let the router choose) or an explicit 'low' | 'medium' | 'high'.
- * An explicit level is always used exactly as chosen; only 'auto' is adjusted by the router.
- */
-export function routeModel({ message = '', hasMedia = false, attachmentCount = 0, thinking = 'auto', mode = 'chat' } = {}) {
-  const text = String(message || '');
-  const explicit = ['low', 'medium', 'high'].includes(thinking) ? thinking : '';
-  const reasons = [];
-  let score = 0;
-  const add = (points, why) => { score += points; reasons.push(why + ' +' + points); };
-
-  if (mode === 'deep-research') return { model: MODELS.argon, tier: 'argon', score: 99, thinking: explicit || 'medium', simple: false, reasons: ['deep research'] };
-  if (explicit === 'high') return { model: MODELS.argon, tier: 'argon', score: 99, thinking: 'high', simple: false, reasons: ['extended thinking chosen'] };
-
-  const trimmed = text.trim();
-  const words = trimmed.split(/\s+/).filter(Boolean).length;
-  if (!hasMedia && words <= 8 && SMALL_TALK_RE.test(trimmed)) {
-    return { model: MODELS.hydrogen, tier: 'hydrogen', score: 0, thinking: explicit || 'low', simple: true, reasons: ['small talk'] };
-  }
-
-  const hasFence = /```/.test(text);
-  const codeLines = hasFence ? (text.match(/\n/g) || []).length : 0;
-  const hardHits = (text.match(HARD_RE_G) || []).length;
-  const hasCode = hasFence || CODE_RE.test(text);
-  const listItems = (text.match(/^\s*(?:\d+[.)]|[-*•])\s+\S/gm) || []).length;
-
-  /* very long prompts */
-  if (words > 900) add(6, 'very long prompt');
-  else if (words > 500) add(4, 'long prompt');
-  else if (words > 300) add(2, 'lengthy prompt');
-  if (listItems >= 8) add(2, 'many-part request');
-
-  /* very hard coding: hard terms only count when the request is about code */
-  if (hasCode && hardHits >= 3) add(4, 'many hard coding terms');
-  else if (hasCode && hardHits === 2) add(2, 'hard coding terms');
-  if (hasFence && codeLines > 60) add(3, 'very large code block');
-  else if (hasFence && codeLines > 25) add(1, 'large code block');
-  if (TRACE_RE.test(text) && hardHits) add(2, 'stack trace with a hard problem');
-  if (BUILD_RE.test(text) && hasCode && words > 40) add(3, 'build a whole system');
-  if (attachmentCount >= 4) add(1, 'many attachments');
-
-  if (score >= ARGON_THRESHOLD) return { model: MODELS.argon, tier: 'argon', score, thinking: explicit || 'medium', simple: false, reasons };
-
-  /* Hydrogen answers everything else. Auto keeps thinking low unless the request clearly needs some. */
-  const needsSome = score >= 2 || (hasCode && words > 40) || (REASON_RE.test(text) && words > 25) || (hasMedia && words > 6);
-  return { model: MODELS.hydrogen, tier: 'hydrogen', score, thinking: explicit || (needsSome ? 'medium' : 'low'), simple: false, reasons };
-}
-
-/** Backwards-compatible helper: just the model id. */
-export function pickModel(args) { return routeModel(args).model; }
-
 /** Lightest thinking, for small helper calls (titles, home-screen copy). */
 export const QUICK_THINKING = Object.freeze({ thinkingConfig: { thinkingLevel: 'LOW' } });
 
-export function thinkingConfig(model, level, { minimal = false } = {}) {
-  /* Gemini 4 models reject thinkingBudget ("use thinking level instead"), so only thinkingLevel is ever sent.
-     `minimal` (small talk) asks for the lightest level; streamRound falls back to LOW if the model refuses it. */
-  if (minimal || level === 'minimal') return { thinkingConfig: { thinkingLevel: 'MINIMAL', includeThoughts: true } };
-  const normalized = { high: 'HIGH', medium: 'MEDIUM' }[level] || 'LOW';
-  return { thinkingConfig: { thinkingLevel: normalized, includeThoughts: true } };
+/** Vertex names for the app's levels; 'max' is the Gemini 4 XHIGH level. */
+const LEVEL_NAMES = Object.freeze({ low: 'LOW', medium: 'MEDIUM', high: 'HIGH', max: 'XHIGH' });
+
+export function thinkingConfig(level) {
+  /* Gemini 3.5/3.8/4 models reject thinkingBudget ("use thinking level instead"), so only thinkingLevel is ever sent. */
+  return { thinkingConfig: { thinkingLevel: LEVEL_NAMES[level] || 'MEDIUM', includeThoughts: true } };
 }
 
 /* ---------- Image generation ---------- */
@@ -305,9 +238,19 @@ export const TTS_VOICES = VOICE_IDS;
  * Streams 24 kHz mono 16-bit PCM for `text`. Calls the REST endpoint
  * directly so speechMetadata (style prompt) is always passed through.
  */
-export async function* streamSpeech({ text, voice = 'Kore', style = '', signal }) {
+/** Gemini TTS can answer with a WAV file instead of bare PCM; the player wants raw 24 kHz PCM16, so drop a RIFF header. */
+function stripWavHeader(buffer) {
+  if (buffer.length > 44 && buffer.toString('ascii', 0, 4) === 'RIFF') {
+    const at = buffer.indexOf('data', 12, 'ascii');
+    return buffer.subarray(at >= 0 ? at + 8 : 44);
+  }
+  return buffer;
+}
+
+/** One speech request against one model: yields PCM chunks. Errors carry the real reason from Google. */
+async function* speechChunks(model, { text, voice, style, signal }) {
   const project = await getProjectId();
-  const url = `https://aiplatform.googleapis.com/v1/projects/${encodeURIComponent(project)}/locations/${VERTEX_LOCATION}/publishers/google/models/${MODELS.tts}:streamGenerateContent?alt=sse`;
+  const url = `https://aiplatform.googleapis.com/v1/projects/${encodeURIComponent(project)}/locations/${VERTEX_LOCATION}/publishers/google/models/${model}:streamGenerateContent?alt=sse`;
   const part = { text: String(text || '').slice(0, 8000) };
   if (style) part.speechMetadata = { style: String(style).slice(0, 400) };
   const response = await googleApi(url, {
@@ -323,23 +266,56 @@ export async function* streamSpeech({ text, voice = 'Kore', style = '', signal }
   });
   if (!response.ok || !response.body) {
     const detail = await response.text().catch(() => '');
-    throw new Error('Speech generation failed (HTTP ' + response.status + '). ' + detail.slice(0, 300));
+    let reason = detail.slice(0, 300);
+    try { reason = JSON.parse(detail)?.error?.message || reason; } catch {}
+    throw Object.assign(new Error(`Speech generation failed on ${model} (HTTP ${response.status}). ${reason}`.trim()), { status: response.status });
   }
   const decoder = new TextDecoder();
   let buffer = '';
-  for await (const chunk of response.body) {
-    buffer += decoder.decode(chunk, { stream: true });
+  let first = true;
+  const read = function* (event) {
+    const data = event.split('\n').filter(line => line.startsWith('data:')).map(line => line.slice(5).trim()).join('');
+    if (!data) return;
+    let payload;
+    try { payload = JSON.parse(data); } catch { return; }
+    for (const p of payload?.candidates?.[0]?.content?.parts || []) {
+      if (!p.inlineData?.data) continue;
+      let chunk = Buffer.from(p.inlineData.data, 'base64');
+      if (first) { chunk = stripWavHeader(chunk); first = false; }
+      if (chunk.length) yield chunk;
+    }
+  };
+  for await (const piece of response.body) {
+    buffer += decoder.decode(piece, { stream: true }).replace(/\r\n/g, '\n');
     let index;
     while ((index = buffer.indexOf('\n\n')) >= 0) {
       const event = buffer.slice(0, index);
       buffer = buffer.slice(index + 2);
-      const data = event.split('\n').filter(line => line.startsWith('data:')).map(line => line.slice(5).trim()).join('');
-      if (!data) continue;
-      let payload;
-      try { payload = JSON.parse(data); } catch { continue; }
-      for (const p of payload?.candidates?.[0]?.content?.parts || []) {
-        if (p.inlineData?.data) yield Buffer.from(p.inlineData.data, 'base64');
-      }
+      yield* read(event);
     }
   }
+  if (buffer.trim()) yield* read(buffer);
+}
+
+/**
+ * Streams read-aloud audio (raw PCM16, 24 kHz, mono). Tries the main TTS model and, if Google says it is not available
+ * (404, 400 or 403 before any audio was produced), the lite one. Only the failure before the first chunk is retried.
+ */
+export async function* streamSpeech({ text, voice = 'Kore', style = '', signal }) {
+  const models = [MODELS.tts, MODELS.ttsLite];
+  let lastError = null;
+  for (const model of models) {
+    let produced = false;
+    try {
+      for await (const chunk of speechChunks(model, { text, voice, style, signal })) { produced = true; yield chunk; }
+      if (produced) return;
+      lastError = new Error(`Speech generation returned no audio on ${model}.`);
+    } catch (error) {
+      if (signal?.aborted || produced) throw error;
+      lastError = error;
+      console.warn('[tts]', String(error?.message || error).slice(0, 300));
+      if (![400, 403, 404, 429, 500, 503, undefined].includes(error?.status)) break;
+    }
+  }
+  throw lastError || new Error('Speech generation failed.');
 }
