@@ -13,6 +13,7 @@ import { errorResponse, HttpError } from './lib/http.js';
 import { getAdminApp, getDb } from './lib/firebase.js';
 import { reportDatabaseRules } from './lib/rules.js';
 import { handleLiveUpgrade } from './live.js';
+import { abandonActiveWriters } from './chat/writer.js';
 import { routes as chatRoutes } from './routes/chat.js';
 import { routes as configRoutes } from './routes/config.js';
 import { routes as dataRoutes } from './routes/data.js';
@@ -204,5 +205,11 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 
 for (const signal of ['SIGTERM', 'SIGINT']) {
-  process.on(signal, () => { server.close(); setTimeout(() => process.exit(0), 8000).unref(); });
+  process.on(signal, () => {
+    server.close();
+    /* Answers still being written are stored as they are (marked as interrupted) instead of staying "working" forever. */
+    const exit = () => process.exit(0);
+    setTimeout(exit, 8000).unref();
+    abandonActiveWriters().finally(exit);
+  });
 }

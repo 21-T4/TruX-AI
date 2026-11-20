@@ -10,7 +10,8 @@
     "dev": "node --watch server/index.js",
     "check": "node scripts/check.mjs",
     "build": "npm run check",
-    "lint": "npm run check"
+    "lint": "npm run check",
+    "test": "node scripts/test-chat.mjs"
   },
   "dependencies": {
     "@google-cloud/storage": "^8.2.0",

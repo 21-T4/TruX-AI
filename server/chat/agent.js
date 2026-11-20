@@ -9,7 +9,7 @@ function throwIfAborted(signal) {
   throw signal.reason || Object.assign(new Error("Generation stopped."), { name: "AbortError" });
 }
 
-export async function runAgent({ model, thinking, simple = false, contents, systemInstruction, toolbox, writer, send, signal, temperature = 0.9, onUsage = null }) {
+export async function runAgent({ model, thinking, simple = false, contents, systemInstruction, toolbox, writer, send, signal, temperature = 0.9, onUsage = null, client = null }) {
   const messages = contents.slice();
   const sources = new Map();
   let searchSuggestionHtml = '';
@@ -20,6 +20,8 @@ export async function runAgent({ model, thinking, simple = false, contents, syst
   let toolsOff = false;        // set when the model refused every tool setup; the rest of the turn is plain text
   let repairs = 0;             // retries after a malformed tool call
   let repairNote = '';
+  let emptyRetries = 0;        // rounds that ended with no visible answer (the budget went into reasoning)
+  let thoughtSeparator = false;
 
   for (let round = 0; round < MAX_ROUNDS; round++) {
     throwIfAborted(signal);
@@ -30,8 +32,15 @@ export async function runAgent({ model, thinking, simple = false, contents, syst
       systemInstruction: repairNote ? systemInstruction + '\n\n' + repairNote : systemInstruction,
       tools: simple || toolsOff ? [] : toolbox.geminiTools(),           // small talk needs no tools, which makes the reply start faster
       fallbackTools: simple || toolsOff ? null : toolbox.geminiTools({ searchAsFunction: true }),
-      config: { ...thinkingConfig(currentModel, thinking, { minimal: simple && round === 0 }), temperature },
+      config: { ...thinkingConfig(currentModel, emptyRetries ? 'low' : thinking, { minimal: simple && round === 0 && !emptyRetries }), temperature },
       signal,
+      client,
+      /* Thinking summaries are streamed to the thinking bar and stored on their own; they never join the answer. */
+      onThought: delta => {
+        if (thoughtSeparator) { delta = '\n\n' + delta.replace(/^\s+/, ''); thoughtSeparator = false; }
+        writer.appendThinking(delta);
+        send({ type: 'thinking', text: delta });
+      },
       onText: delta => {
         if (separatorPending) { delta = '\n\n' + delta.replace(/^\s+/, ''); separatorPending = false; }
         text += delta;
@@ -72,6 +81,16 @@ export async function runAgent({ model, thinking, simple = false, contents, syst
       continue;
     }
     repairNote = '';
+    thoughtSeparator = true;
+
+    /* The model used its whole budget thinking and wrote nothing: ask once or twice more with light thinking
+       instead of storing an empty answer. */
+    if (!result.functionCalls.length && !text.trim() && !result.text.trim() && !writer.state.media.length && emptyRetries < 2 && !signal?.aborted) {
+      emptyRetries++;
+      repairNote = 'NOTE: your previous attempt ended without a visible answer. Think only briefly, then write your final answer to the user right away.';
+      send({ type: 'status', status: 'Finishing the answer…' });
+      continue;
+    }
 
     if (!result.functionCalls.length || !result.modelContent) {
       if (!text && result.finishReason && result.finishReason !== 'STOP') {

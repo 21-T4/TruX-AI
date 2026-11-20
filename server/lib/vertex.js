@@ -71,9 +71,10 @@ const TOOL_SETUP_ERROR = /tool|function|search|ground|server.?side|combin|unsupp
  * retried with a simpler setup instead of failing: first allowing built-in and function tools together, then
  * function tools only (`fallbackTools`, which carries a search function), then no tools. `degraded` says which.
  */
-export async function streamRound({ model, contents, systemInstruction, tools, fallbackTools = null, config = {}, signal, onText }) {
-  const client = await getVertexClient();
+export async function streamRound({ model, contents, systemInstruction, tools, fallbackTools = null, config = {}, signal, onText, onThought = null, client: injectedClient = null }) {
+  const client = injectedClient || await getVertexClient();
   const request = { ...config };
+  if (request.thinkingConfig) request.thinkingConfig = { ...request.thinkingConfig };
   if (systemInstruction) request.systemInstruction = systemInstruction;
   if (tools?.length) request.tools = tools;
   if (signal) request.abortSignal = signal;
@@ -96,6 +97,7 @@ export async function streamRound({ model, contents, systemInstruction, tools, f
 
   let stream;
   let thinkingTried = false;
+  let thoughtsDropped = false;
   for (;;) {
     try {
       stream = await open();
@@ -103,9 +105,15 @@ export async function streamRound({ model, contents, systemInstruction, tools, f
     } catch (error) {
       if (signal?.aborted) throw error;
       const message = String(error?.message || '');
+      /* Thought summaries are a nice extra, never a reason to fail: if the model refuses them, ask again without. */
+      if (request.thinkingConfig?.includeThoughts && !thoughtsDropped && /thought|INVALID_ARGUMENT|\b400\b/i.test(message)) {
+        delete request.thinkingConfig.includeThoughts;
+        thoughtsDropped = true;
+        continue;
+      }
       /* A model that does not know the MINIMAL thinking level: retry with LOW, then with the model's own default. */
       if (request.thinkingConfig?.thinkingLevel === 'MINIMAL' && /thinking|level|minimal|INVALID_ARGUMENT/i.test(message)) {
-        request.thinkingConfig = { thinkingLevel: 'LOW' };
+        request.thinkingConfig = { thinkingLevel: 'LOW', ...(thoughtsDropped ? {} : { includeThoughts: true }) };
         thinkingTried = true;
         continue;
       }
@@ -128,7 +136,12 @@ export async function streamRound({ model, contents, systemInstruction, tools, f
         continue;
       }
       if (typeof part.text === 'string') {
-        if (part.thought) { if (part.thoughtSignature) parts.push(part); continue; }
+        /* Thinking summaries are reported through onThought and kept OUT of the answer text. */
+        if (part.thought) {
+          if (part.text && onThought) await onThought(part.text);
+          if (part.thoughtSignature) parts.push(part);
+          continue;
+        }
         text += part.text;
         // Merge consecutive text parts so history stays compact.
         const last = parts[parts.length - 1];
@@ -257,9 +270,9 @@ export const QUICK_THINKING = Object.freeze({ thinkingConfig: { thinkingLevel: '
 export function thinkingConfig(model, level, { minimal = false } = {}) {
   /* Gemini 4 models reject thinkingBudget ("use thinking level instead"), so only thinkingLevel is ever sent.
      `minimal` (small talk) asks for the lightest level; streamRound falls back to LOW if the model refuses it. */
-  if (minimal || level === 'minimal') return { thinkingConfig: { thinkingLevel: 'MINIMAL' } };
+  if (minimal || level === 'minimal') return { thinkingConfig: { thinkingLevel: 'MINIMAL', includeThoughts: true } };
   const normalized = { high: 'HIGH', medium: 'MEDIUM' }[level] || 'LOW';
-  return { thinkingConfig: { thinkingLevel: normalized } };
+  return { thinkingConfig: { thinkingLevel: normalized, includeThoughts: true } };
 }
 
 /* ---------- Image generation ---------- */

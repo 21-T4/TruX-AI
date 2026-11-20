@@ -14,7 +14,8 @@ const ICON = (() => {
     redo:   w('<path d="M20 11a8 8 0 1 0-2.6 5.9"/><path d="M20 4.5V11h-6"/>'),
     down:   w('<path d="M12 4v11m0 0-4-4m4 4 4-4M5 19h14"/>'),
     check:  w('<path d="m5 13 4.5 4.5L19 7"/>'),
-    trash:  w('<path d="M5 7h14M10 7V5h4v2M7 7l.8 12a1 1 0 0 0 1 1h6.4a1 1 0 0 0 1-1L17 7"/>')
+    trash:  w('<path d="M5 7h14M10 7V5h4v2M7 7l.8 12a1 1 0 0 0 1 1h6.4a1 1 0 0 0 1-1L17 7"/>'),
+    think:  w('<path d="M12 3.5l1.6 4.4 4.4 1.6-4.4 1.6L12 15.5l-1.6-4.4L6 9.5l4.4-1.6L12 3.5Z"/><path d="M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z"/>')
   };
 })();
 
@@ -145,7 +146,11 @@ function attachUserMessageActions(userRow, messageIndex, promptText) {
   resendBtn.title = "Resend this message";
   resendBtn.innerHTML = ICON.redo + "Resend";
   resendBtn.onclick = () => {
-    if (isGenerating) return toast("Stop the current generation first.", "err");
+    if (isGenerating || sendPromptInFlight) return toast("Stop the current generation first.", "err");
+    /* Check everything that could stop the send BEFORE the message is taken out of the chat, so a refused resend
+       never loses the message. */
+    const blocked = truxSendBlocker();
+    if (blocked) return toast(blocked, "err");
     const session = chatSessions[currentChatId];
     const message = session?.messages?.[index];
     if (!message || message.role !== "user") {
@@ -159,12 +164,12 @@ function attachUserMessageActions(userRow, messageIndex, promptText) {
       return toast("This message has no text or saved attachments to resend.", "err");
     }
 
-    // Replace this turn and any later turns, then submit the same prompt
-    // again so the transcript never contains duplicate user messages.
-    
+    // Replace this turn and any later turns, then submit the same prompt again so the transcript never contains
+    // duplicate user messages. The server removes the old turn from the database together with the new one.
     pendingReplaceFrom = String(message.id || "");
+    forgetMessageIds(currentChatId, session.messages.slice(index).map(m => m.id));
     session.messages.splice(index);
-    saveChatSessions();
+    queueSidebarSync();
     let node = userRow;
     while (node) {
       const next = node.nextElementSibling;
@@ -317,6 +322,16 @@ function appendMessageRow(label, text, rc, bc, imageUrl, animate, sources, video
    blocks that are complete are committed once; only the active block is
    refreshed. Each new line gets a subtle fade, with no synthetic cursor.
    ===================================================================== */
+
+/* Finish a stream renderer and call `done` exactly once, even if the renderer never gets to call back (hidden tab,
+   a render error). Without this the composer could stay stuck on "Stop" after an answer and block the next message. */
+function truxFinishReveal(streamer, text, done) {
+  let called = false;
+  let timer = null;
+  const once = () => { if (called) return; called = true; clearTimeout(timer); done(); };
+  timer = setTimeout(() => { try { streamer.cancel(); } catch {} once(); }, Math.max(8000, String(text || "").length * 12));
+  try { streamer.finish(once); } catch { once(); }
+}
 
 function isNearBottom(el, slack) {
   return (el.scrollHeight - el.scrollTop - el.clientHeight) <= (slack || 120);
@@ -594,6 +609,7 @@ function createStreamRenderer(bubble) {
       host.innerHTML = renderFormattedText(target, false);
       renderTruxDiagrams(host);
       scheduleTruxMath(host);
+      bubble.dataset.renderedText = target;          /* settleAssistantRow keeps this markup instead of redrawing it */
       if (truxAutoFollow) container.scrollTop = container.scrollHeight;
       if (doneCb) {
         const callback = doneCb;

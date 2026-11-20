@@ -30,11 +30,14 @@ async function connectedApps(env, uid) {
    message and its reply must not stay behind as history while the same message is sent again (the model would read
    it twice). Message ids are Realtime Database push keys, which sort in the order they were written. */
 export async function dropReplacedTurns(uid, chatId, fromId) {
-  const ref = (await getDb()).ref(`users/${uid}/messages/${chatId}`);
-  const snapshot = await ref.orderByKey().startAt(fromId).get();
+  const db = await getDb();
+  const snapshot = await db.ref(`users/${uid}/messages/${chatId}`).orderByKey().startAt(fromId).get();
   const updates = {};
-  snapshot.forEach(child => { updates[child.key] = null; });
-  if (Object.keys(updates).length) await ref.update(updates);
+  snapshot.forEach(child => {
+    updates[`messages/${chatId}/${child.key}`] = null;
+    updates[`thinking/${chatId}/${child.key}`] = null;
+  });
+  if (Object.keys(updates).length) await db.ref(`users/${uid}`).update(updates);
 }
 
 async function loadHistory(uid, chatId) {

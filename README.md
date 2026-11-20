@@ -92,7 +92,19 @@ To try the sandbox locally run `cd sandbox && npm install && node server.mjs` an
 
 ## Background answers
 
-Answers keep generating on the server after the app is closed or backgrounded. The reply is stored as it is written, the app follows it again when it is reopened (or the network returns), and a push notification is sent when it finishes. If you host on Cloud Run, deploy with CPU always allocated (`--no-cpu-throttling`) so the instance keeps working after the client disconnects.
+Answers keep generating on the server after the app is closed or backgrounded, and a push notification is sent when they finish. If you host on Cloud Run, deploy with CPU always allocated (`--no-cpu-throttling`) so the instance keeps working after the client disconnects.
+
+### How an answer is stored (cost)
+
+The answer is streamed to the screen over SSE, which costs nothing in the database. The Realtime Database only sees (`server/chat/writer.js`):
+
+1. one small `status: "working"` placeholder when the turn starts (written together with the user's message and the chat's list meta in a single multi-path update),
+2. tiny, throttled progress writes while a long answer runs (tool list, activity label, a heartbeat every 20 s),
+3. **one bundled write when the model is done**: `text`, `sources`, `media`, `tools`, `status` and the chat's `updatedAt`/`lastStatus`, atomically. It replaces the placeholder in place, so nothing is removed and re-added. The closing SSE event is sent only after that write landed, so the next message always finds the previous answer in its history. If the write fails it is retried, then falls back to the plain answer alone; a shutdown stores whatever a running answer has so far.
+
+The model's thinking summary is stored apart from the answer at `users/{uid}/thinking/{chatId}/{messageId}` (the message only carries `hasThinking`), so it is never rendered in the answer and never downloaded with the chat's message list. It shows live in the thinking bar and afterwards behind the **Thinking** button under an answer.
+
+If the app is closed or the stream drops mid-answer, the thinking bar says "TruX is working in the background…" (with the tools used so far) and the finished answer is revealed in place when it lands. If the heartbeat stops for 90 s (the server died) the answer is marked as failed with a Retry button instead of locking the chat. `npm test` runs the writer and agent-loop checks.
 
 ## Answer streaming and Stop
 
