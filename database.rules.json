@@ -26,6 +26,11 @@
             }
           }
         },
+        "thinking": {
+          "$chatId": {
+            "$messageId": { ".validate": "newData.isString() && newData.val().length <= 100000" }
+          }
+        },
         "memories": {
           ".indexOn": ["createdAt"],
           "$memoryId": {

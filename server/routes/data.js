@@ -66,8 +66,25 @@ async function listChats(request) {
 async function listMessages(request, { url }) {
   const user = await requireUser(request, { limit: LIMIT });
   const chatId = asId(url.searchParams.get('chatId'));
-  const snap = await (await getDb()).ref(`users/${user.uid}/messages/${chatId}`).orderByKey().limitToLast(300).get();
+  const db = await getDb();
+  /* With messageId only that one message comes back (the app polls it while an answer is being written). */
+  const messageId = url.searchParams.get('messageId');
+  if (messageId) {
+    const id = asId(messageId);
+    const one = await db.ref(`users/${user.uid}/messages/${chatId}/${id}`).get();
+    return json({ messages: one.exists() ? { [id]: one.val() } : {} });
+  }
+  const snap = await db.ref(`users/${user.uid}/messages/${chatId}`).orderByKey().limitToLast(300).get();
   return json({ messages: snap.val() || {} });
+}
+
+/* The thinking summary of one answer lives apart from the answer (users/{uid}/thinking/...), loaded only when asked for. */
+async function getThinking(request, { url }) {
+  const user = await requireUser(request, { limit: LIMIT });
+  const chatId = asId(url.searchParams.get('chatId'));
+  const messageId = asId(url.searchParams.get('messageId'));
+  const snap = await (await getDb()).ref(`users/${user.uid}/thinking/${chatId}/${messageId}`).get();
+  return json({ thinking: typeof snap.val() === 'string' ? snap.val() : '' });
 }
 
 /* Same edits the browser makes itself: chat meta, deletions and the stop flag. */
@@ -76,7 +93,7 @@ function checkedUpdates(raw) {
   for (const [path, value] of Object.entries(raw && typeof raw === 'object' ? raw : {})) {
     const parts = path.split('/');
     const [kind, chatId, a, b] = parts;
-    if (!['chats', 'messages'].includes(kind) || !ID.test(chatId || '')) throw new HttpError(400, 'Unsupported update.');
+    if (!['chats', 'messages', 'thinking'].includes(kind) || !ID.test(chatId || '')) throw new HttpError(400, 'Unsupported update.');
     /* Chats are never erased on request from the app: "delete" only hides them (kept for retention). */
     if (kind === 'chats' && parts.length === 2 && value === null) { out[`chats/${chatId}/deleted`] = true; out[`chats/${chatId}/deletedAt`] = Date.now(); }
     else if (kind === 'chats' && parts.length === 3 && META_KEYS.has(a)) {
@@ -85,8 +102,8 @@ function checkedUpdates(raw) {
       else if (a === 'notebookId') out[path] = value ? String(value).slice(0, 80) : null;
       else out[path] = String(value ?? '').slice(0, a === 'title' ? 120 : 20);
     }
-    else if (kind === 'messages' && parts.length === 2 && value === null) continue; /* kept: whole-chat message history is never wiped */
-    else if (kind === 'messages' && parts.length === 3 && ID.test(a) && value === null) out[path] = null;
+    else if ((kind === 'messages' || kind === 'thinking') && parts.length === 2 && value === null) continue; /* kept: whole-chat message history is never wiped */
+    else if ((kind === 'messages' || kind === 'thinking') && parts.length === 3 && ID.test(a) && value === null) out[path] = null;
     else if (kind === 'messages' && parts.length === 4 && ID.test(a) && b === 'stopRequested') out[path] = value === true;
     else throw new HttpError(400, 'Unsupported update.');
   }
@@ -108,5 +125,6 @@ export const routes = {
   'POST /api/data/memories': changeMemories,
   'GET /api/data/chats': listChats,
   'GET /api/data/messages': listMessages,
+  'GET /api/data/thinking': getThinking,
   'POST /api/data/chats': updateChats
 };

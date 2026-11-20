@@ -70,6 +70,12 @@
 }
 .trux-thinking-details[hidden]{ display: none; }
 @media (hover: hover){ .trux-thinking-toggle:hover{ background: var(--bg-3); color: var(--txt); } }
+/* thinking summary: lives in the thinking bar while it runs and in its own block above a finished answer, never in the answer */
+.trux-thought-live{ white-space: pre-wrap; margin-bottom: 6px; max-height: 220px; overflow: auto; }
+.trux-thought-live:empty{ display: none; }
+.trux-thought-block{ margin: 0 0 10px; padding: 2px 0 2px 14px; border-left: 2px solid var(--line-2); font-size: 13px; line-height: 1.6; color: var(--txt-3); }
+.trux-thought-title{ font-weight: 600; color: var(--txt-2); margin-bottom: 2px; }
+.trux-thought-body{ white-space: pre-wrap; max-height: 320px; overflow: auto; }
 
 /* ---------- streamed markdown ---------- */
 .md-stream{ display: block; }

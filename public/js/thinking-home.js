@@ -67,24 +67,70 @@ function appendToolStatusLine(toolId, tool, detail, phase = "complete", details 
 /* Re-runs the last user turn: drops the trailing assistant message from
    history and its row from the DOM, then re-sends. */
 function regenerateLast() {
-  if(isGenerating) return toast("Still generating - stop it first.");
+  if(isGenerating || sendPromptInFlight) return toast("Still generating - stop it first.");
+  const blocked = truxSendBlocker();
+  if (blocked) return toast(blocked, "err");
   let msgs = chatSessions[currentChatId]?.messages;
   if(!msgs || !msgs.length) return;
   let lastUser = [...msgs].reverse().find(m => m.role === "user");
-  if(!lastUser?.text) return toast("Nothing to regenerate.");
+  if(!lastUser?.text && !(lastUser?.attachments || []).length) return toast("Nothing to regenerate.");
   while(msgs.length && msgs[msgs.length - 1].role !== "user") msgs.pop();
   pendingReplaceFrom = String(msgs[msgs.length - 1]?.id || "");
-  msgs.pop();
-  saveChatSessions();
+  const removed = msgs.splice(msgs.length - 1, 1);       /* the server deletes the old turn together with the new one */
+  forgetMessageIds(currentChatId, [...removed.map(m => m.id)]);
+  queueSidebarSync();
   let rows = getActiveChatContainer().querySelectorAll(".row");
   for(let i = rows.length - 1; i >= 0; i--) {
     let isUser = rows[i].classList.contains("user-row");
     rows[i].remove();
     if(isUser) break;
   }
-  getEl("promptInput").value = lastUser.text;
+  /* The regenerated turn keeps the files of the original message. */
+  selectedImageBase64 = null;
+  pastedTextBlocks = [];
+  fileAttachments = (Array.isArray(lastUser.attachments) ? lastUser.attachments : []).filter(item => item && item.objectKey).map(item => ({
+    name: String(item.name || "attachment"), size: Number(item.size || 0), mimeType: String(item.mimeType || "application/octet-stream"),
+    objectKey: String(item.objectKey), processedKey: item.processedKey || null, processing: false
+  }));
+  renderFileChips();
+  getEl("promptInput").value = lastUser.text || "";
   handleInputChange();
   sendPrompt();
+}
+
+/* Thinking summary, live: appended to the thinking bar's details (never to the answer). */
+function appendThoughtText(detailsId, text) {
+  const details = getEl(detailsId);
+  if (!details || !text) return;
+  let box = details.querySelector(".trux-thought-live");
+  if (!box) { box = document.createElement("div"); box.className = "trux-thought-live"; details.prepend(box); }
+  box.textContent += text;
+  const panel = details.closest(".trux-thinking-panel");
+  const toggle = panel?.querySelector(".trux-thinking-toggle");
+  if (toggle) toggle.hidden = false;
+  if (panel?.classList.contains("expanded")) requestAnimationFrame(() => { details.scrollTop = details.scrollHeight; });
+}
+
+/* The bold heading of the newest thought ("**Checking the dates**") makes a good one-line status. */
+function thoughtHeading(thinkingText) {
+  const all = [...String(thinkingText || "").matchAll(/\*\*([^*\n]{3,80})\*\*/g)];
+  return all.length ? all[all.length - 1][1].trim() : "";
+}
+
+/* "Thinking" button of a finished answer: shows or hides the stored thinking summary above the answer. */
+function toggleThoughtBlock(row, loadText) {
+  const stack = row?.querySelector(".trux-response-stack");
+  if (!stack) return;
+  const existing = stack.querySelector(".trux-thought-block");
+  if (existing) { existing.remove(); return; }
+  const block = document.createElement("div");
+  block.className = "trux-thought-block";
+  block.innerHTML = '<div class="trux-thought-title">Thinking</div><div class="trux-thought-body"></div>';
+  const body = block.querySelector(".trux-thought-body");
+  body.textContent = "Loading…";
+  stack.insertBefore(block, row.querySelector(".bubble"));
+  Promise.resolve().then(loadText).then(text => { body.textContent = String(text || "").trim() || "No thinking was saved for this answer."; })
+    .catch(() => { body.textContent = "Could not load the thinking."; });
 }
 
 function normalizeAiActivity(text) {

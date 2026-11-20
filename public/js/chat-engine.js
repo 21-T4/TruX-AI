@@ -122,7 +122,7 @@ function attachTruxMedia(row, mediaList) {
   }
 }
 
-function renderAssistantActions(row, text, { incomplete = false } = {}) {
+function renderAssistantActions(row, text, { incomplete = false, thinking = null } = {}) {
   const a = row?.querySelector(".actions");
   if (!a) return;
   a.querySelectorAll(".act:not([data-download]):not([data-plugin-reauth])").forEach(el => el.remove());
@@ -132,8 +132,9 @@ function renderAssistantActions(row, text, { incomplete = false } = {}) {
   const editBtn = make("Edit prompt", ICON.edit + "Edit", () => editPromptFromAssistantRow(row));
   const pinBtn = make("Pin to insights", ICON.pin + "Pin", () => pinInsight(text));
   const regenBtn = make("Regenerate this answer", ICON.redo + "Retry", () => regenerateLast());
+  const thinkBtn = thinking ? make("Show thinking", ICON.think + "Thinking", () => toggleThoughtBlock(row, thinking.load)) : null;
   if (incomplete) a.append(regenBtn);
-  else a.append(readBtn, copyBtn, editBtn, pinBtn, regenBtn);
+  else a.append(...[thinkBtn, readBtn, copyBtn, editBtn, pinBtn, regenBtn].filter(Boolean));
 }
 
 function settleAssistantRow(row, msg) {
@@ -144,14 +145,29 @@ function settleAssistantRow(row, msg) {
     bubble.classList.remove("thinking");
     let text = msg.text || "";
     if (msg.status === "error" && !text) text = msg.error || "The response could not be completed.";
-    bubble.innerHTML = renderFormattedText(text, false);
+    /* The stream renderer already drew this exact answer: keep that markup. Redrawing it would blink the text and
+       re-render diagrams and formulas (the answer "disappearing and reappearing"). */
+    const alreadyDrawn = bubble.dataset.renderedText === text && !!bubble.querySelector(".md-stream");
+    if (!alreadyDrawn) {
+      bubble.innerHTML = renderFormattedText(text, false);
+      renderTruxDiagrams(bubble);
+      scheduleTruxMath(bubble);
+    }
+    bubble.querySelector(".trux-stopped-note")?.remove();
     if (msg.status === "stopped") bubble.insertAdjacentHTML("beforeend", '<div class="trux-stopped-note">Stopped</div>');
-    renderTruxDiagrams(bubble);
-    scheduleTruxMath(bubble);
+    else if (msg.status === "error" && msg.text && msg.error) {
+      const note = document.createElement("div");
+      note.className = "trux-stopped-note";
+      note.textContent = msg.error;
+      bubble.appendChild(note);
+    }
   }
   attachSources(row, (msg.sources || []).filter(s => s?.uri).slice(0, 8));
   attachTruxMedia(row, msg.media);
-  renderAssistantActions(row, msg.text || "", { incomplete: msg.status === "error" && !msg.text });
+  const chatIdForThinking = row.dataset.chatId || currentChatId;
+  const thinking = msg.id && (msg.hasThinking || msg.liveThinking)
+    ? { load: () => msg.liveThinking ? msg.liveThinking : loadStoredThinking(chatIdForThinking, msg.id) } : null;
+  renderAssistantActions(row, msg.text || "", { incomplete: msg.status === "error" && !msg.text, thinking });
 }
 
 function dataUrlToBlob(dataUrl) {
@@ -204,11 +220,20 @@ async function readSseStream(response, onEvent, signal) {
   }
 }
 
+/* Why a send cannot go ahead right now ("" when it can). Resend and Regenerate ask this BEFORE they take the old
+   message out of the chat, so a refused send never costs the person their message. */
+function truxSendBlocker() {
+  if (!auth?.currentUser) return truxAuthStateReady ? "Sign in to continue." : "Still restoring your sign-in. Try again in a moment.";
+  if (fileAttachments.some(f => f.processing)) return "Wait for your files to finish uploading.";
+  if (workspaceMode === "chat") { const blocked = truxModelBlockReason(truxSelectedModel); if (blocked) return blocked; }
+  return "";
+}
+
 /* Set by Resend / Regenerate: the saved message this send replaces. The server drops it and its reply from the chat's
    history so the model does not see the same message twice. */
 let pendingReplaceFrom = "";
 
-async function sendPromptImpl() {
+async function sendPromptImpl(releaseSendLock = () => {}) {
   const replaceFrom = pendingReplaceFrom;
   pendingReplaceFrom = "";
   try { if (typeof navigator.vibrate === "function") navigator.vibrate(0); } catch {}
@@ -249,6 +274,9 @@ async function sendPromptImpl() {
   const turnId = ++generationEpoch;
   isScrolledUp = false; truxAutoFollow = true;
   setComposerGenerating(true);
+  /* From here on isGenerating guards against a second send. The lock must not be held until the server closes the
+     stream (it used to be, which blocked the next message and Resend while the title was still being made). */
+  releaseSendLock();
   const voice = wasInputByVoice; wasInputByVoice = false;
 
   const incognito = !!incognitoMode;
@@ -280,7 +308,7 @@ async function sendPromptImpl() {
   chatContainer.scrollTop = chatContainer.scrollHeight;
   setThinkingStatus(sid, uploads.length ? "Uploading…" : "Thinking…");
 
-  const ctx = { turnId, chatId, row, messageId: "", userMessageId: "", text: "", sources: [], media: [], settled: false, incognito };
+  const ctx = { turnId, chatId, row, messageId: "", userMessageId: "", text: "", thinking: "", sources: [], media: [], settled: false, done: false, incognito };
   activeTurnContext = ctx;
   const isCurrent = () => turnId === generationEpoch;
 
@@ -316,7 +344,8 @@ async function sendPromptImpl() {
     ...(isTruxDeveloper(user) ? { ownerModel: store.getItem("trux_owner_gemini_model") || "auto" } : {})
   };
 
-  await truxPendingSync;
+  /* A database write that is waiting for the network must not hold the send forever. */
+  await Promise.race([truxPendingSync, new Promise(resolve => setTimeout(resolve, 2500))]);
   const controller = new AbortController();
   activeAbortController = controller;
   let streamer = null;
@@ -333,9 +362,13 @@ async function sendPromptImpl() {
   const finish = msg => {
     if (ctx.settled) return;
     ctx.settled = true;
+    ctx.done = true;
+    clearTimeout(ctx.stopTimer);
+    if (ctx.following) stopStreamWatcher(chatId);
+    row.dataset.chatId = chatId;
     row.querySelector(".trux-storyboard")?.remove();
     if (activeStreamer === streamer) activeStreamer = null;
-    const stored = { id: ctx.messageId, role: "trux", text: msg.text || "", sources: msg.sources || ctx.sources, media: msg.media || ctx.media, status: msg.status || "done", error: msg.error || "", incomplete: msg.status !== "done" };
+    const stored = { id: ctx.messageId, role: "trux", text: msg.text || "", sources: msg.sources || ctx.sources, media: msg.media || ctx.media, status: msg.status || "done", error: msg.error || "", incomplete: msg.status !== "done", liveThinking: ctx.thinking.trim() };
     if (ctx.messageId) {
       const idx = session.messages.findIndex(m => m.id === ctx.messageId);
       if (idx >= 0) session.messages[idx] = stored; else session.messages.push(stored);
@@ -357,7 +390,7 @@ async function sendPromptImpl() {
       setComposerGenerating(true);
       try {
         streamer.setText(stored.text);
-        streamer.finish(complete);
+        truxFinishReveal(streamer, stored.text, complete);
       } catch { complete(); }
       if (voice || truxAutoRead()) speakText(stored.text);
       for (const m of stored.media || []) { if (m.kind !== "image" && m.kind !== "video") continue; try { saveGeneratedMedia?.({ type: m.kind, objectKey: m.objectKey, prompt: m.prompt || typed }); } catch {} }
@@ -374,9 +407,13 @@ async function sendPromptImpl() {
     if (stored.status === "done") void refreshTruxUsage();   /* throttled; keeps Settings and the picker honest */
   };
 
+  ctx.finish = finish;
+
   const onEvent = ev => {
     ctx.lastEventAt = Date.now();
     if (!isCurrent() && ev.type !== "start") return;
+    /* Once the turn is followed through the database, its answer comes from there; ignore the old stream's text. */
+    if (ctx.following && ["chunk", "final", "stopped", "error"].includes(ev.type)) return;
     switch (ev.type) {
       case "start":
         ctx.messageId = ev.messageId; ctx.userMessageId = ev.userMessageId;
@@ -398,6 +435,17 @@ async function sendPromptImpl() {
         ctx.text += ev.text;
         const s = ensureStreamer();
         if (s) { if (!s.received) s.setText(ctx.text); else s.push(ev.text); }
+        break;
+      }
+      case "thinking": {
+        /* The model's thinking summary: shown in the thinking bar only, never in the answer. */
+        if (!ev.text) break;
+        ctx.thinking += ev.text;
+        if (!streamer) {
+          appendThoughtText(tsid, ev.text);
+          const heading = thoughtHeading(ctx.thinking);
+          if (heading) setThinkingStatus(sid, heading);
+        }
         break;
       }
       case "tool_status":
@@ -474,16 +522,23 @@ async function sendPromptImpl() {
 function followServerTurn(ctx, session, getStreamer) {
   if (ctx.following) return;
   ctx.following = true;
-  try { getStreamer()?.cancel(); } catch {}
-  if (activeStreamer === getStreamer()) activeStreamer = null;
+  /* The live streamer (if the answer was already being written) stays: the finished text continues from where it is. */
   watchStreamingMessage(ctx.chatId, ctx.messageId, ctx.row, {
+    getStreamer,
     onSettled: msg => {
+      if (ctx.done) return;
+      ctx.done = true;
       ctx.settled = true;
+      clearTimeout(ctx.stopTimer);
       if (ctx.turnId !== generationEpoch) return;
+      ctx.row.dataset.chatId = ctx.chatId;
       settleAssistantRow(ctx.row, msg);
+      if (activeStreamer && activeStreamer === getStreamer()) activeStreamer = null;
       if (activeTurnContext === ctx) activeTurnContext = null;
       activeAbortController = null;
       setComposerGenerating(false);
+      queueSidebarSync();
+      if (msg.status === "done") void refreshTruxUsage();
     }
   });
 }
@@ -513,6 +568,15 @@ function markGenerationStopped() {
   if (ctx && !ctx.incognito) {
     /* Keep SSE open so the persistent server turn can receive its stop flag. */
     if (ctx.messageId) requestServerStop(ctx.chatId, ctx.messageId);
+    /* If the server never confirms the stop, end the turn on screen anyway so the composer cannot stay locked. */
+    clearTimeout(ctx.stopTimer);
+    ctx.stopTimer = setTimeout(() => {
+      if (ctx.done || activeTurnContext !== ctx) return;
+      try { activeAbortController?.abort(); } catch {}
+      stopStreamWatcher(ctx.chatId);
+      if (ctx.finish) ctx.finish({ text: ctx.text, status: "stopped" });
+      else { detachActiveTurn(); }
+    }, 8000);
     return;
   }
   try { activeAbortController?.abort(); } catch {}
@@ -524,16 +588,20 @@ function handleActionButton() {
 }
 
 async function sendPrompt() {
-  if (sendPromptInFlight || isGenerating) return;
+  if (sendPromptInFlight || isGenerating) return false;
   sendPromptInFlight = true;
-  try { await sendPromptImpl(); }
+  /* Each call releases only its own lock, and only once, so a finished turn can never unlock a newer one. */
+  let released = false;
+  const release = () => { if (!released) { released = true; sendPromptInFlight = false; } };
+  try { await sendPromptImpl(release); }
   catch (error) {
     console.error("TruX send failed", error);
     toast(error?.message || "Could not send that message.", "err");
     setComposerGenerating(false);
   } finally {
-    sendPromptInFlight = false;
+    release();
   }
+  return true;
 }
 
 /* ---------- Opening a stored chat ---------- */
@@ -553,12 +621,17 @@ function renderStoredMessages(chatId) {
     const parts = buildAssistantRow({ animate: false });
     container.appendChild(parts.row);
     parts.row.dataset.messageId = m.id || "";
-    if (m.status === "streaming") {
+    if (isLiveStatus(m.status)) {
+      /* The server is still writing this answer (or was, when the app closed): show it working in the thinking bar. */
       const bubble = parts.row.querySelector(".bubble");
       if (m.text) { dismissThinkingPanel(parts.row); bubble.innerHTML = renderFormattedText(m.text, false); }
-      else setThinkingStatus(parts.sid, "Still working on this…");
+      else {
+        setThinkingStatus(parts.sid, m.activity || "TruX is working in the background…");
+        for (const t of m.tools || []) if (t?.label) appendToolStatusLine(parts.tsid, t.label, t.status === "running" ? "" : (t.status === "error" ? "Failed" : "Done"), t.status === "running" ? "start" : "complete", { id: t.id, ok: t.status !== "error" });
+      }
       streamingRow = parts.row; streamingId = m.id;
     } else {
+      parts.row.dataset.chatId = chatId;
       settleAssistantRow(parts.row, m);
     }
   });

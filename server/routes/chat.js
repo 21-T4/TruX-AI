@@ -82,7 +82,8 @@ async function generateTitle(message) {
     const { text } = await generateOnce({
       model: MODELS.hydrogen,
       contents: [{ role: 'user', parts: [{ text: 'Write a short, specific title (3-6 words, no quotes, no trailing punctuation) for a chat that starts with:\n\n' + String(message).slice(0, 2000) }] }],
-      config: { maxOutputTokens: 400, temperature: 0.4, ...QUICK_THINKING }
+      config: { maxOutputTokens: 400, temperature: 0.4, ...QUICK_THINKING },
+      signal: AbortSignal.timeout(20_000)
     });
     return text.replace(/^["'\s]+|["'.\s]+$/g, '').slice(0, 80) || '';
   } catch { return ''; }
@@ -141,61 +142,70 @@ async function chat(request, { env, url }) {
     const titlePromise = isFirstTurn ? generateTitle(message || attachments[0]?.name) : null;
     const writer = new MessageWriter({ uid: user.uid, chatId, messageId, enabled: !incognito });
 
-    if (!incognito) {
-      const now = Date.now();
-      const chatMeta = { updatedAt: now, mode, lastStatus: 'streaming' };
-      if (isFirstTurn) Object.assign(chatMeta, { createdAt: now, title: (message || attachments[0]?.name || 'New chat').slice(0, 60) });
-      await Promise.all([
-        messagesRef.child(userMessageId).set({ role: 'user', text: message, attachments, createdAt: now, mode }),
-        db.ref(`users/${user.uid}/chats/${chatId}`).update(chatMeta),
-        writer.start({ createdAt: now + 1, mode })
-      ]);
-    }
-    const unwatch = writer.watchStop(() => controller.abort());
-
-    const previousImage = [...ctx.history].reverse().flatMap(m => [...(m.media || [])].reverse()).find(m => m?.kind === 'image' && m.objectKey);
-    const toolbox = new Toolbox({
-      env, user, chatId, memories: ctx.memories, personalization: ctx.personalization, connectedSlugs: ctx.connectedSlugs,
-      attachments, previousImage, origin: url.origin, writer, send, canVideo, device: normalizeDevice(body.device)
-    });
-
-    const systemInstruction = [
-      PERSONA,
-      toolManifest(toolbox.capabilities),
-      MODE_HINTS[mode] || '',
-      contextBlock({ user, location, timeZone: String(body.timeZone || 'UTC').slice(0, 60) }),
-      ctx.personalization.memoryEnabled ? memoryPrompt(ctx.memories, message) : '',
-      // Last, so the chosen personality is the freshest instruction.
-      personalizationPrompt(ctx.personalization, 'chat')
-    ].filter(Boolean).join('\n\n');
-
-    const history = withoutRepeatedPrompt(incognito ? sanitizeClientHistory(body.history) : ctx.history, message);
-    const contents = [
-      ...historyToContents(history, env.TRUX_BUCKET_NAME),
-      { role: 'user', parts: await userParts({ uid: user.uid, bucket: env.TRUX_BUCKET_NAME, message, attachments }) }
-    ];
-    const ownerModel = user.owner && /^[a-z0-9][a-z0-9.\-]{2,80}$/i.test(String(body.ownerModel || '')) && body.ownerModel !== 'auto'
-      ? String(body.ownerModel) : '';
-    /* routeModel is only used to size the reasoning of Quasar and to spot small talk; it never picks the model. */
-    const route = routeModel({ message, hasMedia: attachments.length > 0, attachmentCount: attachments.length, thinking: 'auto', mode });
-    const model = ownerModel || (mode === 'deep-research' ? resolveModel('aegis').vertex : picked.vertex);
-    /* Every model offers five thinking levels; the person's choice wins, otherwise the model's own default.
-       Adaptive ('auto') lets the router size the reasoning for each question. */
-    const chosenLevel = THINKING_LEVELS.includes(body.thinkingLevel) ? body.thinkingLevel : '';
-    const level = chosenLevel || picked.thinking;
-    thinking = mode === 'deep-research' ? (thinkingChoice === 'auto' ? 'medium' : thinkingChoice)
-      : level === 'auto' ? route.thinking : level;
-    const simple = level === 'minimal' || (chosenLevel && chosenLevel !== picked.thinking) ? false : route.simple;
-    writer.update({ model: picked.id });
-    if (process.env.TRUX_LOG_ROUTING) console.log('[route]', route.tier, 'score', route.score, route.reasons.join(', '));
-    send({ type: 'status', status: mode === 'deep-research' ? 'Researching…' : 'Thinking…', model: picked.id });
-
     let status = 'done';
     let errorText = '';
+    let outcome = null;            // the closing SSE event; sent only after the answer is safely stored
+    let unwatch = () => {};
     /* Tokens generated this turn (thinking included). Counted from the usage the model reports, so it adds no latency. */
     let countedTokens = 0;
     const onUsage = u => { countedTokens += u.outputTokens + u.thinkingTokens + (COUNT_INPUT_TOKENS ? u.promptTokens : 0); };
+    /* Everything from here on sits inside try/finally: whatever fails, the stored message always leaves the
+       "working" state (it used to stay there forever and lock the chat). */
     try {
+      if (!incognito) {
+        const now = Date.now();
+        /* One write for the whole start: the user's message, the chat's list meta and the small "working" placeholder. */
+        const alsoWrite = {
+          [`messages/${chatId}/${userMessageId}`]: { role: 'user', text: message, attachments, createdAt: now, mode },
+          [`chats/${chatId}/updatedAt`]: now,
+          [`chats/${chatId}/mode`]: mode,
+          [`chats/${chatId}/lastStatus`]: 'working'
+        };
+        if (isFirstTurn) {
+          alsoWrite[`chats/${chatId}/createdAt`] = now;
+          alsoWrite[`chats/${chatId}/title`] = (message || attachments[0]?.name || 'New chat').slice(0, 60);
+        }
+        await writer.start({ createdAt: now + 1, mode }, alsoWrite);
+      }
+      unwatch = writer.watchStop(() => controller.abort());
+
+      const previousImage = [...ctx.history].reverse().flatMap(m => [...(m.media || [])].reverse()).find(m => m?.kind === 'image' && m.objectKey);
+      const toolbox = new Toolbox({
+        env, user, chatId, memories: ctx.memories, personalization: ctx.personalization, connectedSlugs: ctx.connectedSlugs,
+        attachments, previousImage, origin: url.origin, writer, send, canVideo, device: normalizeDevice(body.device)
+      });
+
+      const systemInstruction = [
+        PERSONA,
+        toolManifest(toolbox.capabilities),
+        MODE_HINTS[mode] || '',
+        contextBlock({ user, location, timeZone: String(body.timeZone || 'UTC').slice(0, 60) }),
+        ctx.personalization.memoryEnabled ? memoryPrompt(ctx.memories, message) : '',
+        // Last, so the chosen personality is the freshest instruction.
+        personalizationPrompt(ctx.personalization, 'chat')
+      ].filter(Boolean).join('\n\n');
+
+      const history = withoutRepeatedPrompt(incognito ? sanitizeClientHistory(body.history) : ctx.history, message);
+      const contents = [
+        ...historyToContents(history, env.TRUX_BUCKET_NAME),
+        { role: 'user', parts: await userParts({ uid: user.uid, bucket: env.TRUX_BUCKET_NAME, message, attachments }) }
+      ];
+      const ownerModel = user.owner && /^[a-z0-9][a-z0-9.\-]{2,80}$/i.test(String(body.ownerModel || '')) && body.ownerModel !== 'auto'
+        ? String(body.ownerModel) : '';
+      /* routeModel is only used to size the reasoning of Quasar and to spot small talk; it never picks the model. */
+      const route = routeModel({ message, hasMedia: attachments.length > 0, attachmentCount: attachments.length, thinking: 'auto', mode });
+      const model = ownerModel || (mode === 'deep-research' ? resolveModel('aegis').vertex : picked.vertex);
+      /* Every model offers five thinking levels; the person's choice wins, otherwise the model's own default.
+         Adaptive ('auto') lets the router size the reasoning for each question. */
+      const chosenLevel = THINKING_LEVELS.includes(body.thinkingLevel) ? body.thinkingLevel : '';
+      const level = chosenLevel || picked.thinking;
+      thinking = mode === 'deep-research' ? (thinkingChoice === 'auto' ? 'medium' : thinkingChoice)
+        : level === 'auto' ? route.thinking : level;
+      const simple = level === 'minimal' || (chosenLevel && chosenLevel !== picked.thinking) ? false : route.simple;
+      writer.update({ model: picked.id });
+      if (process.env.TRUX_LOG_ROUTING) console.log('[route]', route.tier, 'score', route.score, route.reasons.join(', '));
+      send({ type: 'status', status: mode === 'deep-research' ? 'Researching…' : 'Thinking…', model: picked.id });
+
       if (mode === 'video') {
         // Video studio: always produce a video from the brief and options.
         const options = body.video && typeof body.video === 'object' ? body.video : {};
@@ -206,27 +216,28 @@ async function chat(request, { env, url }) {
         if (response.ok === false) throw Object.assign(new Error(response.error), { status: 400 });
         const plan = writer.state.storyboard;
         writer.appendText(`**${plan?.title || 'Your video'}**\n\n` + (plan?.shots || []).map((shot, i) => `${i + 1}. ${shot.caption}`).join('\n') + (response.note && /could not/.test(response.note) ? '\n\n' + response.note.replace(/^Video produced and already displayed to the user\.\s*/, '') : ''));
-        send({ type: 'final', text: writer.state.text, sources: [], media: writer.state.media });
+        outcome = { type: 'final', text: writer.state.text, sources: [], media: writer.state.media };
       } else {
         const result = await runAgent({ model, thinking, simple, contents, systemInstruction, toolbox, writer, send, signal: controller.signal, temperature: presetTemperature(ctx.personalization), onUsage });
         if (!result.text && !writer.state.media.length) {
           writer.appendText('I could not produce a response. Please try again.');
         }
-        send({ type: 'final', text: writer.state.text, sources: result.sources, media: writer.state.media });
+        writer.update({ sources: result.sources });
+        outcome = { type: 'final', text: writer.state.text, sources: result.sources, media: writer.state.media };
         if (result.usage?.totalTokens) addUsage(user.uid, 'tokens', result.usage.totalTokens).catch(() => {});
         if (mode === 'deep-research') addUsage(user.uid, 'deepResearch').catch(() => {});
       }
     } catch (error) {
       if (controller.signal.aborted) {
         status = 'stopped';
-        send({ type: 'stopped' });
+        outcome = { type: 'stopped' };
       } else {
         status = 'error';
         const raw = String(error?.message || '');
         const readable = Number(error?.status) < 500 && raw && raw.length <= 220 && !/^\s*[{\[]|INVALID_ARGUMENT|googleapis|projects\//.test(raw);
         errorText = readable ? raw : (/tool|function|search|ground/i.test(raw) ? 'A tool step failed. Please send your message again.' : 'The response could not be completed. Please try again.');
         console.error('[chat]', error?.stack || error?.message || error);
-        send({ type: 'error', error: errorText });
+        outcome = { type: 'error', error: errorText };
       }
     } finally {
       unwatch();
@@ -235,14 +246,25 @@ async function chat(request, { env, url }) {
         if (used !== null && picked.dailyTokens) send({ type: 'usage', model: picked.id, used, limit: picked.dailyTokens });
       }
     }
-    await writer.finish(status, errorText ? { error: errorText } : {});
+
+    /* The single bundled write: the whole answer, its sources, media and tools, the thinking summary (kept apart from the
+       answer) and the chat's list meta. The closing event goes out only after it landed, so the very next message the
+       person sends always finds this answer in the history. A stuck database cannot hold the screen for long. */
+    const stored = await Promise.race([
+      writer.finish(status, errorText ? { error: errorText } : {}),
+      new Promise(resolve => setTimeout(() => resolve(false), 10_000))
+    ]);
+    if (!stored && !incognito) console.error('[chat] answer not stored yet for', chatId, messageId);
+    if (outcome) send(outcome);
 
     if (titlePromise) {
-      const title = await titlePromise;
-      if (title) {
-        await db.ref(`users/${user.uid}/chats/${chatId}/title`).set(title).catch(() => {});
-        send({ type: 'title', chatId, title });
-      }
+      const titled = titlePromise.then(async title => {
+        if (title) await db.ref(`users/${user.uid}/chats/${chatId}/title`).set(title).catch(() => {});
+        return title;
+      });
+      /* The title never keeps the stream open for long; if it is late it is still saved and shows up through the chat list. */
+      const title = await Promise.race([titled, new Promise(resolve => setTimeout(() => resolve(''), 3000))]);
+      if (title) send({ type: 'title', chatId, title });
     }
     if (clientGone && status === 'done' && body.notify !== false && !incognito) {
       notifyUser(user.uid, 'TruX finished your answer', writer.state.text.slice(0, 140), { chatId });
